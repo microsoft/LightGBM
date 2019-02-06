@@ -21,6 +21,7 @@ typedef void* BoosterHandle;
 #define C_API_DTYPE_FLOAT64 (1)
 #define C_API_DTYPE_INT32   (2)
 #define C_API_DTYPE_INT64   (3)
+#define C_API_DTYPE_INT8    (4)
 
 #define C_API_PREDICT_NORMAL     (0)
 #define C_API_PREDICT_RAW_SCORE  (1)

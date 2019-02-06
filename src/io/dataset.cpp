@@ -577,7 +577,11 @@ bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len, const
   if (name == std::string("init_score")) {
     *out_ptr = metadata_.init_score();
     *out_len = static_cast<data_size_t>(metadata_.num_init_score());
-  } else {
+  } else if (name == std::string("feature_penalty")){
+    *out_ptr = feature_penalty_.data();
+    *out_len = feature_penalty_.size();
+  }
+  else {
     return false;
   }
   return true;
@@ -589,6 +593,18 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len, const in
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
     *out_len = metadata_.num_queries() + 1;
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool Dataset::GetInt8Field(const char* field_name, data_size_t* out_len, const int8_t** out_ptr) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("monotone_types")) {
+    *out_ptr = monotone_types_.data();
+    *out_len = monotone_types_.size();
   } else {
     return false;
   }

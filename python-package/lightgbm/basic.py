@@ -106,6 +106,13 @@ def cint32_array_to_numpy(cptr, length):
     else:
         raise RuntimeError('Expected int pointer')
 
+def cint8_array_to_numpy(cptr, length):
+    """Convert a ctypes int pointer array to a numpy array."""
+    if isinstance(cptr, ctypes.POINTER(ctypes.c_int8)):
+        return np.fromiter(cptr, dtype=np.int8, count=length)
+    else:
+        raise RuntimeError('Expected int pointer')    
+
 
 def c_str(string):
     """Convert a Python string to C string."""
@@ -166,6 +173,7 @@ C_API_DTYPE_FLOAT32 = 0
 C_API_DTYPE_FLOAT64 = 1
 C_API_DTYPE_INT32 = 2
 C_API_DTYPE_INT64 = 3
+C_API_DTYPE_INT8 = 4
 
 """Matrix is row major in Python"""
 C_API_IS_ROW_MAJOR = 1
@@ -180,7 +188,9 @@ C_API_PREDICT_CONTRIB = 3
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
-                     "group": C_API_DTYPE_INT32}
+                     "group": C_API_DTYPE_INT32,
+                     "feature_penalty": C_API_DTYPE_FLOAT64,
+                     "monotone_types": C_API_DTYPE_INT8}
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'int64': 'int', 'uint8': 'int', 'uint16': 'int',
@@ -700,6 +710,8 @@ class Dataset(object):
         self._predictor = None
         self.pandas_categorical = None
         self.params_back_up = None
+        self.feature_penalty = None
+        self.monotone_types = None
 
     def __del__(self):
         try:
@@ -1179,6 +1191,8 @@ class Dataset(object):
             return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
             return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+        elif out_type.value == C_API_DTYPE_INT8:
+            return cint8_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int8)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
 
@@ -1381,6 +1395,30 @@ class Dataset(object):
         if self.weight is None:
             self.weight = self.get_field('weight')
         return self.weight
+
+    def get_feature_penalty(self):
+        """Get the feature penalty of the Dataset
+
+        Returns
+        -------
+        feature_penalty : numpy array or None
+            Feature penalty for each feature in the data set.
+        """
+        if self.feature_penalty is None:
+            self.feature_penalty = self.get_field('feature_penalty')
+        return self.feature_penalty
+
+    def get_monotone_types(self):
+        """Get the monotone types of the data set
+
+        Returns
+        -------
+        monotone types : numpy array or None
+            monotone types, -1, 0 or 1, for each feature in the data set
+        """
+        if self.monotone_types is None:
+            self.monotone_types = self.get_field('monotone_types')
+        return self.monotone_types
 
     def get_init_score(self):
         """Get the initial score of the Dataset.

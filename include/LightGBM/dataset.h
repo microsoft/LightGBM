@@ -386,6 +386,8 @@ public:
 
   LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
 
+  LIGHTGBM_EXPORT bool GetInt8Field(const char* field_name, data_size_t* out_len, const int8_t** out_ptr);
+
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
   */
