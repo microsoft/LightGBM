@@ -120,3 +120,25 @@ class TestBasic(unittest.TestCase):
             d2 = lgb.Dataset(X2).construct()            
             d1.add_features_from(d2)
 
+    def test_add_features_equal_data_on_alternating_used_unused(self):
+        X = np.random.random((1000,5))
+        X[:,[1,3]] = 0
+        names = ['col_%d' % (i,) for i in range(5)]
+        for j in range(1,5):
+            d1 = lgb.Dataset(X[:,:j],feature_name=names[:j]).construct()
+            d2 = lgb.Dataset(X[:,j:],feature_name=names[j:]).construct()
+            d1.add_features_from(d2)
+            with tempfile.NamedTemporaryFile() as f:
+                d1name = f.name
+            d1.dump_text(d1name)
+            d = lgb.Dataset(X,feature_name=names).construct()
+            with tempfile.NamedTemporaryFile() as f:
+                dname = f.name
+            d.dump_text(dname)
+            with open(d1name,'rt') as d1f:
+                 d1txt = d1f.read()
+            with open(dname, 'rt') as df:
+                 dtxt = df.read()
+            os.remove(dname)
+            os.remove(d1name)
+            self.assertEqual(dtxt, d1txt)
