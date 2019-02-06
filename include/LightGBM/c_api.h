@@ -277,6 +277,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetFree(DatasetHandle handle);
 LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
                                              const char* filename);
 
+LIGHTGBM_C_EXPORT int LGBM_DatasetDumpText(DatasetHandle handle,
+					   const char* filename);
+
 /*!
 * \brief set vector to a content in info
 *        Note: group and group only work for C_API_DTYPE_INT32

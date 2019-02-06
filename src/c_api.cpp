@@ -812,6 +812,14 @@ int LGBM_DatasetSaveBinary(DatasetHandle handle,
   API_END();
 }
 
+int LGBM_DatasetDumpText(DatasetHandle handle,
+                           const char* filename) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  dataset->DumpTextFile(filename);
+  API_END();
+}
+
 int LGBM_DatasetSetField(DatasetHandle handle,
                          const char* field_name,
                          const void* field_data,

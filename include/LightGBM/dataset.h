@@ -391,6 +391,8 @@ public:
   */
   LIGHTGBM_EXPORT void SaveBinaryFile(const char* bin_filename);
 
+  LIGHTGBM_EXPORT void DumpTextFile(const char* text_filename);
+
   LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset);
 
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);

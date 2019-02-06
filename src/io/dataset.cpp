@@ -690,6 +690,75 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
   }
 }
 
+void Dataset::DumpTextFile(const char* text_filename){
+  //TODO: Just use standard stdio for now, but consider VirtualFileWriter later.
+  //TODO: Error handling of any kind
+  auto file = fopen(text_filename, "wt");
+  fprintf(file, "num_features: %d\n", num_features_);
+  fprintf(file, "num_total_features: %d\n", num_total_features_);
+  fprintf(file, "num_groups: %d\n", num_groups_);
+  fprintf(file, "num_data: %d\n", num_data_);
+  //TODO: Metadata
+  //Label_idx?
+  //Sparse_threshold???
+  fprintf(file, "feature_names: ");
+  for(auto n : feature_names_){
+    fprintf(file, "%s, ", n.c_str());
+  }
+  fprintf(file, "\nreal_feature_idx: ");
+  for(auto i : real_feature_idx_){
+    fprintf(file, "%d, ", i);
+  }
+  fprintf(file, "\nfeature2group: ");
+  for(auto i : feature2group_){
+    fprintf(file, "%d, ", i);
+  }
+  fprintf(file, "\nfeature2subfeature: ");
+  for(auto i : feature2subfeature_){
+    fprintf(file, "%d, ", i);
+  }
+  fprintf(file, "\ngroup_bin_boundaries: ");
+  for(auto i : group_bin_boundaries_){
+    fprintf(file, "%lu, ", i);
+  }
+  fprintf(file, "\ngroup_feature_start: ");
+  for(auto i : group_feature_start_){
+    fprintf(file, "%d, ", i);
+  }
+  fprintf(file, "\ngroup_feature_cnt: ");
+  for(auto i : group_feature_cnt_){
+    fprintf(file, "%d, ", i);
+  }
+  fprintf(file, "\nmonotone_types: ");
+  for(auto i : monotone_types_){
+    fprintf(file, "%d, ", i);
+  }
+  fprintf(file, "\nfeature_penalty: ");
+  for(auto i : feature_penalty_){
+    fprintf(file, "%lf, ", i);
+  }
+  fprintf(file, "\n");
+  for(auto n : feature_names_){
+    fprintf(file, "%s, ", n.c_str());
+  }
+  for(data_size_t i = 0; i < num_data_; i++){
+    fprintf(file, "\n");
+    for(int j = 0; j < num_total_features_; j++){
+      if(used_feature_map_[j] < 0){
+	fprintf(file, "NA, ");
+      } else {
+	//Ludicrously inefficient, yay.
+	auto real_feature_idx = used_feature_map_[j];
+	auto group_idx = feature2group_[real_feature_idx];
+	auto sub_idx = feature2subfeature_[real_feature_idx];
+	auto sub_iter = feature_groups_[group_idx]->SubFeatureIterator(sub_idx);
+	fprintf(file, "%d, ", sub_iter->RawGet(i));
+      }
+    }
+  }
+  fclose(file);
+}
+
 void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                                   const data_size_t* data_indices, data_size_t num_data,
                                   int leaf_idx,
@@ -929,8 +998,9 @@ void Dataset::addFeaturesFrom(Dataset* other){
     feature2group_.push_back(group + num_groups_);
   }
   auto bin_offset = group_bin_boundaries_.back();
-  for(auto boundary : other->group_bin_boundaries_){
-    group_bin_boundaries_.push_back(boundary + bin_offset);
+  //Skip the leading 0 when copying group_bin_boundaries.
+  for(auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); i++){
+    group_bin_boundaries_.push_back(*i + bin_offset);
   }
   for(auto group_start : other->group_feature_start_){
     group_feature_start_.push_back(group_start + num_features_);

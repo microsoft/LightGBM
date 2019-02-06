@@ -1500,6 +1500,12 @@ class Dataset(object):
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
         #TODO: Ensure other is properly de-initialised.
 
+    def dump_text(self, fname):
+        _safe_call(_LIB.LGBM_DatasetDumpText(
+            self.construct().handle,
+            c_str(fname)))
+        return self
+
 class Booster(object):
     """Booster in LightGBM."""
 
