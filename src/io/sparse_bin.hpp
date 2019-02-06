@@ -20,7 +20,7 @@ const size_t kNumFastIndex = 64;
 
 template <typename VAL_T>
 class SparseBinIterator: public BinIterator {
-public:
+ public:
   SparseBinIterator(const SparseBin<VAL_T>* bin_data,
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
     : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
@@ -52,7 +52,7 @@ public:
 
   inline void Reset(data_size_t idx) override;
 
-private:
+ private:
   const SparseBin<VAL_T>* bin_data_;
   data_size_t cur_pos_;
   data_size_t i_delta_;
@@ -67,7 +67,7 @@ class OrderedSparseBin;
 
 template <typename VAL_T>
 class SparseBin: public Bin {
-public:
+ public:
   friend class SparseBinIterator<VAL_T>;
   friend class OrderedSparseBin<VAL_T>;
 
@@ -407,7 +407,7 @@ public:
     GetFastIndex();
   }
 
-protected:
+ protected:
   data_size_t num_data_;
   std::vector<uint8_t> deltas_;
   std::vector<VAL_T> vals_;

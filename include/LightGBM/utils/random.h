@@ -13,7 +13,7 @@ namespace LightGBM {
 * \brief A wrapper for random generator
 */
 class Random {
-public:
+ public:
   /*!
   * \brief Constructor, with random seed
   */
@@ -94,7 +94,7 @@ public:
     return ret;
   }
 
-private:
+ private:
   inline int RandInt16() {
     x = (214013 * x + 2531011);
     return static_cast<int>((x >> 16) & 0x7FFF);

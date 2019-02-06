@@ -14,7 +14,7 @@ namespace LightGBM {
 */
 template<typename PointWiseLossCalculator>
 class RegressionMetric: public Metric {
-public:
+ public:
   explicit RegressionMetric(const Config& config) :config_(config) {
   }
 
@@ -95,7 +95,7 @@ public:
   inline static void CheckLabel(label_t) {
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -111,7 +111,7 @@ private:
 
 /*! \brief RMSE loss for regression task */
 class RMSEMetric: public RegressionMetric<RMSEMetric> {
-public:
+ public:
   explicit RMSEMetric(const Config& config) :RegressionMetric<RMSEMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
@@ -130,7 +130,7 @@ public:
 
 /*! \brief L2 loss for regression task */
 class L2Metric: public RegressionMetric<L2Metric> {
-public:
+ public:
   explicit L2Metric(const Config& config) :RegressionMetric<L2Metric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
@@ -144,7 +144,7 @@ public:
 
 /*! \brief L2 loss for regression task */
 class QuantileMetric : public RegressionMetric<QuantileMetric> {
-public:
+ public:
   explicit QuantileMetric(const Config& config) :RegressionMetric<QuantileMetric>(config) {
   }
 
@@ -165,7 +165,7 @@ public:
 
 /*! \brief L1 loss for regression task */
 class L1Metric: public RegressionMetric<L1Metric> {
-public:
+ public:
   explicit L1Metric(const Config& config) :RegressionMetric<L1Metric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
@@ -178,7 +178,7 @@ public:
 
 /*! \brief Huber loss for regression task */
 class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
-public:
+ public:
   explicit HuberLossMetric(const Config& config) :RegressionMetric<HuberLossMetric>(config) {
   }
 
@@ -199,7 +199,7 @@ public:
 /*! \brief Fair loss for regression task */
 // http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
 class FairLossMetric: public RegressionMetric<FairLossMetric> {
-public:
+ public:
   explicit FairLossMetric(const Config& config) :RegressionMetric<FairLossMetric>(config) {
   }
 
@@ -216,7 +216,7 @@ public:
 
 /*! \brief Poisson regression loss for regression task */
 class PoissonMetric: public RegressionMetric<PoissonMetric> {
-public:
+ public:
   explicit PoissonMetric(const Config& config) :RegressionMetric<PoissonMetric>(config) {
   }
 
@@ -235,7 +235,7 @@ public:
 
 /*! \brief Mape regression loss for regression task */
 class MAPEMetric : public RegressionMetric<MAPEMetric> {
-public:
+ public:
   explicit MAPEMetric(const Config& config) :RegressionMetric<MAPEMetric>(config) {
   }
 
@@ -248,7 +248,7 @@ public:
 };
 
 class GammaMetric : public RegressionMetric<GammaMetric> {
-public:
+ public:
   explicit GammaMetric(const Config& config) :RegressionMetric<GammaMetric>(config) {
   }
 
@@ -271,7 +271,7 @@ public:
 
 
 class GammaDevianceMetric : public RegressionMetric<GammaDevianceMetric> {
-public:
+ public:
   explicit GammaDevianceMetric(const Config& config) :RegressionMetric<GammaDevianceMetric>(config) {
   }
 
@@ -292,7 +292,7 @@ public:
 };
 
 class TweedieMetric : public RegressionMetric<TweedieMetric> {
-public:
+ public:
   explicit TweedieMetric(const Config& config) :RegressionMetric<TweedieMetric>(config) {
   }
 

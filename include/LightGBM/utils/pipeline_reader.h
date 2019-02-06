@@ -18,7 +18,7 @@ namespace LightGBM {
 * \brief A pipeline file reader, use 2 threads, one read block from file, the other process the block
 */
 class PipelineReader {
-public:
+ public:
   /*!
   * \brief Read data from a file, use pipeline methods
   * \param filename Filename of data

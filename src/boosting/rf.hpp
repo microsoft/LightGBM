@@ -16,7 +16,7 @@ namespace LightGBM {
 * \brief Rondom Forest implementation
 */
 class RF : public GBDT {
-public:
+ public:
   RF() : GBDT() {
     average_output_ = true;
   }
@@ -199,7 +199,7 @@ public:
     return true;
   };
 
-private:
+ private:
   std::vector<score_t> tmp_grad_;
   std::vector<score_t> tmp_hess_;
   std::vector<double> init_scores_;

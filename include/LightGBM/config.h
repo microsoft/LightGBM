@@ -25,7 +25,7 @@ enum TaskType {
 const int kDefaultNumLeaves = 31;
 
 struct Config {
-public:
+ public:
   std::string ToString() const;
   /*!
   * \brief Get string value by specific name of key
@@ -772,7 +772,7 @@ public:
   static std::unordered_map<std::string, std::string> alias_table;
   static std::unordered_set<std::string> parameter_set;
 
-private:
+ private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;

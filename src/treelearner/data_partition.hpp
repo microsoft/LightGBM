@@ -15,7 +15,7 @@ namespace LightGBM {
 * \brief DataPartition is used to store the the partition of data on tree.
 */
 class DataPartition {
-public:
+ public:
   DataPartition(data_size_t num_data, int num_leaves)
     :num_data_(num_data), num_leaves_(num_leaves) {
     leaf_begin_.resize(num_leaves_);
@@ -188,7 +188,7 @@ public:
   /*! \brief Get number of leaves */
   int num_leaves() const { return num_leaves_; }
 
-private:
+ private:
   /*! \brief Number of all data */
   data_size_t num_data_;
   /*! \brief Number of all leaves */

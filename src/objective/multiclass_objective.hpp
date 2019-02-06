@@ -14,7 +14,7 @@ namespace LightGBM {
 * \brief Objective function for multiclass classification, use softmax as objective functions
 */
 class MulticlassSoftmax: public ObjectiveFunction {
-public:
+ public:
   explicit MulticlassSoftmax(const Config& config) {
     num_class_ = config.num_class;
   }
@@ -146,7 +146,7 @@ public:
     }
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */
@@ -164,7 +164,7 @@ private:
 * \brief Objective function for multiclass classification, use one-vs-all binary objective function
 */
 class MulticlassOVA: public ObjectiveFunction {
-public:
+ public:
   explicit MulticlassOVA(const Config& config) {
     num_class_ = config.num_class;
     for (int i = 0; i < num_class_; ++i) {
@@ -246,7 +246,7 @@ public:
     return binary_loss_[class_id]->ClassNeedTrain(0);
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */
