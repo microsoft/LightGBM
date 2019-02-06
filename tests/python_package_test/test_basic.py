@@ -185,3 +185,51 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(np.asarray([1]), d.get_monotone_types())
         d = lgb.Dataset(X).construct()
         self.assertEqual(None, d.get_monotone_types())
+
+    def test_add_features_feature_penalty(self):
+        X = np.random.random((1000,2))
+        test_cases = [
+            (None, None, None),
+            ([0.5], None, [0.5, 1]),
+            (None, [0.5], [1, 0.5]),
+            ([0.5], [0.5], [0.5, 0.5])]
+        for (p1, p2, expected) in test_cases:
+            if p1 is not None:
+                params1 = {'feature_penalty': p1}
+            else:
+                params1 = {}
+            d1 = lgb.Dataset(X[:,0].reshape((-1,1)), params=params1).construct()
+            if p2 is not None:
+                params2 = {'feature_penalty': p2}
+            else:
+                params2 = {}
+            d2 = lgb.Dataset(X[:,1].reshape((-1,1)), params=params2).construct()
+            d1.add_features_from(d2)
+            actual = d1.get_feature_penalty()
+            if isinstance(actual, np.ndarray):
+                actual = list(actual)
+            self.assertEqual(expected, actual)
+
+    def test_add_features_monotone_types(self):
+        X = np.random.random((1000,2))
+        test_cases = [
+            (None, None, None),
+            ([1], None, [1, 0]),
+            (None, [1], [0, 1]),
+            ([1], [-1], [1, -1])]
+        for (p1, p2, expected) in test_cases:
+            if p1 is not None:
+                params1 = {'monotone_constraints': p1}
+            else:
+                params1 = {}
+            d1 = lgb.Dataset(X[:,0].reshape((-1,1)), params=params1).construct()
+            if p2 is not None:
+                params2 = {'monotone_constraints': p2}
+            else:
+                params2 = {}
+            d2 = lgb.Dataset(X[:,1].reshape((-1,1)), params=params2).construct()
+            d1.add_features_from(d2)
+            actual = d1.get_monotone_types()
+            if isinstance(actual, np.ndarray):
+                actual = list(actual)
+            self.assertEqual(expected, actual)
