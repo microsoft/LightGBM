@@ -1536,7 +1536,7 @@ class Dataset(object):
         if self.handle is None or other.handle is None:
             raise ValueError('Both source and target datasets must be constructed before adding features')
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
-        #TODO: Ensure other is properly de-initialised.
+        other.handle = None
 
     def dump_text(self, fname):
         _safe_call(_LIB.LGBM_DatasetDumpText(
