@@ -983,7 +983,6 @@ void Dataset::addFeaturesFrom(Dataset* other){
   for(auto& fg : other->feature_groups_){
     feature_groups_.push_back(std::move(fg));
   }
-  //TODO: Much of this is just offsetting logic, factor it out.
   for(auto feature_idx : other->used_feature_map_){
     if(feature_idx >= 0){
       used_feature_map_.push_back(feature_idx + num_features_);
