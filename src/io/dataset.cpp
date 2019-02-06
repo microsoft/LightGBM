@@ -951,6 +951,13 @@ void PushVector(std::vector<T>& dest, const std::vector<T>& src){
 }
 
 template<typename T>
+void PushOffset(std::vector<T>& dest, const std::vector<T>& src, const T& offset){
+  for(auto i : src){
+    dest.push_back(i + offset);
+  }
+}
+
+template<typename T>
 void PushClearIfEmpty(std::vector<T>& dest, const size_t dest_len, const std::vector<T>& src, const size_t src_len, const T& deflt){
   if(!dest.empty() && !src.empty()){
     PushVector(dest, src);
@@ -984,20 +991,14 @@ void Dataset::addFeaturesFrom(Dataset* other){
       used_feature_map_.push_back(-1); //Unused feature.
     }
   }
-  for(auto real_feature_idx : other->real_feature_idx_){
-    real_feature_idx_.push_back(real_feature_idx + num_total_features_);
-  }
-  for(auto group : other->feature2group_){
-    feature2group_.push_back(group + num_groups_);
-  }
+  PushOffset(real_feature_idx_, other->real_feature_idx_, num_total_features_);
+  PushOffset(feature2group_, other->feature2group_, num_groups_);
   auto bin_offset = group_bin_boundaries_.back();
   //Skip the leading 0 when copying group_bin_boundaries.
   for(auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); i++){
     group_bin_boundaries_.push_back(*i + bin_offset);
   }
-  for(auto group_start : other->group_feature_start_){
-    group_feature_start_.push_back(group_start + num_features_);
-  }
+  PushOffset(group_feature_start_, other->group_feature_start_, num_features_);
 
   PushClearIfEmpty(monotone_types_, num_total_features_, other->monotone_types_, other->num_total_features_, (int8_t)0);
   PushClearIfEmpty(feature_penalty_, num_total_features_, other->feature_penalty_, other->num_total_features_, 1.0);
