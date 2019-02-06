@@ -1494,6 +1494,11 @@ class Dataset(object):
                 break
         return ref_chain
 
+    def add_features_from(self, other):
+        if self.handle is None or other.handle is None:
+            raise ArgumentError('Both source and target datasets must be constructed before adding features')
+        _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        #TODO: Ensure other is properly de-initialised.
 
 class Booster(object):
     """Booster in LightGBM."""

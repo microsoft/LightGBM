@@ -881,4 +881,67 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hess
   }
 }
 
+template<typename T>
+void PushVector(std::vector<T>& dest, const std::vector<T>& src){
+  for(auto i : src){
+    dest.push_back(i);
+  }
+}
+
+template<typename T>
+void PushClearIfEmpty(std::vector<T>& dest, const size_t dest_len, const std::vector<T>& src, const size_t src_len, const T& deflt){
+  if(!dest.empty() && !src.empty()){
+    PushVector(dest, src);
+  } else if(!dest.empty() && src.empty()){
+    for(size_t i = 0; i < src_len; i++){
+      dest.push_back(deflt);
+    }
+  } else if(dest.empty() && !src.empty()){
+    for(size_t i = 0; i < dest_len; i++){
+      dest.push_back(deflt);
+    }
+    PushVector(dest, src);
+  }
+}
+
+void Dataset::addFeaturesFrom(Dataset* other){
+  if(other->num_data_ != num_data_){
+    throw std::runtime_error("Cannot add features from other dataset with a different number of rows");
+  }
+  PushVector(feature_names_, other->feature_names_);
+  PushVector(feature2subfeature_, other->feature2subfeature_);
+  PushVector(group_feature_cnt_, other->group_feature_cnt_);
+  for(auto& fg : other->feature_groups_){
+    feature_groups_.push_back(std::move(fg));
+  }
+  //TODO: Much of this is just offsetting logic, factor it out.
+  for(auto feature_idx : other->used_feature_map_){
+    if(feature_idx >= 0){
+      used_feature_map_.push_back(feature_idx + num_features_);
+    } else {
+      used_feature_map_.push_back(-1); //Unused feature.
+    }
+  }
+  for(auto real_feature_idx : other->real_feature_idx_){
+    real_feature_idx_.push_back(real_feature_idx + num_total_features_);
+  }
+  for(auto group : other->feature2group_){
+    feature2group_.push_back(group + num_groups_);
+  }
+  auto bin_offset = group_bin_boundaries_.back();
+  for(auto boundary : other->group_bin_boundaries_){
+    group_bin_boundaries_.push_back(boundary + bin_offset);
+  }
+  for(auto group_start : other->group_feature_start_){
+    group_feature_start_.push_back(group_start + num_features_);
+  }
+
+  PushClearIfEmpty(monotone_types_, num_total_features_, other->monotone_types_, other->num_total_features_, (int8_t)0);
+  PushClearIfEmpty(feature_penalty_, num_total_features_, other->feature_penalty_, other->num_total_features_, 1.0);
+  
+  num_features_ += other->num_features_;
+  num_total_features_ += other->num_total_features_;
+  num_groups_ += other->num_groups_;
+}
+
 }  // namespace LightGBM

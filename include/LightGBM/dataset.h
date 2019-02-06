@@ -581,6 +581,8 @@ public:
   /*! \brief Disable copy */
   Dataset(const Dataset&) = delete;
 
+  void addFeaturesFrom(Dataset* other);
+
 private:
   std::string data_filename_;
   /*! \brief Store used features */
