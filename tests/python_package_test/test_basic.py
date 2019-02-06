@@ -142,3 +142,32 @@ class TestBasic(unittest.TestCase):
             os.remove(dname)
             os.remove(d1name)
             self.assertEqual(dtxt, d1txt)
+
+    def test_add_features_same_booster_behaviour(self):
+        X = np.random.random((1000,5))
+        X[:,[1,3]] = 0
+        names = ['col_%d' % (i,) for i in range(5)]
+        for j in range(1,5):
+            d1 = lgb.Dataset(X[:,:j],feature_name=names[:j]).construct()
+            d2 = lgb.Dataset(X[:,j:],feature_name=names[j:]).construct()
+            d1.add_features_from(d2)
+            d = lgb.Dataset(X,feature_name=names).construct()
+            y = np.random.random(1000)
+            d1.set_label(y)
+            d.set_label(y)
+            b1 = lgb.Booster(train_set=d1)
+            b = lgb.Booster(train_set=d)
+            for k in range(10):
+                b.update()
+                b1.update()
+            with tempfile.NamedTemporaryFile() as df:
+                dname = df.name
+            with tempfile.NamedTemporaryFile() as d1f:
+                d1name = d1f.name
+            b1.save_model(d1name)
+            b.save_model(dname)
+            with open(dname, 'rt') as df:
+                dtxt = df.read()
+            with open(d1name, 'rt') as d1f:
+                d1txt = d1f.read()
+            self.assertEqual(dtxt, d1txt)
