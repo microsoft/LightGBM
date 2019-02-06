@@ -707,16 +707,11 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
 }
 
 void Dataset::DumpTextFile(const char* text_filename){
-  //TODO: Just use standard stdio for now, but consider VirtualFileWriter later.
-  //TODO: Error handling of any kind
   auto file = fopen(text_filename, "wt");
   fprintf(file, "num_features: %d\n", num_features_);
   fprintf(file, "num_total_features: %d\n", num_total_features_);
   fprintf(file, "num_groups: %d\n", num_groups_);
   fprintf(file, "num_data: %d\n", num_data_);
-  //TODO: Metadata
-  //Label_idx?
-  //Sparse_threshold???
   fprintf(file, "feature_names: ");
   for(auto n : feature_names_){
     fprintf(file, "%s, ", n.c_str());
