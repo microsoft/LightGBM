@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <unordered_map>
 #include <limits>
+#include <memory>
 #include <vector>
 #include <utility>
 #include <string>
@@ -728,18 +729,23 @@ void Dataset::DumpTextFile(const char* text_filename){
   for(auto n : feature_names_){
     fprintf(file, "%s, ", n.c_str());
   }
+  std::vector<std::unique_ptr<BinIterator>> iterators(num_total_features_);
+  for(int j = 0; j < num_total_features_; j++){
+    if(used_feature_map_[j] >= 0){
+	auto real_feature_idx = used_feature_map_[j];
+	auto group_idx = feature2group_[real_feature_idx];
+	auto sub_idx = feature2subfeature_[real_feature_idx];
+	std::unique_ptr<BinIterator> sub_iter(feature_groups_[group_idx]->SubFeatureIterator(sub_idx));
+	iterators[j] = std::move(sub_iter);
+    }
+  }
   for(data_size_t i = 0; i < num_data_; i++){
     fprintf(file, "\n");
     for(int j = 0; j < num_total_features_; j++){
       if(used_feature_map_[j] < 0){
 	fprintf(file, "NA, ");
       } else {
-	//Ludicrously inefficient, yay.
-	auto real_feature_idx = used_feature_map_[j];
-	auto group_idx = feature2group_[real_feature_idx];
-	auto sub_idx = feature2subfeature_[real_feature_idx];
-	auto sub_iter = feature_groups_[group_idx]->SubFeatureIterator(sub_idx);
-	fprintf(file, "%d, ", sub_iter->RawGet(i));
+	fprintf(file, "%d, ", iterators[j]->RawGet(i));
       }
     }
   }
