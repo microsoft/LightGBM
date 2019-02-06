@@ -101,7 +101,6 @@ class TestBasic(unittest.TestCase):
         with self.assertRaises(lgb.basic.LightGBMError):
             d1.add_features_from(d2)
 
-    #TODO: Bit messy.
     def test_add_features_throws_if_datasets_unconstructed(self):
         X1 = np.random.random((1000, 1))
         X2 = np.random.random((100, 1))
