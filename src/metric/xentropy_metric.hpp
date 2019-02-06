@@ -65,7 +65,7 @@ namespace LightGBM {
 // CrossEntropyMetric : "xentropy" : (optional) weights are used linearly
 //
 class CrossEntropyMetric : public Metric {
-public:
+ public:
   explicit CrossEntropyMetric(const Config&) {}
   virtual ~CrossEntropyMetric() {}
 
@@ -142,7 +142,7 @@ public:
     return -1.0f;  // negative means smaller loss is better, positive means larger loss is better
   }
 
-private:
+ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
@@ -160,7 +160,7 @@ private:
 // ATTENTION: Supposed to be used when the objective also is "xentlambda"
 //
 class CrossEntropyLambdaMetric : public Metric {
-public:
+ public:
   explicit CrossEntropyLambdaMetric(const Config&) {}
   virtual ~CrossEntropyLambdaMetric() {}
 
@@ -228,7 +228,7 @@ public:
     return -1.0f;
   }
 
-private:
+ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
@@ -243,7 +243,7 @@ private:
 // KullbackLeiblerDivergence : "kldiv" : (optional) weights are used linearly
 //
 class KullbackLeiblerDivergence : public Metric {
-public:
+ public:
   explicit KullbackLeiblerDivergence(const Config&) {}
   virtual ~KullbackLeiblerDivergence() {}
 
@@ -336,7 +336,7 @@ public:
     return -1.0f;
   }
 
-private:
+ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */

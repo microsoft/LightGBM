@@ -36,7 +36,7 @@ namespace LightGBM {
 * \brief Objective function for cross-entropy (with optional linear weights)
 */
 class CrossEntropy: public ObjectiveFunction {
-public:
+ public:
   explicit CrossEntropy(const Config&) {
   }
 
@@ -127,7 +127,7 @@ public:
     return initscore;
   }
 
-private:
+ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer for label */
@@ -140,7 +140,7 @@ private:
 * \brief Objective function for alternative parameterization of cross-entropy (see top of file for explanation)
 */
 class CrossEntropyLambda: public ObjectiveFunction {
-public:
+ public:
   explicit CrossEntropyLambda(const Config&) {
     min_weight_ = max_weight_ = 0.0f;
   }

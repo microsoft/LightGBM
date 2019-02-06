@@ -18,7 +18,7 @@ namespace LightGBM {
 */
 template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
-public:
+ public:
   explicit BinaryMetric(const Config&) {
   }
 
@@ -92,7 +92,7 @@ public:
     return std::vector<double>(1, loss);
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -109,7 +109,7 @@ private:
 * \brief Log loss metric for binary classification task.
 */
 class BinaryLoglossMetric: public BinaryMetric<BinaryLoglossMetric> {
-public:
+ public:
   explicit BinaryLoglossMetric(const Config& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
@@ -133,7 +133,7 @@ public:
 * \brief Error rate metric for binary classification task.
 */
 class BinaryErrorMetric: public BinaryMetric<BinaryErrorMetric> {
-public:
+ public:
   explicit BinaryErrorMetric(const Config& config) :BinaryMetric<BinaryErrorMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
@@ -153,7 +153,7 @@ public:
 * \brief Auc Metric for binary classification task.
 */
 class AUCMetric: public Metric {
-public:
+ public:
   explicit AUCMetric(const Config&) {
   }
 
@@ -246,7 +246,7 @@ public:
     return std::vector<double>(1, auc);
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

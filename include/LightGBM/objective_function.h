@@ -11,7 +11,7 @@ namespace LightGBM {
 * \brief The interface of Objective Function.
 */
 class ObjectiveFunction {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~ObjectiveFunction() {}
 

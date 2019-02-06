@@ -23,7 +23,7 @@ class Metric;
 *        and save the score to disk.
 */
 class Application {
-public:
+ public:
   Application(int argc, char** argv);
 
   /*! \brief Destructor */
@@ -32,7 +32,7 @@ public:
   /*! \brief To call this funciton to run application*/
   inline void Run();
 
-private:
+ private:
   /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);
 

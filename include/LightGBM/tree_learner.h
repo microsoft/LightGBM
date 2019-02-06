@@ -21,7 +21,7 @@ class ObjectiveFunction;
 * \brief Interface for tree learner
 */
 class TreeLearner {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~TreeLearner() {}
 

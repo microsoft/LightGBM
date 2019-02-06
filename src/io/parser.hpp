@@ -13,7 +13,7 @@
 namespace LightGBM {
 
 class CSVParser: public Parser {
-public:
+ public:
   explicit CSVParser(int label_idx, int total_columns)
     :label_idx_(label_idx), total_columns_(total_columns) {
   }
@@ -45,13 +45,13 @@ public:
     return total_columns_;
   }
 
-private:
+ private:
   int label_idx_ = 0;
   int total_columns_ = -1;
 };
 
 class TSVParser: public Parser {
-public:
+ public:
   explicit TSVParser(int label_idx, int total_columns)
     :label_idx_(label_idx), total_columns_(total_columns) {
   }
@@ -81,13 +81,13 @@ public:
     return total_columns_;
   }
 
-private:
+ private:
   int label_idx_ = 0;
   int total_columns_ = -1;
 };
 
 class LibSVMParser: public Parser {
-public:
+ public:
   explicit LibSVMParser(int label_idx)
     :label_idx_(label_idx) {
     if (label_idx > 0) {
@@ -121,7 +121,7 @@ public:
     return -1;
   }
 
-private:
+ private:
   int label_idx_ = 0;
 };
 

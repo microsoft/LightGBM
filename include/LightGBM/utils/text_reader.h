@@ -19,7 +19,7 @@ namespace LightGBM {
 */
 template<typename INDEX_T>
 class TextReader {
-public:
+ public:
   /*!
   * \brief Constructor
   * \param filename Filename of data
@@ -306,7 +306,7 @@ public:
     });
   }
 
-private:
+ private:
   /*! \brief Filename of text data */
   const char* filename_;
   /*! \brief Cache the read text data */

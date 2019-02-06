@@ -44,7 +44,7 @@ catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
 
 class Booster {
-public:
+ public:
   explicit Booster(const char* filename) {
     boosting_.reset(Boosting::CreateBoosting("gbdt", filename));
   }
@@ -323,7 +323,7 @@ public:
 
   const Boosting* GetBoosting() const { return boosting_.get(); }
 
-private:
+ private:
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
   /*! \brief All configs */
@@ -356,7 +356,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
 
 // Row iterator of on column for CSC matrix
 class CSC_RowIterator {
-public:
+ public:
   CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
                   const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx);
   ~CSC_RowIterator() {}
@@ -364,7 +364,8 @@ public:
   double Get(int idx);
   // return next non-zero pair, if index < 0, means no more data
   std::pair<int, double> NextNonZero();
-private:
+
+ private:
   int nonzero_idx_ = 0;
   int cur_idx_ = -1;
   double cur_val_ = 0.0f;

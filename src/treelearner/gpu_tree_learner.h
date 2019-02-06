@@ -36,7 +36,7 @@ namespace LightGBM {
 * \brief GPU-based parallel learning algorithm.
 */
 class GPUTreeLearner: public SerialTreeLearner {
-public:
+ public:
   explicit GPUTreeLearner(const Config* tree_config);
   ~GPUTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
@@ -57,14 +57,14 @@ public:
     use_bagging_ = false;
   }
 
-protected:
+ protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
   void FindBestSplits() override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 
-private:
+ private:
   /*! \brief 4-byte feature tuple used by GPU kernels */
   struct Feature4 {
       uint8_t s[4];
@@ -269,7 +269,7 @@ private:
 namespace LightGBM {
 
 class GPUTreeLearner: public SerialTreeLearner {
-public:
+ public:
   #pragma warning(disable : 4702)
   explicit GPUTreeLearner(const Config* tree_config) : SerialTreeLearner(tree_config) {
     Log::Fatal("GPU Tree Learner was not enabled in this build.\n"

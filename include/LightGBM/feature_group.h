@@ -16,7 +16,7 @@ class Dataset;
 class DatasetLoader;
 /*! \brief Using to store data and providing some operations on one feature group*/
 class FeatureGroup {
-public:
+ public:
   friend Dataset;
   friend DatasetLoader;
   /*!
@@ -214,7 +214,7 @@ public:
   /*! \brief Disable copy */
   FeatureGroup(const FeatureGroup&) = delete;
 
-private:
+ private:
   /*! \brief Number of features */
   int num_feature_;
   /*! \brief Bin mapper for sub features */

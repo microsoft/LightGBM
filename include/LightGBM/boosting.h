@@ -20,7 +20,7 @@ struct PredictionEarlyStopInstance;
 * \brief The interface for Boosting
 */
 class LIGHTGBM_EXPORT Boosting {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~Boosting() {}
 
@@ -294,7 +294,7 @@ public:
 };
 
 class GBDTBase : public Boosting {
-public:
+ public:
   virtual double GetLeafValue(int tree_idx, int leaf_idx) const = 0;
   virtual void SetLeafValue(int tree_idx, int leaf_idx, double val) = 0;
 };

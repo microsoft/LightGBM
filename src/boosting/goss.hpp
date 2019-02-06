@@ -24,7 +24,7 @@ std::chrono::duration<double, std::milli> re_init_tree_time;
 #endif
 
 class GOSS: public GBDT {
-public:
+ public:
   /*!
   * \brief Constructor
   */
@@ -208,7 +208,7 @@ public:
     }
   }
 
-private:
+ private:
   std::vector<data_size_t> tmp_indice_right_;
 };
 

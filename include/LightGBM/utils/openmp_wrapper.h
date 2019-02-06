@@ -11,7 +11,7 @@
 #include "log.h"
 
 class ThreadExceptionHelper {
-public:
+ public:
   ThreadExceptionHelper() {
     ex_ptr_ = nullptr;
   }
@@ -31,7 +31,8 @@ public:
     if (ex_ptr_ != nullptr) { return; }
     ex_ptr_ = std::current_exception();
   }
-private:
+
+ private:
   std::exception_ptr ex_ptr_;
   std::mutex lock_;
 };

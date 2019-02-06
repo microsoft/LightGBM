@@ -42,7 +42,7 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
     return fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
   }
 
-private:
+ private:
   FILE* file_ = NULL;
   const std::string filename_;
   const std::string mode_;
@@ -86,7 +86,7 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
     return FileOperation<const void*>(data, bytes, &hdfsWrite);
   }
 
-private:
+ private:
   template <typename BufferType>
   using fileOp = tSize(*)(hdfsFS, hdfsFile, BufferType, tSize);
 

@@ -12,7 +12,7 @@ namespace LightGBM {
 */
 template<typename VAL_T>
 class ArrayArgs {
-public:
+ public:
   inline static size_t ArgMaxMT(const std::vector<VAL_T>& array) {
     int num_threads = 1;
 #pragma omp parallel
