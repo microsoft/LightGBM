@@ -1533,16 +1533,41 @@ class Dataset(object):
         return ref_chain
 
     def add_features_from(self, other):
+        """Add features from other to self.
+
+        This will add every feature from other to self and free other.
+        Other must not be used after this method returns.
+        Both datasets must have been constructed before calling this method.
+
+        Parameters
+        ----------
+        other : Dataset
+            The dataset to take features from
+
+        Returns
+        -------
+        self : The Dataset with the new features added
+        """
         if self.handle is None or other.handle is None:
             raise ValueError('Both source and target datasets must be constructed before adding features')
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
         other.handle = None
 
     def dump_text(self, fname):
+        """Save this dataset to a text file.
+
+        This format cannot be loaded back in by LightGBM, but is useful to debug data set
+        manipulations. 
+
+        Parameters
+        ----------
+        fname : string
+            The file to dump the data set to
+
+        """
         _safe_call(_LIB.LGBM_DatasetDumpText(
             self.construct().handle,
             c_str(fname)))
-        return self
 
 class Booster(object):
     """Booster in LightGBM."""
