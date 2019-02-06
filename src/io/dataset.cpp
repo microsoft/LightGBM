@@ -705,30 +705,6 @@ void Dataset::DumpTextFile(const char* text_filename){
   for(auto n : feature_names_){
     fprintf(file, "%s, ", n.c_str());
   }
-  fprintf(file, "\nreal_feature_idx: ");
-  for(auto i : real_feature_idx_){
-    fprintf(file, "%d, ", i);
-  }
-  fprintf(file, "\nfeature2group: ");
-  for(auto i : feature2group_){
-    fprintf(file, "%d, ", i);
-  }
-  fprintf(file, "\nfeature2subfeature: ");
-  for(auto i : feature2subfeature_){
-    fprintf(file, "%d, ", i);
-  }
-  fprintf(file, "\ngroup_bin_boundaries: ");
-  for(auto i : group_bin_boundaries_){
-    fprintf(file, "%lu, ", i);
-  }
-  fprintf(file, "\ngroup_feature_start: ");
-  for(auto i : group_feature_start_){
-    fprintf(file, "%d, ", i);
-  }
-  fprintf(file, "\ngroup_feature_cnt: ");
-  for(auto i : group_feature_cnt_){
-    fprintf(file, "%d, ", i);
-  }
   fprintf(file, "\nmonotone_types: ");
   for(auto i : monotone_types_){
     fprintf(file, "%d, ", i);
