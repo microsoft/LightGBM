@@ -670,6 +670,23 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
      cmake -DUSE_SWIG=ON ..
      make -j4
 
+macOS
+^^^^^
+
+On macOS Java wrapper of LightGBM can be build using **Java**, **SWIG**, **CMake** and **gcc** or **Apple Clang**
+
+1. Install `CMake`_, `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` is set properly).
+
+2. Run the following commands:
+
+   .. code::
+
+      git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+      mkdir build ; cd build
+      cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
+      make -j4
+
+
 .. |download artifacts| image:: ./_static/images/artifacts-not-available.svg
    :target: https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html
 
