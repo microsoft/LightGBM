@@ -41,7 +41,7 @@ enum class LogLevel: int {
 * \brief A static Log class
 */
 class Log {
-public:
+ public:
   /*!
   * \brief Resets the minimal log level. It is INFO by default.
   * \param level The new minimal log level.
@@ -83,7 +83,7 @@ public:
     throw std::runtime_error(std::string(str_buf));
   }
 
-private:
+ private:
   static void Write(LogLevel level, const char* level_str, const char *format, va_list val) {
     if (level <= GetLevel()) {  // omit the message with low level
       // write to STDOUT

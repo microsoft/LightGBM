@@ -34,7 +34,7 @@ class DatasetLoader;
 *        5. Initial score. optional. if exsitng, the model will boost from this score, otherwise will start from 0.
 */
 class Metadata {
-public:
+ public:
   /*!
   * \brief Null costructor
   */
@@ -206,7 +206,7 @@ public:
   /*! \brief Disable copy */
   Metadata(const Metadata&) = delete;
 
-private:
+ private:
   /*! \brief Load initial scores from file */
   void LoadInitialScore(const char* initscore_file);
   /*! \brief Load wights from file */
@@ -247,7 +247,7 @@ private:
 
 /*! \brief Interface for Parser */
 class Parser {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~Parser() {}
 
@@ -276,7 +276,7 @@ public:
 *          which are used to traning or validation
 */
 class Dataset {
-public:
+ public:
   friend DatasetLoader;
 
   LIGHTGBM_EXPORT Dataset();
@@ -587,7 +587,7 @@ public:
 
   void addFeaturesFrom(Dataset* other);
 
-private:
+ private:
   std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;

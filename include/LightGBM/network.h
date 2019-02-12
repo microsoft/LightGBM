@@ -17,7 +17,7 @@ class Linkers;
 
 /*! \brief The network structure for all_gather */
 class BruckMap {
-public:
+ public:
   /*! \brief The communication times for one all gather operation */
   int k;
   /*! \brief in_ranks[i] means the incomming rank on i-th communication */
@@ -51,7 +51,7 @@ enum RecursiveHalvingNodeType {
 
 /*! \brief Network structure for recursive halving algorithm */
 class RecursiveHalvingMap {
-public:
+ public:
   /*! \brief Communication times for one recursize halving algorithm  */
   int k;
   /*! \brief Node type */
@@ -84,7 +84,7 @@ public:
 
 /*! \brief A static class that contains some collective communication algorithm */
 class Network {
-public:
+ public:
   /*!
   * \brief Initialize
   * \param config Config of network setting
@@ -256,7 +256,7 @@ public:
     }
   }
 
-private:
+ private:
   static void AllgatherBruck(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
 
   static void AllgatherRecursiveDoubling(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);

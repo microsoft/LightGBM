@@ -24,7 +24,7 @@ namespace LightGBM {
 */
 template <typename VAL_T>
 class OrderedSparseBin: public OrderedBin {
-public:
+ public:
   /*! \brief Pair to store one bin entry */
   struct SparsePair {
     data_size_t ridx;  // data(row) index
@@ -192,7 +192,7 @@ public:
   /*! \brief Disable copy */
   OrderedSparseBin<VAL_T>(const OrderedSparseBin<VAL_T>&) = delete;
 
-private:
+ private:
   const SparseBin<VAL_T>* bin_data_;
   /*! \brief Store non-zero pair , group by leaf */
   std::vector<SparsePair> ordered_pair_;

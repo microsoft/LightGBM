@@ -15,7 +15,7 @@ namespace LightGBM {
 * \brief DART algorithm implementation. including Training, prediction, bagging.
 */
 class DART: public GBDT {
-public:
+ public:
   /*!
   * \brief Constructor
   */
@@ -84,7 +84,7 @@ public:
     return false;
   }
 
-private:
+ private:
   /*!
   * \brief drop trees based on drop_rate
   */

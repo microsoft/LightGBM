@@ -9,7 +9,7 @@
 namespace LightGBM {
 
 class Threading {
-public:
+ public:
   template<typename INDEX_T>
   static inline void For(INDEX_T start, INDEX_T end, const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
     int num_threads = 1;

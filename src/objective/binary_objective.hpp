@@ -11,7 +11,7 @@ namespace LightGBM {
 * \brief Objective function for binary classification
 */
 class BinaryLogloss: public ObjectiveFunction {
-public:
+ public:
   explicit BinaryLogloss(const Config& config, std::function<bool(label_t)> is_pos = nullptr) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
@@ -172,7 +172,7 @@ public:
 
   bool NeedAccuratePrediction() const override { return false; }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

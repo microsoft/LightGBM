@@ -23,7 +23,7 @@ namespace LightGBM {
 * \brief Used to predict data with input model
 */
 class Predictor {
-public:
+ public:
   /*!
   * \brief Constructor
   * \param boosting Input boosting model
@@ -207,7 +207,7 @@ public:
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
   }
 
-private:
+ private:
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
     int loop_size = static_cast<int>(features.size());
     for (int i = 0; i < loop_size; ++i) {
