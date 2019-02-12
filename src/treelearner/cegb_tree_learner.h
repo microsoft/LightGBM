@@ -26,6 +26,7 @@ class CEGBTreeLearner : public SerialTreeLearner {
 public:
   CEGBTreeLearner(const Config *config) : SerialTreeLearner(config)
   {
+    ResetConfig(config);
   }
 
   ~CEGBTreeLearner() {}
@@ -35,8 +36,14 @@ protected:
 
   void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) override;
 
+  void ResetConfig(const Config* config) override;
+
+  void ResetTrainingData(const Dataset* data) override;
+
 private:
   std::vector<bool> coupled_features_used;
+  std::vector<double> coupled_feature_penalty;
+  double tradeoff;
 };
 
 } // namespace LightGBM

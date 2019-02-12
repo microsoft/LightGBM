@@ -16,4 +16,13 @@ void CEGBTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* righ
   SerialTreeLearner::Split(tree, best_leaf, left_leaf, right_leaf);
 }
 
+void CEGBTreeLearner::ResetConfig(const Config* config){
+  tradeoff = config->cegb_tradeoff;
+  coupled_feature_penalty = config->cegb_penalty_feature_coupled;
+  SerialTreeLearner::ResetConfig(config);
+}
+
+void CEGBTreeLearner::ResetTrainingData(const Dataset* data){
+  throw std::runtime_error("Cannot reset training data for CEGB");
+}
 } // namespace LightGBM
