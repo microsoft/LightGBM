@@ -40,6 +40,8 @@ protected:
 
   void ResetTrainingData(const Dataset* data) override;
 
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
+
 private:
   std::vector<bool> coupled_features_used;
   std::vector<double> coupled_feature_penalty;
