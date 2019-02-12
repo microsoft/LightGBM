@@ -112,6 +112,9 @@ class SerialTreeLearner: public TreeLearner {
   * \return The number of data in the leaf_idx leaf
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
+
+  double CalculateOndemandCosts(int feature_index, int leaf_index);
+
   /*! \brief number of data */
   data_size_t num_data_;
   /*! \brief number of features */
@@ -169,6 +172,9 @@ class SerialTreeLearner: public TreeLearner {
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
+
+  std::vector<bool> feature_used;
+  std::vector<bool> feature_used_in_data;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

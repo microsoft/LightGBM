@@ -98,6 +98,13 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     }
   }
   Log::Info("Number of data: %d, number of used features: %d", num_data_, num_features_);
+  feature_used.clear();
+  feature_used.resize(train_data->num_features());
+
+  if(!config_->cegb_penalty_feature_lazy.empty()){
+    feature_used_in_data.clear();
+    feature_used_in_data.resize(train_data->num_features() * num_data_);
+  }
 }
 
 void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
@@ -469,6 +476,28 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
   #endif
 }
 
+double SerialTreeLearner::CalculateOndemandCosts(int feature_index, int leaf_index) {
+  if (config_->cegb_penalty_feature_lazy.empty())
+    return 0.0f;
+
+  double penalty = config_->cegb_penalty_feature_lazy[feature_index];
+
+  const int inner_fidx = train_data_->InnerFeatureIndex(feature_index);
+
+  double total = 0.0f;
+  data_size_t cnt_leaf_data = 0;
+  auto tmp_idx = data_partition_->GetIndexOnLeaf(leaf_index, &cnt_leaf_data);
+
+  for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
+    int real_idx = tmp_idx[i_input];
+    if (feature_used_in_data[train_data_->num_data() * inner_fidx + real_idx])
+      continue;
+    total += penalty;
+  }
+
+  return total;
+}
+
 void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   #ifdef TIMETAG
   auto start_time = std::chrono::steady_clock::now();
@@ -496,6 +525,13 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       smaller_leaf_splits_->max_constraint(),
       &smaller_split);
     smaller_split.feature = real_fidx;
+    smaller_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_split * smaller_leaf_splits_->num_data_in_leaf();
+    if(!config_->cegb_penalty_feature_coupled.empty() && !feature_used[feature_index]){
+      smaller_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_feature_coupled[real_fidx];
+    }
+    if(!config_->cegb_penalty_feature_lazy.empty()){
+      smaller_split.gain -= config_->cegb_tradeoff * CalculateOndemandCosts(real_fidx, smaller_leaf_splits_->LeafIndex());
+    }
     if (smaller_split > smaller_best[tid]) {
       smaller_best[tid] = smaller_split;
     }
@@ -519,6 +555,13 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       larger_leaf_splits_->max_constraint(),
       &larger_split);
     larger_split.feature = real_fidx;
+    larger_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_split * larger_leaf_splits_->num_data_in_leaf();
+    if(!config_->cegb_penalty_feature_coupled.empty() && !feature_used[feature_index]){
+      larger_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_feature_coupled[real_fidx];
+    }
+    if(!config_->cegb_penalty_feature_lazy.empty()){
+      larger_split.gain -= config_->cegb_tradeoff*CalculateOndemandCosts(real_fidx, larger_leaf_splits_->LeafIndex());
+    }
     if (larger_split > larger_best[tid]) {
       larger_best[tid] = larger_split;
     }
@@ -703,6 +746,17 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
 void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) {
   const SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
+  feature_used[inner_feature_index] = true;
+
+  if(!config_->cegb_penalty_feature_lazy.empty()){
+    data_size_t cnt_leaf_data = 0;
+    auto tmp_idx = data_partition_->GetIndexOnLeaf(best_leaf, &cnt_leaf_data);
+    for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
+      int real_idx = tmp_idx[i_input];
+      feature_used_in_data[train_data_->num_data() * inner_feature_index + real_idx] = true;
+    }
+  }
+
   // left = parent
   *left_leaf = best_leaf;
   bool is_numerical_split = train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin;
