@@ -50,6 +50,7 @@ private:
   std::vector<double> coupled_feature_penalty;
   std::vector<double> lazy_feature_penalty;
   double tradeoff;
+  double split_penalty;
 };
 
 } // namespace LightGBM

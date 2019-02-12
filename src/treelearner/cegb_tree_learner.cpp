@@ -54,6 +54,7 @@ void CEGBTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* righ
 
 void CEGBTreeLearner::ResetConfig(const Config* config){
   tradeoff = config->cegb_tradeoff;
+  split_penalty = config->cegb_penalty_split;
   coupled_feature_penalty = config->cegb_penalty_feature_coupled;
   lazy_feature_penalty = config->cegb_penalty_feature_lazy;
   SerialTreeLearner::ResetConfig(config);
@@ -94,6 +95,7 @@ void CEGBTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& is
     if(!lazy_feature_penalty.empty()){
       smaller_split.gain -= tradeoff*CalculateOndemandCosts(real_fidx, smaller_leaf_splits_->LeafIndex());
     }
+    smaller_split.gain -= tradeoff*split_penalty*smaller_leaf_splits_->num_data_in_leaf();
     if (smaller_split > smaller_best[tid]) {
       smaller_best[tid] = smaller_split;
     }
@@ -123,6 +125,7 @@ void CEGBTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& is
     if(!lazy_feature_penalty.empty()){
       larger_split.gain -= tradeoff*CalculateOndemandCosts(real_fidx, larger_leaf_splits_->LeafIndex());
     }
+    larger_split.gain -= tradeoff*split_penalty*larger_leaf_splits_->num_data_in_leaf();
     if (larger_split > larger_best[tid]) {
       larger_best[tid] = larger_split;
     }

@@ -527,10 +527,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "cegb_penalty_split", &cegb_penalty_split);
   CHECK(cegb_penalty_split >= 0.0f);
   
-  GetBool(params, "cegb_independent_branches", &cegb_independent_branches);
-
-  GetBool(params, "cegb_predict_lazy", &cegb_predict_lazy);
-
   if (GetString(params, "cegb_penalty_feature_lazy", &tmp_str)){
     cegb_penalty_feature_lazy = Common::StringToArray<double>(tmp_str, ',');
   }
@@ -641,8 +637,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[gpu_use_dp: " << gpu_use_dp << "]\n";
   str_buf << "[cegb_tradeoff: " << cegb_tradeoff << "]\n";
   str_buf << "[cegb_penalty_split: " << cegb_penalty_split << "]\n";
-  str_buf << "[cegb_independent_branches: " << cegb_independent_branches << "]\n";
-  str_buf << "[cegb_predict_lazy: " << cegb_independent_branches << "]\n";
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   return str_buf.str();
