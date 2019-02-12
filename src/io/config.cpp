@@ -138,6 +138,8 @@ void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& para
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("serial")) {
       *tree_learner = "serial";
+    } else if (value == std::string("cegb")) {
+      *tree_learner = "cegb";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
       *tree_learner = "feature";
     } else if (value == std::string("data") || value == std::string("data_parallel")) {
@@ -231,7 +233,9 @@ void Config::CheckParamConflict() {
     is_parallel = true;
   } else {
     is_parallel = false;
-    tree_learner = "serial";
+    if(tree_learner != std::string("cegb") && tree_learner != std::string("serial")){
+      tree_learner = "serial";
+    }
   }
 
   bool is_single_tree_learner = tree_learner == std::string("serial");

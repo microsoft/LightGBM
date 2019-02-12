@@ -1,5 +1,6 @@
 #include <LightGBM/tree_learner.h>
 
+#include "cegb_tree_learner.h"
 #include "serial_tree_learner.h"
 #include "gpu_tree_learner.h"
 #include "parallel_tree_learner.h"
@@ -10,6 +11,8 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
   if (device_type == std::string("cpu")) {
     if (learner_type == std::string("serial")) {
       return new SerialTreeLearner(config);
+    } else if (learner_type == std::string("cegb")){
+      return new CEGBTreeLearner(config);
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<SerialTreeLearner>(config);
     } else if (learner_type == std::string("data")) {

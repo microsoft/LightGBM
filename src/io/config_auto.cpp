@@ -261,6 +261,8 @@ std::unordered_set<std::string> Config::parameter_set({
   "gpu_platform_id",
   "gpu_device_id",
   "gpu_use_dp",
+  "cegb_tradeoff",
+  "cegb_penalty_feature_coupled"
 });
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
