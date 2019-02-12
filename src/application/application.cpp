@@ -136,8 +136,7 @@ void Application::LoadData() {
         dataset_loader.LoadFromFileAlignWithOtherDataset(
           config_.valid[i].c_str(),
           config_.valid_data_initscores[i].c_str(),
-          train_data_.get())
-        );
+          train_data_.get()));
       valid_datas_.push_back(std::move(new_dataset));
       // need save binary file
       if (config_.save_binary) {
@@ -212,7 +211,6 @@ void Application::Train() {
 }
 
 void Application::Predict() {
-
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), -1, false, true, false, false, 1, 1);

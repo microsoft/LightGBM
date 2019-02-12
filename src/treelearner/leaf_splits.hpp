@@ -14,7 +14,7 @@ namespace LightGBM {
 * \brief used to find split candidates for a leaf
 */
 class LeafSplits {
-public:
+ public:
   LeafSplits(data_size_t num_data)
     :num_data_in_leaf_(num_data), num_data_(num_data),
     data_indices_(nullptr) {
@@ -129,7 +129,7 @@ public:
 
   /*! \brief Get sum of gradients of current leaf */
   double sum_gradients() const { return sum_gradients_; }
-  
+
   /*! \brief Get sum of hessians of current leaf */
   double sum_hessians() const { return sum_hessians_; }
 
@@ -141,7 +141,7 @@ public:
   const data_size_t* data_indices() const { return data_indices_; }
 
 
-private:
+ private:
   /*! \brief current leaf index */
   int leaf_index_;
   /*! \brief number of data on current leaf */

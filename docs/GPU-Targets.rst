@@ -5,9 +5,9 @@ GPU Targets Table
 =================
 
 OpenCL is a universal massively parallel programming framework that targets to multiple backends (GPU, CPU, FPGA, etc).
-Bascially, to use a device from a vendor, you have to install drivers from that specific vendor.
-Intel and AMD's OpenCL runtime also include x86 CPU target support.
-NVIDIA's OpenCL runtime only supports NVIDIA GPU (No CPU support).
+Basically, to use a device from a vendor, you have to install drivers from that specific vendor.
+Intel's and AMD's OpenCL runtime also include x86 CPU target support.
+NVIDIA's OpenCL runtime only supports NVIDIA GPU (no CPU support).
 In general, OpenCL CPU backends are quite slow, and should be used for testing and debugging only.
 
 You can find below a table of correspondence:
@@ -32,9 +32,9 @@ Legend:
 Query OpenCL Devices in Your System
 ===================================
 
-Your system might have multiple GPUs from different vendors ("platforms") installed. Setting up LightGBM GPU device requries two parameters: `OpenCL Platform ID <./Parameters.rst#gpu_platform_id>`__ (``gpu_platform_id``) and `OpenCL Device ID <./Parameters.rst#gpu_device_id>`__ (``gpu_device_id``). Generally speaking, each vendor provides a OpenCL Platform, and devices from the same vendor have different device IDs under that platform. For example, if your system has an Intel integrated GPU and two discrete GPUs from AMD, you will have two OpenCL platforms (with ``gpu_platform_id=0`` and ``gpu_platform_id=1``). If the platform 0 is Intel, it has one device (``gpu_device_id=0``) representing the Intel GPU; if the platform 1 is AMD, it has two devices (``gpu_device_id=0``, ``gpu_device_id=1``) representing the two AMD GPUs. If you have a discrete GPU by AMD/NVIDIA and an integrated GPU by Intel, make sure to select the correct ``gpu_platform_id`` to use the discrete GPU as it usually provides better performance.
+Your system might have multiple GPUs from different vendors ("platforms") installed. Setting up LightGBM GPU device requires two parameters: `OpenCL Platform ID <./Parameters.rst#gpu_platform_id>`__ (``gpu_platform_id``) and `OpenCL Device ID <./Parameters.rst#gpu_device_id>`__ (``gpu_device_id``). Generally speaking, each vendor provides an OpenCL platform, and devices from the same vendor have different device IDs under that platform. For example, if your system has an Intel integrated GPU and two discrete GPUs from AMD, you will have two OpenCL platforms (with ``gpu_platform_id=0`` and ``gpu_platform_id=1``). If the platform 0 is Intel, it has one device (``gpu_device_id=0``) representing the Intel GPU; if the platform 1 is AMD, it has two devices (``gpu_device_id=0``, ``gpu_device_id=1``) representing the two AMD GPUs. If you have a discrete GPU by AMD/NVIDIA and an integrated GPU by Intel, make sure to select the correct ``gpu_platform_id`` to use the discrete GPU as it usually provides better performance.
 
-On Windows, OpenCL devices can be queried using `GPUCapsViewer`_, under the OpenCL tab. Note that the platform and device ID reported by this utility start from 1. So you should minus the reported IDs by 1.
+On Windows, OpenCL devices can be queried using `GPUCapsViewer`_, under the OpenCL tab. Note that the platform and device IDs reported by this utility start from 1. So you should minus the reported IDs by 1.
 
 On Linux, OpenCL devices can be listed using the ``clinfo`` command. On Ubuntu, you can install ``clinfo`` by executing ``sudo apt-get install clinfo``.
 
@@ -102,7 +102,7 @@ Example of using GPU (``gpu_platform_id = 0`` and ``gpu_device_id = 0`` in our s
     [LightGBM] [Info] Compiling OpenCL Kernel with 16 bins...
     [LightGBM] [Info] GPU programs have been built
     [LightGBM] [Info] Size of histogram bin entry: 12
-    [LightGBM] [Info] 40 dense feature groups (0.12 MB) transfered to GPU in 0.004211 secs. 76 sparse feature groups.
+    [LightGBM] [Info] 40 dense feature groups (0.12 MB) transferred to GPU in 0.004211 secs. 76 sparse feature groups.
     [LightGBM] [Info] No further splits with positive gain, best gain: -inf
     [LightGBM] [Info] Trained a tree with leaves=16 and max_depth=8
     [1]:    test's rmse:1.10643e-17 
@@ -110,7 +110,7 @@ Example of using GPU (``gpu_platform_id = 0`` and ``gpu_device_id = 0`` in our s
     [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
     [2]:    test's rmse:0
 
-Running on OpenCL CPU backend devices are in generally slow, and we observe crashes on some Windows and macOS systems. Make sure you check the ``Using GPU Device`` line in the log and it is not using a CPU. The above log shows that we are using ``Oland`` GPU from AMD and not CPU.
+Running on OpenCL CPU backend devices is in generally slow, and we observe crashes on some Windows and macOS systems. Make sure you check the ``Using GPU Device`` line in the log and it is not using a CPU. The above log shows that we are using ``Oland`` GPU from AMD and not CPU.
 
 Example of using CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``). The GPU device reported is ``Intel(R) Core(TM) i7-4600U CPU``, so it is using the CPU backend rather than a real GPU.
 
@@ -140,7 +140,7 @@ Example of using CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``). The GPU d
     [LightGBM] [Info] Compiling OpenCL Kernel with 16 bins...
     [LightGBM] [Info] GPU programs have been built
     [LightGBM] [Info] Size of histogram bin entry: 12
-    [LightGBM] [Info] 40 dense feature groups (0.12 MB) transfered to GPU in 0.004540 secs. 76 sparse feature groups.
+    [LightGBM] [Info] 40 dense feature groups (0.12 MB) transferred to GPU in 0.004540 secs. 76 sparse feature groups.
     [LightGBM] [Info] No further splits with positive gain, best gain: -inf
     [LightGBM] [Info] Trained a tree with leaves=16 and max_depth=8
     [1]:    test's rmse:1.10643e-17 

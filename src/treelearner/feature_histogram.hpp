@@ -9,11 +9,10 @@
 #include <cstring>
 #include <cmath>
 
-namespace LightGBM
-{
+namespace LightGBM {
 
 class FeatureMetainfo {
-public:
+ public:
   int num_bin;
   MissingType missing_type;
   int8_t bias = 0;
@@ -28,7 +27,7 @@ public:
 * \brief FeatureHistogram is used to construct and store a histogram for a feature.
 */
 class FeatureHistogram {
-public:
+ public:
   FeatureHistogram() {
     data_ = nullptr;
   }
@@ -83,7 +82,6 @@ public:
 
   void FindBestThresholdNumerical(double sum_gradient, double sum_hessian, data_size_t num_data, double min_constraint, double max_constraint,
                                   SplitInfo* output) {
-
     is_splittable_ = false;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
@@ -118,7 +116,7 @@ public:
     double best_sum_left_gradient = 0;
     double best_sum_left_hessian = 0;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
-    
+
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
     bool is_full_categorical = meta_->missing_type == MissingType::None;
     int used_bin = meta_->num_bin - 1 + is_full_categorical;
@@ -336,7 +334,7 @@ public:
       output->gain = kMinScore;
       Log::Warning("'Forced Split' will be ignored since the gain getting worse. ");
       return;
-    };
+    }
 
     // update split information
     output->threshold = threshold;
@@ -451,8 +449,7 @@ public:
     }
   }
 
-private:
-
+ private:
   static double GetSplitGains(double sum_left_gradients, double sum_left_hessians,
                               double sum_right_gradients, double sum_right_hessians,
                               double l1, double l2, double max_delta_step,
@@ -502,7 +499,6 @@ private:
 
   void FindBestThresholdSequence(double sum_gradient, double sum_hessian, data_size_t num_data, double min_constraint, double max_constraint,
                                  double min_gain_shift, SplitInfo* output, int dir, bool skip_default_bin, bool use_na_as_missing) {
-
     const int8_t bias = meta_->bias;
 
     double best_sum_left_gradient = NAN;
@@ -512,7 +508,6 @@ private:
     uint32_t best_threshold = static_cast<uint32_t>(meta_->num_bin);
 
     if (dir == -1) {
-
       double sum_right_gradient = 0.0f;
       double sum_right_hessian = kEpsilon;
       data_size_t right_count = 0;
@@ -522,7 +517,6 @@ private:
 
       // from right to left, and we don't need data in bin0
       for (; t >= t_end; --t) {
-
         // need to skip default bin
         if (skip_default_bin && (t + bias) == static_cast<int>(meta_->default_bin)) { continue; }
 
@@ -581,7 +575,6 @@ private:
       }
 
       for (; t <= t_end; ++t) {
-
         // need to skip default bin
         if (skip_default_bin && (t + bias) == static_cast<int>(meta_->default_bin)) { continue; }
         if (t >= 0) {
@@ -645,13 +638,13 @@ private:
   const FeatureMetainfo* meta_;
   /*! \brief sum of gradient of each bin */
   HistogramBinEntry* data_;
-  //std::vector<HistogramBinEntry> data_;
+  // std::vector<HistogramBinEntry> data_;
   bool is_splittable_ = true;
 
   std::function<void(double, double, data_size_t, double, double, SplitInfo*)> find_best_threshold_fun_;
 };
 class HistogramPool {
-public:
+ public:
   /*!
   * \brief Constructor
   */
@@ -701,7 +694,7 @@ public:
     if (feature_metas_.empty()) {
       int num_feature = train_data->num_features();
       feature_metas_.resize(num_feature);
-      #pragma omp parallel for schedule(static, 512) if(num_feature >= 1024)
+      #pragma omp parallel for schedule(static, 512) if (num_feature >= 1024)
       for (int i = 0; i < num_feature; ++i) {
         feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
         feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
@@ -751,7 +744,7 @@ public:
 
   void ResetConfig(const Config* config) {
     int size = static_cast<int>(feature_metas_.size());
-    #pragma omp parallel for schedule(static, 512) if(size >= 1024)
+    #pragma omp parallel for schedule(static, 512) if (size >= 1024)
     for (int i = 0; i < size; ++i) {
       feature_metas_[i].config = config;
     }
@@ -772,7 +765,7 @@ public:
       last_used_time_[slot] = ++cur_time_;
       return true;
     } else {
-      // choose the least used slot 
+      // choose the least used slot
       int slot = static_cast<int>(ArrayArgs<int>::ArgMin(last_used_time_));
       *out = pool_[slot].get();
       last_used_time_[slot] = ++cur_time_;
@@ -810,7 +803,8 @@ public:
     last_used_time_[slot] = ++cur_time_;
     inverse_mapper_[slot] = dst_idx;
   }
-private:
+
+ private:
   std::vector<std::unique_ptr<FeatureHistogram[]>> pool_;
   std::vector<std::vector<HistogramBinEntry>> data_;
   std::vector<FeatureMetainfo> feature_metas_;

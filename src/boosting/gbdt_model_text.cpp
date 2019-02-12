@@ -22,6 +22,10 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   str_buf << "\"num_tree_per_iteration\":" << num_tree_per_iteration_ << "," << '\n';
   str_buf << "\"label_index\":" << label_idx_ << "," << '\n';
   str_buf << "\"max_feature_idx\":" << max_feature_idx_ << "," << '\n';
+  str_buf << "\"average_output\":" << (average_output_ ? "true" : "false") << ",\n";
+  if (objective_function_ != nullptr) {
+    str_buf << "\"objective\":\"" << objective_function_->ToString() << "\",\n";
+  }
 
   str_buf << "\"feature_names\":[\""
     << Common::Join(feature_names_, "\",\"") << "\"],"
@@ -148,7 +152,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t\t\t" << "output[k] /= num_iteration_for_pred_;" << '\n';
   str_buf << "\t\t" << "}" << '\n';
   str_buf << "\t" << "}" << '\n';
-  str_buf << "\t" << "else if (objective_function_ != nullptr) {" << '\n';
+  str_buf << "\t" << "if (objective_function_ != nullptr) {" << '\n';
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << '\n';
   str_buf << "\t" << "}" << '\n';
   str_buf << "}" << '\n';
@@ -162,7 +166,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t\t\t" << "output[k] /= num_iteration_for_pred_;" << '\n';
   str_buf << "\t\t" << "}" << '\n';
   str_buf << "\t" << "}" << '\n';
-  str_buf << "\t" << "else if (objective_function_ != nullptr) {" << '\n';
+  str_buf << "\t" << "if (objective_function_ != nullptr) {" << '\n';
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << '\n';
   str_buf << "\t" << "}" << '\n';
   str_buf << "}" << '\n';
@@ -190,7 +194,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t" << "}" << '\n';
   str_buf << "}" << '\n';
 
-  //PredictLeafIndexByMap
+  // PredictLeafIndexByMap
   str_buf << "double (*PredictTreeLeafByMapPtr[])(const std::unordered_map<int, double>&) = { ";
   for (int i = 0; i < num_used_model; ++i) {
     if (i > 0) {
@@ -345,8 +349,8 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   std::unordered_map<std::string, std::string> key_vals;
   while (p < end) {
     auto line_len = Common::GetLine(p);
-    std::string cur_line(p, line_len);
     if (line_len > 0) {
+      std::string cur_line(p, line_len);
       if (!Common::StartsWith(cur_line, "Tree=")) {
         auto strs = Common::Split(cur_line.c_str(), '=');
         if (strs.size() == 1) {
@@ -438,8 +442,8 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   if (!key_vals.count("tree_sizes")) {
     while (p < end) {
       auto line_len = Common::GetLine(p);
-      std::string cur_line(p, line_len);
       if (line_len > 0) {
+        std::string cur_line(p, line_len);
         if (Common::StartsWith(cur_line, "Tree=")) {
           p += line_len;
           p = Common::SkipNewLine(p);
@@ -487,8 +491,8 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   std::stringstream ss;
   while (p < end) {
     auto line_len = Common::GetLine(p);
-    std::string cur_line(p, line_len);
     if (line_len > 0) {
+      std::string cur_line(p, line_len);
       if (cur_line == std::string("parameters:")) {
         is_inparameter = true;
       } else if (cur_line == std::string("end of parameters")) {
@@ -507,7 +511,6 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
 }
 
 std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_type) const {
-
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
     num_iteration += 0;

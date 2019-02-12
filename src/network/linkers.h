@@ -32,7 +32,7 @@ namespace LightGBM {
 * This class will wrap all linkers to other machines if needs
 */
 class Linkers {
-public:
+ public:
   Linkers() {
     is_init_ = false;
   }
@@ -136,7 +136,7 @@ public:
   #endif  // USE_SOCKET
 
 
-private:
+ private:
   /*! \brief Rank of local machine */
   int rank_;
   /*! \brief Total number machines */
@@ -222,9 +222,8 @@ inline void Linkers::Recv(int rank, char* data, int len) const {
   int recv_cnt = 0;
   while (recv_cnt < len) {
     recv_cnt += linkers_[rank]->Recv(data + recv_cnt,
-      //len - recv_cnt
-      std::min(len - recv_cnt, SocketConfig::kMaxReceiveSize)
-    );
+      // len - recv_cnt
+      std::min(len - recv_cnt, SocketConfig::kMaxReceiveSize));
   }
 }
 

@@ -40,13 +40,19 @@ result <- file.copy(from = "src/",
                     overwrite = TRUE)
 .handle_result(result)
 
+result <- file.copy(from = "compute/",
+                    to = file.path("lightgbm_r", "src/"),
+                    recursive = TRUE,
+                    overwrite = TRUE)
+.handle_result(result)
+
 result <- file.copy(from = "CMakeLists.txt",
                     to = file.path("lightgbm_r", "inst", "bin/"),
                     overwrite = TRUE)
 .handle_result(result)
 
 # rebuild documentation
-devtools::document(pkg = "lightgbm_r")
+# devtools::document(pkg = "lightgbm_r")
 
 # Build the package
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected

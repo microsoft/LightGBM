@@ -13,7 +13,7 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series,
+from .compat import (DataFrame, Series, DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
                      json, json_default_with_numpy,
@@ -306,22 +306,29 @@ def _dump_pandas_categorical(pandas_categorical, file_name=None):
 
 
 def _load_pandas_categorical(file_name=None, model_str=None):
+    pandas_key = 'pandas_categorical:'
+    offset = -len(pandas_key)
     if file_name is not None:
-        with open(file_name, 'r') as f:
-            lines = f.readlines()
-            last_line = lines[-1]
-            if last_line.strip() == "":
-                last_line = lines[-2]
-            if last_line.startswith('pandas_categorical:'):
-                return json.loads(last_line[len('pandas_categorical:'):])
+        max_offset = -os.path.getsize(file_name)
+        with open(file_name, 'rb') as f:
+            while True:
+                if offset < max_offset:
+                    offset = max_offset
+                f.seek(offset, os.SEEK_END)
+                lines = f.readlines()
+                if len(lines) >= 2:
+                    break
+                offset *= 2
+        last_line = decode_string(lines[-1]).strip()
+        if not last_line.startswith(pandas_key):
+            last_line = decode_string(lines[-2]).strip()
     elif model_str is not None:
-        lines = model_str.split('\n')
-        last_line = lines[-1]
-        if last_line.strip() == "":
-            last_line = lines[-2]
-        if last_line.startswith('pandas_categorical:'):
-            return json.loads(last_line[len('pandas_categorical:'):])
-    return None
+        idx = model_str.rfind('\n', 0, offset)
+        last_line = model_str[idx:].strip()
+    if last_line.startswith(pandas_key):
+        return json.loads(last_line[len(pandas_key):])
+    else:
+        return None
 
 
 class _InnerPredictor(object):
@@ -402,7 +409,7 @@ class _InnerPredictor(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
             Data source for prediction.
             When data type is string, it represents the path of txt file.
         num_iteration : int, optional (default=-1)
@@ -464,6 +471,8 @@ class _InnerPredictor(object):
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
             preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
+        elif isinstance(data, DataTable):
+            preds, nrow = self.__pred_for_np2d(data.to_numpy(), num_iteration, predict_type)
         else:
             try:
                 warnings.warn('Converting data to scipy sparse matrix.')
@@ -643,7 +652,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -687,6 +696,7 @@ class Dataset(object):
         self.params = copy.deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices = None
+        self.need_slice = True
         self._predictor = None
         self.pandas_categorical = None
         self.params_back_up = None
@@ -781,6 +791,8 @@ class Dataset(object):
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0 and all(isinstance(x, np.ndarray) for x in data):
             self.__init_from_list_np2d(data, params_str, ref_dataset)
+        elif isinstance(data, DataTable):
+            self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
@@ -974,6 +986,8 @@ class Dataset(object):
                         ctypes.c_int(used_indices.shape[0]),
                         c_str(params_str),
                         ctypes.byref(self.handle)))
+                    self.data = self.reference.data
+                    self.get_data()
                     if self.group is not None:
                         self.set_group(self.group)
                     if self.get_label() is None:
@@ -995,7 +1009,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1041,7 +1055,8 @@ class Dataset(object):
         if params is None:
             params = self.params
         ret = Dataset(None, reference=self, feature_name=self.feature_name,
-                      categorical_feature=self.categorical_feature, params=params)
+                      categorical_feature=self.categorical_feature, params=params,
+                      free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
         ret.used_indices = used_indices
@@ -1066,6 +1081,8 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
+        if self.handle is not None and params is not None:
+            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(params))))
         if not self.params:
             self.params = params
         else:
@@ -1076,6 +1093,8 @@ class Dataset(object):
     def _reverse_update_params(self):
         self.params = copy.deepcopy(self.params_back_up)
         self.params_back_up = None
+        if self.handle is not None and self.params is not None:
+            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(self.params))))
         return self
 
     def set_field(self, field_name, data):
@@ -1374,6 +1393,29 @@ class Dataset(object):
         if self.init_score is None:
             self.init_score = self.get_field('init_score')
         return self.init_score
+
+    def get_data(self):
+        """Get the raw data of the Dataset.
+
+        Returns
+        -------
+        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse, list of numpy arrays or None
+            Raw data used in the Dataset construction.
+        """
+        if self.handle is None:
+            raise Exception("Cannot get data before construct Dataset")
+        if self.data is not None and self.used_indices is not None and self.need_slice:
+            if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
+                self.data = self.data[self.used_indices, :]
+            elif isinstance(self.data, DataFrame):
+                self.data = self.data.iloc[self.used_indices].copy()
+            elif isinstance(self.data, DataTable):
+                self.data = self.data[self.used_indices, :]
+            else:
+                warnings.warn("Cannot subset {} type of raw data.\n"
+                              "Returning original raw data".format(type(self.data).__name__))
+            self.need_slice = False
+        return self.data
 
     def get_group(self):
         """Get the group of the Dataset.
@@ -1982,8 +2024,8 @@ class Booster(object):
         """
         _safe_call(_LIB.LGBM_BoosterShuffleModels(
             self.handle,
-            ctypes.c_int(start_iter),
-            ctypes.c_int(end_iter)))
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(end_iteration)))
         return self
 
     def model_from_string(self, model_str, verbose=True):
@@ -2120,7 +2162,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
         num_iteration : int or None, optional (default=None)
@@ -2165,7 +2207,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
             Data source for refit.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array or pandas Series / one-column DataFrame

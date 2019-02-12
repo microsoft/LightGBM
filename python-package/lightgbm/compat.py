@@ -90,6 +90,19 @@ try:
 except ImportError:
     GRAPHVIZ_INSTALLED = False
 
+"""datatable"""
+try:
+    from datatable import DataTable
+    DATATABLE_INSTALLED = True
+except ImportError:
+    DATATABLE_INSTALLED = False
+
+    class DataTable(object):
+        """Dummy class for DataTable."""
+
+        pass
+
+
 """sklearn"""
 try:
     from sklearn.base import BaseEstimator

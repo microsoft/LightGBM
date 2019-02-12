@@ -17,7 +17,7 @@ namespace LightGBM {
 * \brief Objective function for Lambdrank with NDCG
 */
 class LambdarankNDCG: public ObjectiveFunction {
-public:
+ public:
   explicit LambdarankNDCG(const Config& config) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     label_gain_ = config.label_gain;
@@ -34,11 +34,9 @@ public:
   }
 
   explicit LambdarankNDCG(const std::vector<std::string>&) {
-
   }
 
   ~LambdarankNDCG() {
-
   }
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
@@ -207,7 +205,7 @@ public:
 
   bool NeedAccuratePrediction() const override { return false; }
 
-private:
+ private:
   /*! \brief Gains for labels */
   std::vector<double> label_gain_;
   /*! \brief Cache inverse max DCG, speed up calculation */

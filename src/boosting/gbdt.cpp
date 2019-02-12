@@ -30,7 +30,6 @@ num_iteration_for_pred_(0),
 shrinkage_rate_(0.1f),
 num_init_iteration_(0),
 need_re_bagging_(false) {
-
   #pragma omp parallel
   #pragma omp master
   {
@@ -41,7 +40,6 @@ need_re_bagging_(false) {
 }
 
 GBDT::~GBDT() {
-
 }
 
 void GBDT::Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
@@ -57,7 +55,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   shrinkage_rate_ = config_->learning_rate;
 
   std::string forced_splits_path = config->forcedsplits_filename;
-  //load forced_splits file
+  // load forced_splits file
   if (forced_splits_path != "") {
       std::ifstream forced_splits_file(forced_splits_path.c_str());
       std::stringstream buffer;
@@ -188,7 +186,7 @@ void GBDT::Bagging(int iter) {
     data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
     if (inner_size < min_inner_size) { inner_size = min_inner_size; }
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static,1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
       OMP_LOOP_EX_BEGIN();
       left_cnts_buf_[i] = 0;
@@ -308,15 +306,17 @@ double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, int class_id) 
   return init_score;
 }
 
-double GBDT::BoostFromAverage(int class_id) {
+double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
   // boosting from average label; or customized "average" if implemented for the current objective
   if (models_.empty() && !train_score_updater_->has_init_score() && objective_function_ != nullptr) {
     if (config_->boost_from_average || (train_data_ != nullptr && train_data_->num_features() == 0)) {
       double init_score = ObtainAutomaticInitialScore(objective_function_, class_id);
       if (std::fabs(init_score) > kEpsilon) {
-        train_score_updater_->AddScore(init_score, class_id);
-        for (auto& score_updater : valid_score_updater_) {
-          score_updater->AddScore(init_score, class_id);
+        if (update_scorer) {
+          train_score_updater_->AddScore(init_score, class_id);
+          for (auto& score_updater : valid_score_updater_) {
+            score_updater->AddScore(init_score, class_id);
+          }
         }
         Log::Info("Start training from score %lf", init_score);
         return init_score;
@@ -335,7 +335,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   // boosting first
   if (gradients == nullptr || hessians == nullptr) {
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id);
+      init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id, true);
     }
     Boosting();
     gradients = gradients_.data();
@@ -449,7 +449,6 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 }
 
 void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
-
   // update training score
   if (!is_use_subset_) {
     train_score_updater_->AddScore(tree_learner_.get(), tree, cur_tree_id);
@@ -597,7 +596,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     num_data = valid_score_updater_[used_idx]->num_data();
     *out_len = static_cast<int64_t>(num_data) * num_class_;
   }
-  if (objective_function_ != nullptr && !average_output_) {
+  if (objective_function_ != nullptr) {
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       std::vector<double> tree_pred(num_tree_per_iteration_);
@@ -622,7 +621,6 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
 
 void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
                              const std::vector<const Metric*>& training_metrics) {
-
   if (train_data != train_data_ && !train_data_->CheckAlign(*train_data)) {
     Log::Fatal("Cannot reset training data, since new training data has different bin mappers");
   }

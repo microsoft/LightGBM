@@ -73,7 +73,7 @@ Refer to `docs README <./README.rst>`__.
 C API
 -----
 
-Refere to the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/c_api.h>`__.
+Refer to the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/c_api.h>`__.
 
 High Level Language Package
 ---------------------------

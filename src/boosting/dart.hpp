@@ -15,7 +15,7 @@ namespace LightGBM {
 * \brief DART algorithm implementation. including Training, prediction, bagging.
 */
 class DART: public GBDT {
-public:
+ public:
   /*!
   * \brief Constructor
   */
@@ -79,7 +79,12 @@ public:
     return train_score_updater_->score();
   }
 
-private:
+  bool EvalAndCheckEarlyStopping() override {
+    GBDT::OutputMetric(iter_);
+    return false;
+  }
+
+ private:
   /*!
   * \brief drop trees based on drop_rate
   */

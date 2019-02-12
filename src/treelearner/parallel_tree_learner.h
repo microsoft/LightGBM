@@ -20,15 +20,16 @@ namespace LightGBM {
 */
 template <typename TREELEARNER_T>
 class FeatureParallelTreeLearner: public TREELEARNER_T {
-public:
+ public:
   explicit FeatureParallelTreeLearner(const Config* config);
   ~FeatureParallelTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
-protected:
+ protected:
   void BeforeTrain() override;
   void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
-private:
+
+ private:
   /*! \brief rank of local machine */
   int rank_;
   /*! \brief Number of machines of this parallel task */
@@ -46,12 +47,13 @@ private:
 */
 template <typename TREELEARNER_T>
 class DataParallelTreeLearner: public TREELEARNER_T {
-public:
+ public:
   explicit DataParallelTreeLearner(const Config* config);
   ~DataParallelTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetConfig(const Config* config) override;
-protected:
+
+ protected:
   void BeforeTrain() override;
   void FindBestSplits() override;
   void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
@@ -65,7 +67,7 @@ protected:
     }
   }
 
-private:
+ private:
   /*! \brief Rank of local machine */
   int rank_;
   /*! \brief Number of machines of this parallel task */
@@ -99,12 +101,13 @@ private:
 */
 template <typename TREELEARNER_T>
 class VotingParallelTreeLearner: public TREELEARNER_T {
-public:
+ public:
   explicit VotingParallelTreeLearner(const Config* config);
   ~VotingParallelTreeLearner() { }
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetConfig(const Config* config) override;
-protected:
+
+ protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
   void FindBestSplits() override;
@@ -134,7 +137,7 @@ protected:
   void CopyLocalHistogram(const std::vector<int>& smaller_top_features,
     const std::vector<int>& larger_top_features);
 
-private:
+ private:
   /*! \brief Tree config used in local mode */
   Config local_config_;
   /*! \brief Voting size */
@@ -185,7 +188,7 @@ inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, Spl
   int size = SplitInfo::Size(max_cat_threshold);
   smaller_best_split->CopyTo(input_buffer_);
   larger_best_split->CopyTo(input_buffer_ + size);
-  Network::Allreduce(input_buffer_, size * 2, size, output_buffer_, 
+  Network::Allreduce(input_buffer_, size * 2, size, output_buffer_,
                      [] (const char* src, char* dst, int size, comm_size_t len) {
     comm_size_t used_size = 0;
     LightSplitInfo p1, p2;

@@ -11,7 +11,7 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, string_type, DataFrame)
+                     argc_, range_, string_type, DataFrame, DataTable)
 from .engine import train
 
 
@@ -479,9 +479,11 @@ class LGBMModel(_LGBMModelBase):
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
             params['metric'] = set(original_metric + eval_metric)
 
-        if not isinstance(X, DataFrame):
-            X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
-            _LGBMCheckConsistentLength(X, y, sample_weight)
+        if not isinstance(X, (DataFrame, DataTable)):
+            _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
+            _LGBMCheckConsistentLength(_X, _y, sample_weight)
+        else:
+            _X, _y = X, y
 
         if self.class_weight is not None:
             class_sample_weight = _LGBMComputeSampleWeight(self.class_weight, y)
@@ -490,13 +492,13 @@ class LGBMModel(_LGBMModelBase):
             else:
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
-        self._n_features = X.shape[1]
+        self._n_features = _X.shape[1]
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
             ret = Dataset(X, label=y, weight=sample_weight, group=group, params=params)
             return ret.set_init_score(init_score)
 
-        train_set = _construct_dataset(X, y, sample_weight, init_score, group, params)
+        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params)
 
         valid_sets = []
         if eval_set is not None:
@@ -593,7 +595,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not isinstance(X, DataFrame):
+        if not isinstance(X, (DataFrame, DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
@@ -796,7 +798,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
                                                      pred_leaf, pred_contrib, **kwargs)
-        if self._n_classes > 2 or pred_leaf or pred_contrib:
+        if self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
         else:
             return np.vstack((1. - result, result)).transpose()

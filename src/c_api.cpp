@@ -37,7 +37,6 @@ inline int LGBM_APIHandleException(const std::string& ex) {
 }
 
 #define API_BEGIN() try {
-
 #define API_END() } \
 catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
 catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
@@ -45,7 +44,7 @@ catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
 
 class Booster {
-public:
+ public:
   explicit Booster(const char* filename) {
     boosting_.reset(Boosting::CreateBoosting("gbdt", filename));
   }
@@ -77,7 +76,6 @@ public:
     }
     boosting_->Init(&config_, train_data_, objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
-
   }
 
   void MergeFrom(const Booster* other) {
@@ -86,7 +84,6 @@ public:
   }
 
   ~Booster() {
-
   }
 
   void CreateObjectiveAndMetrics() {
@@ -158,7 +155,6 @@ public:
     }
 
     boosting_->ResetConfig(&config_);
-
   }
 
   void AddValidData(const Dataset* valid_data) {
@@ -275,7 +271,7 @@ public:
     return boosting_->SaveModelToString(start_iteration, num_iteration);
   }
 
-  std::string DumpModel(int start_iteration,int num_iteration) {
+  std::string DumpModel(int start_iteration, int num_iteration) {
     return boosting_->DumpModel(start_iteration, num_iteration);
   }
 
@@ -327,8 +323,7 @@ public:
 
   const Boosting* GetBoosting() const { return boosting_.get(); }
 
-private:
-
+ private:
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
   /*! \brief All configs */
@@ -343,7 +338,7 @@ private:
   std::mutex mutex_;
 };
 
-}
+}  // namespace LightGBM
 
 using namespace LightGBM;
 
@@ -361,7 +356,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
 
 // Row iterator of on column for CSC matrix
 class CSC_RowIterator {
-public:
+ public:
   CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
                   const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx);
   ~CSC_RowIterator() {}
@@ -369,7 +364,8 @@ public:
   double Get(int idx);
   // return next non-zero pair, if index < 0, means no more data
   std::pair<int, double> NextNonZero();
-private:
+
+ private:
   int nonzero_idx_ = 0;
   int cur_idx_ = -1;
   double cur_val_ = 0.0f;
@@ -394,7 +390,7 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  DatasetLoader loader(config,nullptr, 1, filename);
+  DatasetLoader loader(config, nullptr, 1, filename);
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
       *out = loader.LoadFromFile(filename, "");
@@ -545,7 +541,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int j = 0; j < nmat; ++j) {
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
-  
+
   if (reference == nullptr) {
     // sample data first
     Random rand(config.data_random_seed);
@@ -563,7 +559,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
         offset += nrow[j];
         ++j;
       }
-      
+
       auto row = get_row_fun[j](static_cast<int>(idx - offset));
       for (size_t k = 0; k < row.size(); ++k) {
         if (std::fabs(row[k]) > kZeroThreshold || std::isnan(row[k])) {
@@ -856,6 +852,13 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   }
   if (!is_success) { throw std::runtime_error("Field not found"); }
   if (*out_ptr == nullptr) { *out_len = 0; }
+  API_END();
+}
+
+int LGBM_DatasetUpdateParam(DatasetHandle handle, const char* parameters) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  dataset->ResetConfig(parameters);
   API_END();
 }
 
@@ -1242,7 +1245,7 @@ int LGBM_BoosterSaveModel(BoosterHandle handle,
 int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                   int start_iteration,
                                   int num_iteration,
-                                  int64_t buffer_len, 
+                                  int64_t buffer_len,
                                   int64_t* out_len,
                                   char* out_str) {
   API_BEGIN();

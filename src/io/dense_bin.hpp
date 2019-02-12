@@ -14,7 +14,7 @@ class DenseBin;
 
 template <typename VAL_T>
 class DenseBinIterator: public BinIterator {
-public:
+ public:
   explicit DenseBinIterator(const DenseBin<VAL_T>* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
     : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
     max_bin_(static_cast<VAL_T>(max_bin)),
@@ -28,7 +28,8 @@ public:
   inline uint32_t RawGet(data_size_t idx) override;
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override { }
-private:
+
+ private:
   const DenseBin<VAL_T>* bin_data_;
   VAL_T min_bin_;
   VAL_T max_bin_;
@@ -41,7 +42,7 @@ private:
 */
 template <typename VAL_T>
 class DenseBin: public Bin {
-public:
+ public:
   friend DenseBinIterator<VAL_T>;
   DenseBin(data_size_t num_data)
     : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {
@@ -310,7 +311,7 @@ public:
     return sizeof(VAL_T) * num_data_;
   }
 
-protected:
+ protected:
   data_size_t num_data_;
   std::vector<VAL_T> data_;
 };

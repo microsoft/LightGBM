@@ -117,7 +117,6 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
     Log::Warning("World size is larger than the machine_list size, change world size to %d", client_ips_.size());
     num_machines_ = static_cast<int>(client_ips_.size());
   }
-
 }
 
 void Linkers::TryBind(int port) {

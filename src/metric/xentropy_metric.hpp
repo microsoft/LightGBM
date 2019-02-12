@@ -65,8 +65,8 @@ namespace LightGBM {
 // CrossEntropyMetric : "xentropy" : (optional) weights are used linearly
 //
 class CrossEntropyMetric : public Metric {
-public:
-	explicit CrossEntropyMetric(const Config&) {}
+ public:
+  explicit CrossEntropyMetric(const Config&) {}
   virtual ~CrossEntropyMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -105,12 +105,12 @@ public:
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          sum_loss += XentLoss(label_[i], score[i]); // NOTE: does not work unless score is a probability
+          sum_loss += XentLoss(label_[i], score[i]);  // NOTE: does not work unless score is a probability
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          sum_loss += XentLoss(label_[i], score[i]) * weights_[i]; // NOTE: does not work unless score is a probability
+          sum_loss += XentLoss(label_[i], score[i]) * weights_[i];  // NOTE: does not work unless score is a probability
         }
       }
     } else {
@@ -139,10 +139,10 @@ public:
   }
 
   double factor_to_bigger_better() const override {
-    return -1.0f; // negative means smaller loss is better, positive means larger loss is better
+    return -1.0f;  // negative means smaller loss is better, positive means larger loss is better
   }
 
-private:
+ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
@@ -160,7 +160,7 @@ private:
 // ATTENTION: Supposed to be used when the objective also is "xentlambda"
 //
 class CrossEntropyLambdaMetric : public Metric {
-public:
+ public:
   explicit CrossEntropyLambdaMetric(const Config&) {}
   virtual ~CrossEntropyLambdaMetric() {}
 
@@ -182,7 +182,6 @@ public:
         Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(), __func__);
       }
     }
-
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
@@ -191,13 +190,13 @@ public:
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          double hhat = std::log(1.0f + std::exp(score[i])); // auto-convert
+          double hhat = std::log(1.0f + std::exp(score[i]));  // auto-convert
           sum_loss += XentLambdaLoss(label_[i], 1.0f, hhat);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          double hhat = std::log(1.0f + std::exp(score[i])); // auto-convert
+          double hhat = std::log(1.0f + std::exp(score[i]));  // auto-convert
           sum_loss += XentLambdaLoss(label_[i], weights_[i], hhat);
         }
       }
@@ -206,14 +205,14 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
-          objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentlambda"
+          objective->ConvertOutput(&score[i], &hhat);  // NOTE: this only works if objective = "xentlambda"
           sum_loss += XentLambdaLoss(label_[i], 1.0f, hhat);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
-          objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentlambda"
+          objective->ConvertOutput(&score[i], &hhat);  // NOTE: this only works if objective = "xentlambda"
           sum_loss += XentLambdaLoss(label_[i], weights_[i], hhat);
         }
       }
@@ -229,7 +228,7 @@ public:
     return -1.0f;
   }
 
-private:
+ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
@@ -244,7 +243,7 @@ private:
 // KullbackLeiblerDivergence : "kldiv" : (optional) weights are used linearly
 //
 class KullbackLeiblerDivergence : public Metric {
-public:
+ public:
   explicit KullbackLeiblerDivergence(const Config&) {}
   virtual ~KullbackLeiblerDivergence() {}
 
@@ -300,12 +299,12 @@ public:
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          sum_loss += XentLoss(label_[i], score[i]); // NOTE: does not work unless score is a probability
+          sum_loss += XentLoss(label_[i], score[i]);  // NOTE: does not work unless score is a probability
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          sum_loss += XentLoss(label_[i], score[i]) * weights_[i]; // NOTE: does not work unless score is a probability
+          sum_loss += XentLoss(label_[i], score[i]) * weights_[i];  // NOTE: does not work unless score is a probability
         }
       }
     } else {
@@ -337,7 +336,7 @@ public:
     return -1.0f;
   }
 
-private:
+ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
@@ -352,6 +351,6 @@ private:
   std::vector<std::string> name_;
 };
 
-} // end namespace LightGBM
+}  // end namespace LightGBM
 
-#endif // end #ifndef LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
+#endif  // end #ifndef LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_

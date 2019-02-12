@@ -5,14 +5,13 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install libomp
         brew upgrade cmake  # CMake >=3.12 is needed to find OpenMP at macOS
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_8.3.1.app/Contents/Developer
+            sudo xcode-select -s /Applications/Xcode_8.3.3.app/Contents/Developer
         fi
     else
         if [[ $TRAVIS == "true" ]]; then
-            sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.3"  # fix "fatal error: _stdio.h: No such file or directory"
-            rm '/usr/local/include/c++'
+#            rm '/usr/local/include/c++'  # previous variant to deal with conflict link
 #            brew cask uninstall oclint  #  reserve variant to deal with conflict link
-#            brew link --overwrite gcc  # previous variant to deal with conflict link
+            brew link --overwrite gcc
         fi
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
@@ -57,6 +56,6 @@ fi
 
 if [[ $TRAVIS == "true" ]]; then
     sh conda.sh -b -p $HOME_DIRECTORY/miniconda
-    conda config --set always_yes yes --set changeps1 no
-    conda update -q conda
 fi
+conda config --set always_yes yes --set changeps1 no
+conda update -q conda

@@ -86,7 +86,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
     bool need_new_group = true;
     std::vector<int> available_groups;
     for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
-      if (group_non_zero_cnt[gid] + cur_non_zero_cnt <= total_sample_cnt + max_error_cnt){
+      if (group_non_zero_cnt[gid] + cur_non_zero_cnt <= total_sample_cnt + max_error_cnt) {
         if (!is_use_gpu || group_num_bin[gid] + bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0)
             <= gpu_max_bin_per_group) {
           available_groups.push_back(gid);
@@ -149,16 +149,16 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
   // filter is based on sampling data, so decrease its range
   const data_size_t filter_cnt = static_cast<data_size_t>(static_cast<double>(0.95 * min_data) / num_data * total_sample_cnt);
   const data_size_t max_error_cnt = static_cast<data_size_t>(total_sample_cnt * max_conflict_rate);
-  int cur_used_feature_cnt = 0;
   std::vector<size_t> feature_non_zero_cnt;
+  feature_non_zero_cnt.reserve(used_features.size());
   // put dense feature first
   for (auto fidx : used_features) {
     feature_non_zero_cnt.emplace_back(num_per_col[fidx]);
-    ++cur_used_feature_cnt;
   }
   // sort by non zero cnt
   std::vector<int> sorted_idx;
-  for (int i = 0; i < cur_used_feature_cnt; ++i) {
+  sorted_idx.reserve(used_features.size());
+  for (int i = 0; i < static_cast<int>(used_features.size()); ++i) {
     sorted_idx.emplace_back(i);
   }
   // sort by non zero cnt, bigger first
@@ -168,6 +168,7 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
   });
 
   std::vector<int> feature_order_by_cnt;
+  feature_order_by_cnt.reserve(sorted_idx.size());
   for (auto sidx : sorted_idx) {
     feature_order_by_cnt.push_back(used_features[sidx]);
   }
@@ -187,7 +188,7 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
         cnt_non_zero += static_cast<int>(num_data * (1.0f - bin_mappers[fidx]->sparse_rate()));
       }
       double sparse_rate = 1.0f - static_cast<double>(cnt_non_zero) / (num_data);
-      // take apart small sparse group, due it will not gain on speed 
+      // take apart small sparse group, due it will not gain on speed
       if (sparse_rate >= sparse_threshold && is_enable_sparse) {
         for (size_t j = 0; j < features_in_group[i].size(); ++j) {
           const int fidx = features_in_group[i][j];
@@ -215,13 +216,12 @@ void Dataset::Construct(
   const int* num_per_col,
   size_t total_sample_cnt,
   const Config& io_config) {
-
   num_total_features_ = static_cast<int>(bin_mappers.size());
   sparse_threshold_ = io_config.sparse_threshold;
   // get num_features
   std::vector<int> used_features;
   for (int i = 0; i < static_cast<int>(bin_mappers.size()); ++i) {
-    if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trival()) {
+    if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trivial()) {
       used_features.emplace_back(i);
     }
   }
@@ -316,6 +316,62 @@ void Dataset::Construct(
       feature_penalty_.clear();
     }
   }
+  max_bin_ = io_config.max_bin;
+  min_data_in_bin_ = io_config.min_data_in_bin;
+  bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
+  use_missing_ = io_config.use_missing;
+  zero_as_missing_ = io_config.zero_as_missing;
+}
+
+void Dataset::ResetConfig(const char* parameters) {
+  auto param = Config::Str2Map(parameters);
+  Config io_config;
+  io_config.Set(param);
+  if (param.count("max_bin") && io_config.max_bin != max_bin_) {
+    Log::Warning("Cannot change max_bin after constructed Dataset handle.");
+  }
+  if (param.count("bin_construct_sample_cnt") && io_config.bin_construct_sample_cnt != bin_construct_sample_cnt_) {
+    Log::Warning("Cannot change bin_construct_sample_cnt after constructed Dataset handle.");
+  }
+  if (param.count("min_data_in_bin") && io_config.min_data_in_bin != min_data_in_bin_) {
+    Log::Warning("Cannot change min_data_in_bin after constructed Dataset handle.");
+  }
+  if (param.count("use_missing") && io_config.use_missing != use_missing_) {
+    Log::Warning("Cannot change use_missing after constructed Dataset handle.");
+  }
+  if (param.count("zero_as_missing") && io_config.zero_as_missing != zero_as_missing_) {
+    Log::Warning("Cannot change zero_as_missing after constructed Dataset handle.");
+  }
+  if (param.count("sparse_threshold") && io_config.sparse_threshold != sparse_threshold_) {
+    Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
+  }
+
+  if (!io_config.monotone_constraints.empty()) {
+    CHECK(static_cast<size_t>(num_total_features_) == io_config.monotone_constraints.size());
+    monotone_types_.resize(num_features_);
+    for (int i = 0; i < num_total_features_; ++i) {
+      int inner_fidx = InnerFeatureIndex(i);
+      if (inner_fidx >= 0) {
+        monotone_types_[inner_fidx] = io_config.monotone_constraints[i];
+      }
+    }
+    if (ArrayArgs<int8_t>::CheckAllZero(monotone_types_)) {
+      monotone_types_.clear();
+    }
+  }
+  if (!io_config.feature_contri.empty()) {
+    CHECK(static_cast<size_t>(num_total_features_) == io_config.feature_contri.size());
+    feature_penalty_.resize(num_features_);
+    for (int i = 0; i < num_total_features_; ++i) {
+      int inner_fidx = InnerFeatureIndex(i);
+      if (inner_fidx >= 0) {
+        feature_penalty_[inner_fidx] = std::max(0.0, io_config.feature_contri[i]);
+      }
+    }
+    if (ArrayArgs<double>::CheckAll(feature_penalty_, 1.0)) {
+      feature_penalty_.clear();
+    }
+  }
 }
 
 void Dataset::FinishLoad() {
@@ -381,7 +437,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
       1,
       bin_mappers,
       num_data_,
-      dataset->sparse_threshold_,
+      sparse_threshold_,
       is_enable_sparse));
     feature2group_.push_back(i);
     feature2subfeature_.push_back(0);
@@ -568,9 +624,9 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(binary_file_token, size_of_token);
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
-      + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
+      + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_) + sizeof(sparse_threshold_)
       + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_ + sizeof(int8_t) * num_features_
-      + sizeof(double) * num_features_;
+      + sizeof(double) * num_features_ + sizeof(int) * 3 + sizeof(bool) * 2;
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header += feature_names_[i].size() + sizeof(int);
@@ -581,6 +637,12 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(&num_features_, sizeof(num_features_));
     writer->Write(&num_total_features_, sizeof(num_total_features_));
     writer->Write(&label_idx_, sizeof(label_idx_));
+    writer->Write(&max_bin_, sizeof(max_bin_));
+    writer->Write(&bin_construct_sample_cnt_, sizeof(bin_construct_sample_cnt_));
+    writer->Write(&min_data_in_bin_, sizeof(min_data_in_bin_));
+    writer->Write(&use_missing_, sizeof(use_missing_));
+    writer->Write(&zero_as_missing_, sizeof(zero_as_missing_));
+    writer->Write(&sparse_threshold_, sizeof(sparse_threshold_));
     writer->Write(used_feature_map_.data(), sizeof(int) * num_total_features_);
     writer->Write(&num_groups_, sizeof(num_groups_));
     writer->Write(real_feature_idx_.data(), sizeof(int) * num_features_);
@@ -636,7 +698,6 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                                   score_t* ordered_gradients, score_t* ordered_hessians,
                                   bool is_constant_hessian,
                                   HistogramBinEntry* hist_data) const {
-
   if (leaf_idx < 0 || num_data < 0 || hist_data == nullptr) {
     return;
   }

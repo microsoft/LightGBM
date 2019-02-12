@@ -524,7 +524,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
   str_buf << "[data: " << data << "]\n";
-  str_buf << "[valid: " << Common::Join(valid,",") << "]\n";
+  str_buf << "[valid: " << Common::Join(valid, ",") << "]\n";
   str_buf << "[num_iterations: " << num_iterations << "]\n";
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
@@ -556,8 +556,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cat_smooth: " << cat_smooth << "]\n";
   str_buf << "[max_cat_to_onehot: " << max_cat_to_onehot << "]\n";
   str_buf << "[top_k: " << top_k << "]\n";
-  str_buf << "[monotone_constraints: " << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints),",") << "]\n";
-  str_buf << "[feature_contri: " << Common::Join(feature_contri,",") << "]\n";
+  str_buf << "[monotone_constraints: " << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints), ",") << "]\n";
+  str_buf << "[feature_contri: " << Common::Join(feature_contri, ",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
   str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
@@ -571,7 +571,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[input_model: " << input_model << "]\n";
   str_buf << "[output_result: " << output_result << "]\n";
   str_buf << "[initscore_filename: " << initscore_filename << "]\n";
-  str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores,",") << "]\n";
+  str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores, ",") << "]\n";
   str_buf << "[pre_partition: " << pre_partition << "]\n";
   str_buf << "[enable_bundle: " << enable_bundle << "]\n";
   str_buf << "[max_conflict_rate: " << max_conflict_rate << "]\n";
@@ -608,10 +608,10 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[poisson_max_delta_step: " << poisson_max_delta_step << "]\n";
   str_buf << "[tweedie_variance_power: " << tweedie_variance_power << "]\n";
   str_buf << "[max_position: " << max_position << "]\n";
-  str_buf << "[label_gain: " << Common::Join(label_gain,",") << "]\n";
+  str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
-  str_buf << "[eval_at: " << Common::Join(eval_at,",") << "]\n";
+  str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[num_machines: " << num_machines << "]\n";
   str_buf << "[local_listen_port: " << local_listen_port << "]\n";
   str_buf << "[time_out: " << time_out << "]\n";

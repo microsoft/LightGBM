@@ -16,13 +16,13 @@ Preparation
 Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-For **Windows** users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if **Visual Studio** (2015 or 2017) is not installed.
+For **Windows** users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
 For **Linux** users, **glibc** >= 2.14 is required.
 
 For **macOS** users:
 
-- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.1) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
+- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.3) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
 
 - For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
 
@@ -43,9 +43,30 @@ Build from Sources
 
 For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
 
-For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang>`__) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__) and specify compilers by running ``export CXX=g++-7 CC=gcc-7`` (replace "7" with version of **gcc** installed on your machine) first.
+For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**.
+
+- In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang>`__) first and **CMake** version 3.12 or higher is required.
+
+  In some cases **OpenMP** cannot be found which causes installation failures. So, if you encounter errors during the installation process, try to pass paths to **CMake** via ``pip`` options, like
+
+  .. code:: sh
+
+      pip install lightgbm --install-option="--openmp-include-dir=/usr/local/opt/libomp/include/" --install-option="--openmp-library=/usr/local/opt/libomp/lib/libomp.dylib"
+
+- In case you prefer **gcc**, you need to install it (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__) and specify compilers by running ``export CXX=g++-7 CC=gcc-7`` (replace "7" with version of **gcc** installed on your machine) first.
 
 For **Windows** users, **Visual Studio** (or `VS Build Tools <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake`_ (version 3.8 or higher).
+
+Build Threadless Version
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--nomp
+
+All remarks, except the **OpenMP** requirement for macOS users, from `Build from Sources section <#build-from-sources>`__ are actual in this case.
+
+It is **strongly not recommended** to use this version of LightGBM!
 
 Build MPI Version
 ~~~~~~~~~~~~~~~~~
@@ -118,6 +139,8 @@ Install from GitHub
 
 All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case.
 
+For **macOS** users who compile with **Apple Clang**, to pass **OpenMP** paths to **CMake** use the following syntax: ``python setup.py install --openmp-include-dir=/usr/local/opt/libomp/include/ --openmp-library=/usr/local/opt/libomp/lib/libomp.dylib``.
+
 For **Windows** users, if you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake`_ (version 3.8 or higher).
 
 .. code:: sh
@@ -128,6 +151,8 @@ For **Windows** users, if you get any errors during installation and there is th
     python setup.py install
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
+
+Run ``python setup.py install --nomp`` to disable **OpenMP** support. All remarks from `Build Threadless Version section <#build-threadless-version>`__ are actual in this case.
 
 Run ``python setup.py install --mpi`` to enable **MPI** support. All remarks from `Build MPI Version section <#build-mpi-version>`__ are actual in this case.
 
