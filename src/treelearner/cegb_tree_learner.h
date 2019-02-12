@@ -30,6 +30,13 @@ public:
 
   ~CEGBTreeLearner() {}
 
+protected:
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
+
+  void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) override;
+
+private:
+  std::vector<bool> coupled_features_used;
 };
 
 } // namespace LightGBM
