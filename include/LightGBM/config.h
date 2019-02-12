@@ -664,6 +664,19 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
+  //NOTE: CEGB params
+  //TODO: Document
+  double cegb_tradeoff;
+  double cegb_penalty_split;
+  bool cegb_independent_branches;
+  bool cegb_predict_lazy;
+
+  //TODO: Original used map<int, double>, is the int just a feature index?
+  //I've assumed that so I can just use a vector.
+  //TODO: It might be a real feature idx (as given by user)
+  std::vector<double> cegb_penalty_feature_lazy;
+  std::vector<double> cegb_penalty_feature_coupled;  
+
   #pragma endregion
 
   #pragma region Metric Parameters
