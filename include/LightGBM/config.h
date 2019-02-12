@@ -666,10 +666,10 @@ struct Config {
 
   //NOTE: CEGB params
   //TODO: Document
-  double cegb_tradeoff;
-  double cegb_penalty_split;
-  bool cegb_independent_branches;
-  bool cegb_predict_lazy;
+  double cegb_tradeoff = 0.0;
+  double cegb_penalty_split = 0.0;
+  bool cegb_independent_branches = false;
+  bool cegb_predict_lazy = false;
 
   //TODO: Original used map<int, double>, is the int just a feature index?
   //I've assumed that so I can just use a vector.
