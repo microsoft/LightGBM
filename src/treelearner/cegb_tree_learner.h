@@ -43,8 +43,12 @@ protected:
   void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 
 private:
+  double CalculateOndemandCosts(int feature_index, int leaf_index);
+  
   std::vector<bool> coupled_features_used;
+  std::vector<bool> lazy_features_used;
   std::vector<double> coupled_feature_penalty;
+  std::vector<double> lazy_feature_penalty;
   double tradeoff;
 };
 
