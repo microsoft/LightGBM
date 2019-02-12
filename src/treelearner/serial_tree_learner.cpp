@@ -4,6 +4,7 @@
 #include <LightGBM/objective_function.h>
 
 #include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/common.h>
 
 #include <algorithm>
 #include <vector>
@@ -101,9 +102,12 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   feature_used.clear();
   feature_used.resize(train_data->num_features());
 
+  if(!config_->cegb_penalty_feature_coupled.empty()){
+    CHECK(config_->cegb_penalty_feature_coupled.size() == train_data_->num_total_features());
+  }
   if(!config_->cegb_penalty_feature_lazy.empty()){
-    feature_used_in_data.clear();
-    feature_used_in_data.resize(train_data->num_features() * num_data_);
+    CHECK(config_->cegb_penalty_feature_lazy.size() == train_data_->num_total_features());
+    feature_used_in_data = Common::EmptyBitset(train_data->num_features() * num_data_);
   }
 }
 
@@ -490,7 +494,7 @@ double SerialTreeLearner::CalculateOndemandCosts(int feature_index, int leaf_ind
 
   for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
     int real_idx = tmp_idx[i_input];
-    if (feature_used_in_data[train_data_->num_data() * inner_fidx + real_idx])
+    if (Common::FindInBitset(feature_used_in_data.data(), train_data_->num_data()*train_data_->num_features(), train_data_->num_data() * inner_fidx + real_idx))
       continue;
     total += penalty;
   }
@@ -753,7 +757,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
     auto tmp_idx = data_partition_->GetIndexOnLeaf(best_leaf, &cnt_leaf_data);
     for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
       int real_idx = tmp_idx[i_input];
-      feature_used_in_data[train_data_->num_data() * inner_feature_index + real_idx] = true;
+      Common::InsertBitset(feature_used_in_data, train_data_->num_data() * inner_feature_index + real_idx);
     }
   }
 

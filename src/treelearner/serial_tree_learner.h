@@ -174,7 +174,7 @@ class SerialTreeLearner: public TreeLearner {
   bool is_constant_hessian_;
 
   std::vector<bool> feature_used;
-  std::vector<bool> feature_used_in_data;
+  std::vector<uint32_t> feature_used_in_data;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

@@ -809,6 +809,22 @@ inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) 
   }
 }
 
+inline static std::vector<uint32_t> EmptyBitset(int n){
+  int size = n / 32;
+  if(n % 32 != 0) size++;
+  return std::vector<uint32_t>(size);
+}
+
+template<typename T>
+inline static void InsertBitset(std::vector<uint32_t>& vec, const T val){
+    int i1 = val / 32;
+    int i2 = val % 32;
+    if (static_cast<int>(vec.size()) < i1 + 1) {
+      vec.resize(i1 + 1, 0);
+    }
+    vec[i1] |= (1 << i2);  
+}
+
 template<typename T>
 inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   std::vector<uint32_t> ret;
