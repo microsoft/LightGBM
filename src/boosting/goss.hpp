@@ -152,7 +152,6 @@ class GOSS: public GBDT {
       if (cur_start > num_data_) { continue; }
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
-      if (cur_cnt == 0) { continue; }
       Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
       data_size_t cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt,
                                                  tmp_indices_.data() + cur_start, tmp_indice_right_.data() + cur_start);
