@@ -671,7 +671,7 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
      make -j4
 
 macOS
-~~~~~
+^^^^^
 
 On macOS Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **Apple Clang** or **gcc**.
 
@@ -679,7 +679,7 @@ First, install `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` is set pr
 Then, either follow the **Apple Clang** or **gcc** installation instructions below.
 
 Apple Clang
-^^^^^^^^^^^
+***********
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
@@ -719,7 +719,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
      make -j4
 
 gcc
-^^^
+***
 
 1. Install `CMake`_ (3.2 or higher):
 
