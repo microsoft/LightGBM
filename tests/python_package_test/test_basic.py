@@ -232,10 +232,3 @@ class TestBasic(unittest.TestCase):
             if isinstance(actual, np.ndarray):
                 actual = list(actual)
             self.assertEqual(expected, actual)
-
-    def test_add_features_frees_added_set(self):
-        X = np.random.random((1000, 2))
-        d1 = lgb.Dataset(X[:, 0].reshape((-1, 1))).construct()
-        d2 = lgb.Dataset(X[:, 1].reshape((-1, 1))).construct()
-        d1.add_features_from(d2)
-        self.assertEqual(None, d2.handle)

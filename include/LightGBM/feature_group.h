@@ -220,11 +220,10 @@ class FeatureGroup {
 
     bin_mappers_.reserve(other.bin_mappers_.size());
     for(auto& bin_mapper : other.bin_mappers_){
-      std::unique_ptr<BinMapper> p(new BinMapper(*bin_mapper));
-      bin_mappers_.push_back(std::move(p));
+      bin_mappers_.emplace_back(new BinMapper(*bin_mapper));
     }
 
-    bin_data_.reset(bin_data_->Clone());
+    bin_data_.reset(other.bin_data_->Clone());
   }
 
  private:
