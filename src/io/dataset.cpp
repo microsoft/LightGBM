@@ -978,8 +978,9 @@ void Dataset::addFeaturesFrom(Dataset* other){
   PushVector(feature_names_, other->feature_names_);
   PushVector(feature2subfeature_, other->feature2subfeature_);
   PushVector(group_feature_cnt_, other->group_feature_cnt_);
+  feature_groups_.reserve(other->feature_groups_.size());
   for(auto& fg : other->feature_groups_){
-    feature_groups_.push_back(std::move(fg));
+    feature_groups_.emplace_back(new FeatureGroup(*fg));
   }
   for(auto feature_idx : other->used_feature_map_){
     if(feature_idx >= 0){
