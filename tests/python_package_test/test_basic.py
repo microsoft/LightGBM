@@ -124,8 +124,8 @@ class TestBasic(unittest.TestCase):
         X[:, [1, 3]] = 0
         names = ['col_%d' % (i,) for i in range(5)]
         for j in range(1, 5):
-            d1 = lgb.Dataset(X[:, :j],feature_name=names[:j]).construct()
-            d2 = lgb.Dataset(X[:, j:],feature_name=names[j:]).construct()
+            d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
+            d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
             d1.add_features_from(d2)
             with tempfile.NamedTemporaryFile() as f:
                 d1name = f.name
