@@ -140,6 +140,8 @@ class SerialTreeLearner: public TreeLearner {
 
   /*! \brief store best split points for all leaves */
   std::vector<SplitInfo> best_split_per_leaf_;
+  /*! \brief store best split per feature for all leaves */
+  std::vector<SplitInfo> splits_per_leaf_;
 
   /*! \brief stores best thresholds for all feature for smaller leaf */
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
