@@ -374,6 +374,26 @@ Learning Control Parameters
 
    -  used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
 
+-  ``cegb_tradeoff`` :raw-html:`<a id="cegb_tradeoff" title="Permalink to this parameter" href="#cegb_tradeoff">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = double, constraints: ``cegb_tradeoff >= 0.0``
+
+   -  cost-effective gradient boosting multiplier for all penalties
+
+-  ``cegb_penalty_split`` :raw-html:`<a id="cegb_penalty_split" title="Permalink to this parameter" href="#cegb_penalty_split">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = double, constraints: ``cegb_penalty_split >= 0.0``
+
+   -  cost-effective gradient-boosting penalty for splitting a node
+
+-  ``cegb_penalty_feature_lazy`` :raw-html:`<a id="cegb_penalty_feature_lazy" title="Permalink to this parameter" href="#cegb_penalty_feature_lazy">&#x1F517;&#xFE0E;</a>`, default = ``0,0,...,0``, type = multi-double
+
+   -  cost-effective gradient boosting penalty for using a feature
+
+   -  applied per data point
+
+-  ``cegb_penalty_feature_coupled`` :raw-html:`<a id="cegb_penalty_feature_coupled" title="Permalink to this parameter" href="#cegb_penalty_feature_coupled">&#x1F517;&#xFE0E;</a>`, default = ``0,0,...,0``, type = multi-double
+
+   -  cost-effective gradient boosting penalty for using a feature
+
+   -  applied once per forest
+
 IO Parameters
 -------------
 
