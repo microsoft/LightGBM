@@ -116,41 +116,41 @@ class TestBasic(unittest.TestCase):
             d1.add_features_from(d2)
         with self.assertRaises(ValueError):
             d1 = lgb.Dataset(X1)
-            d2 = lgb.Dataset(X2).construct()            
+            d2 = lgb.Dataset(X2).construct()
             d1.add_features_from(d2)
 
     def test_add_features_equal_data_on_alternating_used_unused(self):
-        X = np.random.random((1000,5))
-        X[:,[1,3]] = 0
+        X = np.random.random((1000, 5))
+        X[:, [1, 3]] = 0
         names = ['col_%d' % (i,) for i in range(5)]
-        for j in range(1,5):
-            d1 = lgb.Dataset(X[:,:j],feature_name=names[:j]).construct()
-            d2 = lgb.Dataset(X[:,j:],feature_name=names[j:]).construct()
+        for j in range(1, 5):
+            d1 = lgb.Dataset(X[:, :j],feature_name=names[:j]).construct()
+            d2 = lgb.Dataset(X[:, j:],feature_name=names[j:]).construct()
             d1.add_features_from(d2)
             with tempfile.NamedTemporaryFile() as f:
                 d1name = f.name
             d1.dump_text(d1name)
-            d = lgb.Dataset(X,feature_name=names).construct()
+            d = lgb.Dataset(X, feature_name=names).construct()
             with tempfile.NamedTemporaryFile() as f:
                 dname = f.name
             d.dump_text(dname)
-            with open(d1name,'rt') as d1f:
-                 d1txt = d1f.read()
+            with open(d1name, 'rt') as d1f:
+                d1txt = d1f.read()
             with open(dname, 'rt') as df:
-                 dtxt = df.read()
+                dtxt = df.read()
             os.remove(dname)
             os.remove(d1name)
             self.assertEqual(dtxt, d1txt)
 
     def test_add_features_same_booster_behaviour(self):
-        X = np.random.random((1000,5))
-        X[:,[1,3]] = 0
+        X = np.random.random((1000, 5))
+        X[:, [1, 3]] = 0
         names = ['col_%d' % (i,) for i in range(5)]
-        for j in range(1,5):
-            d1 = lgb.Dataset(X[:,:j],feature_name=names[:j]).construct()
-            d2 = lgb.Dataset(X[:,j:],feature_name=names[j:]).construct()
+        for j in range(1, 5):
+            d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
+            d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
             d1.add_features_from(d2)
-            d = lgb.Dataset(X,feature_name=names).construct()
+            d = lgb.Dataset(X, feature_name=names).construct()
             y = np.random.random(1000)
             d1.set_label(y)
             d.set_label(y)
@@ -172,21 +172,21 @@ class TestBasic(unittest.TestCase):
             self.assertEqual(dtxt, d1txt)
 
     def test_get_feature_penalty(self):
-        X = np.random.random((1000,1))
+        X = np.random.random((1000, 1))
         d = lgb.Dataset(X, params={'feature_penalty': [0.5]}).construct()
         self.assertEqual(np.asarray([0.5]), d.get_feature_penalty())
         d = lgb.Dataset(X).construct()
         self.assertEqual(None, d.get_feature_penalty())
 
     def test_get_monotone_types(self):
-        X = np.random.random((1000,1))
+        X = np.random.random((1000, 1))
         d = lgb.Dataset(X, params={'monotone_constraints': [1]}).construct()
         self.assertEqual(np.asarray([1]), d.get_monotone_types())
         d = lgb.Dataset(X).construct()
         self.assertEqual(None, d.get_monotone_types())
 
     def test_add_features_feature_penalty(self):
-        X = np.random.random((1000,2))
+        X = np.random.random((1000, 2))
         test_cases = [
             (None, None, None),
             ([0.5], None, [0.5, 1]),
@@ -197,12 +197,12 @@ class TestBasic(unittest.TestCase):
                 params1 = {'feature_penalty': p1}
             else:
                 params1 = {}
-            d1 = lgb.Dataset(X[:,0].reshape((-1,1)), params=params1).construct()
+            d1 = lgb.Dataset(X[:, 0].reshape((-1, 1)), params=params1).construct()
             if p2 is not None:
                 params2 = {'feature_penalty': p2}
             else:
                 params2 = {}
-            d2 = lgb.Dataset(X[:,1].reshape((-1,1)), params=params2).construct()
+            d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
             d1.add_features_from(d2)
             actual = d1.get_feature_penalty()
             if isinstance(actual, np.ndarray):
@@ -210,7 +210,7 @@ class TestBasic(unittest.TestCase):
             self.assertEqual(expected, actual)
 
     def test_add_features_monotone_types(self):
-        X = np.random.random((1000,2))
+        X = np.random.random((1000, 2))
         test_cases = [
             (None, None, None),
             ([1], None, [1, 0]),
@@ -221,12 +221,12 @@ class TestBasic(unittest.TestCase):
                 params1 = {'monotone_constraints': p1}
             else:
                 params1 = {}
-            d1 = lgb.Dataset(X[:,0].reshape((-1,1)), params=params1).construct()
+            d1 = lgb.Dataset(X[:, 0].reshape((-1, 1)), params=params1).construct()
             if p2 is not None:
                 params2 = {'monotone_constraints': p2}
             else:
                 params2 = {}
-            d2 = lgb.Dataset(X[:,1].reshape((-1,1)), params=params2).construct()
+            d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
             d1.add_features_from(d2)
             actual = d1.get_monotone_types()
             if isinstance(actual, np.ndarray):
@@ -234,8 +234,8 @@ class TestBasic(unittest.TestCase):
             self.assertEqual(expected, actual)
 
     def test_add_features_frees_added_set(self):
-        X = np.random.random((1000,2))
-        d1 = lgb.Dataset(X[:,0].reshape((-1,1))).construct()
-        d2 = lgb.Dataset(X[:,1].reshape((-1,1))).construct()
+        X = np.random.random((1000, 2))
+        d1 = lgb.Dataset(X[:, 0].reshape((-1, 1))).construct()
+        d2 = lgb.Dataset(X[:, 1].reshape((-1, 1))).construct()
         d1.add_features_from(d2)
         self.assertEqual(None, d2.handle)
