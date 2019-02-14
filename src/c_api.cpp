@@ -70,7 +70,7 @@ class Booster {
     if (config_.tree_learner == std::string("feature")) {
       Log::Fatal("Do not support feature parallel in c api");
     }
-    if (Network::num_machines() == 1 && config_.tree_learner != std::string("serial") && config_.tree_learner != std::string("cegb")) {
+    if (Network::num_machines() == 1 && config_.tree_learner != std::string("serial")) {
       Log::Warning("Only find one worker, will switch to serial tree learner");
       config_.tree_learner = "serial";
     }
