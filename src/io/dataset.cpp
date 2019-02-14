@@ -943,6 +943,7 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hess
 
 template<typename T>
 void PushVector(std::vector<T>& dest, const std::vector<T>& src){
+  dest.reserve(dest.size() + src.size());
   for(auto i : src){
     dest.push_back(i);
   }
@@ -950,6 +951,7 @@ void PushVector(std::vector<T>& dest, const std::vector<T>& src){
 
 template<typename T>
 void PushOffset(std::vector<T>& dest, const std::vector<T>& src, const T& offset){
+  dest.reserve(dest.size() + src.size());
   for(auto i : src){
     dest.push_back(i + offset);
   }
