@@ -231,9 +231,7 @@ void Config::CheckParamConflict() {
     is_parallel = true;
   } else {
     is_parallel = false;
-    if(tree_learner != std::string("serial")){
-      tree_learner = "serial";
-    }
+    tree_learner = "serial";
   }
 
   bool is_single_tree_learner = tree_learner == std::string("serial");
