@@ -363,11 +363,20 @@ class Dense4bitsBin : public Bin {
     return sizeof(uint8_t) * data_.size();
   }
 
+  Dense4bitsBin* Clone() override;
+
  protected:
+  Dense4bitsBin(const Dense4bitsBin& other)
+    : num_data_(other.num_data_), data_(other.data_), buf_(other.buf_){}
+    
   data_size_t num_data_;
   std::vector<uint8_t> data_;
   std::vector<uint8_t> buf_;
 };
+
+Dense4bitsBin* Dense4bitsBin::Clone(){
+  return new Dense4bitsBin(*this);
+}
 
 uint32_t Dense4bitsBinIterator::Get(data_size_t idx) {
   const auto bin = (bin_data_->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;

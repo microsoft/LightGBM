@@ -211,8 +211,21 @@ class FeatureGroup {
   }
   /*! \brief Disable copy */
   FeatureGroup& operator=(const FeatureGroup&) = delete;
-  /*! \brief Disable copy */
-  FeatureGroup(const FeatureGroup&) = delete;
+  /*! \brief Deep copy */
+  FeatureGroup(const FeatureGroup& other){
+    num_feature_ = other.num_feature_;
+    is_sparse_ = other.is_sparse_;
+    num_total_bin_ = other.num_total_bin_;
+    bin_offsets_ = other.bin_offsets_;
+
+    bin_mappers_.reserve(other.bin_mappers_.size());
+    for(auto& bin_mapper : other.bin_mappers_){
+      std::unique_ptr<BinMapper> p(new BinMapper(*bin_mapper));
+      bin_mappers_.push_back(std::move(p));
+    }
+
+    bin_data_.reset(bin_data_->Clone());
+  }
 
  private:
   /*! \brief Number of features */
