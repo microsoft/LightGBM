@@ -1398,7 +1398,7 @@ class Dataset(object):
         return self.weight
 
     def get_feature_penalty(self):
-        """Get the feature penalty of the Dataset
+        """Get the feature penalty of the data set.
 
         Returns
         -------
@@ -1410,7 +1410,7 @@ class Dataset(object):
         return self.feature_penalty
 
     def get_monotone_types(self):
-        """Get the monotone types of the data set
+        """Get the monotone types of the data set.
 
         Returns
         -------
