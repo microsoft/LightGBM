@@ -114,13 +114,13 @@ And you can use ``Dataset.set_init_score()`` to set initial score, and ``Dataset
 
 **Memory efficient usage:**
 
-The ``Dataset`` object in LightGBM is very memory-efficient, due to it only need to save discrete bins.
-However, Numpy/Array/Pandas object is memory cost.
-If you concern about your memory consumption, you can save memory according to the following:
+The ``Dataset`` object in LightGBM is very memory-efficient, it only needs to save discrete bins.
+However, Numpy/Array/Pandas object is memory expensive.
+If you are concerned about your memory consumption, you can save memory by:
 
-1. Let ``free_raw_data=True`` (default is ``True``) when constructing the ``Dataset``
+1. Set ``free_raw_data=True`` (default is ``True``) when constructing the ``Dataset``
 
-2. Explicit set ``raw_data=None`` after the ``Dataset`` has been constructed
+2. Explicitly set ``raw_data=None`` after the ``Dataset`` has been constructed
 
 3. Call ``gc``
 
