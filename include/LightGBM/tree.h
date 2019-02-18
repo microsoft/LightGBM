@@ -18,7 +18,7 @@ namespace LightGBM {
 * \brief Tree model
 */
 class Tree {
-public:
+ public:
   /*!
   * \brief Constructor
   * \param max_leaves The number of max leaves
@@ -203,7 +203,7 @@ public:
 
   void RecomputeMaxDepth();
 
-private:
+ private:
   std::string NumericalDecisionIfElse(int node) const;
 
   std::string CategoricalDecisionIfElse(int node) const;

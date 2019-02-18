@@ -27,7 +27,7 @@ enum MissingType {
 
 /*! \brief Store data for one histogram bin */
 struct HistogramBinEntry {
-public:
+ public:
   /*! \brief Sum of gradients on this bin */
   double sum_gradients = 0.0f;
   /*! \brief Sum of hessians on this bin */
@@ -59,7 +59,7 @@ public:
 /*! \brief This class used to convert feature values into bin,
 *          and store some meta information for bin*/
 class BinMapper {
-public:
+ public:
   BinMapper();
   BinMapper(const BinMapper& other);
   explicit BinMapper(const void* memory);
@@ -184,7 +184,7 @@ public:
     }
   }
 
-private:
+ private:
   /*! \brief Number of bins */
   int num_bin_;
   MissingType missing_type_;
@@ -217,7 +217,7 @@ private:
 *        So we only using ordered bin for sparse situations.
 */
 class OrderedBin {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~OrderedBin() {}
 
@@ -265,7 +265,7 @@ public:
 
 /*! \brief Iterator for one bin column */
 class BinIterator {
-public:
+ public:
   /*!
   * \brief Get bin data on specific row index
   * \param idx Index of this data
@@ -284,7 +284,7 @@ public:
 *        but it doesn't need to re-order operation, So it will be faster than OrderedBin for dense feature
 */
 class Bin {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~Bin() {}
   /*!

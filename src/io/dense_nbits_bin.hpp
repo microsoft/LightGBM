@@ -12,7 +12,7 @@ namespace LightGBM {
 class Dense4bitsBin;
 
 class Dense4bitsBinIterator : public BinIterator {
-public:
+ public:
   explicit Dense4bitsBinIterator(const Dense4bitsBin* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
     : bin_data_(bin_data), min_bin_(static_cast<uint8_t>(min_bin)),
     max_bin_(static_cast<uint8_t>(max_bin)),
@@ -26,7 +26,8 @@ public:
   inline uint32_t RawGet(data_size_t idx) override;
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override {}
-private:
+
+ private:
   const Dense4bitsBin* bin_data_;
   uint8_t min_bin_;
   uint8_t max_bin_;
@@ -35,7 +36,7 @@ private:
 };
 
 class Dense4bitsBin : public Bin {
-public:
+ public:
   friend Dense4bitsBinIterator;
   Dense4bitsBin(data_size_t num_data)
     : num_data_(num_data) {
@@ -362,7 +363,7 @@ public:
     return sizeof(uint8_t) * data_.size();
   }
 
-protected:
+ protected:
   data_size_t num_data_;
   std::vector<uint8_t> data_;
   std::vector<uint8_t> buf_;

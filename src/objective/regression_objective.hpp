@@ -69,7 +69,7 @@ namespace LightGBM {
 * \brief Objective function for regression
 */
 class RegressionL2loss: public ObjectiveFunction {
-public:
+ public:
   explicit RegressionL2loss(const Config& config) {
     sqrt_ = config.reg_sqrt;
   }
@@ -165,7 +165,7 @@ public:
     return suml / sumw;
   }
 
-protected:
+ protected:
   bool sqrt_;
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -180,7 +180,7 @@ protected:
 * \brief L1 regression loss
 */
 class RegressionL1loss: public RegressionL2loss {
-public:
+ public:
   explicit RegressionL1loss(const Config& config): RegressionL2loss(config) {
   }
 
@@ -298,7 +298,7 @@ public:
 * \brief Huber regression loss
 */
 class RegressionHuberLoss: public RegressionL2loss {
-public:
+ public:
   explicit RegressionHuberLoss(const Config& config): RegressionL2loss(config) {
     alpha_ = static_cast<double>(config.alpha);
     if (sqrt_) {
@@ -352,7 +352,7 @@ public:
     return false;
   }
 
-private:
+ private:
   /*! \brief delta for Huber loss */
   double alpha_;
 };
@@ -360,7 +360,7 @@ private:
 
 // http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
 class RegressionFairLoss: public RegressionL2loss {
-public:
+ public:
   explicit RegressionFairLoss(const Config& config): RegressionL2loss(config) {
     c_ = static_cast<double>(config.fair_c);
   }
@@ -397,7 +397,7 @@ public:
     return false;
   }
 
-private:
+ private:
   /*! \brief c for Fair loss */
   double c_;
 };
@@ -407,7 +407,7 @@ private:
 * \brief Objective function for Poisson regression
 */
 class RegressionPoissonLoss: public RegressionL2loss {
-public:
+ public:
   explicit RegressionPoissonLoss(const Config& config): RegressionL2loss(config) {
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
     if (sqrt_) {
@@ -481,13 +481,13 @@ public:
     return false;
   }
 
-private:
+ private:
   /*! \brief used to safeguard optimization */
   double max_delta_step_;
 };
 
 class RegressionQuantileloss : public RegressionL2loss {
-public:
+ public:
   explicit RegressionQuantileloss(const Config& config): RegressionL2loss(config) {
     alpha_ = static_cast<score_t>(config.alpha);
     CHECK(alpha_ > 0 && alpha_ < 1);
@@ -607,7 +607,7 @@ public:
     }
   }
 
-private:
+ private:
   score_t alpha_;
 };
 
@@ -616,7 +616,7 @@ private:
 * \brief Mape Regression Loss
 */
 class RegressionMAPELOSS : public RegressionL1loss {
-public:
+ public:
   explicit RegressionMAPELOSS(const Config& config) : RegressionL1loss(config) {
   }
 
@@ -725,7 +725,7 @@ public:
     return true;
   }
 
-private:
+ private:
   std::vector<label_t> label_weight_;
 };
 
@@ -735,7 +735,7 @@ private:
 * \brief Objective function for Gamma regression
 */
 class RegressionGammaLoss : public RegressionPoissonLoss {
-public:
+ public:
   explicit RegressionGammaLoss(const Config& config) : RegressionPoissonLoss(config) {
   }
 
@@ -770,7 +770,7 @@ public:
 * \brief Objective function for Tweedie regression
 */
 class RegressionTweedieLoss: public RegressionPoissonLoss {
-public:
+ public:
   explicit RegressionTweedieLoss(const Config& config) : RegressionPoissonLoss(config) {
     rho_ = config.tweedie_variance_power;
   }
@@ -803,7 +803,7 @@ public:
     return "tweedie";
   }
 
-private:
+ private:
   double rho_;
 };
 

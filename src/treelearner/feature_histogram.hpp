@@ -12,7 +12,7 @@
 namespace LightGBM {
 
 class FeatureMetainfo {
-public:
+ public:
   int num_bin;
   MissingType missing_type;
   int8_t bias = 0;
@@ -27,7 +27,7 @@ public:
 * \brief FeatureHistogram is used to construct and store a histogram for a feature.
 */
 class FeatureHistogram {
-public:
+ public:
   FeatureHistogram() {
     data_ = nullptr;
   }
@@ -449,7 +449,7 @@ public:
     }
   }
 
-private:
+ private:
   static double GetSplitGains(double sum_left_gradients, double sum_left_hessians,
                               double sum_right_gradients, double sum_right_hessians,
                               double l1, double l2, double max_delta_step,
@@ -644,7 +644,7 @@ private:
   std::function<void(double, double, data_size_t, double, double, SplitInfo*)> find_best_threshold_fun_;
 };
 class HistogramPool {
-public:
+ public:
   /*!
   * \brief Constructor
   */
@@ -804,7 +804,7 @@ public:
     inverse_mapper_[slot] = dst_idx;
   }
 
-private:
+ private:
   std::vector<std::unique_ptr<FeatureHistogram[]>> pool_;
   std::vector<std::vector<HistogramBinEntry>> data_;
   std::vector<FeatureMetainfo> feature_metas_;

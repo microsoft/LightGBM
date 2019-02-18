@@ -204,13 +204,13 @@ public:
     typedef std::initializer_list<std::pair<std::string, Type>> shape;
     bool has_shape(const shape & types, std::string & err) const;
 
-private:
+ private:
     std::shared_ptr<JsonValue> m_ptr;
 };
 
 // Internal class hierarchy - JsonValue objects are not exposed to users of this API.
 class JsonValue {
-protected:
+ protected:
     friend class Json;
     friend class JsonInt;
     friend class JsonDouble;

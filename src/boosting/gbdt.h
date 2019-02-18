@@ -24,7 +24,7 @@ namespace LightGBM {
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
 */
 class GBDT : public GBDTBase {
-public:
+ public:
   /*!
   * \brief Constructor
   */
@@ -354,7 +354,7 @@ public:
   */
   virtual const char* SubModelName() const override { return "tree"; }
 
-protected:
+ protected:
   /*!
   * \brief Print eval result and check early stopping
   */
