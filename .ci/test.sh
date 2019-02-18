@@ -15,9 +15,9 @@ cd $BUILD_DIRECTORY
 
 if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     if [[ $PYTHON_VERSION == "2.7" ]]; then
-        conda -y -n $CONDA_ENV mock
+        conda -q -y -n $CONDA_ENV mock
     fi
-    conda install -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"
+    conda install -q -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"
     pip install --user rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
@@ -43,14 +43,14 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
 fi
 
 if [[ $TASK == "pylint" ]]; then
-    conda install -y -n $CONDA_ENV pycodestyle pydocstyle
+    conda install -q -y -n $CONDA_ENV pycodestyle pydocstyle
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
     exit 0
 fi
 
 if [[ $TASK == "if-else" ]]; then
-    conda install -y -n $CONDA_ENV numpy
+    conda install -q -y -n $CONDA_ENV numpy
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
@@ -139,6 +139,6 @@ matplotlib.use\(\"Agg\"\)\
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     for f in *.py; do python $f || exit -1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
-    conda install -y -n $CONDA_ENV ipywidgets notebook
+    conda install -q -y -n $CONDA_ENV ipywidgets notebook
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 fi
