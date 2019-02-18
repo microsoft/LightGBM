@@ -74,13 +74,13 @@ The data is stored in a ``Dataset`` object.
 
 .. code:: python
 
-    test_data = train_data.create_valid('test.svm')
+    validation_data = train_data.create_valid('validation.svm')
 
 or
 
 .. code:: python
 
-    test_data = lgb.Dataset('test.svm', reference=train_data)
+    validation_data = lgb.Dataset('validation.svm', reference=train_data)
 
 In LightGBM, the validation data should be aligned with training data.
 
@@ -151,7 +151,7 @@ Training a model requires a parameter list and data set:
 .. code:: python
 
     num_round = 10
-    bst = lgb.train(param, train_data, num_round, valid_sets=[test_data])
+    bst = lgb.train(param, train_data, num_round, valid_sets=[validation_data])
 
 After training, the model can be saved:
 
