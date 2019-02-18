@@ -33,12 +33,12 @@ jobs:
         PYTHON_VERSION: 2.7
   steps:
   - script: |
-      echo "##vso[task.setvariable variable=PATH]$CONDA/bin:$PATH"
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=OS_NAME]linux"
       echo "##vso[task.setvariable variable=AZURE]true"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+      echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
@@ -65,9 +65,6 @@ jobs:
         METHOD: source
         PYTHON_VERSION: 3.6
   steps:
-  - task: CondaEnvironment@1
-    inputs:
-      updateConda: false
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -79,6 +76,9 @@ jobs:
       LD_LIBRARY_PATH=$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH
       echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
       echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK_PATH/etc/OpenCL/vendors"
+      CONDA=$AGENT_HOMEDIRECTORY/miniconda
+      echo "##vso[task.setvariable variable=CONDA]$CONDA"
+      echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
@@ -103,15 +103,15 @@ jobs:
       bdist:
         TASK: bdist
   steps:
-  - task: CondaEnvironment@1
-    inputs:
-      updateConda: false
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=OS_NAME]macos"
       echo "##vso[task.setvariable variable=AZURE]true"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+      CONDA=$AGENT_HOMEDIRECTORY/miniconda
+      echo "##vso[task.setvariable variable=CONDA]$CONDA"
+      echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
@@ -141,14 +141,12 @@ jobs:
         TASK: bdist
         PYTHON_VERSION: 3.6
   steps:
-  - task: CondaEnvironment@1
-    inputs:
-      createCustomEnvironment: true
-      updateConda: true
-      environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION) matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy'
-      createOptions: '-q'
-  - powershell: $(Build.SourcesDirectory)/.ci/test_windows.ps1
+  - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+    displayName: Enable conda
+  - script: |
+      conda update -q -y conda
+      conda create -q -y -n %CONDA_ENV% python=%PYTHON_VERSION% matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy
+      cmd /c "activate %CONDA_ENV% & powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
