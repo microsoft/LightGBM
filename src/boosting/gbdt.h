@@ -24,7 +24,7 @@ namespace LightGBM {
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
 */
 class GBDT : public GBDTBase {
-public:
+ public:
   /*!
   * \brief Constructor
   */
@@ -361,7 +361,7 @@ public:
     return models_;
   }
 
-protected:
+ protected:
   /*!
   * \brief Print eval result and check early stopping
   */

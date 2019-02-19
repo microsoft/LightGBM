@@ -3,7 +3,7 @@ require(lightgbm)
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
 dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label)
-dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label)
+dtest <- lgb.Dataset.create.valid(dtrain, data = agaricus.test$data, label = agaricus.test$label)
 
 nrounds <- 2
 param <- list(num_leaves = 4,

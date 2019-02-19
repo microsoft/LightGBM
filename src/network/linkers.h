@@ -32,7 +32,7 @@ namespace LightGBM {
 * This class will wrap all linkers to other machines if needs
 */
 class Linkers {
-public:
+ public:
   Linkers() {
     is_init_ = false;
   }
@@ -136,7 +136,7 @@ public:
   #endif  // USE_SOCKET
 
 
-private:
+ private:
   /*! \brief Rank of local machine */
   int rank_;
   /*! \brief Total number machines */

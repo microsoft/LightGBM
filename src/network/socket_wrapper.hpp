@@ -86,7 +86,7 @@ const bool kNoDelay = true;
 }
 
 class TcpSocket {
-public:
+ public:
   TcpSocket() {
     sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd_ == INVALID_SOCKET) {
@@ -291,7 +291,7 @@ public:
     }
   }
 
-private:
+ private:
   SOCKET sockfd_;
 };
 

@@ -69,9 +69,11 @@ my_data_test <- as.matrix(bank_test[, 1:16, with = FALSE])
 # Creating the LightGBM dataset with categorical features
 # The categorical features can be passed to lgb.train to not copy and paste a lot
 dtrain <- lgb.Dataset(data = my_data_train,
-                      label = bank_train$y)
-dtest <- lgb.Dataset(data = my_data_test,
-                     label = bank_test$y)
+                      label = bank_train$y,
+                      categorical_feature = c(2, 3, 4, 5, 7, 8, 9, 11, 16))
+dtest <- lgb.Dataset.create.valid(dtrain,
+                                  data = my_data_test,
+                                  label = bank_test$y)
 
 # We can now train a model
 model <- lgb.train(list(objective = "binary",
@@ -80,8 +82,7 @@ model <- lgb.train(list(objective = "binary",
                         learning_rate = 0.1,
                         min_data = 0,
                         min_hessian = 1,
-                        max_depth = 2,
-                        categorical_feature = c(2, 3, 4, 5, 7, 8, 9, 11, 16)),
+                        max_depth = 2),
                    dtrain,
                    100,
                    valids = list(train = dtrain, valid = dtest))

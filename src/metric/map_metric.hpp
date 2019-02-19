@@ -13,7 +13,7 @@
 namespace LightGBM {
 
 class MapMetric:public Metric {
-public:
+ public:
   explicit MapMetric(const Config& config) {
     // get eval position
     eval_at_ = config.eval_at;
@@ -142,7 +142,7 @@ public:
     return result;
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
