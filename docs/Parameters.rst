@@ -507,6 +507,8 @@ IO Parameters
 
    -  by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
 
+   -  **Note**: works only in case of loading data directly from file
+
 -  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
 
    -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
@@ -521,6 +523,8 @@ IO Parameters
 
    -  set this to ``true`` if input data has header
 
+   -  **Note**: works only in case of loading data directly from file
+
 -  ``label_column`` :raw-html:`<a id="label_column" title="Permalink to this parameter" href="#label_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``label``
 
    -  used to specify the label column
@@ -529,6 +533,8 @@ IO Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
 
+   -  **Note**: works only in case of loading data directly from file
+
 -  ``weight_column`` :raw-html:`<a id="weight_column" title="Permalink to this parameter" href="#weight_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``weight``
 
    -  used to specify the weight column
@@ -536,6 +542,8 @@ IO Parameters
    -  use number for index, e.g. ``weight=0`` means column\_0 is the weight
 
    -  add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
+
+   -  **Note**: works only in case of loading data directly from file
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
 
@@ -546,6 +554,8 @@ IO Parameters
    -  use number for index, e.g. ``query=0`` means column\_0 is the query id
 
    -  add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
+
+   -  **Note**: works only in case of loading data directly from file
 
    -  **Note**: data should be grouped by query\_id
 
