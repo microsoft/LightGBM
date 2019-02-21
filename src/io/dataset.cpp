@@ -962,11 +962,11 @@ void PushClearIfEmpty(std::vector<T>& dest, const size_t dest_len, const std::ve
   if(!dest.empty() && !src.empty()){
     PushVector(dest, src);
   } else if(!dest.empty() && src.empty()){
-    for(size_t i = 0; i < src_len; i++){
+    for(size_t i = 0; i < src_len; ++i){
       dest.push_back(deflt);
     }
   } else if(dest.empty() && !src.empty()){
-    for(size_t i = 0; i < dest_len; i++){
+    for(size_t i = 0; i < dest_len; ++i){
       dest.push_back(deflt);
     }
     PushVector(dest, src);
