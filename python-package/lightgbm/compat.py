@@ -92,7 +92,11 @@ except ImportError:
 
 """datatable"""
 try:
-    from datatable import DataTable
+    import datatable
+    if hasattr(datatable, "Frame"):
+        DataTable = datatable.Frame
+    else:
+        DataTable = datatable.DataTable
     DATATABLE_INSTALLED = True
 except ImportError:
     DATATABLE_INSTALLED = False
