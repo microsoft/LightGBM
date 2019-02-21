@@ -191,7 +191,7 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
                      "group": C_API_DTYPE_INT32,
                      "feature_penalty": C_API_DTYPE_FLOAT64,
-                     "monotone_types": C_API_DTYPE_INT8}
+                     "monotone_constraints": C_API_DTYPE_INT8}
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'int64': 'int', 'uint8': 'int', 'uint16': 'int',
@@ -1398,27 +1398,27 @@ class Dataset(object):
         return self.weight
 
     def get_feature_penalty(self):
-        """Get the feature penalty of the data set.
+        """Get the feature penalty of the Dataset.
 
         Returns
         -------
         feature_penalty : numpy array or None
-            Feature penalty for each feature in the data set.
+            Feature penalty for each feature in the Dataset.
         """
         if self.feature_penalty is None:
             self.feature_penalty = self.get_field('feature_penalty')
         return self.feature_penalty
 
-    def get_monotone_types(self):
-        """Get the monotone types of the data set.
+    def get_monotone_constraints(self):
+        """Get the monotone constraints of the Dataset.
 
         Returns
         -------
-        monotone types : numpy array or None
-            monotone types, -1, 0 or 1, for each feature in the data set
+        monotone_constraints : numpy array or None
+            Monotone constraints, -1, 0 or 1, for each feature in the Dataset
         """
         if self.monotone_types is None:
-            self.monotone_types = self.get_field('monotone_types')
+            self.monotone_types = self.get_field('monotone_constraints')
         return self.monotone_types
 
     def get_init_score(self):
@@ -1534,40 +1534,40 @@ class Dataset(object):
         return ref_chain
 
     def add_features_from(self, other):
-        """Add features from other to self.
+        """Add features from other Dataset to the current Dataset.
 
-        This will add every feature from other to self and free other.
-        Other must not be used after this method returns.
-        Both datasets must have been constructed before calling this method.
+        This will add every feature to the current dataset.
+        Both datasets must be constructed before calling this method.
 
         Parameters
         ----------
         other : Dataset
-            The dataset to take features from
+            The Dataset to take features from.
 
         Returns
         -------
-        self : The Dataset with the new features added
+        self : Dataset with the new features added
         """
         if self.handle is None or other.handle is None:
-            raise ValueError('Both source and target datasets must be constructed before adding features')
+            raise ValueError('Both source and target Datasets must be constructed before adding features')
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        return self
 
-    def dump_text(self, fname):
-        """Save this dataset to a text file.
+    def dump_text(self, filename):
+        """Save Dataset to a text file.
 
-        This format cannot be loaded back in by LightGBM, but is useful to debug data set
-        manipulations.
+        This format cannot be loaded back in by LightGBM, but is useful for debugging purposes.
 
         Parameters
         ----------
-        fname : string
-            The file to dump the data set to
+        filename : string
+            Name of the output file.
 
         """
         _safe_call(_LIB.LGBM_DatasetDumpText(
             self.construct().handle,
-            c_str(fname)))
+            c_str(filename)))
+        return self
 
 
 class Booster(object):

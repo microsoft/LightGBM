@@ -285,7 +285,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_DatasetDumpText(DatasetHandle handle,
-					   const char* filename);
+                                           const char* filename);
 
 /*!
 * \brief set vector to a content in info
@@ -352,7 +352,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
-						  DatasetHandle source);
+                                                  DatasetHandle source);
 
 // --- start Booster interfaces
 

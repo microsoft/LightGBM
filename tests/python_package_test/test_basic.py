@@ -178,12 +178,12 @@ class TestBasic(unittest.TestCase):
         d = lgb.Dataset(X).construct()
         self.assertEqual(None, d.get_feature_penalty())
 
-    def test_get_monotone_types(self):
+    def test_get_monotone_constraints(self):
         X = np.random.random((1000, 1))
         d = lgb.Dataset(X, params={'monotone_constraints': [1]}).construct()
-        self.assertEqual(np.asarray([1]), d.get_monotone_types())
+        self.assertEqual(np.asarray([1]), d.get_monotone_constraints())
         d = lgb.Dataset(X).construct()
-        self.assertEqual(None, d.get_monotone_types())
+        self.assertEqual(None, d.get_monotone_constraints())
 
     def test_add_features_feature_penalty(self):
         X = np.random.random((1000, 2))

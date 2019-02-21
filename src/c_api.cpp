@@ -814,7 +814,7 @@ int LGBM_DatasetSaveBinary(DatasetHandle handle,
 }
 
 int LGBM_DatasetDumpText(DatasetHandle handle,
-                           const char* filename) {
+                         const char* filename) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   dataset->DumpTextFile(filename);
@@ -890,7 +890,7 @@ int LGBM_DatasetGetNumFeature(DatasetHandle handle,
 }
 
 int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
-				 DatasetHandle source) {
+                                DatasetHandle source) {
   API_BEGIN();
   auto target_d = reinterpret_cast<Dataset*>(target);
   auto source_d = reinterpret_cast<Dataset*>(source);

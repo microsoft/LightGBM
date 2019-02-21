@@ -603,7 +603,7 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len, const in
 bool Dataset::GetInt8Field(const char* field_name, data_size_t* out_len, const int8_t** out_ptr) {
   std::string name(field_name);
   name = Common::Trim(name);
-  if (name == std::string("monotone_types")) {
+  if (name == std::string("monotone_constraints")) {
     *out_ptr = monotone_types_.data();
     *out_len = monotone_types_.size();
   } else {
@@ -717,7 +717,7 @@ void Dataset::DumpTextFile(const char* text_filename){
   for(auto n : feature_names_){
     fprintf(file, "%s, ", n.c_str());
   }
-  fprintf(file, "\nmonotone_types: ");
+  fprintf(file, "\nmonotone_constraints: ");
   for(auto i : monotone_types_){
     fprintf(file, "%d, ", i);
   }
@@ -731,14 +731,14 @@ void Dataset::DumpTextFile(const char* text_filename){
   }
   std::vector<std::unique_ptr<BinIterator>> iterators;
   iterators.reserve(num_features_);
-  for(int j = 0; j < num_features_; j++){
+  for(int j = 0; j < num_features_; ++j){
     auto group_idx = feature2group_[j];
     auto sub_idx = feature2subfeature_[j];
     iterators.emplace_back(feature_groups_[group_idx]->SubFeatureIterator(sub_idx));
   }
-  for(data_size_t i = 0; i < num_data_; i++){
+  for(data_size_t i = 0; i < num_data_; ++i){
     fprintf(file, "\n");
-    for(int j = 0; j < num_total_features_; j++){
+    for(int j = 0; j < num_total_features_; ++j){
       auto inner_feature_idx = used_feature_map_[j];
       if(inner_feature_idx < 0){
 	fprintf(file, "NA, ");
@@ -975,7 +975,7 @@ void PushClearIfEmpty(std::vector<T>& dest, const size_t dest_len, const std::ve
 
 void Dataset::addFeaturesFrom(Dataset* other){
   if(other->num_data_ != num_data_){
-    throw std::runtime_error("Cannot add features from other dataset with a different number of rows");
+    throw std::runtime_error("Cannot add features from other Dataset with a different number of rows");
   }
   PushVector(feature_names_, other->feature_names_);
   PushVector(feature2subfeature_, other->feature2subfeature_);
@@ -988,14 +988,14 @@ void Dataset::addFeaturesFrom(Dataset* other){
     if(feature_idx >= 0){
       used_feature_map_.push_back(feature_idx + num_features_);
     } else {
-      used_feature_map_.push_back(-1); //Unused feature.
+      used_feature_map_.push_back(-1);  // Unused feature.
     }
   }
   PushOffset(real_feature_idx_, other->real_feature_idx_, num_total_features_);
   PushOffset(feature2group_, other->feature2group_, num_groups_);
   auto bin_offset = group_bin_boundaries_.back();
-  //Skip the leading 0 when copying group_bin_boundaries.
-  for(auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); i++){
+  // Skip the leading 0 when copying group_bin_boundaries.
+  for(auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); ++i){
     group_bin_boundaries_.push_back(*i + bin_offset);
   }
   PushOffset(group_feature_start_, other->group_feature_start_, num_features_);
