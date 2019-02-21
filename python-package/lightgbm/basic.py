@@ -712,7 +712,7 @@ class Dataset(object):
         self.pandas_categorical = None
         self.params_back_up = None
         self.feature_penalty = None
-        self.monotone_types = None
+        self.monotone_constraints = None
 
     def __del__(self):
         try:
@@ -1415,11 +1415,11 @@ class Dataset(object):
         Returns
         -------
         monotone_constraints : numpy array or None
-            Monotone constraints, -1, 0 or 1, for each feature in the Dataset
+            Monotone constraints: -1, 0 or 1, for each feature in the Dataset.
         """
-        if self.monotone_types is None:
-            self.monotone_types = self.get_field('monotone_constraints')
-        return self.monotone_types
+        if self.monotone_constraints is None:
+            self.monotone_constraints = self.get_field('monotone_constraints')
+        return self.monotone_constraints
 
     def get_init_score(self):
         """Get the initial score of the Dataset.
@@ -1536,8 +1536,7 @@ class Dataset(object):
     def add_features_from(self, other):
         """Add features from other Dataset to the current Dataset.
 
-        This will add every feature to the current dataset.
-        Both datasets must be constructed before calling this method.
+        Both Datasets must be constructed before calling this method.
 
         Parameters
         ----------
@@ -1546,7 +1545,8 @@ class Dataset(object):
 
         Returns
         -------
-        self : Dataset with the new features added
+        self : Dataset
+            Dataset with the new features added.
         """
         if self.handle is None or other.handle is None:
             raise ValueError('Both source and target Datasets must be constructed before adding features')
@@ -1562,6 +1562,11 @@ class Dataset(object):
         ----------
         filename : string
             Name of the output file.
+
+        Returns
+        -------
+        self : Dataset
+            Returns self.
 
         """
         _safe_call(_LIB.LGBM_DatasetDumpText(
