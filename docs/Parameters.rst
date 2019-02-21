@@ -451,7 +451,7 @@ IO Parameters
 
    -  if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
 
-   -  **Note**: can be used only in CLI version
+   -  **Note**: works only in case of loading data directly from file
 
 -  ``valid_data_initscores`` :raw-html:`<a id="valid_data_initscores" title="Permalink to this parameter" href="#valid_data_initscores">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
 
@@ -461,7 +461,7 @@ IO Parameters
 
    -  separate by ``,`` for multi-validation data
 
-   -  **Note**: can be used only in CLI version
+   -  **Note**: works only in case of loading data directly from file
 
 -  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
 

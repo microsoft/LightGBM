@@ -439,7 +439,7 @@ struct Config {
   // alias = init_score_filename, init_score_file, init_score, input_init_score
   // desc = path of file with training initial scores
   // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-  // desc = **Note**: can be used only in CLI version
+  // desc = **Note**: works only in case of loading data directly from file
   std::string initscore_filename = "";
 
   // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
@@ -447,7 +447,7 @@ struct Config {
   // desc = path(s) of file(s) with validation initial scores
   // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
   // desc = separate by ``,`` for multi-validation data
-  // desc = **Note**: can be used only in CLI version
+  // desc = **Note**: works only in case of loading data directly from file
   std::vector<std::string> valid_data_initscores;
 
   // alias = is_pre_partition
