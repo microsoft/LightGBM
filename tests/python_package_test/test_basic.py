@@ -228,7 +228,7 @@ class TestBasic(unittest.TestCase):
                 params2 = {}
             d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
             d1.add_features_from(d2)
-            actual = d1.get_monotone_types()
+            actual = d1.get_monotone_constraints()
             if isinstance(actual, np.ndarray):
                 actual = list(actual)
             self.assertEqual(expected, actual)
