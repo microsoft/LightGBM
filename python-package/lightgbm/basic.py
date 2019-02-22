@@ -1567,7 +1567,6 @@ class Dataset(object):
         -------
         self : Dataset
             Returns self.
-
         """
         _safe_call(_LIB.LGBM_DatasetDumpText(
             self.construct().handle,
