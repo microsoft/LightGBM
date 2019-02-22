@@ -104,10 +104,10 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   feature_used.resize(train_data->num_features());
 
   if(!config_->cegb_penalty_feature_coupled.empty()){
-    CHECK(config_->cegb_penalty_feature_coupled.size() == train_data_->num_total_features());
+    CHECK(config_->cegb_penalty_feature_coupled.size() == static_cast<size_t>(train_data_->num_total_features()));
   }
   if(!config_->cegb_penalty_feature_lazy.empty()){
-    CHECK(config_->cegb_penalty_feature_lazy.size() == train_data_->num_total_features());
+    CHECK(config_->cegb_penalty_feature_lazy.size() == static_cast<size_t>(train_data_->num_total_features()));
     feature_used_in_data = Common::EmptyBitset(train_data->num_features() * num_data_);
   }
 }
