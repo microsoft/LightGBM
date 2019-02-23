@@ -491,12 +491,8 @@ struct Config {
 
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+  // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
-
-  // alias = load_from_binary_file, binary_load, load_binary
-  // desc = set this to ``true`` to enable autoloading from previous saved binary datasets
-  // desc = set this to ``false`` to ignore binary datasets
-  bool enable_load_from_binary_file = true;
 
   // alias = has_header
   // desc = set this to ``true`` if input data has header
