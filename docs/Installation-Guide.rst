@@ -672,6 +672,82 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
      cmake -DUSE_SWIG=ON ..
      make -j4
 
+macOS
+^^^^^
+
+On macOS Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **Apple Clang** or **gcc**.
+
+First, install `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` is set properly).
+Then, either follow the **Apple Clang** or **gcc** installation instructions below.
+
+Apple Clang
+***********
+
+Only **Apple Clang** version 8.1 or higher is supported.
+
+1. Install `CMake`_ (3.12 or higher):
+
+   .. code::
+
+     brew install cmake
+
+2. Install **OpenMP**:
+
+   .. code::
+
+     brew install libomp
+
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     mkdir build ; cd build
+
+     # For Mojave (10.14)
+     cmake \
+       -DUSE_SWIG=ON \
+       -DAPPLE_OUTPUT_DYLIB=ON \
+       -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
+       -DOpenMP_C_LIB_NAMES="omp" \
+       -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
+       -DOpenMP_CXX_LIB_NAMES="omp" \
+       -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib \
+       ..
+
+     # For High Sierra or earlier (<= 10.13)
+     cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
+
+     make -j4
+
+gcc
+***
+
+1. Install `CMake`_ (3.2 or higher):
+
+   .. code::
+
+     brew install cmake
+
+2. Install **gcc**:
+
+   .. code::
+
+     brew install gcc
+
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
+     mkdir build ; cd build
+     cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
+     make -j4
+
+Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
+
+
 .. |download artifacts| image:: ./_static/images/artifacts-not-available.svg
    :target: https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html
 
