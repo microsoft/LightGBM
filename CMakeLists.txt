@@ -55,6 +55,9 @@ if(USE_SWIG)
   if(WIN32)
       FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/windows/x86_64")
       include_directories($ENV{JAVA_HOME}/include/win32)
+  elseif(APPLE)
+      FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/osx/x86_64")
+      include_directories($ENV{JAVA_HOME}/include/darwin)
   else()
       FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
       include_directories($ENV{JAVA_HOME}/include/linux)
@@ -196,6 +199,12 @@ if(USE_SWIG)
             COMMAND cp "${PROJECT_SOURCE_DIR}/Release/*.dll" com/microsoft/ml/lightgbm/windows/x86_64
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
     endif()
+  elseif(APPLE)
+    add_custom_command(TARGET _lightgbm_swig POST_BUILD
+            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+            COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
+            COMMAND cp "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib" com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
+            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
   else()
     add_custom_command(TARGET _lightgbm_swig POST_BUILD
 	    COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
