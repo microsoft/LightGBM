@@ -706,9 +706,6 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
 }
 
 int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
-                                // void* get_row_thread_init,
-                                // void* get_row_thread_free,
-                                // RowFunc get_row_funptr,
                               int num_rows,
                               int64_t num_col,
                               const char* parameters,
