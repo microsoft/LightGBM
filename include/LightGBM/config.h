@@ -439,7 +439,7 @@ struct Config {
   // alias = init_score_filename, init_score_file, init_score, input_init_score
   // desc = path of file with training initial scores
   // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-  // desc = **Note**: can be used only in CLI version
+  // desc = **Note**: works only in case of loading data directly from file
   std::string initscore_filename = "";
 
   // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
@@ -447,7 +447,7 @@ struct Config {
   // desc = path(s) of file(s) with validation initial scores
   // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
   // desc = separate by ``,`` for multi-validation data
-  // desc = **Note**: can be used only in CLI version
+  // desc = **Note**: works only in case of loading data directly from file
   std::vector<std::string> valid_data_initscores;
 
   // alias = is_pre_partition
@@ -486,19 +486,17 @@ struct Config {
   // alias = two_round_loading, use_two_round_loading
   // desc = set this to ``true`` if data file is too big to fit in memory
   // desc = by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
+  // desc = **Note**: works only in case of loading data directly from file
   bool two_round = false;
 
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+  // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
-
-  // alias = load_from_binary_file, binary_load, load_binary
-  // desc = set this to ``true`` to enable autoloading from previous saved binary datasets
-  // desc = set this to ``false`` to ignore binary datasets
-  bool enable_load_from_binary_file = true;
 
   // alias = has_header
   // desc = set this to ``true`` if input data has header
+  // desc = **Note**: works only in case of loading data directly from file
   bool header = false;
 
   // type = int or string
@@ -506,6 +504,7 @@ struct Config {
   // desc = used to specify the label column
   // desc = use number for index, e.g. ``label=0`` means column\_0 is the label
   // desc = add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
+  // desc = **Note**: works only in case of loading data directly from file
   std::string label_column = "";
 
   // type = int or string
@@ -513,6 +512,7 @@ struct Config {
   // desc = used to specify the weight column
   // desc = use number for index, e.g. ``weight=0`` means column\_0 is the weight
   // desc = add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
+  // desc = **Note**: works only in case of loading data directly from file
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
   std::string weight_column = "";
 
@@ -521,6 +521,7 @@ struct Config {
   // desc = used to specify the query/group id column
   // desc = use number for index, e.g. ``query=0`` means column\_0 is the query id
   // desc = add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
+  // desc = **Note**: works only in case of loading data directly from file
   // desc = **Note**: data should be grouped by query\_id
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
   std::string group_column = "";

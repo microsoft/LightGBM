@@ -927,6 +927,14 @@ int LGBM_DatasetSaveBinary(DatasetHandle handle,
   API_END();
 }
 
+int LGBM_DatasetDumpText(DatasetHandle handle,
+                         const char* filename) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  dataset->DumpTextFile(filename);
+  API_END();
+}
+
 int LGBM_DatasetSetField(DatasetHandle handle,
                          const char* field_name,
                          const void* field_data,
@@ -963,6 +971,9 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   } else if (dataset->GetDoubleField(field_name, out_len, reinterpret_cast<const double**>(out_ptr))) {
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
+  } else if(dataset->GetInt8Field(field_name, out_len, reinterpret_cast<const int8_t**>(out_ptr))){
+    *out_type = C_API_DTYPE_INT8;
+    is_success = true;
   }
   if (!is_success) { throw std::runtime_error("Field not found"); }
   if (*out_ptr == nullptr) { *out_len = 0; }
@@ -989,6 +1000,15 @@ int LGBM_DatasetGetNumFeature(DatasetHandle handle,
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   *out = dataset->num_total_features();
+  API_END();
+}
+
+int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
+                                DatasetHandle source) {
+  API_BEGIN();
+  auto target_d = reinterpret_cast<Dataset*>(target);
+  auto source_d = reinterpret_cast<Dataset*>(source);
+  target_d->addFeaturesFrom(source_d);
   API_END();
 }
 

@@ -107,6 +107,14 @@ def cint32_array_to_numpy(cptr, length):
         raise RuntimeError('Expected int pointer')
 
 
+def cint8_array_to_numpy(cptr, length):
+    """Convert a ctypes int pointer array to a numpy array."""
+    if isinstance(cptr, ctypes.POINTER(ctypes.c_int8)):
+        return np.fromiter(cptr, dtype=np.int8, count=length)
+    else:
+        raise RuntimeError('Expected int pointer')
+
+
 def c_str(string):
     """Convert a Python string to C string."""
     return ctypes.c_char_p(string.encode('utf-8'))
@@ -166,6 +174,7 @@ C_API_DTYPE_FLOAT32 = 0
 C_API_DTYPE_FLOAT64 = 1
 C_API_DTYPE_INT32 = 2
 C_API_DTYPE_INT64 = 3
+C_API_DTYPE_INT8 = 4
 
 """Matrix is row major in Python"""
 C_API_IS_ROW_MAJOR = 1
@@ -180,7 +189,9 @@ C_API_PREDICT_CONTRIB = 3
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
-                     "group": C_API_DTYPE_INT32}
+                     "group": C_API_DTYPE_INT32,
+                     "feature_penalty": C_API_DTYPE_FLOAT64,
+                     "monotone_constraints": C_API_DTYPE_INT8}
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'int64': 'int', 'uint8': 'int', 'uint16': 'int',
@@ -409,7 +420,7 @@ class _InnerPredictor(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             When data type is string, it represents the path of txt file.
         num_iteration : int, optional (default=-1)
@@ -652,7 +663,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -700,6 +711,8 @@ class Dataset(object):
         self._predictor = None
         self.pandas_categorical = None
         self.params_back_up = None
+        self.feature_penalty = None
+        self.monotone_constraints = None
 
     def __del__(self):
         try:
@@ -1009,7 +1022,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1179,6 +1192,8 @@ class Dataset(object):
             return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
             return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+        elif out_type.value == C_API_DTYPE_INT8:
+            return cint8_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int8)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
 
@@ -1382,6 +1397,30 @@ class Dataset(object):
             self.weight = self.get_field('weight')
         return self.weight
 
+    def get_feature_penalty(self):
+        """Get the feature penalty of the Dataset.
+
+        Returns
+        -------
+        feature_penalty : numpy array or None
+            Feature penalty for each feature in the Dataset.
+        """
+        if self.feature_penalty is None:
+            self.feature_penalty = self.get_field('feature_penalty')
+        return self.feature_penalty
+
+    def get_monotone_constraints(self):
+        """Get the monotone constraints of the Dataset.
+
+        Returns
+        -------
+        monotone_constraints : numpy array or None
+            Monotone constraints: -1, 0 or 1, for each feature in the Dataset.
+        """
+        if self.monotone_constraints is None:
+            self.monotone_constraints = self.get_field('monotone_constraints')
+        return self.monotone_constraints
+
     def get_init_score(self):
         """Get the initial score of the Dataset.
 
@@ -1399,7 +1438,7 @@ class Dataset(object):
 
         Returns
         -------
-        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse, list of numpy arrays or None
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, list of numpy arrays or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -1493,6 +1532,46 @@ class Dataset(object):
             else:
                 break
         return ref_chain
+
+    def add_features_from(self, other):
+        """Add features from other Dataset to the current Dataset.
+
+        Both Datasets must be constructed before calling this method.
+
+        Parameters
+        ----------
+        other : Dataset
+            The Dataset to take features from.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with the new features added.
+        """
+        if self.handle is None or other.handle is None:
+            raise ValueError('Both source and target Datasets must be constructed before adding features')
+        _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        return self
+
+    def dump_text(self, filename):
+        """Save Dataset to a text file.
+
+        This format cannot be loaded back in by LightGBM, but is useful for debugging purposes.
+
+        Parameters
+        ----------
+        filename : string
+            Name of the output file.
+
+        Returns
+        -------
+        self : Dataset
+            Returns self.
+        """
+        _safe_call(_LIB.LGBM_DatasetDumpText(
+            self.construct().handle,
+            c_str(filename)))
+        return self
 
 
 class Booster(object):
@@ -2162,7 +2241,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
         num_iteration : int or None, optional (default=None)
@@ -2207,7 +2286,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for refit.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
