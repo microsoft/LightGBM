@@ -22,7 +22,6 @@
 #include <stdexcept>
 #include <mutex>
 #include <functional>
-// #include <chrono>
 
 #include "./application/predictor.hpp"
 
