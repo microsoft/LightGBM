@@ -99,7 +99,7 @@
           int size;
   };
   
-  int LGBM_DatasetCreateFromCSRDirect(JNIEnv *jenv,
+  int LGBM_DatasetCreateFromCSRSpark(JNIEnv *jenv,
                                      jobjectArray arrayOfSparseVector,
                                      int num_rows,
                                      int64_t num_col,
