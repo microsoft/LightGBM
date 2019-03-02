@@ -174,7 +174,7 @@ class TestBasic(unittest.TestCase):
         d = lgb.Dataset(X, params={'feature_penalty': [0.5],
                                    'monotone_constraints': [1]}).construct()
         np.testing.assert_almost_equal(d.get_feature_penalty(), [0.5])
-        np.testing.assert_almost_equal(d.get_monotone_constraints(), [1])
+        np.testing.assert_array_equal(d.get_monotone_constraints(), [1])
         d = lgb.Dataset(X).construct()
         self.assertIsNone(d.get_feature_penalty())
         self.assertIsNone(d.get_monotone_constraints())
