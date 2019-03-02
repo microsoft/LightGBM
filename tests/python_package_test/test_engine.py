@@ -783,7 +783,7 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X_train, y_train, params=params)
         gbm = lgb.train(params, lgb_train, num_boost_round=2)
         pred = gbm.predict(X_train)
-        np.testing.assert_allclose(pred, expected_pred)
+        self.assertTrue(np.allclose(pred, expected_pred))
 
     def test_constant_features_regression(self):
         params = {
