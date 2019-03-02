@@ -103,9 +103,7 @@ class TestBasic(unittest.TestCase):
 
     def test_add_features_throws_if_datasets_unconstructed(self):
         X1 = np.random.random((1000, 1))
-        X2 = np.random.random((100, 1))
-        d1 = lgb.Dataset(X1)
-        d2 = lgb.Dataset(X2)
+        X2 = np.random.random((1000, 1))
         with self.assertRaises(ValueError):
             d1 = lgb.Dataset(X1)
             d2 = lgb.Dataset(X2)
