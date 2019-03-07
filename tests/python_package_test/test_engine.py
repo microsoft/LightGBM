@@ -766,57 +766,55 @@ class TestEngine(unittest.TestCase):
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
 
-    def test_constant_features(self, y_true=None, expected_pred=None, more_params=None):
-        if y_true is not None and expected_pred is not None:
-            X_train = np.ones((len(y_true), 1))
-            y_train = np.array(y_true)
-            params = {
-                'objective': 'regression',
-                'num_class': 1,
-                'verbose': -1,
-                'min_data': 1,
-                'num_leaves': 2,
-                'learning_rate': 1,
-                'min_data_in_bin': 1,
-                'boost_from_average': True
-            }
-            params.update(more_params)
-            lgb_train = lgb.Dataset(X_train, y_train, params=params)
-            gbm = lgb.train(params, lgb_train,
-                            num_boost_round=2)
-            pred = gbm.predict(X_train)
-            self.assertTrue(np.allclose(pred, expected_pred))
+    def check_constant_features(self, y_true, expected_pred, more_params):
+        X_train = np.ones((len(y_true), 1))
+        y_train = np.array(y_true)
+        params = {
+            'objective': 'regression',
+            'num_class': 1,
+            'verbose': -1,
+            'min_data': 1,
+            'num_leaves': 2,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'boost_from_average': True
+        }
+        params.update(more_params)
+        lgb_train = lgb.Dataset(X_train, y_train, params=params)
+        gbm = lgb.train(params, lgb_train, num_boost_round=2)
+        pred = gbm.predict(X_train)
+        self.assertTrue(np.allclose(pred, expected_pred))
 
     def test_constant_features_regression(self):
         params = {
             'objective': 'regression'
         }
-        self.test_constant_features([0.0, 10.0, 0.0, 10.0], 5.0, params)
-        self.test_constant_features([0.0, 1.0, 2.0, 3.0], 1.5, params)
-        self.test_constant_features([-1.0, 1.0, -2.0, 2.0], 0.0, params)
+        self.check_constant_features([0.0, 10.0, 0.0, 10.0], 5.0, params)
+        self.check_constant_features([0.0, 1.0, 2.0, 3.0], 1.5, params)
+        self.check_constant_features([-1.0, 1.0, -2.0, 2.0], 0.0, params)
 
     def test_constant_features_binary(self):
         params = {
             'objective': 'binary'
         }
-        self.test_constant_features([0.0, 10.0, 0.0, 10.0], 0.5, params)
-        self.test_constant_features([0.0, 1.0, 2.0, 3.0], 0.75, params)
+        self.check_constant_features([0.0, 10.0, 0.0, 10.0], 0.5, params)
+        self.check_constant_features([0.0, 1.0, 2.0, 3.0], 0.75, params)
 
     def test_constant_features_multiclass(self):
         params = {
             'objective': 'multiclass',
             'num_class': 3
         }
-        self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
-        self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
 
     def test_constant_features_multiclassova(self):
         params = {
             'objective': 'multiclassova',
             'num_class': 3
         }
-        self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
-        self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
 
     def test_fpreproc(self):
         def preprocess_data(dtrain, dtest, params):
