@@ -13,7 +13,8 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, DataTable,
+from .compat import (PANDAS_INSTALLED, DataFrame, Series,
+                     DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
                      json, json_default_with_numpy,
@@ -2426,6 +2427,53 @@ class Booster(object):
             return result.astype(int)
         else:
             return result
+
+    def get_split_value_histogram(self, feature, bins=None):
+        """Get split value histogram of the specified feature.
+
+        Parameters
+        ----------
+        feature : int or string
+            The feature name or index the histogram is calculated for.
+            If int, interpreted as index.
+            If string, interpreted as name.
+        bins : int or None, optional (default=None)
+            The maximum number of bins.
+            If > number of unique split values or None, the number of bins equals number of unique split values.
+
+        Returns
+        -------
+        result : numpy array or pandas DataFrame (if pandas is installed)
+            The histogram of used splitting values for the specified feature.
+        """
+        def add(root):
+            """Recursively add thresholds."""
+            if 'split_index' in root:  # non-leaf
+                if feature_names is not None and isinstance(feature, string_type):
+                    split_feature = feature_names[root['split_feature']]
+                else:
+                    split_feature = root['split_feature']
+                if split_feature == feature:
+                    values.append(root['threshold'])
+                add(root['left_child'])
+                add(root['right_child'])
+
+        model = self.dump_model()
+        feature_names = model.get('feature_names')
+        tree_infos = model['tree_info']
+        values = []
+        for tree_info in tree_infos:
+            add(tree_info['tree_structure'])
+
+        n_unique = len(np.unique(values))
+        bins = max(min(n_unique, bins) if bins is not None else n_unique, 1)
+        hist = np.histogram(values, bins=bins)
+        hist = np.column_stack((hist[1][1:], hist[0]))
+        hist = hist[hist[:, 1] > 0]
+        if PANDAS_INSTALLED:
+            return DataFrame(hist, columns=['SplitValue', 'Count'])
+        else:
+            return hist
 
     def __inner_eval(self, data_name, data_idx, feval=None):
         """Evaluate training or validation data."""

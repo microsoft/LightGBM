@@ -1242,3 +1242,26 @@ class TestEngine(unittest.TestCase):
             np.testing.assert_allclose(y_pred, y_pred_new)
         except MemoryError:
             self.skipTest('not enough RAM')
+
+    def test_get_split_value_histogram(self):
+        X, y = load_boston(True)
+        lgb_train = lgb.Dataset(X, y)
+        gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=20)
+        self.assertTupleEqual(gbm.get_split_value_histogram(0).shape, (10, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=999).shape, (10, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=-1).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=0).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=1).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=2).shape, (2, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=6).shape, (6, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=7).shape, (6, 2))
+        if lgb.compat.PANDAS_INSTALLED:
+            np.testing.assert_almost_equal(gbm.get_split_value_histogram(0).values,
+                                           gbm.get_split_value_histogram(gbm.feature_name()[0]).values)
+            np.testing.assert_almost_equal(gbm.get_split_value_histogram(X.shape[-1] - 1).values,
+                                           gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1]).values)
+        else:
+            np.testing.assert_almost_equal(gbm.get_split_value_histogram(0),
+                                           gbm.get_split_value_histogram(gbm.feature_name()[0]))
+            np.testing.assert_almost_equal(gbm.get_split_value_histogram(X.shape[-1] - 1),
+                                           gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1]))
