@@ -2428,8 +2428,8 @@ class Booster(object):
         else:
             return result
 
-    def get_split_value_histogram(self, feature, bins=None):
-        """Get split value histogram of the specified feature.
+    def get_split_value_histogram(self, feature, bins=None, xgboost_style=False):
+        """Get split value histogram for the specified feature.
 
         Parameters
         ----------
@@ -2437,14 +2437,24 @@ class Booster(object):
             The feature name or index the histogram is calculated for.
             If int, interpreted as index.
             If string, interpreted as name.
-        bins : int or None, optional (default=None)
+        bins : int, string or None, optional (default=None)
             The maximum number of bins.
-            If > number of unique split values or None, the number of bins equals number of unique split values.
+            If None, or int and > number of unique split values and ``xgboost_style=True``,
+            the number of bins equals number of unique split values.
+            If string, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+        xgboost_style : bool, optional (default=False)
+            Whether the returned result should be in the same form as it is in XGBoost.
+            If False, the returned value is tuple of 2 numpy arrays as it is in ``numpy.histogram()`` function.
+            If True, the returned value is matrix, in which the first column is the right edges of non-empty bins
+            and the second one is the histogram values.
 
         Returns
         -------
-        result : numpy array or pandas DataFrame (if pandas is installed)
-            The histogram of used splitting values for the specified feature.
+        result_tuple : tuple of 2 numpy arrays
+            If ``xgboost_style=False``, the values of the histogram of used splitting values for the specified feature
+            and the bin edges.
+        result_array_like : numpy array or pandas DataFrame (if pandas is installed)
+            If ``xgboost_style=True``, the histogram of used splitting values for the specified feature.
         """
         def add(root):
             """Recursively add thresholds."""
@@ -2465,15 +2475,19 @@ class Booster(object):
         for tree_info in tree_infos:
             add(tree_info['tree_structure'])
 
-        n_unique = len(np.unique(values))
-        bins = max(min(n_unique, bins) if bins is not None else n_unique, 1)
-        hist = np.histogram(values, bins=bins)
-        hist = np.column_stack((hist[1][1:], hist[0]))
-        hist = hist[hist[:, 1] > 0]
-        if PANDAS_INSTALLED:
-            return DataFrame(hist, columns=['SplitValue', 'Count'])
+        if bins is None or isinstance(bins, integer_types) and xgboost_style:
+            n_unique = len(np.unique(values))
+            bins = max(min(n_unique, bins) if bins is not None else n_unique, 1)
+        hist, bin_edges = np.histogram(values, bins=bins)
+        if xgboost_style:
+            ret = np.column_stack((bin_edges[1:], hist))
+            ret = ret[ret[:, 1] > 0]
+            if PANDAS_INSTALLED:
+                return DataFrame(ret, columns=['SplitValue', 'Count'])
+            else:
+                return ret
         else:
-            return hist
+            return hist, bin_edges
 
     def __inner_eval(self, data_name, data_idx, feval=None):
         """Evaluate training or validation data."""

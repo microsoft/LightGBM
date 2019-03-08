@@ -1247,21 +1247,72 @@ class TestEngine(unittest.TestCase):
         X, y = load_boston(True)
         lgb_train = lgb.Dataset(X, y)
         gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=20)
-        self.assertTupleEqual(gbm.get_split_value_histogram(0).shape, (10, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=999).shape, (10, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=-1).shape, (1, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=0).shape, (1, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=1).shape, (1, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=2).shape, (2, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=6).shape, (6, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(0, bins=7).shape, (6, 2))
+        # test XGBoost-style return value
+        params = {'feature': 0, 'xgboost_style': True}
+        self.assertTupleEqual(gbm.get_split_value_histogram(**params).shape, (10, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=999, **params).shape, (10, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=-1, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=0, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=1, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=2, **params).shape, (2, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=6, **params).shape, (6, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=7, **params).shape, (6, 2))
         if lgb.compat.PANDAS_INSTALLED:
-            np.testing.assert_almost_equal(gbm.get_split_value_histogram(0).values,
-                                           gbm.get_split_value_histogram(gbm.feature_name()[0]).values)
-            np.testing.assert_almost_equal(gbm.get_split_value_histogram(X.shape[-1] - 1).values,
-                                           gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1]).values)
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(0, xgboost_style=True).values,
+                gbm.get_split_value_histogram(gbm.feature_name()[0], xgboost_style=True).values
+            )
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(X.shape[-1] - 1, xgboost_style=True).values,
+                gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1], xgboost_style=True).values
+            )
         else:
-            np.testing.assert_almost_equal(gbm.get_split_value_histogram(0),
-                                           gbm.get_split_value_histogram(gbm.feature_name()[0]))
-            np.testing.assert_almost_equal(gbm.get_split_value_histogram(X.shape[-1] - 1),
-                                           gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1]))
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(0, xgboost_style=True),
+                gbm.get_split_value_histogram(gbm.feature_name()[0], xgboost_style=True)
+            )
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(X.shape[-1] - 1, xgboost_style=True),
+                gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1], xgboost_style=True)
+            )
+        # test numpy-style return value
+        hist, bins = gbm.get_split_value_histogram(0)
+        self.assertEqual(len(hist), 22)
+        self.assertEqual(len(bins), 23)
+        hist, bins = gbm.get_split_value_histogram(0, bins=999)
+        self.assertEqual(len(hist), 999)
+        self.assertEqual(len(bins), 1000)
+        self.assertRaises(ValueError, gbm.get_split_value_histogram, 0, bins=-1)
+        self.assertRaises(ValueError, gbm.get_split_value_histogram, 0, bins=0)
+        hist, bins = gbm.get_split_value_histogram(0, bins=1)
+        self.assertEqual(len(hist), 1)
+        self.assertEqual(len(bins), 2)
+        hist, bins = gbm.get_split_value_histogram(0, bins=2)
+        self.assertEqual(len(hist), 2)
+        self.assertEqual(len(bins), 3)
+        hist, bins = gbm.get_split_value_histogram(0, bins=6)
+        self.assertEqual(len(hist), 6)
+        self.assertEqual(len(bins), 7)
+        hist, bins = gbm.get_split_value_histogram(0, bins=7)
+        self.assertEqual(len(hist), 7)
+        self.assertEqual(len(bins), 8)
+        hist_idx, bins_idx = gbm.get_split_value_histogram(0)
+        hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[0])
+        np.testing.assert_array_equal(hist_idx, hist_name)
+        np.testing.assert_almost_equal(bins_idx, bins_name)
+        hist_idx, bins_idx = gbm.get_split_value_histogram(X.shape[-1] - 1)
+        hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1])
+        np.testing.assert_array_equal(hist_idx, hist_name)
+        np.testing.assert_almost_equal(bins_idx, bins_name)
+        # test bins string type
+        if np.__version__ > '1.11.0':
+            hist_vals, bin_edges = gbm.get_split_value_histogram(0, bins='auto')
+            hist = gbm.get_split_value_histogram(0, bins='auto', xgboost_style=True)
+            if lgb.compat.PANDAS_INSTALLED:
+                mask = hist_vals > 0
+                np.testing.assert_array_equal(hist_vals[mask], hist['Count'].values)
+                np.testing.assert_almost_equal(bin_edges[1:][mask], hist['SplitValue'].values)
+            else:
+                mask = hist_vals > 0
+                np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
+                np.testing.assert_almost_equal(bin_edges[1:][mask], hist[:, 0])
