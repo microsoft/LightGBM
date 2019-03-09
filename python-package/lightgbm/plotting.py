@@ -141,6 +141,109 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
+def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=0.8,
+                               xlim=None, ylim=None,
+                               title='Split value histogram for feature with @index/name@ @feature@',
+                               xlabel='Feature split value', ylabel='Count',
+                               figsize=None, grid=True, **kwargs):
+    """Plot split value histogram for the specified feature of the model.
+
+    Parameters
+    ----------
+    booster : Booster or LGBMModel
+        Booster or LGBMModel instance of which split value histogram should be plotted.
+    feature : int or string
+        The feature name or index the histogram is plotted for.
+        If int, interpreted as index.
+        If string, interpreted as name.
+    bins : int, string or None, optional (default=None)
+        The maximum number of bins.
+        If None, the number of bins equals number of unique split values.
+        If string, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+    ax : matplotlib.axes.Axes or None, optional (default=None)
+        Target axes instance.
+        If None, new figure and axes will be created.
+    width_coef : float, optional (default=0.8)
+        Coefficient for histogram bar width.
+    xlim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.xlim()``.
+    ylim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.ylim()``.
+    title : string or None, optional (default="Split value histogram for feature with @index/name@ @feature@")
+        Axes title.
+        If None, title is disabled.
+        @feature@ placeholder can be used, and it will be replaced with the value of ``feature`` parameter.
+        @index/name@ placeholder can be used,
+        and it will be replaced with ``index`` word in case of ``int`` type ``feature`` parameter
+        or ``name`` word in case of ``string`` type ``feature`` parameter.
+    xlabel : string or None, optional (default="Feature split value")
+        X-axis title label.
+        If None, title is disabled.
+    ylabel : string or None, optional (default="Count")
+        Y-axis title label.
+        If None, title is disabled.
+    figsize : tuple of 2 elements or None, optional (default=None)
+        Figure size.
+    grid : bool, optional (default=True)
+        Whether to add a grid for axes.
+    **kwargs
+        Other parameters passed to ``ax.bar()``.
+
+    Returns
+    -------
+    ax : matplotlib.axes.Axes
+        The plot with specified model's feature split value histogram.
+    """
+    if MATPLOTLIB_INSTALLED:
+        import matplotlib.pyplot as plt
+    else:
+        raise ImportError('You must install matplotlib to plot split value histogram.')
+
+    if isinstance(booster, LGBMModel):
+        booster = booster.booster_
+    elif not isinstance(booster, Booster):
+        raise TypeError('booster must be Booster or LGBMModel.')
+
+    hist, bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
+    if np.count_nonzero(hist) == 0:
+        raise ValueError('Cannot plot split value histogram, '
+                         'because feature {} was not used in splitting'.format(feature))
+    width = width_coef * (bins[1] - bins[0])
+    centred = (bins[:-1] + bins[1:]) / 2        
+
+    if ax is None:
+        if figsize is not None:
+            _check_not_tuple_of_2_elements(figsize, 'figsize')
+        _, ax = plt.subplots(1, 1, figsize=figsize)
+
+    ax.bar(centred, hist, align='center', width=width, **kwargs)
+
+    if xlim is not None:
+        _check_not_tuple_of_2_elements(xlim, 'xlim')
+    else:
+        range_result = bins[-1] - bins[0]
+        xlim = (bins[0] - range_result * 0.2, bins[-1] + range_result * 0.2)
+    ax.set_xlim(xlim)
+
+    ax.set_yticks([int(tick) for tick in ax.get_yticks()])
+    if ylim is not None:
+        _check_not_tuple_of_2_elements(ylim, 'ylim')
+    else:
+        ylim = (0, max(hist) * 1.1)
+    ax.set_ylim(ylim)
+
+    if title is not None:
+        title = title.replace('@feature@', str(feature))
+        title = title.replace('@index/name@', ('name' if isinstance(feature, string_type) else 'index'))
+        ax.set_title(title)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+    ax.grid(grid)
+    return ax
+
+
 def plot_metric(booster, metric=None, dataset_names=None,
                 ax=None, xlim=None, ylim=None,
                 title='Metric during training',
