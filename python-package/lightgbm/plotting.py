@@ -209,7 +209,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         raise ValueError('Cannot plot split value histogram, '
                          'because feature {} was not used in splitting'.format(feature))
     width = width_coef * (bins[1] - bins[0])
-    centred = (bins[:-1] + bins[1:]) / 2        
+    centred = (bins[:-1] + bins[1:]) / 2
 
     if ax is None:
         if figsize is not None:
