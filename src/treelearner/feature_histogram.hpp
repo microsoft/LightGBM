@@ -384,7 +384,7 @@ class FeatureHistogram {
     double current_gain = GetLeafSplitGain(sum_right_gradient, sum_right_hessian,
                                            meta_->config->lambda_l1, l2,
                                            meta_->config->max_delta_step)
-        + GetLeafSplitGain(sum_left_gradient, sum_right_hessian,
+        + GetLeafSplitGain(sum_left_gradient, sum_left_hessian,
                            meta_->config->lambda_l1, l2,
                            meta_->config->max_delta_step);
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {
