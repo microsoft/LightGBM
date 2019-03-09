@@ -151,7 +151,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     Parameters
     ----------
     booster : Booster or LGBMModel
-        Booster or LGBMModel instance of which split value histogram should be plotted.
+        Booster or LGBMModel instance of which feature split value histogram should be plotted.
     feature : int or string
         The feature name or index the histogram is plotted for.
         If int, interpreted as index.
