@@ -2464,7 +2464,10 @@ class Booster(object):
                 else:
                     split_feature = root['split_feature']
                 if split_feature == feature:
-                    values.append(root['threshold'])
+                    if isinstance(root['threshold'], string_type):
+                        raise TypeError('Cannot compute split value histogram for the categorical feature')
+                    else:
+                        values.append(root['threshold'])
                 add(root['left_child'])
                 add(root['right_child'])
 
