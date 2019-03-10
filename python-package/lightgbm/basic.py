@@ -2437,6 +2437,11 @@ class Booster(object):
             The feature name or index the histogram is calculated for.
             If int, interpreted as index.
             If string, interpreted as name.
+
+            Note
+            ----
+            Categorical features are not supported.
+
         bins : int, string or None, optional (default=None)
             The maximum number of bins.
             If None, or int and > number of unique split values and ``xgboost_style=True``,
