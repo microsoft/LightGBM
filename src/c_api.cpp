@@ -217,7 +217,7 @@ class Booster {
         is_raw_score = false;
       }
 
-        // TODO: config could be optimized away... (maybe using lambda callback?)
+      // TODO: config could be optimized away... (maybe using lambda callback?)
       single_row_predictor_.reset(new Predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
       single_row_num_pred_in_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, predict_contrib);
