@@ -125,12 +125,14 @@
       auto values = (jdoubleArray)jenv->CallObjectMethod(objSparseVec, sparseVectorValues);
       int size = jenv->GetArrayLength(indices);
       
+      // Note: when testing on larger data (e.g. 288k rows per partition and 36mio rows total)
+      // using GetPrimitiveArrayCritical resulted in a dead-lock
       // lock arrays
-      int* indices0 = (int*)jenv->GetPrimitiveArrayCritical(indices, 0);
-      double* values0 = (double*)jenv->GetPrimitiveArrayCritical(values, 0);
+      // int* indices0 = (int*)jenv->GetPrimitiveArrayCritical(indices, 0);
+      // double* values0 = (double*)jenv->GetPrimitiveArrayCritical(values, 0);
       // in test-usecase an alternative to GetPrimitiveArrayCritical as it performs copies
-      // int* indices0 = jenv->GetIntArrayElements(indices, 0);
-      // double* values0 = jenv->GetDoubleArrayElements(values, 0);
+      int* indices0 = jenv->GetIntArrayElements(indices, 0);
+      double* values0 = jenv->GetDoubleArrayElements(values, 0);
       
       jniCache.push_back({indices, values, indices0, values0, size});
    }
@@ -153,10 +155,10 @@
    int ret = LGBM_DatasetCreateFromCSRFunc(&row_func, num_rows, num_col, parameters, reference, out);
    
    for (auto& jc : jniCache) {
-      jenv->ReleasePrimitiveArrayCritical(jc.values, jc.values0, JNI_ABORT);
-      jenv->ReleasePrimitiveArrayCritical(jc.indices, jc.indices0, JNI_ABORT);
-      // jenv->ReleaseDoubleArrayElements(jc.values, jc.values0, JNI_ABORT);
-      // jenv->ReleaseIntArrayElements(jc.indices, jc.indices0, JNI_ABORT);
+      // jenv->ReleasePrimitiveArrayCritical(jc.values, jc.values0, JNI_ABORT);
+      // jenv->ReleasePrimitiveArrayCritical(jc.indices, jc.indices0, JNI_ABORT);
+      jenv->ReleaseDoubleArrayElements(jc.values, jc.values0, JNI_ABORT);
+      jenv->ReleaseIntArrayElements(jc.indices, jc.indices0, JNI_ABORT);
    }
    
    return ret;
