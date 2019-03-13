@@ -53,5 +53,5 @@ test_script:
         if (!$?) { $host.SetShouldExit(-1) }
       }  # run all examples
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
-  - conda install -q -y -n test-env ipywidgets notebook
+  - conda install -q -y -n test-env ipywidgets notebook "tornado=5.1.1"
   - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks
