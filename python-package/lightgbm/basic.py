@@ -2437,6 +2437,11 @@ class Booster(object):
             The feature name or index the histogram is calculated for.
             If int, interpreted as index.
             If string, interpreted as name.
+
+            Note
+            ----
+            Categorical features are not supported.
+
         bins : int, string or None, optional (default=None)
             The maximum number of bins.
             If None, or int and > number of unique split values and ``xgboost_style=True``,
@@ -2464,7 +2469,10 @@ class Booster(object):
                 else:
                     split_feature = root['split_feature']
                 if split_feature == feature:
-                    values.append(root['threshold'])
+                    if isinstance(root['threshold'], string_type):
+                        raise LightGBMError('Cannot compute split value histogram for the categorical feature')
+                    else:
+                        values.append(root['threshold'])
                 add(root['left_child'])
                 add(root['right_child'])
 
