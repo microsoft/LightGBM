@@ -20,7 +20,6 @@ install:
   - ps: >-
       switch ($env:PYTHON_VERSION) {
           "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
-          "3.4" {$env:MINICONDA = """C:\Miniconda34-x64"""}
           "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
           "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
           "3.7" {$env:MINICONDA = """C:\Miniconda37-x64"""}
