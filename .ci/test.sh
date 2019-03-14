@@ -139,6 +139,6 @@ matplotlib.use\(\"Agg\"\)\
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     for f in *.py; do python $f || exit -1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
-    conda install -q -y -n $CONDA_ENV ipywidgets notebook
+    conda install -q -y -n $CONDA_ENV ipywidgets notebook "tornado=5.1.1"
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 fi
