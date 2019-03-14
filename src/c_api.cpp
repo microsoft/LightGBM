@@ -1435,17 +1435,17 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 // data is array of pointers to individual rows
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
-	return [=](int row_idx) {
-		auto inner_function = RowFunctionFromDenseMatric(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
-		auto raw_values = inner_function(0);
-		std::vector<std::pair<int, double>> ret;
-		for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
-			if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
-				ret.emplace_back(i, raw_values[i]);
-			}
-		}
-		return ret;
-	};
+  return [=](int row_idx) {
+    auto inner_function = RowFunctionFromDenseMatric(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
+    auto raw_values = inner_function(0);
+    std::vector<std::pair<int, double>> ret;
+    for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
+      if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
+        ret.emplace_back(i, raw_values[i]);
+      }
+    }
+    return ret;
+  };
 }
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
