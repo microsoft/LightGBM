@@ -230,7 +230,6 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             if first_metric_only:
-                # if first_metrics_only==True, then the only first metrics is used for early stopping
                 break
     _callback.order = 30
     return _callback
