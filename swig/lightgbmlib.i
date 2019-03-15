@@ -18,10 +18,10 @@
 
 %inline %{
   char * LGBM_BoosterSaveModelToStringSWIG(BoosterHandle handle,
-					   int start_iteration,
-					   int num_iteration,
-					   int64_t buffer_len,
-					   int64_t* out_len) {
+                                           int start_iteration,
+                                           int num_iteration,
+                                           int64_t buffer_len,
+                                           int64_t* out_len) {
     char* dst = new char[buffer_len];
     int result = LGBM_BoosterSaveModelToString(handle, start_iteration, num_iteration, buffer_len, out_len, dst);
     // Reallocate to use larger length
@@ -38,9 +38,9 @@
   }
 
   char ** LGBM_BoosterGetEvalNamesSWIG(BoosterHandle handle,
-				       int eval_counts) {
+                                       int eval_counts) {
     char** dst = new char*[eval_counts];
-    for (int i = 0; i < eval_counts; i++) {
+    for (int i = 0; i < eval_counts; ++i) {
       dst[i] = new char[128];
     }
     int result = LGBM_BoosterGetEvalNames(handle, &eval_counts, dst);
