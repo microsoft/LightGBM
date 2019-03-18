@@ -163,6 +163,27 @@ gbm = lgb.train(params,
 
 print('Finished 40 - 50 rounds with self-defined objective function and eval metric...')
 
+
+# another self-defined eval metric
+# f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
+# accuracy
+def accuracy(preds, train_data):
+    labels = train_data.get_label()
+    return 'accuracy', np.mean(labels == (preds > 0.5)), True
+
+
+gbm = lgb.train(params,
+                lgb_train,
+                num_boost_round=10,
+                init_model=gbm,
+                fobj=loglikelihood,
+                feval=lambda preds, train_data: [binary_error(preds, train_data),
+                                                 accuracy(preds, train_data)],
+                valid_sets=lgb_eval)
+
+print('Finished 50 - 60 rounds with self-defined objective function '
+      'and multiple self-defined eval metrics...')
+
 print('Starting a new training job...')
 
 

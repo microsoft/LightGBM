@@ -1,10 +1,12 @@
 /* lightgbmlib.i */
 %module lightgbmlib
 %ignore LGBM_BoosterSaveModelToString;
+%ignore LGBM_BoosterGetEvalNames;
 %{
 /* Includes the header in the wrapper code */
 #include "../include/LightGBM/export.h"
 #include "../include/LightGBM/utils/log.h"
+#include "../include/LightGBM/utils/common.h"
 #include "../include/LightGBM/c_api.h"
 %}
 
@@ -16,12 +18,32 @@
 
 %inline %{
   char * LGBM_BoosterSaveModelToStringSWIG(BoosterHandle handle,
-					   int start_iteration,
-					   int num_iteration,
-					   int64_t buffer_len,
-					   int64_t* out_len) {
+                                           int start_iteration,
+                                           int num_iteration,
+                                           int64_t buffer_len,
+                                           int64_t* out_len) {
     char* dst = new char[buffer_len];
     int result = LGBM_BoosterSaveModelToString(handle, start_iteration, num_iteration, buffer_len, out_len, dst);
+    // Reallocate to use larger length
+    if (*out_len > buffer_len) {
+      delete [] dst;
+      int64_t realloc_len = *out_len;
+      dst = new char[realloc_len];
+      result = LGBM_BoosterSaveModelToString(handle, start_iteration, num_iteration, realloc_len, out_len, dst);
+    }
+    if (result != 0) {
+      return nullptr;
+    }
+    return dst;
+  }
+
+  char ** LGBM_BoosterGetEvalNamesSWIG(BoosterHandle handle,
+                                       int eval_counts) {
+    char** dst = new char*[eval_counts];
+    for (int i = 0; i < eval_counts; ++i) {
+      dst[i] = new char[128];
+    }
+    int result = LGBM_BoosterGetEvalNames(handle, &eval_counts, dst);
     if (result != 0) {
       return nullptr;
     }
@@ -49,6 +71,7 @@
 %array_functions(float, floatArray)
 %array_functions(int, intArray)
 %array_functions(long, longArray)
+%array_functions(char *, stringArray)
 
 /* Custom pointer manipulation template */
 %define %pointer_manipulation(TYPE,NAME)

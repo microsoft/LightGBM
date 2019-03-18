@@ -1246,17 +1246,17 @@ class TestEngine(unittest.TestCase):
 
     def test_get_split_value_histogram(self):
         X, y = load_boston(True)
-        lgb_train = lgb.Dataset(X, y)
+        lgb_train = lgb.Dataset(X, y, categorical_feature=[2])
         gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=20)
         # test XGBoost-style return value
         params = {'feature': 0, 'xgboost_style': True}
-        self.assertTupleEqual(gbm.get_split_value_histogram(**params).shape, (10, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(bins=999, **params).shape, (10, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(**params).shape, (9, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=999, **params).shape, (9, 2))
         self.assertTupleEqual(gbm.get_split_value_histogram(bins=-1, **params).shape, (1, 2))
         self.assertTupleEqual(gbm.get_split_value_histogram(bins=0, **params).shape, (1, 2))
         self.assertTupleEqual(gbm.get_split_value_histogram(bins=1, **params).shape, (1, 2))
         self.assertTupleEqual(gbm.get_split_value_histogram(bins=2, **params).shape, (2, 2))
-        self.assertTupleEqual(gbm.get_split_value_histogram(bins=6, **params).shape, (6, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=6, **params).shape, (5, 2))
         self.assertTupleEqual(gbm.get_split_value_histogram(bins=7, **params).shape, (6, 2))
         if lgb.compat.PANDAS_INSTALLED:
             np.testing.assert_almost_equal(
@@ -1278,8 +1278,8 @@ class TestEngine(unittest.TestCase):
             )
         # test numpy-style return value
         hist, bins = gbm.get_split_value_histogram(0)
-        self.assertEqual(len(hist), 22)
-        self.assertEqual(len(bins), 23)
+        self.assertEqual(len(hist), 23)
+        self.assertEqual(len(bins), 24)
         hist, bins = gbm.get_split_value_histogram(0, bins=999)
         self.assertEqual(len(hist), 999)
         self.assertEqual(len(bins), 1000)
@@ -1317,6 +1317,8 @@ class TestEngine(unittest.TestCase):
                 mask = hist_vals > 0
                 np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
                 np.testing.assert_almost_equal(bin_edges[1:][mask], hist[:, 0])
+        # test histogram is disabled for categorical features
+        self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
 
     def test_early_stopping_for_only_first_metric(self):
         X, y = load_boston(True)
