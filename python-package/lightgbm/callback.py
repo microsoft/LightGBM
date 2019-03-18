@@ -161,6 +161,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     to continue training.
     Requires at least one validation data and one metric.
     If there's more than one, will check all of them. But the training data is ignored anyway.
+    To check only the first metric set ``first_metric_only`` to True.
 
     Parameters
     ----------
