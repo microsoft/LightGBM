@@ -152,6 +152,25 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
                                                 const DatasetHandle reference,
                                                 DatasetHandle* out);
 
+
+/*!
+* \brief create a dataset from CSR format through callbacks
+* \param get_row_funptr pointer to std::function<void(int idx, std::vector<std::pair<int, double>>& ret). CAlled for every row and expected to clear and fill ret
+* \param num_rows number of rows
+* \param num_col number of columns
+* \param parameters additional parameters
+* \param reference used to align bin mapper with other dataset, nullptr means don't used
+* \param out created dataset
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
+                                                int num_rows,
+                                                int64_t num_col,
+                                                const char* parameters,
+                                                const DatasetHandle reference,
+                                                DatasetHandle* out);
+
+
 /*!
 * \brief create a dataset from CSC format
 * \param col_ptr pointer to col headers
@@ -622,7 +641,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
 /*!
 * \brief make prediction for an new data set
 *        Note:  should pre-allocate memory for out_result,
-*               for noraml and raw score: its length is equal to num_class * num_data
+*               for normal and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
 * \param indptr pointer to row headers
@@ -659,9 +678,50 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
+* \brief make prediction for an new data set. This method re-uses the internal predictor structure 
+*        from previous calls and is optimized for single row invocation.
+*        Note:  should pre-allocate memory for out_result,
+*               for normal and raw score: its length is equal to num_class * num_data
+*               for leaf index, its length is equal to num_class * num_data * num_iteration
+* \param handle handle
+* \param indptr pointer to row headers
+* \param indptr_type type of indptr, can be C_API_DTYPE_INT32 or C_API_DTYPE_INT64
+* \param indices findex
+* \param data fvalue
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
+* \param nindptr number of rows in the matrix + 1
+* \param nelem number of nonzero elements in the matrix
+* \param num_col number of columns; when it's set to 0, then guess from data
+* \param predict_type
+*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
+*          C_API_PREDICT_RAW_SCORE: raw score
+*          C_API_PREDICT_LEAF_INDEX: leaf index
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
+* \param out_len len of output result
+* \param out_result used to set a pointer to array, should allocate memory before call this function
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
+                                                const void* indptr,
+                                                int indptr_type,
+                                                const int32_t* indices,
+                                                const void* data,
+                                                int data_type,
+                                                int64_t nindptr,
+                                                int64_t nelem,
+                                                int64_t num_col,
+                                                int predict_type,
+                                                int num_iteration,
+                                                const char* parameter,
+                                                int64_t* out_len,
+                                                double* out_result);
+
+
+/*!
 * \brief make prediction for an new data set
 *        Note:  should pre-allocate memory for out_result,
-*               for noraml and raw score: its length is equal to num_class * num_data
+*               for normal and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
 * \param col_ptr pointer to col headers
@@ -700,7 +760,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
 /*!
 * \brief make prediction for an new data set
 *        Note:  should pre-allocate memory for out_result,
-*               for noraml and raw score: its length is equal to num_class * num_data
+*               for normal and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
 * \param data pointer to the data space
@@ -723,6 +783,38 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 int data_type,
                                                 int32_t nrow,
                                                 int32_t ncol,
+                                                int is_row_major,
+                                                int predict_type,
+                                                int num_iteration,
+                                                const char* parameter,
+                                                int64_t* out_len,
+                                                double* out_result);
+
+/*!
+* \brief make prediction for an new data set. This method re-uses the internal predictor structure 
+*        from previous calls and is optimized for single row invocation.
+*        Note:  should pre-allocate memory for out_result,
+*               for normal and raw score: its length is equal to num_class * num_data
+*               for leaf index, its length is equal to num_class * num_data * num_iteration
+* \param handle handle
+* \param data pointer to the data space
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
+* \param nrow number of rows
+* \param ncol number columns
+* \param is_row_major 1 for row major, 0 for column major
+* \param predict_type
+*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
+*          C_API_PREDICT_RAW_SCORE: raw score
+*          C_API_PREDICT_LEAF_INDEX: leaf index
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
+* \param out_len len of output result
+* \param out_result used to set a pointer to array, should allocate memory before call this function
+* \return 0 when succeed, -1 when failure happens
+*/LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
+                                                const void* data,
+                                                int data_type,
+                                                int ncol,
                                                 int is_row_major,
                                                 int predict_type,
                                                 int num_iteration,
