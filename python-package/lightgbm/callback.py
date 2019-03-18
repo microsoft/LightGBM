@@ -166,8 +166,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     ----------
     stopping_rounds : int
        The possible number of rounds without the trend occurrence.
-    first_metric_only : bool
-       Whether to use only first order of metrics for early stopping.
+    first_metric_only : bool, optional (default=False)
+       Whether to use only the first metric for early stopping.
     verbose : bool, optional (default=True)
         Whether to print message with early stopping information.
 
