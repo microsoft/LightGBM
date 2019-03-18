@@ -766,57 +766,55 @@ class TestEngine(unittest.TestCase):
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
 
-    def test_constant_features(self, y_true=None, expected_pred=None, more_params=None):
-        if y_true is not None and expected_pred is not None:
-            X_train = np.ones((len(y_true), 1))
-            y_train = np.array(y_true)
-            params = {
-                'objective': 'regression',
-                'num_class': 1,
-                'verbose': -1,
-                'min_data': 1,
-                'num_leaves': 2,
-                'learning_rate': 1,
-                'min_data_in_bin': 1,
-                'boost_from_average': True
-            }
-            params.update(more_params)
-            lgb_train = lgb.Dataset(X_train, y_train, params=params)
-            gbm = lgb.train(params, lgb_train,
-                            num_boost_round=2)
-            pred = gbm.predict(X_train)
-            self.assertTrue(np.allclose(pred, expected_pred))
+    def check_constant_features(self, y_true, expected_pred, more_params):
+        X_train = np.ones((len(y_true), 1))
+        y_train = np.array(y_true)
+        params = {
+            'objective': 'regression',
+            'num_class': 1,
+            'verbose': -1,
+            'min_data': 1,
+            'num_leaves': 2,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'boost_from_average': True
+        }
+        params.update(more_params)
+        lgb_train = lgb.Dataset(X_train, y_train, params=params)
+        gbm = lgb.train(params, lgb_train, num_boost_round=2)
+        pred = gbm.predict(X_train)
+        self.assertTrue(np.allclose(pred, expected_pred))
 
     def test_constant_features_regression(self):
         params = {
             'objective': 'regression'
         }
-        self.test_constant_features([0.0, 10.0, 0.0, 10.0], 5.0, params)
-        self.test_constant_features([0.0, 1.0, 2.0, 3.0], 1.5, params)
-        self.test_constant_features([-1.0, 1.0, -2.0, 2.0], 0.0, params)
+        self.check_constant_features([0.0, 10.0, 0.0, 10.0], 5.0, params)
+        self.check_constant_features([0.0, 1.0, 2.0, 3.0], 1.5, params)
+        self.check_constant_features([-1.0, 1.0, -2.0, 2.0], 0.0, params)
 
     def test_constant_features_binary(self):
         params = {
             'objective': 'binary'
         }
-        self.test_constant_features([0.0, 10.0, 0.0, 10.0], 0.5, params)
-        self.test_constant_features([0.0, 1.0, 2.0, 3.0], 0.75, params)
+        self.check_constant_features([0.0, 10.0, 0.0, 10.0], 0.5, params)
+        self.check_constant_features([0.0, 1.0, 2.0, 3.0], 0.75, params)
 
     def test_constant_features_multiclass(self):
         params = {
             'objective': 'multiclass',
             'num_class': 3
         }
-        self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
-        self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
 
     def test_constant_features_multiclassova(self):
         params = {
             'objective': 'multiclassova',
             'num_class': 3
         }
-        self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
-        self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
 
     def test_fpreproc(self):
         def preprocess_data(dtrain, dtest, params):
@@ -1244,3 +1242,79 @@ class TestEngine(unittest.TestCase):
             np.testing.assert_allclose(y_pred, y_pred_new)
         except MemoryError:
             self.skipTest('not enough RAM')
+
+    def test_get_split_value_histogram(self):
+        X, y = load_boston(True)
+        lgb_train = lgb.Dataset(X, y, categorical_feature=[2])
+        gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=20)
+        # test XGBoost-style return value
+        params = {'feature': 0, 'xgboost_style': True}
+        self.assertTupleEqual(gbm.get_split_value_histogram(**params).shape, (9, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=999, **params).shape, (9, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=-1, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=0, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=1, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=2, **params).shape, (2, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=6, **params).shape, (5, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=7, **params).shape, (6, 2))
+        if lgb.compat.PANDAS_INSTALLED:
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(0, xgboost_style=True).values,
+                gbm.get_split_value_histogram(gbm.feature_name()[0], xgboost_style=True).values
+            )
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(X.shape[-1] - 1, xgboost_style=True).values,
+                gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1], xgboost_style=True).values
+            )
+        else:
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(0, xgboost_style=True),
+                gbm.get_split_value_histogram(gbm.feature_name()[0], xgboost_style=True)
+            )
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(X.shape[-1] - 1, xgboost_style=True),
+                gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1], xgboost_style=True)
+            )
+        # test numpy-style return value
+        hist, bins = gbm.get_split_value_histogram(0)
+        self.assertEqual(len(hist), 23)
+        self.assertEqual(len(bins), 24)
+        hist, bins = gbm.get_split_value_histogram(0, bins=999)
+        self.assertEqual(len(hist), 999)
+        self.assertEqual(len(bins), 1000)
+        self.assertRaises(ValueError, gbm.get_split_value_histogram, 0, bins=-1)
+        self.assertRaises(ValueError, gbm.get_split_value_histogram, 0, bins=0)
+        hist, bins = gbm.get_split_value_histogram(0, bins=1)
+        self.assertEqual(len(hist), 1)
+        self.assertEqual(len(bins), 2)
+        hist, bins = gbm.get_split_value_histogram(0, bins=2)
+        self.assertEqual(len(hist), 2)
+        self.assertEqual(len(bins), 3)
+        hist, bins = gbm.get_split_value_histogram(0, bins=6)
+        self.assertEqual(len(hist), 6)
+        self.assertEqual(len(bins), 7)
+        hist, bins = gbm.get_split_value_histogram(0, bins=7)
+        self.assertEqual(len(hist), 7)
+        self.assertEqual(len(bins), 8)
+        hist_idx, bins_idx = gbm.get_split_value_histogram(0)
+        hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[0])
+        np.testing.assert_array_equal(hist_idx, hist_name)
+        np.testing.assert_almost_equal(bins_idx, bins_name)
+        hist_idx, bins_idx = gbm.get_split_value_histogram(X.shape[-1] - 1)
+        hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1])
+        np.testing.assert_array_equal(hist_idx, hist_name)
+        np.testing.assert_almost_equal(bins_idx, bins_name)
+        # test bins string type
+        if np.__version__ > '1.11.0':
+            hist_vals, bin_edges = gbm.get_split_value_histogram(0, bins='auto')
+            hist = gbm.get_split_value_histogram(0, bins='auto', xgboost_style=True)
+            if lgb.compat.PANDAS_INSTALLED:
+                mask = hist_vals > 0
+                np.testing.assert_array_equal(hist_vals[mask], hist['Count'].values)
+                np.testing.assert_almost_equal(bin_edges[1:][mask], hist['SplitValue'].values)
+            else:
+                mask = hist_vals > 0
+                np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
+                np.testing.assert_almost_equal(bin_edges[1:][mask], hist[:, 0])
+        # test histogram is disabled for categorical features
+        self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)

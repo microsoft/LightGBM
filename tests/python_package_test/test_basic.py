@@ -103,9 +103,7 @@ class TestBasic(unittest.TestCase):
 
     def test_add_features_throws_if_datasets_unconstructed(self):
         X1 = np.random.random((1000, 1))
-        X2 = np.random.random((100, 1))
-        d1 = lgb.Dataset(X1)
-        d2 = lgb.Dataset(X2)
+        X2 = np.random.random((1000, 1))
         with self.assertRaises(ValueError):
             d1 = lgb.Dataset(X1)
             d2 = lgb.Dataset(X2)
@@ -122,7 +120,7 @@ class TestBasic(unittest.TestCase):
     def test_add_features_equal_data_on_alternating_used_unused(self):
         X = np.random.random((1000, 5))
         X[:, [1, 3]] = 0
-        names = ['col_%d' % (i,) for i in range(5)]
+        names = ['col_%d' % i for i in range(5)]
         for j in range(1, 5):
             d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
             d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
@@ -145,7 +143,7 @@ class TestBasic(unittest.TestCase):
     def test_add_features_same_booster_behaviour(self):
         X = np.random.random((1000, 5))
         X[:, [1, 3]] = 0
-        names = ['col_%d' % (i,) for i in range(5)]
+        names = ['col_%d' % i for i in range(5)]
         for j in range(1, 5):
             d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
             d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
@@ -171,19 +169,15 @@ class TestBasic(unittest.TestCase):
                 d1txt = d1f.read()
             self.assertEqual(dtxt, d1txt)
 
-    def test_get_feature_penalty(self):
+    def test_get_feature_penalty_and_monotone_constraints(self):
         X = np.random.random((1000, 1))
-        d = lgb.Dataset(X, params={'feature_penalty': [0.5]}).construct()
-        self.assertEqual(np.asarray([0.5]), d.get_feature_penalty())
+        d = lgb.Dataset(X, params={'feature_penalty': [0.5],
+                                   'monotone_constraints': [1]}).construct()
+        np.testing.assert_almost_equal(d.get_feature_penalty(), [0.5])
+        np.testing.assert_array_equal(d.get_monotone_constraints(), [1])
         d = lgb.Dataset(X).construct()
-        self.assertEqual(None, d.get_feature_penalty())
-
-    def test_get_monotone_constraints(self):
-        X = np.random.random((1000, 1))
-        d = lgb.Dataset(X, params={'monotone_constraints': [1]}).construct()
-        self.assertEqual(np.asarray([1]), d.get_monotone_constraints())
-        d = lgb.Dataset(X).construct()
-        self.assertEqual(None, d.get_monotone_constraints())
+        self.assertIsNone(d.get_feature_penalty())
+        self.assertIsNone(d.get_monotone_constraints())
 
     def test_add_features_feature_penalty(self):
         X = np.random.random((1000, 2))
@@ -193,21 +187,16 @@ class TestBasic(unittest.TestCase):
             (None, [0.5], [1, 0.5]),
             ([0.5], [0.5], [0.5, 0.5])]
         for (p1, p2, expected) in test_cases:
-            if p1 is not None:
-                params1 = {'feature_penalty': p1}
-            else:
-                params1 = {}
+            params1 = {'feature_penalty': p1} if p1 is not None else {}
             d1 = lgb.Dataset(X[:, 0].reshape((-1, 1)), params=params1).construct()
-            if p2 is not None:
-                params2 = {'feature_penalty': p2}
-            else:
-                params2 = {}
+            params2 = {'feature_penalty': p2} if p2 is not None else {}
             d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
             d1.add_features_from(d2)
             actual = d1.get_feature_penalty()
-            if isinstance(actual, np.ndarray):
-                actual = list(actual)
-            self.assertEqual(expected, actual)
+            if expected is None:
+                self.assertIsNone(actual)
+            else:
+                np.testing.assert_almost_equal(actual, expected)
 
     def test_add_features_monotone_types(self):
         X = np.random.random((1000, 2))
@@ -217,18 +206,13 @@ class TestBasic(unittest.TestCase):
             (None, [1], [0, 1]),
             ([1], [-1], [1, -1])]
         for (p1, p2, expected) in test_cases:
-            if p1 is not None:
-                params1 = {'monotone_constraints': p1}
-            else:
-                params1 = {}
+            params1 = {'monotone_constraints': p1} if p1 is not None else {}
             d1 = lgb.Dataset(X[:, 0].reshape((-1, 1)), params=params1).construct()
-            if p2 is not None:
-                params2 = {'monotone_constraints': p2}
-            else:
-                params2 = {}
+            params2 = {'monotone_constraints': p2} if p2 is not None else {}
             d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
             d1.add_features_from(d2)
             actual = d1.get_monotone_constraints()
-            if isinstance(actual, np.ndarray):
-                actual = list(actual)
-            self.assertEqual(expected, actual)
+            if actual is None:
+                self.assertIsNone(actual)
+            else:
+                np.testing.assert_array_equal(actual, expected)
