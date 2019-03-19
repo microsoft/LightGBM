@@ -14,11 +14,8 @@ source activate $CONDA_ENV
 cd $BUILD_DIRECTORY
 
 if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
-    if [[ $PYTHON_VERSION == "2.7" ]]; then
-        conda -q -y -n $CONDA_ENV mock
-    fi
-    conda install -q -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"
-    pip install --user rstcheck
+    cd $BUILD_DIRECTORY/docs
+    pip install --user -r requirements.txt rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1

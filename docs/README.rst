@@ -14,17 +14,7 @@ Build
 
 You can build the documentation locally. Just run in ``docs`` folder
 
-for Python 3.x:
-
 .. code:: sh
 
-    pip install sphinx "sphinx_rtd_theme>=0.3"
-    make html
-
- 
-for Python 2.x:
-
-.. code:: sh
-
-    pip install mock sphinx "sphinx_rtd_theme>=0.3"
+    pip install -r requirements.txt
     make html
