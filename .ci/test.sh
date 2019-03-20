@@ -21,7 +21,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
+    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile `find . -type f -name "*.rst"` || exit -1
     # build docs and check them for broken links
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
