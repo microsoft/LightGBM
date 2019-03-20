@@ -43,7 +43,7 @@ for mod_name in MOCK_MODULES:
 # -- General configuration ------------------------------------------------
 
 os.environ['LIGHTGBM_BUILD_DOC'] = '1'
-C_API = os.environ.get('C_API', '') != 'NO'
+C_API = os.environ.get('C_API', '').lower().strip() != 'no'
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
