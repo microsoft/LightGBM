@@ -73,7 +73,7 @@ Refer to `docs README <./README.rst>`__.
 C API
 -----
 
-Refer to `C API <./c_api/unabridged_api.rst>`__ or the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/c_api.h>`__ file, from which the documentation is generated.
+Refer to `C API <./C-API.rst>`__ or the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/c_api.h>`__ file, from which the documentation is generated.
 
 High Level Language Package
 ---------------------------

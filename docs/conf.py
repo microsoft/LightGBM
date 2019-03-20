@@ -21,11 +21,13 @@ import datetime
 import os
 import sys
 import sphinx
-from sphinx.errors import VersionRequirementError
 
-curr_path = os.path.dirname(os.path.realpath(__file__))
-libpath = os.path.join(curr_path, '../python-package/')
-sys.path.insert(0, libpath)
+from sphinx.errors import VersionRequirementError
+from subprocess import PIPE, Popen, STDOUT
+
+CURR_PATH = os.path.abspath(os.path.dirname(__file__))
+LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
+sys.path.insert(0, LIB_PATH)
 
 # -- mock out modules
 try:
@@ -109,25 +111,15 @@ autoclass_content = 'both'
 if C_API:
     extensions.extend([
         'breathe',
-        'exhale'
     ])
-
     breathe_projects = {
-        "LightGBM": "./doxyoutput/xml"
+        "LightGBM": os.path.join(CURR_PATH, 'doxyoutput', 'xml')
     }
     breathe_default_project = "LightGBM"
-
-    exhale_args = {
-        "containmentFolder": "./c_api",
-        "rootFileName": "C_API.rst",
-        "rootFileTitle": "C API",
-        "fullApiSubSectionTitle": "C API",
-        "doxygenStripFromPath": "..",
-        "exhaleExecutesDoxygen": True,
-        "exhaleDoxygenStdin": """INPUT = ../include/LightGBM/c_api.h""",
-        "fullToctreeMaxDepth": 1,
-        "contentsDirectives": False,
+    breathe_domain_by_extension = {
+        "h": "c",
     }
+    breathe_show_define_initializer = True
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -153,6 +145,48 @@ html_static_path = ['_static']
 htmlhelp_basename = 'LightGBMdoc'
 
 
+def generate_doxygen_xml(app):
+    """Generate XML documentation for C API by Doxygen.
+
+    Parameters
+    ----------
+    app : object
+        The application object representing the Sphinx process.
+    """
+    doxygen_args = [
+        "INPUT={}".format(os.path.join(CURR_PATH, os.path.pardir,
+                                       'include', 'LightGBM', 'c_api.h')),
+        "OUTPUT_DIRECTORY={}".format(os.path.join(CURR_PATH, 'doxyoutput')),
+        "GENERATE_HTML=NO",
+        "GENERATE_LATEX=NO",
+        "GENERATE_XML=YES",
+        "XML_OUTPUT=xml",
+        "XML_PROGRAMLISTING=YES",
+        'ALIASES="rst=\verbatim embed:rst:leading-asterisk"',
+        'ALIASES+="endrst=\endverbatim"',
+        "ENABLE_PREPROCESSING=YES",
+        "MACRO_EXPANSION=YES",
+        "EXPAND_ONLY_PREDEF=NO",
+        "SKIP_FUNCTION_MACROS=NO",
+        "SORT_BRIEF_DOCS=YES",
+#        "WARN_AS_ERROR=YES",
+    ]
+    doxygen_input = '\n'.join(doxygen_args)
+    if sys.version[0] == "3":
+        doxygen_input = bytes(doxygen_input, "utf-8")
+    if not os.path.exists(os.path.join(CURR_PATH, 'doxyoutput')):
+        os.makedirs(os.path.join(CURR_PATH, 'doxyoutput'))
+    try:
+        with open(os.devnull, "w") as devnull_file:
+            process = Popen(["doxygen", "-"],
+                            stdin=PIPE, stdout=devnull_file, stderr=STDOUT)
+            process.communicate(doxygen_input)
+            if process.returncode != 0:
+                raise RuntimeError
+    except BaseException:
+        raise Exception("An error has occurred while executing Doxygen")
+
+
 def setup(app):
     """Add new elements at Sphinx initialization time.
 
@@ -161,4 +195,6 @@ def setup(app):
     app : object
         The application object representing the Sphinx process.
     """
+    if C_API:
+        app.connect("builder-inited", generate_doxygen_xml)
     app.add_javascript("js/script.js")

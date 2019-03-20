@@ -342,7 +342,6 @@ docs/_build/
 
 # Doxygen documentation
 docs/doxyoutput
-docs/c_api
 
 # PyBuilder
 target/

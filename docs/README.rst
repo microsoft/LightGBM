@@ -2,7 +2,7 @@ Documentation
 =============
 
 Documentation for LightGBM is generated using `Sphinx <http://www.sphinx-doc.org/>`__
-and `Exhale <https://github.com/svenevs/exhale>`__, which works on top of `Doxygen <http://www.doxygen.nl/index.html>`__ output.
+and `Breathe <https://breathe.readthedocs.io/>`__, which works on top of `Doxygen <http://www.doxygen.nl/index.html>`__ output.
 
 List of parameters and their descriptions in `Parameters.rst <./Parameters.rst>`__
 is generated automatically from comments in `config file <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/config.h>`__
