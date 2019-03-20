@@ -221,10 +221,12 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
 
 /*!
 * \brief create dataset from array of dense matrices
+* \param nmat number of matrices
 * \param data pointer to the data space
 * \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
 * \param nrow number of rows
 * \param ncol number columns
+* \param is_row_major 1 for row major, 0 for column major
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
@@ -379,7 +381,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
 * \brief create an new boosting learner
 * \param train_data training data set
 * \param parameters format: 'key1=value1 key2=value2'
-* \prama out handle of created Booster
+* \param out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterCreate(const DatasetHandle train_data,
@@ -476,7 +478,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_fi
 /*!
 * \brief Refit the tree model using the new data (online learning)
 * \param handle handle
-* \param leaf_preds 
+* \param leaf_preds
 * \param nrow number of rows of leaf_preds
 * \param ncol number of columns of leaf_preds
 * \return 0 when succeed, -1 when failure happens
@@ -506,6 +508,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRollbackOneIter(BoosterHandle handle);
 
 /*!
 * \brief Get iteration of current boosting rounds
+* \param handle handle
 * \param out_iteration iteration of boosting rounds
 * \return 0 when succeed, -1 when failure happens
 */
@@ -513,6 +516,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int*
 
 /*!
 * \brief Get number of tree per iteration
+* \param handle handle
 * \param out_tree_per_iteration number of tree per iteration
 * \return 0 when succeed, -1 when failure happens
 */
@@ -520,6 +524,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterNumModelPerIteration(BoosterHandle handle, int
 
 /*!
 * \brief Get number of weak sub-models
+* \param handle handle
 * \param out_models number of weak sub-models
 * \return 0 when succeed, -1 when failure happens
 */
@@ -527,6 +532,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterNumberOfTotalModel(BoosterHandle handle, int* 
 
 /*!
 * \brief Get number of eval
+* \param handle handle
 * \param out_len total number of eval results
 * \return 0 when succeed, -1 when failure happens
 */
@@ -534,6 +540,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_l
 
 /*!
 * \brief Get name of eval
+* \param handle handle
 * \param out_len total number of eval results
 * \param out_strs names of eval result, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
@@ -542,6 +549,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_le
 
 /*!
 * \brief Get name of features
+* \param handle handle
 * \param out_len total number of features
 * \param out_strs names of features, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
@@ -550,6 +558,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetFeatureNames(BoosterHandle handle, int* out
 
 /*!
 * \brief Get number of features
+* \param handle handle
 * \param out_len total number of features
 * \return 0 when succeed, -1 when failure happens
 */
@@ -562,7 +571,7 @@ Note: 1. you should call LGBM_BoosterGetEvalNames first to get the name of evalu
 * \param handle handle
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
-* \param out_result float arrary contains result
+* \param out_results float arrary contains result
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetEval(BoosterHandle handle,
@@ -678,7 +687,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
-* \brief make prediction for an new data set. This method re-uses the internal predictor structure 
+* \brief make prediction for an new data set. This method re-uses the internal predictor structure
 *        from previous calls and is optimized for single row invocation.
 *        Note:  should pre-allocate memory for out_result,
 *               for normal and raw score: its length is equal to num_class * num_data
@@ -791,7 +800,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
-* \brief make prediction for an new data set. This method re-uses the internal predictor structure 
+* \brief make prediction for an new data set. This method re-uses the internal predictor structure
 *        from previous calls and is optimized for single row invocation.
 *        Note:  should pre-allocate memory for out_result,
 *               for normal and raw score: its length is equal to num_class * num_data
@@ -799,7 +808,6 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
 * \param handle handle
 * \param data pointer to the data space
 * \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
-* \param nrow number of rows
 * \param ncol number columns
 * \param is_row_major 1 for row major, 0 for column major
 * \param predict_type
@@ -825,6 +833,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
 /*!
 * \brief save model into file
 * \param handle handle
+* \param start_iteration start iteration that should be saved
 * \param num_iteration, <= 0 means save all
 * \param filename file name
 * \return 0 when succeed, -1 when failure happens
@@ -837,6 +846,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
 /*!
 * \brief save model to string
 * \param handle handle
+* \param start_iteration start iteration that should be saved
 * \param num_iteration, <= 0 means save all
 * \param buffer_len string buffer length, if buffer_len < out_len, re-allocate buffer
 * \param out_len actual output length
@@ -853,6 +863,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
 /*!
 * \brief dump model to json
 * \param handle handle
+* \param start_iteration start iteration that should be dumped
 * \param num_iteration, <= 0 means save all
 * \param buffer_len string buffer length, if buffer_len < out_len, re-allocate buffer
 * \param out_len actual output length

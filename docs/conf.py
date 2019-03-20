@@ -169,7 +169,7 @@ def generate_doxygen_xml(app):
         "EXPAND_ONLY_PREDEF=NO",
         "SKIP_FUNCTION_MACROS=NO",
         "SORT_BRIEF_DOCS=YES",
-#        "WARN_AS_ERROR=YES",
+        "WARN_AS_ERROR=YES",
     ]
     doxygen_input = '\n'.join(doxygen_args)
     if sys.version[0] == "3":
