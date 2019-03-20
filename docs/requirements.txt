@@ -1,3 +1,2 @@
-sphinx
-sphinx_rtd_theme >= 0.3
-mock; python_version < '3'
+-r requirements_base.txt
+exhale

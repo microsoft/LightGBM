@@ -1,7 +1,8 @@
 Documentation
 =============
 
-Documentation for LightGBM is generated using `Sphinx <http://www.sphinx-doc.org/>`__.
+Documentation for LightGBM is generated using `Sphinx <http://www.sphinx-doc.org/>`__
+and `Exhale <https://github.com/svenevs/exhale>`__, which works on top of `Doxygen <http://www.doxygen.nl/index.html>`__ output.
 
 List of parameters and their descriptions in `Parameters.rst <./Parameters.rst>`__
 is generated automatically from comments in `config file <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/config.h>`__
@@ -12,9 +13,18 @@ After each commit on ``master``, documentation is updated and published to `Read
 Build
 -----
 
-You can build the documentation locally. Just run in ``docs`` folder
+You can build the documentation locally. Just install Doxygen and run in ``docs`` folder
 
 .. code:: sh
 
     pip install -r requirements.txt
+    make html
+
+If you faced any problems with Doxygen installation or you simply do not need documentation for C code,
+it is possible to build the documentation without it:
+
+.. code:: sh
+
+    pip install -r requirements_base.txt
+    export C_API=NO || set C_API=NO
     make html

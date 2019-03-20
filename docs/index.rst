@@ -27,6 +27,7 @@ For more details, please refer to `Features <./Features.rst>`__.
    Experiments <Experiments>
    Parameters <Parameters>
    Parameters Tuning <Parameters-Tuning>
+   C API <c_api/unabridged_api>
    Python API <Python-API>
    Parallel Learning Guide <Parallel-Learning-Guide>
    GPU Tutorial <GPU-Tutorial>
@@ -42,6 +43,9 @@ For more details, please refer to `Features <./Features.rst>`__.
    GPU-Windows
    gcc-Tips
    README
+   c_api/C_API
+   c_api/class_view_hierarchy
+   c_api/file_view_hierarchy
 
 Indices and Tables
 ==================
