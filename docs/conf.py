@@ -44,6 +44,7 @@ for mod_name in MOCK_MODULES:
 
 class IgnoredDirective(Directive):
     """Stub for unknown directives."""
+
     has_content = True
 
     def run(self):
