@@ -22,6 +22,7 @@ import os
 import sys
 import sphinx
 
+from docutils.parsers.rst import Directive
 from sphinx.errors import VersionRequirementError
 from subprocess import PIPE, Popen, STDOUT
 
@@ -39,6 +40,16 @@ MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
                 'sklearn', 'matplotlib', 'pandas', 'graphviz']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
+
+
+class IgnoredDirective(Directive):
+    """Stub for unknown directives."""
+    has_content = True
+
+    def run(self):
+        """Do nothing."""
+        return []
+
 
 # -- General configuration ------------------------------------------------
 
@@ -197,4 +208,6 @@ def setup(app):
     """
     if C_API:
         app.connect("builder-inited", generate_doxygen_xml)
+    else:
+        app.add_directive('doxygenfile', IgnoredDirective)
     app.add_javascript("js/script.js")
