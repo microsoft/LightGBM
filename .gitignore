@@ -341,7 +341,7 @@ instance/
 docs/_build/
 
 # Doxygen documentation
-docs/doxyoutput
+docs/doxyoutput/
 
 # PyBuilder
 target/
