@@ -80,7 +80,6 @@ author = 'Microsoft Corporation'
 BASE_DIR = os.path.abspath('../')
 VERSION_FILE = os.path.join(BASE_DIR, "VERSION.txt")
 
-
 with open(VERSION_FILE, 'r') as f:
 
     # The short X.Y version.
