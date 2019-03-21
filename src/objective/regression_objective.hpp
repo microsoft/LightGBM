@@ -430,7 +430,7 @@ class RegressionPoissonLoss: public RegressionL2loss {
     // Safety check of labels
     label_t miny;
     double sumy;
-    Common::ObtainMinMaxSum(label_, num_data_, &miny, (label_t*)nullptr, &sumy);
+    Common::ObtainMinMaxSum(label_, num_data_, &miny, static_cast<label_t*>(nullptr), &sumy);
     if (miny < 0.0f) {
       Log::Fatal("[%s]: at least one target label is negative", GetName());
     }

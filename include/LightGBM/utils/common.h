@@ -340,7 +340,7 @@ inline static void Uint32ToStr(uint32_t value, char* buffer) {
   }
 
   if (value < 10) {
-    *--buffer = char(value) + '0';
+    *--buffer = static_cast<char>(value) + '0';
   }
   else {
     const unsigned i = value << 1;
