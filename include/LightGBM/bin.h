@@ -447,6 +447,11 @@ class Bin {
   * \return The bin data object
   */
   static Bin* CreateSparseBin(data_size_t num_data, int num_bin);
+
+  /*!
+  * \brief Deep copy the bin
+  */
+  virtual Bin* Clone() = 0;
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {
