@@ -5,6 +5,9 @@
 
 #include <cstring>
 #include <cmath>
+#include <algorithm>
+#include <string>
+#include <vector>
 
 namespace LightGBM {
 /*!

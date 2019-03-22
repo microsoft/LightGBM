@@ -1,23 +1,23 @@
 #ifndef LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
-#include <LightGBM/tree_learner.h>
 
-#include <LightGBM/utils/random.h>
-#include <LightGBM/utils/array_args.h>
+#include <cmath>
+#include <cstdio>
+#include <memory>
+#include <random>
+#include <string>
+#include <vector>
 
+#include "data_partition.hpp"
+#include "feature_histogram.hpp"
+#include "leaf_splits.hpp"
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
-
-#include "feature_histogram.hpp"
+#include <LightGBM/tree_learner.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/random.h>
 #include "split_info.hpp"
-#include "data_partition.hpp"
-#include "leaf_splits.hpp"
 
-#include <cstdio>
-#include <vector>
-#include <random>
-#include <cmath>
-#include <memory>
 #ifdef USE_GPU
 // Use 4KBytes aligned allocator for ordered gradients and ordered hessians when GPU is enabled.
 // This is necessary to pin the two arrays in memory and make transferring faster.

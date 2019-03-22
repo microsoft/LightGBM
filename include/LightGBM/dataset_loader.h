@@ -3,6 +3,10 @@
 
 #include <LightGBM/dataset.h>
 
+#include <string>
+#include <vector>
+#include <unordered_set>
+
 namespace LightGBM {
 
 class DatasetLoader {

@@ -1,20 +1,20 @@
 #ifndef LIGHTGBM_DATASET_H_
 #define LIGHTGBM_DATASET_H_
 
-#include <LightGBM/utils/random.h>
-#include <LightGBM/utils/text_reader.h>
-#include <LightGBM/utils/openmp_wrapper.h>
-
-#include <LightGBM/meta.h>
-#include <LightGBM/config.h>
-#include <LightGBM/feature_group.h>
-
-#include <vector>
-#include <utility>
 #include <functional>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_set>
-#include <mutex>
+#include <utility>
+#include <vector>
+
+#include <LightGBM/config.h>
+#include <LightGBM/feature_group.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/random.h>
+#include <LightGBM/utils/text_reader.h>
 
 namespace LightGBM {
 

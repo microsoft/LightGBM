@@ -1,4 +1,5 @@
 #include <LightGBM/objective_function.h>
+
 #include "regression_objective.hpp"
 #include "binary_objective.hpp"
 #include "rank_objective.hpp"

@@ -1,6 +1,13 @@
 #ifndef LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 
+#include <cmath>
+#include <cstdio>
+#include <memory>
+#include <random>
+#include <string>
+#include <vector>
+
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/dataset.h>
@@ -11,12 +18,6 @@
 #include "data_partition.hpp"
 #include "split_info.hpp"
 #include "leaf_splits.hpp"
-
-#include <cstdio>
-#include <vector>
-#include <random>
-#include <cmath>
-#include <memory>
 
 #ifdef USE_GPU
 

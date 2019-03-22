@@ -1,13 +1,14 @@
 #ifndef LIGHTGBM_TREELEARNER_SPLIT_INFO_HPP_
 #define LIGHTGBM_TREELEARNER_SPLIT_INFO_HPP_
 
-#include <LightGBM/meta.h>
-
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <limits>
 #include <functional>
+#include <vector>
+
+#include <LightGBM/meta.h>
 
 namespace LightGBM {
 

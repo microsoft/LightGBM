@@ -1,14 +1,13 @@
 #ifndef LIGHTGBM_IO_PARSER_HPP_
 #define LIGHTGBM_IO_PARSER_HPP_
-#include <LightGBM/dataset.h>
-
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/log.h>
-
 
 #include <unordered_map>
-#include <vector>
 #include <utility>
+#include <vector>
+
+#include <LightGBM/dataset.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
 
 namespace LightGBM {
 

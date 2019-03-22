@@ -1,13 +1,16 @@
 #ifndef LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 #define LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 
-#include "split_info.hpp"
+#include <cstring>
+#include <cmath>
+#include <algorithm>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/dataset.h>
-
-#include <cstring>
-#include <cmath>
+#include "split_info.hpp"
 
 namespace LightGBM {
 

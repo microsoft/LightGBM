@@ -1,18 +1,15 @@
 #include <LightGBM/dataset.h>
+
+#include <cstdio>
+#include <chrono>
+#include <limits>
+#include <sstream>
+#include <unordered_map>
+
 #include <LightGBM/feature_group.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
 #include <LightGBM/utils/array_args.h>
-
-#include <chrono>
-#include <cstdio>
-#include <unordered_map>
-#include <limits>
-#include <memory>
-#include <vector>
-#include <utility>
-#include <string>
-#include <sstream>
 
 namespace LightGBM {
 

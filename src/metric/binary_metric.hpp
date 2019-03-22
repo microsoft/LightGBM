@@ -1,14 +1,14 @@
 #ifndef LIGHTGBM_METRIC_BINARY_METRIC_HPP_
 #define LIGHTGBM_METRIC_BINARY_METRIC_HPP_
 
-#include <LightGBM/metric.h>
-
-#include <LightGBM/utils/log.h>
-#include <LightGBM/utils/common.h>
-
 #include <algorithm>
-#include <vector>
 #include <sstream>
+#include <string>
+#include <vector>
+
+#include <LightGBM/metric.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
 
 namespace LightGBM {
 

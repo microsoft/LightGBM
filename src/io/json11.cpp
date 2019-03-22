@@ -20,6 +20,7 @@
  */
 
 #include <LightGBM/json11.hpp>
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>

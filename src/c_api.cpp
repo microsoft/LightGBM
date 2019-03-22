@@ -1,5 +1,13 @@
 #include <LightGBM/c_api.h>
 
+#include <cstdio>
+#include <vector>
+#include <string>
+#include <memory>
+#include <stdexcept>
+#include <mutex>
+#include <functional>
+
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/random.h>
@@ -13,15 +21,6 @@
 #include <LightGBM/config.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/network.h>
-
-#include <cstdio>
-#include <vector>
-#include <string>
-#include <cstring>
-#include <memory>
-#include <stdexcept>
-#include <mutex>
-#include <functional>
 
 #include "./application/predictor.hpp"
 

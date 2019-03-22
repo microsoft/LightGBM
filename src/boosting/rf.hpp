@@ -1,15 +1,17 @@
 #ifndef LIGHTGBM_BOOSTING_RF_H_
 #define LIGHTGBM_BOOSTING_RF_H_
 
+#include <cstdio>
+#include <fstream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "gbdt.h"
 #include <LightGBM/boosting.h>
 #include <LightGBM/metric.h>
 #include "score_updater.hpp"
-#include "gbdt.h"
-
-#include <cstdio>
-#include <vector>
-#include <string>
-#include <fstream>
 
 namespace LightGBM {
 /*!

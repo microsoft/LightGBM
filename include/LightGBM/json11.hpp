@@ -50,11 +50,12 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
+#include <initializer_list>
 #include <map>
 #include <memory>
-#include <initializer_list>
+#include <string>
+#include <utility>
+#include <vector>
 
 #ifdef _MSC_VER
     #if _MSC_VER <= 1800  // VS 2013

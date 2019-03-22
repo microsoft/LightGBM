@@ -1,16 +1,16 @@
 #ifndef LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 
-#include <LightGBM/objective_function.h>
-#include <LightGBM/metric.h>
-
 #include <cstdio>
 #include <cstring>
 #include <cmath>
-
-#include <vector>
 #include <algorithm>
 #include <limits>
+#include <string>
+#include <vector>
+
+#include <LightGBM/metric.h>
+#include <LightGBM/objective_function.h>
 
 namespace LightGBM {
 /*!

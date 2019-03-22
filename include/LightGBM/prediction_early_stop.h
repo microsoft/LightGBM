@@ -1,8 +1,8 @@
 #ifndef LIGHTGBM_PREDICTION_EARLY_STOP_H_
 #define LIGHTGBM_PREDICTION_EARLY_STOP_H_
 
-#include <functional>
 #include <string>
+#include <functional>
 
 #include <LightGBM/export.h>
 

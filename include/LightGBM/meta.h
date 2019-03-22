@@ -2,11 +2,11 @@
 #define LIGHTGBM_META_H_
 
 #include <cstdint>
-
-#include <limits>
-#include <vector>
 #include <functional>
+#include <limits>
 #include <memory>
+#include <vector>
+#include <utility>
 
 namespace LightGBM {
 

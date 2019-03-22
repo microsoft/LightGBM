@@ -1,9 +1,12 @@
 #ifndef LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 
-#include <LightGBM/objective_function.h>
-#include <LightGBM/meta.h>
+#include <algorithm>
+#include <string>
+#include <vector>
 
+#include <LightGBM/meta.h>
+#include <LightGBM/objective_function.h>
 #include <LightGBM/utils/array_args.h>
 
 namespace LightGBM {

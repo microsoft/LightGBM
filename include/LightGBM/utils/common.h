@@ -1,21 +1,23 @@
 #ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
 #define LIGHTGBM_UTILS_COMMON_FUN_H_
 
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <algorithm>
+#include <functional>
+#include <iomanip>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
-
-#include <cstdio>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <cstdint>
-#include <algorithm>
-#include <cmath>
-#include <functional>
-#include <memory>
-#include <iterator>
-#include <type_traits>
-#include <iomanip>
 
 #ifdef _MSC_VER
 #include "intrin.h"

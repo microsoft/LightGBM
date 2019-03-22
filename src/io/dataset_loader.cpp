@@ -1,11 +1,9 @@
 #include <LightGBM/dataset_loader.h>
 
+#include <LightGBM/network.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/array_args.h>
-
-#include <LightGBM/network.h>
-
 
 namespace LightGBM {
 

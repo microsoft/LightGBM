@@ -1,5 +1,13 @@
 #include <LightGBM/application.h>
 
+#include <cstdio>
+#include <ctime>
+#include <chrono>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <utility>
+
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/text_reader.h>
 
@@ -14,16 +22,6 @@
 #include "predictor.hpp"
 
 #include <LightGBM/utils/openmp_wrapper.h>
-
-#include <cstdio>
-#include <ctime>
-
-#include <chrono>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace LightGBM {
 

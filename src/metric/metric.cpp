@@ -1,4 +1,5 @@
 #include <LightGBM/metric.h>
+
 #include "regression_metric.hpp"
 #include "binary_metric.hpp"
 #include "rank_metric.hpp"
