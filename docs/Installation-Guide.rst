@@ -585,7 +585,7 @@ HDFS version of LightGBM was tested on CDH-5.14.4 cluster.
 Linux
 ^^^^^
 
-On Linux HDFS version of LightGBM can be built using **CMake** and **gcc** or **Clang**.
+On Linux HDFS version of LightGBM can be built using **CMake** and **gcc**.
 
 1. Install `CMake`_.
 
