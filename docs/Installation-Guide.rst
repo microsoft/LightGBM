@@ -580,7 +580,7 @@ Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/d
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
 
-HDFS version of LightGBM was tested on CDH cluster.
+HDFS version of LightGBM was tested on CDH-5.14.4 cluster.
 
 Linux
 ^^^^^
@@ -597,7 +597,11 @@ On Linux HDFS version of LightGBM can be built using **CMake** and **gcc** or **
      mkdir build ; cd build
      cmake -DUSE_HDFS=ON ..
      # if you have installed HDFS to a customized location, you should specify paths to HDFS headers (hdfs.h) and library (libhdfs.so) like the following:
-     # cmake -DUSE_HDFS=ON -DHDFS_LIB_DIR=/usr/lib/hadoop-hdfs/lib -DHDFS_INCLUDE_DIR=/usr/lib/hadoop-hdfs/include/ ..
+     # cmake \
+     #   -DUSE_HDFS=ON \
+     #   -DHDFS_LIB=/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/lib64/libhdfs.so \
+     #   -DHDFS_INCLUDE_DIR=/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/include/ \
+     #   ..
      make -j4
 
 Build Java Wrapper
