@@ -1,10 +1,10 @@
 #include <LightGBM/utils/file_io.h>
 
+#include <LightGBM/utils/log.h>
+
 #include <algorithm>
 #include <sstream>
 #include <unordered_map>
-
-#include <LightGBM/utils/log.h>
 
 #ifdef USE_HDFS
 #include <hdfs.h>

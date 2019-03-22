@@ -1,16 +1,17 @@
 #include <LightGBM/bin.h>
 
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/file_io.h>
+
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <algorithm>
 
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/file_io.h>
 #include "dense_bin.hpp"
 #include "dense_nbits_bin.hpp"
-#include "sparse_bin.hpp"
 #include "ordered_sparse_bin.hpp"
+#include "sparse_bin.hpp"
 
 namespace LightGBM {
 

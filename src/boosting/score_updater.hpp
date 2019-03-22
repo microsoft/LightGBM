@@ -1,14 +1,14 @@
 #ifndef LIGHTGBM_BOOSTING_SCORE_UPDATER_HPP_
 #define LIGHTGBM_BOOSTING_SCORE_UPDATER_HPP_
 
-#include <cstring>
-#include <vector>
-
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <cstring>
+#include <vector>
 
 namespace LightGBM {
 /*!

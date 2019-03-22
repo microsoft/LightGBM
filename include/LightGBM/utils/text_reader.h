@@ -1,16 +1,15 @@
 #ifndef LIGHTGBM_UTILS_TEXT_READER_H_
 #define LIGHTGBM_UTILS_TEXT_READER_H_
 
-#include <LightGBM/utils/pipeline_reader.h>
 #include <LightGBM/utils/log.h>
+#include <LightGBM/utils/pipeline_reader.h>
 #include <LightGBM/utils/random.h>
 
-#include <cstdio>
-#include <sstream>
-
-#include <vector>
 #include <string>
+#include <cstdio>
 #include <functional>
+#include <sstream>
+#include <vector>
 
 namespace LightGBM {
 

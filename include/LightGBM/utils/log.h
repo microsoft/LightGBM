@@ -1,14 +1,14 @@
 #ifndef LIGHTGBM_UTILS_LOG_H_
 #define LIGHTGBM_UTILS_LOG_H_
 
+#include <string>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
-#include <cstdarg>
 #include <cstring>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
-#include <string>
 
 namespace LightGBM {
 

@@ -1,15 +1,15 @@
 #ifndef LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
 #define LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
 
-#include <algorithm>
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include <LightGBM/meta.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
+
+#include <string>
+#include <algorithm>
+#include <sstream>
+#include <vector>
 
 /*
  * Implements three related metrics:

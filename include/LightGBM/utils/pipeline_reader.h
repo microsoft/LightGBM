@@ -1,16 +1,16 @@
 #ifndef LIGHTGBM_UTILS_PIPELINE_READER_H_
 #define LIGHTGBM_UTILS_PIPELINE_READER_H_
 
-#include <cstdio>
+#include <LightGBM/utils/file_io.h>
+#include <LightGBM/utils/log.h>
+
 #include <algorithm>
+#include <cstdio>
 #include <functional>
 #include <memory>
 #include <thread>
 #include <utility>
 #include <vector>
-
-#include "file_io.h"
-#include <LightGBM/utils/log.h>
 
 namespace LightGBM {
 

@@ -3,9 +3,9 @@
 
 #include <LightGBM/bin.h>
 
-#include <vector>
-#include <cstring>
 #include <cstdint>
+#include <cstring>
+#include <vector>
 
 namespace LightGBM {
 

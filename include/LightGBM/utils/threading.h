@@ -3,8 +3,8 @@
 
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <vector>
 #include <functional>
+#include <vector>
 
 namespace LightGBM {
 

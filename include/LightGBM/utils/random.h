@@ -2,10 +2,9 @@
 #define LIGHTGBM_UTILS_RANDOM_H_
 
 #include <cstdint>
-
 #include <random>
-#include <vector>
 #include <set>
+#include <vector>
 
 namespace LightGBM {
 

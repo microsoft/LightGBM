@@ -4,8 +4,8 @@
 #include <LightGBM/dataset.h>
 
 #include <string>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 namespace LightGBM {
 

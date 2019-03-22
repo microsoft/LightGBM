@@ -3,10 +3,10 @@
 
 #include <LightGBM/objective_function.h>
 
-#include <cstring>
-#include <cmath>
-#include <algorithm>
 #include <string>
+#include <algorithm>
+#include <cmath>
+#include <cstring>
 #include <vector>
 
 namespace LightGBM {

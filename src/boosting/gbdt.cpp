@@ -1,15 +1,15 @@
 #include "gbdt.h"
 
-#include <ctime>
-#include <chrono>
-#include <sstream>
-
-#include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/common.h>
-#include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
-#include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/network.h>
+#include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+
+#include <chrono>
+#include <ctime>
+#include <sstream>
 
 namespace LightGBM {
 

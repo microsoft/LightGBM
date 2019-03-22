@@ -1,9 +1,10 @@
 #include <LightGBM/network.h>
 
-#include <cstring>
-#include <cstdlib>
-
 #include <LightGBM/utils/common.h>
+
+#include <cstdlib>
+#include <cstring>
+
 #include "linkers.h"
 
 namespace LightGBM {

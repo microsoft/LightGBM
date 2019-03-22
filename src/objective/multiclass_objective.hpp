@@ -1,15 +1,16 @@
 #ifndef LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 
-#include <cstring>
-#include <cmath>
-#include <algorithm>
-#include <memory>
+#include <LightGBM/objective_function.h>
+
 #include <string>
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+#include <memory>
 #include <vector>
 
 #include "binary_objective.hpp"
-#include <LightGBM/objective_function.h>
 
 namespace LightGBM {
 /*!

@@ -1,21 +1,22 @@
 #ifndef LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
 
-#include <cmath>
-#include <cstdio>
-#include <memory>
-#include <random>
-#include <string>
-#include <vector>
-
-#include "data_partition.hpp"
-#include "feature_histogram.hpp"
-#include "leaf_splits.hpp"
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/random.h>
+
+#include <string>
+#include <cmath>
+#include <cstdio>
+#include <memory>
+#include <random>
+#include <vector>
+
+#include "data_partition.hpp"
+#include "feature_histogram.hpp"
+#include "leaf_splits.hpp"
 #include "split_info.hpp"
 
 #ifdef USE_GPU

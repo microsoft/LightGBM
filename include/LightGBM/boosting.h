@@ -1,13 +1,13 @@
 #ifndef LIGHTGBM_BOOSTING_H_
 #define LIGHTGBM_BOOSTING_H_
 
-#include <map>
-#include <string>
-#include <vector>
-#include <unordered_map>
-
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
+
+#include <string>
+#include <map>
+#include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 

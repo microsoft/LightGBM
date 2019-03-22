@@ -1,10 +1,10 @@
 #include <LightGBM/config.h>
 
-#include <limits>
-
 #include <LightGBM/utils/common.h>
-#include <LightGBM/utils/random.h>
 #include <LightGBM/utils/log.h>
+#include <LightGBM/utils/random.h>
+
+#include <limits>
 
 namespace LightGBM {
 

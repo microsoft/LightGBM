@@ -1,21 +1,21 @@
 #ifndef LIGHTGBM_PREDICTOR_HPP_
 #define LIGHTGBM_PREDICTOR_HPP_
 
-#include <cstdio>
-#include <cstring>
-#include <functional>
-#include <map>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-
 #include <LightGBM/boosting.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
+
+#include <string>
+#include <cstdio>
+#include <cstring>
+#include <functional>
+#include <map>
+#include <memory>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace LightGBM {
 

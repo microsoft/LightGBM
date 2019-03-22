@@ -28,10 +28,9 @@
 
 #include <LightGBM/utils/log.h>
 
-#include <cstdlib>
-
-#include <unordered_set>
 #include <string>
+#include <cstdlib>
+#include <unordered_set>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")

@@ -1,14 +1,14 @@
 #ifndef LIGHTGBM_TREE_H_
 #define LIGHTGBM_TREE_H_
 
-#include <map>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
+
+#include <string>
+#include <map>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 

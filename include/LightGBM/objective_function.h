@@ -1,12 +1,12 @@
 #ifndef LIGHTGBM_OBJECTIVE_FUNCTION_H_
 #define LIGHTGBM_OBJECTIVE_FUNCTION_H_
 
-#include <functional>
-#include <string>
-
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
+
+#include <string>
+#include <functional>
 
 namespace LightGBM {
 /*!

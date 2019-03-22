@@ -1,18 +1,17 @@
 #ifndef LIGHTGBM_NETWORK_LINKERS_H_
 #define LIGHTGBM_NETWORK_LINKERS_H_
 
-#include <LightGBM/network.h>
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/network.h>
 
-
+#include <string>
 #include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <memory>
 #include <thread>
 #include <vector>
-#include <string>
-#include <memory>
 
 #ifdef USE_SOCKET
 #include "socket_wrapper.hpp"

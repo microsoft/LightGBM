@@ -1,6 +1,8 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
 
+#include <LightGBM/export.h>
+
 #include <cstdint>
 #include <cstring>
 
@@ -11,8 +13,6 @@
 * 2. Get current score for training data and validation
 * The reason is because they are called frequently, the type-conversion on them maybe time cost.
 */
-
-#include <LightGBM/export.h>
 
 typedef void* DatasetHandle;
 typedef void* BoosterHandle;

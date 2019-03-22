@@ -1,11 +1,9 @@
 #include <LightGBM/metric.h>
-
 #include <LightGBM/utils/log.h>
 
-#include <cmath>
-
-#include <vector>
 #include <algorithm>
+#include <cmath>
+#include <vector>
 
 namespace LightGBM {
 

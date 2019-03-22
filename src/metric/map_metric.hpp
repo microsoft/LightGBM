@@ -1,15 +1,15 @@
 #ifndef LIGHTGBM_METRIC_MAP_METRIC_HPP_
 #define LIGHTGBM_METRIC_MAP_METRIC_HPP_
+
 #include <LightGBM/metric.h>
-
-#include <algorithm>
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <string>
+#include <algorithm>
+#include <sstream>
+#include <vector>
 
 namespace LightGBM {
 

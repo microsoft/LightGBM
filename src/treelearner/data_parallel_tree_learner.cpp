@@ -1,9 +1,8 @@
-#include "parallel_tree_learner.h"
-
 #include <cstring>
-
 #include <tuple>
 #include <vector>
+
+#include "parallel_tree_learner.h"
 
 namespace LightGBM {
 

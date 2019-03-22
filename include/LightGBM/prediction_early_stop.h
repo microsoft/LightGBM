@@ -1,10 +1,10 @@
 #ifndef LIGHTGBM_PREDICTION_EARLY_STOP_H_
 #define LIGHTGBM_PREDICTION_EARLY_STOP_H_
 
+#include <LightGBM/export.h>
+
 #include <string>
 #include <functional>
-
-#include <LightGBM/export.h>
 
 namespace LightGBM {
 

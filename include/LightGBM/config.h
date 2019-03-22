@@ -1,19 +1,18 @@
 /// desc and descl2 fields must be written in reStructuredText format
-
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
 
+#include <LightGBM/export.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
+
+#include <string>
 #include <algorithm>
 #include <memory>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/log.h>
-#include <LightGBM/meta.h>
-#include <LightGBM/export.h>
 
 namespace LightGBM {
 

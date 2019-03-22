@@ -1,11 +1,10 @@
 #include <LightGBM/network.h>
-
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 

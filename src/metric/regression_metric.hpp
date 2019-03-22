@@ -1,13 +1,13 @@
 #ifndef LIGHTGBM_METRIC_REGRESSION_METRIC_HPP_
 #define LIGHTGBM_METRIC_REGRESSION_METRIC_HPP_
 
-#include <cmath>
-#include <algorithm>
-#include <string>
-#include <vector>
-
 #include <LightGBM/metric.h>
 #include <LightGBM/utils/log.h>
+
+#include <string>
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 namespace LightGBM {
 /*!

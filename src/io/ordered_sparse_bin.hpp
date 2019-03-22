@@ -1,14 +1,15 @@
 #ifndef LIGHTGBM_IO_ORDERED_SPARSE_BIN_HPP_
 #define LIGHTGBM_IO_ORDERED_SPARSE_BIN_HPP_
 
+#include <LightGBM/bin.h>
+
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <algorithm>
 #include <mutex>
 #include <utility>
 #include <vector>
 
-#include <LightGBM/bin.h>
 #include "sparse_bin.hpp"
 
 namespace LightGBM {

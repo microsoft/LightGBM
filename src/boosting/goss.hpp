@@ -1,19 +1,19 @@
 #ifndef LIGHTGBM_BOOSTING_GOSS_H_
 #define LIGHTGBM_BOOSTING_GOSS_H_
 
-#include "gbdt.h"
-
-#include <cstdio>
-#include <algorithm>
-#include <chrono>
-#include <fstream>
-#include <string>
-#include <vector>
-
 #include <LightGBM/boosting.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <string>
+#include <algorithm>
+#include <chrono>
+#include <cstdio>
+#include <fstream>
+#include <vector>
+
+#include "gbdt.h"
 #include "score_updater.hpp"
 
 namespace LightGBM {

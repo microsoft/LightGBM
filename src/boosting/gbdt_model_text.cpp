@@ -1,12 +1,12 @@
-#include "gbdt.h"
-
-#include <LightGBM/utils/common.h>
-#include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
+#include <LightGBM/objective_function.h>
+#include <LightGBM/utils/common.h>
 
-#include <sstream>
 #include <string>
+#include <sstream>
 #include <vector>
+
+#include "gbdt.h"
 
 namespace LightGBM {
 
