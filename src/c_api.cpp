@@ -710,7 +710,6 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                               const char* parameters,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
-
   API_BEGIN();
 
   auto get_row_fun = *static_cast<std::function<void(int idx, std::vector<std::pair<int, double>>&)>*>(get_row_funptr);
@@ -755,7 +754,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-  
+
   OMP_INIT_EX();
   std::vector<std::pair<int, double>> threadBuffer;
   #pragma omp parallel for schedule(static) private(threadBuffer)
@@ -967,7 +966,7 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   } else if (dataset->GetDoubleField(field_name, out_len, reinterpret_cast<const double**>(out_ptr))) {
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
-  } else if(dataset->GetInt8Field(field_name, out_len, reinterpret_cast<const int8_t**>(out_ptr))){
+  } else if (dataset->GetInt8Field(field_name, out_len, reinterpret_cast<const int8_t**>(out_ptr))) {
     *out_type = C_API_DTYPE_INT8;
     is_success = true;
   }

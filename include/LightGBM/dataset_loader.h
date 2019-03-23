@@ -73,6 +73,6 @@ class DatasetLoader {
   std::unordered_set<int> categorical_features_;
 };
 
-}
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_DATASET_LOADER_H_

@@ -322,7 +322,7 @@ class DenseBin: public Bin {
 };
 
 template<typename VAL_T>
-DenseBin<VAL_T>* DenseBin<VAL_T>::Clone(){
+DenseBin<VAL_T>* DenseBin<VAL_T>::Clone() {
   return new DenseBin<VAL_T>(*this);
 }
 
