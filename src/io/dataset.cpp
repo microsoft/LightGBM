@@ -580,7 +580,7 @@ bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len, const
     *out_len = static_cast<data_size_t>(metadata_.num_init_score());
   } else if (name == std::string("feature_penalty")) {
     *out_ptr = feature_penalty_.data();
-    *out_len = feature_penalty_.size();
+    *out_len = static_cast<data_size_t>(feature_penalty_.size());
   } else {
     return false;
   }
@@ -604,7 +604,7 @@ bool Dataset::GetInt8Field(const char* field_name, data_size_t* out_len, const i
   name = Common::Trim(name);
   if (name == std::string("monotone_constraints")) {
     *out_ptr = monotone_types_.data();
-    *out_len = monotone_types_.size();
+    *out_len = static_cast<data_size_t>(monotone_types_.size());
   } else {
     return false;
   }
@@ -707,7 +707,12 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
 }
 
 void Dataset::DumpTextFile(const char* text_filename) {
-  auto file = fopen(text_filename, "wt");
+  FILE* file = NULL;
+#if _MSC_VER
+  fopen_s(&file, text_filename, "wt");
+#else
+  file = fopen(text_filename, "wt");
+#endif
   fprintf(file, "num_features: %d\n", num_features_);
   fprintf(file, "num_total_features: %d\n", num_total_features_);
   fprintf(file, "num_groups: %d\n", num_groups_);
