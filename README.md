@@ -70,6 +70,8 @@ MMLSpark (Spark-package): https://github.com/Azure/mmlspark
 
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
+LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
+
 Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
 
 Get Started and Documentation

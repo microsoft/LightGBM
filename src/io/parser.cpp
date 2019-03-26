@@ -150,12 +150,10 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   if (type == DataType::LIBSVM) {
     label_idx = GetLabelIdxForLibsvm(line1, num_features, label_idx);
     ret.reset(new LibSVMParser(label_idx));
-  }
-  else if (type == DataType::TSV) {
+  } else if (type == DataType::TSV) {
     label_idx = GetLabelIdxForTSV(line1, num_features, label_idx);
     ret.reset(new TSVParser(label_idx, tab_cnt + 1));
-  }
-  else if (type == DataType::CSV) {
+  } else if (type == DataType::CSV) {
     label_idx = GetLabelIdxForCSV(line1, num_features, label_idx);
     ret.reset(new CSVParser(label_idx, comma_cnt + 1));
   }
