@@ -341,8 +341,7 @@ inline static void Uint32ToStr(uint32_t value, char* buffer) {
 
   if (value < 10) {
     *--buffer = char(value) + '0';
-  }
-  else {
+  } else {
     const unsigned i = value << 1;
     *--buffer = kDigitsLut[i + 1];
     *--buffer = kDigitsLut[i];

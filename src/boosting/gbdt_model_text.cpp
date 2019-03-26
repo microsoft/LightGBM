@@ -355,11 +355,9 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         auto strs = Common::Split(cur_line.c_str(), '=');
         if (strs.size() == 1) {
           key_vals[strs[0]] = "";
-        }
-        else if (strs.size() == 2) {
+        } else if (strs.size() == 2) {
           key_vals[strs[0]] = strs[1];
-        }
-        else if (strs.size() > 2) {
+        } else if (strs.size() > 2) {
           if (strs[0] == "feature_names") {
             key_vals[strs[0]] = cur_line.substr(std::strlen("feature_names="));
           } else {
@@ -367,8 +365,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
             Log::Fatal("Wrong line at model file: %s", cur_line.substr(0, std::min<size_t>(128, cur_line.size())).c_str());
           }
         }
-      }
-      else {
+      } else {
         break;
       }
     }
@@ -450,8 +447,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
           size_t used_len = 0;
           models_.emplace_back(new Tree(p, &used_len));
           p += used_len;
-        }
-        else {
+        } else {
           break;
         }
       }

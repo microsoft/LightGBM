@@ -17,8 +17,7 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     } else if (learner_type == std::string("voting")) {
       return new VotingParallelTreeLearner<SerialTreeLearner>(config);
     }
-  }
-  else if (device_type == std::string("gpu")) {
+  } else if (device_type == std::string("gpu")) {
     if (learner_type == std::string("serial")) {
       return new GPUTreeLearner(config);
     } else if (learner_type == std::string("feature")) {
