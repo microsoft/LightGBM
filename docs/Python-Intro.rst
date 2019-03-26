@@ -42,6 +42,12 @@ The LightGBM Python module can load data from:
 
 The data is stored in a ``Dataset`` object.
 
+Many of the examples in this page use functionality from ``numpy``. To run the examples, be sure to import ``numpy`` in your session.
+
+.. code:: python
+
+    import numpy as np
+
 **To load a libsvm text file or a LightGBM binary file into Dataset:**
 
 .. code:: python
@@ -60,6 +66,7 @@ The data is stored in a ``Dataset`` object.
 
 .. code:: python
 
+    import scipy
     csr = scipy.sparse.csr_matrix((dat, (row, col)))
     train_data = lgb.Dataset(csr)
 
