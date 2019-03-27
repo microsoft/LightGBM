@@ -91,12 +91,7 @@ author = 'Microsoft Corporation'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-#
-BASE_DIR = os.path.abspath('../')
-VERSION_FILE = os.path.join(BASE_DIR, "VERSION.txt")
-
-with open(VERSION_FILE, 'r') as f:
-
+with open(os.path.join(CURR_PATH, os.path.pardir, 'VERSION.txt'), 'r') as f:
     # The short X.Y version.
     version = f.read().strip()
 
