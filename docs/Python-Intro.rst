@@ -42,6 +42,12 @@ The LightGBM Python module can load data from:
 
 The data is stored in a ``Dataset`` object.
 
+Many of the examples in this page use functionality from ``numpy``. To run the examples, be sure to import ``numpy`` in your session.
+
+.. code:: python
+
+    import numpy as np
+
 **To load a libsvm text file or a LightGBM binary file into Dataset:**
 
 .. code:: python
@@ -60,6 +66,7 @@ The data is stored in a ``Dataset`` object.
 
 .. code:: python
 
+    import scipy
     csr = scipy.sparse.csr_matrix((dat, (row, col)))
     train_data = lgb.Dataset(csr)
 
@@ -200,6 +207,7 @@ Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC, etc.).
 Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
+However, you can change this behavior and make LightGBM check only the first metric for early stopping by creating ``early_stopping`` callback with ``first_metric_only=True``.
 
 Prediction
 ----------

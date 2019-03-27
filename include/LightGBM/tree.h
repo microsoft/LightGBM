@@ -331,7 +331,7 @@ class Tree {
     PathElement(int i, double z, double o, double w) : feature_index(i), zero_fraction(z), one_fraction(o), pweight(w) {}
   };
 
-  /*! \brief Polynomial time algorithm for SHAP values (https://arxiv.org/abs/1706.06060)*/
+  /*! \brief Polynomial time algorithm for SHAP values (arXiv:1706.06060)*/
   void TreeSHAP(const double *feature_values, double *phi,
                 int node, int unique_depth,
                 PathElement *parent_unique_path, double parent_zero_fraction,

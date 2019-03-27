@@ -831,6 +831,37 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
+* \brief make prediction for an new data set
+*        Note:  should pre-allocate memory for out_result,
+*               for noraml and raw score: its length is equal to num_class * num_data
+*               for leaf index, its length is equal to num_class * num_data * num_iteration
+* \param handle handle
+* \param data pointer to the data space
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
+* \param nrow number of rows
+* \param ncol number columns
+* \param predict_type
+*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
+*          C_API_PREDICT_RAW_SCORE: raw score
+*          C_API_PREDICT_LEAF_INDEX: leaf index
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
+* \param out_len len of output result
+* \param out_result used to set a pointer to array, should allocate memory before call this function
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
+                                                 const void** data,
+                                                 int data_type,
+                                                 int32_t nrow,
+                                                 int32_t ncol,
+                                                 int predict_type,
+                                                 int num_iteration,
+                                                 const char* parameter,
+                                                 int64_t* out_len,
+                                                 double* out_result);
+                                                
+/*!
 * \brief save model into file
 * \param handle handle
 * \param start_iteration start iteration that should be saved
