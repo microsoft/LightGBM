@@ -103,14 +103,14 @@ int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   // we roughly want 256 workgroups per device, and we have num_dense_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
   double x = 256.0 / num_dense_feature4_;
-  int exp_workgroups_per_feature = (int)ceil(log2(x));
+  int exp_workgroups_per_feature = static_cast<int>(ceil(log2(x)));
   double t = leaf_num_data / 1024.0;
   #if GPU_DEBUG >= 4
   printf("Computing histogram for %d examples and (%d * %d) feature groups\n", leaf_num_data, dword_features_, num_dense_feature4_);
   printf("We can have at most %d workgroups per feature4 for efficiency reasons.\n"
-         "Best workgroup size per feature for full utilization is %d\n", (int)ceil(t), (1 << exp_workgroups_per_feature));
+         "Best workgroup size per feature for full utilization is %d\n", static_cast<int>(ceil(t)), (1 << exp_workgroups_per_feature));
   #endif
-  exp_workgroups_per_feature = std::min(exp_workgroups_per_feature, (int)ceil(log((double)t)/log(2.0)));
+  exp_workgroups_per_feature = std::min(exp_workgroups_per_feature, static_cast<int>(ceil(log(static_cast<double>(t))/log(2.0))));
   if (exp_workgroups_per_feature < 0)
       exp_workgroups_per_feature = 0;
   if (exp_workgroups_per_feature > kMaxLogWorkgroupsPerFeature)
@@ -188,7 +188,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
 
 template <typename HistType>
 void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms) {
-  HistType* hist_outputs = (HistType*) host_histogram_outputs_;
+  HistType* hist_outputs = reinterpret_cast<HistType*>(host_histogram_outputs_);
   // when the output is ready, the computation is done
   histograms_wait_obj_.wait();
   #pragma omp parallel for schedule(static)
@@ -325,9 +325,9 @@ void GPUTreeLearner::AllocateGPUMemory() {
     if (ordered_bins_[i] == nullptr) {
       dense_dword_ind[k] = i;
       // decide if we need to redistribute the bin
-      double t = device_bin_size_ / (double)train_data_->FeatureGroupNumBin(i);
+      double t = device_bin_size_ / static_cast<double>(train_data_->FeatureGroupNumBin(i));
       // multiplier must be a power of 2
-      device_bin_mults_.push_back((int)round(pow(2, floor(log2(t)))));
+      device_bin_mults_.push_back(static_cast<int>(round(pow(2, floor(log2(t))))));
       // device_bin_mults_.push_back(1);
       #if GPU_DEBUG >= 1
       printf("feature-group %d using multiplier %d\n", i, device_bin_mults_.back());
@@ -348,23 +348,23 @@ void GPUTreeLearner::AllocateGPUMemory() {
   // for data transfer time
   auto start_time = std::chrono::steady_clock::now();
   // Now generate new data structure feature4, and copy data to the device
-  int nthreads = std::min(omp_get_max_threads(), (int)dense_feature_group_map_.size() / dword_features_);
+  int nthreads = std::min(omp_get_max_threads(), static_cast<int>(dense_feature_group_map_.size()) / dword_features_);
   nthreads = std::max(nthreads, 1);
   std::vector<Feature4*> host4_vecs(nthreads);
   std::vector<boost::compute::buffer> host4_bufs(nthreads);
   std::vector<Feature4*> host4_ptrs(nthreads);
   // preallocate arrays for all threads, and pin them
   for (int i = 0; i < nthreads; ++i) {
-    host4_vecs[i] = (Feature4*)boost::alignment::aligned_alloc(4096, num_data_ * sizeof(Feature4));
+    host4_vecs[i] = reinterpret_cast<Feature4*>(boost::alignment::aligned_alloc(4096, num_data_ * sizeof(Feature4)));
     host4_bufs[i] = boost::compute::buffer(ctx_, num_data_ * sizeof(Feature4),
                     boost::compute::memory_object::read_write | boost::compute::memory_object::use_host_ptr,
                     host4_vecs[i]);
-    host4_ptrs[i] = (Feature4*)queue_.enqueue_map_buffer(host4_bufs[i], boost::compute::command_queue::map_write_invalidate_region,
-                    0, num_data_ * sizeof(Feature4));
+    host4_ptrs[i] = reinterpret_cast<Feature4*>(queue_.enqueue_map_buffer(host4_bufs[i], boost::compute::command_queue::map_write_invalidate_region,
+                    0, num_data_ * sizeof(Feature4)));
   }
   // building Feature4 bundles; each thread handles dword_features_ features
   #pragma omp parallel for schedule(static)
-  for (int i = 0; i < (int)(dense_feature_group_map_.size() / dword_features_); ++i) {
+  for (int i = 0; i < static_cast<int>(dense_feature_group_map_.size() / dword_features_); ++i) {
     int tid = omp_get_thread_num();
     Feature4* host4 = host4_ptrs[tid];
     auto dense_ind = dense_feature_group_map_.begin() + i * dword_features_;
@@ -689,9 +689,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   dev_ = boost::compute::system::default_device();
   if (platform_id >= 0 && device_id >= 0) {
     const std::vector<boost::compute::platform> platforms = boost::compute::system::platforms();
-    if ((int)platforms.size() > platform_id) {
+    if (static_cast<int>(platforms.size()) > platform_id) {
       const std::vector<boost::compute::device> platform_devices = platforms[platform_id].devices();
-      if ((int)platform_devices.size() > device_id) {
+      if (static_cast<int>(platform_devices.size()) > device_id) {
         Log::Info("Using requested OpenCL platform %d device %d", platform_id, device_id);
         dev_ = platform_devices[device_id];
       }

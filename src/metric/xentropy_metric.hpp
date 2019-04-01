@@ -86,7 +86,7 @@ class CrossEntropyMetric : public Metric {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) weights not allowed to be negative", GetName()[0].c_str(), __func__);
       }
@@ -177,7 +177,7 @@ class CrossEntropyLambdaMetric : public Metric {
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, (label_t*)nullptr);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), static_cast<label_t*>(nullptr));
       if (minw <= 0.0f) {
         Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(), __func__);
       }
@@ -261,7 +261,7 @@ class KullbackLeiblerDivergence : public Metric {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) at least one weight is negative", GetName()[0].c_str(), __func__);
       }

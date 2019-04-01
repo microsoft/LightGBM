@@ -57,7 +57,7 @@ class CrossEntropy: public ObjectiveFunction {
     if (weights_ != nullptr) {
       label_t minw;
       double sumw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sumw);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), &sumw);
       if (minw < 0.0f) {
         Log::Fatal("[%s]: at least one weight is negative", GetName());
       }
@@ -160,7 +160,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
     Log::Info("[%s:%s]: (objective) labels passed interval [0, 1] check",  GetName(), __func__);
 
     if (weights_ != nullptr) {
-      Common::ObtainMinMaxSum(weights_, num_data_, &min_weight_, &max_weight_, (label_t*)nullptr);
+      Common::ObtainMinMaxSum(weights_, num_data_, &min_weight_, &max_weight_, static_cast<label_t*>(nullptr));
       if (min_weight_ <= 0.0f) {
         Log::Fatal("[%s]: at least one weight is non-positive", GetName());
       }

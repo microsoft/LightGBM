@@ -238,7 +238,7 @@ bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
   ifs.close();
   output_file.close();
 
-  return (bool)output_file;
+  return static_cast<bool>(output_file);
 }
 
 std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) const {
@@ -337,7 +337,7 @@ bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, const char* f
   output_file.write(str_to_write.c_str(), str_to_write.size());
   output_file.close();
 
-  return (bool)output_file;
+  return static_cast<bool>(output_file);
 }
 
 bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
