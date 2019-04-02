@@ -62,7 +62,7 @@ Many of the examples in this page use functionality from ``numpy``. To run the e
     label = np.random.randint(2, size=500)  # binary target
     train_data = lgb.Dataset(data, label=label)
 
-**To load a scpiy.sparse.csr\_matrix array into Dataset:**
+**To load a scipy.sparse.csr\_matrix array into Dataset:**
 
 .. code:: python
 
