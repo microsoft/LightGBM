@@ -255,12 +255,12 @@ class TestBasic(unittest.TestCase):
         ds = lgb.Dataset(X, feature_name=names).construct()
         ds.set_label(y)
         # Compare pairs of penalties, to ensure scaling works as intended
-        pairs= [({'cegb_penalty_feature_coupled': [1, 2, 1, 2, 1]},
-                 {'cegb_penalty_feature_coupled': [0.5, 1, 0.5, 1, 0.5], 'cegb_tradeoff': 2}),
-                ({'cegb_penalty_feature_lazy': [0.01, 0.02, 0.03, 0.04, 0.05]},
-                 {'cegb_penalty_feature_lazy': [0.005, 0.01, 0.015, 0.02, 0.025], 'cegb_tradeoff': 2}),
-                ({'cegb_penalty_split': 1},
-                 {'cegb_penalty_split': 2, 'cegb_tradeoff': 0.5})]
+        pairs = [({'cegb_penalty_feature_coupled': [1, 2, 1, 2, 1]},
+                  {'cegb_penalty_feature_coupled': [0.5, 1, 0.5, 1, 0.5], 'cegb_tradeoff': 2}),
+                 ({'cegb_penalty_feature_lazy': [0.01, 0.02, 0.03, 0.04, 0.05]},
+                  {'cegb_penalty_feature_lazy': [0.005, 0.01, 0.015, 0.02, 0.025], 'cegb_tradeoff': 2}),
+                 ({'cegb_penalty_split': 1},
+                  {'cegb_penalty_split': 2, 'cegb_tradeoff': 0.5})]
         for (p1, p2) in pairs:
             booster1 = lgb.Booster(train_set=ds, params=p1)
             booster2 = lgb.Booster(train_set=ds, params=p2)
