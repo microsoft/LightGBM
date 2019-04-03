@@ -44,7 +44,7 @@ LambdaRank
 Cost Efficient Gradient Boosting
 --------------------------------
 
-Cost Efficient Gradient Boosting (CEGB) <https://papers.nips.cc/paper/6753-cost-efficient-gradient-boosting.pdf> makes it possible to penalise boosting based on the cost of obtaining feature values.
+`Cost Efficient Gradient Boosting <https://papers.nips.cc/paper/6753-cost-efficient-gradient-boosting.pdf>`_ (CEGB)  makes it possible to penalise boosting based on the cost of obtaining feature values.
 CEGB penalises learning in the following ways:
 
 - Each time a tree is split, a penalty of ``cegb_penalty_split`` is applied.
