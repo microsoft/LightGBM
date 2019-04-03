@@ -378,12 +378,10 @@ struct Config {
   double refit_decay_rate = 0.9;
 
   // check = >=0.0
-  // default = 1
   // desc = cost-effective gradient boosting multiplier for all penalties
   double cegb_tradeoff = 1.0;
 
   // check = >=0.0
-  // default = 0
   // desc = cost-effective gradient-boosting penalty for splitting a node
   double cegb_penalty_split = 0.0;
 

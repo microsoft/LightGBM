@@ -755,7 +755,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
   if(!config_->cegb_penalty_feature_coupled.empty() && !feature_used[inner_feature_index]){
     feature_used[inner_feature_index] = true;
-    for(int i = 0; i < tree->num_leaves(); i++){
+    for(int i = 0; i < tree->num_leaves(); ++i){
       if(i == best_leaf) continue;
       auto split = &splits_per_leaf_[i*train_data_->num_features() + inner_feature_index];
       split->gain += config_->cegb_tradeoff*config_->cegb_penalty_feature_coupled[best_split_info.feature];
