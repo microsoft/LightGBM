@@ -13,7 +13,8 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, DataTable,
+from .compat import (PANDAS_INSTALLED, DataFrame, Series,
+                     DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
                      json, json_default_with_numpy,
@@ -107,6 +108,14 @@ def cint32_array_to_numpy(cptr, length):
         raise RuntimeError('Expected int pointer')
 
 
+def cint8_array_to_numpy(cptr, length):
+    """Convert a ctypes int pointer array to a numpy array."""
+    if isinstance(cptr, ctypes.POINTER(ctypes.c_int8)):
+        return np.fromiter(cptr, dtype=np.int8, count=length)
+    else:
+        raise RuntimeError('Expected int pointer')
+
+
 def c_str(string):
     """Convert a Python string to C string."""
     return ctypes.c_char_p(string.encode('utf-8'))
@@ -166,6 +175,7 @@ C_API_DTYPE_FLOAT32 = 0
 C_API_DTYPE_FLOAT64 = 1
 C_API_DTYPE_INT32 = 2
 C_API_DTYPE_INT64 = 3
+C_API_DTYPE_INT8 = 4
 
 """Matrix is row major in Python"""
 C_API_IS_ROW_MAJOR = 1
@@ -180,7 +190,9 @@ C_API_PREDICT_CONTRIB = 3
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
-                     "group": C_API_DTYPE_INT32}
+                     "group": C_API_DTYPE_INT32,
+                     "feature_penalty": C_API_DTYPE_FLOAT64,
+                     "monotone_constraints": C_API_DTYPE_INT8}
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'int64': 'int', 'uint8': 'int', 'uint16': 'int',
@@ -409,7 +421,7 @@ class _InnerPredictor(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             When data type is string, it represents the path of txt file.
         num_iteration : int, optional (default=-1)
@@ -652,7 +664,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -700,6 +712,8 @@ class Dataset(object):
         self._predictor = None
         self.pandas_categorical = None
         self.params_back_up = None
+        self.feature_penalty = None
+        self.monotone_constraints = None
 
     def __del__(self):
         try:
@@ -1009,7 +1023,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1179,6 +1193,8 @@ class Dataset(object):
             return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
             return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+        elif out_type.value == C_API_DTYPE_INT8:
+            return cint8_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int8)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
 
@@ -1382,6 +1398,30 @@ class Dataset(object):
             self.weight = self.get_field('weight')
         return self.weight
 
+    def get_feature_penalty(self):
+        """Get the feature penalty of the Dataset.
+
+        Returns
+        -------
+        feature_penalty : numpy array or None
+            Feature penalty for each feature in the Dataset.
+        """
+        if self.feature_penalty is None:
+            self.feature_penalty = self.get_field('feature_penalty')
+        return self.feature_penalty
+
+    def get_monotone_constraints(self):
+        """Get the monotone constraints of the Dataset.
+
+        Returns
+        -------
+        monotone_constraints : numpy array or None
+            Monotone constraints: -1, 0 or 1, for each feature in the Dataset.
+        """
+        if self.monotone_constraints is None:
+            self.monotone_constraints = self.get_field('monotone_constraints')
+        return self.monotone_constraints
+
     def get_init_score(self):
         """Get the initial score of the Dataset.
 
@@ -1399,7 +1439,7 @@ class Dataset(object):
 
         Returns
         -------
-        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse, list of numpy arrays or None
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, list of numpy arrays or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -1493,6 +1533,46 @@ class Dataset(object):
             else:
                 break
         return ref_chain
+
+    def add_features_from(self, other):
+        """Add features from other Dataset to the current Dataset.
+
+        Both Datasets must be constructed before calling this method.
+
+        Parameters
+        ----------
+        other : Dataset
+            The Dataset to take features from.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with the new features added.
+        """
+        if self.handle is None or other.handle is None:
+            raise ValueError('Both source and target Datasets must be constructed before adding features')
+        _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        return self
+
+    def dump_text(self, filename):
+        """Save Dataset to a text file.
+
+        This format cannot be loaded back in by LightGBM, but is useful for debugging purposes.
+
+        Parameters
+        ----------
+        filename : string
+            Name of the output file.
+
+        Returns
+        -------
+        self : Dataset
+            Returns self.
+        """
+        _safe_call(_LIB.LGBM_DatasetDumpText(
+            self.construct().handle,
+            c_str(filename)))
+        return self
 
 
 class Booster(object):
@@ -2162,7 +2242,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
         num_iteration : int or None, optional (default=None)
@@ -2207,7 +2287,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for refit.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
@@ -2347,6 +2427,75 @@ class Booster(object):
             return result.astype(int)
         else:
             return result
+
+    def get_split_value_histogram(self, feature, bins=None, xgboost_style=False):
+        """Get split value histogram for the specified feature.
+
+        Parameters
+        ----------
+        feature : int or string
+            The feature name or index the histogram is calculated for.
+            If int, interpreted as index.
+            If string, interpreted as name.
+
+            Note
+            ----
+            Categorical features are not supported.
+
+        bins : int, string or None, optional (default=None)
+            The maximum number of bins.
+            If None, or int and > number of unique split values and ``xgboost_style=True``,
+            the number of bins equals number of unique split values.
+            If string, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+        xgboost_style : bool, optional (default=False)
+            Whether the returned result should be in the same form as it is in XGBoost.
+            If False, the returned value is tuple of 2 numpy arrays as it is in ``numpy.histogram()`` function.
+            If True, the returned value is matrix, in which the first column is the right edges of non-empty bins
+            and the second one is the histogram values.
+
+        Returns
+        -------
+        result_tuple : tuple of 2 numpy arrays
+            If ``xgboost_style=False``, the values of the histogram of used splitting values for the specified feature
+            and the bin edges.
+        result_array_like : numpy array or pandas DataFrame (if pandas is installed)
+            If ``xgboost_style=True``, the histogram of used splitting values for the specified feature.
+        """
+        def add(root):
+            """Recursively add thresholds."""
+            if 'split_index' in root:  # non-leaf
+                if feature_names is not None and isinstance(feature, string_type):
+                    split_feature = feature_names[root['split_feature']]
+                else:
+                    split_feature = root['split_feature']
+                if split_feature == feature:
+                    if isinstance(root['threshold'], string_type):
+                        raise LightGBMError('Cannot compute split value histogram for the categorical feature')
+                    else:
+                        values.append(root['threshold'])
+                add(root['left_child'])
+                add(root['right_child'])
+
+        model = self.dump_model()
+        feature_names = model.get('feature_names')
+        tree_infos = model['tree_info']
+        values = []
+        for tree_info in tree_infos:
+            add(tree_info['tree_structure'])
+
+        if bins is None or isinstance(bins, integer_types) and xgboost_style:
+            n_unique = len(np.unique(values))
+            bins = max(min(n_unique, bins) if bins is not None else n_unique, 1)
+        hist, bin_edges = np.histogram(values, bins=bins)
+        if xgboost_style:
+            ret = np.column_stack((bin_edges[1:], hist))
+            ret = ret[ret[:, 1] > 0]
+            if PANDAS_INSTALLED:
+                return DataFrame(ret, columns=['SplitValue', 'Count'])
+            else:
+                return ret
+        else:
+            return hist, bin_edges
 
     def __inner_eval(self, data_name, data_idx, feval=None):
         """Evaluate training or validation data."""

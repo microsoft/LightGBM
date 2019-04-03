@@ -471,7 +471,7 @@ IO Parameters
 
    -  if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
 
-   -  **Note**: can be used only in CLI version
+   -  **Note**: works only in case of loading data directly from file
 
 -  ``valid_data_initscores`` :raw-html:`<a id="valid_data_initscores" title="Permalink to this parameter" href="#valid_data_initscores">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
 
@@ -481,7 +481,7 @@ IO Parameters
 
    -  separate by ``,`` for multi-validation data
 
-   -  **Note**: can be used only in CLI version
+   -  **Note**: works only in case of loading data directly from file
 
 -  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
 
@@ -527,19 +527,19 @@ IO Parameters
 
    -  by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
 
+   -  **Note**: works only in case of loading data directly from file
+
 -  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
 
    -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
 
--  ``enable_load_from_binary_file`` :raw-html:`<a id="enable_load_from_binary_file" title="Permalink to this parameter" href="#enable_load_from_binary_file">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``load_from_binary_file``, ``binary_load``, ``load_binary``
-
-   -  set this to ``true`` to enable autoloading from previous saved binary datasets
-
-   -  set this to ``false`` to ignore binary datasets
+   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
 -  ``header`` :raw-html:`<a id="header" title="Permalink to this parameter" href="#header">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``has_header``
 
    -  set this to ``true`` if input data has header
+
+   -  **Note**: works only in case of loading data directly from file
 
 -  ``label_column`` :raw-html:`<a id="label_column" title="Permalink to this parameter" href="#label_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``label``
 
@@ -549,6 +549,8 @@ IO Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
 
+   -  **Note**: works only in case of loading data directly from file
+
 -  ``weight_column`` :raw-html:`<a id="weight_column" title="Permalink to this parameter" href="#weight_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``weight``
 
    -  used to specify the weight column
@@ -556,6 +558,8 @@ IO Parameters
    -  use number for index, e.g. ``weight=0`` means column\_0 is the weight
 
    -  add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
+
+   -  **Note**: works only in case of loading data directly from file
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
 
@@ -566,6 +570,8 @@ IO Parameters
    -  use number for index, e.g. ``query=0`` means column\_0 is the query id
 
    -  add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
+
+   -  **Note**: works only in case of loading data directly from file
 
    -  **Note**: data should be grouped by query\_id
 

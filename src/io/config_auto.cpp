@@ -108,9 +108,6 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"use_two_round_loading", "two_round"},
   {"is_save_binary", "save_binary"},
   {"is_save_binary_file", "save_binary"},
-  {"load_from_binary_file", "enable_load_from_binary_file"},
-  {"binary_load", "enable_load_from_binary_file"},
-  {"load_binary", "enable_load_from_binary_file"},
   {"has_header", "header"},
   {"label", "label_column"},
   {"weight", "weight_column"},
@@ -225,7 +222,6 @@ std::unordered_set<std::string> Config::parameter_set({
   "zero_as_missing",
   "two_round",
   "save_binary",
-  "enable_load_from_binary_file",
   "header",
   "label_column",
   "weight_column",
@@ -442,8 +438,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "save_binary", &save_binary);
 
-  GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
-
   GetBool(params, "header", &header);
 
   GetString(params, "label_column", &label_column);
@@ -603,7 +597,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[zero_as_missing: " << zero_as_missing << "]\n";
   str_buf << "[two_round: " << two_round << "]\n";
   str_buf << "[save_binary: " << save_binary << "]\n";
-  str_buf << "[enable_load_from_binary_file: " << enable_load_from_binary_file << "]\n";
   str_buf << "[header: " << header << "]\n";
   str_buf << "[label_column: " << label_column << "]\n";
   str_buf << "[weight_column: " << weight_column << "]\n";
