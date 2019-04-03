@@ -17,12 +17,14 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 - Faster training speed and higher efficiency.
 - Lower memory usage.
 - Better accuracy.
-- Parallel and GPU learning supported.
+- Support of parallel and GPU learning.
 - Capable of handling large-scale data.
 
-For further details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst). Benefits from these advantages, LightGBM is being widely-used in many [winning solutions](https://github.com/Microsoft/LightGBM/blob/master/examples/README.md#machine-learning-challenge-winning-solutions) of machine learning competitions.
+For further details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst).
 
-[Comparison experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, the [parallel experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings. 
+Benefitting from these advantages, LightGBM is being widely-used in many [winning solutions](https://github.com/Microsoft/LightGBM/blob/master/examples/README.md#machine-learning-challenge-winning-solutions) of machine learning competitions.
+
+[Comparison experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, [parallel experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
 
 News
 ----
@@ -51,19 +53,31 @@ News
 
 More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/blob/master/docs/Key-Events.md).
 
-
 External (Unofficial) Repositories
 ----------------------------------
 
 Julia-package: https://github.com/Allardvm/LightGBM.jl
 
-JPMML: https://github.com/jpmml/jpmml-lightgbm
+JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
+Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
+
+ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
+
+SHAP (model output explainer): https://github.com/slundberg/shap
+
+MMLSpark (Spark-package): https://github.com/Azure/mmlspark
+
+ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
+
+LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
+
+Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
 
 Get Started and Documentation
 -----------------------------
 
-Install by following the [guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
+Install by following [guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
 
 Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
 
@@ -114,3 +128,8 @@ Guolin Ke, Qi Meng, Thomas Finley, Taifeng Wang, Wei Chen, Weidong Ma, Qiwei Ye,
 Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tie-Yan Liu. "[A Communication-Efficient Parallel Algorithm for Decision Tree](http://papers.nips.cc/paper/6380-a-communication-efficient-parallel-algorithm-for-decision-tree)". Advances in Neural Information Processing Systems 29 (NIPS 2016), pp. 1279-1287.
 
 Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359)". SysML Conference, 2018.
+
+License
+-------
+
+This project is licensed under the terms of the MIT license. See [LICENSE](https://github.com/Microsoft/LightGBM/blob/master/LICENSE) for additional details.

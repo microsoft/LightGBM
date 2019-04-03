@@ -19,14 +19,14 @@ namespace LightGBM {
 */
 template<typename INDEX_T>
 class TextReader {
-public:
+ public:
   /*!
   * \brief Constructor
   * \param filename Filename of data
   * \param is_skip_first_line True if need to skip header
   */
   TextReader(const char* filename, bool is_skip_first_line):
-    filename_(filename), is_skip_first_line_(is_skip_first_line){
+    filename_(filename), is_skip_first_line_(is_skip_first_line) {
     if (is_skip_first_line_) {
       auto reader = VirtualFileReader::Make(filename);
       if (!reader->Init()) {
@@ -100,8 +100,7 @@ public:
             last_line_.append(buffer_process + last_i, i - last_i);
             process_fun(total_cnt, last_line_.c_str(), last_line_.size());
             last_line_ = "";
-          }
-          else {
+          } else {
             process_fun(total_cnt, buffer_process + last_i, i - last_i);
           }
           ++cnt;
@@ -110,8 +109,7 @@ public:
           // skip end of line
           while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
           last_i = i;
-        }
-        else {
+        } else {
           ++i;
         }
       }
@@ -167,8 +165,7 @@ public:
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
         ++cur_sample_cnt;
-      }
-      else {
+      } else {
         const size_t idx = static_cast<size_t>(random.NextInt(0, static_cast<int>(line_idx + 1)));
         if (idx < static_cast<size_t>(sample_cnt)) {
           out_sampled_data->operator[](idx) = std::string(buffer, size);
@@ -207,10 +204,9 @@ public:
         if (cur_sample_cnt < sample_cnt) {
           out_sampled_data->emplace_back(buffer, size);
           ++cur_sample_cnt;
-        }
-        else {
+        } else {
           const size_t idx = static_cast<size_t>(random.NextInt(0, static_cast<int>(out_used_data_indices->size())));
-          if (idx < static_cast<size_t>(sample_cnt) ) {
+          if (idx < static_cast<size_t>(sample_cnt)) {
             out_sampled_data->operator[](idx) = std::string(buffer, size);
           }
         }
@@ -225,7 +221,7 @@ public:
     });
   }
 
-  INDEX_T ReadAllAndProcessParallelWithFilter(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun, const std::function<bool(INDEX_T,INDEX_T)>& filter_fun) {
+  INDEX_T ReadAllAndProcessParallelWithFilter(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun, const std::function<bool(INDEX_T, INDEX_T)>& filter_fun) {
     last_line_ = "";
     INDEX_T total_cnt = 0;
     INDEX_T used_cnt = 0;
@@ -250,8 +246,7 @@ public:
               ++used_cnt;
             }
             last_line_ = "";
-          }
-          else {
+          } else {
             if (filter_fun(used_cnt, total_cnt)) {
               lines_.emplace_back(buffer_process + last_i, i - last_i);
               ++used_cnt;
@@ -263,8 +258,7 @@ public:
           // skip end of line
           while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
           last_i = i;
-        }
-        else {
+        } else {
           ++i;
         }
       }
@@ -296,17 +290,16 @@ public:
 
   INDEX_T ReadPartAndProcessParallel(const std::vector<INDEX_T>& used_data_indices, const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun) {
     return ReadAllAndProcessParallelWithFilter(process_fun,
-      [&used_data_indices](INDEX_T used_cnt ,INDEX_T total_cnt) {
+      [&used_data_indices](INDEX_T used_cnt, INDEX_T total_cnt) {
       if (static_cast<size_t>(used_cnt) < used_data_indices.size() && total_cnt == used_data_indices[used_cnt]) {
         return true;
-      }
-      else {
+      } else {
         return false;
       }
     });
   }
 
-private:
+ private:
   /*! \brief Filename of text data */
   const char* filename_;
   /*! \brief Cache the read text data */
@@ -314,7 +307,7 @@ private:
   /*! \brief Buffer for last line */
   std::string last_line_;
   /*! \brief first line */
-  std::string first_line_="";
+  std::string first_line_ = "";
   /*! \brief is skip first line */
   bool is_skip_first_line_ = false;
   /*! \brief is skip first line */

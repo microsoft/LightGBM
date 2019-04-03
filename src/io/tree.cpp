@@ -17,7 +17,6 @@ namespace LightGBM {
 
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
-
   left_child_.resize(max_leaves_ - 1);
   right_child_.resize(max_leaves_ - 1);
   split_feature_inner_.resize(max_leaves_ - 1);
@@ -45,7 +44,6 @@ Tree::Tree(int max_leaves)
 }
 
 Tree::~Tree() {
-
 }
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
@@ -344,7 +342,7 @@ std::string Tree::CategoricalDecisionIfElse(int node) const {
   } else {
     str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
   }
-  int cat_idx = int(threshold_[node]);
+  int cat_idx = static_cast<int>(threshold_[node]);
   str_buf << "if (int_fval >= 0 && int_fval < 32 * (";
   str_buf << cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx];
   str_buf << ") && (((cat_threshold[" << cat_boundaries_[cat_idx];
@@ -379,7 +377,7 @@ std::string Tree::ToIfElse(int index, bool predict_leaf_index) const {
   }
   str_buf << " }" << '\n';
 
-  //Predict func by Map to ifelse
+  // Predict func by Map to ifelse
   str_buf << "double PredictTree" << index;
   if (predict_leaf_index) {
     str_buf << "LeafByMap";
@@ -480,7 +478,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   while (read_line < max_num_line) {
     if (*p == '\r' || *p == '\n') break;
     auto start = p;
-    while (*p != '=') ++p; 
+    while (*p != '=') ++p;
     std::string key(start, p - start);
     ++p;
     start = p;
@@ -652,7 +650,6 @@ void Tree::TreeSHAP(const double *feature_values, double *phi,
                     int node, int unique_depth,
                     PathElement *parent_unique_path, double parent_zero_fraction,
                     double parent_one_fraction, int parent_feature_index) const {
-
   // extend the unique path
   PathElement* unique_path = parent_unique_path + unique_depth;
   if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);

@@ -172,6 +172,16 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
+* \brief Update parameters for a Dataset
+* \param handle a instance of data matrix
+* \param parameters parameters
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParam_R(LGBM_SE handle,
+  LGBM_SE params,
+  LGBM_SE call_state);
+
+/*!
 * \brief get number of data.
 * \param handle the handle to the dataset
 * \param out The address to hold number of data
@@ -232,7 +242,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
   LGBM_SE out,
   LGBM_SE call_state);
-  
+
 /*!
 * \brief Merge model in two boosters to first handle
 * \param handle handle, will merge other handle to this
@@ -512,4 +522,4 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   LGBM_SE out_str,
   LGBM_SE call_state);
 
-#endif // LIGHTGBM_R_H_
+#endif  // LIGHTGBM_R_H_

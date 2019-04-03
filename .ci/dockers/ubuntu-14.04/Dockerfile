@@ -24,8 +24,18 @@ RUN apt-get update \
     build-essential \
  && rm -rf /var/lib/apt/lists/*
 
+# Install clang 6.0
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y \
+ && cd /tmp \
+ && wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
+ && add-apt-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main" -y \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+    clang-6.0 \
+ && rm -rf /var/lib/apt/lists/*
+
 # Install CMake
-RUN curl -sL https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.sh -o cmake.sh \
+RUN curl -sL https://cmake.org/files/v3.13/cmake-3.13.2-Linux-x86_64.sh -o cmake.sh \
  && chmod +x cmake.sh \
  && ./cmake.sh --prefix=/usr/local --exclude-subdir \
  && rm cmake.sh
@@ -33,13 +43,14 @@ RUN curl -sL https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.sh -o cmake
 # Install Miniconda
 RUN curl -sL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh \
  && chmod +x miniconda.sh \
- && ./miniconda.sh -b -p /usr/local/miniconda \
+ && ./miniconda.sh -b -p /opt/conda \
  && rm miniconda.sh \
- && chmod -R 777 /usr/local/miniconda \
- && /usr/local/miniconda/bin/conda install python=3 -q -y \
- && /usr/local/miniconda/bin/conda install mkl qt -q -y \
- && /usr/local/miniconda/bin/conda clean -a -y
-ENV CONDA=/usr/local/miniconda
+ && /opt/conda/bin/conda install python=3 -q -y \
+ && /opt/conda/bin/conda install mkl qt -q -y \
+ && /opt/conda/bin/conda clean -a -y \
+ && chmod -R 777 /opt/conda
+ 
+ENV CONDA=/opt/conda/
 
 # Clean system
 RUN apt-get clean \

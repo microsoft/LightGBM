@@ -24,8 +24,7 @@ namespace LightGBM {
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
 */
 class GBDT : public GBDTBase {
-public:
-
+ public:
   /*!
   * \brief Constructor
   */
@@ -212,7 +211,7 @@ public:
         num_preb_in_one_row *= max_iteration;
       }
     } else if (is_pred_contrib) {
-      num_preb_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2); // +1 for 0-based indexing, +1 for baseline
+      num_preb_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2);  // +1 for 0-based indexing, +1 for baseline
     }
     return num_preb_in_one_row;
   }
@@ -355,12 +354,11 @@ public:
   */
   virtual const char* SubModelName() const override { return "tree"; }
 
-protected:
-
+ protected:
   /*!
   * \brief Print eval result and check early stopping
   */
-  bool EvalAndCheckEarlyStopping();
+  virtual bool EvalAndCheckEarlyStopping();
 
   /*!
   * \brief reset config for bagging
@@ -407,7 +405,7 @@ protected:
   */
   std::string OutputMetric(int iter);
 
-  double BoostFromAverage(int class_id);
+  double BoostFromAverage(int class_id, bool update_scorer);
 
   /*! \brief current iteration */
   int iter_;
@@ -488,7 +486,6 @@ protected:
   std::string loaded_parameter_;
 
   Json forced_splits_json_;
-
 };
 
 }  // namespace LightGBM

@@ -15,7 +15,7 @@ namespace LightGBM {
 * \brief Used to store some information for gain split point
 */
 struct SplitInfo {
-public:
+ public:
   /*! \brief Feature index */
   int feature = -1;
   /*! \brief Split threshold */
@@ -185,11 +185,10 @@ public:
       return local_feature == other_feature;
     }
   }
-
 };
 
 struct LightSplitInfo {
-public:
+ public:
   /*! \brief Feature index */
   int feature = -1;
   /*! \brief Split gain */
@@ -280,7 +279,6 @@ public:
       return local_feature == other_feature;
     }
   }
-
 };
 
 }  // namespace LightGBM

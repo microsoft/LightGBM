@@ -6,7 +6,7 @@ data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
 
 dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label)
-dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label)
+dtest <- lgb.Dataset.create.valid(dtrain, data = agaricus.test$data, label = agaricus.test$label)
 
 # Note: for customized objective function, we leave objective as default
 # Note: what we are getting is margin value in prediction

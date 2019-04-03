@@ -21,7 +21,7 @@ class ObjectiveFunction;
 * \brief Interface for tree learner
 */
 class TreeLearner {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~TreeLearner() {}
 
@@ -47,7 +47,7 @@ public:
   * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian, 
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian,
                       Json& forced_split_json) = 0;
 
   /*!
@@ -74,6 +74,9 @@ public:
 
   virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
                                data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const = 0;
+
+  virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, double prediction,
+    data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const = 0;
 
   TreeLearner() = default;
   /*! \brief Disable copy */

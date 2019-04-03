@@ -11,7 +11,7 @@ namespace LightGBM {
 * \brief Objective function for binary classification
 */
 class BinaryLogloss: public ObjectiveFunction {
-public:
+ public:
   explicit BinaryLogloss(const Config& config, std::function<bool(label_t)> is_pos = nullptr) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
@@ -19,7 +19,7 @@ public:
     }
     is_unbalance_ = config.is_unbalance;
     scale_pos_weight_ = static_cast<double>(config.scale_pos_weight);
-    if(is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
+    if (is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
       Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time");
     }
     is_pos_ = is_pos;
@@ -54,7 +54,7 @@ public:
     // REMOVEME: remove the warning after 2.4 version release
     Log::Warning("Starting from the 2.1.2 version, default value for "
                  "the \"boost_from_average\" parameter in \"binary\" objective is true.\n"
-                 "This may cause significantly different results comparing to the previous versions of LightGBM.\n" 
+                 "This may cause significantly different results comparing to the previous versions of LightGBM.\n"
                  "Try to set boost_from_average=false, if your old models produce bad results");
     // count for positive and negative samples
     #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
@@ -65,10 +65,11 @@ public:
         ++cnt_negative;
       }
     }
+    need_train_ = true;
     if (cnt_negative == 0 || cnt_positive == 0) {
       Log::Warning("Contains only one class");
       // not need to boost.
-      num_data_ = 0;
+      need_train_ = false;
     }
     Log::Info("Number of positive: %d, number of negative: %d", cnt_positive, cnt_negative);
     // use -1 for negative class, and 1 for positive class
@@ -91,6 +92,9 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
+    if (!need_train_) {
+      return;
+    }
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -119,13 +123,13 @@ public:
       }
     }
   }
-  
+
   // implement custom average to boost from (if enabled among options)
   double BoostFromScore(int) const override {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml,sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]) * weights_[i];
         sumw += weights_[i];
@@ -145,8 +149,8 @@ public:
     return initscore;
   }
 
-  bool ClassNeedTrain(int /*class_id*/) const override { 
-    return num_data_ > 0; 
+  bool ClassNeedTrain(int /*class_id*/) const override {
+    return need_train_;
   }
 
   const char* GetName() const override {
@@ -168,7 +172,7 @@ public:
 
   bool NeedAccuratePrediction() const override { return false; }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -185,6 +189,7 @@ private:
   const label_t* weights_;
   double scale_pos_weight_;
   std::function<bool(label_t)> is_pos_;
+  bool need_train_;
 };
 
 }  // namespace LightGBM

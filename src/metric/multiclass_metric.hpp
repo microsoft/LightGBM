@@ -14,17 +14,15 @@ namespace LightGBM {
 */
 template<typename PointWiseLossCalculator>
 class MulticlassMetric: public Metric {
-public:
+ public:
   explicit MulticlassMetric(const Config& config) {
     num_class_ = config.num_class;
   }
 
   virtual ~MulticlassMetric() {
-
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-
     name_.emplace_back(PointWiseLossCalculator::Name());
     num_data_ = num_data;
     // get label
@@ -114,7 +112,7 @@ public:
     return std::vector<double>(1, loss);
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -130,7 +128,7 @@ private:
 
 /*! \brief L2 loss for multiclass task */
 class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
-public:
+ public:
   explicit MultiErrorMetric(const Config& config) :MulticlassMetric<MultiErrorMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, std::vector<double>& score) {
@@ -150,7 +148,7 @@ public:
 
 /*! \brief Logloss for multiclass task */
 class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetric> {
-public:
+ public:
   explicit MultiSoftmaxLoglossMetric(const Config& config) :MulticlassMetric<MultiSoftmaxLoglossMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, std::vector<double>& score) {

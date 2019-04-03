@@ -25,7 +25,7 @@ enum TaskType {
 const int kDefaultNumLeaves = 31;
 
 struct Config {
-public:
+ public:
   std::string ToString() const;
   /*!
   * \brief Get string value by specific name of key
@@ -197,8 +197,10 @@ public:
 
   // [doc-only]
   // alias = random_seed, random_state
-  // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
-  // desc = will be overridden, if you set other seeds
+  // default = None
+  // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.
+  // desc = by default, this seed is unused in favor of default values of other seeds
+  // desc = this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
   int seed = 0;
 
   #pragma endregion
@@ -335,7 +337,7 @@ public:
   // desc = used for the categorical features
   // desc = this can reduce the effect of noises in categorical features, especially for categories with few data
   double cat_smooth = 10.0;
-  
+
   // check = >0
   // desc = when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
   int max_cat_to_onehot = 4;
@@ -360,11 +362,12 @@ public:
   // desc = used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to replace the split gain of i-th feature
   // desc = you need to specify all features in order
   std::vector<double> feature_contri;
-  
+
   // alias = fs, forced_splits_filename, forced_splits_file, forced_splits
   // desc = path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
+  // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
   // desc = see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
@@ -436,7 +439,7 @@ public:
   // alias = init_score_filename, init_score_file, init_score, input_init_score
   // desc = path of file with training initial scores
   // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-  // desc = **Note**: can be used only in CLI version
+  // desc = **Note**: works only in case of loading data directly from file
   std::string initscore_filename = "";
 
   // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
@@ -444,7 +447,7 @@ public:
   // desc = path(s) of file(s) with validation initial scores
   // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
   // desc = separate by ``,`` for multi-validation data
-  // desc = **Note**: can be used only in CLI version
+  // desc = **Note**: works only in case of loading data directly from file
   std::vector<std::string> valid_data_initscores;
 
   // alias = is_pre_partition
@@ -483,19 +486,17 @@ public:
   // alias = two_round_loading, use_two_round_loading
   // desc = set this to ``true`` if data file is too big to fit in memory
   // desc = by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
+  // desc = **Note**: works only in case of loading data directly from file
   bool two_round = false;
 
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+  // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
-
-  // alias = load_from_binary_file, binary_load, load_binary
-  // desc = set this to ``true`` to enable autoloading from previous saved binary datasets
-  // desc = set this to ``false`` to ignore binary datasets
-  bool enable_load_from_binary_file = true;
 
   // alias = has_header
   // desc = set this to ``true`` if input data has header
+  // desc = **Note**: works only in case of loading data directly from file
   bool header = false;
 
   // type = int or string
@@ -503,6 +504,7 @@ public:
   // desc = used to specify the label column
   // desc = use number for index, e.g. ``label=0`` means column\_0 is the label
   // desc = add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
+  // desc = **Note**: works only in case of loading data directly from file
   std::string label_column = "";
 
   // type = int or string
@@ -510,6 +512,7 @@ public:
   // desc = used to specify the weight column
   // desc = use number for index, e.g. ``weight=0`` means column\_0 is the weight
   // desc = add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
+  // desc = **Note**: works only in case of loading data directly from file
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
   std::string weight_column = "";
 
@@ -518,6 +521,7 @@ public:
   // desc = used to specify the query/group id column
   // desc = use number for index, e.g. ``query=0`` means column\_0 is the query id
   // desc = add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
+  // desc = **Note**: works only in case of loading data directly from file
   // desc = **Note**: data should be grouped by query\_id
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
   std::string group_column = "";
@@ -529,6 +533,7 @@ public:
   // desc = add a prefix ``name:`` for column name, e.g. ``ignore_column=name:c1,c2,c3`` means c1, c2 and c3 will be ignored
   // desc = **Note**: works only in case of loading data directly from file
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
+  // desc = **Note**: despite the fact that specified columns will be completely ignored during the training, they still should have a valid format allowing LightGBM to load file successfully
   std::string ignore_column = "";
 
   // type = multi-int or string
@@ -702,6 +707,7 @@ public:
 
   // alias = training_metric, is_training_metric, train_metric
   // desc = set this to ``true`` to output metric result over training dataset
+  // desc = **Note**: can be used only in CLI version
   bool is_provide_training_metric = false;
 
   // type = multi-int
@@ -766,7 +772,8 @@ public:
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static std::unordered_map<std::string, std::string> alias_table;
   static std::unordered_set<std::string> parameter_set;
-private:
+
+ private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
@@ -832,10 +839,10 @@ struct ParameterAlias {
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
       auto alias = Config::alias_table.find(pair.first);
-      if (alias != Config::alias_table.end()) { // found alias
+      if (alias != Config::alias_table.end()) {  // found alias
         auto alias_set = tmp_map.find(alias->second);
-        if (alias_set != tmp_map.end()) { // alias already set
-                                          // set priority by length & alphabetically to ensure reproducible behavior
+        if (alias_set != tmp_map.end()) {  // alias already set
+                                           // set priority by length & alphabetically to ensure reproducible behavior
           if (alias_set->second.size() < pair.first.size() ||
             (alias_set->second.size() == pair.first.size() && alias_set->second < pair.first)) {
             Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s",
@@ -847,7 +854,7 @@ struct ParameterAlias {
                          pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), pair.second.c_str());
             tmp_map[alias->second] = pair.first;
           }
-        } else { // alias not set
+        } else {  // alias not set
           tmp_map.emplace(alias->second, pair.first);
         }
       } else if (Config::parameter_set.find(pair.first) == Config::parameter_set.end()) {
@@ -856,7 +863,7 @@ struct ParameterAlias {
     }
     for (const auto& pair : tmp_map) {
       auto alias = params->find(pair.first);
-      if (alias == params->end()) { // not find
+      if (alias == params->end()) {  // not find
         params->emplace(pair.first, params->at(pair.second));
         params->erase(pair.second);
       } else {

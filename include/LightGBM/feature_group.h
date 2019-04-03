@@ -16,7 +16,7 @@ class Dataset;
 class DatasetLoader;
 /*! \brief Using to store data and providing some operations on one feature group*/
 class FeatureGroup {
-public:
+ public:
   friend Dataset;
   friend DatasetLoader;
   /*!
@@ -145,7 +145,7 @@ public:
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
     return bin_data_->GetIterator(min_bin, max_bin, default_bin);
   }
-  
+
   /*!
    * \brief Returns a BinIterator that can access the entire feature group's raw data.
    *        The RawGet() function of the iterator should be called for best efficiency.
@@ -176,7 +176,6 @@ public:
     } else {
       return bin_data_->SplitCategorical(min_bin, max_bin, default_bin, threshold, num_threshold, data_indices, num_data, lte_indices, gt_indices);
     }
-
   }
   /*!
   * \brief From bin to feature value
@@ -212,10 +211,22 @@ public:
   }
   /*! \brief Disable copy */
   FeatureGroup& operator=(const FeatureGroup&) = delete;
-  /*! \brief Disable copy */
-  FeatureGroup(const FeatureGroup&) = delete;
+  /*! \brief Deep copy */
+  FeatureGroup(const FeatureGroup& other) {
+    num_feature_ = other.num_feature_;
+    is_sparse_ = other.is_sparse_;
+    num_total_bin_ = other.num_total_bin_;
+    bin_offsets_ = other.bin_offsets_;
 
-private:
+    bin_mappers_.reserve(other.bin_mappers_.size());
+    for (auto& bin_mapper : other.bin_mappers_) {
+      bin_mappers_.emplace_back(new BinMapper(*bin_mapper));
+    }
+
+    bin_data_.reset(other.bin_data_->Clone());
+  }
+
+ private:
   /*! \brief Number of features */
   int num_feature_;
   /*! \brief Bin mapper for sub features */

@@ -11,7 +11,7 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, string_type, DataFrame)
+                     argc_, range_, string_type, DataFrame, DataTable)
 from .engine import train
 
 
@@ -369,8 +369,19 @@ class LGBMModel(_LGBMModelBase):
             to continue training.
             Requires at least one validation data and one metric.
             If there's more than one, will check all of them. But the training data is ignored anyway.
-        verbose : bool, optional (default=True)
-            If True and an evaluation set is used, writes the evaluation progress.
+            To check only the first metric you can pass in ``callbacks``
+            ``early_stopping`` callback with ``first_metric_only=True``.
+        verbose : bool or int, optional (default=True)
+            Requires at least one evaluation data.
+            If True, the eval metric on the eval set is printed at each boosting stage.
+            If int, the eval metric on the eval set is printed at every ``verbose`` boosting stage.
+            The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
+
+            Example
+            -------
+            With ``verbose`` = 4 and at least one item in ``eval_set``,
+            an evaluation metric is printed every 4 (instead of 1) boosting stages.
+
         feature_name : list of strings or 'auto', optional (default='auto')
             Feature names.
             If 'auto' and data is pandas DataFrame, data columns names are used.
@@ -470,9 +481,11 @@ class LGBMModel(_LGBMModelBase):
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
             params['metric'] = set(original_metric + eval_metric)
 
-        if not isinstance(X, DataFrame):
-            X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
-            _LGBMCheckConsistentLength(X, y, sample_weight)
+        if not isinstance(X, (DataFrame, DataTable)):
+            _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
+            _LGBMCheckConsistentLength(_X, _y, sample_weight)
+        else:
+            _X, _y = X, y
 
         if self.class_weight is not None:
             class_sample_weight = _LGBMComputeSampleWeight(self.class_weight, y)
@@ -481,13 +494,13 @@ class LGBMModel(_LGBMModelBase):
             else:
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
-        self._n_features = X.shape[1]
+        self._n_features = _X.shape[1]
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
             ret = Dataset(X, label=y, weight=sample_weight, group=group, params=params)
             return ret.set_init_score(init_score)
 
-        train_set = _construct_dataset(X, y, sample_weight, init_score, group, params)
+        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params)
 
         valid_sets = []
         if eval_set is not None:
@@ -584,7 +597,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not isinstance(X, DataFrame):
+        if not isinstance(X, (DataFrame, DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
@@ -787,7 +800,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
                                                      pred_leaf, pred_contrib, **kwargs)
-        if self._n_classes > 2 or pred_leaf or pred_contrib:
+        if self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
         else:
             return np.vstack((1. - result, result)).transpose()

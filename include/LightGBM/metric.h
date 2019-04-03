@@ -18,7 +18,7 @@ namespace LightGBM {
 *        Metric is used to calculate metric result
 */
 class Metric {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~Metric() {}
 
@@ -51,15 +51,13 @@ public:
   * \param config Config for metric
   */
   LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const Config& config);
-
 };
 
 /*!
 * \brief Static class, used to calculate DCG score
 */
 class DCGCalculator {
-public:
-  
+ public:
   static void DefaultEvalAt(std::vector<int>* eval_at);
   static void DefaultLabelGain(std::vector<double>* label_gain);
   /*!
@@ -125,7 +123,7 @@ public:
   */
   inline static double GetDiscount(data_size_t k) { return discount_[k]; }
 
-private:
+ private:
   /*! \brief store gains for different label */
   static std::vector<double> label_gain_;
   /*! \brief store discount score for different position */

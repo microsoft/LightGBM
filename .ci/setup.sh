@@ -3,16 +3,15 @@
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
-        brew reinstall cmake  # CMake >=3.12 is needed to find OpenMP at macOS
+        brew upgrade cmake  # CMake >=3.12 is needed to find OpenMP at macOS
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_8.3.1.app/Contents/Developer
+            sudo xcode-select -s /Applications/Xcode_8.3.3.app/Contents/Developer
         fi
     else
         if [[ $TRAVIS == "true" ]]; then
-            sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.3"  # fix "fatal error: _stdio.h: No such file or directory"
-            rm '/usr/local/include/c++'
+#            rm '/usr/local/include/c++'  # previous variant to deal with conflict link
 #            brew cask uninstall oclint  #  reserve variant to deal with conflict link
-#            brew link --overwrite gcc  # previous variant to deal with conflict link
+            brew link --overwrite gcc
         fi
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
@@ -21,15 +20,13 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
     fi
-    if [[ $TRAVIS == "true" ]]; then
-        wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
-    fi
+    wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
         sudo apt-get update
         sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
-        sudo apt-get install libomp-dev
+        sudo apt-get install --no-install-recommends -y libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
@@ -50,13 +47,13 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-    if [[ $TRAVIS == "true" ]]; then
-        wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-Linux-x86_64.sh
+    if [[ $TRAVIS == "true" ]] || [[ $TASK == "gpu" ]]; then
+        wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-Linux-x86_64.sh
     fi
 fi
 
-if [[ $TRAVIS == "true" ]]; then
-    sh conda.sh -b -p $HOME_DIRECTORY/miniconda
-    conda config --set always_yes yes --set changeps1 no
-    conda update -q conda
+if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]] || [[ $TASK == "gpu" ]]; then
+    sh conda.sh -b -p $CONDA
 fi
+conda config --set always_yes yes --set changeps1 no
+conda update -q conda

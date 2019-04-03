@@ -18,7 +18,7 @@ std::chrono::duration<double, std::milli> hist_time;
 std::chrono::duration<double, std::milli> find_split_time;
 std::chrono::duration<double, std::milli> split_time;
 std::chrono::duration<double, std::milli> ordered_bin_time;
-#endif // TIMETAG
+#endif  // TIMETAG
 
 SerialTreeLearner::SerialTreeLearner(const Config* config)
   :config_(config) {
@@ -253,7 +253,6 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vect
 }
 
 void SerialTreeLearner::BeforeTrain() {
-
   // reset histogram pool
   histogram_pool_.ResetMap();
 
@@ -322,8 +321,7 @@ void SerialTreeLearner::BeforeTrain() {
       const data_size_t* indices = data_partition_->indices();
       data_size_t begin = data_partition_->leaf_begin(0);
       data_size_t end = begin + data_partition_->leaf_count(0);
-      data_size_t loop_size = end - begin;
-      #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
+      #pragma omp parallel for schedule(static, 512) if (end - begin >= 1024)
       for (data_size_t i = begin; i < end; ++i) {
         is_data_in_leaf_[indices[i]] = 1;
       }
@@ -336,7 +334,7 @@ void SerialTreeLearner::BeforeTrain() {
         OMP_LOOP_EX_END();
       }
       OMP_THROW_EX();
-      #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
+      #pragma omp parallel for schedule(static, 512) if (end - begin >= 1024)
       for (data_size_t i = begin; i < end; ++i) {
         is_data_in_leaf_[indices[i]] = 0;
       }
@@ -397,13 +395,12 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
     char mark = 1;
     data_size_t begin = data_partition_->leaf_begin(left_leaf);
     data_size_t end = begin + left_cnt;
-    data_size_t loop_size = end - begin;
     if (left_cnt > right_cnt) {
       begin = data_partition_->leaf_begin(right_leaf);
       end = begin + right_cnt;
       mark = 0;
     }
-    #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
+    #pragma omp parallel for schedule(static, 512) if (end - begin >= 1024)
     for (data_size_t i = begin; i < end; ++i) {
       is_data_in_leaf_[indices[i]] = 1;
     }
@@ -416,7 +413,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
+    #pragma omp parallel for schedule(static, 512) if (end - begin >= 1024)
     for (data_size_t i = begin; i < end; ++i) {
       is_data_in_leaf_[indices[i]] = 0;
     }
@@ -429,7 +426,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
 
 void SerialTreeLearner::FindBestSplits() {
   std::vector<int8_t> is_feature_used(num_features_, 0);
-  #pragma omp parallel for schedule(static,1024) if (num_features_ >= 2048)
+  #pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used_[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
@@ -544,7 +541,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
 }
 
 int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
-                                       int* right_leaf, int *cur_depth, 
+                                       int* right_leaf, int *cur_depth,
                                        bool *aborted_last_force_split) {
   int32_t result_count = 0;
   // start at root leaf
@@ -555,8 +552,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
   bool left_smaller = true;
   std::unordered_map<int, SplitInfo> forceSplitMap;
   q.push(std::make_pair(forced_split_json, *left_leaf));
-  while(!q.empty()) {
-
+  while (!q.empty()) {
     // before processing next node from queue, store info for current left/right leaf
     // store "best split" for left and right, even if they might be overwritten by forced split
     if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
@@ -688,11 +684,15 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
     right = Json();
     if ((pair.first).object_items().count("left") > 0) {
       left = (pair.first)["left"];
-      q.push(std::make_pair(left, *left_leaf));
+      if (left.object_items().count("feature") > 0 && left.object_items().count("threshold") > 0) {
+        q.push(std::make_pair(left, *left_leaf));
+      }
     }
     if ((pair.first).object_items().count("right") > 0) {
       right = (pair.first)["right"];
-      q.push(std::make_pair(right, *right_leaf));
+      if (right.object_items().count("feature") > 0 && right.object_items().count("threshold") > 0) {
+        q.push(std::make_pair(right, *right_leaf));
+      }
     }
     result_count++;
     *(cur_depth) = std::max(*(cur_depth), tree->leaf_depth(*left_leaf));
@@ -813,7 +813,47 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       for (int i = 0; i < tree->num_leaves(); ++i) {
         tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
       }
-    } 
+    }
+  }
+}
+
+void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, double prediction,
+  data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+  if (obj != nullptr && obj->IsRenewTreeOutput()) {
+    CHECK(tree->num_leaves() <= data_partition_->num_leaves());
+    const data_size_t* bag_mapper = nullptr;
+    if (total_num_data != num_data_) {
+      CHECK(bag_cnt == num_data_);
+      bag_mapper = bag_indices;
+    }
+    std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
+    int num_machines = Network::num_machines();
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < tree->num_leaves(); ++i) {
+      const double output = static_cast<double>(tree->LeafOutput(i));
+      data_size_t cnt_leaf_data = 0;
+      auto index_mapper = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
+      if (cnt_leaf_data > 0) {
+        // bag_mapper[index_mapper[i]]
+        const double new_output = obj->RenewTreeOutput(output, prediction, index_mapper, bag_mapper, cnt_leaf_data);
+        tree->SetLeafOutput(i, new_output);
+      } else {
+        CHECK(num_machines > 1);
+        tree->SetLeafOutput(i, 0.0);
+        n_nozeroworker_perleaf[i] = 0;
+      }
+    }
+    if (num_machines > 1) {
+      std::vector<double> outputs(tree->num_leaves());
+      for (int i = 0; i < tree->num_leaves(); ++i) {
+        outputs[i] = static_cast<double>(tree->LeafOutput(i));
+      }
+      Network::GlobalSum(outputs);
+      Network::GlobalSum(n_nozeroworker_perleaf);
+      for (int i = 0; i < tree->num_leaves(); ++i) {
+        tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
+      }
+    }
   }
 }
 

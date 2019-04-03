@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import collections
+import warnings
 from operator import gt, lt
 
 from .compat import range_
@@ -149,7 +150,7 @@ def reset_parameter(**kwargs):
     return _callback
 
 
-def early_stopping(stopping_rounds, verbose=True):
+def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     """Create a callback that activates early stopping.
 
     Note
@@ -160,11 +161,14 @@ def early_stopping(stopping_rounds, verbose=True):
     to continue training.
     Requires at least one validation data and one metric.
     If there's more than one, will check all of them. But the training data is ignored anyway.
+    To check only the first metric set ``first_metric_only`` to True.
 
     Parameters
     ----------
     stopping_rounds : int
        The possible number of rounds without the trend occurrence.
+    first_metric_only : bool, optional (default=False)
+       Whether to use only the first metric for early stopping.
     verbose : bool, optional (default=True)
         Whether to print message with early stopping information.
 
@@ -177,8 +181,16 @@ def early_stopping(stopping_rounds, verbose=True):
     best_iter = []
     best_score_list = []
     cmp_op = []
+    enabled = [True]
 
     def _init(env):
+        enabled[0] = not any((boost_alias in env.params
+                              and env.params[boost_alias] == 'dart') for boost_alias in ('boosting',
+                                                                                         'boosting_type',
+                                                                                         'boost'))
+        if not enabled[0]:
+            warnings.warn('Early stopping is not available in dart mode')
+            return
         if not env.evaluation_result_list:
             raise ValueError('For early stopping, '
                              'at least one dataset and eval metric is required for evaluation')
@@ -200,9 +212,11 @@ def early_stopping(stopping_rounds, verbose=True):
     def _callback(env):
         if not cmp_op:
             _init(env)
+        if not enabled[0]:
+            return
         for i in range_(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
-            if cmp_op[i](score, best_score[i]):
+            if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
                 best_iter[i] = env.iteration
                 best_score_list[i] = env.evaluation_result_list
@@ -216,5 +230,7 @@ def early_stopping(stopping_rounds, verbose=True):
                     print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
+            if first_metric_only:  # the only first metric is used for early stopping
+                break
     _callback.order = 30
     return _callback

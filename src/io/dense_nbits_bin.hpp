@@ -12,7 +12,7 @@ namespace LightGBM {
 class Dense4bitsBin;
 
 class Dense4bitsBinIterator : public BinIterator {
-public:
+ public:
   explicit Dense4bitsBinIterator(const Dense4bitsBin* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
     : bin_data_(bin_data), min_bin_(static_cast<uint8_t>(min_bin)),
     max_bin_(static_cast<uint8_t>(max_bin)),
@@ -26,7 +26,8 @@ public:
   inline uint32_t RawGet(data_size_t idx) override;
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override {}
-private:
+
+ private:
   const Dense4bitsBin* bin_data_;
   uint8_t min_bin_;
   uint8_t max_bin_;
@@ -35,7 +36,7 @@ private:
 };
 
 class Dense4bitsBin : public Bin {
-public:
+ public:
   friend Dense4bitsBinIterator;
   Dense4bitsBin(data_size_t num_data)
     : num_data_(num_data) {
@@ -45,7 +46,6 @@ public:
   }
 
   ~Dense4bitsBin() {
-
   }
 
   void Push(int, data_size_t idx, uint32_t value) override {
@@ -72,11 +72,9 @@ public:
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
                           const score_t* ordered_gradients, const score_t* ordered_hessians,
                           HistogramBinEntry* out) const override {
-
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
-
       const data_size_t idx0 = data_indices[i];
       const auto bin0 = (data_[idx0 >> 1] >> ((idx0 & 1) << 2)) & 0xf;
 
@@ -103,7 +101,6 @@ public:
       ++out[bin1].cnt;
       ++out[bin2].cnt;
       ++out[bin3].cnt;
-
     }
 
     for (; i < num_data; ++i) {
@@ -121,7 +118,6 @@ public:
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
-
       const auto bin0 = (data_[i >> 1]) & 0xf;
       const auto bin1 = (data_[i >> 1] >> 4) & 0xf;
       const auto bin2 = (data_[(i >> 1) + 1]) & 0xf;
@@ -367,7 +363,14 @@ public:
     return sizeof(uint8_t) * data_.size();
   }
 
-protected:
+  Dense4bitsBin* Clone() override {
+    return new Dense4bitsBin(*this);
+  }
+
+ protected:
+  Dense4bitsBin(const Dense4bitsBin& other)
+    : num_data_(other.num_data_), data_(other.data_), buf_(other.buf_) {}
+
   data_size_t num_data_;
   std::vector<uint8_t> data_;
   std::vector<uint8_t> buf_;

@@ -25,7 +25,7 @@ def find_lib():
     exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
     LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
-    logging.info("Installing lib_lightgbm from: %s" % LIB_PATH)
+    logger.info("Installing lib_lightgbm from: %s" % LIB_PATH)
     return LIB_PATH
 
 
@@ -87,10 +87,11 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
-                boost_root=None, boost_dir=None, boost_include_dir=None,
-                boost_librarydir=None, opencl_include_dir=None,
-                opencl_library=None):
+def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
+                use_hdfs=False, boost_root=None, boost_dir=None,
+                boost_include_dir=None, boost_librarydir=None,
+                opencl_include_dir=None, opencl_library=None,
+                openmp_include_dir=None, openmp_library=None):
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
         shutil.rmtree(os.path.join(CURRENT_DIR, "build_cpp"))
@@ -116,8 +117,11 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
             cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
+    if nomp:
+        cmake_cmd.append("-DUSE_OPENMP=OFF")
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
+
     if system() in ('Windows', 'Microsoft'):
         if use_mingw:
             if use_mpi:
@@ -132,7 +136,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
             lib_path = os.path.join(CURRENT_DIR, "compile", "windows", "x64", "DLL", "lib_lightgbm.dll")
             if not any((use_gpu, use_mpi, use_hdfs)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
-                platform_toolsets = ("v141", "v140")
+                platform_toolsets = ("v141", "v140", "v142")
                 for pt in platform_toolsets:
                     status = silent_call(["MSBuild",
                                           os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"),
@@ -146,7 +150,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
                 if status != 0 or not os.path.exists(lib_path):
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
             if status != 0 or not os.path.exists(lib_path):
-                vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64")
+                vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 16 2019")
                 for vs in vs_versions:
                     logger.info("Starting to compile with %s." % vs)
                     status = silent_call(cmake_cmd + ["-G", vs])
@@ -161,9 +165,41 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
                             error_msg='Please install CMake first')
     else:  # Linux, Darwin (macOS), etc.
         logger.info("Starting to compile with CMake.")
-        silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
-        silent_call(["make", "_lightgbm", "-j4"], raise_error=True,
-                    error_msg='An error has occurred while building lightgbm library file')
+        # Apple Clang with OpenMP
+        if system() == 'Darwin' and not nomp and not (os.environ.get('CC', '').startswith('gcc')
+                                                      and os.environ.get('CXX', '').startswith('g++')):
+            def get_cmake_opts(openmp_include_dir, openmp_library):
+                if openmp_include_dir and openmp_library:
+                    return ['-DOpenMP_C_FLAGS=-Xpreprocessor -fopenmp -I{0}'.format(openmp_include_dir),
+                            '-DOpenMP_C_LIB_NAMES=omp',
+                            '-DOpenMP_CXX_FLAGS=-Xpreprocessor -fopenmp -I{0}'.format(openmp_include_dir),
+                            '-DOpenMP_CXX_LIB_NAMES=omp',
+                            '-DOpenMP_omp_LIBRARY={0}'.format(openmp_library)]
+                else:
+                    return []
+
+            status = silent_call(cmake_cmd + get_cmake_opts(openmp_include_dir, openmp_library))
+            status += silent_call(["make", "_lightgbm", "-j4"])
+            if status != 0:
+                logger.warning("Compilation failed.")
+                logger.info("Starting to compile with Homebrew OpenMP paths guesses.")
+                clear_path(os.path.join(CURRENT_DIR, "build_cpp"))
+                status = silent_call(cmake_cmd + get_cmake_opts('/usr/local/opt/libomp/include',
+                                                                '/usr/local/opt/libomp/lib/libomp.dylib'))
+                status += silent_call(["make", "_lightgbm", "-j4"])
+            if status != 0:
+                logger.warning("Compilation failed.")
+                logger.info("Starting to compile with MacPorts OpenMP paths guesses.")
+                clear_path(os.path.join(CURRENT_DIR, "build_cpp"))
+                silent_call(cmake_cmd + get_cmake_opts('/opt/local/include/libomp',
+                                                       '/opt/local/lib/libomp/libomp.dylib'),
+                            raise_error=True, error_msg='Please install CMake and all required dependencies first')
+                silent_call(["make", "_lightgbm", "-j4"], raise_error=True,
+                            error_msg='An error has occurred while building lightgbm library file')
+        else:
+            silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
+            silent_call(["make", "_lightgbm", "-j4"], raise_error=True,
+                        error_msg='An error has occurred while building lightgbm library file')
     os.chdir(CURRENT_DIR)
 
 
@@ -184,6 +220,7 @@ class CustomInstall(install):
         ('mingw', 'm', 'Compile with MinGW'),
         ('gpu', 'g', 'Compile GPU version'),
         ('mpi', None, 'Compile MPI version'),
+        ('nomp', None, 'Compile version without OpenMP support'),
         ('hdfs', 'h', 'Compile HDFS version'),
         ('precompile', 'p', 'Use precompiled library'),
         ('boost-root=', None, 'Boost preferred installation prefix'),
@@ -191,7 +228,9 @@ class CustomInstall(install):
         ('boost-include-dir=', None, 'Directory containing Boost headers'),
         ('boost-librarydir=', None, 'Preferred Boost library directory'),
         ('opencl-include-dir=', None, 'OpenCL include directory'),
-        ('opencl-library=', None, 'Path to OpenCL library')
+        ('opencl-library=', None, 'Path to OpenCL library'),
+        ('openmp-include-dir=', None, 'OpenMP include directory'),
+        ('openmp-library=', None, 'Path to OpenMP library')
     ]
 
     def initialize_options(self):
@@ -204,18 +243,22 @@ class CustomInstall(install):
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
+        self.openmp_include_dir = None
+        self.openmp_library = None
         self.mpi = 0
         self.hdfs = 0
         self.precompile = 0
+        self.nomp = 0
 
     def run(self):
         open(LOG_PATH, 'wb').close()
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi, use_hdfs=self.hdfs,
-                        boost_root=self.boost_root, boost_dir=self.boost_dir,
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi, nomp=self.nomp,
+                        use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
-                        opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library)
+                        opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
+                        openmp_include_dir=self.openmp_include_dir, openmp_library=self.openmp_library)
         install.run(self)
         if os.path.isfile(LOG_PATH):
             os.remove(LOG_PATH)
@@ -288,7 +331,6 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 2',
                        'Programming Language :: Python :: 2.7',
                        'Programming Language :: Python :: 3',
-                       'Programming Language :: Python :: 3.4',
                        'Programming Language :: Python :: 3.5',
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',

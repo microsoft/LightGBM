@@ -147,8 +147,7 @@ void Json::dump(string &out) const {
 
 template <Json::Type tag, typename T>
 class Value : public JsonValue {
-protected:
-
+ protected:
     // Constructors
     explicit Value(const T &value) : m_value(value) {}
     explicit Value(T &&value)      : m_value(move(value)) {}
@@ -175,7 +174,7 @@ class JsonDouble final : public Value<Json::NUMBER, double> {
     int int_value() const override { return static_cast<int>(m_value); }
     bool equals(const JsonValue * other) const override { return m_value == other->number_value(); }
     bool less(const JsonValue * other)   const override { return m_value <  other->number_value(); }
-public:
+ public:
     explicit JsonDouble(double value) : Value(value) {}
 };
 
@@ -184,19 +183,19 @@ class JsonInt final : public Value<Json::NUMBER, int> {
     int int_value() const override { return m_value; }
     bool equals(const JsonValue * other) const override { return m_value == other->number_value(); }
     bool less(const JsonValue * other)   const override { return m_value <  other->number_value(); }
-public:
+ public:
     explicit JsonInt(int value) : Value(value) {}
 };
 
 class JsonBoolean final : public Value<Json::BOOL, bool> {
     bool bool_value() const override { return m_value; }
-public:
+ public:
     explicit JsonBoolean(bool value) : Value(value) {}
 };
 
 class JsonString final : public Value<Json::STRING, string> {
     const string &string_value() const override { return m_value; }
-public:
+ public:
     explicit JsonString(const string &value) : Value(value) {}
     explicit JsonString(string &&value)      : Value(move(value)) {}
 };
@@ -204,7 +203,7 @@ public:
 class JsonArray final : public Value<Json::ARRAY, Json::array> {
     const Json::array &array_items() const override { return m_value; }
     const Json & operator[](size_t i) const override;
-public:
+ public:
     explicit JsonArray(const Json::array &value) : Value(value) {}
     explicit JsonArray(Json::array &&value)      : Value(move(value)) {}
 };
@@ -212,13 +211,13 @@ public:
 class JsonObject final : public Value<Json::OBJECT, Json::object> {
     const Json::object &object_items() const override { return m_value; }
     const Json & operator[](const string &key) const override;
-public:
+ public:
     explicit JsonObject(const Json::object &value) : Value(value) {}
     explicit JsonObject(Json::object &&value)      : Value(move(value)) {}
 };
 
 class JsonNull final : public Value<Json::NUL, NullStruct> {
-public:
+ public:
     JsonNull() : Value({}) {}
 };
 
@@ -291,8 +290,10 @@ const Json & JsonObject::operator[] (const string &key) const {
     return (iter == m_value.end()) ? static_null() : iter->second;
 }
 const Json & JsonArray::operator[] (size_t i) const {
-    if (i >= m_value.size()) return static_null();
-    else return m_value[i];
+    if (i >= m_value.size())
+        return static_null();
+    else
+        return m_value[i];
 }
 
 /* * * * * * * * * * * * * * * * * * * *
@@ -345,7 +346,6 @@ namespace {
  * Object that tracks all state of an in-progress parse.
  */
 struct JsonParser final {
-
     /* State
      */
     const string &str;
@@ -389,15 +389,14 @@ struct JsonParser final {
         i++;
         if (i == str.size())
           return fail("Unexpected end of input after start of comment", false);
-        if (str[i] == '/') { // inline comment
+        if (str[i] == '/') {  // inline comment
           i++;
           // advance until next line, or end of input
           while (i < str.size() && str[i] != '\n') {
             i++;
           }
           comment_found = true;
-        }
-        else if (str[i] == '*') { // multiline comment
+        } else if (str[i] == '*') {  // multiline comment
           i++;
           if (i > str.size()-2)
             return fail("Unexpected end of input inside multi-line comment", false);
@@ -409,9 +408,9 @@ struct JsonParser final {
           }
           i += 2;
           comment_found = true;
-        }
-        else
+        } else {
           return fail("Malformed comment", false);
+        }
       }
       return comment_found;
     }
@@ -422,14 +421,14 @@ struct JsonParser final {
      */
     void consume_garbage() {
       consume_whitespace();
-      if(strategy == JsonParse::COMMENTS) {
+      if (strategy == JsonParse::COMMENTS) {
         bool comment_found = false;
         do {
           comment_found = consume_comment();
           if (failed) return;
           consume_whitespace();
         }
-        while(comment_found);
+        while (comment_found);
       }
     }
 
@@ -440,9 +439,9 @@ struct JsonParser final {
      */
     char get_next_token() {
         consume_garbage();
-        if (failed) return (char)0;
+        if (failed) return char{0};
         if (i == str.size())
-            return fail("Unexpected end of input", (char)0);
+            return fail("Unexpected end of input", char{0});
 
         return str[i++];
     }
@@ -726,7 +725,7 @@ struct JsonParser final {
         return fail("Expected value, got " + esc(ch));
     }
 };
-}//namespace {
+}  // namespace
 
 Json Json::parse(const string &in, string &err, JsonParse strategy) {
     JsonParser parser { in, 0, err, false, strategy };
@@ -784,4 +783,4 @@ bool Json::has_shape(const shape & types, string & err) const {
     return true;
 }
 
-} // namespace json11
+}  // namespace json11

@@ -51,8 +51,7 @@ const int INVALID_SOCKET = -1;
 #ifdef _WIN32
 #ifndef _MSC_VER
 // not using visual studio in windows
-inline int inet_pton(int af, const char *src, void *dst)
-{
+inline int inet_pton(int af, const char *src, void *dst) {
   struct sockaddr_storage ss;
   int size = sizeof(ss);
   char src_copy[INET6_ADDRSTRLEN + 1];
@@ -87,7 +86,7 @@ const bool kNoDelay = true;
 }
 
 class TcpSocket {
-public:
+ public:
   TcpSocket() {
     sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd_ == INVALID_SOCKET) {
@@ -119,11 +118,11 @@ public:
     if (sockfd_ == INVALID_SOCKET) {
       return;
     }
-    
+
     if (setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
       Log::Warning("Set SO_RCVBUF failed, please increase your net.core.rmem_max to 100k at least");
     }
-    
+
     if (setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
       Log::Warning("Set SO_SNDBUF failed, please increase your net.core.wmem_max to 100k at least");
     }
@@ -174,7 +173,7 @@ public:
     PIP_ADAPTER_INFO pAdapter = NULL;
     DWORD dwRetVal = 0;
     ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
-    pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(sizeof(IP_ADAPTER_INFO));
+    pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(sizeof(IP_ADAPTER_INFO)));
     if (pAdapterInfo == NULL) {
       Log::Fatal("GetAdaptersinfo error: allocating memory");
     }
@@ -182,7 +181,7 @@ public:
     // the necessary size into the ulOutBufLen variable
     if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
       FREE(pAdapterInfo);
-      pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(ulOutBufLen);
+      pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(ulOutBufLen));
       if (pAdapterInfo == NULL) {
         Log::Fatal("GetAdaptersinfo error: allocating memory");
       }
@@ -292,7 +291,7 @@ public:
     }
   }
 
-private:
+ private:
   SOCKET sockfd_;
 };
 

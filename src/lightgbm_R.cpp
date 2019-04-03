@@ -19,7 +19,6 @@
 
 #define R_API_BEGIN() \
   try {
-
 #define R_API_END() } \
   catch(std::exception& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.what()); return call_state;} \
   catch(std::string& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.c_str()); return call_state; } \
@@ -54,7 +53,6 @@ LGBM_SE LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
   LGBM_SE reference,
   LGBM_SE out,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromFile(R_CHAR_PTR(filename), R_CHAR_PTR(parameters),
@@ -96,7 +94,6 @@ LGBM_SE LGBM_DatasetCreateFromMat_R(LGBM_SE data,
   LGBM_SE reference,
   LGBM_SE out,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   int32_t nrow = static_cast<int32_t>(R_AS_INT(num_row));
   int32_t ncol = static_cast<int32_t>(R_AS_INT(num_col));
@@ -114,7 +111,6 @@ LGBM_SE LGBM_DatasetGetSubset_R(LGBM_SE handle,
   LGBM_SE parameters,
   LGBM_SE out,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   int len = R_AS_INT(len_used_row_indices);
   std::vector<int> idxvec(len);
@@ -151,7 +147,6 @@ LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   LGBM_SE actual_len,
   LGBM_SE feature_names,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   int len = 0;
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &len));
@@ -204,7 +199,7 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
       vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
-  } else if(!strcmp("init_score", name)) {
+  } else if (!strcmp("init_score", name)) {
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, R_REAL_PTR(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
@@ -221,7 +216,6 @@ LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE field_name,
   LGBM_SE field_data,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   const char* name = R_CHAR_PTR(field_name);
   int out_len = 0;
@@ -256,7 +250,6 @@ LGBM_SE LGBM_DatasetGetFieldSize_R(LGBM_SE handle,
   LGBM_SE field_name,
   LGBM_SE out,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   const char* name = R_CHAR_PTR(field_name);
   int out_len = 0;
@@ -267,6 +260,14 @@ LGBM_SE LGBM_DatasetGetFieldSize_R(LGBM_SE handle,
     out_len -= 1;
   }
   R_INT_PTR(out)[0] = static_cast<int>(out_len);
+  R_API_END();
+}
+
+LGBM_SE LGBM_DatasetUpdateParam_R(LGBM_SE handle,
+  LGBM_SE params,
+  LGBM_SE call_state) {
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_DatasetUpdateParam(R_GET_PTR(handle), R_CHAR_PTR(params)));
   R_API_END();
 }
 
@@ -315,7 +316,6 @@ LGBM_SE LGBM_BoosterCreate_R(LGBM_SE train_data,
 LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
   LGBM_SE out,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   int out_num_iterations = 0;
   BoosterHandle handle = nullptr;
@@ -327,7 +327,6 @@ LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
 LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
   LGBM_SE out,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   int out_num_iterations = 0;
   BoosterHandle handle = nullptr;
@@ -414,7 +413,6 @@ LGBM_SE LGBM_BoosterRollbackOneIter_R(LGBM_SE handle,
 LGBM_SE LGBM_BoosterGetCurrentIteration_R(LGBM_SE handle,
   LGBM_SE out,
   LGBM_SE call_state) {
-
   int out_iteration;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetCurrentIteration(R_GET_PTR(handle), &out_iteration));
@@ -427,7 +425,6 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   LGBM_SE actual_len,
   LGBM_SE eval_names,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
@@ -466,7 +463,7 @@ LGBM_SE LGBM_BoosterGetNumPredict_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t len;
   CHECK_CALL(LGBM_BoosterGetNumPredict(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
-  R_INT_PTR(out)[0] = static_cast<int>(len);
+  R_INT64_PTR(out)[0] = len;
   R_API_END();
 }
 
@@ -544,7 +541,6 @@ LGBM_SE LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   LGBM_SE parameter,
   LGBM_SE out_result,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
@@ -575,7 +571,6 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   LGBM_SE parameter,
   LGBM_SE out_result,
   LGBM_SE call_state) {
-
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 

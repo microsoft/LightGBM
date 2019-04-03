@@ -1,5 +1,4 @@
 language: cpp
-sudo: required
 dist: trusty
 
 git:
@@ -8,6 +7,7 @@ git:
 os:
   - linux
   - osx
+osx_image: xcode10.1
 
 env:
   global:  # default values
@@ -46,7 +46,8 @@ before_install:
         export OS_NAME="linux";
         export COMPILER="clang";
     fi
-  - export PATH="$HOME/miniconda/bin:$PATH"
+  - export CONDA="$HOME/miniconda"
+  - export PATH="$CONDA/bin:$PATH"
   - export CONDA_ENV="test-env"
   - export LGB_VER=$(head -n 1 VERSION.txt)
   - export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
