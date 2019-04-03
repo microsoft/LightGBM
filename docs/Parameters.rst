@@ -374,11 +374,11 @@ Learning Control Parameters
 
    -  used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
 
--  ``cegb_tradeoff`` :raw-html:`<a id="cegb_tradeoff" title="Permalink to this parameter" href="#cegb_tradeoff">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = double, constraints: ``cegb_tradeoff >= 0.0``
+-  ``cegb_tradeoff`` :raw-html:`<a id="cegb_tradeoff" title="Permalink to this parameter" href="#cegb_tradeoff">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``cegb_tradeoff >= 0.0``
 
    -  cost-effective gradient boosting multiplier for all penalties
 
--  ``cegb_penalty_split`` :raw-html:`<a id="cegb_penalty_split" title="Permalink to this parameter" href="#cegb_penalty_split">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = double, constraints: ``cegb_penalty_split >= 0.0``
+-  ``cegb_penalty_split`` :raw-html:`<a id="cegb_penalty_split" title="Permalink to this parameter" href="#cegb_penalty_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``cegb_penalty_split >= 0.0``
 
    -  cost-effective gradient-boosting penalty for splitting a node
 
