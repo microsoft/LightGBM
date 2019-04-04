@@ -353,7 +353,7 @@ def cv(params, train_set, num_boost_round=100,
     folds : generator or iterator of (train_idx, test_idx) tuples, scikit-learn splitter object or None, optional (default=None)
         If generator or iterator, it should yield the train and test indices for each fold.
         If object, it should be one of the scikit-learn splitter classes
-        (http://scikit-learn.org/stable/modules/classes.html#splitter-classes)
+        (https://scikit-learn.org/stable/modules/classes.html#splitter-classes)
         and have ``split`` method.
         This argument has highest priority over other data split arguments.
     nfold : int, optional (default=5)
