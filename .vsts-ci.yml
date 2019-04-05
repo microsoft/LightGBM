@@ -10,7 +10,7 @@ jobs:
 - job: Linux
 ###########################################
   variables:
-    COMPILER: gcc
+    COMPILER: clang
   pool:
     vmImage: 'ubuntu-16.04'
   container: ubuntu1404
@@ -63,7 +63,7 @@ jobs:
 - job: MacOS
 ###########################################
   variables:
-    COMPILER: clang
+    COMPILER: gcc
   pool:
     vmImage: 'macOS-10.13'
   strategy:
