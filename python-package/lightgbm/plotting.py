@@ -196,6 +196,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     """
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
+        from matplotlib.ticker import MaxNLocator
     else:
         raise ImportError('You must install matplotlib to plot split value histogram.')
 
@@ -225,7 +226,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         xlim = (bins[0] - range_result * 0.2, bins[-1] + range_result * 0.2)
     ax.set_xlim(xlim)
 
-    ax.set_yticks([int(tick) for tick in ax.get_yticks()])
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     if ylim is not None:
         _check_not_tuple_of_2_elements(ylim, 'ylim')
     else:
