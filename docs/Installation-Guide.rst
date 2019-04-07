@@ -599,8 +599,8 @@ On Linux HDFS version of LightGBM can be built using **CMake** and **gcc**.
      # if you have installed HDFS to a customized location, you should specify paths to HDFS headers (hdfs.h) and library (libhdfs.so) like the following:
      # cmake \
      #   -DUSE_HDFS=ON \
-     #   -DHDFS_LIB=/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/lib64/libhdfs.so \
-     #   -DHDFS_INCLUDE_DIR=/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/include/ \
+     #   -DHDFS_LIB="/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/lib64/libhdfs.so" \
+     #   -DHDFS_INCLUDE_DIR="/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/include/" \
      #   ..
      make -j4
 
