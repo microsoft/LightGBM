@@ -248,7 +248,7 @@ From Command Line
      cmake -A x64 -DUSE_OPENMP=OFF ..
      cmake --build . --target ALL_BUILD --config Release
 
-The ``.exe`` and dll files will be in ``LightGBM/Release`` folder.
+The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
 
 MinGW-w64
 *********
@@ -626,7 +626,7 @@ VS Build Tools
      cmake -A x64 -DUSE_SWIG=ON ..
      cmake --build . --target ALL_BUILD --config Release
 
-The jar file will be in ``LightGBM/build`` folder and the dll files will be in ``LightGBM/Release`` folder.
+The ``.jar`` file will be in ``LightGBM/build`` folder and the ``.dll`` files will be in ``LightGBM/Release`` folder.
 
 MinGW-w64
 *********
@@ -646,7 +646,7 @@ MinGW-w64
      cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..
      mingw32-make.exe -j4
 
-The jar file will be in ``LightGBM/build`` folder and the dll files will be in ``LightGBM/`` folder.
+The ``.jar`` file will be in ``LightGBM/build`` folder and the ``.dll`` files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
 
