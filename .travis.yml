@@ -1,5 +1,4 @@
 language: cpp
-dist: trusty
 
 git:
   submodules: true
@@ -7,7 +6,8 @@ git:
 os:
   - linux
   - osx
-osx_image: xcode10.1
+dist: trusty
+osx_image: xcode10.2
 
 env:
   global:  # default values
