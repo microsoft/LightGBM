@@ -197,6 +197,10 @@ std::unordered_set<std::string> Config::parameter_set({
   "feature_contri",
   "forcedsplits_filename",
   "refit_decay_rate",
+  "cegb_tradeoff",
+  "cegb_penalty_split",
+  "cegb_penalty_feature_lazy",
+  "cegb_penalty_feature_coupled",
   "verbosity",
   "max_bin",
   "min_data_in_bin",
@@ -368,6 +372,20 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "refit_decay_rate", &refit_decay_rate);
   CHECK(refit_decay_rate >=0.0);
   CHECK(refit_decay_rate <=1.0);
+
+  GetDouble(params, "cegb_tradeoff", &cegb_tradeoff);
+  CHECK(cegb_tradeoff >=0.0);
+
+  GetDouble(params, "cegb_penalty_split", &cegb_penalty_split);
+  CHECK(cegb_penalty_split >=0.0);
+
+  if (GetString(params, "cegb_penalty_feature_lazy", &tmp_str)) {
+    cegb_penalty_feature_lazy = Common::StringToArray<double>(tmp_str, ',');
+  }
+
+  if (GetString(params, "cegb_penalty_feature_coupled", &tmp_str)) {
+    cegb_penalty_feature_coupled = Common::StringToArray<double>(tmp_str, ',');
+  }
 
   GetInt(params, "verbosity", &verbosity);
 
@@ -554,6 +572,10 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[feature_contri: " << Common::Join(feature_contri, ",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
   str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";
+  str_buf << "[cegb_tradeoff: " << cegb_tradeoff << "]\n";
+  str_buf << "[cegb_penalty_split: " << cegb_penalty_split << "]\n";
+  str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
+  str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";

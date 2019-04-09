@@ -41,6 +41,19 @@ LambdaRank
 
 -  Use ``max_position`` to set the NDCG optimization position.
 
+Cost Efficient Gradient Boosting
+--------------------------------
+
+`Cost Efficient Gradient Boosting <https://papers.nips.cc/paper/6753-cost-efficient-gradient-boosting.pdf>`_ (CEGB)  makes it possible to penalise boosting based on the cost of obtaining feature values.
+CEGB penalises learning in the following ways:
+
+- Each time a tree is split, a penalty of ``cegb_penalty_split`` is applied.
+- When a feature is used for the first time, ``cegb_penalty_feature_coupled`` is applied. This penalty can be different for each feature and should be specified as one ``double`` per feature.
+- When a feature is used for the first time for a data row, ``cegb_penalty_feature_lazy`` is applied. Like ``cegb_penalty_feature_coupled``, this penalty is specified as one ``double`` per feature.
+
+Each of the penalties above is scaled by ``cegb_tradeoff``.
+Using this parameter, it is possible to change the overall strength of the CEGB penalties by changing only one parameter.
+
 Parameters Tuning
 -----------------
 
