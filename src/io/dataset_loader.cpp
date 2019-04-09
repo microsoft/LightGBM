@@ -390,8 +390,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
         dataset->monotone_types_[inner_fidx] = config_.monotone_constraints[i];
       }
     }
-  }
-  else {
+  } else {
     const int8_t* tmp_ptr_monotone_type = reinterpret_cast<const int8_t*>(mem_ptr);
     dataset->monotone_types_.clear();
     for (int i = 0; i < dataset->num_features_; ++i) {
@@ -413,8 +412,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
         dataset->feature_penalty_[inner_fidx] = config_.feature_contri[i];
       }
     }
-  }
-  else {
+  } else {
     const double* tmp_ptr_feature_penalty = reinterpret_cast<const double*>(mem_ptr);
     dataset->feature_penalty_.clear();
     for (int i = 0; i < dataset->num_features_; ++i) {

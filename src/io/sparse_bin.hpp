@@ -413,7 +413,7 @@ class SparseBin: public Bin {
   SparseBin<VAL_T>(const SparseBin<VAL_T>& other)
     : num_data_(other.num_data_), deltas_(other.deltas_), vals_(other.vals_),
       num_vals_(other.num_vals_), push_buffers_(other.push_buffers_),
-      fast_index_(other.fast_index_), fast_index_shift_(other.fast_index_shift_){}
+      fast_index_(other.fast_index_), fast_index_shift_(other.fast_index_shift_) {}
 
   data_size_t num_data_;
   std::vector<uint8_t> deltas_;
@@ -425,7 +425,7 @@ class SparseBin: public Bin {
 };
 
 template<typename VAL_T>
-SparseBin<VAL_T>* SparseBin<VAL_T>::Clone(){
+SparseBin<VAL_T>* SparseBin<VAL_T>::Clone() {
   return new SparseBin(*this);
 }
 
