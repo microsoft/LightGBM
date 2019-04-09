@@ -24,18 +24,19 @@ RUN apt-get update \
     build-essential \
  && rm -rf /var/lib/apt/lists/*
 
-# Install clang 6.0
+# Install clang 7.0
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y \
  && cd /tmp \
  && wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
- && add-apt-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main" -y \
+ && add-apt-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-7 main" -y \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
-    clang-6.0 \
+    clang-7 \
+    libomp-7-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # Install CMake
-RUN curl -sL https://cmake.org/files/v3.13/cmake-3.13.2-Linux-x86_64.sh -o cmake.sh \
+RUN curl -sL https://cmake.org/files/v3.14/cmake-3.14.1-Linux-x86_64.sh -o cmake.sh \
  && chmod +x cmake.sh \
  && ./cmake.sh --prefix=/usr/local --exclude-subdir \
  && rm cmake.sh
