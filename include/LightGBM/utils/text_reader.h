@@ -99,8 +99,7 @@ class TextReader {
             last_line_.append(buffer_process + last_i, i - last_i);
             process_fun(total_cnt, last_line_.c_str(), last_line_.size());
             last_line_ = "";
-          }
-          else {
+          } else {
             process_fun(total_cnt, buffer_process + last_i, i - last_i);
           }
           ++cnt;
@@ -109,8 +108,7 @@ class TextReader {
           // skip end of line
           while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
           last_i = i;
-        }
-        else {
+        } else {
           ++i;
         }
       }
@@ -166,8 +164,7 @@ class TextReader {
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
         ++cur_sample_cnt;
-      }
-      else {
+      } else {
         const size_t idx = static_cast<size_t>(random.NextInt(0, static_cast<int>(line_idx + 1)));
         if (idx < static_cast<size_t>(sample_cnt)) {
           out_sampled_data->operator[](idx) = std::string(buffer, size);
@@ -206,8 +203,7 @@ class TextReader {
         if (cur_sample_cnt < sample_cnt) {
           out_sampled_data->emplace_back(buffer, size);
           ++cur_sample_cnt;
-        }
-        else {
+        } else {
           const size_t idx = static_cast<size_t>(random.NextInt(0, static_cast<int>(out_used_data_indices->size())));
           if (idx < static_cast<size_t>(sample_cnt)) {
             out_sampled_data->operator[](idx) = std::string(buffer, size);
@@ -249,8 +245,7 @@ class TextReader {
               ++used_cnt;
             }
             last_line_ = "";
-          }
-          else {
+          } else {
             if (filter_fun(used_cnt, total_cnt)) {
               lines_.emplace_back(buffer_process + last_i, i - last_i);
               ++used_cnt;
@@ -262,8 +257,7 @@ class TextReader {
           // skip end of line
           while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
           last_i = i;
-        }
-        else {
+        } else {
           ++i;
         }
       }
@@ -298,8 +292,7 @@ class TextReader {
       [&used_data_indices](INDEX_T used_cnt, INDEX_T total_cnt) {
       if (static_cast<size_t>(used_cnt) < used_data_indices.size() && total_cnt == used_data_indices[used_cnt]) {
         return true;
-      }
-      else {
+      } else {
         return false;
       }
     });

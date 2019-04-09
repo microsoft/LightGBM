@@ -61,7 +61,7 @@ namespace LightGBM {
   CHECK(threshold < weighted_cdf[pos]);\
   T v1 = data_reader(sorted_idx[pos - 1]);\
   T v2 = data_reader(sorted_idx[pos]);\
-  if(weighted_cdf[pos + 1] - weighted_cdf[pos] > kEpsilon){\
+  if (weighted_cdf[pos + 1] - weighted_cdf[pos] > kEpsilon) {\
     return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1); \
   } else {\
     return static_cast<T>(v2);\
@@ -433,7 +433,7 @@ class RegressionPoissonLoss: public RegressionL2loss {
     // Safety check of labels
     label_t miny;
     double sumy;
-    Common::ObtainMinMaxSum(label_, num_data_, &miny, (label_t*)nullptr, &sumy);
+    Common::ObtainMinMaxSum(label_, num_data_, &miny, static_cast<label_t*>(nullptr), &sumy);
     if (miny < 0.0f) {
       Log::Fatal("[%s]: at least one target label is negative", GetName());
     }

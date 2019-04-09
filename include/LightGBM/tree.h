@@ -260,7 +260,7 @@ class Tree {
       }
       int_fval = 0;
     }
-    int cat_idx = int(threshold_[node]);
+    int cat_idx = static_cast<int>(threshold_[node]);
     if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
                              cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], int_fval)) {
       return left_child_[node];
@@ -269,7 +269,7 @@ class Tree {
   }
 
   inline int CategoricalDecisionInner(uint32_t fval, int node) const {
-    int cat_idx = int(threshold_in_bin_[node]);
+    int cat_idx = static_cast<int>(threshold_in_bin_[node]);
     if (Common::FindInBitset(cat_threshold_inner_.data() + cat_boundaries_inner_[cat_idx],
                              cat_boundaries_inner_[cat_idx + 1] - cat_boundaries_inner_[cat_idx], fval)) {
       return left_child_[node];
@@ -332,7 +332,7 @@ class Tree {
     PathElement(int i, double z, double o, double w) : feature_index(i), zero_fraction(z), one_fraction(o), pweight(w) {}
   };
 
-  /*! \brief Polynomial time algorithm for SHAP values (https://arxiv.org/abs/1706.06060)*/
+  /*! \brief Polynomial time algorithm for SHAP values (arXiv:1706.06060)*/
   void TreeSHAP(const double *feature_values, double *phi,
                 int node, int unique_depth,
                 PathElement *parent_unique_path, double parent_zero_fraction,

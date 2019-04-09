@@ -1,6 +1,7 @@
 # coding: utf-8
 # pylint: skip-file
 import copy
+import itertools
 import math
 import os
 import psutil
@@ -1318,3 +1319,45 @@ class TestEngine(unittest.TestCase):
                 np.testing.assert_almost_equal(bin_edges[1:][mask], hist[:, 0])
         # test histogram is disabled for categorical features
         self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
+
+    def test_early_stopping_for_only_first_metric(self):
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'regression',
+            'metric': 'None',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+
+        decreasing_generator = itertools.count(0, -1)
+
+        def decreasing_metric(preds, train_data):
+            return ('decreasing_metric', next(decreasing_generator), False)
+
+        def constant_metric(preds, train_data):
+            return ('constant_metric', 0.0, False)
+
+        # test that all metrics are checked (default behaviour)
+        early_stop_callback = lgb.early_stopping(5, verbose=False)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+                        feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                         constant_metric(preds, train_data)],
+                        callbacks=[early_stop_callback])
+        self.assertEqual(gbm.best_iteration, 1)
+
+        # test that only the first metric is checked
+        early_stop_callback = lgb.early_stopping(5, first_metric_only=True, verbose=False)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+                        feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                         constant_metric(preds, train_data)],
+                        callbacks=[early_stop_callback])
+        self.assertEqual(gbm.best_iteration, 20)
+        # ... change the order of metrics
+        early_stop_callback = lgb.early_stopping(5, first_metric_only=True, verbose=False)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+                        feval=lambda preds, train_data: [constant_metric(preds, train_data),
+                                                         decreasing_metric(preds, train_data)],
+                        callbacks=[early_stop_callback])
+        self.assertEqual(gbm.best_iteration, 1)

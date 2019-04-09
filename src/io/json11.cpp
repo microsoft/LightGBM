@@ -291,8 +291,10 @@ const Json & JsonObject::operator[] (const string &key) const {
     return (iter == m_value.end()) ? static_null() : iter->second;
 }
 const Json & JsonArray::operator[] (size_t i) const {
-    if (i >= m_value.size()) return static_null();
-    else return m_value[i];
+    if (i >= m_value.size())
+        return static_null();
+    else
+        return m_value[i];
 }
 
 /* * * * * * * * * * * * * * * * * * * *
@@ -388,15 +390,14 @@ struct JsonParser final {
         i++;
         if (i == str.size())
           return fail("Unexpected end of input after start of comment", false);
-        if (str[i] == '/') { // inline comment
+        if (str[i] == '/') {  // inline comment
           i++;
           // advance until next line, or end of input
           while (i < str.size() && str[i] != '\n') {
             i++;
           }
           comment_found = true;
-        }
-        else if (str[i] == '*') {  // multiline comment
+        } else if (str[i] == '*') {  // multiline comment
           i++;
           if (i > str.size()-2)
             return fail("Unexpected end of input inside multi-line comment", false);
@@ -408,9 +409,9 @@ struct JsonParser final {
           }
           i += 2;
           comment_found = true;
-        }
-        else
+        } else {
           return fail("Malformed comment", false);
+        }
       }
       return comment_found;
     }
@@ -439,9 +440,9 @@ struct JsonParser final {
      */
     char get_next_token() {
         consume_garbage();
-        if (failed) return (char)0;
+        if (failed) return char{0};
         if (i == str.size())
-            return fail("Unexpected end of input", (char)0);
+            return fail("Unexpected end of input", char{0});
 
         return str[i++];
     }

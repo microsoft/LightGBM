@@ -369,8 +369,8 @@ class Dense4bitsBin : public Bin {
 
  protected:
   Dense4bitsBin(const Dense4bitsBin& other)
-    : num_data_(other.num_data_), data_(other.data_), buf_(other.buf_){}
-    
+    : num_data_(other.num_data_), data_(other.data_), buf_(other.buf_) {}
+
   data_size_t num_data_;
   std::vector<uint8_t> data_;
   std::vector<uint8_t> buf_;

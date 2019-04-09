@@ -238,7 +238,7 @@ bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
   ifs.close();
   output_file.close();
 
-  return (bool)output_file;
+  return static_cast<bool>(output_file);
 }
 
 std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) const {
@@ -337,7 +337,7 @@ bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, const char* f
   output_file.write(str_to_write.c_str(), str_to_write.size());
   output_file.close();
 
-  return (bool)output_file;
+  return static_cast<bool>(output_file);
 }
 
 bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
@@ -355,11 +355,9 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         auto strs = Common::Split(cur_line.c_str(), '=');
         if (strs.size() == 1) {
           key_vals[strs[0]] = "";
-        }
-        else if (strs.size() == 2) {
+        } else if (strs.size() == 2) {
           key_vals[strs[0]] = strs[1];
-        }
-        else if (strs.size() > 2) {
+        } else if (strs.size() > 2) {
           if (strs[0] == "feature_names") {
             key_vals[strs[0]] = cur_line.substr(std::strlen("feature_names="));
           } else {
@@ -367,8 +365,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
             Log::Fatal("Wrong line at model file: %s", cur_line.substr(0, std::min<size_t>(128, cur_line.size())).c_str());
           }
         }
-      }
-      else {
+      } else {
         break;
       }
     }
@@ -450,8 +447,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
           size_t used_len = 0;
           models_.emplace_back(new Tree(p, &used_len));
           p += used_len;
-        }
-        else {
+        } else {
           break;
         }
       }

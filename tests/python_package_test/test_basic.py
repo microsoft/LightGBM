@@ -216,3 +216,68 @@ class TestBasic(unittest.TestCase):
                 self.assertIsNone(actual)
             else:
                 np.testing.assert_array_equal(actual, expected)
+
+    def test_cegb_affects_behavior(self):
+        X = np.random.random((1000, 5))
+        X[:, [1, 3]] = 0
+        y = np.random.random(1000)
+        names = ['col_%d' % i for i in range(5)]
+        ds = lgb.Dataset(X, feature_name=names).construct()
+        ds.set_label(y)
+        base = lgb.Booster(train_set=ds)
+        for k in range(10):
+            base.update()
+        with tempfile.NamedTemporaryFile() as f:
+            basename = f.name
+        base.save_model(basename)
+        with open(basename, 'rt') as f:
+            basetxt = f.read()
+        # Set extremely harsh penalties, so CEGB will block most splits.
+        cases = [{'cegb_penalty_feature_coupled': [50, 100, 10, 25, 30]},
+                 {'cegb_penalty_feature_lazy': [1, 2, 3, 4, 5]},
+                 {'cegb_penalty_split': 1}]
+        for case in cases:
+            booster = lgb.Booster(train_set=ds, params=case)
+            for k in range(10):
+                booster.update()
+            with tempfile.NamedTemporaryFile() as f:
+                casename = f.name
+            booster.save_model(casename)
+            with open(casename, 'rt') as f:
+                casetxt = f.read()
+            self.assertNotEqual(basetxt, casetxt)
+
+    def test_cegb_scaling_equalities(self):
+        X = np.random.random((1000, 5))
+        X[:, [1, 3]] = 0
+        y = np.random.random(1000)
+        names = ['col_%d' % i for i in range(5)]
+        ds = lgb.Dataset(X, feature_name=names).construct()
+        ds.set_label(y)
+        # Compare pairs of penalties, to ensure scaling works as intended
+        pairs = [({'cegb_penalty_feature_coupled': [1, 2, 1, 2, 1]},
+                  {'cegb_penalty_feature_coupled': [0.5, 1, 0.5, 1, 0.5], 'cegb_tradeoff': 2}),
+                 ({'cegb_penalty_feature_lazy': [0.01, 0.02, 0.03, 0.04, 0.05]},
+                  {'cegb_penalty_feature_lazy': [0.005, 0.01, 0.015, 0.02, 0.025], 'cegb_tradeoff': 2}),
+                 ({'cegb_penalty_split': 1},
+                  {'cegb_penalty_split': 2, 'cegb_tradeoff': 0.5})]
+        for (p1, p2) in pairs:
+            booster1 = lgb.Booster(train_set=ds, params=p1)
+            booster2 = lgb.Booster(train_set=ds, params=p2)
+            for k in range(10):
+                booster1.update()
+                booster2.update()
+            with tempfile.NamedTemporaryFile() as f:
+                p1name = f.name
+            # Reset booster1's parameters to p2, so the parameter section of the file matches.
+            booster1.reset_parameter(p2)
+            booster1.save_model(p1name)
+            with open(p1name, 'rt') as f:
+                p1txt = f.read()
+            with tempfile.NamedTemporaryFile() as f:
+                p2name = f.name
+            booster2.save_model(p2name)
+            self.maxDiff = None
+            with open(p2name, 'rt') as f:
+                p2txt = f.read()
+            self.assertEqual(p1txt, p2txt)

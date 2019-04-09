@@ -27,8 +27,7 @@ class CSVParser: public Parser {
       if (idx == label_idx_) {
         *out_label = val;
         bias = -1;
-      }
-      else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
+      } else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
         out_features->emplace_back(idx + bias, val);
       }
       ++idx;

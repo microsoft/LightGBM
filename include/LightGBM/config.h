@@ -375,6 +375,26 @@ struct Config {
   // desc = used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
   double refit_decay_rate = 0.9;
 
+  // check = >=0.0
+  // desc = cost-effective gradient boosting multiplier for all penalties
+  double cegb_tradeoff = 1.0;
+
+  // check = >=0.0
+  // desc = cost-effective gradient-boosting penalty for splitting a node
+  double cegb_penalty_split = 0.0;
+
+  // type = multi-double
+  // default = 0,0,...,0
+  // desc = cost-effective gradient boosting penalty for using a feature
+  // desc = applied per data point
+  std::vector<double> cegb_penalty_feature_lazy;
+
+  // type = multi-double
+  // default = 0,0,...,0
+  // desc = cost-effective gradient boosting penalty for using a feature
+  // desc = applied once per forest
+  std::vector<double> cegb_penalty_feature_coupled;  
+
   #pragma endregion
 
   #pragma region IO Parameters

@@ -78,7 +78,7 @@ enum JsonParse {
 class JsonValue;
 
 class Json final {
-public:
+ public:
     // Types
     enum Type {
         NUL, NUMBER, BOOL, STRING, ARRAY, OBJECT

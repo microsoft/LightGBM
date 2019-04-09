@@ -575,11 +575,10 @@ bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len, const
   if (name == std::string("init_score")) {
     *out_ptr = metadata_.init_score();
     *out_len = static_cast<data_size_t>(metadata_.num_init_score());
-  } else if (name == std::string("feature_penalty")){
+  } else if (name == std::string("feature_penalty")) {
     *out_ptr = feature_penalty_.data();
-    *out_len = feature_penalty_.size();
-  }
-  else {
+    *out_len = static_cast<data_size_t>(feature_penalty_.size());
+  } else {
     return false;
   }
   return true;
@@ -602,7 +601,7 @@ bool Dataset::GetInt8Field(const char* field_name, data_size_t* out_len, const i
   name = Common::Trim(name);
   if (name == std::string("monotone_constraints")) {
     *out_ptr = monotone_types_.data();
-    *out_len = monotone_types_.size();
+    *out_len = static_cast<data_size_t>(monotone_types_.size());
   } else {
     return false;
   }
@@ -704,43 +703,48 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
   }
 }
 
-void Dataset::DumpTextFile(const char* text_filename){
-  auto file = fopen(text_filename, "wt");
+void Dataset::DumpTextFile(const char* text_filename) {
+  FILE* file = NULL;
+#if _MSC_VER
+  fopen_s(&file, text_filename, "wt");
+#else
+  file = fopen(text_filename, "wt");
+#endif
   fprintf(file, "num_features: %d\n", num_features_);
   fprintf(file, "num_total_features: %d\n", num_total_features_);
   fprintf(file, "num_groups: %d\n", num_groups_);
   fprintf(file, "num_data: %d\n", num_data_);
   fprintf(file, "feature_names: ");
-  for(auto n : feature_names_){
+  for (auto n : feature_names_) {
     fprintf(file, "%s, ", n.c_str());
   }
   fprintf(file, "\nmonotone_constraints: ");
-  for(auto i : monotone_types_){
+  for (auto i : monotone_types_) {
     fprintf(file, "%d, ", i);
   }
   fprintf(file, "\nfeature_penalty: ");
-  for(auto i : feature_penalty_){
+  for (auto i : feature_penalty_) {
     fprintf(file, "%lf, ", i);
   }
   fprintf(file, "\n");
-  for(auto n : feature_names_){
+  for (auto n : feature_names_) {
     fprintf(file, "%s, ", n.c_str());
   }
   std::vector<std::unique_ptr<BinIterator>> iterators;
   iterators.reserve(num_features_);
-  for(int j = 0; j < num_features_; ++j){
+  for (int j = 0; j < num_features_; ++j) {
     auto group_idx = feature2group_[j];
     auto sub_idx = feature2subfeature_[j];
     iterators.emplace_back(feature_groups_[group_idx]->SubFeatureIterator(sub_idx));
   }
-  for(data_size_t i = 0; i < num_data_; ++i){
+  for (data_size_t i = 0; i < num_data_; ++i) {
     fprintf(file, "\n");
-    for(int j = 0; j < num_total_features_; ++j){
+    for (int j = 0; j < num_total_features_; ++j) {
       auto inner_feature_idx = used_feature_map_[j];
-      if(inner_feature_idx < 0){
-	fprintf(file, "NA, ");
+      if (inner_feature_idx < 0) {
+        fprintf(file, "NA, ");
       } else {
-	fprintf(file, "%d, ", iterators[inner_feature_idx]->RawGet(i));
+        fprintf(file, "%d, ", iterators[inner_feature_idx]->RawGet(i));
       }
     }
   }
@@ -939,50 +943,50 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hess
 }
 
 template<typename T>
-void PushVector(std::vector<T>& dest, const std::vector<T>& src){
+void PushVector(std::vector<T>& dest, const std::vector<T>& src) {
   dest.reserve(dest.size() + src.size());
-  for(auto i : src){
+  for (auto i : src) {
     dest.push_back(i);
   }
 }
 
 template<typename T>
-void PushOffset(std::vector<T>& dest, const std::vector<T>& src, const T& offset){
+void PushOffset(std::vector<T>& dest, const std::vector<T>& src, const T& offset) {
   dest.reserve(dest.size() + src.size());
-  for(auto i : src){
+  for (auto i : src) {
     dest.push_back(i + offset);
   }
 }
 
 template<typename T>
-void PushClearIfEmpty(std::vector<T>& dest, const size_t dest_len, const std::vector<T>& src, const size_t src_len, const T& deflt){
-  if(!dest.empty() && !src.empty()){
+void PushClearIfEmpty(std::vector<T>& dest, const size_t dest_len, const std::vector<T>& src, const size_t src_len, const T& deflt) {
+  if (!dest.empty() && !src.empty()) {
     PushVector(dest, src);
-  } else if(!dest.empty() && src.empty()){
-    for(size_t i = 0; i < src_len; ++i){
+  } else if (!dest.empty() && src.empty()) {
+    for (size_t i = 0; i < src_len; ++i) {
       dest.push_back(deflt);
     }
-  } else if(dest.empty() && !src.empty()){
-    for(size_t i = 0; i < dest_len; ++i){
+  } else if (dest.empty() && !src.empty()) {
+    for (size_t i = 0; i < dest_len; ++i) {
       dest.push_back(deflt);
     }
     PushVector(dest, src);
   }
 }
 
-void Dataset::addFeaturesFrom(Dataset* other){
-  if(other->num_data_ != num_data_){
+void Dataset::addFeaturesFrom(Dataset* other) {
+  if (other->num_data_ != num_data_) {
     throw std::runtime_error("Cannot add features from other Dataset with a different number of rows");
   }
   PushVector(feature_names_, other->feature_names_);
   PushVector(feature2subfeature_, other->feature2subfeature_);
   PushVector(group_feature_cnt_, other->group_feature_cnt_);
   feature_groups_.reserve(other->feature_groups_.size());
-  for(auto& fg : other->feature_groups_){
+  for (auto& fg : other->feature_groups_) {
     feature_groups_.emplace_back(new FeatureGroup(*fg));
   }
-  for(auto feature_idx : other->used_feature_map_){
-    if(feature_idx >= 0){
+  for (auto feature_idx : other->used_feature_map_) {
+    if (feature_idx >= 0) {
       used_feature_map_.push_back(feature_idx + num_features_);
     } else {
       used_feature_map_.push_back(-1);  // Unused feature.
@@ -992,14 +996,14 @@ void Dataset::addFeaturesFrom(Dataset* other){
   PushOffset(feature2group_, other->feature2group_, num_groups_);
   auto bin_offset = group_bin_boundaries_.back();
   // Skip the leading 0 when copying group_bin_boundaries.
-  for(auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); ++i){
+  for (auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); ++i) {
     group_bin_boundaries_.push_back(*i + bin_offset);
   }
   PushOffset(group_feature_start_, other->group_feature_start_, num_features_);
 
   PushClearIfEmpty(monotone_types_, num_total_features_, other->monotone_types_, other->num_total_features_, (int8_t)0);
   PushClearIfEmpty(feature_penalty_, num_total_features_, other->feature_penalty_, other->num_total_features_, 1.0);
-  
+
   num_features_ += other->num_features_;
   num_total_features_ += other->num_total_features_;
   num_groups_ += other->num_groups_;

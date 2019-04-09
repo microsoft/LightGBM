@@ -388,6 +388,9 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
 
+std::function<std::vector<std::pair<int, double>>(int row_idx)>
+RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type);
+
 std::function<std::vector<std::pair<int, double>>(int idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
                    const void* data, int data_type, int64_t nindptr, int64_t nelem);
@@ -709,7 +712,6 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                               const char* parameters,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
-
   API_BEGIN();
 
   auto get_row_fun = *static_cast<std::function<void(int idx, std::vector<std::pair<int, double>>&)>*>(get_row_funptr);
@@ -754,7 +756,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-  
+
   OMP_INIT_EX();
   std::vector<std::pair<int, double>> threadBuffer;
   #pragma omp parallel for schedule(static) private(threadBuffer)
@@ -966,7 +968,7 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   } else if (dataset->GetDoubleField(field_name, out_len, reinterpret_cast<const double**>(out_ptr))) {
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
-  } else if(dataset->GetInt8Field(field_name, out_len, reinterpret_cast<const int8_t**>(out_ptr))){
+  } else if (dataset->GetInt8Field(field_name, out_len, reinterpret_cast<const int8_t**>(out_ptr))) {
     *out_type = C_API_DTYPE_INT8;
     is_success = true;
   }
@@ -1415,6 +1417,30 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
 }
 
 
+int LGBM_BoosterPredictForMats(BoosterHandle handle,
+                               const void** data,
+                               int data_type,
+                               int32_t nrow,
+                               int32_t ncol,
+                               int predict_type,
+                               int num_iteration,
+                               const char* parameter,
+                               int64_t* out_len,
+                               double* out_result) {
+  API_BEGIN();
+  auto param = Config::Str2Map(parameter);
+  Config config;
+  config.Set(param);
+  if (config.num_threads > 0) {
+    omp_set_num_threads(config.num_threads);
+  }
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto get_row_fun = RowPairFunctionFromDenseRows(data, ncol, data_type);
+  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
+                       config, out_result, out_len);
+  API_END();
+}
+
 int LGBM_BoosterSaveModel(BoosterHandle handle,
                           int start_iteration,
                           int num_iteration,
@@ -1586,6 +1612,22 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
     };
   }
   return nullptr;
+}
+
+// data is array of pointers to individual rows
+std::function<std::vector<std::pair<int, double>>(int row_idx)>
+RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
+  return [=](int row_idx) {
+    auto inner_function = RowFunctionFromDenseMatric(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
+    auto raw_values = inner_function(0);
+    std::vector<std::pair<int, double>> ret;
+    for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
+      if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
+        ret.emplace_back(i, raw_values[i]);
+      }
+    }
+    return ret;
+  };
 }
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
