@@ -323,13 +323,16 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
     return ret
 
 
-def _agg_cv_result(raw_results):
+def _agg_cv_result(raw_results, disp_train_loss=False):
     """Aggregate cross-validation results."""
     cvmap = collections.defaultdict(list)
     metric_type = {}
     for one_result in raw_results:
         for one_line in one_result:
-            key = "{} {}".format(one_line[0], one_line[1])
+            if disp_train_loss:
+                key = "{} {}".format(one_line[0], one_line[1])
+            else:
+                key = one_line[1]
             metric_type[key] = one_line[3]
             cvmap[key].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
@@ -492,7 +495,7 @@ def cv(params, train_set, num_boost_round=100,
                                     end_iteration=num_boost_round,
                                     evaluation_result_list=None))
         cvfolds.update(fobj=fobj)
-        res = _agg_cv_result(cvfolds.eval_valid(feval))
+        res = _agg_cv_result(cvfolds.eval_valid(feval), disp_train_loss)
         for _, key, mean, _, std in res:
             results[key + '-mean'].append(mean)
             results[key + '-stdv'].append(std)
