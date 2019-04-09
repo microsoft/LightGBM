@@ -150,7 +150,7 @@ def reset_parameter(**kwargs):
     return _callback
 
 
-def early_stopping(stopping_rounds, verbose=True):
+def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     """Create a callback that activates early stopping.
 
     Note
@@ -161,11 +161,14 @@ def early_stopping(stopping_rounds, verbose=True):
     to continue training.
     Requires at least one validation data and one metric.
     If there's more than one, will check all of them. But the training data is ignored anyway.
+    To check only the first metric set ``first_metric_only`` to True.
 
     Parameters
     ----------
     stopping_rounds : int
        The possible number of rounds without the trend occurrence.
+    first_metric_only : bool, optional (default=False)
+       Whether to use only the first metric for early stopping.
     verbose : bool, optional (default=True)
         Whether to print message with early stopping information.
 
@@ -227,5 +230,7 @@ def early_stopping(stopping_rounds, verbose=True):
                     print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
+            if first_metric_only:  # the only first metric is used for early stopping
+                break
     _callback.order = 30
     return _callback

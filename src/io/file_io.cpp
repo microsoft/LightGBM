@@ -92,7 +92,7 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
 
   template <typename BufferType>
   inline size_t FileOperation(BufferType data, size_t bytes, fileOp<BufferType> op) const {
-    char* buffer = (char *)data;
+    char* buffer = reinterpret_cast<char *>(data);
     size_t remain = bytes;
     while (remain != 0) {
       size_t nmax = static_cast<size_t>(std::numeric_limits<tSize>::max());
