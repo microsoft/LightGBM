@@ -468,7 +468,7 @@ class TestEngine(unittest.TestCase):
         # enable display training loss
         cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
                         nfold=3, stratified=False, shuffle=False,
-                        metrics='l1', verbose_eval=False, disp_train_loss=True)
+                        metrics='l1', verbose_eval=False, show_train_loss=True)
         self.assertIn('train l1-mean', cv_res)
         self.assertIn('valid l1-mean', cv_res)
         self.assertNotIn('train l2-mean', cv_res)
