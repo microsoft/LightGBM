@@ -1,10 +1,11 @@
 #include <LightGBM/prediction_early_stop.h>
+
 #include <LightGBM/utils/log.h>
 
-#include <algorithm>
-#include <vector>
-#include <cmath>
 #include <limits>
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 namespace {
 

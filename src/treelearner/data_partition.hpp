@@ -1,13 +1,12 @@
 #ifndef LIGHTGBM_TREELEARNER_DATA_PARTITION_HPP_
 #define LIGHTGBM_TREELEARNER_DATA_PARTITION_HPP_
 
-#include <LightGBM/meta.h>
 #include <LightGBM/dataset.h>
-
+#include <LightGBM/meta.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <algorithm>
 #include <cstring>
-
 #include <vector>
 
 namespace LightGBM {

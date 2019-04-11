@@ -3,8 +3,11 @@
 
 #include <LightGBM/objective_function.h>
 
-#include <cstring>
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <memory>
 #include <vector>
 
 #include "binary_objective.hpp"

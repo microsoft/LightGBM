@@ -1,9 +1,8 @@
 #include <LightGBM/dataset.h>
-
 #include <LightGBM/utils/common.h>
 
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace LightGBM {
 

@@ -1,14 +1,14 @@
 #ifndef LIGHTGBM_METRIC_H_
 #define LIGHTGBM_METRIC_H_
 
+#include <LightGBM/config.h>
+#include <LightGBM/dataset.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/objective_function.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/common.h>
 
-#include <LightGBM/meta.h>
-#include <LightGBM/config.h>
-#include <LightGBM/dataset.h>
-#include <LightGBM/objective_function.h>
-
+#include <string>
 #include <vector>
 
 namespace LightGBM {

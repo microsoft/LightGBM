@@ -1,4 +1,5 @@
 #ifdef USE_MPI
+
 #include "linkers.h"
 
 namespace LightGBM {

@@ -3,12 +3,13 @@
 #ifdef _OPENMP
 
 #include <omp.h>
+#include <LightGBM/utils/log.h>
+
 #include <exception>
-#include <stdexcept>
-#include <mutex>
-#include <vector>
 #include <memory>
-#include "log.h"
+#include <mutex>
+#include <stdexcept>
+#include <vector>
 
 class ThreadExceptionHelper {
  public:

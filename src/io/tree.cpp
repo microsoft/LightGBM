@@ -1,17 +1,12 @@
 #include <LightGBM/tree.h>
 
-#include <LightGBM/utils/threading.h>
-#include <LightGBM/utils/common.h>
-
 #include <LightGBM/dataset.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/threading.h>
 
-#include <sstream>
-#include <unordered_map>
 #include <functional>
-#include <vector>
-#include <string>
-#include <memory>
 #include <iomanip>
+#include <sstream>
 
 namespace LightGBM {
 

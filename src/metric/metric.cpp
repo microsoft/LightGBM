@@ -1,9 +1,10 @@
 #include <LightGBM/metric.h>
-#include "regression_metric.hpp"
+
 #include "binary_metric.hpp"
-#include "rank_metric.hpp"
 #include "map_metric.hpp"
 #include "multiclass_metric.hpp"
+#include "rank_metric.hpp"
+#include "regression_metric.hpp"
 #include "xentropy_metric.hpp"
 
 namespace LightGBM {

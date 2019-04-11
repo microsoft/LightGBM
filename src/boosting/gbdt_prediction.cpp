@@ -1,8 +1,8 @@
-#include "gbdt.h"
-
-#include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+
+#include "gbdt.h"
 
 namespace LightGBM {
 

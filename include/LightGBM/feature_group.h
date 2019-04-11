@@ -1,10 +1,9 @@
 #ifndef LIGHTGBM_FEATURE_GROUP_H_
 #define LIGHTGBM_FEATURE_GROUP_H_
 
-#include <LightGBM/utils/random.h>
-
-#include <LightGBM/meta.h>
 #include <LightGBM/bin.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/random.h>
 
 #include <cstdio>
 #include <memory>

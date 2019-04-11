@@ -2,10 +2,12 @@
 #define LIGHTGBM_METRIC_REGRESSION_METRIC_HPP_
 
 #include <LightGBM/metric.h>
-
 #include <LightGBM/utils/log.h>
 
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace LightGBM {
 /*!

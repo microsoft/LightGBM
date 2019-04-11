@@ -3,13 +3,16 @@
 
 #include <LightGBM/boosting.h>
 #include <LightGBM/metric.h>
-#include "score_updater.hpp"
-#include "gbdt.h"
 
-#include <cstdio>
-#include <vector>
 #include <string>
+#include <cstdio>
 #include <fstream>
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include "gbdt.h"
+#include "score_updater.hpp"
 
 namespace LightGBM {
 /*!

@@ -4,18 +4,20 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <cstdio>
+#include <limits>
 #include <string>
-#include <vector>
-#include <sstream>
-#include <cstdint>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <functional>
-#include <memory>
-#include <iterator>
-#include <type_traits>
 #include <iomanip>
+#include <iterator>
+#include <memory>
+#include <sstream>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #ifdef _MSC_VER
 #include "intrin.h"

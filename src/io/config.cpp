@@ -1,13 +1,9 @@
 #include <LightGBM/config.h>
 
 #include <LightGBM/utils/common.h>
-#include <LightGBM/utils/random.h>
 #include <LightGBM/utils/log.h>
+#include <LightGBM/utils/random.h>
 
-#include <vector>
-#include <string>
-#include <unordered_set>
-#include <algorithm>
 #include <limits>
 
 namespace LightGBM {

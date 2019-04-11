@@ -3,12 +3,12 @@
 
 #include <LightGBM/bin.h>
 
-#include <cstring>
-#include <cstdint>
-
-#include <vector>
-#include <mutex>
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 #include "sparse_bin.hpp"
 

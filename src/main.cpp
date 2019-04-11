@@ -1,5 +1,6 @@
-#include <iostream>
 #include <LightGBM/application.h>
+
+#include <iostream>
 
 int main(int argc, char** argv) {
   try {

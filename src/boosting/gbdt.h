@@ -4,17 +4,20 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
-#include <LightGBM/json11.hpp>
 
-#include "score_updater.hpp"
-
-#include <cstdio>
-#include <vector>
 #include <string>
+#include <algorithm>
+#include <cstdio>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <mutex>
-#include <map>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include <LightGBM/json11.hpp>
+#include "score_updater.hpp"
 
 using namespace json11;
 

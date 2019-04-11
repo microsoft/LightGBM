@@ -1,11 +1,12 @@
 #ifndef LIGHTGBM_UTILS_FILE_IO_H_
 #define LIGHTGBM_UTILS_FILE_IO_H_
 
-#include <memory>
-#include <iostream>
+#include <string>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <memory>
 
 namespace LightGBM {
 

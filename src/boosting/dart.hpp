@@ -2,13 +2,15 @@
 #define LIGHTGBM_BOOSTING_DART_H_
 
 #include <LightGBM/boosting.h>
-#include "score_updater.hpp"
-#include "gbdt.h"
 
-#include <cstdio>
-#include <vector>
 #include <string>
+#include <algorithm>
+#include <cstdio>
 #include <fstream>
+#include <vector>
+
+#include "gbdt.h"
+#include "score_updater.hpp"
 
 namespace LightGBM {
 /*!

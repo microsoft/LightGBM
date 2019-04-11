@@ -2,11 +2,11 @@
 #define LIGHTGBM_METRIC_RANK_METRIC_HPP_
 
 #include <LightGBM/metric.h>
-
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <string>
 #include <sstream>
 #include <vector>
 

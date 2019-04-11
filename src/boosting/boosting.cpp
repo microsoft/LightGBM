@@ -1,6 +1,7 @@
 #include <LightGBM/boosting.h>
-#include "gbdt.h"
+
 #include "dart.hpp"
+#include "gbdt.h"
 #include "goss.hpp"
 #include "rf.hpp"
 

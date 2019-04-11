@@ -1,8 +1,9 @@
 #include <LightGBM/objective_function.h>
-#include "regression_objective.hpp"
+
 #include "binary_objective.hpp"
-#include "rank_objective.hpp"
 #include "multiclass_objective.hpp"
+#include "rank_objective.hpp"
+#include "regression_objective.hpp"
 #include "xentropy_objective.hpp"
 
 namespace LightGBM {

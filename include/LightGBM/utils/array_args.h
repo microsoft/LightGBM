@@ -1,9 +1,11 @@
 #ifndef LIGHTGBM_UTILS_ARRAY_AGRS_H_
 #define LIGHTGBM_UTILS_ARRAY_AGRS_H_
 
-#include <vector>
-#include <algorithm>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <algorithm>
+#include <utility>
+#include <vector>
 
 namespace LightGBM {
 

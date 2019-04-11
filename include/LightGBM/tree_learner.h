@@ -1,12 +1,13 @@
 #ifndef LIGHTGBM_TREE_LEARNER_H_
 #define LIGHTGBM_TREE_LEARNER_H_
 
-
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
-#include <LightGBM/json11.hpp>
+#include <LightGBM/meta.h>
 
+#include <string>
 #include <vector>
+
+#include <LightGBM/json11.hpp>
 
 using namespace json11;
 

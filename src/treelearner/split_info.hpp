@@ -3,11 +3,12 @@
 
 #include <LightGBM/meta.h>
 
+#include <limits>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <limits>
 #include <functional>
+#include <vector>
 
 namespace LightGBM {
 

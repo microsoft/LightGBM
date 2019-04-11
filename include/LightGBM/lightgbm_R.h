@@ -1,11 +1,10 @@
 #ifndef LIGHTGBM_R_H_
 #define LIGHTGBM_R_H_
 
-#include "R_object_helper.h"
+#include <LightGBM/c_api.h>
+#include <LightGBM/R_object_helper.h>
 
 #include <cstdint>
-#include <LightGBM/c_api.h>
-
 
 /*!
 * \brief get string message of the last error

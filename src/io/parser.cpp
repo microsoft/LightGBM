@@ -1,8 +1,9 @@
 #include "parser.hpp"
 
-#include <iostream>
+#include <string>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <memory>
 
 namespace LightGBM {

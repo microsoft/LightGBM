@@ -2,10 +2,10 @@
 
 #include <LightGBM/utils/common.h>
 
-#include "linkers.h"
-
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
+
+#include "linkers.h"
 
 namespace LightGBM {
 
