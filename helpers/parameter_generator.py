@@ -306,7 +306,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     # tails
     str_to_write += "  return str_buf.str();\n"
     str_to_write += "}\n\n"
-    str_to_write += "}\n"
+    str_to_write += "}  // namespace LightGBM\n"
     with open(config_out_cpp, "w") as config_out_cpp_file:
         config_out_cpp_file.write(str_to_write)
 
