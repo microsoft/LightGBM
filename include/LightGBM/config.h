@@ -1,4 +1,10 @@
-/// desc and descl2 fields must be written in reStructuredText format
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ *
+ * \note
+ * desc and descl2 fields must be written in reStructuredText format
+ */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
 
