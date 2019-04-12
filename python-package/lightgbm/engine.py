@@ -415,9 +415,9 @@ def cv(params, train_set, num_boost_round=100,
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
-    eval_train_metric : bool, optional　(default=False)
-        Whether to display the train metric in progress. The score of the metric is calculated
-        again after each training step, so there is some impact on performance.
+    eval_train_metric : bool, optional (default=False)
+        Whether to display the train metric in progress.
+        The score of the metric is calculated again after each training step, so there is some impact on performance.
 
     Returns
     -------
