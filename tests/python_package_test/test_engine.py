@@ -583,7 +583,7 @@ class TestEngine(unittest.TestCase):
         model_str = gbm4.model_to_string()
         gbm4.model_from_string(model_str, False)
         pred5 = gbm4.predict(X_test)
-        gbm5 = lgb.Booster({'model_str': model_str})
+        gbm5 = lgb.Booster(model_str=model_str)
         pred6 = gbm5.predict(X_test)
         np.testing.assert_almost_equal(pred0, pred1)
         np.testing.assert_almost_equal(pred0, pred2)
