@@ -644,4 +644,4 @@ std::string Config::SaveMembersToString() const {
   return str_buf.str();
 }
 
-}
+}  // namespace LightGBM
