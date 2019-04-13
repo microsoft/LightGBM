@@ -26,6 +26,13 @@ For users who wants to install online with GPU or want to choose a specific comp
 
 You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
 
+#### Linux OS Preparation
+1. Install CMake `sudo apt-get install cmake`
+2. Install curl `sudo apt-get install libcurl4-gnutls-dev` 
+3. Install openssl `sudo apt-get install openssl-dev`
+4. Install xml2 `sudo apt-get install libxml2-dev`
+5. Install R devtools `sudo -i R` --> `install.packages("devtools", dependencies = TRUE)`
+
 ```
 # replace 8 with version of gcc installed on your machine
 export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
@@ -37,7 +44,10 @@ Build and install R-package with the following commands:
 
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
-cd LightGBM
+cd LightGBM; 
+mkdir build ; cd build
+cmake ..
+make -j4
 Rscript build_r.R
 ```
 
