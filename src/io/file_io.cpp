@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/utils/file_io.h>
 
 #include <LightGBM/utils/log.h>

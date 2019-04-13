@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/common.h>
