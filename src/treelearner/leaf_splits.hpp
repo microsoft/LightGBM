@@ -1,12 +1,16 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 #define LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 
-#include <limits>
-
 #include <LightGBM/meta.h>
-#include "data_partition.hpp"
 
+#include <limits>
 #include <vector>
+
+#include "data_partition.hpp"
 
 namespace LightGBM {
 

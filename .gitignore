@@ -382,6 +382,9 @@ lightgbm.model
 # VSCode
 .vscode
 
+# IntelliJ IDEA
+.idea/
+
 # Files from local Python install
 python-package/LICENSE
 python-package/build_cpp/

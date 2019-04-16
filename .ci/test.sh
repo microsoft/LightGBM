@@ -8,6 +8,16 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
+if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]] && [[ $(sw_vers -productVersion | cut -d'.' -f2) -ge "14" ]]; then
+    CMAKE_OPTS=(-DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+                -DOpenMP_C_LIB_NAMES=omp
+                -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+                -DOpenMP_CXX_LIB_NAMES=omp
+                -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib)
+else
+    CMAKE_OPTS=()
+fi
+
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
 source activate $CONDA_ENV
 
@@ -49,7 +59,7 @@ fi
 
 if [[ $TASK == "if-else" ]]; then
     conda install -q -y -n $CONDA_ENV numpy
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake "${CMAKE_OPTS[@]}" .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
@@ -99,7 +109,7 @@ if [[ $TASK == "gpu" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
+    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ "${CMAKE_OPTS[@]}" ..
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
@@ -107,9 +117,9 @@ elif [[ $TASK == "mpi" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-    cmake -DUSE_MPI=ON ..
+    cmake -DUSE_MPI=ON "${CMAKE_OPTS[@]}" ..
 else
-    cmake ..
+    cmake "${CMAKE_OPTS[@]}" ..
 fi
 
 make _lightgbm -j4 || exit -1

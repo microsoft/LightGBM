@@ -134,14 +134,14 @@ If you are concerned about your memory consumption, you can save memory by:
 Setting Parameters
 ------------------
 
-LightGBM can use either a list of pairs or a dictionary to set `Parameters <./Parameters.rst>`__.
+LightGBM can use a dictionary to set `Parameters <./Parameters.rst>`__.
 For instance:
 
 -  Booster parameters:
 
    .. code:: python
 
-       param = {'num_leaves':31, 'num_trees':100, 'objective':'binary'}
+       param = {'num_leaves': 31, 'num_trees': 100, 'objective': 'binary'}
        param['metric'] = 'auc'
 
 -  You can also specify multiple eval metrics:
@@ -176,7 +176,7 @@ A saved model can be loaded:
 
 .. code:: python
 
-    bst = lgb.Booster(model_file='model.txt')  #init model
+    bst = lgb.Booster(model_file='model.txt')  # init model
 
 CV
 --

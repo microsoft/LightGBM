@@ -1,20 +1,19 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "gbdt.h"
 
+#include <LightGBM/metric.h>
+#include <LightGBM/network.h>
+#include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <LightGBM/utils/common.h>
-#include <LightGBM/objective_function.h>
-#include <LightGBM/metric.h>
-#include <LightGBM/prediction_early_stop.h>
-#include <LightGBM/network.h>
-
-#include <ctime>
-
-#include <sstream>
 #include <chrono>
-#include <string>
-#include <vector>
-#include <utility>
+#include <ctime>
+#include <sstream>
 
 namespace LightGBM {
 

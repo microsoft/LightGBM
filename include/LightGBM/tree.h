@@ -1,13 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREE_H_
 #define LIGHTGBM_TREE_H_
 
-#include <LightGBM/meta.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/meta.h>
 
 #include <string>
-#include <vector>
-#include <memory>
 #include <map>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 

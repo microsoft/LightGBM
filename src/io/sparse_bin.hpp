@@ -1,15 +1,19 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_IO_SPARSE_BIN_HPP_
 #define LIGHTGBM_IO_SPARSE_BIN_HPP_
 
-#include <LightGBM/utils/log.h>
-
 #include <LightGBM/bin.h>
-
+#include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <cstring>
-#include <cstdint>
 #include <limits>
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <utility>
 #include <vector>
 
 namespace LightGBM {

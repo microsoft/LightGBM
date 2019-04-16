@@ -69,7 +69,7 @@ Optimization in Network Communication
 -------------------------------------
 
 It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in parallel learning of LightGBM.
-LightGBM implement state-of-art algorithms\ `[9] <#references>`__.
+LightGBM implements state-of-art algorithms\ `[9] <#references>`__.
 These collective communication algorithms can provide much better performance than point-to-point communication.
 
 Optimization in Parallel Learning
@@ -147,7 +147,7 @@ Data Parallel in LightGBM
 
 We reduce communication cost of data parallel in LightGBM:
 
-1. Instead of "Merge global histograms from all local histograms", LightGBM use "Reduce Scatter" to merge histograms of different (non-overlapping) features for different workers.
+1. Instead of "Merge global histograms from all local histograms", LightGBM uses "Reduce Scatter" to merge histograms of different (non-overlapping) features for different workers.
    Then workers find the local best split on local merged histograms and sync up the global best split.
 
 2. As aforementioned, LightGBM uses histogram subtraction to speed up training.
@@ -244,9 +244,9 @@ Other Features
 
 -  Validation metric output during training
 
--  Multi validation data
+-  Multiple validation data
 
--  Multi metrics
+-  Multiple metrics
 
 -  Early stopping (both training and prediction)
 
