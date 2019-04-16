@@ -1,10 +1,14 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_THREADING_H_
 #define LIGHTGBM_UTILS_THREADING_H_
 
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <vector>
 #include <functional>
+#include <vector>
 
 namespace LightGBM {
 

@@ -1,20 +1,21 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/bin.h>
 
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+
 #include "dense_bin.hpp"
 #include "dense_nbits_bin.hpp"
-#include "sparse_bin.hpp"
 #include "ordered_sparse_bin.hpp"
-
-#include <cmath>
-#include <cstring>
-#include <cstdint>
-
-#include <limits>
-#include <vector>
-#include <algorithm>
+#include "sparse_bin.hpp"
 
 namespace LightGBM {
 

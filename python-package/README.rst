@@ -121,7 +121,7 @@ Build HDFS Version
 
     pip install lightgbm --install-option=--hdfs
 
-Note that the installation process of HDFS version is **untested**.
+Note that the installation process of HDFS version was tested only on **Linux**.
 
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

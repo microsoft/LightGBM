@@ -1,20 +1,24 @@
-/// desc and descl2 fields must be written in reStructuredText format
-
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ *
+ * \note
+ * desc and descl2 fields must be written in reStructuredText format
+ */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
 
+#include <LightGBM/export.h>
+#include <LightGBM/meta.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
-#include <LightGBM/meta.h>
-#include <LightGBM/export.h>
-
-#include <vector>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <algorithm>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace LightGBM {
 
@@ -395,7 +399,7 @@ struct Config {
   // default = 0,0,...,0
   // desc = cost-effective gradient boosting penalty for using a feature
   // desc = applied once per forest
-  std::vector<double> cegb_penalty_feature_coupled;  
+  std::vector<double> cegb_penalty_feature_coupled;
 
   #pragma endregion
 

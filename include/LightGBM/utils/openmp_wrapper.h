@@ -1,14 +1,19 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_OPENMP_WRAPPER_H_
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 #ifdef _OPENMP
 
 #include <omp.h>
+#include <LightGBM/utils/log.h>
+
 #include <exception>
-#include <stdexcept>
-#include <mutex>
-#include <vector>
 #include <memory>
-#include "log.h"
+#include <mutex>
+#include <stdexcept>
+#include <vector>
 
 class ThreadExceptionHelper {
  public:

@@ -1,15 +1,19 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifdef USE_GPU
-#include "gpu_tree_learner.h"
-#include "../io/dense_bin.hpp"
-#include "../io/dense_nbits_bin.hpp"
 
-#include <LightGBM/utils/array_args.h>
-#include <LightGBM/network.h>
+#include "gpu_tree_learner.h"
+
 #include <LightGBM/bin.h>
+#include <LightGBM/network.h>
+#include <LightGBM/utils/array_args.h>
 
 #include <algorithm>
-#include <vector>
 
+#include "../io/dense_bin.hpp"
+#include "../io/dense_nbits_bin.hpp"
 
 #define GPU_DEBUG 0
 

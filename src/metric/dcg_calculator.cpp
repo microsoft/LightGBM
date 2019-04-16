@@ -1,11 +1,13 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/metric.h>
-
 #include <LightGBM/utils/log.h>
 
-#include <cmath>
-
-#include <vector>
 #include <algorithm>
+#include <cmath>
+#include <vector>
 
 namespace LightGBM {
 

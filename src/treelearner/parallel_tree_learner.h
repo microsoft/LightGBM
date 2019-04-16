@@ -1,15 +1,19 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 
-#include "serial_tree_learner.h"
-#include "gpu_tree_learner.h"
 #include <LightGBM/network.h>
-
 #include <LightGBM/utils/array_args.h>
 
 #include <cstring>
-#include <vector>
 #include <memory>
+#include <vector>
+
+#include "gpu_tree_learner.h"
+#include "serial_tree_learner.h"
 
 namespace LightGBM {
 

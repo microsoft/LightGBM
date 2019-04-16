@@ -1,12 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_LOG_H_
 #define LIGHTGBM_UTILS_LOG_H_
 
-#include <iostream>
+#include <string>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
-#include <cstdarg>
 #include <cstring>
 #include <exception>
+#include <iostream>
 #include <stdexcept>
 
 namespace LightGBM {

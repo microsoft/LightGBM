@@ -1,12 +1,16 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_META_H_
 #define LIGHTGBM_META_H_
 
-#include <cstdint>
-
 #include <limits>
-#include <vector>
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <utility>
+#include <vector>
 
 namespace LightGBM {
 

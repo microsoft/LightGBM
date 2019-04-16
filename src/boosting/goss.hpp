@@ -1,20 +1,24 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_GOSS_H_
 #define LIGHTGBM_BOOSTING_GOSS_H_
 
+#include <LightGBM/boosting.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/boosting.h>
 
-#include "score_updater.hpp"
-#include "gbdt.h"
-
-#include <cstdio>
-#include <vector>
 #include <string>
-#include <fstream>
-#include <chrono>
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
+#include <fstream>
+#include <vector>
+
+#include "gbdt.h"
+#include "score_updater.hpp"
 
 namespace LightGBM {
 

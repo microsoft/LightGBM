@@ -1,5 +1,10 @@
-// this file can either be read and passed to an OpenCL compiler directly,
-// or included in a C++11 source file as a string literal
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ *
+ * \brief This file can either be read and passed to an OpenCL compiler directly,
+ *        or included in a C++11 source file as a string literal.
+ */
 #ifndef __OPENCL_VERSION__
 // If we are including this file in C++,
 // the entire source file following (except the last #endif) will become
