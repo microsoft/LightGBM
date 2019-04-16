@@ -267,7 +267,8 @@ class _CVBooster(object):
         return handler_function
 
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True, shuffle=True):
+def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
+                  shuffle=True, eval_train_metric=False):
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
@@ -317,19 +318,25 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
         else:
             tparam = params
         cvbooster = Booster(tparam, train_set)
+        if eval_train_metric:
+            cvbooster.add_valid(train_set, 'train')
         cvbooster.add_valid(valid_set, 'valid')
         ret.append(cvbooster)
     return ret
 
 
-def _agg_cv_result(raw_results):
+def _agg_cv_result(raw_results, eval_train_metric=False):
     """Aggregate cross-validation results."""
     cvmap = collections.defaultdict(list)
     metric_type = {}
     for one_result in raw_results:
         for one_line in one_result:
-            metric_type[one_line[1]] = one_line[3]
-            cvmap[one_line[1]].append(one_line[2])
+            if eval_train_metric:
+                key = "{} {}".format(one_line[0], one_line[1])
+            else:
+                key = one_line[1]
+            metric_type[key] = one_line[3]
+            cvmap[key].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
@@ -339,7 +346,7 @@ def cv(params, train_set, num_boost_round=100,
        feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
-       callbacks=None):
+       callbacks=None, eval_train_metric=False):
     """Perform the cross-validation with given paramaters.
 
     Parameters
@@ -412,6 +419,9 @@ def cv(params, train_set, num_boost_round=100,
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
+    eval_train_metric : bool, optional (default=False)
+        Whether to display the train metric in progress.
+        The score of the metric is calculated again after each training step, so there is some impact on performance.
 
     Returns
     -------
@@ -459,7 +469,8 @@ def cv(params, train_set, num_boost_round=100,
     results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,
                             params=params, seed=seed, fpreproc=fpreproc,
-                            stratified=stratified, shuffle=shuffle)
+                            stratified=stratified, shuffle=shuffle,
+                            eval_train_metric=eval_train_metric)
 
     # setup callbacks
     if callbacks is None:
@@ -489,7 +500,7 @@ def cv(params, train_set, num_boost_round=100,
                                     end_iteration=num_boost_round,
                                     evaluation_result_list=None))
         cvfolds.update(fobj=fobj)
-        res = _agg_cv_result(cvfolds.eval_valid(feval))
+        res = _agg_cv_result(cvfolds.eval_valid(feval), eval_train_metric)
         for _, key, mean, _, std in res:
             results[key + '-mean'].append(mean)
             results[key + '-stdv'].append(std)
