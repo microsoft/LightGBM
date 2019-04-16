@@ -148,7 +148,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
   }
 };
 
-/*! \brief L2 loss for regression task */
+/*! \brief Quantile loss for regression task */
 class QuantileMetric : public RegressionMetric<QuantileMetric> {
  public:
   explicit QuantileMetric(const Config& config) :RegressionMetric<QuantileMetric>(config) {
