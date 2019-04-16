@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_IO_DENSE_NBITS_BIN_HPP_
 #define LIGHTGBM_IO_DENSE_NBITS_BIN_HPP_
 

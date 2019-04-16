@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_FILE_IO_H_
 #define LIGHTGBM_UTILS_FILE_IO_H_
 

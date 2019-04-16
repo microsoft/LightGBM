@@ -465,6 +465,16 @@ class TestEngine(unittest.TestCase):
                         callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
         self.assertIn('l1-mean', cv_res)
         self.assertEqual(len(cv_res['l1-mean']), 10)
+        # enable display training loss
+        cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
+                        nfold=3, stratified=False, shuffle=False,
+                        metrics='l1', verbose_eval=False, eval_train_metric=True)
+        self.assertIn('train l1-mean', cv_res)
+        self.assertIn('valid l1-mean', cv_res)
+        self.assertNotIn('train l2-mean', cv_res)
+        self.assertNotIn('valid l2-mean', cv_res)
+        self.assertEqual(len(cv_res['train l1-mean']), 10)
+        self.assertEqual(len(cv_res['valid l1-mean']), 10)
         # self defined folds
         tss = TimeSeriesSplit(3)
         folds = tss.split(X_train)
@@ -583,7 +593,7 @@ class TestEngine(unittest.TestCase):
         model_str = gbm4.model_to_string()
         gbm4.model_from_string(model_str, False)
         pred5 = gbm4.predict(X_test)
-        gbm5 = lgb.Booster({'model_str': model_str})
+        gbm5 = lgb.Booster(model_str=model_str)
         pred6 = gbm5.predict(X_test)
         np.testing.assert_almost_equal(pred0, pred1)
         np.testing.assert_almost_equal(pred0, pred2)
