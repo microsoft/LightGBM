@@ -1,16 +1,20 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_PIPELINE_READER_H_
 #define LIGHTGBM_UTILS_PIPELINE_READER_H_
 
+#include <LightGBM/utils/file_io.h>
 #include <LightGBM/utils/log.h>
 
-#include <cstdio>
-
-#include <functional>
-#include <thread>
-#include <memory>
 #include <algorithm>
+#include <cstdio>
+#include <functional>
+#include <memory>
+#include <thread>
+#include <utility>
 #include <vector>
-#include "file_io.h"
 
 namespace LightGBM {
 

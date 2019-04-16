@@ -1,14 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_SCORE_UPDATER_HPP_
 #define LIGHTGBM_BOOSTING_SCORE_UPDATER_HPP_
 
-
-#include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/meta.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstring>
+#include <vector>
 
 namespace LightGBM {
 /*!

@@ -1,10 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 
 #include <LightGBM/objective_function.h>
 
-#include <cstring>
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <memory>
 #include <vector>
 
 #include "binary_objective.hpp"

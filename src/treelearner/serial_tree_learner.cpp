@@ -1,14 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "serial_tree_learner.h"
 
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
-
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
 
 #include <algorithm>
-#include <vector>
 #include <queue>
+#include <unordered_map>
+#include <utility>
 
 namespace LightGBM {
 
@@ -103,10 +107,10 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   feature_used.clear();
   feature_used.resize(train_data->num_features());
 
-  if(!config_->cegb_penalty_feature_coupled.empty()){
+  if (!config_->cegb_penalty_feature_coupled.empty()) {
     CHECK(config_->cegb_penalty_feature_coupled.size() == static_cast<size_t>(train_data_->num_total_features()));
   }
-  if(!config_->cegb_penalty_feature_lazy.empty()){
+  if (!config_->cegb_penalty_feature_lazy.empty()) {
     CHECK(config_->cegb_penalty_feature_lazy.size() == static_cast<size_t>(train_data_->num_total_features()));
     feature_used_in_data = Common::EmptyBitset(train_data->num_features() * num_data_);
   }
@@ -531,10 +535,10 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       &smaller_split);
     smaller_split.feature = real_fidx;
     smaller_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_split * smaller_leaf_splits_->num_data_in_leaf();
-    if(!config_->cegb_penalty_feature_coupled.empty() && !feature_used[feature_index]){
+    if (!config_->cegb_penalty_feature_coupled.empty() && !feature_used[feature_index]) {
       smaller_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_feature_coupled[real_fidx];
     }
-    if(!config_->cegb_penalty_feature_lazy.empty()){
+    if (!config_->cegb_penalty_feature_lazy.empty()) {
       smaller_split.gain -= config_->cegb_tradeoff * CalculateOndemandCosts(real_fidx, smaller_leaf_splits_->LeafIndex());
     }
     splits_per_leaf_[smaller_leaf_splits_->LeafIndex()*train_data_->num_features() + feature_index] = smaller_split;
@@ -562,10 +566,10 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       &larger_split);
     larger_split.feature = real_fidx;
     larger_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_split * larger_leaf_splits_->num_data_in_leaf();
-    if(!config_->cegb_penalty_feature_coupled.empty() && !feature_used[feature_index]){
+    if (!config_->cegb_penalty_feature_coupled.empty() && !feature_used[feature_index]) {
       larger_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_feature_coupled[real_fidx];
     }
-    if(!config_->cegb_penalty_feature_lazy.empty()){
+    if (!config_->cegb_penalty_feature_lazy.empty()) {
       larger_split.gain -= config_->cegb_tradeoff*CalculateOndemandCosts(real_fidx, larger_leaf_splits_->LeafIndex());
     }
     splits_per_leaf_[larger_leaf_splits_->LeafIndex()*train_data_->num_features() + feature_index] = larger_split;
@@ -753,18 +757,18 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
 void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) {
   const SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
-  if(!config_->cegb_penalty_feature_coupled.empty() && !feature_used[inner_feature_index]){
+  if (!config_->cegb_penalty_feature_coupled.empty() && !feature_used[inner_feature_index]) {
     feature_used[inner_feature_index] = true;
-    for(int i = 0; i < tree->num_leaves(); ++i){
-      if(i == best_leaf) continue;
+    for (int i = 0; i < tree->num_leaves(); ++i) {
+      if (i == best_leaf) continue;
       auto split = &splits_per_leaf_[i*train_data_->num_features() + inner_feature_index];
       split->gain += config_->cegb_tradeoff*config_->cegb_penalty_feature_coupled[best_split_info.feature];
-      if(*split > best_split_per_leaf_[i])
-	best_split_per_leaf_[i] = *split;
+      if (*split > best_split_per_leaf_[i])
+        best_split_per_leaf_[i] = *split;
     }
   }
 
-  if(!config_->cegb_penalty_feature_lazy.empty()){
+  if (!config_->cegb_penalty_feature_lazy.empty()) {
     data_size_t cnt_leaf_data = 0;
     auto tmp_idx = data_partition_->GetIndexOnLeaf(best_leaf, &cnt_leaf_data);
     for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {

@@ -1,22 +1,28 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 
-#include <LightGBM/utils/random.h>
-#include <LightGBM/utils/array_args.h>
 #include <LightGBM/dataset.h>
-#include <LightGBM/tree.h>
 #include <LightGBM/feature_group.h>
-#include "feature_histogram.hpp"
-#include "serial_tree_learner.h"
-#include "data_partition.hpp"
-#include "split_info.hpp"
-#include "leaf_splits.hpp"
+#include <LightGBM/tree.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/random.h>
 
-#include <cstdio>
-#include <vector>
-#include <random>
+#include <string>
 #include <cmath>
+#include <cstdio>
 #include <memory>
+#include <random>
+#include <vector>
+
+#include "data_partition.hpp"
+#include "feature_histogram.hpp"
+#include "leaf_splits.hpp"
+#include "serial_tree_learner.h"
+#include "split_info.hpp"
 
 #ifdef USE_GPU
 

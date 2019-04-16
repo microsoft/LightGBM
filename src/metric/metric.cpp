@@ -1,9 +1,14 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/metric.h>
-#include "regression_metric.hpp"
+
 #include "binary_metric.hpp"
-#include "rank_metric.hpp"
 #include "map_metric.hpp"
 #include "multiclass_metric.hpp"
+#include "rank_metric.hpp"
+#include "regression_metric.hpp"
 #include "xentropy_metric.hpp"
 
 namespace LightGBM {

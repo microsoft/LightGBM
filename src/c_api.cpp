@@ -1,29 +1,32 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/c_api.h>
 
-#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/boosting.h>
+#include <LightGBM/config.h>
+#include <LightGBM/dataset.h>
+#include <LightGBM/dataset_loader.h>
+#include <LightGBM/metric.h>
+#include <LightGBM/network.h>
+#include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/utils/log.h>
-#include <LightGBM/dataset_loader.h>
-#include <LightGBM/dataset.h>
-#include <LightGBM/boosting.h>
-#include <LightGBM/objective_function.h>
-#include <LightGBM/metric.h>
-#include <LightGBM/config.h>
-#include <LightGBM/prediction_early_stop.h>
-#include <LightGBM/network.h>
 
-#include <cstdio>
-#include <vector>
 #include <string>
-#include <cstring>
-#include <memory>
-#include <stdexcept>
-#include <mutex>
+#include <cstdio>
 #include <functional>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <vector>
 
-#include "./application/predictor.hpp"
+#include "application/predictor.hpp"
 
 namespace LightGBM {
 
@@ -217,9 +220,9 @@ class Booster {
         is_raw_score = false;
       }
 
-      // TODO: config could be optimized away... (maybe using lambda callback?)
+      // TODO(eisber): config could be optimized away... (maybe using lambda callback?)
       single_row_predictor_.reset(new Predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                        config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
+                                                config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
       single_row_num_pred_in_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, predict_contrib);
       single_row_predict_function_ = single_row_predictor_->GetPredictFunction();
     }

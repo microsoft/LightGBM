@@ -1,8 +1,12 @@
-#include "gbdt.h"
-
-#include <LightGBM/utils/openmp_wrapper.h>
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+
+#include "gbdt.h"
 
 namespace LightGBM {
 

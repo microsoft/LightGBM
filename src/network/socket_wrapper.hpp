@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #define LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #ifdef USE_SOCKET
@@ -28,10 +32,9 @@
 
 #include <LightGBM/utils/log.h>
 
-#include <cstdlib>
-
-#include <unordered_set>
 #include <string>
+#include <cstdlib>
+#include <unordered_set>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")

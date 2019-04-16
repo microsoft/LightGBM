@@ -1,13 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREELEARNER_SPLIT_INFO_HPP_
 #define LIGHTGBM_TREELEARNER_SPLIT_INFO_HPP_
 
 #include <LightGBM/meta.h>
 
+#include <limits>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <limits>
 #include <functional>
+#include <vector>
 
 namespace LightGBM {
 

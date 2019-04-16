@@ -1,14 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_IO_ORDERED_SPARSE_BIN_HPP_
 #define LIGHTGBM_IO_ORDERED_SPARSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
 
-#include <cstring>
-#include <cstdint>
-
-#include <vector>
-#include <mutex>
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 #include "sparse_bin.hpp"
 

@@ -1,15 +1,19 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
 #define LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
 
-#include <LightGBM/metric.h>
 #include <LightGBM/meta.h>
-
-#include <LightGBM/utils/log.h>
+#include <LightGBM/metric.h>
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
 
+#include <string>
 #include <algorithm>
-#include <vector>
 #include <sstream>
+#include <vector>
 
 /*
  * Implements three related metrics:

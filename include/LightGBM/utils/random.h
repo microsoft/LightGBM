@@ -1,11 +1,14 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_RANDOM_H_
 #define LIGHTGBM_UTILS_RANDOM_H_
 
 #include <cstdint>
-
 #include <random>
-#include <vector>
 #include <set>
+#include <vector>
 
 namespace LightGBM {
 

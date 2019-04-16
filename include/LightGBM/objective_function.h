@@ -1,9 +1,15 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_OBJECTIVE_FUNCTION_H_
 #define LIGHTGBM_OBJECTIVE_FUNCTION_H_
 
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/meta.h>
+
+#include <string>
 #include <functional>
 
 namespace LightGBM {

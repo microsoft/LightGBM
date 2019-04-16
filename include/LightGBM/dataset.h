@@ -1,20 +1,24 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_DATASET_H_
 #define LIGHTGBM_DATASET_H_
 
-#include <LightGBM/utils/random.h>
-#include <LightGBM/utils/text_reader.h>
-#include <LightGBM/utils/openmp_wrapper.h>
-
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/random.h>
+#include <LightGBM/utils/text_reader.h>
 
-#include <vector>
-#include <utility>
-#include <functional>
 #include <string>
-#include <unordered_set>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace LightGBM {
 
