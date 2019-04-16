@@ -1,13 +1,19 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 
-#include <LightGBM/objective_function.h>
 #include <LightGBM/meta.h>
-
+#include <LightGBM/objective_function.h>
 #include <LightGBM/utils/common.h>
 
-#include <cstring>
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <vector>
 
 /*
  * Implements gradients and hessians for the following point losses.

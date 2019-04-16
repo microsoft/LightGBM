@@ -1,16 +1,20 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BIN_H_
 #define LIGHTGBM_BIN_H_
 
 #include <LightGBM/meta.h>
-
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
 
-
-#include <vector>
+#include <limits>
+#include <string>
 #include <functional>
-#include <unordered_map>
 #include <sstream>
+#include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 
