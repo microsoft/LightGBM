@@ -148,7 +148,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
   }
 };
 
-/*! \brief L2 loss for regression task */
+/*! \brief Quantile loss for regression task */
 class QuantileMetric : public RegressionMetric<QuantileMetric> {
  public:
   explicit QuantileMetric(const Config& config) :RegressionMetric<QuantileMetric>(config) {
@@ -157,7 +157,7 @@ class QuantileMetric : public RegressionMetric<QuantileMetric> {
   inline static double LossOnPoint(label_t label, double score, const Config& config) {
     double delta = label - score;
     if (delta < 0) {
-      return (config.alpha - 1.0f) * delta;
+      return (1.0f - config.alpha) * delta;
     } else {
       return config.alpha * delta;
     }
