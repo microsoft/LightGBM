@@ -6,7 +6,7 @@ endif()
 
 PROJECT(lightgbm)
 
-OPTION(USE_MPI "MPI based parallel learning" OFF)
+OPTION(USE_MPI "Enable MPI-based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
@@ -15,7 +15,7 @@ OPTION(USE_R35 "Set to ON if your R version is not smaller than 3.5" OFF)
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
-endif()
+endif(APPLE)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
@@ -66,13 +66,13 @@ endif(USE_SWIG)
 
 if(USE_R35)
     ADD_DEFINITIONS(-DR_VER_ABOVE_35)
-endif()
+endif(USE_R35)
 
 if(USE_MPI)
     find_package(MPI REQUIRED)
     ADD_DEFINITIONS(-DUSE_MPI)
-    MESSAGE(${MPI_LIBRARIES})
-    MESSAGE(${MPI_CXX_LIBRARIES})
+    MESSAGE(STATUS "MPI libraries: " ${MPI_LIBRARIES})
+    MESSAGE(STATUS "MPI C++ libraries: " ${MPI_CXX_LIBRARIES})
 else()
     ADD_DEFINITIONS(-DUSE_SOCKET)
 endif(USE_MPI)
@@ -82,15 +82,15 @@ if(USE_OPENMP)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 else()
     # Ignore unknown #pragma warning
-    if( (CMAKE_CXX_COMPILER_ID MATCHES "[cC][lL][aA][nN][gG]")
-      OR (CMAKE_CXX_COMPILER_ID MATCHES "[gG][nN][uU]"))
+    if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      OR (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
     endif()
 endif(USE_OPENMP)
 
 if(USE_GPU)
     SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/compute/include)
-    include_directories (${BOOST_COMPUTE_HEADER_DIR})
+    include_directories(${BOOST_COMPUTE_HEADER_DIR})
     find_package(OpenCL REQUIRED)
     include_directories(${OpenCL_INCLUDE_DIRS})
     MESSAGE(STATUS "OpenCL include directory: " ${OpenCL_INCLUDE_DIRS})
@@ -138,7 +138,7 @@ if(MSVC)
 else()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops")
-endif()
+endif(MSVC)
 
 SET(LightGBM_HEADER_DIR ${PROJECT_SOURCE_DIR}/include)
 
@@ -170,7 +170,7 @@ file(GLOB SOURCES
 )
 
 add_executable(lightgbm src/main.cpp ${SOURCES})
-add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp  ${SOURCES})
+add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES})
 
 if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
@@ -182,9 +182,9 @@ if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
   swig_add_module(_lightgbm_swig java swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
-  # needed to ensure linux build does not have lib specified twice, eg liblib_lightgbm_swig
+  # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
   set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
-  # needed in latest version of cmake for VS and MINGW builds to ensure output dll has lib prefix
+  # needed in some versions of CMake for VS and MinGW builds to ensure output dll has lib prefix
   set_target_properties(_lightgbm_swig PROPERTIES OUTPUT_NAME "lib_lightgbm_swig")
   if(WIN32)
     if(MINGW OR CYGWIN)
