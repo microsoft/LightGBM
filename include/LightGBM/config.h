@@ -631,12 +631,14 @@ struct Config {
   // alias = unbalance, unbalanced_sets
   // desc = used only in ``binary`` application
   // desc = set this to ``true`` if training data are unbalanced
+  // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
   bool is_unbalance = false;
 
   // check = >0.0
   // desc = used only in ``binary`` application
   // desc = weight of labels with positive class
+  // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
   double scale_pos_weight = 1.0;
 

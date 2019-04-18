@@ -690,6 +690,8 @@ Objective Parameters
 
    -  set this to ``true`` if training data are unbalanced
 
+   -  **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
+
    -  **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
 
 -  ``scale_pos_weight`` :raw-html:`<a id="scale_pos_weight" title="Permalink to this parameter" href="#scale_pos_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
@@ -697,6 +699,8 @@ Objective Parameters
    -  used only in ``binary`` application
 
    -  weight of labels with positive class
+
+   -  **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
 
    -  **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
 
