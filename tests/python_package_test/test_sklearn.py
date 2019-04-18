@@ -209,19 +209,24 @@ class TestSklearn(unittest.TestCase):
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
-                          "D": np.random.permutation([True, False] * 150)})  # bool
+                          "D": np.random.permutation([True, False] * 150),  # bool
+                          "E": pd.Categorical(np.random.permutation(['z', 'y', 'x', 'w', 'v'] * 60),
+                                              ordered=True)})  # str and ordered categorical
         y = np.random.permutation([0, 1] * 150)
-        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),  # unseen category
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
-                               "D": np.random.permutation([True, False] * 30)})
-        cat_cols = []
-        for col in ["A", "B", "C", "D"]:
-            X[col] = X[col].astype('category')
-            X_test[col] = X_test[col].astype('category')
-            cat_cols.append(X[col].cat.categories.tolist())
+                               "D": np.random.permutation([True, False] * 30),
+                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                                                   ordered=True)})
+        cat_cols_actual = ["A", "B", "C", "D"]
+        cat_cols_to_store = cat_cols_actual + ["E"]
+        X[cat_cols_actual] = X[cat_cols_actual].astype('category')
+        X_test[cat_cols_actual] = X_test[cat_cols_actual].astype('category')
+        cat_values = [X[col].cat.categories.tolist() for col in cat_cols_to_store]
         gbm0 = lgb.sklearn.LGBMClassifier().fit(X, y)
         pred0 = gbm0.predict(X_test)
+        pred_prob = gbm0.predict_proba(X_test)[:, 1]
         gbm1 = lgb.sklearn.LGBMClassifier().fit(X, pd.Series(y), categorical_feature=[0])
         pred1 = gbm1.predict(X_test)
         gbm2 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A'])
@@ -231,16 +236,21 @@ class TestSklearn(unittest.TestCase):
         gbm3.booster_.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = gbm4.predict(X_test)
-        pred_prob = gbm0.predict_proba(X_test)[:, 1]
+        gbm5 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['E'])
+        pred5 = gbm5.predict(X_test)
         np.testing.assert_almost_equal(pred0, pred1)
         np.testing.assert_almost_equal(pred0, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred_prob, pred4)
-        self.assertListEqual(gbm0.booster_.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm1.booster_.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm2.booster_.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm3.booster_.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm4.pandas_categorical, cat_cols)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred5)  # ordered cat features aren't treated as cat features by default
+        self.assertListEqual(gbm0.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm1.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm2.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm3.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm4.pandas_categorical, cat_values)
+        self.assertListEqual(gbm5.booster_.pandas_categorical, cat_values)
 
     def test_predict(self):
         iris = load_iris()
