@@ -170,6 +170,9 @@ class LGBMModel(_LGBMModelBase):
             Weights associated with classes in the form ``{class_label: weight}``.
             Use this parameter only for multi-class classification task;
             for binary classification task you may use ``is_unbalance`` or ``scale_pos_weight`` parameters.
+            Note, that the usage of all these parameters will result in poor estimates of the individual class probabilities.
+            You may want to consider performing probability calibration
+            (https://scikit-learn.org/stable/modules/calibration.html) of your model.
             The 'balanced' mode uses the values of y to automatically adjust weights
             inversely proportional to class frequencies in the input data as ``n_samples / (n_classes * np.bincount(y))``.
             If None, all classes are supposed to have weight one.
