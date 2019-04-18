@@ -206,6 +206,7 @@ class TestSklearn(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
         import pandas as pd
+        np.random.seed(42)
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
@@ -219,6 +220,7 @@ class TestSklearn(unittest.TestCase):
                                "D": np.random.permutation([True, False] * 30),
                                "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
                                                    ordered=True)})
+        np.random.seed()
         cat_cols_actual = ["A", "B", "C", "D"]
         cat_cols_to_store = cat_cols_actual + ["E"]
         X[cat_cols_actual] = X[cat_cols_actual].astype('category')
