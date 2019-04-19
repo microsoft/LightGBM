@@ -553,7 +553,7 @@ class TestEngine(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
         import pandas as pd
-        np.random.seed(42)  # sometimes there is no difference how E col is treated (cat or not cat)
+        np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
@@ -601,8 +601,16 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X, y)
         gbm6 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=['E'])
         pred7 = gbm6.predict(X_test)
-        np.testing.assert_almost_equal(pred0, pred1)
-        np.testing.assert_almost_equal(pred0, pred2)
+        lgb_train = lgb.Dataset(X, y)
+        gbm7 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[])
+        pred8 = gbm7.predict(X_test)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred1)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred2)
+        np.testing.assert_almost_equal(pred1, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred0, pred4)
         np.testing.assert_almost_equal(pred0, pred5)
@@ -610,6 +618,9 @@ class TestEngine(unittest.TestCase):
         self.assertRaises(AssertionError,
                           np.testing.assert_almost_equal,
                           pred0, pred7)  # ordered cat features aren't treated as cat features by default
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred8)
         self.assertListEqual(gbm0.pandas_categorical, cat_values)
         self.assertListEqual(gbm1.pandas_categorical, cat_values)
         self.assertListEqual(gbm2.pandas_categorical, cat_values)
@@ -617,6 +628,7 @@ class TestEngine(unittest.TestCase):
         self.assertListEqual(gbm4.pandas_categorical, cat_values)
         self.assertListEqual(gbm5.pandas_categorical, cat_values)
         self.assertListEqual(gbm6.pandas_categorical, cat_values)
+        self.assertListEqual(gbm7.pandas_categorical, cat_values)
 
     def test_reference_chain(self):
         X = np.random.normal(size=(100, 2))
