@@ -10,11 +10,18 @@
 #include "../include/LightGBM/c_api.h"
 %}
 
+%include "various.i"
+%include "carrays.i"
+%include "cpointer.i"
+
+/* Note: instead of using array_functions for string array we apply a typemap instead.
+   Future char** parameter names should be added to the typemap.
+*/
+%apply char **STRING_ARRAY { char **feature_names, char **out_strs }
+
 /* header files */
 %include "../include/LightGBM/export.h"
 %include "../include/LightGBM/c_api.h"
-%include "cpointer.i"
-%include "carrays.i"
 
 %typemap(in, numinputs=0) JNIEnv *jenv %{
    $1 = jenv; 
@@ -68,7 +75,7 @@
     double* data0 = (double*)jenv->GetPrimitiveArrayCritical(data, 0);
     
     int ret = LGBM_BoosterPredictForMatSingleRow(handle, data0, data_type, ncol, is_row_major, predict_type,
-                                     num_iteration, parameter, out_len, out_result);
+                                                 num_iteration, parameter, out_len, out_result);
     
     jenv->ReleasePrimitiveArrayCritical(data, data0, JNI_ABORT);
     
@@ -207,6 +214,9 @@
 %array_functions(float, floatArray)
 %array_functions(int, intArray)
 %array_functions(long, longArray)
+/* Note: there is a bug in the SWIG generated string arrays when creating
+   a new array with strings where the strings are prematurely deallocated
+*/
 %array_functions(char *, stringArray)
 
 /* Custom pointer manipulation template */
@@ -256,4 +266,3 @@ TYPE *NAME##_handle();
 
 /* Allow retrieving handle to void** */
 %pointer_handle(void*, voidpp)
-
