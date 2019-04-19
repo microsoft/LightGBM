@@ -2261,9 +2261,11 @@ class Booster(object):
 
             Note
             ----
-            If you want to get more explanation for your model's predictions using SHAP values
+            If you want to get more explanations for your model's predictions using SHAP values,
             like SHAP interaction values,
-            you can install shap package (https://github.com/slundberg/shap).
+            you can install the shap package (https://github.com/slundberg/shap).
+            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+            column, where the last column is the expected value.
 
         data_has_header : bool, optional (default=False)
             Whether the data has header.

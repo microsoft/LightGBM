@@ -582,9 +582,11 @@ class LGBMModel(_LGBMModelBase):
 
             Note
             ----
-            If you want to get more explanation for your model's predictions using SHAP values
+            If you want to get more explanations for your model's predictions using SHAP values,
             like SHAP interaction values,
-            you can install shap package (https://github.com/slundberg/shap).
+            you can install the shap package (https://github.com/slundberg/shap).
+            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+            column, where the last column is the expected value.
 
         **kwargs
             Other parameters for the prediction.
@@ -593,10 +595,10 @@ class LGBMModel(_LGBMModelBase):
         -------
         predicted_result : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
             The predicted values.
-        X_leaves : array-like of shape = [n_samples, n_trees] or shape [n_samples, n_trees * n_classes]
+        X_leaves : array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
             If ``pred_leaf=True``, the predicted leaf every tree for each sample.
-        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape [n_samples, (n_features + 1) * n_classes]
-            If ``pred_contrib=True``, the each feature contributions for each sample.
+        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
+            If ``pred_contrib=True``, the feature contributions for each sample.
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
@@ -785,9 +787,11 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
             Note
             ----
-            If you want to get more explanation for your model's predictions using SHAP values
+            If you want to get more explanations for your model's predictions using SHAP values,
             like SHAP interaction values,
-            you can install shap package (https://github.com/slundberg/shap).
+            you can install the shap package (https://github.com/slundberg/shap).
+            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+            column, where the last column is the expected value.
 
         **kwargs
             Other parameters for the prediction.
@@ -797,9 +801,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         predicted_probability : array-like of shape = [n_samples, n_classes]
             The predicted probability for each class for each sample.
         X_leaves : array-like of shape = [n_samples, n_trees * n_classes]
-            If ``pred_leaf=True``, the predicted leaf every tree for each sample.
+            If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
         X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes]
-            If ``pred_contrib=True``, the each feature contributions for each sample.
+            If ``pred_contrib=True``, the feature contributions for each sample.
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
                                                      pred_leaf, pred_contrib, **kwargs)
