@@ -258,7 +258,8 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
-        cat_cols = data.select_dtypes(include=['category']).columns
+        cat_cols = list(data.select_dtypes(include=['category']).columns)
+        cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
         else:
@@ -267,26 +268,25 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             for col, category in zip_(cat_cols, pandas_categorical):
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
-        if len(cat_cols):  # cat_cols is pandas Index object
+        if len(cat_cols):  # cat_cols is list
             data = data.copy()  # not alter origin DataFrame
             data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
         if categorical_feature is not None:
             if feature_name is None:
                 feature_name = list(data.columns)
             if categorical_feature == 'auto':
-                categorical_feature = list(cat_cols)
+                categorical_feature = cat_cols_not_ordered
             else:
-                categorical_feature = list(categorical_feature) + list(cat_cols)
+                categorical_feature = list(categorical_feature) + cat_cols_not_ordered
         if feature_name == 'auto':
             feature_name = list(data.columns)
         data_dtypes = data.dtypes
         if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
             bad_fields = [data.columns[i] for i, dtype in
                           enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
-
-            msg = ("DataFrame.dtypes for data must be int, float or bool.\n"
-                   "Did not expect the data types in fields ")
-            raise ValueError(msg + ', '.join(bad_fields))
+            raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
+                             "Did not expect the data types in fields "
+                             + ', '.join(bad_fields))
         data = data.values.astype('float')
     else:
         if feature_name == 'auto':
@@ -686,7 +686,7 @@ class Dataset(object):
             Categorical features.
             If list of int, interpreted as indices.
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
-            If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+            If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
