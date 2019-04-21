@@ -15,7 +15,7 @@ if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]] && [[ $(sw_vers -prod
                 -DOpenMP_CXX_LIB_NAMES=omp
                 -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib)
 else
-    CMAKE_OPTS=()
+    CMAKE_OPTS=(-DUSE_SWIG=ON)
 fi
 
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION

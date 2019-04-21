@@ -21,12 +21,17 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else  # Linux
+    sudo apt-get update
+    sudo apt-get install -y swig # install SWIG for java wrappers
+    apt-get install -y openjdk-8-jdk # install JAVA
+    # setup JAVA_HOME
+    ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
+    RUN export JAVA_HOME
     if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
         sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-7 100
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-7 100
     fi
     if [[ $TASK == "mpi" ]]; then
-        sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
