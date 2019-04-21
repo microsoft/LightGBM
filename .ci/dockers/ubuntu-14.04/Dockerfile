@@ -41,6 +41,26 @@ RUN curl -sL https://cmake.org/files/v3.14/cmake-3.14.1-Linux-x86_64.sh -o cmake
  && ./cmake.sh --prefix=/usr/local --exclude-subdir \
  && rm cmake.sh
 
+# Install Java
+RUN add-apt-repository ppa:openjdk-r/ppa -y \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+    openjdk-8-jdk \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
+
+# Install SWIG
+RUN curl -sL https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz -o swig.tar.gz \
+ && tar -xzf swig.tar.gz \
+ && cd swig-3.0.12 \
+ && ./configure --prefix=/usr/local --without-pcre \
+ && make \
+ && make install \
+ && cd .. \
+ && rm swig.tar.gz \
+ && rm -rf swig-3.0.12
+
 # Install Miniconda
 RUN curl -sL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh \
  && chmod +x miniconda.sh \

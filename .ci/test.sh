@@ -18,6 +18,19 @@ else
     CMAKE_OPTS=()
 fi
 
+if [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]] && [[ $TASK == "swig" ]]; then
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
+    cmake -DUSE_SWIG=ON "${CMAKE_OPTS[@]}" ..
+    make -j4 || exit -1
+    if [[ $COMPILER == "gcc" ]]; then
+        objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit -1
+        objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit -1
+        python $BUILD_DIRECTORY/helpers/check_dynamic_dependencies.py $BUILD_DIRECTORY/objdump.log || exit -1
+    fi
+    cp $BUILD_DIRECTORY/build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib.jar
+    exit 0
+fi
+
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
 source activate $CONDA_ENV
 
@@ -61,9 +74,9 @@ fi
 
 if [[ $TASK == "if-else" ]]; then
     conda install -q -y -n $CONDA_ENV numpy
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake "${CMAKE_OPTS[@]}" .. && make lightgbm -j4 || exit -1
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake "${CMAKE_OPTS[@]}" .. && make -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
-    cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
+    cd $BUILD_DIRECTORY/build && make -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
     exit 0
 fi
@@ -124,7 +137,7 @@ else
     cmake "${CMAKE_OPTS[@]}" ..
 fi
 
-make _lightgbm -j4 || exit -1
+make -j4 || exit -1
 
 cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile --user || exit -1
 pytest $BUILD_DIRECTORY/tests || exit -1
