@@ -215,6 +215,13 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         if not enabled[0]:
             return
         for i in range_(len(env.evaluation_result_list)):
+            metric_key = env.evaluation_result_list[i][1]
+            eval_metric = env.params['metric'][0]
+            if metric_key.split(" ")[0] == "train":
+                continue # train metric doesn't used on early stopping.
+            if first_metric_only:
+                if metric_key != "valid {}".format(eval_metric) and metric_key != eval_metric:
+                    continue
             score = env.evaluation_result_list[i][2]
             if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
@@ -230,7 +237,5 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
-            if first_metric_only:  # the only first metric is used for early stopping
-                break
     _callback.order = 30
     return _callback
