@@ -10,7 +10,7 @@ jobs:
 - job: Linux
 ###########################################
   variables:
-    COMPILER: gcc
+    COMPILER: clang
   pool:
     vmImage: 'ubuntu-16.04'
   container: ubuntu1404
