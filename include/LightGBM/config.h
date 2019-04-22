@@ -588,6 +588,7 @@ struct Config {
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
   // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
+  // desc = **Note**: unlike the shap package, with ``pred_contrib`` we return a matrix with an extra column, where the last column is the expected value.
   bool predict_contrib = false;
 
   // desc = used only in ``prediction`` task
@@ -631,12 +632,14 @@ struct Config {
   // alias = unbalance, unbalanced_sets
   // desc = used only in ``binary`` application
   // desc = set this to ``true`` if training data are unbalanced
+  // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
   bool is_unbalance = false;
 
   // check = >0.0
   // desc = used only in ``binary`` application
   // desc = weight of labels with positive class
+  // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
   double scale_pos_weight = 1.0;
 
