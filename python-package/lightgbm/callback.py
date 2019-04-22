@@ -8,6 +8,7 @@ import warnings
 from operator import gt, lt
 
 from .compat import range_
+from .basic import LightGBMError
 
 
 class EarlyStopException(Exception):
@@ -214,9 +215,16 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             _init(env)
         if not enabled[0]:
             return
+        if first_metric_only:
+            eval_metric = None
+            for m in ['metric', 'metrics', 'metric_types']:
+                if m in env.params.keys():
+                    eval_metric = env.params[m][0]
+                    break
+            if eval_metric is None:
+                raise LightGBMError("`metric` should be specified if first_metric_only==True.")
         for i in range_(len(env.evaluation_result_list)):
             metric_key = env.evaluation_result_list[i][1]
-            eval_metric = env.params['metric'][0]
             if metric_key.split(" ")[0] == "train":
                 continue # train metric doesn't used on early stopping.
             if first_metric_only:
