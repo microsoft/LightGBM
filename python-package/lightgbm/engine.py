@@ -56,7 +56,7 @@ def train(params, train_set, num_boost_round=100,
         Categorical features.
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
-        If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
@@ -391,7 +391,7 @@ def cv(params, train_set, num_boost_round=100,
         Categorical features.
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
-        If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
