@@ -185,19 +185,27 @@ def generate_doxygen_xml(app):
         "WARN_AS_ERROR=YES",
     ]
     doxygen_input = '\n'.join(doxygen_args)
-    if sys.version[0] == "3":
+    is_py3 = sys.version[0] == "3"
+    if is_py3:
         doxygen_input = bytes(doxygen_input, "utf-8")
     if not os.path.exists(os.path.join(CURR_PATH, 'doxyoutput')):
         os.makedirs(os.path.join(CURR_PATH, 'doxyoutput'))
     try:
-        with open(os.devnull, "w") as devnull_file:
-            process = Popen(["doxygen", "-"],
-                            stdin=PIPE, stdout=devnull_file, stderr=STDOUT)
-            process.communicate(doxygen_input)
-            if process.returncode != 0:
-                raise RuntimeError
-    except BaseException:
-        raise Exception("An error has occurred while executing Doxygen")
+        # Warning! The following code can cause buffer overflows on RTD.
+        # Consider suppressing output completely if RTD project silently fails.
+        # Refer to https://github.com/svenevs/exhale
+        # /blob/fe7644829057af622e467bb529db6c03a830da99/exhale/deploy.py#L99-L111
+        process = Popen(["doxygen", "-"],
+                        stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        output = process.communicate(doxygen_input)
+        output = '\n'.join([i.decode('utf-8') if is_py3 else i
+                            for i in output if i is not None])
+        if process.returncode != 0:
+            raise RuntimeError(output)
+        else:
+            print(output)
+    except BaseException as e:
+        raise Exception("An error has occurred while executing Doxygen\n" + str(e))
 
 
 def setup(app):
