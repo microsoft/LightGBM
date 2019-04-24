@@ -206,9 +206,13 @@
 %pointer_cast(int32_t *, int *, int32_t_to_int_ptr)
 %pointer_cast(long *, int64_t *, long_to_int64_t_ptr)
 %pointer_cast(double *, int64_t *, double_to_int64_t_ptr)
-%pointer_cast(double *, void *, double_to_voidp_ptr)
 %pointer_cast(int *, int32_t *, int_to_int32_t_ptr)
+
+%pointer_cast(double *, void *, double_to_voidp_ptr)
 %pointer_cast(float *, void *, float_to_voidp_ptr)
+%pointer_cast(int *, void *, int_to_voidp_ptr)
+%pointer_cast(int32_t *, void *, int32_t_to_voidp_ptr)
+%pointer_cast(int64_t *, void *, int64_t_to_voidp_ptr)
 
 %array_functions(double, doubleArray)
 %array_functions(float, floatArray)
