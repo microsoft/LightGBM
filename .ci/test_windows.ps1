@@ -6,7 +6,7 @@ function Check-Output {
   }
 }
 
-$env:PATH += ";$env:MINICONDA\Library\bin\graphviz"  # temp graphviz hotfix
+$env:PATH += ";$env:CONDA\Library\bin\graphviz"  # temp graphviz hotfix
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
