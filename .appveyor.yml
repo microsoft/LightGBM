@@ -1,4 +1,4 @@
-﻿version: 2.2.4.{build}
+version: 2.2.4.{build}
 
 image: Visual Studio 2015
 platform: x64
