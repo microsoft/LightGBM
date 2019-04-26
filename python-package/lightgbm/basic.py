@@ -274,10 +274,10 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         if categorical_feature is not None:
             if feature_name is None:
                 feature_name = list(data.columns)
-            if categorical_feature == 'auto':
+            if categorical_feature == 'auto':  # use cat cols from DataFrame
                 categorical_feature = cat_cols_not_ordered
-            else:
-                categorical_feature = list(categorical_feature) + cat_cols_not_ordered
+            else:  # use cat cols specified by user
+                categorical_feature = list(categorical_feature)
         if feature_name == 'auto':
             feature_name = list(data.columns)
         data_dtypes = data.dtypes
@@ -285,7 +285,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             bad_fields = [data.columns[i] for i, dtype in
                           enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
-                             "Did not expect the data types in fields "
+                             "Did not expect the data types in the following fields: "
                              + ', '.join(bad_fields))
         data = data.values.astype('float')
     else:

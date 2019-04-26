@@ -206,7 +206,7 @@ class TestSklearn(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
         import pandas as pd
-        np.random.seed(42)  # sometimes there is no difference how E col is treated (cat or not cat)
+        np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
@@ -227,32 +227,43 @@ class TestSklearn(unittest.TestCase):
         X_test[cat_cols_actual] = X_test[cat_cols_actual].astype('category')
         cat_values = [X[col].cat.categories.tolist() for col in cat_cols_to_store]
         gbm0 = lgb.sklearn.LGBMClassifier().fit(X, y)
-        pred0 = gbm0.predict(X_test)
+        pred0 = gbm0.predict(X_test, raw_score=True)
         pred_prob = gbm0.predict_proba(X_test)[:, 1]
         gbm1 = lgb.sklearn.LGBMClassifier().fit(X, pd.Series(y), categorical_feature=[0])
-        pred1 = gbm1.predict(X_test)
+        pred1 = gbm1.predict(X_test, raw_score=True)
         gbm2 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A'])
-        pred2 = gbm2.predict(X_test)
+        pred2 = gbm2.predict(X_test, raw_score=True)
         gbm3 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A', 'B', 'C', 'D'])
-        pred3 = gbm3.predict(X_test)
+        pred3 = gbm3.predict(X_test, raw_score=True)
         gbm3.booster_.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = gbm4.predict(X_test)
         gbm5 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['E'])
-        pred5 = gbm5.predict(X_test)
-        np.testing.assert_almost_equal(pred0, pred1)
-        np.testing.assert_almost_equal(pred0, pred2)
+        pred5 = gbm5.predict(X_test, raw_score=True)
+        gbm6 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=[])
+        pred6 = gbm6.predict(X_test, raw_score=True)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred1)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred2)
+        np.testing.assert_almost_equal(pred1, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred_prob, pred4)
         self.assertRaises(AssertionError,
                           np.testing.assert_almost_equal,
                           pred0, pred5)  # ordered cat features aren't treated as cat features by default
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred6)
         self.assertListEqual(gbm0.booster_.pandas_categorical, cat_values)
         self.assertListEqual(gbm1.booster_.pandas_categorical, cat_values)
         self.assertListEqual(gbm2.booster_.pandas_categorical, cat_values)
         self.assertListEqual(gbm3.booster_.pandas_categorical, cat_values)
         self.assertListEqual(gbm4.pandas_categorical, cat_values)
         self.assertListEqual(gbm5.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm6.booster_.pandas_categorical, cat_values)
 
     def test_predict(self):
         iris = load_iris()
