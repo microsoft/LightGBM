@@ -1,4 +1,4 @@
-﻿version: 2.2.4.{build}
+version: 2.2.4.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -31,6 +31,7 @@ install:
   - conda update -q -y conda
   - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy
   - activate test-env
+  - set PATH=%CONDA_PREFIX%\Library\bin\graphviz;%PATH%  # temp graphviz hotfix
 
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%\python-package
