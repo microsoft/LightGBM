@@ -26,12 +26,12 @@ install:
           default {$env:MINICONDA = """C:\Miniconda37-x64"""}
       }
   - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
-  - set PATH=%MINICONDA%\Library\bin\graphviz;%PATH%  # temp graphviz hotfix
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q -y conda
   - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy
   - activate test-env
+  - set PATH=%CONDA_PREFIX%\Library\bin\graphviz;%PATH%  # temp graphviz hotfix
 
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%\python-package
