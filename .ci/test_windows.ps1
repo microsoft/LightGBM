@@ -6,6 +6,8 @@ function Check-Output {
   }
 }
 
+$env:PATH += ";$env:CONDA_PREFIX\Library\bin\graphviz"  # temp graphviz hotfix
+
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
