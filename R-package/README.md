@@ -80,7 +80,7 @@ You will need:
 
 In addition, if you are using a Visual Studio precompiled DLL, assuming you do not have Visual Studio installed (if you have it installed, ignore the warnings below):
 
-* Visual Studio 2015/2017 precompiled DLL: download and install Visual Studio Runtime for [2015](https://www.microsoft.com/en-us/download/details.aspx?id=52685)/[2017](https://go.microsoft.com/fwlink/?LinkId=746572) (you will get an error about MSVCP140.dll missing otherwise)
+* Visual Studio 2015/2017/2019 precompiled DLL: download and install Visual Studio Runtime for [2015](https://www.microsoft.com/en-us/download/details.aspx?id=52685)/[2017](https://aka.ms/vs/15/release/vc_redist.x64.exe)/[2019](https://aka.ms/vs/16/release/vc_redist.x64.exe) (you will get an error about MSVCP140.dll missing otherwise)
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 

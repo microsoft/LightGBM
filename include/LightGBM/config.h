@@ -588,7 +588,7 @@ struct Config {
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
   // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
-  // desc = **Note**: unlike the shap package, with ``pred_contrib`` we return a matrix with an extra column, where the last column is the expected value.
+  // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
   bool predict_contrib = false;
 
   // desc = used only in ``prediction`` task
