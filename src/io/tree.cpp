@@ -506,6 +506,12 @@ Tree::Tree(const char* str, size_t* used_len) {
   } else {
     Log::Fatal("Tree model string format error, should contain leaf_value field");
   }
+  
+  if (key_vals.count("shrinkage")) {
+    Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
+  } else {
+    shrinkage_ = 1.0f;
+  }
 
   if (num_leaves_ <= 1) { return; }
 
@@ -575,12 +581,6 @@ Tree::Tree(const char* str, size_t* used_len) {
     } else {
       Log::Fatal("Tree model should contain cat_threshold field");
     }
-  }
-
-  if (key_vals.count("shrinkage")) {
-    Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
-  } else {
-    shrinkage_ = 1.0f;
   }
   max_depth_ = -1;
 }

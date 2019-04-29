@@ -69,7 +69,7 @@ From Command Line
      cd LightGBM
      mkdir build
      cd build
-     cmake -DCMAKE_GENERATOR_PLATFORM=x64 ..
+     cmake -A x64 ..
      cmake --build . --target ALL_BUILD --config Release
 
 The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
@@ -230,7 +230,7 @@ With GUI
 
    If you have errors about **Platform Toolset**, go to ``PROJECT`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the toolset installed on your machine.
 
-The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
+The ``.exe`` file will be in ``LightGBM-master/windows/x64/Release`` folder.
 
 From Command Line
 -----------------
@@ -245,10 +245,10 @@ From Command Line
      cd LightGBM
      mkdir build
      cd build
-     cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_OPENMP=OFF ..
+     cmake -A x64 -DUSE_OPENMP=OFF ..
      cmake --build . --target ALL_BUILD --config Release
 
-The exe and dll files will be in ``LightGBM/Release`` folder.
+The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
 
 MinGW-w64
 *********
@@ -266,7 +266,7 @@ MinGW-w64
      cmake -G "MinGW Makefiles" -DUSE_OPENMP=OFF ..
      mingw32-make.exe -j4
 
-The exe and dll files will be in ``LightGBM/`` folder.
+The ``.exe`` and ``.dll`` files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -G "MinGW Makefiles" -DUSE_OPENMP=OFF ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
 
@@ -370,7 +370,7 @@ With GUI
 
    If you have errors about **Platform Toolset**, go to ``PROJECT`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the toolset installed on your machine.
 
-The exe file will be in ``LightGBM-master/windows/x64/Release_mpi`` folder.
+The ``.exe`` file will be in ``LightGBM-master/windows/x64/Release_mpi`` folder.
 
 From Command Line
 *****************
@@ -387,10 +387,10 @@ From Command Line
      cd LightGBM
      mkdir build
      cd build
-     cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_MPI=ON ..
+     cmake -A x64 -DUSE_MPI=ON ..
      cmake --build . --target ALL_BUILD --config Release
 
-The exe and dll files will be in ``LightGBM/Release`` folder.
+The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
 
 **Note**: Building MPI version by **MinGW** is not supported due to the miss of MPI library in it.
 
@@ -555,7 +555,9 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
    
    Visual Studio 2015 -> ``msvc-14.0-64.exe``,
 
-   Visual Studio 2017 -> ``msvc-14.1-64.exe``.
+   Visual Studio 2017 -> ``msvc-14.1-64.exe``,
+
+   Visual Studio 2019 -> ``msvc-14.2-64.exe``.
 
 4. Run the following commands:
 
@@ -565,9 +567,9 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
      cd LightGBM
      mkdir build
      cd build
-     cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_GPU=1 -DBOOST_ROOT=C:/local/boost_1_63_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_63_0/lib64-msvc-14.0 ..
+     cmake -A x64 -DUSE_GPU=1 -DBOOST_ROOT=C:/local/boost_1_63_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_63_0/lib64-msvc-14.0 ..
      # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
-     # cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_GPU=1 -DBOOST_ROOT=C:/local/boost_1_63_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_63_0/lib64-msvc-14.0 -DOpenCL_LIBRARY="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/lib/x64/OpenCL.lib" -DOpenCL_INCLUDE_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/include" ..
+     # cmake -A x64 -DUSE_GPU=1 -DBOOST_ROOT=C:/local/boost_1_63_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_63_0/lib64-msvc-14.0 -DOpenCL_LIBRARY="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/lib/x64/OpenCL.lib" -DOpenCL_INCLUDE_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/include" ..
      cmake --build . --target ALL_BUILD --config Release
 
    **Note**: ``C:/local/boost_1_63_0`` and ``C:/local/boost_1_63_0/lib64-msvc-14.0`` are locations of your **Boost** binaries (assuming you've downloaded 1.63.0 version for Visual Studio 2015).
@@ -629,10 +631,10 @@ VS Build Tools
      cd LightGBM
      mkdir build
      cd build
-     cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_SWIG=ON ..
+     cmake -A x64 -DUSE_SWIG=ON ..
      cmake --build . --target ALL_BUILD --config Release
 
-The jar file will be in ``LightGBM/build`` folder and the dll files will be in ``LightGBM/Release`` folder.
+The ``.jar`` file will be in ``LightGBM/build`` folder and the ``.dll`` files will be in ``LightGBM/Release`` folder.
 
 MinGW-w64
 *********
@@ -652,7 +654,7 @@ MinGW-w64
      cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..
      mingw32-make.exe -j4
 
-The jar file will be in ``LightGBM/build`` folder and the dll files will be in ``LightGBM/`` folder.
+The ``.jar`` file will be in ``LightGBM/build`` folder and the ``.dll`` files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
 
