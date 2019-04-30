@@ -15,7 +15,7 @@ jobs:
     vmImage: 'ubuntu-16.04'
   container: ubuntu1404
   strategy:
-    maxParallel: 6
+    maxParallel: 7
     matrix:
       regular:
         TASK: regular
@@ -25,6 +25,8 @@ jobs:
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.6
+      swig:
+        TASK: swig
       inference:
         TASK: if-else
       mpi_source:
