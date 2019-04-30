@@ -2,7 +2,7 @@ Package: lightgbm
 Type: Package
 Title: Light Gradient Boosting Machine
 Version: 2.2.4
-Date: 2019-02-05
+Date: 2019-04-30
 Authors@R: c(
 	person("Guolin", "Ke", email = "guolin.ke@microsoft.com", role = c("aut", "cre")),
 	person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("ctb")),
