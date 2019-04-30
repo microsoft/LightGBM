@@ -16,7 +16,7 @@ Preparation
 Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-For **Windows** users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
+For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
 For **Linux** users, **glibc** >= 2.14 is required.
 
@@ -28,7 +28,7 @@ For **macOS** users:
 
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
 
-Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. After that download the wheel file and install from it:
+Install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first. After that download the wheel file and install from it:
 
 .. code:: sh
 
