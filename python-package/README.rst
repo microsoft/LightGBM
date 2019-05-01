@@ -64,7 +64,7 @@ Build Threadless Version
 
     pip install lightgbm --install-option=--nomp
 
-All remarks, except the **OpenMP** requirement for macOS users, from `Build from Sources section <#build-from-sources>`__ are actual in this case.
+All remarks, except the **OpenMP** requirement for **macOS** users, from `Build from Sources section <#build-from-sources>`__ are actual in this case.
 
 It is **strongly not recommended** to use this version of LightGBM!
 
