@@ -62,10 +62,6 @@ typedef void(*AllgatherFunction)(char* input, comm_size_t input_size, const comm
 
 #define NO_SPECIFIC (-1)
 
-#if (_MSC_VER <= 1800)
-#define __func__ __FUNCTION__
-#endif
-
 }  // namespace LightGBM
 
 #endif   // LightGBM_META_H_

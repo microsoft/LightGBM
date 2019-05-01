@@ -92,7 +92,7 @@ All remarks from `Build from Sources section <#build-from-sources>`__ are actual
 
 For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 
-**Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation. Alternatively, you may pass options to **CMake** via ``pip`` options, like
+**Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. Almost always you also need to pass ``OpenCL_INCLUDE_DIR``, ``OpenCL_LIBRARY`` options for **Linux** and ``BOOST_ROOT``, ``BOOST_LIBRARYDIR`` options for **Windows** to **CMake** via ``pip`` options, like
 
 .. code:: sh
 
@@ -112,7 +112,7 @@ All available options:
 
 - opencl-library
 
-For more details see `FindBoost <https://cmake.org/cmake/help/v3.8/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/v3.8/module/FindOpenCL.html>`__.
+For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/latest/module/FindOpenCL.html>`__.
 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
