@@ -196,10 +196,10 @@ def generate_doxygen_xml(app):
         # Refer to https://github.com/svenevs/exhale
         # /blob/fe7644829057af622e467bb529db6c03a830da99/exhale/deploy.py#L99-L111
         process = Popen(["doxygen", "-"],
-                        stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-        output = process.communicate(doxygen_input)
+                        stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        stdout, stderr = process.communicate(doxygen_input)
         output = '\n'.join([i.decode('utf-8') if is_py3 else i
-                            for i in output if i is not None])
+                            for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
         else:
