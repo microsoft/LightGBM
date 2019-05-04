@@ -9,7 +9,6 @@ RUN apt-get update \
     unzip \
     wget \
     zip \
-    graphviz \
  && rm -rf /var/lib/apt/lists/*
 
 # Setup the locale
