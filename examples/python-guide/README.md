@@ -57,5 +57,6 @@ Examples include:
     - Train and record eval results for further plotting
     - Plot metrics recorded during training
     - Plot feature importances
+    - Plot split value histogram
     - Plot one specified tree
     - Plot one specified tree with Graphviz
