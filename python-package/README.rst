@@ -112,7 +112,7 @@ All available options:
 
 - opencl-library
 
-For more details see `FindBoost <https://cmake.org/cmake/help/v3.8/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/v3.8/module/FindOpenCL.html>`__.
+For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/latest/module/FindOpenCL.html>`__.
 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
