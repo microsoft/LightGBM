@@ -62,6 +62,8 @@ Plotting
 
 .. autofunction:: lightgbm.plot_importance
 
+.. autofunction:: lightgbm.plot_split_value_histogram
+
 .. autofunction:: lightgbm.plot_metric
 
 .. autofunction:: lightgbm.plot_tree
