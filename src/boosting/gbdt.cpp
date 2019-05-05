@@ -688,6 +688,11 @@ void GBDT::ResetConfig(const Config* config) {
 void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   // if need bagging, create buffer
   if (config->bagging_fraction < 1.0 && config->bagging_freq > 0) {
+    need_re_bagging_ = false;
+    if (!is_change_dataset &&
+      config_.get() != nullptr && config_->bagging_fraction == config->bagging_fraction && config_->bagging_freq == config->bagging_freq) {
+      return;
+    }
     bag_data_cnt_ =
       static_cast<data_size_t>(config->bagging_fraction * num_data_);
     bag_data_indices_.resize(num_data_);
@@ -719,9 +724,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
       Log::Debug("Use subset for bagging");
     }
 
-    if (is_change_dataset) {
-      need_re_bagging_ = true;
-    }
+    need_re_bagging_ = true;
 
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
       if (objective_function_ == nullptr) {
