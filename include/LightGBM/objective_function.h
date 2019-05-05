@@ -43,7 +43,7 @@ class ObjectiveFunction {
 
   virtual bool IsRenewTreeOutput() const { return false; }
 
-  virtual double RenewTreeOutput(double ori_output, const double*,
+  virtual double RenewTreeOutput(double ori_output, std::function<double(const label_t*, int)> residual_getter,
                                  const data_size_t*,
                                  const data_size_t*,
                                  data_size_t) const { return ori_output; }

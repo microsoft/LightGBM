@@ -130,8 +130,9 @@ class RF : public GBDT {
       }
 
       if (new_tree->num_leaves() > 1) {
-        std::vector<double> tmp_preds(num_data_, init_scores_[cur_tree_id]);
-        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, tmp_preds.data(),
+        double pred = init_scores_[cur_tree_id];
+        auto residual_getter = [pred](const label_t* label, int i) {return static_cast<double>(label[i]) - pred; };
+        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
           num_data_, bag_data_indices_.data(), bag_data_cnt_);
         if (std::fabs(init_scores_[cur_tree_id]) > kEpsilon) {
           new_tree->AddBias(init_scores_[cur_tree_id]);

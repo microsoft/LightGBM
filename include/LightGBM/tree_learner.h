@@ -77,7 +77,7 @@ class TreeLearner {
   */
   virtual void AddPredictionToScore(const Tree* tree, double* out_score) const = 0;
 
-  virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
+  virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                                data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const = 0;
 
   TreeLearner() = default;
