@@ -37,16 +37,14 @@ source activate $CONDA_ENV
 cd $BUILD_DIRECTORY
 
 if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
-    if [[ $PYTHON_VERSION == "2.7" ]]; then
-        conda -q -y -n $CONDA_ENV mock
-    fi
-    conda install -q -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"
-    pip install --user rstcheck
+    cd $BUILD_DIRECTORY/docs
+    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
+    pip install --user -r requirements.txt rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
+    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile `find . -type f -name "*.rst"` || exit -1
     # build docs and check them for broken links
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \

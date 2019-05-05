@@ -21,11 +21,14 @@ import datetime
 import os
 import sys
 import sphinx
-from sphinx.errors import VersionRequirementError
 
-curr_path = os.path.dirname(os.path.realpath(__file__))
-libpath = os.path.join(curr_path, '../python-package/')
-sys.path.insert(0, libpath)
+from docutils.parsers.rst import Directive
+from sphinx.errors import VersionRequirementError
+from subprocess import PIPE, Popen
+
+CURR_PATH = os.path.abspath(os.path.dirname(__file__))
+LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
+sys.path.insert(0, LIB_PATH)
 
 # -- mock out modules
 try:
@@ -38,9 +41,21 @@ MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
+
+class IgnoredDirective(Directive):
+    """Stub for unknown directives."""
+
+    has_content = True
+
+    def run(self):
+        """Do nothing."""
+        return []
+
+
 # -- General configuration ------------------------------------------------
 
 os.environ['LIGHTGBM_BUILD_DOC'] = '1'
+C_API = os.environ.get('C_API', '').lower().strip() != 'no'
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
@@ -76,12 +91,7 @@ author = 'Microsoft Corporation'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-#
-BASE_DIR = os.path.abspath('../')
-VERSION_FILE = os.path.join(BASE_DIR, "VERSION.txt")
-
-with open(VERSION_FILE, 'r') as f:
-
+with open(os.path.join(CURR_PATH, os.path.pardir, 'VERSION.txt'), 'r') as f:
     # The short X.Y version.
     version = f.read().strip()
 
@@ -109,6 +119,21 @@ todo_include_todos = False
 # Both the class' and the __init__ method's docstring are concatenated and inserted.
 autoclass_content = 'both'
 
+# -- Configuration for C API docs generation ------------------------------
+
+if C_API:
+    extensions.extend([
+        'breathe',
+    ])
+    breathe_projects = {
+        "LightGBM": os.path.join(CURR_PATH, 'doxyoutput', 'xml')
+    }
+    breathe_default_project = "LightGBM"
+    breathe_domain_by_extension = {
+        "h": "c",
+    }
+    breathe_show_define_initializer = True
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -133,6 +158,56 @@ html_static_path = ['_static']
 htmlhelp_basename = 'LightGBMdoc'
 
 
+def generate_doxygen_xml(app):
+    """Generate XML documentation for C API by Doxygen.
+
+    Parameters
+    ----------
+    app : object
+        The application object representing the Sphinx process.
+    """
+    doxygen_args = [
+        "INPUT={}".format(os.path.join(CURR_PATH, os.path.pardir,
+                                       'include', 'LightGBM', 'c_api.h')),
+        "OUTPUT_DIRECTORY={}".format(os.path.join(CURR_PATH, 'doxyoutput')),
+        "GENERATE_HTML=NO",
+        "GENERATE_LATEX=NO",
+        "GENERATE_XML=YES",
+        "XML_OUTPUT=xml",
+        "XML_PROGRAMLISTING=YES",
+        r'ALIASES="rst=\verbatim embed:rst:leading-asterisk"',
+        r'ALIASES+="endrst=\endverbatim"',
+        "ENABLE_PREPROCESSING=YES",
+        "MACRO_EXPANSION=YES",
+        "EXPAND_ONLY_PREDEF=NO",
+        "SKIP_FUNCTION_MACROS=NO",
+        "SORT_BRIEF_DOCS=YES",
+        "WARN_AS_ERROR=YES",
+    ]
+    doxygen_input = '\n'.join(doxygen_args)
+    is_py3 = sys.version[0] == "3"
+    if is_py3:
+        doxygen_input = bytes(doxygen_input, "utf-8")
+    if not os.path.exists(os.path.join(CURR_PATH, 'doxyoutput')):
+        os.makedirs(os.path.join(CURR_PATH, 'doxyoutput'))
+    try:
+        # Warning! The following code can cause buffer overflows on RTD.
+        # Consider suppressing output completely if RTD project silently fails.
+        # Refer to https://github.com/svenevs/exhale
+        # /blob/fe7644829057af622e467bb529db6c03a830da99/exhale/deploy.py#L99-L111
+        process = Popen(["doxygen", "-"],
+                        stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        stdout, stderr = process.communicate(doxygen_input)
+        output = '\n'.join([i.decode('utf-8') if is_py3 else i
+                            for i in (stdout, stderr) if i is not None])
+        if process.returncode != 0:
+            raise RuntimeError(output)
+        else:
+            print(output)
+    except BaseException as e:
+        raise Exception("An error has occurred while executing Doxygen\n" + str(e))
+
+
 def setup(app):
     """Add new elements at Sphinx initialization time.
 
@@ -141,4 +216,8 @@ def setup(app):
     app : object
         The application object representing the Sphinx process.
     """
+    if C_API:
+        app.connect("builder-inited", generate_doxygen_xml)
+    else:
+        app.add_directive('doxygenfile', IgnoredDirective)
     app.add_javascript("js/script.js")
