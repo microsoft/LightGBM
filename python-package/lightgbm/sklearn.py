@@ -290,6 +290,10 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes = None
         self.set_params(**kwargs)
 
+    def _more_tags(self):
+        return {'allow_nan': True,
+                'X_types': ['2darray', 'sparse', '1dlabels']}
+
     def get_params(self, deep=True):
         """Get parameters for this estimator.
 
