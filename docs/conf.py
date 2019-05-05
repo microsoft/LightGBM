@@ -24,7 +24,7 @@ import sphinx
 
 from docutils.parsers.rst import Directive
 from sphinx.errors import VersionRequirementError
-from subprocess import PIPE, Popen, STDOUT
+from subprocess import PIPE, Popen
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
