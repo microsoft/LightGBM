@@ -1,4 +1,4 @@
-version: 2.2.4.{build}
+﻿version: 2.2.4.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -29,7 +29,7 @@ install:
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q -y conda
-  - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy
+  - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
   - activate test-env
   - set PATH=%CONDA_PREFIX%\Library\bin\graphviz;%PATH%  # temp graphviz hotfix
 

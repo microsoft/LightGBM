@@ -122,7 +122,7 @@ jobs:
     displayName: Enable conda
   - script: |
       conda update -q -y conda
-      conda create -q -y -n %CONDA_ENV% python=%PYTHON_VERSION% matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy
+      conda create -q -y -n %CONDA_ENV% python=%PYTHON_VERSION% matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
       cmd /c "activate %CONDA_ENV% & powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
   - task: PublishBuildArtifacts@1
