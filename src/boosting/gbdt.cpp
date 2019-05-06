@@ -364,7 +364,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 
     if (new_tree->num_leaves() > 1) {
       should_continue = true;
-      tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, train_score_updater_->score() + bias,
+      auto score_ptr = train_score_updater_->score() + bias;
+      auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
+      tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
                                      num_data_, bag_data_indices_.data(), bag_data_cnt_);
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
@@ -688,6 +690,11 @@ void GBDT::ResetConfig(const Config* config) {
 void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   // if need bagging, create buffer
   if (config->bagging_fraction < 1.0 && config->bagging_freq > 0) {
+    need_re_bagging_ = false;
+    if (!is_change_dataset &&
+      config_.get() != nullptr && config_->bagging_fraction == config->bagging_fraction && config_->bagging_freq == config->bagging_freq) {
+      return;
+    }
     bag_data_cnt_ =
       static_cast<data_size_t>(config->bagging_fraction * num_data_);
     bag_data_indices_.resize(num_data_);
@@ -719,9 +726,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
       Log::Debug("Use subset for bagging");
     }
 
-    if (is_change_dataset) {
-      need_re_bagging_ = true;
-    }
+    need_re_bagging_ = true;
 
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
       if (objective_function_ == nullptr) {
