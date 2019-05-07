@@ -5,7 +5,7 @@ This document gives a basic walkthrough of LightGBM Python-package.
 
 **List of other helpful links**
 
--  `Python Examples <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`__
+-  `Python Examples <https://github.com/microsoft/LightGBM/tree/master/examples/python-guide>`__
 
 -  `Python API <./Python-API.rst>`__
 
@@ -226,4 +226,4 @@ If early stopping is enabled during training, you can get predictions from the b
 
     ypred = bst.predict(data, num_iteration=bst.best_iteration)
 
-.. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
+.. _Python-package: https://github.com/microsoft/LightGBM/tree/master/python-package
