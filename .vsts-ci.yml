@@ -19,24 +19,6 @@ jobs:
     matrix:
       regular:
         TASK: regular
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.5
-      bdist:
-        TASK: bdist
-        PYTHON_VERSION: 3.6
-      swig:
-        TASK: swig
-      inference:
-        TASK: if-else
-      mpi_source:
-        TASK: mpi
-        METHOD: source
-        PYTHON_VERSION: 2.7
-      gpu_source:
-        TASK: gpu
-        METHOD: source
-        PYTHON_VERSION: 3.6
   steps:
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
@@ -74,11 +56,6 @@ jobs:
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.5
-      bdist:
-        TASK: bdist
   steps:
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
@@ -114,9 +91,6 @@ jobs:
       sdist:
         TASK: sdist
         PYTHON_VERSION: 2.7
-      bdist:
-        TASK: bdist
-        PYTHON_VERSION: 3.6
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Enable conda
