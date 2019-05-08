@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# rerun CI
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-9
     export CC=gcc-9
