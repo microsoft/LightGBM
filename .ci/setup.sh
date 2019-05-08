@@ -13,7 +13,7 @@ if [[ $OS_NAME == "macos" ]]; then
             brew link --overwrite gcc
         fi
         if [[ $TASK != "mpi" ]]; then
-            brew install gcc
+            brew upgrade gcc
         fi
     fi
     if [[ $TASK == "mpi" ]]; then
