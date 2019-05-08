@@ -322,9 +322,6 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
       
       # Store score
       score <- env$eval_list[[i]]$value * factor_to_bigger_better[i]
-      
-      # Check if best_score exists
-      if (!is.na(env$model$best_score) == TRUE) {
         
         # Check if score is better
         if (score > best_score[i]) {
@@ -363,8 +360,6 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
           }
           
         }
-        
-      }
       
       if (!isTRUE(env$met_early_stop) && cur_iter == env$end_iteration) {
         # Check if model is not null
