@@ -12,6 +12,8 @@ if [[ $OS_NAME == "macos" ]]; then
 #            brew cask uninstall oclint  #  reserve variant to deal with conflict link
             brew link --overwrite gcc
             brew upgrade gcc
+        else
+            brew update
         fi
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
