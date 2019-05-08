@@ -4,7 +4,7 @@ CVBooster <- R6::R6Class(
   cloneable = FALSE,
   public = list(
     best_iter = -1,
-    best_score = -1,
+    best_score = NA,
     record_evals = list(),
     boosters = list(),
     initialize = function(x) {
