@@ -192,7 +192,7 @@ class TestSklearn(unittest.TestCase):
         for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
                                 (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
             check_parameters_default_constructible(name, estimator)
-            # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
+            # we cannot leave default params (see https://github.com/microsoft/LightGBM/issues/833)
             estimator = estimator(min_child_samples=1, min_data_in_bin=1)
             for check in _yield_all_checks(name, estimator):
                 check_name = check.func.__name__ if hasattr(check, 'func') else check.__name__
