@@ -65,7 +65,7 @@ jobs:
 - job: MacOS
 ###########################################
   variables:
-    COMPILER: gcc
+    COMPILER: clang
   pool:
     vmImage: 'macOS-10.13'
   strategy:
