@@ -44,6 +44,15 @@ if (!use_precompile) {
     cmake_cmd <- paste0(cmake_cmd, " -DUSE_R35=ON ")
   }
 
+  APPLE <- Sys.info()['sysname'] == 'Darwin'
+  if (APPLE) {
+    cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" ')
+    cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_C_LIB_NAMES="omp" ')
+    cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" ')
+    cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_CXX_LIB_NAMES="omp" ')
+    cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_omp_LIBRARY="$(brew --prefix libomp)/lib/libomp.dylib" ')
+  }
+
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
