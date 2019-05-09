@@ -78,7 +78,11 @@ if [[ $TASK == "sdist" ]]; then
     if [[ $AZURE == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
         mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
-        cmake -DUSE_SWIG=ON "${CMAKE_OPTS[@]}" ..
+        if [[ $OS_NAME == "macos" ]]; then
+            cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON "${CMAKE_OPTS[@]}" ..
+        else
+            cmake -DUSE_SWIG=ON "${CMAKE_OPTS[@]}" ..
+        fi
         make -j4 || exit -1
         if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
             objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit -1
