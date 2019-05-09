@@ -77,17 +77,15 @@ if [[ $TASK == "sdist" ]]; then
     pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
     if [[ $AZURE == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
-        if [[ $OS_NAME == "linux" ]]; then
-            mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
-            cmake -DUSE_SWIG=ON "${CMAKE_OPTS[@]}" ..
-            make -j4 || exit -1
-            if [[ $COMPILER == "gcc" ]]; then
-                objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit -1
-                objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit -1
-                python $BUILD_DIRECTORY/helpers/check_dynamic_dependencies.py $BUILD_DIRECTORY/objdump.log || exit -1
-            fi
-            cp $BUILD_DIRECTORY/build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib.jar
+        mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
+        cmake -DUSE_SWIG=ON "${CMAKE_OPTS[@]}" ..
+        make -j4 || exit -1
+        if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
+            objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit -1
+            objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit -1
+            python $BUILD_DIRECTORY/helpers/check_dynamic_dependencies.py $BUILD_DIRECTORY/objdump.log || exit -1
         fi
+        cp $BUILD_DIRECTORY/build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_$OS_NAME.jar
     fi
     pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
     exit 0
