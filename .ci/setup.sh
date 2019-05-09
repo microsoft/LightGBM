@@ -11,6 +11,9 @@ if [[ $OS_NAME == "macos" ]]; then
 #            rm '/usr/local/include/c++'  # previous variant to deal with conflict link
 #            brew cask uninstall oclint  #  reserve variant to deal with conflict link
             brew link --overwrite gcc
+            brew upgrade gcc
+        else
+            brew update
         fi
         if [[ $TASK != "mpi" ]]; then
             brew install gcc

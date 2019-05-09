@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
-    export CXX=g++-8
-    export CC=gcc-8
+    export CXX=g++-9
+    export CC=gcc-9
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
