@@ -70,7 +70,6 @@ conda install -q -y -n $CONDA_ENV matplotlib numpy pandas psutil pytest python-g
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     sudo ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib || exit -1  # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
-    conda install -q -y -n $CONDA_ENV nomkl
 fi
 
 if [[ $TASK == "sdist" ]]; then
