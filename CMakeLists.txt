@@ -11,7 +11,7 @@ OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
-OPTION(USE_R35 "Set to ON if your R version is not smaller than 3.5" OFF)
+OPTION(USE_R35 "Set to ON if your R version is not earlier than 3.5" OFF)
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
