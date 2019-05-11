@@ -162,3 +162,19 @@ jobs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: NuGet
       artifactType: container
+  - task: GitHubRelease@0
+    displayName: 'Create GitHub Release'
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    inputs:
+      gitHubConnection: XXX
+      repositoryName: '$(Build.Repository.Name)'
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'auto'
+      assets: |
+        '$(Build.SourcesDirectory)/binaries/*'
+        '$(Build.ArtifactStagingDirectory)/*.nupkg'
+      assetUploadMode: 'delete'
+      isDraft: true
+      isPreRelease: false
+      addChangeLog: false
