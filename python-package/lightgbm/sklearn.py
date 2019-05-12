@@ -152,7 +152,7 @@ class LGBMModel(_LGBMModelBase):
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)
-            Maximum tree depth for base learners, -1 means no limit.
+            Maximum tree depth for base learners, <=0 means no limit.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
             You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate
