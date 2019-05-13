@@ -22,6 +22,7 @@ import os
 import sys
 import sphinx
 
+from distutils.dir_util import copy_tree
 from docutils.parsers.rst import Directive
 from sphinx.errors import VersionRequirementError
 from subprocess import PIPE, Popen
@@ -56,6 +57,8 @@ class IgnoredDirective(Directive):
 
 os.environ['LIGHTGBM_BUILD_DOC'] = '1'
 C_API = os.environ.get('C_API', '').lower().strip() != 'no'
+RTD = bool(os.environ.get('READTHEDOCS', ''))
+R_API = RTD  # TODO: allow users to build R API locally
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
@@ -208,6 +211,44 @@ def generate_doxygen_xml(app):
         raise Exception("An error has occurred while executing Doxygen\n" + str(e))
 
 
+def generate_r_docs(app):
+    """Generate documentation for R-package.
+
+    Parameters
+    ----------
+    app : object
+        The application object representing the Sphinx process.
+    """
+    commands = """
+    export PATH="/home/docs/.conda/bin:$PATH"
+    echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile 
+    conda create -q -y -n r_env r-base r-devtools r-data.table r-jsonlite r-magrittr r-matrix r-testthat cmake
+    conda install -q -y -n r_env -c conda-forge r-pkgdown
+    source activate r_env
+    export TAR=/bin/tar
+    cd /home/docs/checkouts/readthedocs.org/user_builds/lightgbm/checkouts/docs
+    sed -i'.bak' '/# Build the package (do not touch this line!)/q' build_r.R
+    Rscript build_r.R
+    Rscript build_r_site.R
+    """
+    try:
+        # Warning! The following code can cause buffer overflows on RTD.
+        # Consider suppressing output completely if RTD project silently fails.
+        # Refer to https://github.com/svenevs/exhale
+        # /blob/fe7644829057af622e467bb529db6c03a830da99/exhale/deploy.py#L99-L111
+        process = Popen(['/bin/bash'],
+                        stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                        universal_newlines=True)
+        stdout, stderr = process.communicate(commands)
+        output = '\n'.join([i for i in (stdout, stderr) if i is not None])
+        if process.returncode != 0:
+            raise RuntimeError(output)
+        else:
+            print(output)
+    except BaseException as e:
+        raise Exception("An error has occurred while generating documentation for R-package\n" + str(e))
+
+
 def setup(app):
     """Add new elements at Sphinx initialization time.
 
@@ -216,8 +257,15 @@ def setup(app):
     app : object
         The application object representing the Sphinx process.
     """
-    if C_API:
+    first_run = not os.path.exists(os.path.join(CURR_PATH, '_FIRST_RUN.flag'))
+    if first_run and RTD:
+        open(os.path.join(CURR_PATH, '_FIRST_RUN.flag'), 'w').close()
+    if C_API and (not RTD or first_run):
         app.connect("builder-inited", generate_doxygen_xml)
     else:
         app.add_directive('doxygenfile', IgnoredDirective)
+    if R_API:
+        if not RTD or first_run:
+            app.connect("builder-inited", generate_r_docs)
+        app.connect("build-finished", lambda app, exception: copy_tree(app.confdir + '/../lightgbm_r/docs', app.outdir + '/R', verbose=0))
     app.add_javascript("js/script.js")
