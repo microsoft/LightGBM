@@ -1,3 +1,7 @@
+trigger:
+  tags:
+    include:
+    - v*
 variables:
   PYTHON_VERSION: 3.7
   CONDA_ENV: test-env
