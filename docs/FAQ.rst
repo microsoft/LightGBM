@@ -139,6 +139,20 @@ LightGBM
 
        ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib
 
+   The described above fix worked fine before the release of OpenMP 8.0.0 version.
+   Starting from 8.0.0 version, Homebrew formula for OpenMP includes ``-DLIBOMP_INSTALL_ALIASES=OFF`` option which leads to that the fix doesn't work anymore.
+   However, you can create symlinks to library aliases manually:
+
+   ::
+
+       for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do sudo ln -sf "$(brew --cellar libomp)"/*/lib/libomp.dylib $CONDA_PREFIX/lib/$LIBOMP_ALIAS; done
+
+   Another workaround would be removing MKL optimizations from Conda's packages completely:
+
+   ::
+
+       conda install nomkl
+
    If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
 --------------
