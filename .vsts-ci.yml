@@ -1,4 +1,7 @@
 trigger:
+  branches:
+    include:
+    - '*'
   tags:
     include:
     - v*
@@ -175,9 +178,10 @@ jobs:
       action: 'create'
       target: '$(Build.SourceVersion)'
       tagSource: 'auto'
+      title: '$(Build.SourceBranchName)'
       assets: |
-        '$(Build.SourcesDirectory)/binaries/*'
-        '$(Build.ArtifactStagingDirectory)/*.nupkg'
+        $(Build.SourcesDirectory)/binaries/PackageAssets/*
+        $(Build.ArtifactStagingDirectory)/*.nupkg
       assetUploadMode: 'delete'
       isDraft: true
       isPreRelease: false
