@@ -376,8 +376,8 @@ class LGBMModel(_LGBMModelBase):
             to continue training.
             Requires at least one validation data and one metric.
             If there's more than one, will check all of them. But the training data is ignored anyway.
-            To check only the first metric you can pass in ``callbacks``
-            ``early_stopping`` callback with ``first_metric_only=True``.
+            To check only the first metric, set the ``first_metric_only`` parameter to ``True``
+            in additional model constructor's parameters``kwargs``.
         verbose : bool or int, optional (default=True)
             Requires at least one evaluation data.
             If True, the eval metric on the eval set is printed at each boosting stage.
