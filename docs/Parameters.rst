@@ -240,6 +240,10 @@ Learning Control Parameters
 
    -  ``<= 0`` means disable
 
+-  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  will only use first metric for early stopping if set to ``True``
+
 -  ``max_delta_step`` :raw-html:`<a id="max_delta_step" title="Permalink to this parameter" href="#max_delta_step">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``max_tree_output``, ``max_leaf_output``
 
    -  used to limit the max output of tree leaves
