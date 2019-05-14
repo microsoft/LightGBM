@@ -135,9 +135,9 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
     valid_metrics_.back().push_back(metric);
   }
   valid_metrics_.back().shrink_to_fit();
-
-  auto num_metrics = valid_metrics.size();
+  
   if (early_stopping_round_ > 0) {
+    auto num_metrics = valid_metrics.size();
     if (es_first_metric_only_) { num_metrics = 1; }
     best_iter_.emplace_back(num_metrics, 0);
     best_score_.emplace_back(num_metrics, kMinScore);
