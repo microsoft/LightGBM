@@ -244,8 +244,6 @@ Learning Control Parameters
 
    -  set this to ``true``, if you want to use only the first metric for early stopping
 
-   -  **Note**: can be used only in CLI version
-
 -  ``max_delta_step`` :raw-html:`<a id="max_delta_step" title="Permalink to this parameter" href="#max_delta_step">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``max_tree_output``, ``max_leaf_output``
 
    -  used to limit the max output of tree leaves

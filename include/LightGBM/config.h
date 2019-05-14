@@ -261,7 +261,6 @@ struct Config {
   int early_stopping_round = 0;
 
   // desc = set this to ``true``, if you want to use only the first metric for early stopping
-  // desc = **Note**: can be used only in CLI version
   bool first_metric_only = false;
 
   // alias = max_tree_output, max_leaf_output
