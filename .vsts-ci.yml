@@ -1,3 +1,10 @@
+trigger:
+  branches:
+    include:
+    - '*'
+  tags:
+    include:
+    - v*
 variables:
   PYTHON_VERSION: 3.7
   CONDA_ENV: test-env
@@ -161,3 +168,20 @@ jobs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: NuGet
       artifactType: container
+  - task: GitHubRelease@0
+    displayName: 'Create GitHub Release'
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    inputs:
+      gitHubConnection: guolinke
+      repositoryName: '$(Build.Repository.Name)'
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'auto'
+      title: '$(Build.SourceBranchName)'
+      assets: |
+        $(Build.SourcesDirectory)/binaries/PackageAssets/*
+        $(Build.ArtifactStagingDirectory)/*.nupkg
+      assetUploadMode: 'delete'
+      isDraft: true
+      isPreRelease: false
+      addChangeLog: false
