@@ -190,6 +190,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::GlobalVoting(int leaf_idx, const 
   // get top k
   std::vector<LightSplitInfo> top_k_splits;
   ArrayArgs<LightSplitInfo>::MaxK(feature_best_split, top_k_, &top_k_splits);
+  std::stable_sort(top_k_splits.begin(), top_k_splits.end(), std::greater<LightSplitInfo>());
   for (auto& split : top_k_splits) {
     if (split.gain == kMinScore || split.feature == -1) {
       continue;
