@@ -839,6 +839,14 @@ Metric Parameters
 
    -  `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ and `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__ evaluation positions, separated by ``,``
 
+-  ``top_k_threshold`` :raw-html:`<a id="top_k_threshold" title="Permalink to this parameter" href="#top_k_threshold">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``top_k_threshold > 0``
+
+   -  threshold for top-k multi-error metric
+
+   -  the error on each sample is 0 if the true class is among the top k predictions, and 1 otherwise
+
+   -  when k=1 this is equivalent to the usual multi-error metric
+
 Network Parameters
 ------------------
 

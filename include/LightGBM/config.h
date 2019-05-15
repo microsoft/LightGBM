@@ -744,6 +744,12 @@ struct Config {
   // desc = `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ and `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__ evaluation positions, separated by ``,``
   std::vector<int> eval_at;
 
+  // check = >0
+  // desc = threshold for top-k multi-error metric
+  // desc = the error on each sample is 0 if the true class is among the top k predictions, and 1 otherwise
+  // desc = when k=1 this is equivalent to the usual multi-error metric
+  int top_k_threshold = 1;
+
   #pragma endregion
 
   #pragma region Network Parameters
