@@ -29,10 +29,10 @@ class TestMultiMetrics(unittest.TestCase):
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
         predict_1 = est.predict(X)
         # check that default gives same result as k = 1
-        self.assertTrue(np.max(np.abs(predict_1 - predict_default)) < 1e-10)
+        self.assertTrue(np.max(np.abs(predict_1 - predict_default)) < 1e-5)
         # check against independent calculation
         err = top_k_error(y, predict_default, 1)
-        self.assertTrue(abs(results['train']['multi_error'][-1] - err) < 1e-10)
+        self.assertTrue(abs(results['train']['multi_error'][-1] - err) < 1e-5)
 
     def test_k_2(self):
         X, y = datasets.load_digits(return_X_y=True)
@@ -44,4 +44,4 @@ class TestMultiMetrics(unittest.TestCase):
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
         predict_2 = est.predict(X)
         err = top_k_error(y, predict_2, 2)
-        self.assertTrue(abs(results['train']['multi_error'][-1] - err) < 1e-10)
+        self.assertTrue(abs(results['train']['multi_error'][-1] - err) < 1e-5)
