@@ -4,7 +4,7 @@ variables:
 resources:
   containers:
   - container: ubuntu1404
-    image: lightgbm/vsts-agent:latest
+    image: lightgbm/vsts-agent:ubuntu-14.04
 jobs:
 ###########################################
 - job: Linux
