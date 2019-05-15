@@ -212,7 +212,7 @@ struct Config {
   #pragma region Learning Control Parameters
 
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
-  // desc = ``< 0`` means no limit
+  // desc = ``<= 0`` means no limit
   int max_depth = -1;
 
   // alias = min_data_per_leaf, min_data, min_child_samples
