@@ -748,7 +748,7 @@ struct Config {
   // desc = threshold for top-k multi-error metric
   // desc = the error on each sample is 0 if the true class is among the top k predictions, and 1 otherwise
   // desc = when k=1 this is equivalent to the usual multi-error metric
-  int top_k_threshold = 1;
+  int multi_error_top_k = 1;
 
   #pragma endregion
 

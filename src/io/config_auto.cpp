@@ -259,7 +259,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "metric_freq",
   "is_provide_training_metric",
   "eval_at",
-  "top_k_threshold",
+  "multi_error_top_k",
   "num_machines",
   "local_listen_port",
   "time_out",
@@ -519,8 +519,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     eval_at = Common::StringToArray<int>(tmp_str, ',');
   }
 
-  GetInt(params, "top_k_threshold", &top_k_threshold);
-  CHECK(top_k_threshold >0);
+  GetInt(params, "multi_error_top_k", &multi_error_top_k);
+  CHECK(multi_error_top_k >0);
 
   GetInt(params, "num_machines", &num_machines);
   CHECK(num_machines >0);
@@ -637,7 +637,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
-  str_buf << "[top_k_threshold: " << top_k_threshold << "]\n";
+  str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[num_machines: " << num_machines << "]\n";
   str_buf << "[local_listen_port: " << local_listen_port << "]\n";
   str_buf << "[time_out: " << time_out << "]\n";

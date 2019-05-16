@@ -380,7 +380,7 @@ class TestEngine(unittest.TestCase):
         results = {}
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
         predict_default = est.predict(X)
-        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'top_k_threshold': 1,
+        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 1,
                   'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
         results = {}
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
@@ -391,7 +391,7 @@ class TestEngine(unittest.TestCase):
         err = top_k_error(y, predict_1, 1)
         np.testing.assert_almost_equal(results['train']['multi_error'][-1], err, 5)
         # check against independent calculation for k = 2
-        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'top_k_threshold': 2,
+        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 2,
                   'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
         results = {}
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
