@@ -66,8 +66,7 @@ def train(params, train_set, num_boost_round=100,
         to continue training.
         Requires at least one validation data and one metric.
         If there's more than one, will check all of them. But the training data is ignored anyway.
-        To check only the first metric you can pass in ``callbacks``
-        ``early_stopping`` callback with ``first_metric_only=True``.
+        To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
     evals_result: dict or None, optional (default=None)
@@ -116,14 +115,15 @@ def train(params, train_set, num_boost_round=100,
     for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
                   "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
         if alias in params:
-            num_boost_round = int(params.pop(alias))
+            num_boost_round = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
     for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
-        if alias in params and params[alias] is not None:
-            early_stopping_rounds = int(params.pop(alias))
+        if alias in params:
+            early_stopping_rounds = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
+    first_metric_only = params.pop('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
@@ -181,7 +181,7 @@ def train(params, train_set, num_boost_round=100,
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=bool(verbose_eval)))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
         callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
@@ -400,8 +400,7 @@ def cv(params, train_set, num_boost_round=100,
         CV score needs to improve at least every ``early_stopping_rounds`` round(s)
         to continue.
         Requires at least one metric. If there's more than one, will check all of them.
-        To check only the first metric you can pass in ``callbacks``
-        ``early_stopping`` callback with ``first_metric_only=True``.
+        To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         Last entry in evaluation history is the one from the best iteration.
     fpreproc : callable or None, optional (default=None)
         Preprocessing function that takes (dtrain, dtest, params)
@@ -449,6 +448,7 @@ def cv(params, train_set, num_boost_round=100,
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             early_stopping_rounds = params.pop(alias)
             break
+    first_metric_only = params.pop('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
@@ -480,7 +480,7 @@ def cv(params, train_set, num_boost_round=100,
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
     if early_stopping_rounds is not None:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=False))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, integer_types):

@@ -22,6 +22,9 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
     fi
+    if [[ $AZURE == "true" ]] && [[ $TASK == "sdist" ]]; then
+        brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/f3544543a3115023fc7ca962c21d14b443f419d0/Formula/swig.rb  # swig 3.0.12
+    fi
     wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
