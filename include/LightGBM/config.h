@@ -260,6 +260,9 @@ struct Config {
   // desc = ``<= 0`` means disable
   int early_stopping_round = 0;
 
+  // desc = set this to ``true``, if you want to use only the first metric for early stopping
+  bool first_metric_only = false;
+
   // alias = max_tree_output, max_leaf_output
   // desc = used to limit the max output of tree leaves
   // desc = ``<= 0`` means no constraint
