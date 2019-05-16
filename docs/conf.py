@@ -58,7 +58,6 @@ class IgnoredDirective(Directive):
 os.environ['LIGHTGBM_BUILD_DOC'] = '1'
 C_API = os.environ.get('C_API', '').lower().strip() != 'no'
 RTD = bool(os.environ.get('READTHEDOCS', ''))
-R_API = RTD  # TODO: allow users to build R API locally
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
@@ -226,11 +225,11 @@ def generate_r_docs(app):
     conda install -q -y -n r_env -c conda-forge r-pkgdown
     source activate r_env
     export TAR=/bin/tar
-    cd /home/docs/checkouts/readthedocs.org/user_builds/lightgbm/checkouts/docs
+    cd {0}
     sed -i'.bak' '/# Build the package (do not touch this line!)/q' build_r.R
     Rscript build_r.R
     Rscript build_r_site.R
-    """
+    """.format(os.path.join(CURR_PATH, os.path.pardir))
     try:
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
@@ -260,12 +259,14 @@ def setup(app):
     first_run = not os.path.exists(os.path.join(CURR_PATH, '_FIRST_RUN.flag'))
     if first_run and RTD:
         open(os.path.join(CURR_PATH, '_FIRST_RUN.flag'), 'w').close()
-    if C_API and (not RTD or first_run):
+    if C_API:
         app.connect("builder-inited", generate_doxygen_xml)
     else:
         app.add_directive('doxygenfile', IgnoredDirective)
-    if R_API:
-        if not RTD or first_run:
+    if RTD:  # build R docs only on Read the Docs site
+        if first_run:
             app.connect("builder-inited", generate_r_docs)
-        app.connect("build-finished", lambda app, exception: copy_tree(app.confdir + '/../lightgbm_r/docs', app.outdir + '/R', verbose=0))
+        app.connect("build-finished",
+                    lambda app, exception: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
+                                                     os.path.join(app.outdir, "R"), verbose=0))
     app.add_javascript("js/script.js")

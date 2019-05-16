@@ -1,4 +1,3 @@
-
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 Predictor <- R6::R6Class(

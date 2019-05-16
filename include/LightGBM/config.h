@@ -102,7 +102,7 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gammma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
+  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
   // alias = objective_type, app, application
   // desc = regression application
   // descl2 = ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
@@ -212,7 +212,7 @@ struct Config {
   #pragma region Learning Control Parameters
 
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
-  // desc = ``< 0`` means no limit
+  // desc = ``<= 0`` means no limit
   int max_depth = -1;
 
   // alias = min_data_per_leaf, min_data, min_child_samples

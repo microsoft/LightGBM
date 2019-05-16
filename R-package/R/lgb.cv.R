@@ -64,10 +64,10 @@ CVBooster <- R6::R6Class(
 #' model <- lgb.cv(params,
 #'                 dtrain,
 #'                 10,
-#'                 nfold = 5,
+#'                 nfold = 3,
 #'                 min_data = 1,
 #'                 learning_rate = 1,
-#'                 early_stopping_rounds = 10)
+#'                 early_stopping_rounds = 5)
 #' @export
 lgb.cv <- function(params = list(),
                    data,

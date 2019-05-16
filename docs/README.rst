@@ -20,6 +20,9 @@ You can build the documentation locally. Just install Doxygen and run in ``docs`
     pip install -r requirements.txt
     make html
 
+Unfortunately, documentation for R code is built only on our site, and commands above will not build it for you locally.
+Consider using common R utilities for documentation generation, if you need it.
+
 If you faced any problems with Doxygen installation or you simply do not need documentation for C code,
 it is possible to build the documentation without it:
 

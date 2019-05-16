@@ -152,7 +152,7 @@ class LGBMModel(_LGBMModelBase):
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)
-            Maximum tree depth for base learners, -1 means no limit.
+            Maximum tree depth for base learners, <=0 means no limit.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
             You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate
@@ -376,8 +376,8 @@ class LGBMModel(_LGBMModelBase):
             to continue training.
             Requires at least one validation data and one metric.
             If there's more than one, will check all of them. But the training data is ignored anyway.
-            To check only the first metric you can pass in ``callbacks``
-            ``early_stopping`` callback with ``first_metric_only=True``.
+            To check only the first metric, set the ``first_metric_only`` parameter to ``True``
+            in additional parameters ``**kwargs`` of the model constructor.
         verbose : bool or int, optional (default=True)
             Requires at least one evaluation data.
             If True, the eval metric on the eval set is printed at each boosting stage.

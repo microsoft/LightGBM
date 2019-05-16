@@ -1379,24 +1379,23 @@ class TestEngine(unittest.TestCase):
             return ('constant_metric', 0.0, False)
 
         # test that all metrics are checked (default behaviour)
-        early_stop_callback = lgb.early_stopping(5, verbose=False)
         gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
                         feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
                                                          constant_metric(preds, train_data)],
-                        callbacks=[early_stop_callback])
+                        early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 1)
 
         # test that only the first metric is checked
-        early_stop_callback = lgb.early_stopping(5, first_metric_only=True, verbose=False)
-        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
+                        num_boost_round=20, valid_sets=[lgb_eval],
                         feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
                                                          constant_metric(preds, train_data)],
-                        callbacks=[early_stop_callback])
+                        early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 20)
         # ... change the order of metrics
-        early_stop_callback = lgb.early_stopping(5, first_metric_only=True, verbose=False)
-        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
+                        num_boost_round=20, valid_sets=[lgb_eval],
                         feval=lambda preds, train_data: [constant_metric(preds, train_data),
                                                          decreasing_metric(preds, train_data)],
-                        callbacks=[early_stop_callback])
+                        early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 1)

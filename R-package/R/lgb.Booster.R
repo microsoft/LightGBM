@@ -644,11 +644,11 @@ Booster <- R6::R6Class(
 #' valids <- list(test = dtest)
 #' model <- lgb.train(params,
 #'                    dtrain,
-#'                    100,
+#'                    10,
 #'                    valids,
 #'                    min_data = 1,
 #'                    learning_rate = 1,
-#'                    early_stopping_rounds = 10)
+#'                    early_stopping_rounds = 5)
 #' preds <- predict(model, test$data)
 #'
 #' @rdname predict.lgb.Booster
@@ -701,11 +701,11 @@ predict.lgb.Booster <- function(object,
 #' valids <- list(test = dtest)
 #' model <- lgb.train(params,
 #'                    dtrain,
-#'                    100,
+#'                    10,
 #'                    valids,
 #'                    min_data = 1,
 #'                    learning_rate = 1,
-#'                    early_stopping_rounds = 10)
+#'                    early_stopping_rounds = 5)
 #' lgb.save(model, "model.txt")
 #' load_booster <- lgb.load(filename = "model.txt")
 #' model_string <- model$save_model_to_string(NULL) # saves best iteration
@@ -759,11 +759,11 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #' valids <- list(test = dtest)
 #' model <- lgb.train(params,
 #'                    dtrain,
-#'                    100,
+#'                    10,
 #'                    valids,
 #'                    min_data = 1,
 #'                    learning_rate = 1,
-#'                    early_stopping_rounds = 10)
+#'                    early_stopping_rounds = 5)
 #' lgb.save(model, "model.txt")
 #'
 #' @rdname lgb.save
@@ -806,11 +806,11 @@ lgb.save <- function(booster, filename, num_iteration = NULL){
 #' valids <- list(test = dtest)
 #' model <- lgb.train(params,
 #'                   dtrain,
-#'                    100,
+#'                    10,
 #'                    valids,
 #'                    min_data = 1,
 #'                    learning_rate = 1,
-#'                    early_stopping_rounds = 10)
+#'                    early_stopping_rounds = 5)
 #' json_model <- lgb.dump(model)
 #'
 #' @rdname lgb.dump
@@ -850,11 +850,11 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #' valids <- list(test = dtest)
 #' model <- lgb.train(params,
 #'                    dtrain,
-#'                    100,
+#'                    10,
 #'                    valids,
 #'                    min_data = 1,
 #'                    learning_rate = 1,
-#'                    early_stopping_rounds = 10)
+#'                    early_stopping_rounds = 5)
 #' lgb.get.eval.result(model, "test", "l2")
 #'
 #' @rdname lgb.get.eval.result

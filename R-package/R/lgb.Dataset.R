@@ -1,4 +1,3 @@
-
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 Dataset <- R6::R6Class(

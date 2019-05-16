@@ -1,4 +1,3 @@
-
 #' @name lgb_shared_params
 #' @title Shared parameter docs
 #' @description Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
