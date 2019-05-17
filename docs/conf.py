@@ -220,7 +220,7 @@ def generate_r_docs(app):
     """
     commands = """
     export PATH="/home/docs/.conda/bin:$PATH"
-    echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile 
+    echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile
     conda create -q -y -n r_env r-base r-devtools r-data.table r-jsonlite r-magrittr r-matrix r-testthat cmake
     conda install -q -y -n r_env -c conda-forge r-pkgdown
     source activate r_env

@@ -856,7 +856,6 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 5)
 #' lgb.get.eval.result(model, "test", "l2")
-#'
 #' @rdname lgb.get.eval.result
 #' @export
 lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_err = FALSE) {

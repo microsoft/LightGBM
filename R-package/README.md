@@ -116,7 +116,7 @@ You may also read [Microsoft/LightGBM#912](https://github.com/microsoft/LightGBM
 Examples
 --------
 
-Please visit [demo](https://github.com/microsoft/LightGBM/tree/docs/R-package/demo):
+Please visit [demo](https://github.com/microsoft/LightGBM/tree/master/R-package/demo):
 
 * [Basic walkthrough of wrappers](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/basic_walkthrough.R)
 * [Boosting from existing prediction](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/boost_from_prediction.R)

@@ -1,0 +1,57 @@
+version: 2.2.4.{build}
+
+image: Visual Studio 2015
+platform: x64
+configuration:  # a trick to construct a build matrix with multiple Python versions
+  - 3.6
+
+environment:
+  matrix:
+    - COMPILER: MSVC
+    - COMPILER: MINGW
+
+clone_depth: 50
+
+install:
+  - git submodule update --init --recursive  # get `compute` folder
+  - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # delete sh.exe from PATH (mingw32-make fix)
+  - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
+  - set PYTHON_VERSION=%CONFIGURATION%
+  - ps: >-
+      switch ($env:PYTHON_VERSION) {
+          "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
+          "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
+          "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
+          "3.7" {$env:MINICONDA = """C:\Miniconda37-x64"""}
+          default {$env:MINICONDA = """C:\Miniconda37-x64"""}
+      }
+  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
+  - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q -y conda
+  - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
+  - activate test-env
+  - set PATH=%CONDA_PREFIX%\Library\bin\graphviz;%PATH%  # temp graphviz hotfix
+
+build_script:
+  - cd %APPVEYOR_BUILD_FOLDER%\python-package
+  - IF "%COMPILER%"=="MINGW" (
+    python setup.py install --mingw)
+    ELSE (
+    python setup.py install)
+
+test_script:
+  - pytest %APPVEYOR_BUILD_FOLDER%\tests\python_package_test
+  - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide
+  - ps: >-
+      @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
+      (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"
+  - ps: >-
+      foreach ($file in @(Get-ChildItem *.py)) {
+        @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
+        python $file
+        if (!$?) { $host.SetShouldExit(-1) }
+      }  # run all examples
+  - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
+  - conda install -q -y -n test-env ipywidgets notebook
+  - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks

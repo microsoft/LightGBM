@@ -44,7 +44,6 @@
 #'                    min_data = 1,
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 5)
-#'
 #' @export
 lgb.train <- function(params = list(),
                       data,
