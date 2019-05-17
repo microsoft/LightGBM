@@ -395,7 +395,7 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
         predict_2 = est.predict(X)
         err = top_k_error(y, predict_2, 2)
-        np.testing.assert_almost_equal(results['train']['multi_error'][-1], err, 5)
+        np.testing.assert_almost_equal(results['train']['multi_error@2'][-1], err, 5)
         # check against independent calculation for k = 10
         params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 10,
                   'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
@@ -403,7 +403,7 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
         predict_2 = est.predict(X)
         err = top_k_error(y, predict_2, 10)
-        np.testing.assert_almost_equal(results['train']['multi_error'][-1], err, 5)
+        np.testing.assert_almost_equal(results['train']['multi_error@10'][-1], err, 5)
         # check case where predictions are equal
         X = np.array([[0, 0], [0, 0]])
         y = np.array([0, 1])
@@ -418,7 +418,7 @@ class TestEngine(unittest.TestCase):
                   'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
         results = {}
         lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
-        np.testing.assert_almost_equal(results['train']['multi_error'][-1], 0, 5)
+        np.testing.assert_almost_equal(results['train']['multi_error@2'][-1], 0, 5)
 
     def test_early_stopping(self):
         X, y = load_breast_cancer(True)

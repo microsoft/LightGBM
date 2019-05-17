@@ -28,7 +28,7 @@ class MulticlassMetric: public Metric {
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back(PointWiseLossCalculator::Name());
+    name_.emplace_back(PointWiseLossCalculator::Name(config_));
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -148,8 +148,9 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
     return 0.0f;
   }
 
-  inline static const char* Name() {
-    return "multi_error";
+  inline static const std::string Name(const Config& config) {
+    if (config.multi_error_top_k == 1) return "multi_error";
+	else return "multi_error@" + std::to_string(config.multi_error_top_k);
   }
 };
 
@@ -167,7 +168,7 @@ class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetr
     }
   }
 
-  inline static const char* Name() {
+  inline static const std::string Name(const Config&) {
     return "multi_logloss";
   }
 };
