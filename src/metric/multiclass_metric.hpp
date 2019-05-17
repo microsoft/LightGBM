@@ -150,7 +150,7 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
 
   inline static const std::string Name(const Config& config) {
     if (config.multi_error_top_k == 1) return "multi_error";
-	else return "multi_error@" + std::to_string(config.multi_error_top_k);
+    else return "multi_error@" + std::to_string(config.multi_error_top_k);
   }
 };
 
