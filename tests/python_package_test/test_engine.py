@@ -27,12 +27,10 @@ def multi_logloss(y_true, y_pred):
 
 
 def top_k_error(y_true, y_pred, k):
-    top_k = np.argpartition(-y_pred, k)[:, :k]
-    num_correct = 0.0
-    for i in range(len(y_true)):
-        if y_true[i] in top_k[i]:
-            num_correct += 1
-    return 1 - num_correct / len(y_true)
+    if k == y_pred.shape[1]:
+        return 0
+    max_rest = np.max(-np.partition(-y_pred, k)[:, k:], axis=1)
+    return 1 - np.mean((y_pred[np.arange(len(y_true)), y_true] > max_rest))
 
 
 class TestEngine(unittest.TestCase):
@@ -398,6 +396,29 @@ class TestEngine(unittest.TestCase):
         predict_2 = est.predict(X)
         err = top_k_error(y, predict_2, 2)
         np.testing.assert_almost_equal(results['train']['multi_error'][-1], err, 5)
+        # check against independent calculation for k = 10
+        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 10,
+                  'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
+        results = {}
+        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        predict_2 = est.predict(X)
+        err = top_k_error(y, predict_2, 10)
+        np.testing.assert_almost_equal(results['train']['multi_error'][-1], err, 5)
+        # check case where predictions are equal
+        X = np.array([[0, 0], [0, 0]])
+        y = np.array([0, 1])
+        lgb_data = lgb.Dataset(X, label=y)
+        params = {'objective': 'multiclass', 'num_classes': 2, 'metric': 'multi_error', 'multi_error_top_k': 1,
+                  'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
+        results = {}
+        lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        np.testing.assert_almost_equal(results['train']['multi_error'][-1], 1, 5)
+        lgb_data = lgb.Dataset(X, label=y)
+        params = {'objective': 'multiclass', 'num_classes': 2, 'metric': 'multi_error', 'multi_error_top_k': 2,
+                  'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
+        results = {}
+        lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        np.testing.assert_almost_equal(results['train']['multi_error'][-1], 0, 5)
 
     def test_early_stopping(self):
         X, y = load_breast_cancer(True)

@@ -142,8 +142,8 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
     size_t k = static_cast<size_t>(label);
 	int num_larger = 0;
     for (size_t i = 0; i < score.size(); ++i) {
-      if (score[i] > score[k]) num_larger++;
-      if (num_larger >= config.multi_error_top_k) return 1.0f;
+      if (score[i] >= score[k]) num_larger++;
+      if (num_larger > config.multi_error_top_k) return 1.0f;
     }
     return 0.0f;
   }

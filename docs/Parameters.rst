@@ -845,6 +845,8 @@ Metric Parameters
 
    -  the error on each sample is 0 if the true class is among the top k predictions, and 1 otherwise
 
+   -  (more precisely, the error on a sample is 0 if there are at least ``num_classes - k`` predictions strictly less than the prediction on the true class)
+
    -  when k=1 this is equivalent to the usual multi-error metric
 
 Network Parameters
