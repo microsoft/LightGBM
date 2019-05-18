@@ -841,13 +841,15 @@ Metric Parameters
 
 -  ``multi_error_top_k`` :raw-html:`<a id="multi_error_top_k" title="Permalink to this parameter" href="#multi_error_top_k">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``multi_error_top_k > 0``
 
-   -  threshold for top-k multi-error metric
+   -  used only with ``multi-error`` metric
 
-   -  the error on each sample is 0 if the true class is among the top k predictions, and 1 otherwise
+      -  threshold for top-k multi-error metric
 
-   -  (more precisely, the error on a sample is 0 if there are at least ``num_classes - k`` predictions strictly less than the prediction on the true class)
+      -  the error on each sample is ``0`` if the true class is among the top ``multi_error_top_k`` predictions, and ``1`` otherwise
 
-   -  when k=1 this is equivalent to the usual multi-error metric
+      -  more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
+
+      -  when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
 
 Network Parameters
 ------------------
