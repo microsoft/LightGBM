@@ -219,11 +219,19 @@ def generate_r_docs(app):
         The application object representing the Sphinx process.
     """
     commands = """
-    export PATH="/home/docs/.conda/bin:$PATH"
     echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile
-    conda create -q -y -n r_env r-base r-devtools r-data.table r-jsonlite r-magrittr r-matrix r-testthat cmake
-    conda install -q -y -n r_env -c conda-forge r-pkgdown
-    source activate r_env
+    /home/docs/.conda/bin/conda create -q -y -n r_env \
+        r-base \
+        r-devtools \
+        r-data.table \
+        r-jsonlite \
+        r-magrittr \
+        r-matrix \
+        r-testthat \
+        cmake
+    /home/docs/.conda/bin/conda install -q -y -n r_env -c conda-forge \
+        r-pkgdown
+    source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {0}
     sed -i'.bak' '/# Build the package (do not touch this line!)/q' build_r.R
