@@ -223,7 +223,7 @@ def test_booster():
         ctypes.byref(booster))
     LIB.LGBM_BoosterAddValidData(booster, test)
     is_finished = ctypes.c_int(0)
-    for i in range(1, 101):
+    for i in range(1, 51):
         LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(is_finished))
         result = np.array([0.0], dtype=np.float64)
         out_len = ctypes.c_ulong(0)
@@ -261,7 +261,7 @@ def test_booster():
         mat.shape[1],
         1,
         1,
-        50,
+        25,
         c_str(''),
         ctypes.byref(num_preb),
         preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
@@ -271,7 +271,7 @@ def test_booster():
                            '../../examples/binary_classification/binary.test')),
         0,
         0,
-        50,
+        25,
         c_str(''),
         c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)

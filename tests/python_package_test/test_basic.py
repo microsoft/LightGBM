@@ -30,13 +30,13 @@ class TestBasic(unittest.TestCase):
         bst = lgb.Booster(params, train_data)
         bst.add_valid(valid_data, "valid_1")
 
-        for i in range(30):
+        for i in range(20):
             bst.update()
             if i % 10 == 0:
                 print(bst.eval_train(), bst.eval_valid())
 
-        self.assertEqual(bst.current_iteration(), 30)
-        self.assertEqual(bst.num_trees(), 30)
+        self.assertEqual(bst.current_iteration(), 20)
+        self.assertEqual(bst.num_trees(), 20)
         self.assertEqual(bst.num_model_per_iteration(), 1)
 
         bst.save_model("model.txt")
@@ -94,16 +94,16 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(subset_group[1], 9)
 
     def test_add_features_throws_if_num_data_unequal(self):
-        X1 = np.random.random((1000, 1))
-        X2 = np.random.random((100, 1))
+        X1 = np.random.random((100, 1))
+        X2 = np.random.random((10, 1))
         d1 = lgb.Dataset(X1).construct()
         d2 = lgb.Dataset(X2).construct()
         with self.assertRaises(lgb.basic.LightGBMError):
             d1.add_features_from(d2)
 
     def test_add_features_throws_if_datasets_unconstructed(self):
-        X1 = np.random.random((1000, 1))
-        X2 = np.random.random((1000, 1))
+        X1 = np.random.random((100, 1))
+        X2 = np.random.random((100, 1))
         with self.assertRaises(ValueError):
             d1 = lgb.Dataset(X1)
             d2 = lgb.Dataset(X2)
@@ -118,7 +118,7 @@ class TestBasic(unittest.TestCase):
             d1.add_features_from(d2)
 
     def test_add_features_equal_data_on_alternating_used_unused(self):
-        X = np.random.random((1000, 5))
+        X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
         names = ['col_%d' % i for i in range(5)]
         for j in range(1, 5):
@@ -141,7 +141,7 @@ class TestBasic(unittest.TestCase):
             self.assertEqual(dtxt, d1txt)
 
     def test_add_features_same_booster_behaviour(self):
-        X = np.random.random((1000, 5))
+        X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
         names = ['col_%d' % i for i in range(5)]
         for j in range(1, 5):
@@ -149,7 +149,7 @@ class TestBasic(unittest.TestCase):
             d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
             d1.add_features_from(d2)
             d = lgb.Dataset(X, feature_name=names).construct()
-            y = np.random.random(1000)
+            y = np.random.random(100)
             d1.set_label(y)
             d.set_label(y)
             b1 = lgb.Booster(train_set=d1)
@@ -170,7 +170,7 @@ class TestBasic(unittest.TestCase):
             self.assertEqual(dtxt, d1txt)
 
     def test_get_feature_penalty_and_monotone_constraints(self):
-        X = np.random.random((1000, 1))
+        X = np.random.random((100, 1))
         d = lgb.Dataset(X, params={'feature_penalty': [0.5],
                                    'monotone_constraints': [1]}).construct()
         np.testing.assert_almost_equal(d.get_feature_penalty(), [0.5])
@@ -180,7 +180,7 @@ class TestBasic(unittest.TestCase):
         self.assertIsNone(d.get_monotone_constraints())
 
     def test_add_features_feature_penalty(self):
-        X = np.random.random((1000, 2))
+        X = np.random.random((100, 2))
         test_cases = [
             (None, None, None),
             ([0.5], None, [0.5, 1]),
@@ -199,7 +199,7 @@ class TestBasic(unittest.TestCase):
                 np.testing.assert_almost_equal(actual, expected)
 
     def test_add_features_monotone_types(self):
-        X = np.random.random((1000, 2))
+        X = np.random.random((100, 2))
         test_cases = [
             (None, None, None),
             ([1], None, [1, 0]),
@@ -218,9 +218,9 @@ class TestBasic(unittest.TestCase):
                 np.testing.assert_array_equal(actual, expected)
 
     def test_cegb_affects_behavior(self):
-        X = np.random.random((1000, 5))
+        X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
-        y = np.random.random(1000)
+        y = np.random.random(100)
         names = ['col_%d' % i for i in range(5)]
         ds = lgb.Dataset(X, feature_name=names).construct()
         ds.set_label(y)
@@ -248,9 +248,9 @@ class TestBasic(unittest.TestCase):
             self.assertNotEqual(basetxt, casetxt)
 
     def test_cegb_scaling_equalities(self):
-        X = np.random.random((1000, 5))
+        X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
-        y = np.random.random(1000)
+        y = np.random.random(100)
         names = ['col_%d' % i for i in range(5)]
         ds = lgb.Dataset(X, feature_name=names).construct()
         ds.set_label(y)

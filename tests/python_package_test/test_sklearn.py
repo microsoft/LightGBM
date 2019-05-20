@@ -107,7 +107,7 @@ class TestSklearn(unittest.TestCase):
     def test_dart(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm = lgb.LGBMRegressor(boosting_type='dart')
+        gbm = lgb.LGBMRegressor(boosting_type='dart', n_estimators=50)
         gbm.fit(X_train, y_train)
         self.assertLessEqual(gbm.score(X_train, y_train), 1.)
 
@@ -124,8 +124,8 @@ class TestSklearn(unittest.TestCase):
     def test_clone_and_property(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm = lgb.LGBMRegressor(n_estimators=100, silent=True)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+        gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
+        gbm.fit(X_train, y_train, verbose=False)
 
         gbm_clone = clone(gbm)
         self.assertIsInstance(gbm.booster_, lgb.Booster)
@@ -133,8 +133,8 @@ class TestSklearn(unittest.TestCase):
 
         X, y = load_digits(2, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        clf = lgb.LGBMClassifier()
-        clf.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+        clf = lgb.LGBMClassifier(n_estimators=10, silent=True)
+        clf.fit(X_train, y_train, verbose=False)
         self.assertListEqual(sorted(clf.classes_), [0, 1])
         self.assertEqual(clf.n_classes_, 2)
         self.assertIsInstance(clf.booster_, lgb.Booster)
@@ -143,8 +143,8 @@ class TestSklearn(unittest.TestCase):
     def test_joblib(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm = lgb.LGBMRegressor(n_estimators=100, silent=True)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+        gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
+        gbm.fit(X_train, y_train, verbose=False)
 
         joblib.dump(gbm, 'lgb.pkl')
         gbm_pickle = joblib.load('lgb.pkl')
@@ -152,8 +152,6 @@ class TestSklearn(unittest.TestCase):
         self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
         self.assertListEqual(list(gbm.feature_importances_), list(gbm_pickle.feature_importances_))
 
-        X, y = load_boston(True)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         for key in gbm.evals_result_:
@@ -166,14 +164,14 @@ class TestSklearn(unittest.TestCase):
             self.assertAlmostEqual(*preds, places=5)
 
     def test_feature_importances_single_leaf(self):
-        clf = lgb.LGBMClassifier(n_estimators=100)
+        clf = lgb.LGBMClassifier(n_estimators=10)
         data = load_iris()
         clf.fit(data.data, data.target)
         importances = clf.feature_importances_
         self.assertEqual(len(importances), 4)
 
     def test_feature_importances_type(self):
-        clf = lgb.LGBMClassifier(n_estimators=100)
+        clf = lgb.LGBMClassifier(n_estimators=10)
         data = load_iris()
         clf.fit(data.data, data.target)
         clf.set_params(importance_type='split')
@@ -226,21 +224,21 @@ class TestSklearn(unittest.TestCase):
         X[cat_cols_actual] = X[cat_cols_actual].astype('category')
         X_test[cat_cols_actual] = X_test[cat_cols_actual].astype('category')
         cat_values = [X[col].cat.categories.tolist() for col in cat_cols_to_store]
-        gbm0 = lgb.sklearn.LGBMClassifier().fit(X, y)
+        gbm0 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y)
         pred0 = gbm0.predict(X_test, raw_score=True)
         pred_prob = gbm0.predict_proba(X_test)[:, 1]
-        gbm1 = lgb.sklearn.LGBMClassifier().fit(X, pd.Series(y), categorical_feature=[0])
+        gbm1 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, pd.Series(y), categorical_feature=[0])
         pred1 = gbm1.predict(X_test, raw_score=True)
-        gbm2 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A'])
+        gbm2 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=['A'])
         pred2 = gbm2.predict(X_test, raw_score=True)
-        gbm3 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A', 'B', 'C', 'D'])
+        gbm3 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = gbm3.predict(X_test, raw_score=True)
         gbm3.booster_.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = gbm4.predict(X_test)
-        gbm5 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['E'])
+        gbm5 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=['E'])
         pred5 = gbm5.predict(X_test, raw_score=True)
-        gbm6 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=[])
+        gbm6 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=[])
         pred6 = gbm6.predict(X_test, raw_score=True)
         self.assertRaises(AssertionError,
                           np.testing.assert_almost_equal,
@@ -325,7 +323,7 @@ class TestSklearn(unittest.TestCase):
 
     def test_metrics(self):
         def custom_obj(y_true, y_pred):
-            return np.zeros(y_true.shape), np.zeros(y_true.shape)
+            return np.ones(y_true.shape), np.ones(y_true.shape)
 
         def custom_metric(y_true, y_pred):
             return 'error', 0, False
