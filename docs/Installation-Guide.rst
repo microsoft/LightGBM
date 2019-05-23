@@ -3,6 +3,10 @@ Installation Guide
 
 Here is the guide for the build of LightGBM CLI version.
 
+All instructions below are aimed to compile 64-bit version of LightGBM.
+It is worth to compile 32-bit version only in very rare special cases of environmental limitations.
+32-bit version is slow and untested, so use it on your own risk and don't forget to adjust some commands in this guide.
+
 For the build of Python-package and R-package, please refer to `Python-package`_ and `R-package`_ folders respectively.
 
 Also you can download artifacts of the latest successful build in master branch: |download artifacts|.
