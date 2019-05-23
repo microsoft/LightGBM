@@ -87,11 +87,12 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
+def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
                 use_hdfs=False, boost_root=None, boost_dir=None,
                 boost_include_dir=None, boost_librarydir=None,
                 opencl_include_dir=None, opencl_library=None,
-                openmp_include_dir=None, openmp_library=None):
+                openmp_include_dir=None, openmp_library=None,
+                nomp=False, bit32=False):
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
         shutil.rmtree(os.path.join(CURRENT_DIR, "build_cpp"))
@@ -134,7 +135,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
         else:
             status = 1
             lib_path = os.path.join(CURRENT_DIR, "compile", "windows", "x64", "DLL", "lib_lightgbm.dll")
-            if not any((use_gpu, use_mpi, use_hdfs)):
+            if not any((use_gpu, use_mpi, use_hdfs, nomp, bit32)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v142", "v141", "v140")
                 for pt in platform_toolsets:
@@ -150,10 +151,11 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
                 if status != 0 or not os.path.exists(lib_path):
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
             if status != 0 or not os.path.exists(lib_path):
+                arch = "Win32" if bit32 else "x64"
                 vs_versions = ("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
                 for vs in vs_versions:
                     logger.info("Starting to compile with %s." % vs)
-                    status = silent_call(cmake_cmd + ["-G", vs, "-A", "x64"])
+                    status = silent_call(cmake_cmd + ["-G", vs, "-A", arch])
                     if status == 0:
                         break
                     else:
@@ -222,6 +224,7 @@ class CustomInstall(install):
         ('mpi', None, 'Compile MPI version'),
         ('nomp', None, 'Compile version without OpenMP support'),
         ('hdfs', 'h', 'Compile HDFS version'),
+        ('bit32', None, 'Compile 32-bit version'),
         ('precompile', 'p', 'Use precompiled library'),
         ('boost-root=', None, 'Boost preferred installation prefix'),
         ('boost-dir=', None, 'Directory with Boost package configuration file'),
@@ -249,16 +252,25 @@ class CustomInstall(install):
         self.hdfs = 0
         self.precompile = 0
         self.nomp = 0
+        self.bit32 = 0
 
     def run(self):
+        if (8 * struct.calcsize("P")) != 64:
+            if self.bit32:
+                logger.warning("You're installing 32-bit version. "
+                               "This version is slow and untested, so use it on your own risk.")
+            else:
+                raise Exception("Cannot install LightGBM in 32-bit Python, "
+                                "please use 64-bit Python instead.")
         open(LOG_PATH, 'wb').close()
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi, nomp=self.nomp,
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi,
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
-                        openmp_include_dir=self.openmp_include_dir, openmp_library=self.openmp_library)
+                        openmp_include_dir=self.openmp_include_dir, openmp_library=self.openmp_library,
+                        nomp=self.nomp, bit32=self.bit32)
         install.run(self)
         if os.path.isfile(LOG_PATH):
             os.remove(LOG_PATH)
@@ -281,9 +293,6 @@ class CustomSdist(sdist):
 
 
 if __name__ == "__main__":
-    if (8 * struct.calcsize("P")) != 64:
-        raise Exception('Cannot install LightGBM in 32-bit Python, please use 64-bit Python instead.')
-
     CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
     LOG_PATH = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
     LOG_NOTICE = "The full version of error log was saved into {0}".format(LOG_PATH)
