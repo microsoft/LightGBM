@@ -14,6 +14,7 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      argc_, range_, string_type, DataFrame, DataTable)
 from .engine import train
 
+from functools import wraps
 
 def _objective_function_wrapper(func):
     """Decorate an objective function.
@@ -47,6 +48,7 @@ def _objective_function_wrapper(func):
             dataset : Dataset
                 The training set from which the labels will be extracted using ``dataset.get_label()``.
     """
+    @wraps(func)
     def inner(preds, dataset):
         """Call passed function with appropriate arguments."""
         labels = dataset.get_label()
@@ -115,6 +117,7 @@ def _eval_function_wrapper(func):
             dataset : Dataset
                 The training set from which the labels will be extracted using ``dataset.get_label()``.
     """
+    @wraps(func)
     def inner(preds, dataset):
         """Call passed function with appropriate arguments."""
         labels = dataset.get_label()
