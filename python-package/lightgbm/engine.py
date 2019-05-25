@@ -56,7 +56,7 @@ def train(params, train_set, num_boost_round=100,
         Categorical features.
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
-        If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
@@ -66,8 +66,7 @@ def train(params, train_set, num_boost_round=100,
         to continue training.
         Requires at least one validation data and one metric.
         If there's more than one, will check all of them. But the training data is ignored anyway.
-        To check only the first metric you can pass in ``callbacks``
-        ``early_stopping`` callback with ``first_metric_only=True``.
+        To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
     evals_result: dict or None, optional (default=None)
@@ -116,14 +115,15 @@ def train(params, train_set, num_boost_round=100,
     for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
                   "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
         if alias in params:
-            num_boost_round = int(params.pop(alias))
+            num_boost_round = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
     for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
-        if alias in params and params[alias] is not None:
-            early_stopping_rounds = int(params.pop(alias))
+        if alias in params:
+            early_stopping_rounds = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
+    first_metric_only = params.pop('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
@@ -181,7 +181,7 @@ def train(params, train_set, num_boost_round=100,
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=bool(verbose_eval)))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
         callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
@@ -267,7 +267,8 @@ class _CVBooster(object):
         return handler_function
 
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True, shuffle=True):
+def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
+                  shuffle=True, eval_train_metric=False):
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
@@ -317,19 +318,25 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
         else:
             tparam = params
         cvbooster = Booster(tparam, train_set)
+        if eval_train_metric:
+            cvbooster.add_valid(train_set, 'train')
         cvbooster.add_valid(valid_set, 'valid')
         ret.append(cvbooster)
     return ret
 
 
-def _agg_cv_result(raw_results):
+def _agg_cv_result(raw_results, eval_train_metric=False):
     """Aggregate cross-validation results."""
     cvmap = collections.defaultdict(list)
     metric_type = {}
     for one_result in raw_results:
         for one_line in one_result:
-            metric_type[one_line[1]] = one_line[3]
-            cvmap[one_line[1]].append(one_line[2])
+            if eval_train_metric:
+                key = "{} {}".format(one_line[0], one_line[1])
+            else:
+                key = one_line[1]
+            metric_type[key] = one_line[3]
+            cvmap[key].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
@@ -339,7 +346,7 @@ def cv(params, train_set, num_boost_round=100,
        feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
-       callbacks=None):
+       callbacks=None, eval_train_metric=False):
     """Perform the cross-validation with given paramaters.
 
     Parameters
@@ -353,7 +360,7 @@ def cv(params, train_set, num_boost_round=100,
     folds : generator or iterator of (train_idx, test_idx) tuples, scikit-learn splitter object or None, optional (default=None)
         If generator or iterator, it should yield the train and test indices for each fold.
         If object, it should be one of the scikit-learn splitter classes
-        (http://scikit-learn.org/stable/modules/classes.html#splitter-classes)
+        (https://scikit-learn.org/stable/modules/classes.html#splitter-classes)
         and have ``split`` method.
         This argument has highest priority over other data split arguments.
     nfold : int, optional (default=5)
@@ -384,7 +391,7 @@ def cv(params, train_set, num_boost_round=100,
         Categorical features.
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
-        If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
@@ -393,8 +400,7 @@ def cv(params, train_set, num_boost_round=100,
         CV score needs to improve at least every ``early_stopping_rounds`` round(s)
         to continue.
         Requires at least one metric. If there's more than one, will check all of them.
-        To check only the first metric you can pass in ``callbacks``
-        ``early_stopping`` callback with ``first_metric_only=True``.
+        To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         Last entry in evaluation history is the one from the best iteration.
     fpreproc : callable or None, optional (default=None)
         Preprocessing function that takes (dtrain, dtest, params)
@@ -412,6 +418,9 @@ def cv(params, train_set, num_boost_round=100,
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
+    eval_train_metric : bool, optional (default=False)
+        Whether to display the train metric in progress.
+        The score of the metric is calculated again after each training step, so there is some impact on performance.
 
     Returns
     -------
@@ -439,6 +448,7 @@ def cv(params, train_set, num_boost_round=100,
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             early_stopping_rounds = params.pop(alias)
             break
+    first_metric_only = params.pop('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
@@ -459,7 +469,8 @@ def cv(params, train_set, num_boost_round=100,
     results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,
                             params=params, seed=seed, fpreproc=fpreproc,
-                            stratified=stratified, shuffle=shuffle)
+                            stratified=stratified, shuffle=shuffle,
+                            eval_train_metric=eval_train_metric)
 
     # setup callbacks
     if callbacks is None:
@@ -469,7 +480,7 @@ def cv(params, train_set, num_boost_round=100,
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
     if early_stopping_rounds is not None:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=False))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, integer_types):
@@ -489,7 +500,7 @@ def cv(params, train_set, num_boost_round=100,
                                     end_iteration=num_boost_round,
                                     evaluation_result_list=None))
         cvfolds.update(fobj=fobj)
-        res = _agg_cv_result(cvfolds.eval_valid(feval))
+        res = _agg_cv_result(cvfolds.eval_valid(feval), eval_train_metric)
         for _, key, mean, _, std in res:
             results[key + '-mean'].append(mean)
             results[key + '-stdv'].append(std)

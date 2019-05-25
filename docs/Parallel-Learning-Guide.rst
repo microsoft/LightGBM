@@ -124,4 +124,4 @@ Example
 
 .. _here: https://www.youtube.com/watch?v=iqzXhp5TxUY
 
-.. _A simple parallel example: https://github.com/Microsoft/lightgbm/tree/master/examples/parallel_learning
+.. _A simple parallel example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning

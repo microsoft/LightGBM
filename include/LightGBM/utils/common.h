@@ -1,21 +1,27 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
 #define LIGHTGBM_UTILS_COMMON_FUN_H_
 
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <cstdio>
+#include <limits>
 #include <string>
-#include <vector>
-#include <sstream>
-#include <cstdint>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <functional>
-#include <memory>
-#include <iterator>
-#include <type_traits>
 #include <iomanip>
+#include <iterator>
+#include <memory>
+#include <sstream>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #ifdef _MSC_VER
 #include "intrin.h"
@@ -806,6 +812,22 @@ inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) 
   if (su != nullptr) {
     *su = static_cast<T2>(sumw);
   }
+}
+
+inline static std::vector<uint32_t> EmptyBitset(int n) {
+  int size = n / 32;
+  if (n % 32 != 0) ++size;
+  return std::vector<uint32_t>(size);
+}
+
+template<typename T>
+inline static void InsertBitset(std::vector<uint32_t>& vec, const T val) {
+    int i1 = val / 32;
+    int i2 = val % 32;
+    if (static_cast<int>(vec.size()) < i1 + 1) {
+      vec.resize(i1 + 1, 0);
+    }
+    vec[i1] |= (1 << i2);
 }
 
 template<typename T>

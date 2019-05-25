@@ -1,12 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREE_LEARNER_H_
 #define LIGHTGBM_TREE_LEARNER_H_
 
-
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
-#include <LightGBM/json11.hpp>
+#include <LightGBM/meta.h>
 
+#include <string>
 #include <vector>
+
+#include <LightGBM/json11.hpp>
 
 using namespace json11;
 
@@ -72,11 +77,8 @@ class TreeLearner {
   */
   virtual void AddPredictionToScore(const Tree* tree, double* out_score) const = 0;
 
-  virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
+  virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                                data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const = 0;
-
-  virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, double prediction,
-    data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const = 0;
 
   TreeLearner() = default;
   /*! \brief Disable copy */

@@ -69,7 +69,7 @@ Optimization in Network Communication
 -------------------------------------
 
 It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in parallel learning of LightGBM.
-LightGBM implement state-of-art algorithms\ `[9] <#references>`__.
+LightGBM implements state-of-art algorithms\ `[9] <#references>`__.
 These collective communication algorithms can provide much better performance than point-to-point communication.
 
 Optimization in Parallel Learning
@@ -147,7 +147,7 @@ Data Parallel in LightGBM
 
 We reduce communication cost of data parallel in LightGBM:
 
-1. Instead of "Merge global histograms from all local histograms", LightGBM use "Reduce Scatter" to merge histograms of different (non-overlapping) features for different workers.
+1. Instead of "Merge global histograms from all local histograms", LightGBM uses "Reduce Scatter" to merge histograms of different (non-overlapping) features for different workers.
    Then workers find the local best split on local merged histograms and sync up the global best split.
 
 2. As aforementioned, LightGBM uses histogram subtraction to speed up training.
@@ -244,9 +244,9 @@ Other Features
 
 -  Validation metric output during training
 
--  Multi validation data
+-  Multiple validation data
 
--  Multi metrics
+-  Multiple metrics
 
 -  Early stopping (both training and prediction)
 
@@ -283,7 +283,7 @@ References
 
 .. _On Grouping for Maximum Homogeneity: https://www.researchgate.net/publication/242580910_On_Grouping_for_Maximum_Homogeneity
 
-.. _Optimization of collective communication operations in MPICH: http://wwwi10.lrr.in.tum.de/~gerndt/home/Teaching/HPCSeminar/mpich_multi_coll.pdf
+.. _Optimization of collective communication operations in MPICH: https://www.mcs.anl.gov/~thakur/papers/ijhpca-coll.pdf
 
 .. _A Communication-Efficient Parallel Algorithm for Decision Tree: http://papers.nips.cc/paper/6381-a-communication-efficient-parallel-algorithm-for-decision-tree
 

@@ -340,6 +340,9 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Doxygen documentation
+docs/doxyoutput/
+
 # PyBuilder
 target/
 
@@ -378,6 +381,9 @@ lightgbm.model
 
 # VSCode
 .vscode
+
+# IntelliJ IDEA
+.idea/
 
 # Files from local Python install
 python-package/LICENSE

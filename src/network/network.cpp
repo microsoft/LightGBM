@@ -1,11 +1,15 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/network.h>
 
 #include <LightGBM/utils/common.h>
 
-#include "linkers.h"
-
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
+
+#include "linkers.h"
 
 namespace LightGBM {
 

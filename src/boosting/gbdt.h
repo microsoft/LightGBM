@@ -1,20 +1,27 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_GBDT_H_
 #define LIGHTGBM_BOOSTING_GBDT_H_
 
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
-#include <LightGBM/json11.hpp>
 
-#include "score_updater.hpp"
-
-#include <cstdio>
-#include <vector>
 #include <string>
+#include <algorithm>
+#include <cstdio>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <mutex>
-#include <map>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include <LightGBM/json11.hpp>
+#include "score_updater.hpp"
 
 using namespace json11;
 
@@ -427,6 +434,8 @@ class GBDT : public GBDTBase {
   std::vector<std::vector<const Metric*>> valid_metrics_;
   /*! \brief Number of rounds for early stopping */
   int early_stopping_round_;
+  /*! \brief Only use first metric for early stopping */
+  bool es_first_metric_only_;
   /*! \brief Best iteration(s) for early stopping */
   std::vector<std::vector<int>> best_iter_;
   /*! \brief Best score(s) for early stopping */

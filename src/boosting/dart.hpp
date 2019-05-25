@@ -1,14 +1,20 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_DART_H_
 #define LIGHTGBM_BOOSTING_DART_H_
 
 #include <LightGBM/boosting.h>
-#include "score_updater.hpp"
-#include "gbdt.h"
 
-#include <cstdio>
-#include <vector>
 #include <string>
+#include <algorithm>
+#include <cstdio>
 #include <fstream>
+#include <vector>
+
+#include "gbdt.h"
+#include "score_updater.hpp"
 
 namespace LightGBM {
 /*!

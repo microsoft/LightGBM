@@ -1,11 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_REGRESSION_METRIC_HPP_
 #define LIGHTGBM_METRIC_REGRESSION_METRIC_HPP_
 
 #include <LightGBM/metric.h>
-
 #include <LightGBM/utils/log.h>
 
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace LightGBM {
 /*!
@@ -142,7 +148,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
   }
 };
 
-/*! \brief L2 loss for regression task */
+/*! \brief Quantile loss for regression task */
 class QuantileMetric : public RegressionMetric<QuantileMetric> {
  public:
   explicit QuantileMetric(const Config& config) :RegressionMetric<QuantileMetric>(config) {

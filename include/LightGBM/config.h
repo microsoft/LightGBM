@@ -1,20 +1,24 @@
-/// desc and descl2 fields must be written in reStructuredText format
-
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ *
+ * \note
+ * desc and descl2 fields must be written in reStructuredText format
+ */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
 
+#include <LightGBM/export.h>
+#include <LightGBM/meta.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
-#include <LightGBM/meta.h>
-#include <LightGBM/export.h>
-
-#include <vector>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <algorithm>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace LightGBM {
 
@@ -98,7 +102,7 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gammma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
+  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
   // alias = objective_type, app, application
   // desc = regression application
   // descl2 = ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
@@ -208,7 +212,7 @@ struct Config {
   #pragma region Learning Control Parameters
 
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
-  // desc = ``< 0`` means no limit
+  // desc = ``<= 0`` means no limit
   int max_depth = -1;
 
   // alias = min_data_per_leaf, min_data, min_child_samples
@@ -255,6 +259,9 @@ struct Config {
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
   // desc = ``<= 0`` means disable
   int early_stopping_round = 0;
+
+  // desc = set this to ``true``, if you want to use only the first metric for early stopping
+  bool first_metric_only = false;
 
   // alias = max_tree_output, max_leaf_output
   // desc = used to limit the max output of tree leaves
@@ -368,7 +375,7 @@ struct Config {
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
   // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
-  // desc = see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
   // check = >=0.0
@@ -376,6 +383,26 @@ struct Config {
   // desc = decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees
   // desc = used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
   double refit_decay_rate = 0.9;
+
+  // check = >=0.0
+  // desc = cost-effective gradient boosting multiplier for all penalties
+  double cegb_tradeoff = 1.0;
+
+  // check = >=0.0
+  // desc = cost-effective gradient-boosting penalty for splitting a node
+  double cegb_penalty_split = 0.0;
+
+  // type = multi-double
+  // default = 0,0,...,0
+  // desc = cost-effective gradient boosting penalty for using a feature
+  // desc = applied per data point
+  std::vector<double> cegb_penalty_feature_lazy;
+
+  // type = multi-double
+  // default = 0,0,...,0
+  // desc = cost-effective gradient boosting penalty for using a feature
+  // desc = applied once per forest
+  std::vector<double> cegb_penalty_feature_coupled;
 
   #pragma endregion
 
@@ -564,6 +591,7 @@ struct Config {
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
   // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
+  // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
   bool predict_contrib = false;
 
   // desc = used only in ``prediction`` task
@@ -607,12 +635,14 @@ struct Config {
   // alias = unbalance, unbalanced_sets
   // desc = used only in ``binary`` application
   // desc = set this to ``true`` if training data are unbalanced
+  // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
   bool is_unbalance = false;
 
   // check = >0.0
   // desc = used only in ``binary`` application
   // desc = weight of labels with positive class
+  // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
   double scale_pos_weight = 1.0;
 

@@ -465,6 +465,16 @@ class TestEngine(unittest.TestCase):
                         callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
         self.assertIn('l1-mean', cv_res)
         self.assertEqual(len(cv_res['l1-mean']), 10)
+        # enable display training loss
+        cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
+                        nfold=3, stratified=False, shuffle=False,
+                        metrics='l1', verbose_eval=False, eval_train_metric=True)
+        self.assertIn('train l1-mean', cv_res)
+        self.assertIn('valid l1-mean', cv_res)
+        self.assertNotIn('train l2-mean', cv_res)
+        self.assertNotIn('valid l2-mean', cv_res)
+        self.assertEqual(len(cv_res['train l1-mean']), 10)
+        self.assertEqual(len(cv_res['valid l1-mean']), 10)
         # self defined folds
         tss = TimeSeriesSplit(3)
         folds = tss.split(X_train)
@@ -543,60 +553,89 @@ class TestEngine(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
         import pandas as pd
+        np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
-                          "D": np.random.permutation([True, False] * 150)})  # bool
+                          "D": np.random.permutation([True, False] * 150),  # bool
+                          "E": pd.Categorical(np.random.permutation(['z', 'y', 'x', 'w', 'v'] * 60),
+                                              ordered=True)})  # str and ordered categorical
         y = np.random.permutation([0, 1] * 150)
-        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),  # unseen category
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
-                               "D": np.random.permutation([True, False] * 30)})
-        cat_cols = []
-        for col in ["A", "B", "C", "D"]:
-            X[col] = X[col].astype('category')
-            X_test[col] = X_test[col].astype('category')
-            cat_cols.append(X[col].cat.categories.tolist())
+                               "D": np.random.permutation([True, False] * 30),
+                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                                                   ordered=True)})
+        np.random.seed()  # reset seed
+        cat_cols_actual = ["A", "B", "C", "D"]
+        cat_cols_to_store = cat_cols_actual + ["E"]
+        X[cat_cols_actual] = X[cat_cols_actual].astype('category')
+        X_test[cat_cols_actual] = X_test[cat_cols_actual].astype('category')
+        cat_values = [X[col].cat.categories.tolist() for col in cat_cols_to_store]
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
             'verbose': -1
         }
         lgb_train = lgb.Dataset(X, y)
-        gbm0 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
+        gbm0 = lgb.train(params, lgb_train, num_boost_round=10)
         pred0 = gbm0.predict(X_test)
+        self.assertEqual(lgb_train.categorical_feature, 'auto')
         lgb_train = lgb.Dataset(X, pd.DataFrame(y))  # also test that label can be one-column pd.DataFrame
-        gbm1 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=[0])
+        gbm1 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[0])
         pred1 = gbm1.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, [0])
         lgb_train = lgb.Dataset(X, pd.Series(y))  # also test that label can be pd.Series
-        gbm2 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=['A'])
+        gbm2 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=['A'])
         pred2 = gbm2.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, ['A'])
         lgb_train = lgb.Dataset(X, y)
-        gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=['A', 'B', 'C', 'D'])
+        gbm3 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = gbm3.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, ['A', 'B', 'C', 'D'])
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = gbm4.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, ['A', 'B', 'C', 'D'])
         model_str = gbm4.model_to_string()
         gbm4.model_from_string(model_str, False)
         pred5 = gbm4.predict(X_test)
-        gbm5 = lgb.Booster({'model_str': model_str})
+        gbm5 = lgb.Booster(model_str=model_str)
         pred6 = gbm5.predict(X_test)
-        np.testing.assert_almost_equal(pred0, pred1)
-        np.testing.assert_almost_equal(pred0, pred2)
+        lgb_train = lgb.Dataset(X, y)
+        gbm6 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=['E'])
+        pred7 = gbm6.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, ['E'])
+        lgb_train = lgb.Dataset(X, y)
+        gbm7 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[])
+        pred8 = gbm7.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, [])
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred1)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred2)
+        np.testing.assert_almost_equal(pred1, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred0, pred4)
         np.testing.assert_almost_equal(pred0, pred5)
         np.testing.assert_almost_equal(pred0, pred6)
-        self.assertListEqual(gbm0.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm1.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm2.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm3.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm4.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm5.pandas_categorical, cat_cols)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred7)  # ordered cat features aren't treated as cat features by default
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred8)
+        self.assertListEqual(gbm0.pandas_categorical, cat_values)
+        self.assertListEqual(gbm1.pandas_categorical, cat_values)
+        self.assertListEqual(gbm2.pandas_categorical, cat_values)
+        self.assertListEqual(gbm3.pandas_categorical, cat_values)
+        self.assertListEqual(gbm4.pandas_categorical, cat_values)
+        self.assertListEqual(gbm5.pandas_categorical, cat_values)
+        self.assertListEqual(gbm6.pandas_categorical, cat_values)
+        self.assertListEqual(gbm7.pandas_categorical, cat_values)
 
     def test_reference_chain(self):
         X = np.random.normal(size=(100, 2))
@@ -1340,24 +1379,23 @@ class TestEngine(unittest.TestCase):
             return ('constant_metric', 0.0, False)
 
         # test that all metrics are checked (default behaviour)
-        early_stop_callback = lgb.early_stopping(5, verbose=False)
         gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
                         feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
                                                          constant_metric(preds, train_data)],
-                        callbacks=[early_stop_callback])
+                        early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 1)
 
         # test that only the first metric is checked
-        early_stop_callback = lgb.early_stopping(5, first_metric_only=True, verbose=False)
-        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
+                        num_boost_round=20, valid_sets=[lgb_eval],
                         feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
                                                          constant_metric(preds, train_data)],
-                        callbacks=[early_stop_callback])
+                        early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 20)
         # ... change the order of metrics
-        early_stop_callback = lgb.early_stopping(5, first_metric_only=True, verbose=False)
-        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
+                        num_boost_round=20, valid_sets=[lgb_eval],
                         feval=lambda preds, train_data: [constant_metric(preds, train_data),
                                                          decreasing_metric(preds, train_data)],
-                        callbacks=[early_stop_callback])
+                        early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 1)

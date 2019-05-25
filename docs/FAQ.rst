@@ -16,7 +16,7 @@ LightGBM FAQ
 Critical
 ~~~~~~~~
 
-Please post an issue in `Microsoft/LightGBM repository <https://github.com/Microsoft/LightGBM/issues>`__ for any
+Please post an issue in `Microsoft/LightGBM repository <https://github.com/microsoft/LightGBM/issues>`__ for any
 LightGBM issues you encounter. For critical issues (crash, prediction error, nonsense outputs...), you may also ping a
 member of the core team according to the relevant area of expertise by mentioning them with the arobase (@) symbol:
 
@@ -65,20 +65,20 @@ LightGBM
 -  **Question 3**: When running LightGBM on a large dataset, my computer runs out of RAM.
 
 -  **Solution 3**: Multiple solutions: set the ``histogram_pool_size`` parameter to the MB you want to use for LightGBM (histogram\_pool\_size + dataset size = approximately RAM used),
-   lower ``num_leaves`` or lower ``max_bin`` (see `Microsoft/LightGBM#562 <https://github.com/Microsoft/LightGBM/issues/562>`__).
+   lower ``num_leaves`` or lower ``max_bin`` (see `Microsoft/LightGBM#562 <https://github.com/microsoft/LightGBM/issues/562>`__).
 
 --------------
 
 -  **Question 4**: I am using Windows. Should I use Visual Studio or MinGW for compiling LightGBM?
 
--  **Solution 4**: Visual Studio `performs best for LightGBM <https://github.com/Microsoft/LightGBM/issues/542>`__.
+-  **Solution 4**: Visual Studio `performs best for LightGBM <https://github.com/microsoft/LightGBM/issues/542>`__.
 
 --------------
 
 -  **Question 5**: When using LightGBM GPU, I cannot reproduce results over several runs.
 
 -  **Solution 5**: This is normal and expected behaviour, but you may try to use ``gpu_use_dp = true`` for reproducibility
-   (see `Microsoft/LightGBM#560 <https://github.com/Microsoft/LightGBM/pull/560#issuecomment-304561654>`__).
+   (see `Microsoft/LightGBM#560 <https://github.com/microsoft/LightGBM/pull/560#issuecomment-304561654>`__).
    You may also use the CPU version.
 
 --------------
@@ -86,7 +86,7 @@ LightGBM
 -  **Question 6**: Bagging is not reproducible when changing the number of threads.
 
 -  **Solution 6**: LightGBM bagging is multithreaded, so its output depends on the number of threads used.
-   There is `no workaround currently <https://github.com/Microsoft/LightGBM/issues/632>`__.
+   There is `no workaround currently <https://github.com/microsoft/LightGBM/issues/632>`__.
 
 --------------
 
@@ -94,14 +94,14 @@ LightGBM
 
 -  **Solution 7**: This is expected behaviour for arbitrary parameters. To enable Random Forest,
    you must use ``bagging_fraction`` and ``feature_fraction`` different from 1, along with a ``bagging_freq``.
-   `This thread <https://github.com/Microsoft/LightGBM/issues/691>`__ includes an example.
+   `This thread <https://github.com/microsoft/LightGBM/issues/691>`__ includes an example.
 
 --------------
 
 -  **Question 8**: CPU usage is low (like 10%) in Windows when using LightGBM on very large datasets with many-core systems.
 
 -  **Solution 8**: Please use `Visual Studio <https://visualstudio.microsoft.com/downloads/>`__
-   as it may be `10x faster than MinGW <https://github.com/Microsoft/LightGBM/issues/749>`__ especially for very large trees.
+   as it may be `10x faster than MinGW <https://github.com/microsoft/LightGBM/issues/749>`__ especially for very large trees.
 
 --------------
 
@@ -115,7 +115,7 @@ LightGBM
 
 -  **Solution 9**: The column you're trying to pass via ``categorical_feature`` likely contains very large values.
    Categorical features in LightGBM are limited by int32 range,
-   so you cannot pass values that are greater than ``Int32.MaxValue`` (2147483647) as categorical features (see `Microsoft/LightGBM#1359 <https://github.com/Microsoft/LightGBM/issues/1359>`__).
+   so you cannot pass values that are greater than ``Int32.MaxValue`` (2147483647) as categorical features (see `Microsoft/LightGBM#1359 <https://github.com/microsoft/LightGBM/issues/1359>`__).
    You should convert them to integers ranging from zero to the number of categories first.
 
 --------------
@@ -139,13 +139,27 @@ LightGBM
 
        ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib
 
+   The described above fix worked fine before the release of OpenMP 8.0.0 version.
+   Starting from 8.0.0 version, Homebrew formula for OpenMP includes ``-DLIBOMP_INSTALL_ALIASES=OFF`` option which leads to that the fix doesn't work anymore.
+   However, you can create symlinks to library aliases manually:
+
+   ::
+
+       for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do sudo ln -sf "$(brew --cellar libomp)"/*/lib/libomp.dylib $CONDA_PREFIX/lib/$LIBOMP_ALIAS; done
+
+   Another workaround would be removing MKL optimizations from Conda's packages completely:
+
+   ::
+
+       conda install nomkl
+
    If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
 --------------
 
 -  **Question 11**: LightGBM hangs when multithreading (OpenMP) and using forking in Linux at the same time.
 
--  **Solution 11**: Use ``nthreads=1`` to disable multithreading of LightGBM. There is a bug with OpenMP which hangs forked sessions with multithreading activated. A more expensive solution is to use new processes instead of using fork, however, keep in mind it is creating new processes where you have to copy memory and load libraries (example: if you want to fork 16 times your current process, then you will require to make 16 copies of your dataset in memory) (see `Microsoft/LightGBM#1789 <https://github.com/Microsoft/LightGBM/issues/1789#issuecomment-433713383>`__).
+-  **Solution 11**: Use ``nthreads=1`` to disable multithreading of LightGBM. There is a bug with OpenMP which hangs forked sessions with multithreading activated. A more expensive solution is to use new processes instead of using fork, however, keep in mind it is creating new processes where you have to copy memory and load libraries (example: if you want to fork 16 times your current process, then you will require to make 16 copies of your dataset in memory) (see `Microsoft/LightGBM#1789 <https://github.com/microsoft/LightGBM/issues/1789#issuecomment-433713383>`__).
    
    An alternative, if multithreading is really necessary inside the forked sessions, would be to compile LightGBM with Intel toolchain. Intel compilers are unaffected by this bug.
    
@@ -160,14 +174,14 @@ R-package
 
 -  **Solution 1**: Run ``lgb.unloader(wipe = TRUE)`` in the R console, and recreate the LightGBM datasets (this will wipe all LightGBM-related variables).
    Due to the pointers, choosing to not wipe variables will not fix the error.
-   This is a known issue: `Microsoft/LightGBM#698 <https://github.com/Microsoft/LightGBM/issues/698>`__.
+   This is a known issue: `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
 
 --------------
 
 -  **Question 2**: I used ``setinfo``, tried to print my ``lgb.Dataset``, and now the R console froze!
 
 -  **Solution 2**: Avoid printing the ``lgb.Dataset`` after using ``setinfo``.
-   This is a known bug: `Microsoft/LightGBM#539 <https://github.com/Microsoft/LightGBM/issues/539>`__.
+   This is a known bug: `Microsoft/LightGBM#539 <https://github.com/microsoft/LightGBM/issues/539>`__.
 
 --------------
 
@@ -226,9 +240,9 @@ Python-package
 -  **Question 3**: I encounter segmentation faults (segfaults) randomly after installing LightGBM from PyPI using ``pip install lightgbm``.
 
 -  **Solution 3**: We are doing our best to provide universal wheels which have high running speed and are compatible with any hardware, OS, compiler, etc. at the same time.
-   However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/Microsoft/LightGBM/issues/1743>`__).
+   However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
    Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary :all: lightgbm``.
-   For the OS-specific prerequisites see `this guide <https://github.com/Microsoft/LightGBM/blob/master/python-package/README.rst#build-from-sources>`__.
+   For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#build-from-sources>`__.
 
    Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.

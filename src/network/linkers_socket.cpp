@@ -1,19 +1,22 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifdef USE_SOCKET
-#include "linkers.h"
 
+#include <LightGBM/config.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <LightGBM/config.h>
-
+#include <string>
+#include <chrono>
 #include <cstring>
-
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <thread>
-#include <chrono>
-#include <string>
+
+#include "linkers.h"
 
 namespace LightGBM {
 

@@ -152,7 +152,7 @@ class LGBMModel(_LGBMModelBase):
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)
-            Maximum tree depth for base learners, -1 means no limit.
+            Maximum tree depth for base learners, <=0 means no limit.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
             You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate
@@ -170,6 +170,9 @@ class LGBMModel(_LGBMModelBase):
             Weights associated with classes in the form ``{class_label: weight}``.
             Use this parameter only for multi-class classification task;
             for binary classification task you may use ``is_unbalance`` or ``scale_pos_weight`` parameters.
+            Note, that the usage of all these parameters will result in poor estimates of the individual class probabilities.
+            You may want to consider performing probability calibration
+            (https://scikit-learn.org/stable/modules/calibration.html) of your model.
             The 'balanced' mode uses the values of y to automatically adjust weights
             inversely proportional to class frequencies in the input data as ``n_samples / (n_classes * np.bincount(y))``.
             If None, all classes are supposed to have weight one.
@@ -287,6 +290,10 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes = None
         self.set_params(**kwargs)
 
+    def _more_tags(self):
+        return {'allow_nan': True,
+                'X_types': ['2darray', 'sparse', '1dlabels']}
+
     def get_params(self, deep=True):
         """Get parameters for this estimator.
 
@@ -369,8 +376,8 @@ class LGBMModel(_LGBMModelBase):
             to continue training.
             Requires at least one validation data and one metric.
             If there's more than one, will check all of them. But the training data is ignored anyway.
-            To check only the first metric you can pass in ``callbacks``
-            ``early_stopping`` callback with ``first_metric_only=True``.
+            To check only the first metric, set the ``first_metric_only`` parameter to ``True``
+            in additional parameters ``**kwargs`` of the model constructor.
         verbose : bool or int, optional (default=True)
             Requires at least one evaluation data.
             If True, the eval metric on the eval set is printed at each boosting stage.
@@ -389,7 +396,7 @@ class LGBMModel(_LGBMModelBase):
             Categorical features.
             If list of int, interpreted as indices.
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
-            If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+            If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
@@ -579,9 +586,11 @@ class LGBMModel(_LGBMModelBase):
 
             Note
             ----
-            If you want to get more explanation for your model's predictions using SHAP values
+            If you want to get more explanations for your model's predictions using SHAP values,
             like SHAP interaction values,
-            you can install shap package (https://github.com/slundberg/shap).
+            you can install the shap package (https://github.com/slundberg/shap).
+            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+            column, where the last column is the expected value.
 
         **kwargs
             Other parameters for the prediction.
@@ -590,10 +599,10 @@ class LGBMModel(_LGBMModelBase):
         -------
         predicted_result : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
             The predicted values.
-        X_leaves : array-like of shape = [n_samples, n_trees] or shape [n_samples, n_trees * n_classes]
-            If ``pred_leaf=True``, the predicted leaf every tree for each sample.
-        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape [n_samples, (n_features + 1) * n_classes]
-            If ``pred_contrib=True``, the each feature contributions for each sample.
+        X_leaves : array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
+            If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
+        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
+            If ``pred_contrib=True``, the feature contributions for each sample.
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
@@ -782,9 +791,11 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
             Note
             ----
-            If you want to get more explanation for your model's predictions using SHAP values
+            If you want to get more explanations for your model's predictions using SHAP values,
             like SHAP interaction values,
-            you can install shap package (https://github.com/slundberg/shap).
+            you can install the shap package (https://github.com/slundberg/shap).
+            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+            column, where the last column is the expected value.
 
         **kwargs
             Other parameters for the prediction.
@@ -794,9 +805,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         predicted_probability : array-like of shape = [n_samples, n_classes]
             The predicted probability for each class for each sample.
         X_leaves : array-like of shape = [n_samples, n_trees * n_classes]
-            If ``pred_leaf=True``, the predicted leaf every tree for each sample.
+            If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
         X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes]
-            If ``pred_contrib=True``, the each feature contributions for each sample.
+            If ``pred_contrib=True``, the feature contributions for each sample.
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
                                                      pred_leaf, pred_contrib, **kwargs)

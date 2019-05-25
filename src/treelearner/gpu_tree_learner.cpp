@@ -1,15 +1,19 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifdef USE_GPU
-#include "gpu_tree_learner.h"
-#include "../io/dense_bin.hpp"
-#include "../io/dense_nbits_bin.hpp"
 
-#include <LightGBM/utils/array_args.h>
-#include <LightGBM/network.h>
+#include "gpu_tree_learner.h"
+
 #include <LightGBM/bin.h>
+#include <LightGBM/network.h>
+#include <LightGBM/utils/array_args.h>
 
 #include <algorithm>
-#include <vector>
 
+#include "../io/dense_bin.hpp"
+#include "../io/dense_nbits_bin.hpp"
 
 #define GPU_DEBUG 0
 
@@ -432,7 +436,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
                         i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
-    printf("first example of feature-group tuple is: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
+    printf("first example of feature-group tuple is: %d %d %d %d\n", host4[0].s[0], host4[0].s[1], host4[0].s[2], host4[0].s[3]);
     printf("Feature-groups copied to device with multipliers ");
     for (int l = 0; l < dword_features_; ++l) {
       printf("%d ", dev_bin_mult[l]);

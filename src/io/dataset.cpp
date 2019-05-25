@@ -1,18 +1,19 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/dataset.h>
+
 #include <LightGBM/feature_group.h>
+#include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/utils/array_args.h>
 
+#include <limits>
 #include <chrono>
 #include <cstdio>
-#include <unordered_map>
-#include <limits>
-#include <memory>
-#include <vector>
-#include <utility>
-#include <string>
 #include <sstream>
+#include <unordered_map>
 
 namespace LightGBM {
 

@@ -1,10 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 
-#include <LightGBM/objective_function.h>
 #include <LightGBM/meta.h>
-
+#include <LightGBM/objective_function.h>
 #include <LightGBM/utils/array_args.h>
+
+#include <string>
+#include <algorithm>
+#include <vector>
 
 namespace LightGBM {
 
@@ -58,7 +65,7 @@ namespace LightGBM {
   CHECK(threshold < weighted_cdf[pos]);\
   T v1 = data_reader(sorted_idx[pos - 1]);\
   T v2 = data_reader(sorted_idx[pos]);\
-  if (weighted_cdf[pos + 1] - weighted_cdf[pos] > kEpsilon) {\
+  if (weighted_cdf[pos + 1] - weighted_cdf[pos] >= 1.0f) {\
     return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1); \
   } else {\
     return static_cast<T>(v2);\
@@ -225,62 +232,30 @@ class RegressionL1loss: public RegressionL2loss {
 
   bool IsRenewTreeOutput() const override { return true; }
 
-  double RenewTreeOutput(double, const double* pred,
+  double RenewTreeOutput(double, std::function<double(const label_t*, int)> residual_getter,
                          const data_size_t* index_mapper,
                          const data_size_t* bagging_mapper,
                          data_size_t num_data_in_leaf) const override {
     const double alpha = 0.5;
     if (weights_ == nullptr) {
       if (bagging_mapper == nullptr) {
-        #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
+        #define data_reader(i) (residual_getter(label_,index_mapper[i]))
         PercentileFun(double, data_reader, num_data_in_leaf, alpha);
         #undef data_reader
       } else {
-        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
-        PercentileFun(double, data_reader, num_data_in_leaf, alpha);
-        #undef data_reader
-      }
-    } else {
-      if (bagging_mapper == nullptr) {
-        #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
-        #define weight_reader(i) (weights_[index_mapper[i]])
-        WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
-        #undef data_reader
-        #undef weight_reader
-      } else {
-        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
-        #define weight_reader(i) (weights_[bagging_mapper[index_mapper[i]]])
-        WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
-        #undef data_reader
-        #undef weight_reader
-      }
-    }
-  }
-
-  double RenewTreeOutput(double, double pred,
-                         const data_size_t* index_mapper,
-                         const data_size_t* bagging_mapper,
-                         data_size_t num_data_in_leaf) const override {
-    const double alpha = 0.5;
-    if (weights_ == nullptr) {
-      if (bagging_mapper == nullptr) {
-        #define data_reader(i) (label_[index_mapper[i]] - pred)
-        PercentileFun(double, data_reader, num_data_in_leaf, alpha);
-        #undef data_reader
-      } else {
-        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred)
+        #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
         PercentileFun(double, data_reader, num_data_in_leaf, alpha);
         #undef data_reader
       }
     } else {
       if (bagging_mapper == nullptr) {
-        #define data_reader(i) (label_[index_mapper[i]] - pred)
+        #define data_reader(i) (residual_getter(label_,index_mapper[i]))
         #define weight_reader(i) (weights_[index_mapper[i]])
         WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
         #undef data_reader
         #undef weight_reader
       } else {
-        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred)
+        #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
         #define weight_reader(i) (weights_[bagging_mapper[index_mapper[i]]])
         WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
         #undef data_reader
@@ -545,60 +520,29 @@ class RegressionQuantileloss : public RegressionL2loss {
 
   bool IsRenewTreeOutput() const override { return true; }
 
-  double RenewTreeOutput(double, const double* pred,
+  double RenewTreeOutput(double, std::function<double(const label_t*, int)> residual_getter,
                          const data_size_t* index_mapper,
                          const data_size_t* bagging_mapper,
                          data_size_t num_data_in_leaf) const override {
     if (weights_ == nullptr) {
       if (bagging_mapper == nullptr) {
-        #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
+        #define data_reader(i) (residual_getter(label_,index_mapper[i]))
         PercentileFun(double, data_reader, num_data_in_leaf, alpha_);
         #undef data_reader
       } else {
-        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
-        PercentileFun(double, data_reader, num_data_in_leaf, alpha_);
-        #undef data_reader
-      }
-    } else {
-      if (bagging_mapper == nullptr) {
-        #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
-        #define weight_reader(i) (weights_[index_mapper[i]])
-        WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha_);
-        #undef data_reader
-        #undef weight_reader
-      } else {
-        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
-        #define weight_reader(i) (weights_[bagging_mapper[index_mapper[i]]])
-        WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha_);
-        #undef data_reader
-        #undef weight_reader
-      }
-    }
-  }
-
-  double RenewTreeOutput(double, double pred,
-                         const data_size_t* index_mapper,
-                         const data_size_t* bagging_mapper,
-                         data_size_t num_data_in_leaf) const override {
-    if (weights_ == nullptr) {
-      if (bagging_mapper == nullptr) {
-        #define data_reader(i) (label_[index_mapper[i]] - pred)
-        PercentileFun(double, data_reader, num_data_in_leaf, alpha_);
-        #undef data_reader
-      } else {
-        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred)
+        #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
         PercentileFun(double, data_reader, num_data_in_leaf, alpha_);
         #undef data_reader
       }
     } else {
       if (bagging_mapper == nullptr) {
-        #define data_reader(i) (label_[index_mapper[i]] - pred)
+        #define data_reader(i) (residual_getter(label_,index_mapper[i]))
         #define weight_reader(i) (weights_[index_mapper[i]])
         WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha_);
         #undef data_reader
         #undef weight_reader
       } else {
-        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred)
+        #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
         #define weight_reader(i) (weights_[bagging_mapper[index_mapper[i]]])
         WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha_);
         #undef data_reader
@@ -677,39 +621,19 @@ class RegressionMAPELOSS : public RegressionL1loss {
 
   bool IsRenewTreeOutput() const override { return true; }
 
-  double RenewTreeOutput(double, const double* pred,
+  double RenewTreeOutput(double, std::function<double(const label_t*, int)> residual_getter,
                          const data_size_t* index_mapper,
                          const data_size_t* bagging_mapper,
                          data_size_t num_data_in_leaf) const override {
     const double alpha = 0.5;
     if (bagging_mapper == nullptr) {
-      #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
+      #define data_reader(i) (residual_getter(label_,index_mapper[i]))
       #define weight_reader(i) (label_weight_[index_mapper[i]])
       WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
       #undef data_reader
       #undef weight_reader
     } else {
-      #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
-      #define weight_reader(i) (label_weight_[bagging_mapper[index_mapper[i]]])
-      WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
-      #undef data_reader
-      #undef weight_reader
-    }
-  }
-
-  double RenewTreeOutput(double, double pred,
-                         const data_size_t* index_mapper,
-                         const data_size_t* bagging_mapper,
-                         data_size_t num_data_in_leaf) const override {
-    const double alpha = 0.5;
-    if (bagging_mapper == nullptr) {
-      #define data_reader(i) (label_[index_mapper[i]] - pred)
-      #define weight_reader(i) (label_weight_[index_mapper[i]])
-      WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
-      #undef data_reader
-      #undef weight_reader
-    } else {
-      #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred)
+      #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
       #define weight_reader(i) (label_weight_[bagging_mapper[index_mapper[i]]])
       WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
       #undef data_reader
