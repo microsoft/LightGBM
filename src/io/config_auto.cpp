@@ -210,6 +210,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "cegb_penalty_feature_coupled",
   "verbosity",
   "max_bin",
+  "max_bin_by_feature",
   "min_data_in_bin",
   "bin_construct_sample_cnt",
   "histogram_pool_size",
@@ -401,6 +402,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
 
+  if (GetString(params, "max_bin_by_feature", &tmp_str)) {
+    max_bin_by_feature = Common::StringToArray<int32_t>(tmp_str, ',');
+  }
+
   GetInt(params, "min_data_in_bin", &min_data_in_bin);
   CHECK(min_data_in_bin >0);
 
@@ -588,6 +593,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
+  str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
   str_buf << "[bin_construct_sample_cnt: " << bin_construct_sample_cnt << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";

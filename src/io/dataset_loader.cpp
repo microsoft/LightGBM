@@ -427,6 +427,23 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->feature_penalty_.clear();
   }
 
+  if (!config_.max_bin_by_feature.empty()) {
+    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.max_bin_by_feature.size());
+    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+    dataset->max_bin_by_feature_.resize(dataset->num_total_features_);
+    dataset->max_bin_by_feature_.assign(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end());
+  } else {
+    const int32_t* tmp_ptr_max_bin_by_feature = reinterpret_cast<const int32_t*>(mem_ptr);
+    dataset->max_bin_by_feature_.clear();
+    for (int i = 0; i < dataset->num_total_features_; ++i) {
+      dataset->max_bin_by_feature_.push_back(tmp_ptr_max_bin_by_feature[i]);
+    }
+  }
+  mem_ptr += sizeof(int32_t) * (dataset->num_total_features_);
+  if (ArrayArgs<int32_t>::CheckAll(dataset->max_bin_by_feature_, -1)) {
+    dataset->max_bin_by_feature_.clear();
+  }
+
   // get feature names
   dataset->feature_names_.clear();
   // write feature names
@@ -544,7 +561,10 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       feature_names_.push_back(str_buf.str());
     }
   }
-
+  if (!config_.max_bin_by_feature.empty()) {
+    CHECK(static_cast<size_t>(num_col) == config_.max_bin_by_feature.size());
+    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+  }
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
   if (Network::num_machines() == 1) {
@@ -562,8 +582,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
         bin_type = BinType::CategoricalBin;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
-                              config_.max_bin, config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      if (config_.max_bin_by_feature.empty()) {
+        bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
+          config_.max_bin, config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      } else {
+        bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
+          config_.max_bin_by_feature[i], config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      }
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -599,8 +624,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
         bin_type = BinType::CategoricalBin;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i], total_sample_size,
-                              config_.max_bin, config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      if (config_.max_bin_by_feature.empty()) {
+        bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i], total_sample_size,
+          config_.max_bin, config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      } else {
+        bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i], total_sample_size,
+          config_.max_bin_by_feature[start[rank] + i], config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      }
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -830,6 +860,11 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     dataset->num_total_features_ = static_cast<int>(feature_names_.size());
   }
 
+  if (!config_.max_bin_by_feature.empty()) {
+    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.max_bin_by_feature.size());
+    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+  }
+
   // check the range of label_idx, weight_idx and group_idx
   CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
   CHECK(weight_idx_ < 0 || weight_idx_ < dataset->num_total_features_);
@@ -864,8 +899,13 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         bin_type = BinType::CategoricalBin;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
-                              sample_data.size(), config_.max_bin, config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      if (config_.max_bin_by_feature.empty()) {
+        bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
+          sample_data.size(), config_.max_bin, config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      } else {
+        bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
+          sample_data.size(), config_.max_bin_by_feature[i], config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      }
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -901,8 +941,13 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         bin_type = BinType::CategoricalBin;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(), static_cast<int>(sample_values[start[rank] + i].size()),
-                              sample_data.size(), config_.max_bin, config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      if (config_.max_bin_by_feature.empty()) {
+        bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(), static_cast<int>(sample_values[start[rank] + i].size()),
+          sample_data.size(), config_.max_bin, config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      } else {
+        bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(), static_cast<int>(sample_values[start[rank] + i].size()),
+          sample_data.size(), config_.max_bin_by_feature[i], config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+      }
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();

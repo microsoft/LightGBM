@@ -756,6 +756,30 @@ class TestEngine(unittest.TestCase):
         constrained_model = lgb.train(params, trainset)
         self.assertTrue(is_correctly_constrained(constrained_model))
 
+    def test_max_bin_by_feature(self):
+        col1 = np.arange(0, 100)[:, np.newaxis]
+        col2 = np.zeros((100, 1))
+        col2[20:] = 1
+        X = np.concatenate([col1, col2], axis=1)
+        y = np.arange(0, 100)
+        params = {
+            'objective': 'regression_l2',
+            'verbose': -1,
+            'num_leaves': 100,
+            'min_data_in_leaf': 1,
+            'min_sum_hessian_in_leaf': 0,
+            'min_data_in_bin': 1,
+            'max_bin_by_feature': [100, 2],
+            'num_rounds': 1,
+        }
+        lgb_data = lgb.Dataset(X, label=y)
+        est = lgb.train(params, lgb_data)
+        self.assertTrue(len(np.unique(est.predict(X))) == 100)
+        params['max_bin_by_feature'] = [2, 100]
+        lgb_data = lgb.Dataset(X, label=y)
+        est = lgb.train(params, lgb_data)
+        self.assertTrue(len(np.unique(est.predict(X))) == 3)
+
     def test_refit(self):
         X, y = load_breast_cancer(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)

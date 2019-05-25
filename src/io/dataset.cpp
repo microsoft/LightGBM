@@ -318,6 +318,12 @@ void Dataset::Construct(
       feature_penalty_.clear();
     }
   }
+  if (!io_config.max_bin_by_feature.empty()) {
+    CHECK(static_cast<size_t>(num_total_features_) == io_config.max_bin_by_feature.size());
+    CHECK(*(std::min_element(io_config.max_bin_by_feature.begin(), io_config.max_bin_by_feature.end())) > 1);
+    max_bin_by_feature_.resize(num_total_features_);
+    max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(), io_config.max_bin_by_feature.end());
+  }
   max_bin_ = io_config.max_bin;
   min_data_in_bin_ = io_config.min_data_in_bin;
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
@@ -331,6 +337,9 @@ void Dataset::ResetConfig(const char* parameters) {
   io_config.Set(param);
   if (param.count("max_bin") && io_config.max_bin != max_bin_) {
     Log::Warning("Cannot change max_bin after constructed Dataset handle.");
+  }
+  if (param.count("max_bin_by_feature") && io_config.max_bin_by_feature != max_bin_by_feature_) {
+    Log::Warning("Cannot change max_bin_by_feature after constructed Dataset handle.");
   }
   if (param.count("bin_construct_sample_cnt") && io_config.bin_construct_sample_cnt != bin_construct_sample_cnt_) {
     Log::Warning("Cannot change bin_construct_sample_cnt after constructed Dataset handle.");
@@ -682,6 +691,13 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     if (ArrayArgs<double>::CheckAll(feature_penalty_, 1.0)) {
       feature_penalty_.clear();
     }
+    if (max_bin_by_feature_.empty()) {
+      ArrayArgs<int32_t>::Assign(&max_bin_by_feature_, -1, num_total_features_);
+    }
+    writer->Write(max_bin_by_feature_.data(), sizeof(double) * num_features_);
+    if (ArrayArgs<int32_t>::CheckAll(max_bin_by_feature_, -1)) {
+      max_bin_by_feature_.clear();
+    }
     // write feature names
     for (int i = 0; i < num_total_features_; ++i) {
       int str_len = static_cast<int>(feature_names_[i].size());
@@ -729,6 +745,10 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fprintf(file, "\nfeature_penalty: ");
   for (auto i : feature_penalty_) {
     fprintf(file, "%lf, ", i);
+  }
+  fprintf(file, "\nmax_bin_by_feature: ");
+  for (auto i : max_bin_by_feature_) {
+    fprintf(file, "%d, ", i);
   }
   fprintf(file, "\n");
   for (auto n : feature_names_) {

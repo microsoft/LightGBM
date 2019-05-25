@@ -419,6 +419,12 @@ struct Config {
   // desc = LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
   int max_bin = 255;
 
+  // type = multi-int
+  // default = None
+  // desc = max number of bins for each feature
+  // desc = if not specified, will use ``max_bin`` for all features
+  std::vector<int32_t> max_bin_by_feature;  
+
   // check = >0
   // desc = minimal number of data inside one bin
   // desc = use this to avoid one-data-one-bin (potential over-fitting)
