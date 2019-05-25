@@ -157,7 +157,7 @@ class TestSklearn(unittest.TestCase):
         gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
                 eval_metric=mse, early_stopping_rounds=5, verbose=False,
-                callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(10, 0, -1) / 10))])
+                callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))])
 
         joblib.dump(gbm, 'lgb.pkl')  # test model with custom functions
         gbm_pickle = joblib.load('lgb.pkl')
@@ -169,7 +169,7 @@ class TestSklearn(unittest.TestCase):
 
         gbm_pickle.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
                        eval_metric=mse, early_stopping_rounds=5, verbose=False,
-                       callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(10, 0, -1) / 10))])
+                       callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))])
         for eval_set in gbm.evals_result_:
             for metric in gbm.evals_result_[eval_set]:
                 np.testing.assert_array_almost_equal(gbm.evals_result_[eval_set][metric],

@@ -39,10 +39,38 @@ def train(params, train_set, num_boost_round=100,
         Names of ``valid_sets``.
     fobj : callable or None, optional (default=None)
         Customized objective function.
+        Should accept two parameters: preds, train_data,
+        and return (grad, hess).
+
+            preds : list or numpy 1-D array
+                The predicted values.
+            train_data : Dataset
+                The training dataset.
+            grad : list or numpy 1-D array
+                The value of the first order derivative (gradient) for each sample point.
+            hess : list or numpy 1-D array
+                The value of the second order derivative (Hessian) for each sample point.
+
+        For multi-class task, the preds is group by class_id first, then group by row_id.
+        If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
+        and you should group grad and hess in this way as well.
+
     feval : callable or None, optional (default=None)
         Customized evaluation function.
         Should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+
+            preds : list or numpy 1-D array
+                The predicted values.
+            train_data : Dataset
+                The training dataset.
+            eval_name : string
+                The name of evaluation function.
+            eval_result : float
+                The eval result.
+            is_higher_better : bool
+                Is eval result higher better, e.g. AUC is ``is_higher_better``.
+
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
@@ -373,11 +401,39 @@ def cv(params, train_set, num_boost_round=100,
         Evaluation metrics to be monitored while CV.
         If not None, the metric in ``params`` will be overridden.
     fobj : callable or None, optional (default=None)
-        Custom objective function.
+        Customized objective function.
+        Should accept two parameters: preds, train_data,
+        and return (grad, hess).
+
+            preds : list or numpy 1-D array
+                The predicted values.
+            train_data : Dataset
+                The training dataset.
+            grad : list or numpy 1-D array
+                The value of the first order derivative (gradient) for each sample point.
+            hess : list or numpy 1-D array
+                The value of the second order derivative (Hessian) for each sample point.
+
+        For multi-class task, the preds is group by class_id first, then group by row_id.
+        If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
+        and you should group grad and hess in this way as well.
+
     feval : callable or None, optional (default=None)
         Customized evaluation function.
         Should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+
+            preds : list or numpy 1-D array
+                The predicted values.
+            train_data : Dataset
+                The training dataset.
+            eval_name : string
+                The name of evaluation function.
+            eval_result : float
+                The eval result.
+            is_higher_better : bool
+                Is eval result higher better, e.g. AUC is ``is_higher_better``.
+
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
