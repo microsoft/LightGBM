@@ -694,7 +694,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     if (max_bin_by_feature_.empty()) {
       ArrayArgs<int32_t>::Assign(&max_bin_by_feature_, -1, num_total_features_);
     }
-    writer->Write(max_bin_by_feature_.data(), sizeof(double) * num_features_);
+    writer->Write(max_bin_by_feature_.data(), sizeof(double) * num_total_features_);
     if (ArrayArgs<int32_t>::CheckAll(max_bin_by_feature_, -1)) {
       max_bin_by_feature_.clear();
     }
