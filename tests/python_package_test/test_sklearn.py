@@ -154,7 +154,8 @@ class TestSklearn(unittest.TestCase):
     def test_joblib(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj, silent=True)
+        gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
+                                silent=True, importance_type='split')
         gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
                 eval_metric=mse, early_stopping_rounds=5, verbose=False,
                 callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))])
@@ -163,13 +164,10 @@ class TestSklearn(unittest.TestCase):
         gbm_pickle = joblib.load('lgb.pkl')
         self.assertIsInstance(gbm_pickle.booster_, lgb.Booster)
         self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
-        self.assertListEqual(list(gbm.feature_importances_), list(gbm_pickle.feature_importances_))
+        np.testing.assert_array_equal(gbm.feature_importances_, gbm_pickle.feature_importances_)
         self.assertAlmostEqual(gbm_pickle.learning_rate, 0.1)
         self.assertTrue(callable(gbm_pickle.objective))
 
-        gbm_pickle.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
-                       eval_metric=mse, early_stopping_rounds=5, verbose=False,
-                       callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))])
         for eval_set in gbm.evals_result_:
             for metric in gbm.evals_result_[eval_set]:
                 np.testing.assert_array_almost_equal(gbm.evals_result_[eval_set][metric],
