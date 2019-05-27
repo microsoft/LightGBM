@@ -1,0 +1,32 @@
+# This file controls default reviewers for LightGBM code.
+# See https://help.github.com/en/articles/about-code-owners
+# for details
+#
+# Maintainers are encouraged to use their best discretion in
+# setting reviewers on PRs manually, but this file should
+# offer a reasonable automatic best-guess
+
+# main C++ code
+include/*    @guolinke @chivee
+CmakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12
+
+# R code
+R-package/*    @Laurae2 @jameslamb
+*.R    @Laurae2 @jameslamb
+
+# Python code
+python-package/*    @StrikerRUS @chivee
+*.py    @StrikerRUS @wxchan @henry0312
+
+# CI administrative stuff
+.ci/*    @StrikerRUS @Laurae2 @jameslamb
+docs/*    @StrikerRUS @Laurae2 @jameslamb
+.travis.yml    @StrikerRUS @Laurae2 @jameslamb
+.appveyor.yml    @StrikerRUS @Laurae2 @jameslamb
+.vsts-ci.yml    @Laurae2
+
+# GPU code
+docker/gpu/*    @huanzhang12
+docs/GPU-Windows.rst    @huanzhang12
+src/treelearner/gpu_tree_learner.cpp    @huanzhang12 @guolinke @chivee
+src/treelearner/tree_learner.cpp    @huanzhang12 @guolinke @chivee
