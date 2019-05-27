@@ -1,15 +1,19 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
 #define LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
 
-#include <LightGBM/metric.h>
 #include <LightGBM/meta.h>
-
-#include <LightGBM/utils/log.h>
+#include <LightGBM/metric.h>
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
 
+#include <string>
 #include <algorithm>
-#include <vector>
 #include <sstream>
+#include <vector>
 
 /*
  * Implements three related metrics:
@@ -86,7 +90,7 @@ class CrossEntropyMetric : public Metric {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) weights not allowed to be negative", GetName()[0].c_str(), __func__);
       }
@@ -177,7 +181,7 @@ class CrossEntropyLambdaMetric : public Metric {
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, (label_t*)nullptr);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), static_cast<label_t*>(nullptr));
       if (minw <= 0.0f) {
         Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(), __func__);
       }
@@ -261,7 +265,7 @@ class KullbackLeiblerDivergence : public Metric {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) at least one weight is negative", GetName()[0].c_str(), __func__);
       }

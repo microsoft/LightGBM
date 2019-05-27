@@ -5,7 +5,7 @@ This document gives a basic walkthrough of LightGBM Python-package.
 
 **List of other helpful links**
 
--  `Python Examples <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`__
+-  `Python Examples <https://github.com/microsoft/LightGBM/tree/master/examples/python-guide>`__
 
 -  `Python API <./Python-API.rst>`__
 
@@ -36,11 +36,17 @@ The LightGBM Python module can load data from:
 
 -  libsvm/tsv/csv/txt format file
 
--  NumPy 2D array(s), pandas DataFrame, H2O DataTable, SciPy sparse matrix
+-  NumPy 2D array(s), pandas DataFrame, H2O DataTable's Frame, SciPy sparse matrix
 
 -  LightGBM binary file
 
 The data is stored in a ``Dataset`` object.
+
+Many of the examples in this page use functionality from ``numpy``. To run the examples, be sure to import ``numpy`` in your session.
+
+.. code:: python
+
+    import numpy as np
 
 **To load a libsvm text file or a LightGBM binary file into Dataset:**
 
@@ -56,10 +62,11 @@ The data is stored in a ``Dataset`` object.
     label = np.random.randint(2, size=500)  # binary target
     train_data = lgb.Dataset(data, label=label)
 
-**To load a scpiy.sparse.csr\_matrix array into Dataset:**
+**To load a scipy.sparse.csr\_matrix array into Dataset:**
 
 .. code:: python
 
+    import scipy
     csr = scipy.sparse.csr_matrix((dat, (row, col)))
     train_data = lgb.Dataset(csr)
 
@@ -127,14 +134,14 @@ If you are concerned about your memory consumption, you can save memory by:
 Setting Parameters
 ------------------
 
-LightGBM can use either a list of pairs or a dictionary to set `Parameters <./Parameters.rst>`__.
+LightGBM can use a dictionary to set `Parameters <./Parameters.rst>`__.
 For instance:
 
 -  Booster parameters:
 
    .. code:: python
 
-       param = {'num_leaves':31, 'num_trees':100, 'objective':'binary'}
+       param = {'num_leaves': 31, 'objective': 'binary'}
        param['metric'] = 'auc'
 
 -  You can also specify multiple eval metrics:
@@ -169,7 +176,7 @@ A saved model can be loaded:
 
 .. code:: python
 
-    bst = lgb.Booster(model_file='model.txt')  #init model
+    bst = lgb.Booster(model_file='model.txt')  # init model
 
 CV
 --
@@ -178,7 +185,6 @@ Training with 5-fold CV:
 
 .. code:: python
 
-    num_round = 10
     lgb.cv(param, train_data, num_round, nfold=5)
 
 Early Stopping
@@ -189,7 +195,7 @@ Early stopping requires at least one set in ``valid_sets``. If there is more tha
 
 .. code:: python
 
-    bst = lgb.train(param, train_data, num_round, valid_sets=valid_sets, early_stopping_rounds=10)
+    bst = lgb.train(param, train_data, num_round, valid_sets=valid_sets, early_stopping_rounds=5)
     bst.save_model('model.txt', num_iteration=bst.best_iteration)
 
 The model will train until the validation score stops improving.
@@ -200,6 +206,7 @@ Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC, etc.).
 Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
+However, you can change this behavior and make LightGBM check only the first metric for early stopping by passing ``first_metric_only=True`` in ``param`` or ``early_stopping`` callback constructor.
 
 Prediction
 ----------
@@ -218,4 +225,4 @@ If early stopping is enabled during training, you can get predictions from the b
 
     ypred = bst.predict(data, num_iteration=bst.best_iteration)
 
-.. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
+.. _Python-package: https://github.com/microsoft/LightGBM/tree/master/python-package

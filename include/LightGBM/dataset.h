@@ -1,20 +1,24 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_DATASET_H_
 #define LIGHTGBM_DATASET_H_
 
-#include <LightGBM/utils/random.h>
-#include <LightGBM/utils/text_reader.h>
-#include <LightGBM/utils/openmp_wrapper.h>
-
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/random.h>
+#include <LightGBM/utils/text_reader.h>
 
-#include <vector>
-#include <utility>
-#include <functional>
 #include <string>
-#include <unordered_set>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace LightGBM {
 
@@ -386,10 +390,14 @@ class Dataset {
 
   LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
 
+  LIGHTGBM_EXPORT bool GetInt8Field(const char* field_name, data_size_t* out_len, const int8_t** out_ptr);
+
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
   */
   LIGHTGBM_EXPORT void SaveBinaryFile(const char* bin_filename);
+
+  LIGHTGBM_EXPORT void DumpTextFile(const char* text_filename);
 
   LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset);
 
@@ -580,6 +588,8 @@ class Dataset {
   Dataset& operator=(const Dataset&) = delete;
   /*! \brief Disable copy */
   Dataset(const Dataset&) = delete;
+
+  void addFeaturesFrom(Dataset* other);
 
  private:
   std::string data_filename_;

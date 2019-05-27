@@ -1,9 +1,15 @@
+/*!
+ * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/utils/file_io.h>
+
 #include <LightGBM/utils/log.h>
 
 #include <algorithm>
 #include <sstream>
 #include <unordered_map>
+
 #ifdef USE_HDFS
 #include <hdfs.h>
 #endif
@@ -92,7 +98,7 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
 
   template <typename BufferType>
   inline size_t FileOperation(BufferType data, size_t bytes, fileOp<BufferType> op) const {
-    char* buffer = (char *)data;
+    char* buffer = const_cast<char*>(static_cast<const char*>(data));
     size_t remain = bytes;
     while (remain != 0) {
       size_t nmax = static_cast<size_t>(std::numeric_limits<tSize>::max());

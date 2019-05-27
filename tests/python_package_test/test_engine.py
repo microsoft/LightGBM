@@ -1,6 +1,7 @@
 # coding: utf-8
 # pylint: skip-file
 import copy
+import itertools
 import math
 import os
 import psutil
@@ -23,6 +24,13 @@ except ImportError:
 
 def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
+
+
+def top_k_error(y_true, y_pred, k):
+    if k == y_pred.shape[1]:
+        return 0
+    max_rest = np.max(-np.partition(-y_pred, k)[:, k:], axis=1)
+    return 1 - np.mean((y_pred[np.arange(len(y_true)), y_true] > max_rest))
 
 
 class TestEngine(unittest.TestCase):
@@ -362,6 +370,56 @@ class TestEngine(unittest.TestCase):
         ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
         self.assertLess(ret, 0.2)
 
+    def test_multi_class_error(self):
+        X, y = load_digits(return_X_y=True)
+        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'num_leaves': 4, 'seed': 0,
+                  'num_rounds': 30, 'verbose': -1}
+        lgb_data = lgb.Dataset(X, label=y)
+        results = {}
+        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        predict_default = est.predict(X)
+        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 1,
+                  'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
+        results = {}
+        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        predict_1 = est.predict(X)
+        # check that default gives same result as k = 1
+        np.testing.assert_array_almost_equal(predict_1, predict_default, 5)
+        # check against independent calculation for k = 1
+        err = top_k_error(y, predict_1, 1)
+        np.testing.assert_almost_equal(results['train']['multi_error'][-1], err, 5)
+        # check against independent calculation for k = 2
+        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 2,
+                  'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
+        results = {}
+        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        predict_2 = est.predict(X)
+        err = top_k_error(y, predict_2, 2)
+        np.testing.assert_almost_equal(results['train']['multi_error@2'][-1], err, 5)
+        # check against independent calculation for k = 10
+        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 10,
+                  'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
+        results = {}
+        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        predict_2 = est.predict(X)
+        err = top_k_error(y, predict_2, 10)
+        np.testing.assert_almost_equal(results['train']['multi_error@10'][-1], err, 5)
+        # check case where predictions are equal
+        X = np.array([[0, 0], [0, 0]])
+        y = np.array([0, 1])
+        lgb_data = lgb.Dataset(X, label=y)
+        params = {'objective': 'multiclass', 'num_classes': 2, 'metric': 'multi_error', 'multi_error_top_k': 1,
+                  'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
+        results = {}
+        lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        np.testing.assert_almost_equal(results['train']['multi_error'][-1], 1, 5)
+        lgb_data = lgb.Dataset(X, label=y)
+        params = {'objective': 'multiclass', 'num_classes': 2, 'metric': 'multi_error', 'multi_error_top_k': 2,
+                  'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
+        results = {}
+        lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        np.testing.assert_almost_equal(results['train']['multi_error@2'][-1], 0, 5)
+
     def test_early_stopping(self):
         X, y = load_breast_cancer(True)
         params = {
@@ -464,6 +522,16 @@ class TestEngine(unittest.TestCase):
                         callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
         self.assertIn('l1-mean', cv_res)
         self.assertEqual(len(cv_res['l1-mean']), 10)
+        # enable display training loss
+        cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
+                        nfold=3, stratified=False, shuffle=False,
+                        metrics='l1', verbose_eval=False, eval_train_metric=True)
+        self.assertIn('train l1-mean', cv_res)
+        self.assertIn('valid l1-mean', cv_res)
+        self.assertNotIn('train l2-mean', cv_res)
+        self.assertNotIn('valid l2-mean', cv_res)
+        self.assertEqual(len(cv_res['train l1-mean']), 10)
+        self.assertEqual(len(cv_res['valid l1-mean']), 10)
         # self defined folds
         tss = TimeSeriesSplit(3)
         folds = tss.split(X_train)
@@ -542,60 +610,89 @@ class TestEngine(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
         import pandas as pd
+        np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
-                          "D": np.random.permutation([True, False] * 150)})  # bool
+                          "D": np.random.permutation([True, False] * 150),  # bool
+                          "E": pd.Categorical(np.random.permutation(['z', 'y', 'x', 'w', 'v'] * 60),
+                                              ordered=True)})  # str and ordered categorical
         y = np.random.permutation([0, 1] * 150)
-        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),  # unseen category
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
-                               "D": np.random.permutation([True, False] * 30)})
-        cat_cols = []
-        for col in ["A", "B", "C", "D"]:
-            X[col] = X[col].astype('category')
-            X_test[col] = X_test[col].astype('category')
-            cat_cols.append(X[col].cat.categories.tolist())
+                               "D": np.random.permutation([True, False] * 30),
+                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                                                   ordered=True)})
+        np.random.seed()  # reset seed
+        cat_cols_actual = ["A", "B", "C", "D"]
+        cat_cols_to_store = cat_cols_actual + ["E"]
+        X[cat_cols_actual] = X[cat_cols_actual].astype('category')
+        X_test[cat_cols_actual] = X_test[cat_cols_actual].astype('category')
+        cat_values = [X[col].cat.categories.tolist() for col in cat_cols_to_store]
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
             'verbose': -1
         }
         lgb_train = lgb.Dataset(X, y)
-        gbm0 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
+        gbm0 = lgb.train(params, lgb_train, num_boost_round=10)
         pred0 = gbm0.predict(X_test)
+        self.assertEqual(lgb_train.categorical_feature, 'auto')
         lgb_train = lgb.Dataset(X, pd.DataFrame(y))  # also test that label can be one-column pd.DataFrame
-        gbm1 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=[0])
+        gbm1 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[0])
         pred1 = gbm1.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, [0])
         lgb_train = lgb.Dataset(X, pd.Series(y))  # also test that label can be pd.Series
-        gbm2 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=['A'])
+        gbm2 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=['A'])
         pred2 = gbm2.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, ['A'])
         lgb_train = lgb.Dataset(X, y)
-        gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=['A', 'B', 'C', 'D'])
+        gbm3 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = gbm3.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, ['A', 'B', 'C', 'D'])
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = gbm4.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, ['A', 'B', 'C', 'D'])
         model_str = gbm4.model_to_string()
         gbm4.model_from_string(model_str, False)
         pred5 = gbm4.predict(X_test)
-        gbm5 = lgb.Booster({'model_str': model_str})
+        gbm5 = lgb.Booster(model_str=model_str)
         pred6 = gbm5.predict(X_test)
-        np.testing.assert_almost_equal(pred0, pred1)
-        np.testing.assert_almost_equal(pred0, pred2)
+        lgb_train = lgb.Dataset(X, y)
+        gbm6 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=['E'])
+        pred7 = gbm6.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, ['E'])
+        lgb_train = lgb.Dataset(X, y)
+        gbm7 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[])
+        pred8 = gbm7.predict(X_test)
+        self.assertListEqual(lgb_train.categorical_feature, [])
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred1)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred2)
+        np.testing.assert_almost_equal(pred1, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred0, pred4)
         np.testing.assert_almost_equal(pred0, pred5)
         np.testing.assert_almost_equal(pred0, pred6)
-        self.assertListEqual(gbm0.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm1.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm2.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm3.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm4.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm5.pandas_categorical, cat_cols)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred7)  # ordered cat features aren't treated as cat features by default
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred8)
+        self.assertListEqual(gbm0.pandas_categorical, cat_values)
+        self.assertListEqual(gbm1.pandas_categorical, cat_values)
+        self.assertListEqual(gbm2.pandas_categorical, cat_values)
+        self.assertListEqual(gbm3.pandas_categorical, cat_values)
+        self.assertListEqual(gbm4.pandas_categorical, cat_values)
+        self.assertListEqual(gbm5.pandas_categorical, cat_values)
+        self.assertListEqual(gbm6.pandas_categorical, cat_values)
+        self.assertListEqual(gbm7.pandas_categorical, cat_values)
 
     def test_reference_chain(self):
         X = np.random.normal(size=(100, 2))
@@ -766,57 +863,55 @@ class TestEngine(unittest.TestCase):
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
 
-    def test_constant_features(self, y_true=None, expected_pred=None, more_params=None):
-        if y_true is not None and expected_pred is not None:
-            X_train = np.ones((len(y_true), 1))
-            y_train = np.array(y_true)
-            params = {
-                'objective': 'regression',
-                'num_class': 1,
-                'verbose': -1,
-                'min_data': 1,
-                'num_leaves': 2,
-                'learning_rate': 1,
-                'min_data_in_bin': 1,
-                'boost_from_average': True
-            }
-            params.update(more_params)
-            lgb_train = lgb.Dataset(X_train, y_train, params=params)
-            gbm = lgb.train(params, lgb_train,
-                            num_boost_round=2)
-            pred = gbm.predict(X_train)
-            self.assertTrue(np.allclose(pred, expected_pred))
+    def check_constant_features(self, y_true, expected_pred, more_params):
+        X_train = np.ones((len(y_true), 1))
+        y_train = np.array(y_true)
+        params = {
+            'objective': 'regression',
+            'num_class': 1,
+            'verbose': -1,
+            'min_data': 1,
+            'num_leaves': 2,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'boost_from_average': True
+        }
+        params.update(more_params)
+        lgb_train = lgb.Dataset(X_train, y_train, params=params)
+        gbm = lgb.train(params, lgb_train, num_boost_round=2)
+        pred = gbm.predict(X_train)
+        self.assertTrue(np.allclose(pred, expected_pred))
 
     def test_constant_features_regression(self):
         params = {
             'objective': 'regression'
         }
-        self.test_constant_features([0.0, 10.0, 0.0, 10.0], 5.0, params)
-        self.test_constant_features([0.0, 1.0, 2.0, 3.0], 1.5, params)
-        self.test_constant_features([-1.0, 1.0, -2.0, 2.0], 0.0, params)
+        self.check_constant_features([0.0, 10.0, 0.0, 10.0], 5.0, params)
+        self.check_constant_features([0.0, 1.0, 2.0, 3.0], 1.5, params)
+        self.check_constant_features([-1.0, 1.0, -2.0, 2.0], 0.0, params)
 
     def test_constant_features_binary(self):
         params = {
             'objective': 'binary'
         }
-        self.test_constant_features([0.0, 10.0, 0.0, 10.0], 0.5, params)
-        self.test_constant_features([0.0, 1.0, 2.0, 3.0], 0.75, params)
+        self.check_constant_features([0.0, 10.0, 0.0, 10.0], 0.5, params)
+        self.check_constant_features([0.0, 1.0, 2.0, 3.0], 0.75, params)
 
     def test_constant_features_multiclass(self):
         params = {
             'objective': 'multiclass',
             'num_class': 3
         }
-        self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
-        self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
 
     def test_constant_features_multiclassova(self):
         params = {
             'objective': 'multiclassova',
             'num_class': 3
         }
-        self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
-        self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
+        self.check_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
 
     def test_fpreproc(self):
         def preprocess_data(dtrain, dtest, params):
@@ -1244,3 +1339,120 @@ class TestEngine(unittest.TestCase):
             np.testing.assert_allclose(y_pred, y_pred_new)
         except MemoryError:
             self.skipTest('not enough RAM')
+
+    def test_get_split_value_histogram(self):
+        X, y = load_boston(True)
+        lgb_train = lgb.Dataset(X, y, categorical_feature=[2])
+        gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=20)
+        # test XGBoost-style return value
+        params = {'feature': 0, 'xgboost_style': True}
+        self.assertTupleEqual(gbm.get_split_value_histogram(**params).shape, (9, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=999, **params).shape, (9, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=-1, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=0, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=1, **params).shape, (1, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=2, **params).shape, (2, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=6, **params).shape, (5, 2))
+        self.assertTupleEqual(gbm.get_split_value_histogram(bins=7, **params).shape, (6, 2))
+        if lgb.compat.PANDAS_INSTALLED:
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(0, xgboost_style=True).values,
+                gbm.get_split_value_histogram(gbm.feature_name()[0], xgboost_style=True).values
+            )
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(X.shape[-1] - 1, xgboost_style=True).values,
+                gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1], xgboost_style=True).values
+            )
+        else:
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(0, xgboost_style=True),
+                gbm.get_split_value_histogram(gbm.feature_name()[0], xgboost_style=True)
+            )
+            np.testing.assert_almost_equal(
+                gbm.get_split_value_histogram(X.shape[-1] - 1, xgboost_style=True),
+                gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1], xgboost_style=True)
+            )
+        # test numpy-style return value
+        hist, bins = gbm.get_split_value_histogram(0)
+        self.assertEqual(len(hist), 23)
+        self.assertEqual(len(bins), 24)
+        hist, bins = gbm.get_split_value_histogram(0, bins=999)
+        self.assertEqual(len(hist), 999)
+        self.assertEqual(len(bins), 1000)
+        self.assertRaises(ValueError, gbm.get_split_value_histogram, 0, bins=-1)
+        self.assertRaises(ValueError, gbm.get_split_value_histogram, 0, bins=0)
+        hist, bins = gbm.get_split_value_histogram(0, bins=1)
+        self.assertEqual(len(hist), 1)
+        self.assertEqual(len(bins), 2)
+        hist, bins = gbm.get_split_value_histogram(0, bins=2)
+        self.assertEqual(len(hist), 2)
+        self.assertEqual(len(bins), 3)
+        hist, bins = gbm.get_split_value_histogram(0, bins=6)
+        self.assertEqual(len(hist), 6)
+        self.assertEqual(len(bins), 7)
+        hist, bins = gbm.get_split_value_histogram(0, bins=7)
+        self.assertEqual(len(hist), 7)
+        self.assertEqual(len(bins), 8)
+        hist_idx, bins_idx = gbm.get_split_value_histogram(0)
+        hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[0])
+        np.testing.assert_array_equal(hist_idx, hist_name)
+        np.testing.assert_almost_equal(bins_idx, bins_name)
+        hist_idx, bins_idx = gbm.get_split_value_histogram(X.shape[-1] - 1)
+        hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1])
+        np.testing.assert_array_equal(hist_idx, hist_name)
+        np.testing.assert_almost_equal(bins_idx, bins_name)
+        # test bins string type
+        if np.__version__ > '1.11.0':
+            hist_vals, bin_edges = gbm.get_split_value_histogram(0, bins='auto')
+            hist = gbm.get_split_value_histogram(0, bins='auto', xgboost_style=True)
+            if lgb.compat.PANDAS_INSTALLED:
+                mask = hist_vals > 0
+                np.testing.assert_array_equal(hist_vals[mask], hist['Count'].values)
+                np.testing.assert_almost_equal(bin_edges[1:][mask], hist['SplitValue'].values)
+            else:
+                mask = hist_vals > 0
+                np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
+                np.testing.assert_almost_equal(bin_edges[1:][mask], hist[:, 0])
+        # test histogram is disabled for categorical features
+        self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
+
+    def test_early_stopping_for_only_first_metric(self):
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'regression',
+            'metric': 'None',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+
+        decreasing_generator = itertools.count(0, -1)
+
+        def decreasing_metric(preds, train_data):
+            return ('decreasing_metric', next(decreasing_generator), False)
+
+        def constant_metric(preds, train_data):
+            return ('constant_metric', 0.0, False)
+
+        # test that all metrics are checked (default behaviour)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+                        feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                         constant_metric(preds, train_data)],
+                        early_stopping_rounds=5, verbose_eval=False)
+        self.assertEqual(gbm.best_iteration, 1)
+
+        # test that only the first metric is checked
+        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
+                        num_boost_round=20, valid_sets=[lgb_eval],
+                        feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                         constant_metric(preds, train_data)],
+                        early_stopping_rounds=5, verbose_eval=False)
+        self.assertEqual(gbm.best_iteration, 20)
+        # ... change the order of metrics
+        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
+                        num_boost_round=20, valid_sets=[lgb_eval],
+                        feval=lambda preds, train_data: [constant_metric(preds, train_data),
+                                                         decreasing_metric(preds, train_data)],
+                        early_stopping_rounds=5, verbose_eval=False)
+        self.assertEqual(gbm.best_iteration, 1)

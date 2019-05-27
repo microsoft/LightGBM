@@ -3,10 +3,10 @@ LightGBM, Light Gradient Boosting Machine
 
 [![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
-[![Travis Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
+[![Travis Build Status](https://travis-ci.org/microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/microsoft/LightGBM)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
-[![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Microsoft/LightGBM/blob/master/LICENSE)
+[![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/microsoft/LightGBM/issues)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.org/project/lightgbm)
 [![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg)](https://pypi.org/project/lightgbm)
 [![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -20,11 +20,32 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 - Support of parallel and GPU learning.
 - Capable of handling large-scale data.
 
-For further details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst).
+For further details, please refer to [Features](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst).
 
-Benefitting from these advantages, LightGBM is being widely-used in many [winning solutions](https://github.com/Microsoft/LightGBM/blob/master/examples/README.md#machine-learning-challenge-winning-solutions) of machine learning competitions.
+Benefitting from these advantages, LightGBM is being widely-used in many [winning solutions](https://github.com/microsoft/LightGBM/blob/master/examples/README.md#machine-learning-challenge-winning-solutions) of machine learning competitions.
 
-[Comparison experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, [parallel experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
+[Comparison experiments](https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, [parallel experiments](https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
+
+Get Started and Documentation
+-----------------------------
+
+Install by following [guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
+
+Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
+
+Next you may want to read:
+
+* [**Examples**](https://github.com/microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
+* [**Features**](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
+* [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
+* [**Parallel Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
+* [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
+
+Documentation for contributors:
+
+* [**How we update readthedocs.io**](https://github.com/microsoft/LightGBM/blob/master/docs/README.rst).
+* Check out the [**Development Guide**](https://github.com/microsoft/LightGBM/blob/master/docs/Development-Guide.rst).
+
 
 News
 ----
@@ -45,13 +66,13 @@ News
 
 02/12/2017 : LightGBM v1 stable release.
 
-01/08/2017 : Release [**R-package**](https://github.com/Microsoft/LightGBM/tree/master/R-package) beta version, welcome to have a try and provide feedback.
+01/08/2017 : Release [**R-package**](https://github.com/microsoft/LightGBM/tree/master/R-package) beta version, welcome to have a try and provide feedback.
 
 12/05/2016 : **Categorical Features as input directly** (without one-hot coding). 
 
-12/02/2016 : Release [**Python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
+12/02/2016 : Release [**Python-package**](https://github.com/microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
 
-More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/blob/master/docs/Key-Events.md).
+More detailed update logs : [Key Events](https://github.com/microsoft/LightGBM/blob/master/docs/Key-Events.md).
 
 External (Unofficial) Repositories
 ----------------------------------
@@ -70,27 +91,9 @@ MMLSpark (Spark-package): https://github.com/Azure/mmlspark
 
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
+LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
+
 Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
-
-Get Started and Documentation
------------------------------
-
-Install by following [guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
-
-Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
-
-Next you may want to read:
-
-* [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
-* [**Features**](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
-* [**Parameters**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
-* [**Parallel Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
-* [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
-
-Documentation for contributors:
-
-* [**How we update readthedocs.io**](https://github.com/Microsoft/LightGBM/blob/master/docs/README.rst).
-* Check out the [**Development Guide**](https://github.com/Microsoft/LightGBM/blob/master/docs/Development-Guide.rst).
 
 Support
 -------
@@ -99,18 +102,18 @@ Support
 * Discuss on the [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
 * Discuss on the [LightGBM Slack team](https://lightgbm.slack.com).
   * Use [this invite link](https://lightgbm-slack-autojoin.herokuapp.com/) to join the team.
-* Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/Microsoft/LightGBM/issues).
+* Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/microsoft/LightGBM/issues).
 
 How to Contribute
 -----------------
 
 LightGBM has been developed and used by many active community members. Your help is very valuable to make it better for everyone.
 
-- Check out [call for contributions](https://github.com/Microsoft/LightGBM/issues?q=is%3Aissue+is%3Aopen+label%3Acall-for-contribution) to see what can be improved, or open an issue if you want something.
-- Contribute to the [tests](https://github.com/Microsoft/LightGBM/tree/master/tests) to make it more reliable.
-- Contribute to the [documents](https://github.com/Microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
-- Contribute to the [examples](https://github.com/Microsoft/LightGBM/tree/master/examples) to share your experience with other users.
-- Add your stories and experience to [Awesome LightGBM](https://github.com/Microsoft/LightGBM/blob/master/examples/README.md).
+- Check out [call for contributions](https://github.com/microsoft/LightGBM/issues?q=is%3Aissue+is%3Aopen+label%3Acall-for-contribution) to see what can be improved, or open an issue if you want something.
+- Contribute to the [tests](https://github.com/microsoft/LightGBM/tree/master/tests) to make it more reliable.
+- Contribute to the [documents](https://github.com/microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
+- Contribute to the [examples](https://github.com/microsoft/LightGBM/tree/master/examples) to share your experience with other users.
+- Add your stories and experience to [Awesome LightGBM](https://github.com/microsoft/LightGBM/blob/master/examples/README.md).
 - Open issue if you met problems during development.
 
 Microsoft Open Source Code of Conduct
@@ -127,7 +130,9 @@ Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tie-Yan Liu. 
 
 Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359)". SysML Conference, 2018.
 
+**Note**: If you use LightGBM in your GitHub projects, please add `lightgbm` in the `requirements.txt`.
+
 License
 -------
 
-This project is licensed under the terms of the MIT license. See [LICENSE](https://github.com/Microsoft/LightGBM/blob/master/LICENSE) for additional details.
+This project is licensed under the terms of the MIT license. See [LICENSE](https://github.com/microsoft/LightGBM/blob/master/LICENSE) for additional details.

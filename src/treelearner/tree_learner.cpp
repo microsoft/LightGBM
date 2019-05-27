@@ -1,8 +1,12 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/tree_learner.h>
 
-#include "serial_tree_learner.h"
 #include "gpu_tree_learner.h"
 #include "parallel_tree_learner.h"
+#include "serial_tree_learner.h"
 
 namespace LightGBM {
 
@@ -17,8 +21,7 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     } else if (learner_type == std::string("voting")) {
       return new VotingParallelTreeLearner<SerialTreeLearner>(config);
     }
-  }
-  else if (device_type == std::string("gpu")) {
+  } else if (device_type == std::string("gpu")) {
     if (learner_type == std::string("serial")) {
       return new GPUTreeLearner(config);
     } else if (learner_type == std::string("feature")) {

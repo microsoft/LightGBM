@@ -92,3 +92,192 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(len(subset_group), 2)
         self.assertEqual(subset_group[0], 1)
         self.assertEqual(subset_group[1], 9)
+
+    def test_add_features_throws_if_num_data_unequal(self):
+        X1 = np.random.random((1000, 1))
+        X2 = np.random.random((100, 1))
+        d1 = lgb.Dataset(X1).construct()
+        d2 = lgb.Dataset(X2).construct()
+        with self.assertRaises(lgb.basic.LightGBMError):
+            d1.add_features_from(d2)
+
+    def test_add_features_throws_if_datasets_unconstructed(self):
+        X1 = np.random.random((1000, 1))
+        X2 = np.random.random((1000, 1))
+        with self.assertRaises(ValueError):
+            d1 = lgb.Dataset(X1)
+            d2 = lgb.Dataset(X2)
+            d1.add_features_from(d2)
+        with self.assertRaises(ValueError):
+            d1 = lgb.Dataset(X1).construct()
+            d2 = lgb.Dataset(X2)
+            d1.add_features_from(d2)
+        with self.assertRaises(ValueError):
+            d1 = lgb.Dataset(X1)
+            d2 = lgb.Dataset(X2).construct()
+            d1.add_features_from(d2)
+
+    def test_add_features_equal_data_on_alternating_used_unused(self):
+        X = np.random.random((1000, 5))
+        X[:, [1, 3]] = 0
+        names = ['col_%d' % i for i in range(5)]
+        for j in range(1, 5):
+            d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
+            d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
+            d1.add_features_from(d2)
+            with tempfile.NamedTemporaryFile() as f:
+                d1name = f.name
+            d1.dump_text(d1name)
+            d = lgb.Dataset(X, feature_name=names).construct()
+            with tempfile.NamedTemporaryFile() as f:
+                dname = f.name
+            d.dump_text(dname)
+            with open(d1name, 'rt') as d1f:
+                d1txt = d1f.read()
+            with open(dname, 'rt') as df:
+                dtxt = df.read()
+            os.remove(dname)
+            os.remove(d1name)
+            self.assertEqual(dtxt, d1txt)
+
+    def test_add_features_same_booster_behaviour(self):
+        X = np.random.random((1000, 5))
+        X[:, [1, 3]] = 0
+        names = ['col_%d' % i for i in range(5)]
+        for j in range(1, 5):
+            d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
+            d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
+            d1.add_features_from(d2)
+            d = lgb.Dataset(X, feature_name=names).construct()
+            y = np.random.random(1000)
+            d1.set_label(y)
+            d.set_label(y)
+            b1 = lgb.Booster(train_set=d1)
+            b = lgb.Booster(train_set=d)
+            for k in range(10):
+                b.update()
+                b1.update()
+            with tempfile.NamedTemporaryFile() as df:
+                dname = df.name
+            with tempfile.NamedTemporaryFile() as d1f:
+                d1name = d1f.name
+            b1.save_model(d1name)
+            b.save_model(dname)
+            with open(dname, 'rt') as df:
+                dtxt = df.read()
+            with open(d1name, 'rt') as d1f:
+                d1txt = d1f.read()
+            self.assertEqual(dtxt, d1txt)
+
+    def test_get_feature_penalty_and_monotone_constraints(self):
+        X = np.random.random((1000, 1))
+        d = lgb.Dataset(X, params={'feature_penalty': [0.5],
+                                   'monotone_constraints': [1]}).construct()
+        np.testing.assert_almost_equal(d.get_feature_penalty(), [0.5])
+        np.testing.assert_array_equal(d.get_monotone_constraints(), [1])
+        d = lgb.Dataset(X).construct()
+        self.assertIsNone(d.get_feature_penalty())
+        self.assertIsNone(d.get_monotone_constraints())
+
+    def test_add_features_feature_penalty(self):
+        X = np.random.random((1000, 2))
+        test_cases = [
+            (None, None, None),
+            ([0.5], None, [0.5, 1]),
+            (None, [0.5], [1, 0.5]),
+            ([0.5], [0.5], [0.5, 0.5])]
+        for (p1, p2, expected) in test_cases:
+            params1 = {'feature_penalty': p1} if p1 is not None else {}
+            d1 = lgb.Dataset(X[:, 0].reshape((-1, 1)), params=params1).construct()
+            params2 = {'feature_penalty': p2} if p2 is not None else {}
+            d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
+            d1.add_features_from(d2)
+            actual = d1.get_feature_penalty()
+            if expected is None:
+                self.assertIsNone(actual)
+            else:
+                np.testing.assert_almost_equal(actual, expected)
+
+    def test_add_features_monotone_types(self):
+        X = np.random.random((1000, 2))
+        test_cases = [
+            (None, None, None),
+            ([1], None, [1, 0]),
+            (None, [1], [0, 1]),
+            ([1], [-1], [1, -1])]
+        for (p1, p2, expected) in test_cases:
+            params1 = {'monotone_constraints': p1} if p1 is not None else {}
+            d1 = lgb.Dataset(X[:, 0].reshape((-1, 1)), params=params1).construct()
+            params2 = {'monotone_constraints': p2} if p2 is not None else {}
+            d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
+            d1.add_features_from(d2)
+            actual = d1.get_monotone_constraints()
+            if actual is None:
+                self.assertIsNone(actual)
+            else:
+                np.testing.assert_array_equal(actual, expected)
+
+    def test_cegb_affects_behavior(self):
+        X = np.random.random((1000, 5))
+        X[:, [1, 3]] = 0
+        y = np.random.random(1000)
+        names = ['col_%d' % i for i in range(5)]
+        ds = lgb.Dataset(X, feature_name=names).construct()
+        ds.set_label(y)
+        base = lgb.Booster(train_set=ds)
+        for k in range(10):
+            base.update()
+        with tempfile.NamedTemporaryFile() as f:
+            basename = f.name
+        base.save_model(basename)
+        with open(basename, 'rt') as f:
+            basetxt = f.read()
+        # Set extremely harsh penalties, so CEGB will block most splits.
+        cases = [{'cegb_penalty_feature_coupled': [50, 100, 10, 25, 30]},
+                 {'cegb_penalty_feature_lazy': [1, 2, 3, 4, 5]},
+                 {'cegb_penalty_split': 1}]
+        for case in cases:
+            booster = lgb.Booster(train_set=ds, params=case)
+            for k in range(10):
+                booster.update()
+            with tempfile.NamedTemporaryFile() as f:
+                casename = f.name
+            booster.save_model(casename)
+            with open(casename, 'rt') as f:
+                casetxt = f.read()
+            self.assertNotEqual(basetxt, casetxt)
+
+    def test_cegb_scaling_equalities(self):
+        X = np.random.random((1000, 5))
+        X[:, [1, 3]] = 0
+        y = np.random.random(1000)
+        names = ['col_%d' % i for i in range(5)]
+        ds = lgb.Dataset(X, feature_name=names).construct()
+        ds.set_label(y)
+        # Compare pairs of penalties, to ensure scaling works as intended
+        pairs = [({'cegb_penalty_feature_coupled': [1, 2, 1, 2, 1]},
+                  {'cegb_penalty_feature_coupled': [0.5, 1, 0.5, 1, 0.5], 'cegb_tradeoff': 2}),
+                 ({'cegb_penalty_feature_lazy': [0.01, 0.02, 0.03, 0.04, 0.05]},
+                  {'cegb_penalty_feature_lazy': [0.005, 0.01, 0.015, 0.02, 0.025], 'cegb_tradeoff': 2}),
+                 ({'cegb_penalty_split': 1},
+                  {'cegb_penalty_split': 2, 'cegb_tradeoff': 0.5})]
+        for (p1, p2) in pairs:
+            booster1 = lgb.Booster(train_set=ds, params=p1)
+            booster2 = lgb.Booster(train_set=ds, params=p2)
+            for k in range(10):
+                booster1.update()
+                booster2.update()
+            with tempfile.NamedTemporaryFile() as f:
+                p1name = f.name
+            # Reset booster1's parameters to p2, so the parameter section of the file matches.
+            booster1.reset_parameter(p2)
+            booster1.save_model(p1name)
+            with open(p1name, 'rt') as f:
+                p1txt = f.read()
+            with tempfile.NamedTemporaryFile() as f:
+                p2name = f.name
+            booster2.save_model(p2name)
+            self.maxDiff = None
+            with open(p2name, 'rt') as f:
+                p2txt = f.read()
+            self.assertEqual(p1txt, p2txt)

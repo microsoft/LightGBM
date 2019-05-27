@@ -24,7 +24,7 @@ For users who wants to install online with GPU or want to choose a specific comp
 
 #### Mac OS Preparation
 
-You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
+You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
 
 ```
 # replace 8 with version of gcc installed on your machine
@@ -36,7 +36,7 @@ export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
 Build and install R-package with the following commands:
 
 ```sh
-git clone --recursive https://github.com/Microsoft/LightGBM
+git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
 Rscript build_r.R
 ```
@@ -47,7 +47,7 @@ Note: for the build with Visual Studio/VS Build Tools in Windows, you should use
 
 Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Linux users might require the appropriate user write permissions for packages.
 
-Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
+Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
 If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in cmake options when build precompiled dll/lib**.
 
@@ -80,7 +80,7 @@ You will need:
 
 In addition, if you are using a Visual Studio precompiled DLL, assuming you do not have Visual Studio installed (if you have it installed, ignore the warnings below):
 
-* Visual Studio 2015/2017 precompiled DLL: download and install Visual Studio Runtime for [2015](https://www.microsoft.com/en-us/download/details.aspx?id=52685)/[2017](https://go.microsoft.com/fwlink/?LinkId=746572) (you will get an error about MSVCP140.dll missing otherwise)
+* Visual Studio 2015/2017/2019 precompiled DLL: download and install Visual Studio Runtime for [2015](https://www.microsoft.com/en-us/download/details.aspx?id=52685)/[2017](https://aka.ms/vs/15/release/vc_redist.x64.exe)/[2019](https://aka.ms/vs/16/release/vc_redist.x64.exe) (you will get an error about MSVCP140.dll missing otherwise)
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 
@@ -89,7 +89,7 @@ For instance, you can install the R-package from LightGBM master commit of GitHu
 ```r
 lgb.dl(commit = "master",
        compiler = "vs",
-       repo = "https://github.com/Microsoft/LightGBM")
+       repo = "https://github.com/microsoft/LightGBM")
 ```
 
 You may also install using a precompiled dll/lib using the following from R:
@@ -97,7 +97,7 @@ You may also install using a precompiled dll/lib using the following from R:
 ```r
 lgb.dl(commit = "master",
        libdll = "C:\\LightGBM\\windows\\x64\\DLL\\lib_lightgbm.dll", # YOUR PRECOMPILED DLL
-       repo = "https://github.com/Microsoft/LightGBM")
+       repo = "https://github.com/microsoft/LightGBM")
 ```
 
 You may also install online using a LightGBM with proper GPU support using Visual Studio (as an example here) using the following from R:
@@ -105,13 +105,13 @@ You may also install online using a LightGBM with proper GPU support using Visua
 ```r
 lgb.dl(commit = "master",
        compiler = "vs", # Remove this for MinGW + GPU installation
-       repo = "https://github.com/Microsoft/LightGBM",
+       repo = "https://github.com/microsoft/LightGBM",
        use_gpu = TRUE)
 ```
 
 For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
 
-You may also read [Microsoft/LightGBM#912](https://github.com/Microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM installation in Windows with Visual Studio.
+You may also read [Microsoft/LightGBM#912](https://github.com/microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM installation in Windows with Visual Studio.
 
 Examples
 --------

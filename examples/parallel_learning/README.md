@@ -18,4 +18,4 @@ Here is an example for LightGBM to perform parallel learning for 2 machines.
 
 This parallel learning example is based on socket. LightGBM also supports parallel learning based on mpi.
 
-For more details about the usage of parallel learning, please refer to [this](https://github.com/Microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst).
+For more details about the usage of parallel learning, please refer to [this](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst).

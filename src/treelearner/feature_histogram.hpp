@@ -1,13 +1,21 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 #define LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 
-#include "split_info.hpp"
-
-#include <LightGBM/utils/array_args.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/utils/array_args.h>
 
-#include <cstring>
+#include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include "split_info.hpp"
 
 namespace LightGBM {
 
@@ -384,7 +392,7 @@ class FeatureHistogram {
     double current_gain = GetLeafSplitGain(sum_right_gradient, sum_right_hessian,
                                            meta_->config->lambda_l1, l2,
                                            meta_->config->max_delta_step)
-        + GetLeafSplitGain(sum_left_gradient, sum_right_hessian,
+        + GetLeafSplitGain(sum_left_gradient, sum_left_hessian,
                            meta_->config->lambda_l1, l2,
                            meta_->config->max_delta_step);
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {

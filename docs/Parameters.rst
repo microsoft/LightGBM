@@ -51,7 +51,7 @@ Core Parameters
 
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
 
--  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
+-  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gamma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
 
    -  regression application
 
@@ -190,7 +190,7 @@ Learning Control Parameters
 
    -  limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
 
-   -  ``< 0`` means no limit
+   -  ``<= 0`` means no limit
 
 -  ``min_data_in_leaf`` :raw-html:`<a id="min_data_in_leaf" title="Permalink to this parameter" href="#min_data_in_leaf">&#x1F517;&#xFE0E;</a>`, default = ``20``, type = int, aliases: ``min_data_per_leaf``, ``min_data``, ``min_child_samples``, constraints: ``min_data_in_leaf >= 0``
 
@@ -239,6 +239,10 @@ Learning Control Parameters
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
 
    -  ``<= 0`` means disable
+
+-  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  set this to ``true``, if you want to use only the first metric for early stopping
 
 -  ``max_delta_step`` :raw-html:`<a id="max_delta_step" title="Permalink to this parameter" href="#max_delta_step">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``max_tree_output``, ``max_leaf_output``
 
@@ -366,13 +370,33 @@ Learning Control Parameters
 
    -  **Note**: the forced split logic will be ignored, if the split makes gain worse
 
-   -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
 
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
 
    -  decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees
 
    -  used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
+
+-  ``cegb_tradeoff`` :raw-html:`<a id="cegb_tradeoff" title="Permalink to this parameter" href="#cegb_tradeoff">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``cegb_tradeoff >= 0.0``
+
+   -  cost-effective gradient boosting multiplier for all penalties
+
+-  ``cegb_penalty_split`` :raw-html:`<a id="cegb_penalty_split" title="Permalink to this parameter" href="#cegb_penalty_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``cegb_penalty_split >= 0.0``
+
+   -  cost-effective gradient-boosting penalty for splitting a node
+
+-  ``cegb_penalty_feature_lazy`` :raw-html:`<a id="cegb_penalty_feature_lazy" title="Permalink to this parameter" href="#cegb_penalty_feature_lazy">&#x1F517;&#xFE0E;</a>`, default = ``0,0,...,0``, type = multi-double
+
+   -  cost-effective gradient boosting penalty for using a feature
+
+   -  applied per data point
+
+-  ``cegb_penalty_feature_coupled`` :raw-html:`<a id="cegb_penalty_feature_coupled" title="Permalink to this parameter" href="#cegb_penalty_feature_coupled">&#x1F517;&#xFE0E;</a>`, default = ``0,0,...,0``, type = multi-double
+
+   -  cost-effective gradient boosting penalty for using a feature
+
+   -  applied once per forest
 
 IO Parameters
 -------------
@@ -451,7 +475,7 @@ IO Parameters
 
    -  if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
 
-   -  **Note**: can be used only in CLI version
+   -  **Note**: works only in case of loading data directly from file
 
 -  ``valid_data_initscores`` :raw-html:`<a id="valid_data_initscores" title="Permalink to this parameter" href="#valid_data_initscores">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
 
@@ -461,7 +485,7 @@ IO Parameters
 
    -  separate by ``,`` for multi-validation data
 
-   -  **Note**: can be used only in CLI version
+   -  **Note**: works only in case of loading data directly from file
 
 -  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
 
@@ -507,19 +531,19 @@ IO Parameters
 
    -  by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
 
+   -  **Note**: works only in case of loading data directly from file
+
 -  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
 
    -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
 
--  ``enable_load_from_binary_file`` :raw-html:`<a id="enable_load_from_binary_file" title="Permalink to this parameter" href="#enable_load_from_binary_file">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``load_from_binary_file``, ``binary_load``, ``load_binary``
-
-   -  set this to ``true`` to enable autoloading from previous saved binary datasets
-
-   -  set this to ``false`` to ignore binary datasets
+   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
 -  ``header`` :raw-html:`<a id="header" title="Permalink to this parameter" href="#header">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``has_header``
 
    -  set this to ``true`` if input data has header
+
+   -  **Note**: works only in case of loading data directly from file
 
 -  ``label_column`` :raw-html:`<a id="label_column" title="Permalink to this parameter" href="#label_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``label``
 
@@ -529,6 +553,8 @@ IO Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
 
+   -  **Note**: works only in case of loading data directly from file
+
 -  ``weight_column`` :raw-html:`<a id="weight_column" title="Permalink to this parameter" href="#weight_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``weight``
 
    -  used to specify the weight column
@@ -536,6 +562,8 @@ IO Parameters
    -  use number for index, e.g. ``weight=0`` means column\_0 is the weight
 
    -  add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
+
+   -  **Note**: works only in case of loading data directly from file
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
 
@@ -546,6 +574,8 @@ IO Parameters
    -  use number for index, e.g. ``query=0`` means column\_0 is the query id
 
    -  add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
+
+   -  **Note**: works only in case of loading data directly from file
 
    -  **Note**: data should be grouped by query\_id
 
@@ -607,6 +637,8 @@ IO Parameters
 
    -  **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
 
+   -  **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
+
 -  ``num_iteration_predict`` :raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" href="#num_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
    -  used only in ``prediction`` task
@@ -664,6 +696,8 @@ Objective Parameters
 
    -  set this to ``true`` if training data are unbalanced
 
+   -  **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
+
    -  **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
 
 -  ``scale_pos_weight`` :raw-html:`<a id="scale_pos_weight" title="Permalink to this parameter" href="#scale_pos_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
@@ -671,6 +705,8 @@ Objective Parameters
    -  used only in ``binary`` application
 
    -  weight of labels with positive class
+
+   -  **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
 
    -  **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
 
@@ -806,6 +842,18 @@ Metric Parameters
    -  used only with ``ndcg`` and ``map`` metrics
 
    -  `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ and `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__ evaluation positions, separated by ``,``
+
+-  ``multi_error_top_k`` :raw-html:`<a id="multi_error_top_k" title="Permalink to this parameter" href="#multi_error_top_k">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``multi_error_top_k > 0``
+
+   -  used only with ``multi_error`` metric
+
+   -  threshold for top-k multi-error metric
+
+   -  the error on each sample is ``0`` if the true class is among the top ``multi_error_top_k`` predictions, and ``1`` otherwise
+
+      -  more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
+
+   -  when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
 
 Network Parameters
 ------------------

@@ -5,7 +5,7 @@ Booster <- R6::R6Class(
   public = list(
 
     best_iter = -1,
-    best_score = -1,
+    best_score = NA,
     record_evals = list(),
 
     # Finalize will free up the handles
@@ -517,7 +517,7 @@ Booster <- R6::R6Class(
           # Parse and store privately names
           names <- strsplit(names, "\t")[[1]]
           private$eval_names <- names
-          private$higher_better_inner_eval <- grepl("^ndcg|^auc$", names)
+          private$higher_better_inner_eval <- grepl("^ndcg|^map|^auc$", names)
 
         }
 

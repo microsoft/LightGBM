@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #define LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #ifdef USE_SOCKET
@@ -28,10 +32,9 @@
 
 #include <LightGBM/utils/log.h>
 
-#include <cstdlib>
-
-#include <unordered_set>
 #include <string>
+#include <cstdlib>
+#include <unordered_set>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")
@@ -173,7 +176,7 @@ class TcpSocket {
     PIP_ADAPTER_INFO pAdapter = NULL;
     DWORD dwRetVal = 0;
     ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
-    pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(sizeof(IP_ADAPTER_INFO));
+    pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(sizeof(IP_ADAPTER_INFO)));
     if (pAdapterInfo == NULL) {
       Log::Fatal("GetAdaptersinfo error: allocating memory");
     }
@@ -181,7 +184,7 @@ class TcpSocket {
     // the necessary size into the ulOutBufLen variable
     if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
       FREE(pAdapterInfo);
-      pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(ulOutBufLen);
+      pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(ulOutBufLen));
       if (pAdapterInfo == NULL) {
         Log::Fatal("GetAdaptersinfo error: allocating memory");
       }

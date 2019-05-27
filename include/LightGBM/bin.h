@@ -1,16 +1,20 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BIN_H_
 #define LIGHTGBM_BIN_H_
 
 #include <LightGBM/meta.h>
-
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
 
-
-#include <vector>
+#include <limits>
+#include <string>
 #include <functional>
-#include <unordered_map>
 #include <sstream>
+#include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 
@@ -447,6 +451,11 @@ class Bin {
   * \return The bin data object
   */
   static Bin* CreateSparseBin(data_size_t num_data, int num_bin);
+
+  /*!
+  * \brief Deep copy the bin
+  */
+  virtual Bin* Clone() = 0;
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {

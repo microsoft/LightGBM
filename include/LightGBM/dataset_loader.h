@@ -1,7 +1,15 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_DATASET_LOADER_H_
 #define LIGHTGBM_DATASET_LOADER_H_
 
 #include <LightGBM/dataset.h>
+
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 namespace LightGBM {
 
@@ -73,6 +81,6 @@ class DatasetLoader {
   std::unordered_set<int> categorical_features_;
 };
 
-}
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_DATASET_LOADER_H_

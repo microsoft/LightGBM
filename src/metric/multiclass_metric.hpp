@@ -1,11 +1,16 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_MULTICLASS_METRIC_HPP_
 #define LIGHTGBM_METRIC_MULTICLASS_METRIC_HPP_
 
 #include <LightGBM/metric.h>
-
 #include <LightGBM/utils/log.h>
 
+#include <string>
 #include <cmath>
+#include <vector>
 
 namespace LightGBM {
 /*!
@@ -15,7 +20,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class MulticlassMetric: public Metric {
  public:
-  explicit MulticlassMetric(const Config& config) {
+  explicit MulticlassMetric(const Config& config) :config_(config){
     num_class_ = config.num_class;
   }
 
@@ -23,7 +28,7 @@ class MulticlassMetric: public Metric {
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back(PointWiseLossCalculator::Name());
+    name_.emplace_back(PointWiseLossCalculator::Name(config_));
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -67,7 +72,7 @@ class MulticlassMetric: public Metric {
           std::vector<double> rec(num_pred_per_row);
           objective->ConvertOutput(raw_score.data(), rec.data());
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec, config_);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -80,7 +85,7 @@ class MulticlassMetric: public Metric {
           std::vector<double> rec(num_pred_per_row);
           objective->ConvertOutput(raw_score.data(), rec.data());
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec, config_) * weights_[i];
         }
       }
     } else {
@@ -93,7 +98,7 @@ class MulticlassMetric: public Metric {
             rec[k] = static_cast<double>(score[idx]);
           }
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec, config_);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -104,7 +109,7 @@ class MulticlassMetric: public Metric {
             rec[k] = static_cast<double>(score[idx]);
           }
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec, config_) * weights_[i];
         }
       }
     }
@@ -124,25 +129,28 @@ class MulticlassMetric: public Metric {
   /*! \brief Name of this test set */
   std::vector<std::string> name_;
   int num_class_;
+  /*! \brief config parameters*/
+  Config config_;
 };
 
-/*! \brief L2 loss for multiclass task */
+/*! \brief top-k error for multiclass task; if k=1 (default) this is the usual multi-error */
 class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
  public:
   explicit MultiErrorMetric(const Config& config) :MulticlassMetric<MultiErrorMetric>(config) {}
 
-  inline static double LossOnPoint(label_t label, std::vector<double>& score) {
+  inline static double LossOnPoint(label_t label, std::vector<double>& score, const Config& config) {
     size_t k = static_cast<size_t>(label);
+    int num_larger = 0;
     for (size_t i = 0; i < score.size(); ++i) {
-      if (i != k && score[i] >= score[k]) {
-        return 1.0f;
-      }
+      if (score[i] >= score[k]) ++num_larger;
+      if (num_larger > config.multi_error_top_k) return 1.0f;
     }
     return 0.0f;
   }
 
-  inline static const char* Name() {
-    return "multi_error";
+  inline static const std::string Name(const Config& config) {
+    if (config.multi_error_top_k == 1) return "multi_error";
+    else return "multi_error@" + std::to_string(config.multi_error_top_k);
   }
 };
 
@@ -151,7 +159,7 @@ class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetr
  public:
   explicit MultiSoftmaxLoglossMetric(const Config& config) :MulticlassMetric<MultiSoftmaxLoglossMetric>(config) {}
 
-  inline static double LossOnPoint(label_t label, std::vector<double>& score) {
+  inline static double LossOnPoint(label_t label, std::vector<double>& score, const Config&) {
     size_t k = static_cast<size_t>(label);
     if (score[k] > kEpsilon) {
       return static_cast<double>(-std::log(score[k]));
@@ -160,7 +168,7 @@ class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetr
     }
   }
 
-  inline static const char* Name() {
+  inline static const std::string Name(const Config&) {
     return "multi_logloss";
   }
 };

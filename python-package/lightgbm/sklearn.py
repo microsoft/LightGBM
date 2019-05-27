@@ -14,49 +14,64 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      argc_, range_, string_type, DataFrame, DataTable)
 from .engine import train
 
-from functools import wraps
 
-def _objective_function_wrapper(func):
-    """Decorate an objective function.
+class _ObjectiveFunctionWrapper(object):
+    """Proxy class for objective function."""
 
-    Note
-    ----
-    For multi-class task, the y_pred is group by class_id first, then group by row_id.
-    If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
-    and you should group grad and hess in this way as well.
+    def __init__(self, func):
+        """Construct a proxy class.
 
-    Parameters
-    ----------
-    func : callable
-        Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group):
+        This class transforms objective function to match objective function with signature ``new_func(preds, dataset)``
+        as expected by ``lightgbm.engine.train``.
 
-            y_true : array-like of shape = [n_samples]
-                The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The predicted values.
-            group : array-like
-                Group/query data, used for ranking task.
+        Parameters
+        ----------
+        func : callable
+            Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)
+            and returns (grad, hess):
 
-    Returns
-    -------
-    new_func : callable
-        The new objective function as expected by ``lightgbm.engine.train``.
-        The signature is ``new_func(preds, dataset)``:
+                y_true : array-like of shape = [n_samples]
+                    The target values.
+                y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                    The predicted values.
+                group : array-like
+                    Group/query data, used for ranking task.
+                grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                    The value of the first order derivative (gradient) for each sample point.
+                hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                    The value of the second order derivative (Hessian) for each sample point.
 
-            preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The predicted values.
-            dataset : Dataset
-                The training set from which the labels will be extracted using ``dataset.get_label()``.
-    """
-    @wraps(func)
-    def inner(preds, dataset):
-        """Call passed function with appropriate arguments."""
+        Note
+        ----
+        For multi-class task, the y_pred is group by class_id first, then group by row_id.
+        If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
+        and you should group grad and hess in this way as well.
+        """
+        self.func = func
+
+    def __call__(self, preds, dataset):
+        """Call passed function with appropriate arguments.
+
+        Parameters
+        ----------
+        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            The predicted values.
+        dataset : Dataset
+            The training dataset.
+
+        Returns
+        -------
+        grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            The value of the first order derivative (gradient) for each sample point.
+        hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            The value of the second order derivative (Hessian) for each sample point.
+        """
         labels = dataset.get_label()
-        argc = argc_(func)
+        argc = argc_(self.func)
         if argc == 2:
-            grad, hess = func(labels, preds)
+            grad, hess = self.func(labels, preds)
         elif argc == 3:
-            grad, hess = func(labels, preds, dataset.get_group())
+            grad, hess = self.func(labels, preds, dataset.get_group())
         else:
             raise TypeError("Self-defined objective function should have 2 or 3 arguments, got %d" % argc)
         """weighted for objective"""
@@ -77,60 +92,78 @@ def _objective_function_wrapper(func):
                         grad[idx] *= weight[i]
                         hess[idx] *= weight[i]
         return grad, hess
-    return inner
 
 
-def _eval_function_wrapper(func):
-    """Decorate an eval function.
+class _EvalFunctionWrapper(object):
+    """Proxy class for evaluation function."""
 
-    Note
-    ----
-    For multi-class task, the y_pred is group by class_id first, then group by row_id.
-    If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
+    def __init__(self, func):
+        """Construct a proxy class.
 
-    Parameters
-    ----------
-    func : callable
-        Expects a callable with following signatures:
-        ``func(y_true, y_pred)``,
-        ``func(y_true, y_pred, weight)``
-        or ``func(y_true, y_pred, weight, group)``
-        and returns (eval_name->string, eval_result->float, is_bigger_better->bool):
+        This class transforms evaluation function to match evaluation function with signature ``new_func(preds, dataset)``
+        as expected by ``lightgbm.engine.train``.
 
-            y_true : array-like of shape = [n_samples]
-                The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The predicted values.
-            weight : array-like of shape = [n_samples]
-                The weight of samples.
-            group : array-like
-                Group/query data, used for ranking task.
+        Parameters
+        ----------
+        func : callable
+            Expects a callable with following signatures:
+            ``func(y_true, y_pred)``,
+            ``func(y_true, y_pred, weight)``
+            or ``func(y_true, y_pred, weight, group)``
+            and returns (eval_name, eval_result, is_higher_better) or
+            list of (eval_name, eval_result, is_higher_better):
 
-    Returns
-    -------
-    new_func : callable
-        The new eval function as expected by ``lightgbm.engine.train``.
-        The signature is ``new_func(preds, dataset)``:
+                y_true : array-like of shape = [n_samples]
+                    The target values.
+                y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                    The predicted values.
+                weight : array-like of shape = [n_samples]
+                    The weight of samples.
+                group : array-like
+                    Group/query data, used for ranking task.
+                eval_name : string
+                    The name of evaluation function.
+                eval_result : float
+                    The eval result.
+                is_higher_better : bool
+                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The predicted values.
-            dataset : Dataset
-                The training set from which the labels will be extracted using ``dataset.get_label()``.
-    """
-    @wraps(func)
-    def inner(preds, dataset):
-        """Call passed function with appropriate arguments."""
+        Note
+        ----
+        For multi-class task, the y_pred is group by class_id first, then group by row_id.
+        If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
+        """
+        self.func = func
+
+    def __call__(self, preds, dataset):
+        """Call passed function with appropriate arguments.
+
+        Parameters
+        ----------
+        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            The predicted values.
+        dataset : Dataset
+            The training dataset.
+
+        Returns
+        -------
+        eval_name : string
+            The name of evaluation function.
+        eval_result : float
+            The eval result.
+        is_higher_better : bool
+            Is eval result higher better, e.g. AUC is ``is_higher_better``.
+        """
         labels = dataset.get_label()
-        argc = argc_(func)
+        argc = argc_(self.func)
         if argc == 2:
-            return func(labels, preds)
+            return self.func(labels, preds)
         elif argc == 3:
-            return func(labels, preds, dataset.get_weight())
+            return self.func(labels, preds, dataset.get_weight())
         elif argc == 4:
-            return func(labels, preds, dataset.get_weight(), dataset.get_group())
+            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())
         else:
             raise TypeError("Self-defined eval function should have 2, 3 or 4 arguments, got %d" % argc)
-    return inner
 
 
 class LGBMModel(_LGBMModelBase):
@@ -155,7 +188,7 @@ class LGBMModel(_LGBMModelBase):
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)
-            Maximum tree depth for base learners, -1 means no limit.
+            Maximum tree depth for base learners, <=0 means no limit.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
             You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate
@@ -173,6 +206,9 @@ class LGBMModel(_LGBMModelBase):
             Weights associated with classes in the form ``{class_label: weight}``.
             Use this parameter only for multi-class classification task;
             for binary classification task you may use ``is_unbalance`` or ``scale_pos_weight`` parameters.
+            Note, that the usage of all these parameters will result in poor estimates of the individual class probabilities.
+            You may want to consider performing probability calibration
+            (https://scikit-learn.org/stable/modules/calibration.html) of your model.
             The 'balanced' mode uses the values of y to automatically adjust weights
             inversely proportional to class frequencies in the input data as ``n_samples / (n_classes * np.bincount(y))``.
             If None, all classes are supposed to have weight one.
@@ -248,9 +284,9 @@ class LGBMModel(_LGBMModelBase):
             group : array-like
                 Group/query data, used for ranking task.
             grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The value of the gradient for each sample point.
+                The value of the first order derivative (gradient) for each sample point.
             hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The value of the second derivative for each sample point.
+                The value of the second order derivative (Hessian) for each sample point.
 
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
@@ -289,6 +325,10 @@ class LGBMModel(_LGBMModelBase):
         self._classes = None
         self._n_classes = None
         self.set_params(**kwargs)
+
+    def _more_tags(self):
+        return {'allow_nan': True,
+                'X_types': ['2darray', 'sparse', '1dlabels']}
 
     def get_params(self, deep=True):
         """Get parameters for this estimator.
@@ -372,6 +412,8 @@ class LGBMModel(_LGBMModelBase):
             to continue training.
             Requires at least one validation data and one metric.
             If there's more than one, will check all of them. But the training data is ignored anyway.
+            To check only the first metric, set the ``first_metric_only`` parameter to ``True``
+            in additional parameters ``**kwargs`` of the model constructor.
         verbose : bool or int, optional (default=True)
             Requires at least one evaluation data.
             If True, the eval metric on the eval set is printed at each boosting stage.
@@ -390,7 +432,7 @@ class LGBMModel(_LGBMModelBase):
             Categorical features.
             If list of int, interpreted as indices.
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
-            If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+            If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
@@ -408,8 +450,8 @@ class LGBMModel(_LGBMModelBase):
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``
-        and returns (eval_name, eval_result, is_bigger_better) or
-        list of (eval_name, eval_result, is_bigger_better):
+        and returns (eval_name, eval_result, is_higher_better) or
+        list of (eval_name, eval_result, is_higher_better):
 
             y_true : array-like of shape = [n_samples]
                 The target values.
@@ -420,11 +462,11 @@ class LGBMModel(_LGBMModelBase):
             group : array-like
                 Group/query data, used for ranking task.
             eval_name : string
-                The name of evaluation.
+                The name of evaluation function.
             eval_result : float
                 The eval result.
-            is_bigger_better : bool
-                Is eval result bigger better, e.g. AUC is bigger_better.
+            is_higher_better : bool
+                Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
@@ -439,7 +481,7 @@ class LGBMModel(_LGBMModelBase):
             else:
                 raise ValueError("Unknown LGBMModel type.")
         if callable(self._objective):
-            self._fobj = _objective_function_wrapper(self._objective)
+            self._fobj = _ObjectiveFunctionWrapper(self._objective)
         else:
             self._fobj = None
         evals_result = {}
@@ -460,7 +502,7 @@ class LGBMModel(_LGBMModelBase):
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
         if callable(eval_metric):
-            feval = _eval_function_wrapper(eval_metric)
+            feval = _EvalFunctionWrapper(eval_metric)
         else:
             feval = None
             # register default metric for consistency with callable eval_metric case
@@ -580,9 +622,11 @@ class LGBMModel(_LGBMModelBase):
 
             Note
             ----
-            If you want to get more explanation for your model's predictions using SHAP values
+            If you want to get more explanations for your model's predictions using SHAP values,
             like SHAP interaction values,
-            you can install shap package (https://github.com/slundberg/shap).
+            you can install the shap package (https://github.com/slundberg/shap).
+            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+            column, where the last column is the expected value.
 
         **kwargs
             Other parameters for the prediction.
@@ -591,10 +635,10 @@ class LGBMModel(_LGBMModelBase):
         -------
         predicted_result : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
             The predicted values.
-        X_leaves : array-like of shape = [n_samples, n_trees] or shape [n_samples, n_trees * n_classes]
-            If ``pred_leaf=True``, the predicted leaf every tree for each sample.
-        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape [n_samples, (n_features + 1) * n_classes]
-            If ``pred_contrib=True``, the each feature contributions for each sample.
+        X_leaves : array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
+            If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
+        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
+            If ``pred_contrib=True``, the feature contributions for each sample.
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
@@ -783,9 +827,11 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
             Note
             ----
-            If you want to get more explanation for your model's predictions using SHAP values
+            If you want to get more explanations for your model's predictions using SHAP values,
             like SHAP interaction values,
-            you can install shap package (https://github.com/slundberg/shap).
+            you can install the shap package (https://github.com/slundberg/shap).
+            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+            column, where the last column is the expected value.
 
         **kwargs
             Other parameters for the prediction.
@@ -795,9 +841,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         predicted_probability : array-like of shape = [n_samples, n_classes]
             The predicted probability for each class for each sample.
         X_leaves : array-like of shape = [n_samples, n_trees * n_classes]
-            If ``pred_leaf=True``, the predicted leaf every tree for each sample.
+            If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
         X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes]
-            If ``pred_contrib=True``, the each feature contributions for each sample.
+            If ``pred_contrib=True``, the feature contributions for each sample.
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
                                                      pred_leaf, pred_contrib, **kwargs)

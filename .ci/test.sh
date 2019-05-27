@@ -1,11 +1,21 @@
 #!/bin/bash
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
-    export CXX=g++-8
-    export CC=gcc-8
+    export CXX=g++-9
+    export CC=gcc-9
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
+fi
+
+if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]] && [[ $(sw_vers -productVersion | cut -d'.' -f2) -ge "14" ]]; then
+    CMAKE_OPTS=(-DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+                -DOpenMP_C_LIB_NAMES=omp
+                -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+                -DOpenMP_CXX_LIB_NAMES=omp
+                -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib)
+else
+    CMAKE_OPTS=()
 fi
 
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
@@ -14,16 +24,14 @@ source activate $CONDA_ENV
 cd $BUILD_DIRECTORY
 
 if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
-    if [[ $PYTHON_VERSION == "2.7" ]]; then
-        conda -q -y -n $CONDA_ENV mock
-    fi
-    conda install -q -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"
-    pip install --user rstcheck
+    cd $BUILD_DIRECTORY/docs
+    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
+    pip install --user -r requirements.txt rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
+    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile `find . -type f -name "*.rst"` || exit -1
     # build docs and check them for broken links
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
@@ -51,17 +59,18 @@ fi
 
 if [[ $TASK == "if-else" ]]; then
     conda install -q -y -n $CONDA_ENV numpy
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake "${CMAKE_OPTS[@]}" .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy
+conda install -q -y -n $CONDA_ENV matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
-    sudo ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib || exit -1  # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
+    # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
+    for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do sudo ln -sf "$(brew --cellar libomp)"/*/lib/libomp.dylib $CONDA_PREFIX/lib/$LIBOMP_ALIAS || exit -1; done
 fi
 
 if [[ $TASK == "sdist" ]]; then
@@ -69,6 +78,19 @@ if [[ $TASK == "sdist" ]]; then
     pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
     if [[ $AZURE == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
+        mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
+        if [[ $OS_NAME == "macos" ]]; then
+            cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON "${CMAKE_OPTS[@]}" ..
+        else
+            cmake -DUSE_SWIG=ON "${CMAKE_OPTS[@]}" ..
+        fi
+        make -j4 || exit -1
+        if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
+            objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit -1
+            objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit -1
+            python $BUILD_DIRECTORY/helpers/check_dynamic_dependencies.py $BUILD_DIRECTORY/objdump.log || exit -1
+        fi
+        cp $BUILD_DIRECTORY/build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_$OS_NAME.jar
     fi
     pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
     exit 0
@@ -101,7 +123,7 @@ if [[ $TASK == "gpu" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
+    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ "${CMAKE_OPTS[@]}" ..
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
@@ -109,9 +131,9 @@ elif [[ $TASK == "mpi" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-    cmake -DUSE_MPI=ON ..
+    cmake -DUSE_MPI=ON "${CMAKE_OPTS[@]}" ..
 else
-    cmake ..
+    cmake "${CMAKE_OPTS[@]}" ..
 fi
 
 make _lightgbm -j4 || exit -1

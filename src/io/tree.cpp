@@ -1,17 +1,16 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/tree.h>
 
-#include <LightGBM/utils/threading.h>
-#include <LightGBM/utils/common.h>
-
 #include <LightGBM/dataset.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/threading.h>
 
-#include <sstream>
-#include <unordered_map>
 #include <functional>
-#include <vector>
-#include <string>
-#include <memory>
 #include <iomanip>
+#include <sstream>
 
 namespace LightGBM {
 
@@ -342,7 +341,7 @@ std::string Tree::CategoricalDecisionIfElse(int node) const {
   } else {
     str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
   }
-  int cat_idx = int(threshold_[node]);
+  int cat_idx = static_cast<int>(threshold_[node]);
   str_buf << "if (int_fval >= 0 && int_fval < 32 * (";
   str_buf << cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx];
   str_buf << ") && (((cat_threshold[" << cat_boundaries_[cat_idx];
@@ -507,6 +506,12 @@ Tree::Tree(const char* str, size_t* used_len) {
   } else {
     Log::Fatal("Tree model string format error, should contain leaf_value field");
   }
+  
+  if (key_vals.count("shrinkage")) {
+    Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
+  } else {
+    shrinkage_ = 1.0f;
+  }
 
   if (num_leaves_ <= 1) { return; }
 
@@ -576,12 +581,6 @@ Tree::Tree(const char* str, size_t* used_len) {
     } else {
       Log::Fatal("Tree model should contain cat_threshold field");
     }
-  }
-
-  if (key_vals.count("shrinkage")) {
-    Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
-  } else {
-    shrinkage_ = 1.0f;
   }
   max_depth_ = -1;
 }

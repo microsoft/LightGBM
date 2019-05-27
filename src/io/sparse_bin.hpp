@@ -1,15 +1,19 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_IO_SPARSE_BIN_HPP_
 #define LIGHTGBM_IO_SPARSE_BIN_HPP_
 
-#include <LightGBM/utils/log.h>
-
 #include <LightGBM/bin.h>
-
+#include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <cstring>
-#include <cstdint>
 #include <limits>
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <utility>
 #include <vector>
 
 namespace LightGBM {
@@ -407,7 +411,14 @@ class SparseBin: public Bin {
     GetFastIndex();
   }
 
+  SparseBin<VAL_T>* Clone() override;
+
  protected:
+  SparseBin<VAL_T>(const SparseBin<VAL_T>& other)
+    : num_data_(other.num_data_), deltas_(other.deltas_), vals_(other.vals_),
+      num_vals_(other.num_vals_), push_buffers_(other.push_buffers_),
+      fast_index_(other.fast_index_), fast_index_shift_(other.fast_index_shift_) {}
+
   data_size_t num_data_;
   std::vector<uint8_t> deltas_;
   std::vector<VAL_T> vals_;
@@ -416,6 +427,11 @@ class SparseBin: public Bin {
   std::vector<std::pair<data_size_t, data_size_t>> fast_index_;
   data_size_t fast_index_shift_;
 };
+
+template<typename VAL_T>
+SparseBin<VAL_T>* SparseBin<VAL_T>::Clone() {
+  return new SparseBin(*this);
+}
 
 template <typename VAL_T>
 inline uint32_t SparseBinIterator<VAL_T>::RawGet(data_size_t idx) {

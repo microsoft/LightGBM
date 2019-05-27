@@ -50,10 +50,14 @@ print('Plotting feature importances...')
 ax = lgb.plot_importance(gbm, max_num_features=10)
 plt.show()
 
-print('Plotting 84th tree...')  # one tree use categorical feature to split
-ax = lgb.plot_tree(gbm, tree_index=83, figsize=(20, 8), show_info=['split_gain'])
+print('Plotting split value histogram...')
+ax = lgb.plot_split_value_histogram(gbm, feature='f26', bins='auto')
 plt.show()
 
-print('Plotting 84th tree with graphviz...')
-graph = lgb.create_tree_digraph(gbm, tree_index=83, name='Tree84')
+print('Plotting 54th tree...')  # one tree use categorical feature to split
+ax = lgb.plot_tree(gbm, tree_index=53, figsize=(15, 15), show_info=['split_gain'])
+plt.show()
+
+print('Plotting 54th tree with graphviz...')
+graph = lgb.create_tree_digraph(gbm, tree_index=53, name='Tree54')
 graph.render(view=True)

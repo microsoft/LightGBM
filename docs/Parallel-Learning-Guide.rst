@@ -122,6 +122,6 @@ Example
 
 -  `A simple parallel example`_
 
-.. _here: https://blogs.technet.microsoft.com/windowshpc/2015/02/02/how-to-compile-and-run-a-simple-ms-mpi-program/
+.. _here: https://www.youtube.com/watch?v=iqzXhp5TxUY
 
-.. _A simple parallel example: https://github.com/Microsoft/lightgbm/tree/master/examples/parallel_learning
+.. _A simple parallel example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning

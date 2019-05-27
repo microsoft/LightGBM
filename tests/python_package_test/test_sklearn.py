@@ -26,6 +26,17 @@ def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
 
+def custom_asymmetric_obj(y_true, y_pred):
+    residual = (y_true - y_pred).astype("float")
+    grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
+    hess = np.where(residual < 0, 2 * 10.0, 2.0)
+    return grad, hess
+
+
+def mse(y_true, y_pred):
+    return 'custom MSE', mean_squared_error(y_true, y_pred), False
+
+
 class TestSklearn(unittest.TestCase):
 
     def test_binary(self):
@@ -143,27 +154,27 @@ class TestSklearn(unittest.TestCase):
     def test_joblib(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm = lgb.LGBMRegressor(n_estimators=100, silent=True)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+        gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
+                                silent=True, importance_type='split')
+        gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
+                eval_metric=mse, early_stopping_rounds=5, verbose=False,
+                callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))])
 
-        joblib.dump(gbm, 'lgb.pkl')
+        joblib.dump(gbm, 'lgb.pkl')  # test model with custom functions
         gbm_pickle = joblib.load('lgb.pkl')
         self.assertIsInstance(gbm_pickle.booster_, lgb.Booster)
         self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
-        self.assertListEqual(list(gbm.feature_importances_), list(gbm_pickle.feature_importances_))
+        np.testing.assert_array_equal(gbm.feature_importances_, gbm_pickle.feature_importances_)
+        self.assertAlmostEqual(gbm_pickle.learning_rate, 0.1)
+        self.assertTrue(callable(gbm_pickle.objective))
 
-        X, y = load_boston(True)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
-        gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
-        for key in gbm.evals_result_:
-            for evals in zip(gbm.evals_result_[key], gbm_pickle.evals_result_[key]):
-                self.assertAlmostEqual(*evals, places=5)
+        for eval_set in gbm.evals_result_:
+            for metric in gbm.evals_result_[eval_set]:
+                np.testing.assert_array_almost_equal(gbm.evals_result_[eval_set][metric],
+                                                     gbm_pickle.evals_result_[eval_set][metric])
         pred_origin = gbm.predict(X_test)
         pred_pickle = gbm_pickle.predict(X_test)
-        self.assertEqual(len(pred_origin), len(pred_pickle))
-        for preds in zip(pred_origin, pred_pickle):
-            self.assertAlmostEqual(*preds, places=5)
+        np.testing.assert_array_almost_equal(pred_origin, pred_pickle)
 
     def test_feature_importances_single_leaf(self):
         clf = lgb.LGBMClassifier(n_estimators=100)
@@ -192,7 +203,7 @@ class TestSklearn(unittest.TestCase):
         for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
                                 (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
             check_parameters_default_constructible(name, estimator)
-            # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
+            # we cannot leave default params (see https://github.com/microsoft/LightGBM/issues/833)
             estimator = estimator(min_child_samples=1, min_data_in_bin=1)
             for check in _yield_all_checks(name, estimator):
                 check_name = check.func.__name__ if hasattr(check, 'func') else check.__name__
@@ -206,41 +217,64 @@ class TestSklearn(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
         import pandas as pd
+        np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
-                          "D": np.random.permutation([True, False] * 150)})  # bool
+                          "D": np.random.permutation([True, False] * 150),  # bool
+                          "E": pd.Categorical(np.random.permutation(['z', 'y', 'x', 'w', 'v'] * 60),
+                                              ordered=True)})  # str and ordered categorical
         y = np.random.permutation([0, 1] * 150)
-        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),  # unseen category
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
-                               "D": np.random.permutation([True, False] * 30)})
-        cat_cols = []
-        for col in ["A", "B", "C", "D"]:
-            X[col] = X[col].astype('category')
-            X_test[col] = X_test[col].astype('category')
-            cat_cols.append(X[col].cat.categories.tolist())
+                               "D": np.random.permutation([True, False] * 30),
+                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                                                   ordered=True)})
+        np.random.seed()  # reset seed
+        cat_cols_actual = ["A", "B", "C", "D"]
+        cat_cols_to_store = cat_cols_actual + ["E"]
+        X[cat_cols_actual] = X[cat_cols_actual].astype('category')
+        X_test[cat_cols_actual] = X_test[cat_cols_actual].astype('category')
+        cat_values = [X[col].cat.categories.tolist() for col in cat_cols_to_store]
         gbm0 = lgb.sklearn.LGBMClassifier().fit(X, y)
-        pred0 = gbm0.predict(X_test)
+        pred0 = gbm0.predict(X_test, raw_score=True)
+        pred_prob = gbm0.predict_proba(X_test)[:, 1]
         gbm1 = lgb.sklearn.LGBMClassifier().fit(X, pd.Series(y), categorical_feature=[0])
-        pred1 = gbm1.predict(X_test)
+        pred1 = gbm1.predict(X_test, raw_score=True)
         gbm2 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A'])
-        pred2 = gbm2.predict(X_test)
+        pred2 = gbm2.predict(X_test, raw_score=True)
         gbm3 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A', 'B', 'C', 'D'])
-        pred3 = gbm3.predict(X_test)
+        pred3 = gbm3.predict(X_test, raw_score=True)
         gbm3.booster_.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = gbm4.predict(X_test)
-        pred_prob = gbm0.predict_proba(X_test)[:, 1]
-        np.testing.assert_almost_equal(pred0, pred1)
-        np.testing.assert_almost_equal(pred0, pred2)
+        gbm5 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['E'])
+        pred5 = gbm5.predict(X_test, raw_score=True)
+        gbm6 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=[])
+        pred6 = gbm6.predict(X_test, raw_score=True)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred1)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred2)
+        np.testing.assert_almost_equal(pred1, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred_prob, pred4)
-        self.assertListEqual(gbm0.booster_.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm1.booster_.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm2.booster_.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm3.booster_.pandas_categorical, cat_cols)
-        self.assertListEqual(gbm4.pandas_categorical, cat_cols)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred5)  # ordered cat features aren't treated as cat features by default
+        self.assertRaises(AssertionError,
+                          np.testing.assert_almost_equal,
+                          pred0, pred6)
+        self.assertListEqual(gbm0.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm1.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm2.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm3.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm4.pandas_categorical, cat_values)
+        self.assertListEqual(gbm5.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm6.booster_.pandas_categorical, cat_values)
 
     def test_predict(self):
         iris = load_iris()
