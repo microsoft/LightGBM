@@ -26,6 +26,17 @@ def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
 
+def custom_asymmetric_obj(y_true, y_pred):
+    residual = (y_true - y_pred).astype("float")
+    grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
+    hess = np.where(residual < 0, 2 * 10.0, 2.0)
+    return grad, hess
+
+
+def mse(y_true, y_pred):
+    return 'custom MSE', mean_squared_error(y_true, y_pred), False
+
+
 class TestSklearn(unittest.TestCase):
 
     def test_binary(self):
@@ -143,27 +154,27 @@ class TestSklearn(unittest.TestCase):
     def test_joblib(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm = lgb.LGBMRegressor(n_estimators=100, silent=True)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+        gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
+                                silent=True, importance_type='split')
+        gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
+                eval_metric=mse, early_stopping_rounds=5, verbose=False,
+                callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))])
 
-        joblib.dump(gbm, 'lgb.pkl')
+        joblib.dump(gbm, 'lgb.pkl')  # test model with custom functions
         gbm_pickle = joblib.load('lgb.pkl')
         self.assertIsInstance(gbm_pickle.booster_, lgb.Booster)
         self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
-        self.assertListEqual(list(gbm.feature_importances_), list(gbm_pickle.feature_importances_))
+        np.testing.assert_array_equal(gbm.feature_importances_, gbm_pickle.feature_importances_)
+        self.assertAlmostEqual(gbm_pickle.learning_rate, 0.1)
+        self.assertTrue(callable(gbm_pickle.objective))
 
-        X, y = load_boston(True)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
-        gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
-        for key in gbm.evals_result_:
-            for evals in zip(gbm.evals_result_[key], gbm_pickle.evals_result_[key]):
-                self.assertAlmostEqual(*evals, places=5)
+        for eval_set in gbm.evals_result_:
+            for metric in gbm.evals_result_[eval_set]:
+                np.testing.assert_array_almost_equal(gbm.evals_result_[eval_set][metric],
+                                                     gbm_pickle.evals_result_[eval_set][metric])
         pred_origin = gbm.predict(X_test)
         pred_pickle = gbm_pickle.predict(X_test)
-        self.assertEqual(len(pred_origin), len(pred_pickle))
-        for preds in zip(pred_origin, pred_pickle):
-            self.assertAlmostEqual(*preds, places=5)
+        np.testing.assert_array_almost_equal(pred_origin, pred_pickle)
 
     def test_feature_importances_single_leaf(self):
         clf = lgb.LGBMClassifier(n_estimators=100)

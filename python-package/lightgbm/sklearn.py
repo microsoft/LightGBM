@@ -15,46 +15,63 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
 from .engine import train
 
 
-def _objective_function_wrapper(func):
-    """Decorate an objective function.
+class _ObjectiveFunctionWrapper(object):
+    """Proxy class for objective function."""
 
-    Note
-    ----
-    For multi-class task, the y_pred is group by class_id first, then group by row_id.
-    If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
-    and you should group grad and hess in this way as well.
+    def __init__(self, func):
+        """Construct a proxy class.
 
-    Parameters
-    ----------
-    func : callable
-        Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group):
+        This class transforms objective function to match objective function with signature ``new_func(preds, dataset)``
+        as expected by ``lightgbm.engine.train``.
 
-            y_true : array-like of shape = [n_samples]
-                The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The predicted values.
-            group : array-like
-                Group/query data, used for ranking task.
+        Parameters
+        ----------
+        func : callable
+            Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)
+            and returns (grad, hess):
 
-    Returns
-    -------
-    new_func : callable
-        The new objective function as expected by ``lightgbm.engine.train``.
-        The signature is ``new_func(preds, dataset)``:
+                y_true : array-like of shape = [n_samples]
+                    The target values.
+                y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                    The predicted values.
+                group : array-like
+                    Group/query data, used for ranking task.
+                grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                    The value of the first order derivative (gradient) for each sample point.
+                hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                    The value of the second order derivative (Hessian) for each sample point.
 
-            preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The predicted values.
-            dataset : Dataset
-                The training set from which the labels will be extracted using ``dataset.get_label()``.
-    """
-    def inner(preds, dataset):
-        """Call passed function with appropriate arguments."""
+        Note
+        ----
+        For multi-class task, the y_pred is group by class_id first, then group by row_id.
+        If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
+        and you should group grad and hess in this way as well.
+        """
+        self.func = func
+
+    def __call__(self, preds, dataset):
+        """Call passed function with appropriate arguments.
+
+        Parameters
+        ----------
+        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            The predicted values.
+        dataset : Dataset
+            The training dataset.
+
+        Returns
+        -------
+        grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            The value of the first order derivative (gradient) for each sample point.
+        hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            The value of the second order derivative (Hessian) for each sample point.
+        """
         labels = dataset.get_label()
-        argc = argc_(func)
+        argc = argc_(self.func)
         if argc == 2:
-            grad, hess = func(labels, preds)
+            grad, hess = self.func(labels, preds)
         elif argc == 3:
-            grad, hess = func(labels, preds, dataset.get_group())
+            grad, hess = self.func(labels, preds, dataset.get_group())
         else:
             raise TypeError("Self-defined objective function should have 2 or 3 arguments, got %d" % argc)
         """weighted for objective"""
@@ -75,59 +92,78 @@ def _objective_function_wrapper(func):
                         grad[idx] *= weight[i]
                         hess[idx] *= weight[i]
         return grad, hess
-    return inner
 
 
-def _eval_function_wrapper(func):
-    """Decorate an eval function.
+class _EvalFunctionWrapper(object):
+    """Proxy class for evaluation function."""
 
-    Note
-    ----
-    For multi-class task, the y_pred is group by class_id first, then group by row_id.
-    If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
+    def __init__(self, func):
+        """Construct a proxy class.
 
-    Parameters
-    ----------
-    func : callable
-        Expects a callable with following signatures:
-        ``func(y_true, y_pred)``,
-        ``func(y_true, y_pred, weight)``
-        or ``func(y_true, y_pred, weight, group)``
-        and returns (eval_name->string, eval_result->float, is_bigger_better->bool):
+        This class transforms evaluation function to match evaluation function with signature ``new_func(preds, dataset)``
+        as expected by ``lightgbm.engine.train``.
 
-            y_true : array-like of shape = [n_samples]
-                The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The predicted values.
-            weight : array-like of shape = [n_samples]
-                The weight of samples.
-            group : array-like
-                Group/query data, used for ranking task.
+        Parameters
+        ----------
+        func : callable
+            Expects a callable with following signatures:
+            ``func(y_true, y_pred)``,
+            ``func(y_true, y_pred, weight)``
+            or ``func(y_true, y_pred, weight, group)``
+            and returns (eval_name, eval_result, is_higher_better) or
+            list of (eval_name, eval_result, is_higher_better):
 
-    Returns
-    -------
-    new_func : callable
-        The new eval function as expected by ``lightgbm.engine.train``.
-        The signature is ``new_func(preds, dataset)``:
+                y_true : array-like of shape = [n_samples]
+                    The target values.
+                y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                    The predicted values.
+                weight : array-like of shape = [n_samples]
+                    The weight of samples.
+                group : array-like
+                    Group/query data, used for ranking task.
+                eval_name : string
+                    The name of evaluation function.
+                eval_result : float
+                    The eval result.
+                is_higher_better : bool
+                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The predicted values.
-            dataset : Dataset
-                The training set from which the labels will be extracted using ``dataset.get_label()``.
-    """
-    def inner(preds, dataset):
-        """Call passed function with appropriate arguments."""
+        Note
+        ----
+        For multi-class task, the y_pred is group by class_id first, then group by row_id.
+        If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
+        """
+        self.func = func
+
+    def __call__(self, preds, dataset):
+        """Call passed function with appropriate arguments.
+
+        Parameters
+        ----------
+        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            The predicted values.
+        dataset : Dataset
+            The training dataset.
+
+        Returns
+        -------
+        eval_name : string
+            The name of evaluation function.
+        eval_result : float
+            The eval result.
+        is_higher_better : bool
+            Is eval result higher better, e.g. AUC is ``is_higher_better``.
+        """
         labels = dataset.get_label()
-        argc = argc_(func)
+        argc = argc_(self.func)
         if argc == 2:
-            return func(labels, preds)
+            return self.func(labels, preds)
         elif argc == 3:
-            return func(labels, preds, dataset.get_weight())
+            return self.func(labels, preds, dataset.get_weight())
         elif argc == 4:
-            return func(labels, preds, dataset.get_weight(), dataset.get_group())
+            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())
         else:
             raise TypeError("Self-defined eval function should have 2, 3 or 4 arguments, got %d" % argc)
-    return inner
 
 
 class LGBMModel(_LGBMModelBase):
@@ -248,9 +284,9 @@ class LGBMModel(_LGBMModelBase):
             group : array-like
                 Group/query data, used for ranking task.
             grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The value of the gradient for each sample point.
+                The value of the first order derivative (gradient) for each sample point.
             hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The value of the second derivative for each sample point.
+                The value of the second order derivative (Hessian) for each sample point.
 
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
@@ -414,8 +450,8 @@ class LGBMModel(_LGBMModelBase):
         Custom eval function expects a callable with following signatures:
         ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
         ``func(y_true, y_pred, weight, group)``
-        and returns (eval_name, eval_result, is_bigger_better) or
-        list of (eval_name, eval_result, is_bigger_better):
+        and returns (eval_name, eval_result, is_higher_better) or
+        list of (eval_name, eval_result, is_higher_better):
 
             y_true : array-like of shape = [n_samples]
                 The target values.
@@ -426,11 +462,11 @@ class LGBMModel(_LGBMModelBase):
             group : array-like
                 Group/query data, used for ranking task.
             eval_name : string
-                The name of evaluation.
+                The name of evaluation function.
             eval_result : float
                 The eval result.
-            is_bigger_better : bool
-                Is eval result bigger better, e.g. AUC is bigger_better.
+            is_higher_better : bool
+                Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
@@ -445,7 +481,7 @@ class LGBMModel(_LGBMModelBase):
             else:
                 raise ValueError("Unknown LGBMModel type.")
         if callable(self._objective):
-            self._fobj = _objective_function_wrapper(self._objective)
+            self._fobj = _ObjectiveFunctionWrapper(self._objective)
         else:
             self._fobj = None
         evals_result = {}
@@ -466,7 +502,7 @@ class LGBMModel(_LGBMModelBase):
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
         if callable(eval_metric):
-            feval = _eval_function_wrapper(eval_metric)
+            feval = _EvalFunctionWrapper(eval_metric)
         else:
             feval = None
             # register default metric for consistency with callable eval_metric case
