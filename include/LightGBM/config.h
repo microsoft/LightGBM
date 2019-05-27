@@ -102,7 +102,7 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gammma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
+  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
   // alias = objective_type, app, application
   // desc = regression application
   // descl2 = ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
@@ -212,7 +212,7 @@ struct Config {
   #pragma region Learning Control Parameters
 
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
-  // desc = ``< 0`` means no limit
+  // desc = ``<= 0`` means no limit
   int max_depth = -1;
 
   // alias = min_data_per_leaf, min_data, min_child_samples
@@ -259,6 +259,9 @@ struct Config {
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
   // desc = ``<= 0`` means disable
   int early_stopping_round = 0;
+
+  // desc = set this to ``true``, if you want to use only the first metric for early stopping
+  bool first_metric_only = false;
 
   // alias = max_tree_output, max_leaf_output
   // desc = used to limit the max output of tree leaves
@@ -743,6 +746,14 @@ struct Config {
   // desc = used only with ``ndcg`` and ``map`` metrics
   // desc = `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ and `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__ evaluation positions, separated by ``,``
   std::vector<int> eval_at;
+
+  // check = >0
+  // desc = used only with ``multi_error`` metric
+  // desc = threshold for top-k multi-error metric
+  // desc = the error on each sample is ``0`` if the true class is among the top ``multi_error_top_k`` predictions, and ``1`` otherwise
+  // descl2 = more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
+  // desc = when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
+  int multi_error_top_k = 1;
 
   #pragma endregion
 

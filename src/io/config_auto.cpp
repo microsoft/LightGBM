@@ -181,6 +181,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "feature_fraction",
   "feature_fraction_seed",
   "early_stopping_round",
+  "first_metric_only",
   "max_delta_step",
   "lambda_l1",
   "lambda_l2",
@@ -259,6 +260,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "metric_freq",
   "is_provide_training_metric",
   "eval_at",
+  "multi_error_top_k",
   "num_machines",
   "local_listen_port",
   "time_out",
@@ -311,6 +313,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
 
   GetInt(params, "early_stopping_round", &early_stopping_round);
+
+  GetBool(params, "first_metric_only", &first_metric_only);
 
   GetDouble(params, "max_delta_step", &max_delta_step);
 
@@ -518,6 +522,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     eval_at = Common::StringToArray<int>(tmp_str, ',');
   }
 
+  GetInt(params, "multi_error_top_k", &multi_error_top_k);
+  CHECK(multi_error_top_k >0);
+
   GetInt(params, "num_machines", &num_machines);
   CHECK(num_machines >0);
 
@@ -556,6 +563,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";
   str_buf << "[feature_fraction_seed: " << feature_fraction_seed << "]\n";
   str_buf << "[early_stopping_round: " << early_stopping_round << "]\n";
+  str_buf << "[first_metric_only: " << first_metric_only << "]\n";
   str_buf << "[max_delta_step: " << max_delta_step << "]\n";
   str_buf << "[lambda_l1: " << lambda_l1 << "]\n";
   str_buf << "[lambda_l2: " << lambda_l2 << "]\n";
@@ -633,6 +641,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
+  str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[num_machines: " << num_machines << "]\n";
   str_buf << "[local_listen_port: " << local_listen_port << "]\n";
   str_buf << "[time_out: " << time_out << "]\n";

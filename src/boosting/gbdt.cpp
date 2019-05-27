@@ -22,6 +22,7 @@ GBDT::GBDT() : iter_(0),
 train_data_(nullptr),
 objective_function_(nullptr),
 early_stopping_round_(0),
+es_first_metric_only_(false),
 max_feature_idx_(0),
 num_tree_per_iteration_(1),
 num_class_(1),
@@ -51,6 +52,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   num_class_ = config->num_class;
   config_ = std::unique_ptr<Config>(new Config(*config));
   early_stopping_round_ = config_->early_stopping_round;
+  es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
   std::string forced_splits_path = config->forcedsplits_filename;
@@ -129,20 +131,18 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
   }
   valid_score_updater_.push_back(std::move(new_score_updater));
   valid_metrics_.emplace_back();
-  if (early_stopping_round_ > 0) {
-    best_iter_.emplace_back();
-    best_score_.emplace_back();
-    best_msg_.emplace_back();
-  }
   for (const auto& metric : valid_metrics) {
     valid_metrics_.back().push_back(metric);
-    if (early_stopping_round_ > 0) {
-      best_iter_.back().push_back(0);
-      best_score_.back().push_back(kMinScore);
-      best_msg_.back().emplace_back();
-    }
   }
   valid_metrics_.back().shrink_to_fit();
+  
+  if (early_stopping_round_ > 0) {
+    auto num_metrics = valid_metrics.size();
+    if (es_first_metric_only_) { num_metrics = 1; }
+    best_iter_.emplace_back(num_metrics, 0);
+    best_score_.emplace_back(num_metrics, kMinScore);
+    best_msg_.emplace_back(num_metrics);
+  }
 }
 
 void GBDT::Boosting() {
@@ -514,6 +514,7 @@ std::string GBDT::OutputMetric(int iter) {
             msg_buf << tmp_buf.str() << '\n';
           }
         }
+        if (es_first_metric_only_ && j > 0) { continue; }
         if (ret.empty() && early_stopping_round_ > 0) {
           auto cur_score = valid_metrics_[i][j]->factor_to_bigger_better() * test_scores.back();
           if (cur_score > best_score_[i][j]) {

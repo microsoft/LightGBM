@@ -7,7 +7,6 @@ sslverify=0
 ignore=
   public.tableau.com
   http://www.intel.com/software/products/support
-  https://webscope.sandbox.yahoo.com
 ignorewarnings=http-robots-denied,https-certificate-error
 
 [output]

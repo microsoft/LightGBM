@@ -434,6 +434,8 @@ class GBDT : public GBDTBase {
   std::vector<std::vector<const Metric*>> valid_metrics_;
   /*! \brief Number of rounds for early stopping */
   int early_stopping_round_;
+  /*! \brief Only use first metric for early stopping */
+  bool es_first_metric_only_;
   /*! \brief Best iteration(s) for early stopping */
   std::vector<std::vector<int>> best_iter_;
   /*! \brief Best score(s) for early stopping */
