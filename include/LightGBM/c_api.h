@@ -55,7 +55,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
                                                  DatasetHandle* out);
 
 /*!
- * \brief Create an empty dataset by sampling data.
+ * \brief Allocate the space for dataset and bucket feature bins according to sampled data.
  * \param sample_data Sampled data, grouped by the column
  * \param sample_indices Indices of sampled data
  * \param ncol Number of columns
@@ -76,7 +76,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
                                                           DatasetHandle* out);
 
 /*!
- * \brief Create an empty dataset by reference dataset.
+ * \brief Allocate the space for dataset and bucket feature bins according to reference dataset.
  * \param reference Used to align bin mapper with other dataset
  * \param num_total_row Number of total rows
  * \param[out] out Created dataset
