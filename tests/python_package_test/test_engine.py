@@ -770,15 +770,14 @@ class TestEngine(unittest.TestCase):
             'min_sum_hessian_in_leaf': 0,
             'min_data_in_bin': 1,
             'max_bin_by_feature': [100, 2],
-            'num_rounds': 1,
         }
         lgb_data = lgb.Dataset(X, label=y)
-        est = lgb.train(params, lgb_data)
-        self.assertTrue(len(np.unique(est.predict(X))) == 100)
+        est = lgb.train(params, lgb_data, num_boost_round=1)
+        self.assertEqual(len(np.unique(est.predict(X))), 100)
         params['max_bin_by_feature'] = [2, 100]
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data)
-        self.assertTrue(len(np.unique(est.predict(X))) == 3)
+        self.assertEqual(len(np.unique(est.predict(X))),3)
 
     def test_refit(self):
         X, y = load_breast_cancer(True)
