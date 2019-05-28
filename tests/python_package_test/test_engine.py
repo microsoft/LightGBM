@@ -776,8 +776,8 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(len(np.unique(est.predict(X))), 100)
         params['max_bin_by_feature'] = [2, 100]
         lgb_data = lgb.Dataset(X, label=y)
-        est = lgb.train(params, lgb_data)
-        self.assertEqual(len(np.unique(est.predict(X))),3)
+        est = lgb.train(params, lgb_data, num_boost_round=1)
+        self.assertEqual(len(np.unique(est.predict(X))), 3)
 
     def test_refit(self):
         X, y = load_breast_cancer(True)
