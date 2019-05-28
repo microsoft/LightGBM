@@ -769,7 +769,7 @@ class TestEngine(unittest.TestCase):
             'min_data_in_leaf': 1,
             'min_sum_hessian_in_leaf': 0,
             'min_data_in_bin': 1,
-            'max_bin_by_feature': [100, 2],
+            'max_bin_by_feature': [100, 2]
         }
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
