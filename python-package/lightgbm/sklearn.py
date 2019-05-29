@@ -574,7 +574,7 @@ class LGBMModel(_LGBMModelBase):
                     if valid_class_weight is not None:
                         if isinstance(valid_class_weight, dict) and self._class_map is not None:
                             valid_class_weight = {self._class_map[k]: v for k, v in valid_class_weight.items()}
-                        valid_class_sample_weight = _LGBMComputeSampleWeight(valid_class_weight,  valid_data[1])
+                        valid_class_sample_weight = _LGBMComputeSampleWeight(valid_class_weight, valid_data[1])
                         if valid_weight is None or len(valid_weight) == 0:
                             valid_weight = valid_class_sample_weight
                         else:
