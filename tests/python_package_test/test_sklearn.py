@@ -637,7 +637,7 @@ class TestSklearn(unittest.TestCase):
         gbm_str = lgb.LGBMClassifier(n_estimators=10, class_weight='balanced', silent=True)
         gbm_str.fit(X_train, y_train_str,
                     eval_set=[(X_train, y_train_str), (X_test, y_test_str),
-                              (X_test, y_test_str), (X_test, y_test_str), (X_test, y_test)],
+                              (X_test, y_test_str), (X_test, y_test_str), (X_test, y_test_str)],
                     eval_class_weight=['balanced', None, 'balanced', {'1': 10, '4': 20}, {'5': 30, '2': 40}],
                     verbose=False)
         for eval_set1, eval_set2 in itertools.combinations(gbm_str.evals_result_.keys(), 2):
