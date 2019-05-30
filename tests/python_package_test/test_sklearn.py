@@ -254,10 +254,10 @@ class TestSklearn(unittest.TestCase):
         gbm6 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=[])
         pred6 = gbm6.predict(X_test, raw_score=True)
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred1)
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred2)
         np.testing.assert_allclose(pred1, pred2)
         np.testing.assert_allclose(pred0, pred3)
