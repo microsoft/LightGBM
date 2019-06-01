@@ -254,4 +254,5 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                         print(f"Evaluating only :{metric_key}")
                 raise EarlyStopException(best_iter[i], best_score_list[i])
     _callback.order = 30
+    _callback.first_metric_only = first_metric_only
     return _callback
