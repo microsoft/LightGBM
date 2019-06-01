@@ -1417,6 +1417,7 @@ class TestEngine(unittest.TestCase):
         self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
 
     def test_early_stopping_for_only_first_metric(self):
+        np.random.seed(71)
         # Regression test
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -1458,7 +1459,10 @@ class TestEngine(unittest.TestCase):
             'learning_rate': 0.5,
             'num_leaves': 5,
             'metric': 'l2',
-            'verbose': -1
+            'verbose': -1,
+            'seed': 123,
+            'bagging_seed': 234,
+            'feature_fraction_seed': 456
         }
         gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
                         num_boost_round=300, valid_sets=[lgb_eval],
@@ -1471,7 +1475,10 @@ class TestEngine(unittest.TestCase):
                 'learning_rate': 0.05,
                 'num_leaves': 5,
                 'metric': metric_list,
-                'verbose': -1
+                'verbose': -1,
+                'seed': 123,
+                'bagging_seed': 234,
+                'feature_fraction_seed': 456
             }
             gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
                             num_boost_round=300, valid_sets=[lgb_eval],
@@ -1484,7 +1491,10 @@ class TestEngine(unittest.TestCase):
                 'learning_rate': 0.05,
                 'num_leaves': 5,
                 'metric': metric_list,
-                'verbose': -1
+                'verbose': -1,
+                'seed': 123,
+                'bagging_seed': 234,
+                'feature_fraction_seed': 456
             }
             ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
                             stratified=False,
@@ -1520,7 +1530,10 @@ class TestEngine(unittest.TestCase):
         params = {
             'objective': 'binary',
             'metric': 'None',
-            'verbose': -1
+            'verbose': -1,
+            'seed': 123,
+            'bagging_seed': 234,
+            'feature_fraction_seed': 456
         }
         gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
                         feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
@@ -1544,7 +1557,10 @@ class TestEngine(unittest.TestCase):
             'learning_rate': 0.05,
             'num_leaves': 5,
             'metric': 'binary_logloss',
-            'verbose': -1
+            'verbose': -1,
+            'seed': 123,
+            'bagging_seed': 234,
+            'feature_fraction_seed': 456
         }
         gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
                         num_boost_round=300, valid_sets=[lgb_eval],
@@ -1557,7 +1573,10 @@ class TestEngine(unittest.TestCase):
                 'learning_rate': 0.05,
                 'num_leaves': 5,
                 'metric': metric_list,
-                'verbose': -1
+                'verbose': -1,
+                'seed': 123,
+                'bagging_seed': 234,
+                'feature_fraction_seed': 456
             }
             gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
                             num_boost_round=300, valid_sets=[lgb_eval],
@@ -1570,7 +1589,10 @@ class TestEngine(unittest.TestCase):
                 'learning_rate': 0.05,
                 'num_leaves': 5,
                 'metric': metric_list,
-                'verbose': -1
+                'verbose': -1,
+                'seed': 123,
+                'bagging_seed': 234,
+                'feature_fraction_seed': 456
             }
             ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
                             train_set=lgb_train,
