@@ -1418,6 +1418,7 @@ class TestEngine(unittest.TestCase):
         self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
 
     def test_early_stopping_for_only_first_metric(self):
+        # Regression test
         def load_data_for_regression():
             print('Loading data...')
             df_train = pd.read_csv('../../examples/regression/regression.train', header=None, sep='\t')
@@ -1523,3 +1524,98 @@ class TestEngine(unittest.TestCase):
         metrics_combination_cv(['l1', 'l2'], 30, True, True)
         metrics_combination_cv(['l2', 'l1'], 15, False, True)
         metrics_combination_cv(['l1', 'l2'], 15, False, True)
+        # Classification test
+        def load_data_for_classification():
+            df_train = pd.read_csv('../../examples/binary_classification/binary.train', header=None, sep='\t')
+            df_test = pd.read_csv('../../examples/binary_classification/binary.test', header=None, sep='\t')
+            y_train = df_train[0]
+            y_test = df_test[0]
+            X_train = df_train.drop(0, axis=1)
+            X_test = df_test.drop(0, axis=1)
+            return X_train, X_test, y_train, y_test
+        X_train, X_test, y_train, y_test = load_data_for_classification()
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+
+        # test that all metrics are checked (default behaviour)
+        params = {
+            'objective': 'binary',
+            'metric': 'None',
+            'verbose': -1
+        }
+        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
+                        feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                         constant_metric(preds, train_data)],
+                        early_stopping_rounds=5, verbose_eval=False)
+        self.assertEqual(gbm.best_iteration, 1)
+        # test that only the first metric is checked
+        try:
+            gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
+                            num_boost_round=20, valid_sets=[lgb_eval],
+                            feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                             constant_metric(preds, train_data)],
+                            early_stopping_rounds=5, verbose_eval=False)
+            self.assertTrue(True, "LightGBMError should be raised.")
+        except lgb.basic.LightGBMError as e:
+            print(e)
+            self.assertEqual(e.args[0], '`first_metric_only` and `feval` are not available at the same time.')
+            # self.assertEqual(gbm.best_iteration, 20)
+        # test that various combination of metrics.
+        params = {
+            'boosting_type': 'gbdt',
+            'objective': 'binary',
+            'learning_rate': 0.5,
+            'num_leaves': 5,
+            'metric': 'binary_logloss',
+            'verbose': -1
+        }
+        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
+                        num_boost_round=300, valid_sets=[lgb_eval],
+                        early_stopping_rounds=5, verbose_eval=False)
+        self.assertEqual(gbm.best_iteration, 37)
+        def metrics_combination_train(metric_list, assumed_iteration, first_metric_only):
+            params = {
+                'boosting_type': 'gbdt',
+                'objective': 'binary',
+                'learning_rate': 0.5,
+                'num_leaves': 5,
+                'metric': metric_list,
+                'verbose': -1
+            }
+            gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
+                            num_boost_round=300, valid_sets=[lgb_eval],
+                            early_stopping_rounds=5, verbose_eval=False)
+            self.assertEqual(gbm.best_iteration, assumed_iteration)
+        def metrics_combination_cv(metric_list, assumed_iteration, first_metric_only, eval_train_metric):
+            params = {
+                'boosting_type': 'gbdt',
+                'objective': 'binary',
+                'learning_rate': 0.5,
+                'num_leaves': 5,
+                'metric': metric_list,
+                'verbose': -1
+            }
+            ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
+                            train_set=lgb_train,
+                            num_boost_round=300,
+                            early_stopping_rounds=5, verbose_eval=False,
+                            eval_train_metric=eval_train_metric)
+            self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
+        metrics_combination_train('binary_logloss', 37, True)
+        metrics_combination_train('auc', 21, True)
+        metrics_combination_train(['binary_logloss', 'auc'], 37, True)
+        metrics_combination_train(['auc', 'binary_logloss'], 21, True)
+        metrics_combination_train(['binary_logloss', 'auc'], 21, False)
+        metrics_combination_train(['auc', 'binary_logloss'], 21, False)
+        metrics_combination_cv('binary_logloss', 20, True, False)
+        metrics_combination_cv('auc', 19, True, False)
+        metrics_combination_cv(['binary_logloss', 'auc'], 20, True, False)
+        metrics_combination_cv(['auc', 'binary_logloss'], 19, True, False)
+        metrics_combination_cv(['binary_logloss', 'auc'], 19, False, False)
+        metrics_combination_cv(['auc', 'binary_logloss'], 19, False, False)
+        metrics_combination_cv('binary_logloss', 20, True, True)
+        metrics_combination_cv('auc', 19, True, True)
+        metrics_combination_cv(['binary_logloss', 'auc'], 20, True, True)
+        metrics_combination_cv(['auc', 'binary_logloss'], 19, True, True)
+        metrics_combination_cv(['binary_logloss', 'auc'], 19, False, True)
+        metrics_combination_cv(['auc', 'binary_logloss'], 19, False, True)
