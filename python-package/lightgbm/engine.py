@@ -15,6 +15,7 @@ from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
                      string_type, integer_types, range_, zip_)
 
+
 def train(params, train_set, num_boost_round=100,
           valid_sets=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
@@ -199,7 +200,7 @@ def train(params, train_set, num_boost_round=100,
     else:
         for i, cb in enumerate(callbacks):
             if hasattr(cb, 'first_metric_only') and cb.first_metric_only and feval is not None:
-               raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
+                raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
 
@@ -537,7 +538,7 @@ def cv(params, train_set, num_boost_round=100,
     else:
         for i, cb in enumerate(callbacks):
             if hasattr(cb, 'first_metric_only') and cb.first_metric_only and feval is not None:
-               raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
+                raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
     if early_stopping_rounds is not None:

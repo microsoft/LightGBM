@@ -1468,6 +1468,7 @@ class TestEngine(unittest.TestCase):
                         num_boost_round=300, valid_sets=[lgb_eval],
                         early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 34)
+
         def metrics_combination_train_regression(metric_list, assumed_iteration, first_metric_only, assertion=True):
             params = {
                 'boosting_type': 'gbdt',
@@ -1487,6 +1488,7 @@ class TestEngine(unittest.TestCase):
                 self.assertEqual(gbm.best_iteration, assumed_iteration)
             else:
                 return gbm.best_iteration
+
         def metrics_combination_cv_regression(metric_list, assumed_iteration, first_metric_only,
                                               eval_train_metric, assertion=True):
             params = {
@@ -1501,16 +1503,15 @@ class TestEngine(unittest.TestCase):
                 'feature_fraction_seed': 456
             }
             ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
-                            stratified=False,
-                            train_set=lgb_train,
-                            num_boost_round=300,
-                            early_stopping_rounds=5, verbose_eval=False,
-                            eval_train_metric=eval_train_metric)
+                         stratified=False,
+                         train_set=lgb_train,
+                         num_boost_round=300,
+                         early_stopping_rounds=5, verbose_eval=False,
+                         eval_train_metric=eval_train_metric)
             if assertion:
                 self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
             else:
                 return len(ret[list(ret.keys())[0]])
-
 
         n_iter_metric_1 = metrics_combination_train_regression('l2', 0, True, assertion=False)
         n_iter_metric_2 = metrics_combination_train_regression('l1', 0, True, assertion=False)
@@ -1580,6 +1581,7 @@ class TestEngine(unittest.TestCase):
                         num_boost_round=300, valid_sets=[lgb_eval],
                         early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 73)
+
         def metrics_combination_train(metric_list, assumed_iteration, first_metric_only, assertion=True):
             params = {
                 'boosting_type': 'gbdt',
@@ -1599,6 +1601,7 @@ class TestEngine(unittest.TestCase):
                 self.assertEqual(gbm.best_iteration, assumed_iteration)
             else:
                 return gbm.best_iteration
+
         def metrics_combination_cv(metric_list, assumed_iteration, first_metric_only,
                                    eval_train_metric, assertion=True):
             params = {
@@ -1613,10 +1616,10 @@ class TestEngine(unittest.TestCase):
                 'feature_fraction_seed': 456
             }
             ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
-                            train_set=lgb_train,
-                            num_boost_round=300,
-                            early_stopping_rounds=5, verbose_eval=False,
-                            eval_train_metric=eval_train_metric)
+                         train_set=lgb_train,
+                         num_boost_round=300,
+                         early_stopping_rounds=5, verbose_eval=False,
+                         eval_train_metric=eval_train_metric)
             if assertion:
                 self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
             else:
