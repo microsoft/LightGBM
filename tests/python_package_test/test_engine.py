@@ -1420,10 +1420,8 @@ class TestEngine(unittest.TestCase):
     def test_early_stopping_for_only_first_metric(self):
         # Regression test
         def load_data_for_regression():
-            print('Loading data...')
             df_train = pd.read_csv('../../examples/regression/regression.train', header=None, sep='\t')
             df_test = pd.read_csv('../../examples/regression/regression.test', header=None, sep='\t')
-
             y_train = df_train[0]
             y_test = df_test[0]
             X_train = df_train.drop(0, axis=1)
@@ -1441,7 +1439,6 @@ class TestEngine(unittest.TestCase):
 
         def constant_metric(preds, train_data):
             return ('constant_metric', 0.0, False)
-
         # test that all metrics are checked (default behaviour)
         params = {
             'objective': 'regression',
@@ -1460,11 +1457,9 @@ class TestEngine(unittest.TestCase):
                             feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
                                                              constant_metric(preds, train_data)],
                             early_stopping_rounds=5, verbose_eval=False)
-            self.assertTrue(True, "LightGBMError should be raised.")
+            self.assertTrue(False, "LightGBMError should be raised.")
         except lgb.basic.LightGBMError as e:
-            print(e)
             self.assertEqual(e.args[0], '`first_metric_only` and `feval` are not available at the same time.')
-            # self.assertEqual(gbm.best_iteration, 20)
         # test that various combination of metrics.
         params = {
             'boosting_type': 'gbdt',
@@ -1536,7 +1531,6 @@ class TestEngine(unittest.TestCase):
         X_train, X_test, y_train, y_test = load_data_for_classification()
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-
         # test that all metrics are checked (default behaviour)
         params = {
             'objective': 'binary',
@@ -1555,11 +1549,9 @@ class TestEngine(unittest.TestCase):
                             feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
                                                              constant_metric(preds, train_data)],
                             early_stopping_rounds=5, verbose_eval=False)
-            self.assertTrue(True, "LightGBMError should be raised.")
+            self.assertTrue(False, "LightGBMError should be raised.")
         except lgb.basic.LightGBMError as e:
-            print(e)
             self.assertEqual(e.args[0], '`first_metric_only` and `feval` are not available at the same time.')
-            # self.assertEqual(gbm.best_iteration, 20)
         # test that various combination of metrics.
         params = {
             'boosting_type': 'gbdt',
