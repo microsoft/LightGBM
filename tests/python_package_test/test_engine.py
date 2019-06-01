@@ -1634,6 +1634,4 @@ class TestEngine(unittest.TestCase):
         metrics_combination_cv(['auc', 'binary_logloss'], n_iter_metric_2, True, True)
         metrics_combination_cv(['binary_logloss', 'auc'], n_iter_metric_min, False, True)
         metrics_combination_cv(['auc', 'binary_logloss'], n_iter_metric_min, False, True)
-
         np.random.seed()
-        
