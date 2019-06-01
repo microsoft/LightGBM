@@ -8,6 +8,9 @@ import psutil
 import random
 import unittest
 
+import sys
+sys.path = ["/Users/kenichi.matsui/Documents/996_github/LightGBM/python-package/"] + sys.path
+
 import lightgbm as lgb
 import numpy as np
 from scipy.sparse import csr_matrix
