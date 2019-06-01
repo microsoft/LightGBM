@@ -210,6 +210,8 @@ def train(params, train_set, num_boost_round=100,
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
+        if first_metric_only and feval is not None:
+            raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:

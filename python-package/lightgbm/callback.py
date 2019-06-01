@@ -219,7 +219,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             eval_metric = None
             for m in ['metric', 'metrics', 'metric_types']:
                 if m in env.params.keys():
-                    if isinstance(env.params[m], tuple):
+                    if isinstance(env.params[m], tuple) or isinstance(env.params[m], list):
                         eval_metric = env.params[m][0]
                     else:
                         eval_metric = env.params[m]
