@@ -219,7 +219,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             eval_metric = None
             for m in ['metric', 'metrics', 'metric_types']:
                 if m in env.params.keys():
-                    if isinstance(env.params[m], list):
+                    if isinstance(env.params[m], tuple):
                         eval_metric = env.params[m][0]
                     else:
                         eval_metric = env.params[m]
@@ -232,18 +232,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             if metric_key.split(" ")[0] == "train":
                 continue  # train metric doesn't used on early stopping.
             if first_metric_only:
-                if isinstance(eval_metric, tuple):
-                    # multi metric
-                    if metric_key.find("valid ") >= 0:
-                        if metric_key != "valid {}".format(eval_metric[0]):
-                            continue
-                    else:
-                        if metric_key != eval_metric[0]:
-                            continue
-                else:
-                    # single metric
-                    if metric_key != "valid {}".format(eval_metric) and metric_key != eval_metric and eval_metric != "":
-                        continue
+                if metric_key != "valid {}".format(eval_metric) and metric_key != eval_metric and eval_metric != "":
+                    continue
             score = env.evaluation_result_list[i][2]
             if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
@@ -254,14 +244,14 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     print('Early stopping, best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print(f"metric_key:{metric_key}")
+                        print(f"Evaluating only :{metric_key}")
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             if env.iteration == env.end_iteration - 1:
                 if verbose:
                     print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print(f"metric_key:{metric_key}")
+                        print(f"Evaluating only :{metric_key}")
                 raise EarlyStopException(best_iter[i], best_score_list[i])
     _callback.order = 30
     return _callback
