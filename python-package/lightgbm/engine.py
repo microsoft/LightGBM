@@ -199,7 +199,7 @@ def train(params, train_set, num_boost_round=100,
         callbacks = set()
     else:
         for i, cb in enumerate(callbacks):
-            if hasattr(cb, 'first_metric_only') and cb.first_metric_only and feval is not None:
+            if getattr(cb, 'first_metric_only', False) and feval is not None:
                 raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
@@ -537,7 +537,7 @@ def cv(params, train_set, num_boost_round=100,
         callbacks = set()
     else:
         for i, cb in enumerate(callbacks):
-            if hasattr(cb, 'first_metric_only') and cb.first_metric_only and feval is not None:
+            if getattr(cb, 'first_metric_only', False) and feval is not None:
                 raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)

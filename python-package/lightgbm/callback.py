@@ -217,17 +217,16 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             return
         if first_metric_only:
             eval_metric = None
-            for m in ['metric', 'metrics', 'metric_types']:
-                if m in env.params.keys():
-                    if isinstance(env.params[m], tuple) or isinstance(env.params[m], list):
-                        eval_metric = env.params[m][0]
+            for metric_alias in ['metric', 'metrics', 'metric_types']:
+                if metric_alias in env.params.keys():
+                    if isinstance(env.params[metric_alias], (tuple, list)):
+                        eval_metric = env.params[metric_alias][0]
                     else:
-                        eval_metric = env.params[m]
+                        eval_metric = env.params[metric_alias]
                     break
             if eval_metric is None:
                 raise LightGBMError("`metric` should be specified if first_metric_only==True.")
         for i in range_(len(env.evaluation_result_list)):
-            # print(f"env.evaluation_result_list):{env.evaluation_result_list}")
             metric_key = env.evaluation_result_list[i][1]
             if metric_key.split(" ")[0] == "train":
                 continue  # train metric doesn't used on early stopping.
@@ -244,14 +243,14 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     print('Early stopping, best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print("Evaluating only :{}".format(metric_key))
+                        print("Evaluating only: {}".format(metric_key))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             if env.iteration == env.end_iteration - 1:
                 if verbose:
                     print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print("Evaluating only :{}".format(metric_key))
+                        print("Evaluating only: {}".format(metric_key))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
     _callback.order = 30
     _callback.first_metric_only = first_metric_only
