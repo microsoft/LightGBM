@@ -171,7 +171,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetMembersFromString(params);
   
   // sort eval_at
-  std::sort(eval_at.begin(), eval_at.end())
+  std::sort(eval_at.begin(), eval_at.end());
 
   if (valid_data_initscores.size() == 0 && valid.size() > 0) {
     valid_data_initscores = std::vector<std::string>(valid.size(), "");
