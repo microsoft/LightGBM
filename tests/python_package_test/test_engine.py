@@ -1,7 +1,6 @@
 # coding: utf-8
 # pylint: skip-file
 import copy
-import itertools
 import math
 import os
 import psutil
@@ -15,7 +14,6 @@ from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
-from numpy.testing import assert_raises_regex
 
 try:
     import cPickle as pickle
@@ -1418,220 +1416,150 @@ class TestEngine(unittest.TestCase):
         self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
 
     def test_early_stopping_for_only_first_metric(self):
-        np.random.seed(71)
-        # Regression test
+        # regression test
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
-        decreasing_generator = itertools.count(0, -1)
-
-        def decreasing_metric(preds, train_data):
-            return ('decreasing_metric', next(decreasing_generator), False)
-
+        # test that first_metric_only and feval cannot be used together
         def constant_metric(preds, train_data):
             return ('constant_metric', 0.0, False)
-        # test that all metrics are checked (default behaviour)
+
         params = {
             'objective': 'regression',
             'metric': 'None',
             'verbose': -1,
             'seed': 123,
         }
-        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
-                        feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
-                                                         constant_metric(preds, train_data)],
-                        early_stopping_rounds=5, verbose_eval=False)
-        self.assertEqual(gbm.best_iteration, 1)
-        # test that only the first metric is checked
-        with assert_raises_regex(lgb.basic.LightGBMError,
-                                 '`first_metric_only` and `feval` are not available at the same time.'):
+        with np.testing.assert_raises_regex(lgb.basic.LightGBMError,
+                                            '`first_metric_only` and `feval` are not available*'):
             lgb.train(dict(params, first_metric_only=True), lgb_train,
                       num_boost_round=20, valid_sets=[lgb_eval],
-                      feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
-                                                       constant_metric(preds, train_data)],
+                      feval=constant_metric,
                       early_stopping_rounds=5, verbose_eval=False)
-        # test that various combination of metrics.
-        params = {
-            'objective': 'regression',
-            'learning_rate': 0.05,
-            'num_leaves': 5,
-            'metric': 'l2',
-            'verbose': -1,
-            'seed': 123,
-        }
-        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
-                        num_boost_round=150, valid_sets=[lgb_eval],
-                        early_stopping_rounds=5, verbose_eval=False)
-        self.assertEqual(gbm.best_iteration, 116)
 
-        def metrics_combination_train_regression(metric_list, assumed_iteration, first_metric_only, assertion=True):
+        # test various combination of metrics
+        def metrics_combination_train_regression(metric_list, assumed_iteration, first_metric_only):
             params = {
                 'objective': 'regression',
-                'learning_rate': 0.05,
+                'learning_rate': 0.5,
                 'num_leaves': 10,
                 'metric': metric_list,
                 'verbose': -1,
-                'seed': 123,
+                'seed': 123
             }
             gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
-                            num_boost_round=300, valid_sets=[lgb_eval],
+                            num_boost_round=25, valid_sets=[lgb_eval],
                             early_stopping_rounds=5, verbose_eval=False)
-            if assertion:
-                self.assertEqual(gbm.best_iteration, assumed_iteration)
-            else:
-                return gbm.best_iteration
+            self.assertEqual(gbm.best_iteration, assumed_iteration)
 
-        def metrics_combination_cv_regression(metric_list, assumed_iteration, first_metric_only,
-                                              eval_train_metric, assertion=True):
+        def metrics_combination_cv_regression(metric_list, assumed_iteration,
+                                              first_metric_only, eval_train_metric):
             params = {
                 'objective': 'regression',
-                'learning_rate': 0.05,
+                'learning_rate': 0.9,
                 'num_leaves': 10,
                 'metric': metric_list,
                 'verbose': -1,
                 'seed': 123,
+                'gpu_use_dp': True
             }
             ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
                          stratified=False,
                          train_set=lgb_train,
-                         num_boost_round=300,
+                         num_boost_round=25,
                          early_stopping_rounds=5, verbose_eval=False,
                          eval_train_metric=eval_train_metric)
-            if assertion:
-                self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
-            else:
-                return len(ret[list(ret.keys())[0]])
+            self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
 
-        n_iter_metric_1 = metrics_combination_train_regression('l2', 0, True, assertion=False)
-        n_iter_metric_2 = metrics_combination_train_regression('l1', 0, True, assertion=False)
-        assert n_iter_metric_1 != n_iter_metric_2, (n_iter_metric_1, n_iter_metric_2)
-        n_iter_metric_min = min([n_iter_metric_1, n_iter_metric_2])
-        metrics_combination_train_regression('l2', n_iter_metric_1, True)
-        metrics_combination_train_regression('l1', n_iter_metric_2, True)
-        metrics_combination_train_regression(['l2', 'l1'], n_iter_metric_1, True)
-        metrics_combination_train_regression(['l1', 'l2'], n_iter_metric_2, True)
-        metrics_combination_train_regression(['l2', 'l1'], n_iter_metric_min, False)
-        metrics_combination_train_regression(['l1', 'l2'], n_iter_metric_min, False)
+        best_iter_l1 = 16
+        best_iter_l2 = 19
+        best_iter_min = min([best_iter_l1, best_iter_l2])
+        metrics_combination_train_regression('l2', best_iter_l2, True)
+        metrics_combination_train_regression('l1', best_iter_l1, True)
+        metrics_combination_train_regression(['l2', 'l1'], best_iter_l2, True)
+        metrics_combination_train_regression(['l1', 'l2'], best_iter_l1, True)
+        metrics_combination_train_regression(['l2', 'l1'], best_iter_min, False)
+        metrics_combination_train_regression(['l1', 'l2'], best_iter_min, False)
 
-        n_iter_metric_1 = metrics_combination_cv_regression('l2', 0, True, False, assertion=False)
-        n_iter_metric_2 = metrics_combination_cv_regression('l1', 0, True, False, assertion=False)
-        assert n_iter_metric_1 != n_iter_metric_2, (n_iter_metric_1, n_iter_metric_2)
-        n_iter_metric_min = min([n_iter_metric_1, n_iter_metric_2])
-        metrics_combination_cv_regression('l2', n_iter_metric_1, True, False)
-        metrics_combination_cv_regression('l1', n_iter_metric_2, True, False)
-        metrics_combination_cv_regression(['l2', 'l1'], n_iter_metric_1, True, False)
-        metrics_combination_cv_regression(['l1', 'l2'], n_iter_metric_2, True, False)
-        metrics_combination_cv_regression(['l2', 'l1'], n_iter_metric_min, False, False)
-        metrics_combination_cv_regression(['l1', 'l2'], n_iter_metric_min, False, False)
-        metrics_combination_cv_regression('l2', n_iter_metric_1, True, True)
-        metrics_combination_cv_regression('l1', n_iter_metric_2, True, True)
-        metrics_combination_cv_regression(['l2', 'l1'], n_iter_metric_1, True, True)
-        metrics_combination_cv_regression(['l1', 'l2'], n_iter_metric_2, True, True)
-        metrics_combination_cv_regression(['l2', 'l1'], n_iter_metric_min, False, True)
-        metrics_combination_cv_regression(['l1', 'l2'], n_iter_metric_min, False, True)
-        # Classification test
+        best_iter_l1 = 6
+        best_iter_l2 = 11
+        best_iter_min = min([best_iter_l1, best_iter_l2])
+        metrics_combination_cv_regression('l2', best_iter_l2, True, False)
+        metrics_combination_cv_regression('l1', best_iter_l1, True, False)
+        metrics_combination_cv_regression(['l2', 'l1'], best_iter_l2, True, False)
+        metrics_combination_cv_regression(['l1', 'l2'], best_iter_l1, True, False)
+        metrics_combination_cv_regression(['l2', 'l1'], best_iter_min, False, False)
+        metrics_combination_cv_regression(['l1', 'l2'], best_iter_min, False, False)
+        metrics_combination_cv_regression('l2', best_iter_l2, True, True)
+        metrics_combination_cv_regression('l1', best_iter_l1, True, True)
+        metrics_combination_cv_regression(['l2', 'l1'], best_iter_l2, True, True)
+        metrics_combination_cv_regression(['l1', 'l2'], best_iter_l1, True, True)
+        metrics_combination_cv_regression(['l2', 'l1'], best_iter_min, False, True)
+        metrics_combination_cv_regression(['l1', 'l2'], best_iter_min, False, True)
+
+        # classification test
         X, y = load_breast_cancer(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-        # test that all metrics are checked (default behaviour)
-        params = {
-            'objective': 'binary',
-            'metric': 'None',
-            'verbose': -1,
-            'seed': 123,
-        }
-        gbm = lgb.train(params, lgb_train, num_boost_round=20, valid_sets=[lgb_eval],
-                        feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
-                                                         constant_metric(preds, train_data)],
-                        early_stopping_rounds=5, verbose_eval=False)
-        self.assertEqual(gbm.best_iteration, 1)
-        # test that only the first metric is checked
-        with assert_raises_regex(lgb.basic.LightGBMError,
-                                 '`first_metric_only` and `feval` are not available at the same time.'):
-            lgb.train(dict(params, first_metric_only=True), lgb_train,
-                      num_boost_round=20, valid_sets=[lgb_eval],
-                      feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
-                                                       constant_metric(preds, train_data)],
-                      early_stopping_rounds=5, verbose_eval=False)
-        # test that various combination of metrics.
-        params = {
-            'objective': 'binary',
-            'learning_rate': 0.05,
-            'num_leaves': 5,
-            'metric': 'binary_logloss',
-            'verbose': -1,
-            'seed': 123,
-        }
-        gbm = lgb.train(dict(params, first_metric_only=True), lgb_train,
-                        num_boost_round=150, valid_sets=[lgb_eval],
-                        early_stopping_rounds=5, verbose_eval=False)
-        self.assertEqual(gbm.best_iteration, 73)
 
-        def metrics_combination_train(metric_list, assumed_iteration, first_metric_only, assertion=True):
+        # test various combination of metrics
+        def metrics_combination_train_classification(metric_list, assumed_iteration, first_metric_only):
             params = {
                 'objective': 'binary',
-                'learning_rate': 0.05,
+                'learning_rate': 0.5,
                 'num_leaves': 5,
                 'metric': metric_list,
                 'verbose': -1,
-                'seed': 123,
+                'seed': 123
             }
             gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
-                            num_boost_round=150, valid_sets=[lgb_eval],
+                            num_boost_round=25, valid_sets=[lgb_eval],
                             early_stopping_rounds=5, verbose_eval=False)
-            if assertion:
-                self.assertEqual(gbm.best_iteration, assumed_iteration)
-            else:
-                return gbm.best_iteration
+            self.assertEqual(gbm.best_iteration, assumed_iteration)
 
-        def metrics_combination_cv(metric_list, assumed_iteration, first_metric_only,
-                                   eval_train_metric, assertion=True):
+        def metrics_combination_cv_classification(metric_list, assumed_iteration,
+                                                  first_metric_only, eval_train_metric):
             params = {
                 'objective': 'binary',
-                'learning_rate': 0.05,
+                'learning_rate': 0.4,
                 'num_leaves': 5,
                 'metric': metric_list,
                 'verbose': -1,
                 'seed': 123,
+                'gpu_use_dp': True
             }
             ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
-                         train_set=lgb_train,
-                         num_boost_round=150,
+                         train_set=lgb_train, num_boost_round=25,
+                         nfold=3, stratified=False, shuffle=False,
                          early_stopping_rounds=5, verbose_eval=False,
                          eval_train_metric=eval_train_metric)
-            if assertion:
-                self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
-            else:
-                return len(ret[list(ret.keys())[0]])
+            self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
 
-        n_iter_metric_1 = metrics_combination_train('binary_logloss', 0, True, assertion=False)
-        n_iter_metric_2 = metrics_combination_train('auc', 0, True, assertion=False)
-        assert n_iter_metric_1 != n_iter_metric_2, (n_iter_metric_1, n_iter_metric_2)
-        n_iter_metric_min = min([n_iter_metric_1, n_iter_metric_2])
-        metrics_combination_train('binary_logloss', n_iter_metric_1, True)
-        metrics_combination_train('auc', n_iter_metric_2, True)
-        metrics_combination_train(['binary_logloss', 'auc'], n_iter_metric_1, True)
-        metrics_combination_train(['auc', 'binary_logloss'], n_iter_metric_2, True)
-        metrics_combination_train(['binary_logloss', 'auc'], n_iter_metric_min, False)
-        metrics_combination_train(['auc', 'binary_logloss'], n_iter_metric_min, False)
+        best_iter_logloss = 7
+        best_iter_auc = 3
+        best_iter_min = min([best_iter_logloss, best_iter_auc])
+        metrics_combination_train_classification('binary_logloss', best_iter_logloss, True)
+        metrics_combination_train_classification('auc', best_iter_auc, True)
+        metrics_combination_train_classification(['binary_logloss', 'auc'], best_iter_logloss, True)
+        metrics_combination_train_classification(['auc', 'binary_logloss'], best_iter_auc, True)
+        metrics_combination_train_classification(['binary_logloss', 'auc'], best_iter_min, False)
+        metrics_combination_train_classification(['auc', 'binary_logloss'], best_iter_min, False)
 
-        n_iter_metric_1 = metrics_combination_cv('binary_logloss', 0, True, False, assertion=False)
-        n_iter_metric_2 = metrics_combination_cv('auc', 0, True, False, assertion=False)
-        assert n_iter_metric_1 != n_iter_metric_2, (n_iter_metric_1, n_iter_metric_2)
-        n_iter_metric_min = min([n_iter_metric_1, n_iter_metric_2])
-        metrics_combination_cv('binary_logloss', n_iter_metric_1, True, False)
-        metrics_combination_cv('auc', n_iter_metric_2, True, False)
-        metrics_combination_cv(['binary_logloss', 'auc'], n_iter_metric_1, True, False)
-        metrics_combination_cv(['auc', 'binary_logloss'], n_iter_metric_2, True, False)
-        metrics_combination_cv(['binary_logloss', 'auc'], n_iter_metric_min, False, False)
-        metrics_combination_cv(['auc', 'binary_logloss'], n_iter_metric_min, False, False)
-        metrics_combination_cv('binary_logloss', n_iter_metric_1, True, True)
-        metrics_combination_cv('auc', n_iter_metric_2, True, True)
-        metrics_combination_cv(['binary_logloss', 'auc'], n_iter_metric_1, True, True)
-        metrics_combination_cv(['auc', 'binary_logloss'], n_iter_metric_2, True, True)
-        metrics_combination_cv(['binary_logloss', 'auc'], n_iter_metric_min, False, True)
-        metrics_combination_cv(['auc', 'binary_logloss'], n_iter_metric_min, False, True)
-        np.random.seed()
+        best_iter_logloss = 15
+        best_iter_error = 6
+        best_iter_min = min([best_iter_logloss, best_iter_error])
+        metrics_combination_cv_classification('binary_logloss', best_iter_logloss, True, False)
+        metrics_combination_cv_classification('binary_error', best_iter_error, True, False)
+        metrics_combination_cv_classification(['binary_logloss', 'binary_error'], best_iter_logloss, True, False)
+        metrics_combination_cv_classification(['binary_error', 'binary_logloss'], best_iter_error, True, False)
+        metrics_combination_cv_classification(['binary_logloss', 'binary_error'], best_iter_min, False, False)
+        metrics_combination_cv_classification(['binary_error', 'binary_logloss'], best_iter_min, False, False)
+        metrics_combination_cv_classification('binary_logloss', best_iter_logloss, True, True)
+        metrics_combination_cv_classification('binary_error', best_iter_error, True, True)
+        metrics_combination_cv_classification(['binary_logloss', 'binary_error'], best_iter_logloss, True, True)
+        metrics_combination_cv_classification(['binary_error', 'binary_logloss'], best_iter_error, True, True)
+        metrics_combination_cv_classification(['binary_logloss', 'binary_error'], best_iter_min, False, True)
+        metrics_combination_cv_classification(['binary_error', 'binary_logloss'], best_iter_min, False, True)
