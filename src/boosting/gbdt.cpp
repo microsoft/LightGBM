@@ -726,30 +726,24 @@ void GBDT::ResetConfig(const Config* config) {
 
 void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   // if need bagging, create buffer
-  if ((config->bagging_fraction < 1.0 || (config->pos_bagging_fraction < 1.0 && config->neg_bagging_fraction < 1.0)) && config->bagging_freq > 0) {
+  data_size_t num_pos_data = 0;
+  if (objective_function_ != nullptr) {
+    num_pos_data = objective_function_->NumPositiveData();
+  }
+  bool balance_bagging_cond = (config->pos_bagging_fraction < 1.0 || config->neg_bagging_fraction < 1.0) && (num_pos_data > 0);
+  if ((config->bagging_fraction < 1.0 || balance_bagging_cond) && config->bagging_freq > 0) {
     need_re_bagging_ = false;
     if (!is_change_dataset &&
       config_.get() != nullptr && config_->bagging_fraction == config->bagging_fraction && config_->bagging_freq == config->bagging_freq
       && config_->pos_bagging_fraction == config->pos_bagging_fraction && config_->neg_bagging_fraction == config->neg_bagging_fraction) {
       return;
     }
-    if (config->pos_bagging_fraction >= 1.0 && config->neg_bagging_fraction >= 1.0) {
-      bag_data_cnt_ =
-        static_cast<data_size_t>(config->bagging_fraction * num_data_);
-    } else {
-      data_size_t pos_cnt = 0;
-      data_size_t neg_cnt = 0;
-      auto label_ptr = train_data_->metadata().label();
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        if (label_ptr[i] > 0) {
-          ++pos_cnt;
-        }
-        else {
-          ++neg_cnt;
-        }
-      }
+    if (balance_bagging_cond) {
       balanced_bagging_ = true;
-      bag_data_cnt_ = static_cast<data_size_t>(pos_cnt * config->pos_bagging_fraction) + static_cast<data_size_t>(neg_cnt * config->neg_bagging_fraction);
+      bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config->pos_bagging_fraction) 
+                      + static_cast<data_size_t>((num_data_ - num_pos_data) * config->neg_bagging_fraction);
+    } else {
+      bag_data_cnt_ = static_cast<data_size_t>(config->bagging_fraction * num_data_);
     }
     bag_data_indices_.resize(num_data_);
     tmp_indices_.resize(num_data_);
