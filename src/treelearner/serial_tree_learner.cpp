@@ -54,7 +54,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   int max_cache_size = 0;
   // Get the max size of pool
   if (config_->histogram_pool_size <= 0) {
-    max_cache_size = config_->num_leaves;
+    max_cache_size = std::min(config_->num_leaves, 2 << config_->max_depth);
   } else {
     size_t total_histogram_size = 0;
     for (int i = 0; i < train_data_->num_features(); ++i) {
