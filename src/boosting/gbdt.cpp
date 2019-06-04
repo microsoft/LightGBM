@@ -197,8 +197,7 @@ data_size_t GBDT::BalancedBaggingHelper(Random& cur_rand, data_size_t start, dat
     }
     if (is_in_bag) {
       buffer[cur_left_cnt++] = start + i;
-    }
-    else {
+    } else {
       right_buffer[cur_right_pos--] = start + i;
     }
   }
