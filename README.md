@@ -26,6 +26,27 @@ Benefitting from these advantages, LightGBM is being widely-used in many [winnin
 
 [Comparison experiments](https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, [parallel experiments](https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
 
+Get Started and Documentation
+-----------------------------
+
+Install by following [guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
+
+Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
+
+Next you may want to read:
+
+* [**Examples**](https://github.com/microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
+* [**Features**](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
+* [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
+* [**Parallel Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
+* [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
+
+Documentation for contributors:
+
+* [**How we update readthedocs.io**](https://github.com/microsoft/LightGBM/blob/master/docs/README.rst).
+* Check out the [**Development Guide**](https://github.com/microsoft/LightGBM/blob/master/docs/Development-Guide.rst).
+
+
 News
 ----
 
@@ -74,26 +95,6 @@ LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
 Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
 
-Get Started and Documentation
------------------------------
-
-Install by following [guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
-
-Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
-
-Next you may want to read:
-
-* [**Examples**](https://github.com/microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
-* [**Features**](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
-* [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
-* [**Parallel Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
-* [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
-
-Documentation for contributors:
-
-* [**How we update readthedocs.io**](https://github.com/microsoft/LightGBM/blob/master/docs/README.rst).
-* Check out the [**Development Guide**](https://github.com/microsoft/LightGBM/blob/master/docs/Development-Guide.rst).
-
 Support
 -------
 
@@ -128,6 +129,8 @@ Guolin Ke, Qi Meng, Thomas Finley, Taifeng Wang, Wei Chen, Weidong Ma, Qiwei Ye,
 Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tie-Yan Liu. "[A Communication-Efficient Parallel Algorithm for Decision Tree](http://papers.nips.cc/paper/6380-a-communication-efficient-parallel-algorithm-for-decision-tree)". Advances in Neural Information Processing Systems 29 (NIPS 2016), pp. 1279-1287.
 
 Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359)". SysML Conference, 2018.
+
+**Note**: If you use LightGBM in your GitHub projects, please add `lightgbm` in the `requirements.txt`.
 
 License
 -------

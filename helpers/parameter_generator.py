@@ -23,7 +23,6 @@ def get_parameter_infos(config_hpp):
         Tuple with names and content of sections.
     """
     is_inparameter = False
-    parameter_group = None
     cur_key = None
     cur_info = {}
     keys = []
