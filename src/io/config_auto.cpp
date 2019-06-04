@@ -58,6 +58,12 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"sub_row", "bagging_fraction"},
   {"subsample", "bagging_fraction"},
   {"bagging", "bagging_fraction"},
+  {"pos_sub_row", "pos_bagging_fraction"},
+  {"pos_subsample", "pos_bagging_fraction"},
+  {"pos_bagging", "pos_bagging_fraction"},
+  {"neg_sub_row", "neg_bagging_fraction"},
+  {"neg_subsample", "neg_bagging_fraction"},
+  {"neg_bagging", "neg_bagging_fraction"},
   {"subsample_freq", "bagging_freq"},
   {"bagging_fraction_seed", "bagging_seed"},
   {"sub_feature", "feature_fraction"},
@@ -176,6 +182,8 @@ std::unordered_set<std::string> Config::parameter_set({
   "min_data_in_leaf",
   "min_sum_hessian_in_leaf",
   "bagging_fraction",
+  "pos_bagging_fraction",
+  "neg_bagging_fraction",
   "bagging_freq",
   "bagging_seed",
   "feature_fraction",
@@ -301,6 +309,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "bagging_fraction", &bagging_fraction);
   CHECK(bagging_fraction >0.0);
   CHECK(bagging_fraction <=1.0);
+
+  GetDouble(params, "pos_bagging_fraction", &pos_bagging_fraction);
+  CHECK(pos_bagging_fraction >0.0);
+  CHECK(pos_bagging_fraction <=1.0);
+
+  GetDouble(params, "neg_bagging_fraction", &neg_bagging_fraction);
+  CHECK(neg_bagging_fraction >0.0);
+  CHECK(neg_bagging_fraction <=1.0);
 
   GetInt(params, "bagging_freq", &bagging_freq);
 
@@ -558,6 +574,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
   str_buf << "[bagging_fraction: " << bagging_fraction << "]\n";
+  str_buf << "[pos_bagging_fraction: " << pos_bagging_fraction << "]\n";
+  str_buf << "[neg_bagging_fraction: " << neg_bagging_fraction << "]\n";
   str_buf << "[bagging_freq: " << bagging_freq << "]\n";
   str_buf << "[bagging_seed: " << bagging_seed << "]\n";
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";
