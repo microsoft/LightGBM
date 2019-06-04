@@ -59,7 +59,7 @@ def is_numeric(obj):
 
 
 def is_numpy_1d_array(data):
-    """Check whether data is a 1-D numpy array."""
+    """Check whether data is a numpy 1-D array."""
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
 
@@ -69,7 +69,7 @@ def is_1d_list(data):
 
 
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
-    """Convert data to 1-D numpy array."""
+    """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
         if data.dtype == dtype:
             return data
@@ -1853,9 +1853,20 @@ class Booster(object):
             If None, last training data is used.
         fobj : callable or None, optional (default=None)
             Customized objective function.
+            Should accept two parameters: preds, train_data,
+            and return (grad, hess).
 
-            For multi-class task, the score is group by class_id first, then group by row_id.
-            If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
+                preds : list or numpy 1-D array
+                    The predicted values.
+                train_data : Dataset
+                    The training dataset.
+                grad : list or numpy 1-D array
+                    The value of the first order derivative (gradient) for each sample point.
+                hess : list or numpy 1-D array
+                    The value of the second order derivative (Hessian) for each sample point.
+
+            For multi-class task, the preds is group by class_id first, then group by row_id.
+            If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
 
         Returns
@@ -1902,9 +1913,9 @@ class Booster(object):
 
         Parameters
         ----------
-        grad : 1-D numpy array or 1-D list
+        grad : list or numpy 1-D array
             The first order derivative (gradient).
-        hess : 1-D numpy array or 1-D list
+        hess : list or numpy 1-D array
             The second order derivative (Hessian).
 
         Returns
@@ -1994,8 +2005,20 @@ class Booster(object):
             Name of the data.
         feval : callable or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, train_data,
+            Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+
+                preds : list or numpy 1-D array
+                    The predicted values.
+                eval_data : Dataset
+                    The evaluation dataset.
+                eval_name : string
+                    The name of evaluation function.
+                eval_result : float
+                    The eval result.
+                is_higher_better : bool
+                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2030,6 +2053,18 @@ class Booster(object):
             Customized evaluation function.
             Should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+
+                preds : list or numpy 1-D array
+                    The predicted values.
+                train_data : Dataset
+                    The training dataset.
+                eval_name : string
+                    The name of evaluation function.
+                eval_result : float
+                    The eval result.
+                is_higher_better : bool
+                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2047,8 +2082,20 @@ class Booster(object):
         ----------
         feval : callable or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, train_data,
+            Should accept two parameters: preds, valid_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+
+                preds : list or numpy 1-D array
+                    The predicted values.
+                valid_data : Dataset
+                    The validation dataset.
+                eval_name : string
+                    The name of evaluation function.
+                eval_result : float
+                    The eval result.
+                is_higher_better : bool
+                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
