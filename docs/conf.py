@@ -221,16 +221,16 @@ def generate_r_docs(app):
     commands = """
     echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile
     /home/docs/.conda/bin/conda create -q -y -n r_env \
-        r-base \
-        r-devtools \
-        r-data.table \
-        r-jsonlite \
-        r-magrittr \
-        r-matrix \
-        r-testthat \
-        cmake
+        r-base=3.5.1=h1e0a451_2 \
+        r-devtools=1.13.6=r351h6115d3f_0 \
+        r-data.table=1.11.4=r351h96ca727_0 \
+        r-jsonlite=1.5=r351h96ca727_0 \
+        r-magrittr=1.5=r351h6115d3f_4 \
+        r-matrix=1.2_14=r351h96ca727_0 \
+        r-testthat=2.0.0=r351h29659fb_0 \
+        cmake=3.14.0=h52cb24c_0
     /home/docs/.conda/bin/conda install -q -y -n r_env -c conda-forge \
-        r-pkgdown
+        r-pkgdown=1.3.0=r351h6115d3f_1000
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {0}
