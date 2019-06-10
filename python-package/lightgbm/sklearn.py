@@ -4,14 +4,13 @@
 from __future__ import absolute_import
 
 import numpy as np
-import warnings
 
 from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, string_type, DataFrame, DataTable)
+                     argc_, range_, zip_, string_type, DataFrame, DataTable)
 from .engine import train
 
 
@@ -321,6 +320,8 @@ class LGBMModel(_LGBMModelBase):
         self._other_params = {}
         self._objective = objective
         self.class_weight = class_weight
+        self._class_weight = None
+        self._class_map = None
         self._n_features = None
         self._classes = None
         self._n_classes = None
@@ -530,8 +531,10 @@ class LGBMModel(_LGBMModelBase):
         else:
             _X, _y = X, y
 
-        if self.class_weight is not None:
-            class_sample_weight = _LGBMComputeSampleWeight(self.class_weight, y)
+        if self._class_weight is None:
+            self._class_weight = self.class_weight
+        if self._class_weight is not None:
+            class_sample_weight = _LGBMComputeSampleWeight(self._class_weight, y)
             if sample_weight is None or len(sample_weight) == 0:
                 sample_weight = class_sample_weight
             else:
@@ -548,7 +551,7 @@ class LGBMModel(_LGBMModelBase):
         valid_sets = []
         if eval_set is not None:
 
-            def _get_meta_data(collection, i):
+            def _get_meta_data(collection, name, i):
                 if collection is None:
                     return None
                 elif isinstance(collection, list):
@@ -556,8 +559,7 @@ class LGBMModel(_LGBMModelBase):
                 elif isinstance(collection, dict):
                     return collection.get(i, None)
                 else:
-                    raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group '
-                                    'should be dict or list')
+                    raise TypeError('{} should be dict or list'.format(name))
 
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
@@ -566,16 +568,18 @@ class LGBMModel(_LGBMModelBase):
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
-                    valid_weight = _get_meta_data(eval_sample_weight, i)
-                    if _get_meta_data(eval_class_weight, i) is not None:
-                        valid_class_sample_weight = _LGBMComputeSampleWeight(_get_meta_data(eval_class_weight, i),
-                                                                             valid_data[1])
+                    valid_weight = _get_meta_data(eval_sample_weight, 'eval_sample_weight', i)
+                    valid_class_weight = _get_meta_data(eval_class_weight, 'eval_class_weight', i)
+                    if valid_class_weight is not None:
+                        if isinstance(valid_class_weight, dict) and self._class_map is not None:
+                            valid_class_weight = {self._class_map[k]: v for k, v in valid_class_weight.items()}
+                        valid_class_sample_weight = _LGBMComputeSampleWeight(valid_class_weight, valid_data[1])
                         if valid_weight is None or len(valid_weight) == 0:
                             valid_weight = valid_class_sample_weight
                         else:
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
-                    valid_init_score = _get_meta_data(eval_init_score, i)
-                    valid_group = _get_meta_data(eval_group, i)
+                    valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
+                    valid_group = _get_meta_data(eval_group, 'eval_group', i)
                     valid_set = _construct_dataset(valid_data[0], valid_data[1],
                                                    valid_weight, valid_init_score, valid_group, params)
                 valid_sets.append(valid_set)
@@ -751,6 +755,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         _LGBMCheckClassificationTargets(y)
         self._le = _LGBMLabelEncoder().fit(y)
         _y = self._le.transform(y)
+        self._class_map = dict(zip_(self._le.classes_, self._le.transform(self._le.classes_)))
+        if isinstance(self.class_weight, dict):
+            self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 
         self._classes = self._le.classes_
         self._n_classes = len(self._classes)
