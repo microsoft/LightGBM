@@ -522,7 +522,7 @@ class LGBMModel(_LGBMModelBase):
             # concatenate metric from params (or default if not provided in params) and eval_metric
             original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
-            params['metric'] = set(original_metric + eval_metric)
+            params['metric'] = original_metric + [e for e in eval_metric if e not in original_metric]
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)

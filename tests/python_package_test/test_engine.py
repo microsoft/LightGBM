@@ -1451,7 +1451,7 @@ class TestEngine(unittest.TestCase):
             }
             gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
                             num_boost_round=25, valid_sets=[lgb_eval],
-                            early_stopping_rounds=5, verbose_eval=False)
+                            early_stopping_rounds=5, verbose_eval=10)
             self.assertEqual(gbm.best_iteration, assumed_iteration)
 
         def metrics_combination_cv_regression(metric_list, assumed_iteration,
@@ -1469,7 +1469,7 @@ class TestEngine(unittest.TestCase):
                          stratified=False,
                          train_set=lgb_train,
                          num_boost_round=25,
-                         early_stopping_rounds=5, verbose_eval=False,
+                         early_stopping_rounds=5, verbose_eval=10,
                          eval_train_metric=eval_train_metric)
             self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
 

@@ -225,11 +225,18 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     break
         for i in range_(len(env.evaluation_result_list)):
             metric_key = env.evaluation_result_list[i][1]
-            if metric_key.split(" ")[0] == "train":
-                continue  # train metric doesn't used on early stopping.
-            if first_metric_only and eval_metric is not None and metric_key != "valid {}".format(eval_metric) and \
-                    metric_key != eval_metric and eval_metric != "":
+            if env.evaluation_result_list[i][0] == "cv_agg":
+                if metric_key.split(" ")[0] == "train":
+                    continue  # train metric doesn't used on early stopping.
+                if first_metric_only and eval_metric is not None and metric_key != "valid {}".format(eval_metric) and \
+                        metric_key != eval_metric and eval_metric != "":
+                    continue
+            elif env.evaluation_result_list[i][0] == "training":
                 continue
+            else:
+                if first_metric_only:
+                    if metric_key != eval_metric:
+                        continue
             score = env.evaluation_result_list[i][2]
             if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
