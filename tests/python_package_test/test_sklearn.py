@@ -631,13 +631,13 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': False}
         params['metric'] = "l1"
         # first_metric_only=False
-        callbacks = [lgb.early_stopping(5, first_metric_only=False)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 13)
         self.assertIn('l1', gbm.evals_result_['valid_0'])
         # first_metric_only=True
-        callbacks = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 13)
         self.assertIn('l1', gbm.evals_result_['valid_0'])
 
@@ -645,13 +645,13 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': False}
         params['metric'] = "l2"
         # first_metric_only=False
-        callbacks = [lgb.early_stopping(5, first_metric_only=False)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 7)
         self.assertIn('l2', gbm.evals_result_['valid_0'])
         # first_metric_only=True
-        callbacks = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 7)
         self.assertIn('l2', gbm.evals_result_['valid_0'])
 
@@ -659,23 +659,23 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': False}
         params['metric'] = ["l1", "l2"]
         # first_metric_only=False
-        callbacks = [lgb.early_stopping(5, first_metric_only=False)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 7)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 7)
         self.assertIn('l1', gbm.evals_result_['valid_0'])
         self.assertIn('l2', gbm.evals_result_['valid_0'])
         # first_metric_only=True
-        callbacks = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 13)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 13)
         self.assertIn('l1', gbm.evals_result_['valid_0'])
         self.assertIn('l2', gbm.evals_result_['valid_0'])
         # first_metric_only=True
         params['metric'] = ["l2", "l1"]
-        callbacks = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 7)
         self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 7)
         self.assertIn('l1', gbm.evals_result_['valid_0'])
@@ -685,22 +685,22 @@ class TestSklearn(unittest.TestCase):
         params_fit['eval_set']= [(X_train, y_train), (X_test, y_test)]
         params['metric'] = ["l1", "l2"]
         # first_metric_only=False
-        callbacks = [lgb.early_stopping(5, first_metric_only=False)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_1']['l1']), 7)
         self.assertEqual(len(gbm.evals_result_['valid_1']['l2']), 7)
         self.assertIn('l2', gbm.evals_result_['valid_1'])
         # first_metric_only=True
-        callbacks = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_1']['l1']), 13)
         self.assertEqual(len(gbm.evals_result_['valid_1']['l2']), 13)
         self.assertIn('l1', gbm.evals_result_['valid_1'])
         self.assertIn('l2', gbm.evals_result_['valid_1'])
         # first_metric_only=True
         params['metric'] = ["l2", "l1"]
-        callbacks = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit, callbacks=callbacks)
+        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['valid_1']['l1']), 7)
         self.assertEqual(len(gbm.evals_result_['valid_1']['l2']), 7)
         self.assertIn('l1', gbm.evals_result_['valid_1'])
