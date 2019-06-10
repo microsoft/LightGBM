@@ -625,7 +625,7 @@ class TestSklearn(unittest.TestCase):
                   'learning_rate': 0.8,
                   'num_leaves': 15,
                   'verbose': -1,
-                  'seed': 123,}
+                  'seed': 123, }
 
         # single eval_set
         params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': False}
@@ -682,7 +682,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('l2', gbm.evals_result_['valid_0'])
 
         # double eval_set
-        params_fit['eval_set']= [(X_train, y_train), (X_test, y_test)]
+        params_fit['eval_set'] = [(X_train, y_train), (X_test, y_test)]
         params['metric'] = ["l1", "l2"]
         # first_metric_only=False
         params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
