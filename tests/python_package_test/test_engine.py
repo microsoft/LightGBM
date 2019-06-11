@@ -1422,6 +1422,11 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
+        # basic case
+        gbm = lgb.train({'objective': 'regression', 'learning_rate': 1, 'metric': ['l2', 'l1']},
+                        lgb_train, valid_sets=[lgb_eval], early_stopping_rounds=1, verbose_eval=10)
+        self.assertEqual(gbm.best_iteration, 1)
+
         # test that first_metric_only and feval cannot be used together
         def constant_metric(preds, train_data):
             return ('constant_metric', 0.0, False)
@@ -1437,7 +1442,7 @@ class TestEngine(unittest.TestCase):
             lgb.train(dict(params, first_metric_only=True), lgb_train,
                       num_boost_round=20, valid_sets=[lgb_eval],
                       feval=constant_metric,
-                      early_stopping_rounds=5, verbose_eval=False)
+                      early_stopping_rounds=5, verbose_eval=10)
 
         # test various combination of metrics
         def metrics_combination_train_regression(metric_list, assumed_iteration, first_metric_only):
