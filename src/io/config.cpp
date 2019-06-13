@@ -265,6 +265,7 @@ void Config::CheckParamConflict() {
         && num_leaves == kDefaultNumLeaves) {
       Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
     }
+    num_leaves = std::min(num_leaves, 2 << max_depth);
   }
 }
 
