@@ -555,6 +555,12 @@ class Dataset {
     // replace ' ' in feature_names with '_'
     bool spaceInFeatureName = false;
     for (auto& feature_name : feature_names_) {
+      // check ascii
+      for (auto c: feature_name) {
+        if (static_cast<unsigned char>(c) > 127) {
+          Log::Fatal("Do not support non-ascii characters in feature name.");
+        }
+      }
       if (feature_name.find(' ') != std::string::npos) {
         spaceInFeatureName = true;
         std::replace(feature_name.begin(), feature_name.end(), ' ', '_');
