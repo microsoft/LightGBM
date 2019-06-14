@@ -7,7 +7,6 @@ LightGBM, Light Gradient Boosting Machine
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/microsoft/LightGBM/issues)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
-[![Downloads](https://pepy.tech/badge/lightgbm)](https://pepy.tech/project/lightgbm)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.org/project/lightgbm)
 [![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg)](https://pypi.org/project/lightgbm)
 [![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
