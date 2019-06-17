@@ -224,6 +224,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     else:
                         eval_metric = env.params[metric_alias]
                     break
+            if eval_metric is None:
+                eval_metric = env.evaluation_result_list[0][1]
         for i in range_(len(env.evaluation_result_list)):
             metric_key = env.evaluation_result_list[i][1]
             if env.evaluation_result_list[i][0] == "cv_agg":

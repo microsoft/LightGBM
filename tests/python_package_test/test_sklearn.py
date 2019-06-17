@@ -621,6 +621,19 @@ class TestSklearn(unittest.TestCase):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
 
+        # evaluation data is not set.
+        params = {'n_estimators': 30, 'verbose': 10, 'first_metric_only': True,
+                  'early_stopping_rounds': 5}
+        params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': 10}
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']['l2']), params['n_estimators'])
+        self.assertIn('l2', gbm.evals_result_['training'])
+
+        params['first_metric_only'] = False
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']['l2']), params['n_estimators'])
+        self.assertIn('l2', gbm.evals_result_['training'])
+
         params = {'n_estimators': 30,
                   'learning_rate': 0.8,
                   'num_leaves': 15,
@@ -632,6 +645,15 @@ class TestSklearn(unittest.TestCase):
         params_fit['eval_metric'] = "l1"
         params_fit['early_stopping_rounds'] = 5
         params['first_metric_only'] = True
+
+        def custom_obj(y_true, y_pred):
+            return np.zeros(y_true.shape), np.zeros(y_true.shape)
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='l2', **params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 6)
+        self.assertIn('l1', gbm.evals_result_['valid_0'])
+        self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 6)
+        self.assertIn('l2', gbm.evals_result_['valid_0'])
+
         # first_metric_only=False
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         self.assertEqual(gbm._best_iteration, 8)

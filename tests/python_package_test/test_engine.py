@@ -1423,6 +1423,12 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
         # basic case
+        gbm = lgb.train({'objective': 'regression', 'first_metric_only': True}, lgb_train, valid_sets=[lgb_eval],
+                        early_stopping_rounds=1)
+        self.assertEqual(gbm.best_iteration, 35)
+        gbm = lgb.train({'objective': 'regression', 'first_metric_only': True}, lgb_train, valid_sets=[lgb_eval],
+                        early_stopping_rounds=1)
+        self.assertEqual(gbm.best_iteration, 35)
         gbm = lgb.train({'objective': 'regression', 'learning_rate': 1, 'metric': ['l2', 'l1']},
                         lgb_train, valid_sets=[lgb_eval], early_stopping_rounds=1, verbose_eval=10)
         self.assertEqual(gbm.best_iteration, 1)
