@@ -29,9 +29,7 @@ Benefitting from these advantages, LightGBM is being widely-used in many [winnin
 Get Started and Documentation
 -----------------------------
 
-Install by following [guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
-
-Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
+Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository. If you are new to LightGBM, follow [the installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) on that site.
 
 Next you may want to read:
 
@@ -109,12 +107,12 @@ How to Contribute
 
 LightGBM has been developed and used by many active community members. Your help is very valuable to make it better for everyone.
 
-- Check out [call for contributions](https://github.com/microsoft/LightGBM/issues?q=is%3Aissue+is%3Aopen+label%3Acall-for-contribution) to see what can be improved, or open an issue if you want something.
 - Contribute to the [tests](https://github.com/microsoft/LightGBM/tree/master/tests) to make it more reliable.
-- Contribute to the [documents](https://github.com/microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
+- Contribute to the [documentation](https://github.com/microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
 - Contribute to the [examples](https://github.com/microsoft/LightGBM/tree/master/examples) to share your experience with other users.
-- Add your stories and experience to [Awesome LightGBM](https://github.com/microsoft/LightGBM/blob/master/examples/README.md).
-- Open issue if you met problems during development.
+- Look for [issues with tag "help wanted"](https://github.com/microsoft/LightGBM/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) and submit pull requests to address them.
+- Add your stories and experience to [Awesome LightGBM](https://github.com/microsoft/LightGBM/blob/master/examples/README.md). If LightGBM helped you in a machine learning competition or some research application, we want to hear about it!
+- [Open an issue](https://github.com/microsoft/LightGBM/issues) to report problems or recommend new features.
 
 Microsoft Open Source Code of Conduct
 -------------------------------------
