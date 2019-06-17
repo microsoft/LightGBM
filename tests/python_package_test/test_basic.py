@@ -48,24 +48,21 @@ class TestBasic(unittest.TestCase):
         pred_from_file = bst.predict(tname)
         os.remove(tname)
         self.assertEqual(len(pred_from_matr), len(pred_from_file))
-        for preds in zip(pred_from_matr, pred_from_file):
-            self.assertAlmostEqual(*preds, places=15)
+        np.testing.assert_allclose(pred_from_matr, pred_from_file)
 
         # check saved model persistence
         bst = lgb.Booster(params, model_file="model.txt")
         pred_from_model_file = bst.predict(X_test)
         self.assertEqual(len(pred_from_matr), len(pred_from_model_file))
-        for preds in zip(pred_from_matr, pred_from_model_file):
-            # we need to check the consistency of model file here, so test for exact equal
-            self.assertEqual(*preds)
+        # we need to check the consistency of model file here, so test for exact equal
+        np.testing.assert_array_equal(pred_from_matr, pred_from_model_file)
 
         # check early stopping is working. Make it stop very early, so the scores should be very close to zero
         pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
         pred_early_stopping = bst.predict(X_test, **pred_parameter)
         self.assertEqual(len(pred_from_matr), len(pred_early_stopping))
-        for preds in zip(pred_early_stopping, pred_from_matr):
-            # scores likely to be different, but prediction should still be the same
-            self.assertEqual(preds[0] > 0, preds[1] > 0)
+        # scores likely to be different, but prediction should still be the same
+        np.testing.assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping))
 
     def test_chunked_dataset(self):
         X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
@@ -76,7 +73,6 @@ class TestBasic(unittest.TestCase):
 
         train_data = lgb.Dataset(X_train, label=y_train, params={"bin_construct_sample_cnt": 100})
         valid_data = train_data.create_valid(X_test, label=y_test, params={"bin_construct_sample_cnt": 100})
-
         train_data.construct()
         valid_data.construct()
 
