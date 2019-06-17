@@ -603,7 +603,7 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
                       'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        np.testing.assert_array_equal(gbm.evals_result_['training']['l2'], np.inf)
+        np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.inf)
 
     def test_nan_handle(self):
         nrows = 1000
@@ -615,7 +615,7 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
                       'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        np.testing.assert_array_equal(gbm.evals_result_['training']['l2'], np.nan)
+        np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
 
     def test_class_weight(self):
         X, y = load_digits(10, True)
