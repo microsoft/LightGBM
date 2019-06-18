@@ -1416,22 +1416,10 @@ class TestEngine(unittest.TestCase):
         self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
 
     def test_early_stopping_for_only_first_metric(self):
-        # regression test
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-
-        # basic case
-        gbm = lgb.train({'objective': 'regression', 'first_metric_only': True}, lgb_train, valid_sets=[lgb_eval],
-                        early_stopping_rounds=1)
-        self.assertEqual(gbm.best_iteration, 35)
-        gbm = lgb.train({'objective': 'regression', 'first_metric_only': True}, lgb_train, valid_sets=[lgb_eval],
-                        early_stopping_rounds=1)
-        self.assertEqual(gbm.best_iteration, 35)
-        gbm = lgb.train({'objective': 'regression', 'learning_rate': 1, 'metric': ['l2', 'l1']},
-                        lgb_train, valid_sets=[lgb_eval], early_stopping_rounds=1, verbose_eval=10)
-        self.assertEqual(gbm.best_iteration, 1)
 
         # test that first_metric_only and feval cannot be used together
         def constant_metric(preds, train_data):
@@ -1448,7 +1436,7 @@ class TestEngine(unittest.TestCase):
             lgb.train(dict(params, first_metric_only=True), lgb_train,
                       num_boost_round=20, valid_sets=[lgb_eval],
                       feval=constant_metric,
-                      early_stopping_rounds=5, verbose_eval=10)
+                      early_stopping_rounds=5, verbose_eval=False)
 
         # test various combination of metrics
         def metrics_combination_train_regression(metric_list, assumed_iteration, first_metric_only):
@@ -1462,7 +1450,7 @@ class TestEngine(unittest.TestCase):
             }
             gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
                             num_boost_round=25, valid_sets=[lgb_eval],
-                            early_stopping_rounds=5, verbose_eval=10)
+                            early_stopping_rounds=5, verbose_eval=False)
             self.assertEqual(gbm.best_iteration, assumed_iteration)
 
         def metrics_combination_cv_regression(metric_list, assumed_iteration,
@@ -1480,13 +1468,15 @@ class TestEngine(unittest.TestCase):
                          stratified=False,
                          train_set=lgb_train,
                          num_boost_round=25,
-                         early_stopping_rounds=5, verbose_eval=10,
+                         early_stopping_rounds=5, verbose_eval=False,
                          eval_train_metric=eval_train_metric)
             self.assertEqual(len(ret[list(ret.keys())[0]]), assumed_iteration)
 
         best_iter_l1 = 16
         best_iter_l2 = 19
         best_iter_min = min([best_iter_l1, best_iter_l2])
+        metrics_combination_train_regression(None, best_iter_l2, False)
+        metrics_combination_train_regression(None, best_iter_l2, True)
         metrics_combination_train_regression('l2', best_iter_l2, True)
         metrics_combination_train_regression('l1', best_iter_l1, True)
         metrics_combination_train_regression(['l2', 'l1'], best_iter_l2, True)
@@ -1497,12 +1487,14 @@ class TestEngine(unittest.TestCase):
         best_iter_l1 = 6
         best_iter_l2 = 11
         best_iter_min = min([best_iter_l1, best_iter_l2])
+        metrics_combination_cv_regression(None, best_iter_l2, True, False)
         metrics_combination_cv_regression('l2', best_iter_l2, True, False)
         metrics_combination_cv_regression('l1', best_iter_l1, True, False)
         metrics_combination_cv_regression(['l2', 'l1'], best_iter_l2, True, False)
         metrics_combination_cv_regression(['l1', 'l2'], best_iter_l1, True, False)
         metrics_combination_cv_regression(['l2', 'l1'], best_iter_min, False, False)
         metrics_combination_cv_regression(['l1', 'l2'], best_iter_min, False, False)
+        metrics_combination_cv_regression(None, best_iter_l2, True, True)
         metrics_combination_cv_regression('l2', best_iter_l2, True, True)
         metrics_combination_cv_regression('l1', best_iter_l1, True, True)
         metrics_combination_cv_regression(['l2', 'l1'], best_iter_l2, True, True)

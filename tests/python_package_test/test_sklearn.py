@@ -621,190 +621,75 @@ class TestSklearn(unittest.TestCase):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
 
-        # evaluation data is not set.
-        params = {'n_estimators': 30, 'verbose': 10, 'first_metric_only': True,
-                  'early_stopping_rounds': 5}
-        params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': 10}
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']['l2']), params['n_estimators'])
-        self.assertIn('l2', gbm.evals_result_['training'])
-
-        params['first_metric_only'] = False
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']['l2']), params['n_estimators'])
-        self.assertIn('l2', gbm.evals_result_['training'])
-
-        params = {'n_estimators': 30,
-                  'learning_rate': 0.8,
+        params = {'n_estimators': 25,
+                  'learning_rate': 0.7,
                   'num_leaves': 15,
                   'verbose': -1,
-                  'seed': 123, }
+                  'seed': 123}
+        params_fit = {'X': X_train,
+                      'y': y_train,
+                      'eval_set': (X_train, y_train),
+                      'early_stopping_rounds': 5,
+                      'verbose': False}
+
+        def fit_and_check(eval_set_name, metric_names, assumed_iteration, first_metric_only):
+            params['first_metric_only'] = first_metric_only
+            gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
+            self.assertIn(eval_set_name, gbm.evals_result_)
+            for metric_name in metric_names:
+                self.assertIn(metric_name, gbm.evals_result_[eval_set_name])
+                self.assertEqual(len(gbm.evals_result_[eval_set_name][metric_name]),
+                                 assumed_iteration + (params_fit['early_stopping_rounds']
+                                                      if eval_set_name != 'training'
+                                                      else params['n_estimators']))
+                self.assertEqual(gbm.best_iteration_, assumed_iteration)
+
+        # training data as eval_set
+        fit_and_check('training', ['l2'], 0, False)
+        fit_and_check('training', ['l2'], 0, True)
 
         # single eval_set
-        params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': 10}
-        params_fit['eval_metric'] = "l1"
-        params_fit['early_stopping_rounds'] = 5
-        params['first_metric_only'] = True
-
-        def custom_obj(y_true, y_pred):
-            return np.zeros(y_true.shape), np.zeros(y_true.shape)
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='l2', **params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 6)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 6)
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
-
-        # first_metric_only=False
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(gbm._best_iteration, 8)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
+        params_fit['eval_set'] = (X_test, y_test)
+        fit_and_check('valid_0', ['l2'], 3, False)
+        fit_and_check('valid_0', ['l2'], 3, True)
 
         params_fit['eval_metric'] = "l2"
-        params_fit['early_stopping_rounds'] = 5
-        params['first_metric_only'] = True
-        # first_metric_only=False
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(gbm._best_iteration, 2)
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
+        fit_and_check('valid_0', ['l2'], 3, False)
+        fit_and_check('valid_0', ['l2'], 3, True)
 
-        # single eval_set
-        params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': 10}
+        params_fit['eval_metric'] = "l1"
+        fit_and_check('valid_0', ['l1', 'l2'], 3, False)
+        fit_and_check('valid_0', ['l1', 'l2'], 3, True)
+
         params_fit['eval_metric'] = ["l1", "l2"]
-        params_fit['early_stopping_rounds'] = 5
-        params['first_metric_only'] = False
-        # first_metric_only=False
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(gbm._best_iteration, 2)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
+        fit_and_check('valid_0', ['l1', 'l2'], 3, False)
+        fit_and_check('valid_0', ['l1', 'l2'], 6, True)
 
-        # first_metric_only=True
-        params['first_metric_only'] = True
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(gbm._best_iteration, 8)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
-
-        # first_metric_only=True
         params_fit['eval_metric'] = ["l2", "l1"]
-        params_fit['early_stopping_rounds'] = 5
-        params['first_metric_only'] = True
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(gbm._best_iteration, 2)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
+        fit_and_check('valid_0', ['l1', 'l2'], 3, False)
+        fit_and_check('valid_0', ['l1', 'l2'], 3, True)
 
         # two eval_set
-        params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_train, y_train), (X_test, y_test)], 'verbose': 10}
-        params_fit['eval_metric'] = ["l1", "l2"]
-        params_fit['early_stopping_rounds'] = 5
-        params['first_metric_only'] = False
-        # first_metric_only=False
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(gbm._best_iteration, 2)
-        self.assertIn('l1', gbm.evals_result_['valid_1'])
-        self.assertIn('l2', gbm.evals_result_['valid_1'])
-        # first_metric_only=True
-        params['first_metric_only'] = True
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(gbm._best_iteration, 8)
-        self.assertIn('l1', gbm.evals_result_['valid_1'])
-        self.assertIn('l2', gbm.evals_result_['valid_1'])
-        # first_metric_only=True
-        params_fit['eval_metric'] = ["l2", "l1"]
-        params_fit['early_stopping_rounds'] = 5
-        params['first_metric_only'] = True
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(gbm._best_iteration, 2)
-        self.assertIn('l1', gbm.evals_result_['valid_1'])
-        self.assertIn('l2', gbm.evals_result_['valid_1'])
-        # single eval_set
-        params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': False}
-        with np.testing.assert_raises_regex(ValueError,
-                                            'For early stopping, at least one dataset and eval metric is '
-                                            'required for evaluation'):
-            params['metric'] = None
-            # first_metric_only=False
-            params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
-            gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-            self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 13)
-            self.assertIn('l1', gbm.evals_result_['valid_0'])
-        params['metric'] = "l1"
-        # first_metric_only=False
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 13)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-        # first_metric_only=True
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 13)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-
-        # single eval_set
-        params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': False}
-        params['metric'] = "l2"
-        # first_metric_only=False
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 7)
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
-        # first_metric_only=True
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 7)
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
-
-        # single eval_set
-        params_fit = {'X': X_train, 'y': y_train, 'eval_set': [(X_test, y_test)], 'verbose': False}
-        params['metric'] = ["l1", "l2"]
-        # first_metric_only=False
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 7)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 7)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
-        # first_metric_only=True
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 13)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 13)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
-        # first_metric_only=True
-        params['metric'] = ["l2", "l1"]
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l1']), 7)
-        self.assertEqual(len(gbm.evals_result_['valid_0']['l2']), 7)
-        self.assertIn('l1', gbm.evals_result_['valid_0'])
-        self.assertIn('l2', gbm.evals_result_['valid_0'])
-
-        # double eval_set
         params_fit['eval_set'] = [(X_train, y_train), (X_test, y_test)]
-        params['metric'] = ["l1", "l2"]
-        # first_metric_only=False
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=False)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_1']['l1']), 7)
-        self.assertEqual(len(gbm.evals_result_['valid_1']['l2']), 7)
-        self.assertIn('l2', gbm.evals_result_['valid_1'])
-        # first_metric_only=True
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_1']['l1']), 13)
-        self.assertEqual(len(gbm.evals_result_['valid_1']['l2']), 13)
-        self.assertIn('l1', gbm.evals_result_['valid_1'])
-        self.assertIn('l2', gbm.evals_result_['valid_1'])
-        # first_metric_only=True
-        params['metric'] = ["l2", "l1"]
-        params_fit["callbacks"] = [lgb.early_stopping(5, first_metric_only=True)]
-        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        self.assertEqual(len(gbm.evals_result_['valid_1']['l1']), 7)
-        self.assertEqual(len(gbm.evals_result_['valid_1']['l2']), 7)
-        self.assertIn('l1', gbm.evals_result_['valid_1'])
-        self.assertIn('l2', gbm.evals_result_['valid_1'])
+        fit_and_check('valid_1', ['l2'], 3, False)
+        fit_and_check('valid_1', ['l2'], 3, True)
+
+        params_fit['eval_metric'] = "l2"
+        fit_and_check('valid_1', ['l2'], 3, False)
+        fit_and_check('valid_1', ['l2'], 3, True)
+
+        params_fit['eval_metric'] = "l1"
+        fit_and_check('valid_1', ['l1', 'l2'], 3, False)
+        fit_and_check('valid_1', ['l1', 'l2'], 3, True)
+
+        params_fit['eval_metric'] = ["l1", "l2"]
+        fit_and_check('valid_1', ['l1', 'l2'], 3, False)
+        fit_and_check('valid_1', ['l1', 'l2'], 6, True)
+
+        params_fit['eval_metric'] = ["l2", "l1"]
+        fit_and_check('valid_1', ['l1', 'l2'], 3, False)
+        fit_and_check('valid_1', ['l1', 'l2'], 3, True)
+
 
     def test_class_weight(self):
         X, y = load_digits(10, True)
