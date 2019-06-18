@@ -210,6 +210,38 @@ Learning Control Parameters
 
    -  **Note**: to enable bagging, ``bagging_freq`` should be set to a non zero value as well
 
+-  ``pos_bagging_fraction`` :raw-html:`<a id="pos_bagging_fraction" title="Permalink to this parameter" href="#pos_bagging_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``pos_sub_row``, ``pos_subsample``, ``pos_bagging``, constraints: ``0.0 < pos_bagging_fraction <= 1.0``
+
+   -  used only in ``binary`` application
+
+   -  used for imbalanced binary classification problem, will randomly sample ``#pos_samples * pos_bagging_fraction`` positive samples in bagging
+
+   -  should be used together with ``neg_bagging_fraction``
+
+   -  set this to ``1.0`` to disable
+
+   -  **Note**: to enable this, you need to set ``bagging_freq`` and ``neg_bagging_fraction`` as well
+
+   -  **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+
+   -  **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+
+-  ``neg_bagging_fraction`` :raw-html:`<a id="neg_bagging_fraction" title="Permalink to this parameter" href="#neg_bagging_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``neg_sub_row``, ``neg_subsample``, ``neg_bagging``, constraints: ``0.0 < neg_bagging_fraction <= 1.0``
+
+   -  used only in ``binary`` application
+
+   -  used for imbalanced binary classification problem, will randomly sample ``#neg_samples * neg_bagging_fraction`` negative samples in bagging
+
+   -  should be used together with ``pos_bagging_fraction``
+
+   -  set this to ``1.0`` to disable
+
+   -  **Note**: to enable this, you need to set ``bagging_freq`` and ``pos_bagging_fraction`` as well
+
+   -  **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+
+   -  **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+
 -  ``bagging_freq`` :raw-html:`<a id="bagging_freq" title="Permalink to this parameter" href="#bagging_freq">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``subsample_freq``
 
    -  frequency for bagging
