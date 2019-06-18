@@ -690,7 +690,6 @@ class TestSklearn(unittest.TestCase):
         fit_and_check('valid_1', ['l1', 'l2'], 3, False)
         fit_and_check('valid_1', ['l1', 'l2'], 3, True)
 
-
     def test_class_weight(self):
         X, y = load_digits(10, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
