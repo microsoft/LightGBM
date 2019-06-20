@@ -615,6 +615,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
     comm_size_t buffer_size = type_size * total_num_feature;
+    CHECK(buffer_size >= 0);
     auto input_buffer = std::vector<char>(buffer_size);
     auto output_buffer = std::vector<char>(buffer_size);
 
@@ -917,6 +918,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
     comm_size_t buffer_size = type_size * num_total_features;
+    CHECK(buffer_size >= 0);
     auto input_buffer = std::vector<char>(buffer_size);
     auto output_buffer = std::vector<char>(buffer_size);
 
