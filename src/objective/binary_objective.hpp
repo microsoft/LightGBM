@@ -96,6 +96,7 @@ class BinaryLogloss: public ObjectiveFunction {
       }
     }
     label_weights_[1] *= scale_pos_weight_;
+    num_pos_data_ = cnt_positive;
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
@@ -179,9 +180,13 @@ class BinaryLogloss: public ObjectiveFunction {
 
   bool NeedAccuratePrediction() const override { return false; }
 
+  data_size_t NumPositiveData() const override { return num_pos_data_; }
+
  private:
   /*! \brief Number of data */
   data_size_t num_data_;
+  /*! \brief Number of positive samples */
+  data_size_t num_pos_data_;
   /*! \brief Pointer of label */
   const label_t* label_;
   /*! \brief True if using unbalance training */
