@@ -33,8 +33,10 @@ def custom_asymmetric_obj(y_true, y_pred):
     hess = np.where(residual < 0, 2 * 10.0, 2.0)
     return grad, hess
 
+
 def custom_dummy_obj(y_true, y_pred):
     return np.ones(y_true.shape), np.ones(y_true.shape)
+
 
 def custom_dummy_metric(y_true, y_pred):
     return 'error', 0, False
