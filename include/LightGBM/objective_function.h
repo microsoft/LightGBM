@@ -61,6 +61,9 @@ class ObjectiveFunction {
   /*! \brief The prediction should be accurate or not. True will disable early stopping for prediction. */
   virtual bool NeedAccuratePrediction() const { return true; }
 
+  /*! \brief Return the number of positive samples. Return 0 if no binary classification tasks.*/
+  virtual data_size_t NumPositiveData() const { return 0; }
+
   virtual void ConvertOutput(const double* input, double* output) const {
     output[0] = input[0];
   }

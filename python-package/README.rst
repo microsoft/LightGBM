@@ -1,7 +1,7 @@
 LightGBM Python-package
 =======================
 
-|License| |Python Versions| |PyPI Version|
+|License| |Python Versions| |PyPI Version| |Downloads|
 
 Installation
 ------------
@@ -199,5 +199,6 @@ Documentation strings (docstrings) are written in the NumPy style.
    :target: https://pypi.org/project/lightgbm
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg
    :target: https://pypi.org/project/lightgbm
-
+.. |Downloads| image:: https://pepy.tech/badge/lightgbm
+   :target: https://pepy.tech/project/lightgbm
 .. _CMake: https://cmake.org/
