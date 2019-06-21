@@ -394,9 +394,9 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
                     label += r'\n{0}: {1}'.format(info, _float2str(root[info], precision))
                 elif info == 'internal_count':
                     label += r'\n{0}: {1}'.format(info, root[info])
-            graph.node(name, label=label)
+            graph.node(name, label=label, shape="rectangle")
             if root['decision_type'] == '<=':
-                l_dec, r_dec = '<=', '>'
+                l_dec, r_dec = '&#8804;', '>'
             elif root['decision_type'] == '==':
                 l_dec, r_dec = 'is', "isn't"
             else:
@@ -416,6 +416,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
             graph.edge(parent, name, decision)
 
     graph = Digraph(**kwargs)
+    graph.attr("graph", nodesep="0.05", ranksep="0.1", rankdir="LR")
     add(tree_info['tree_structure'])
 
     return graph
@@ -497,7 +498,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
 
 def plot_tree(booster, ax=None, tree_index=0, figsize=None,
               old_graph_attr=None, old_node_attr=None, old_edge_attr=None,
-              show_info=None, precision=None, **kwargs):
+              show_info=None, precision=3, **kwargs):
     """Plot specified tree.
 
     Note
