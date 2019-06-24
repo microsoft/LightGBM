@@ -380,7 +380,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
     else:
         raise ImportError('You must install graphviz to plot tree.')
 
-    def add(root, parent=None, decision=None):
+    def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
         if 'split_index' in root:  # non-leaf
             name = 'split{0}'.format(root['split_index'])
@@ -394,6 +394,8 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
                     label += r'\n{0}: {1}'.format(info, _float2str(root[info], precision))
                 elif info == 'internal_count':
                     label += r'\n{0}: {1}'.format(info, root[info])
+                elif info == "data_percentage":
+                    label += r'\n{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
 
             fillcolor = "white"
             style = ""
@@ -412,8 +414,8 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
                 l_dec, r_dec = 'is', "isn't"
             else:
                 raise ValueError('Invalid decision type in tree model.')
-            add(root['left_child'], name, l_dec)
-            add(root['right_child'], name, r_dec)
+            add(root['left_child'], total_count, name, l_dec)
+            add(root['right_child'], total_count, name, r_dec)
         else:  # leaf
             name = 'leaf{0}'.format(root['leaf_index'])
             label = 'leaf_index: {0}'.format(root['leaf_index'])
@@ -428,7 +430,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
 
     graph = Digraph(**kwargs)
     graph.attr("graph", nodesep="0.05", ranksep="0.1", rankdir="LR")
-    add(tree_info['tree_structure'])
+    add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
 
     return graph
 
