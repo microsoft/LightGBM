@@ -369,7 +369,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
+def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraints={}, **kwargs):
     """Convert specified tree to graphviz instance.
 
     See:
@@ -394,7 +394,18 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
                     label += r'\n{0}: {1}'.format(info, _float2str(root[info], precision))
                 elif info == 'internal_count':
                     label += r'\n{0}: {1}'.format(info, root[info])
-            graph.node(name, label=label, shape="rectangle")
+
+            fillcolor="white"
+            style = ""
+            if feature_names is not None and feature_names[root['split_feature']] in constraints:
+                if constraints[feature_names[root['split_feature']]] == 1:
+                    fillcolor = "#ddffdd"
+                    style = "filled" + style
+                if constraints[feature_names[root['split_feature']]] == -1:
+                    fillcolor = "#ffdddd"
+                    style = "filled" + style
+
+            graph.node(name, label=label, shape="rectangle", style=style, fillcolor=fillcolor)
             if root['decision_type'] == '<=':
                 l_dec, r_dec = '&#8804;', '>'
             elif root['decision_type'] == '==':
@@ -422,7 +433,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
+def create_tree_digraph(booster, tree_index=0, constraints = {}, show_info=None, precision=None,
                         old_name=None, old_comment=None, old_filename=None, old_directory=None,
                         old_format=None, old_engine=None, old_encoding=None, old_graph_attr=None,
                         old_node_attr=None, old_edge_attr=None, old_body=None, old_strict=False, **kwargs):
@@ -491,7 +502,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
     if show_info is None:
         show_info = []
 
-    graph = _to_graphviz(tree_info, show_info, feature_names, precision, **kwargs)
+    graph = _to_graphviz(tree_info, show_info, feature_names, precision, constraints, **kwargs)
 
     return graph
 
