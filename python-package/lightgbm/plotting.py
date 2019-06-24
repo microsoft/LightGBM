@@ -444,11 +444,11 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
               <TD COLSPAN="2"><B>Legend</B></TD>
              </TR>
              <TR>
-              <TD>Monotonic increasing</TD>
+              <TD>Monotone increasing</TD>
               <TD BGCOLOR="#ddffdd"></TD>
              </TR>
              <TR>
-              <TD>Monotonic decreasing</TD>
+              <TD>Monotone decreasing</TD>
               <TD BGCOLOR="#ffdddd"></TD>
              </TR>
             </TABLE>
