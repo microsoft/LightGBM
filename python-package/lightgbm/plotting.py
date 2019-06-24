@@ -395,7 +395,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
                 elif info == 'internal_count':
                     label += r'\n{0}: {1}'.format(info, root[info])
 
-            fillcolor="white"
+            fillcolor = "white"
             style = ""
             if feature_names is not None and feature_names[root['split_feature']] in constraints:
                 if constraints[feature_names[root['split_feature']]] == 1:
