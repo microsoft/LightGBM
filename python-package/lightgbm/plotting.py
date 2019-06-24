@@ -385,10 +385,10 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
         if 'split_index' in root:  # non-leaf
             name = 'split{0}'.format(root['split_index'])
             if feature_names is not None:
-                label = 'split_feature_name: {0}'.format(feature_names[root['split_feature']])
+                label = '{0} = '.format(feature_names[root['split_feature']])
             else:
-                label = 'split_feature_index: {0}'.format(root['split_feature'])
-            label += r'\nthreshold: {0}'.format(_float2str(root['threshold'], precision))
+                label = '{0} = '.format(root['split_feature'])
+            label += r'{0}'.format(_float2str(root['threshold'], precision))
             for info in show_info:
                 if info in {'split_gain', 'internal_value', 'internal_weight'}:
                     label += r'\n{0}: {1}'.format(info, _float2str(root[info], precision))
