@@ -391,7 +391,12 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
             label += r'{0}'.format(_float2str(root['threshold'], precision))
             for info in show_info:
                 if info in {'split_gain', 'internal_value', 'internal_weight'}:
-                    label += r'<br/>{0}: {1}'.format(info, _float2str(root[info], precision))
+                    output = info
+                    if info == "split_gain":
+                        output = "gain"
+                    elif info == "internal_value":
+                        output = "value"
+                    label += r'<br/>{0}: {1}'.format(output, _float2str(root[info], precision))
                 elif info == 'internal_count':
                     label += r'<br/>{0}: {1}'.format(info, root[info])
                 elif info == "data_percentage":
