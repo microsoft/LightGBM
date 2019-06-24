@@ -432,6 +432,23 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
     graph = Digraph(**kwargs)
     graph.attr("graph", nodesep="0.05", ranksep="0.1", rankdir="LR")
     add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
+    if constraints:
+        legend = """<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="black">
+             <TR>
+              <TD COLSPAN="2"><B>Legend</B></TD>
+             </TR>
+             <TR>
+              <TD>Monotonic increasing</TD>
+              <TD BGCOLOR="#ddffdd"></TD>
+             </TR>
+             <TR>
+              <TD>Monotonic decreasing</TD>
+              <TD BGCOLOR="#ffdddd"></TD>
+             </TR>
+            </TABLE>
+           >"""
+        graph.node("legend", label=legend, shape="rectangle", color = "white")
 
     return graph
 
