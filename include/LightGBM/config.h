@@ -325,6 +325,18 @@ struct Config {
   // desc = dropout rate: a fraction of previous trees to drop during the dropout
   double drop_rate = 0.1;
 
+  // alias = monotone_splits_penalty
+  // check = >=0.0
+  // check = <max_depth; if max_depth > 0
+  // desc = used only if ``monotone_constraints`` is set
+  // desc = monotone penalty: a penalization of 0 equals to no penalization. A penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+  double monotone_penalty = 0.;
+
+  // alias = monotone_constraints_precise_mode
+  // desc = used only if ``monotone_constraints`` is set
+  // desc = monotone precise mode: if set to false then the program will run as fast as without constraints, but the results may be over-constrained. If set to true, then the program will be slower, but results will be better. Note that if there are categorical features, in the dataset, they will be splitted using the fast method regardless of this parameter. Also, the parameter can only be set to true if the missing handle is disabled
+  bool monotone_precise_mode = false;
+
   // desc = used only in ``dart``
   // desc = max number of dropped trees during one boosting iteration
   // desc = ``<=0`` means no limit

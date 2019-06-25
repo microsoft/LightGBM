@@ -312,6 +312,18 @@ Learning Control Parameters
 
    -  dropout rate: a fraction of previous trees to drop during the dropout
 
+-  ``monotone_penalty`` :raw-html:`<a id="monotone_penalty" title="Permalink to this parameter" href="#monotone_penalty">&#x1F517;&#xFE0E;</a>`, default = ``0.``, type = double, aliases: ``monotone_splits_penalty``, constraints: ``0.0 <= monotone_penalty (< max_depth, if max_depth > 0)``
+
+   -  used only if ``monotone_constraints`` is set
+
+   -  monotone penalty: a penalization of 0 equals to no penalization. A penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+
+-  ``monotone_precise_method`` :raw-html:`<a id="monotone_precise_method" title="Permalink to this parameter" href="#monotone_precise_method">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``monotone_constraints_precise_mode``
+
+   -  used only if ``monotone_constraints`` is set
+
+   -  monotone precise method`: if set to false then the program will run as fast as without constraints, but the results may be over-constrained. If set to true, then the program will be slower, but results will be better. Note that if there are categorical features, in the dataset, they will be splitted using the fast method regardless of this parameter. Also, the parameter can only be set to true if the missing handle is disabled
+
 -  ``max_drop`` :raw-html:`<a id="max_drop" title="Permalink to this parameter" href="#max_drop">&#x1F517;&#xFE0E;</a>`, default = ``50``, type = int
 
    -  used only in ``dart``
