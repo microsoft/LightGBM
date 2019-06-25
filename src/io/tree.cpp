@@ -24,7 +24,9 @@ Tree::Tree(int max_leaves)
   threshold_.resize(max_leaves_ - 1);
   decision_type_.resize(max_leaves_ - 1, 0);
   split_gain_.resize(max_leaves_ - 1);
+  node_parent_.resize(max_leaves_ - 1);
   leaf_parent_.resize(max_leaves_);
+  leaf_is_in_monotone_subtree_.resize(max_leaves_);
   leaf_value_.resize(max_leaves_);
   leaf_weight_.resize(max_leaves_);
   leaf_count_.resize(max_leaves_);
@@ -38,6 +40,7 @@ Tree::Tree(int max_leaves)
   leaf_value_[0] = 0.0f;
   leaf_weight_[0] = 0.0f;
   leaf_parent_[0] = -1;
+  node_parent_[0] = -1;
   shrinkage_ = 1.0f;
   num_cat_ = 0;
   cat_boundaries_.push_back(0);
