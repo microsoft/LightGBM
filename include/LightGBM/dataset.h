@@ -586,6 +586,15 @@ class Dataset {
     return bufs;
   }
 
+  // This function retrieves the number of bins for a specific feature
+  int NumBin(int feature_idx) const {
+    const int group = feature2group_[feature_idx];
+    const int sub_feature = feature2subfeature_[feature_idx];
+    const BinMapper *bin_mapper =
+        feature_groups_[group]->bin_mappers_[sub_feature].get();
+    return bin_mapper->num_bin();
+  }
+
   void ResetConfig(const char* parameters);
 
   /*! \brief Get Number of data */
