@@ -121,6 +121,8 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
 
+  void InitializeConstraints(unsigned int tid);
+
   /*! \brief number of data */
   data_size_t num_data_;
   /*! \brief number of features */
@@ -185,6 +187,18 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
+
+  std::vector<std::vector<double> > dummy_min_constraints;
+  std::vector<std::vector<double> > min_constraints;
+  std::vector<std::vector<double> > dummy_max_constraints;
+  std::vector<std::vector<double> > max_constraints;
+
+  std::vector<std::vector<uint32_t> > thresholds_min_constraints;
+  std::vector<std::vector<uint32_t> > thresholds_max_constraints;
+
+  std::vector<std::vector<int> > features;
+  std::vector<std::vector<uint32_t> > thresholds;
+  std::vector<std::vector<bool> > is_in_right_split;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

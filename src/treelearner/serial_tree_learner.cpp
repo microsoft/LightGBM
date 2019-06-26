@@ -120,6 +120,45 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
   }
+
+  dummy_min_constraints.resize(num_threads_);
+  min_constraints.resize(num_threads_);
+  dummy_max_constraints.resize(num_threads_);
+  max_constraints.resize(num_threads_);
+
+  thresholds_min_constraints.resize(num_threads_);
+  thresholds_max_constraints.resize(num_threads_);
+
+  features.resize(num_threads_);
+  is_in_right_split.resize(num_threads_);
+  thresholds.resize(num_threads_);
+
+  // the number 32 has no real meaning here, but during our experiments,
+  // we found that the number of constraints per feature was well below 32, so by
+  // allocating this space, we may save some time because we won't have to allocate it later
+  int space_to_reserve = 32;
+  if (!config_->monotone_precise_mode) {
+    space_to_reserve = 1;
+  }
+
+  for (int i = 0; i < num_threads_; ++i) {
+    dummy_min_constraints[i].reserve(space_to_reserve);
+    min_constraints[i].reserve(space_to_reserve);
+    dummy_max_constraints[i].reserve(space_to_reserve);
+    max_constraints[i].reserve(space_to_reserve);
+
+    thresholds_min_constraints[i].reserve(space_to_reserve);
+    thresholds_max_constraints[i].reserve(space_to_reserve);
+
+    if (!config_->monotone_constraints.empty()) {
+      // the number 100 has no real meaning here, same as before
+      features[i].reserve(std::max(100, config_->max_depth));
+      is_in_right_split[i].reserve(std::max(100, config_->max_depth));
+      thresholds[i].reserve(std::max(100, config_->max_depth));
+    }
+
+    InitializeConstraints(i);
+  }
 }
 
 void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
@@ -932,4 +971,26 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
   }
 }
 
+// initializing constraints is just writing that the constraints should +/- inf from threshold 0
+void SerialTreeLearner::InitializeConstraints(unsigned int tid) {
+  thresholds[tid].clear();
+  is_in_right_split[tid].clear();
+  features[tid].clear();
+
+  thresholds_min_constraints[tid].resize(1);
+  thresholds_max_constraints[tid].resize(1);
+
+  dummy_min_constraints[tid].resize(1);
+  min_constraints[tid].resize(1);
+  dummy_max_constraints[tid].resize(1);
+  max_constraints[tid].resize(1);
+
+  dummy_min_constraints[tid][0] = -std::numeric_limits<double>::max();
+  min_constraints[tid][0] = -std::numeric_limits<double>::max();
+  dummy_max_constraints[tid][0] = std::numeric_limits<double>::max();
+  max_constraints[tid][0] = std::numeric_limits<double>::max();
+
+  thresholds_min_constraints[tid][0] = 0;
+  thresholds_max_constraints[tid][0] = 0;
+}
 }  // namespace LightGBM
