@@ -38,7 +38,9 @@ class LeafSplits {
   * \param sum_gradients
   * \param sum_hessians
   */
-  void Init(int leaf, const DataPartition* data_partition, double sum_gradients, double sum_hessians) {
+  void Init(int leaf, const DataPartition *data_partition, double sum_gradients,
+            double sum_hessians, int depth) {
+    depth_ = depth;
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     sum_gradients_ = sum_gradients;
@@ -59,6 +61,7 @@ class LeafSplits {
   * \param hessians
   */
   void Init(const score_t* gradients, const score_t* hessians) {
+    depth_ = 0;
     num_data_in_leaf_ = num_data_;
     leaf_index_ = 0;
     data_indices_ = nullptr;
@@ -82,7 +85,9 @@ class LeafSplits {
   * \param gradients
   * \param hessians
   */
-  void Init(int leaf, const DataPartition* data_partition, const score_t* gradients, const score_t* hessians) {
+  void Init(int leaf, const DataPartition *data_partition,
+            const score_t *gradients, const score_t *hessians, int depth) {
+    depth_ = depth;
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     double tmp_sum_gradients = 0.0f;
@@ -106,6 +111,7 @@ class LeafSplits {
   * \param sum_hessians
   */
   void Init(double sum_gradients, double sum_hessians) {
+    depth_ = 0;
     leaf_index_ = 0;
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians;
@@ -117,6 +123,7 @@ class LeafSplits {
   * \brief Init splits on current leaf
   */
   void Init() {
+    depth_ = 0;
     leaf_index_ = -1;
     data_indices_ = nullptr;
     num_data_in_leaf_ = 0;
@@ -140,6 +147,7 @@ class LeafSplits {
   double max_constraint() const { return max_val_; }
 
   double min_constraint() const { return min_val_; }
+  int depth() const { return depth_; }
 
   /*! \brief Get indices of data of current leaf */
   const data_size_t* data_indices() const { return data_indices_; }
@@ -160,6 +168,7 @@ class LeafSplits {
   const data_size_t* data_indices_;
   double min_val_;
   double max_val_;
+  int depth_;
 };
 
 }  // namespace LightGBM

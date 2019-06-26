@@ -149,16 +149,26 @@ bool VotingParallelTreeLearner<TREELEARNER_T>::BeforeFindBestSplit(const Tree* t
   if (TREELEARNER_T::BeforeFindBestSplit(tree, left_leaf, right_leaf)) {
     data_size_t num_data_in_left_child = GetGlobalDataCountInLeaf(left_leaf);
     data_size_t num_data_in_right_child = GetGlobalDataCountInLeaf(right_leaf);
+    int depth = tree->leaf_depth(left_leaf);
+    #ifdef DEBUG
+    CHECK(depth == tree->leaf_depth(right_leaf));
+    #endif
     if (right_leaf < 0) {
       return true;
     } else if (num_data_in_left_child < num_data_in_right_child) {
       // get local sumup
-      this->smaller_leaf_splits_->Init(left_leaf, this->data_partition_.get(), this->gradients_, this->hessians_);
-      this->larger_leaf_splits_->Init(right_leaf, this->data_partition_.get(), this->gradients_, this->hessians_);
+      this->smaller_leaf_splits_->Init(left_leaf, this->data_partition_.get(),
+                                       this->gradients_, this->hessians_,
+                                       depth);
+      this->larger_leaf_splits_->Init(right_leaf, this->data_partition_.get(),
+                                      this->gradients_, this->hessians_, depth);
     } else {
       // get local sumup
-      this->smaller_leaf_splits_->Init(right_leaf, this->data_partition_.get(), this->gradients_, this->hessians_);
-      this->larger_leaf_splits_->Init(left_leaf, this->data_partition_.get(), this->gradients_, this->hessians_);
+      this->smaller_leaf_splits_->Init(right_leaf, this->data_partition_.get(),
+                                       this->gradients_, this->hessians_,
+                                       depth);
+      this->larger_leaf_splits_->Init(left_leaf, this->data_partition_.get(),
+                                      this->gradients_, this->hessians_, depth);
     }
     return true;
   } else {
@@ -480,20 +490,24 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, 
   auto p_left = smaller_leaf_splits_global_.get();
   auto p_right = larger_leaf_splits_global_.get();
   // init the global sumup info
+  int depth = tree->leaf_depth(*left_leaf);
+  #ifdef DEBUG
+  CHECK(depth == tree->leaf_depth(*right_leaf));
+  #endif
   if (best_split_info.left_count < best_split_info.right_count) {
     smaller_leaf_splits_global_->Init(*left_leaf, this->data_partition_.get(),
-      best_split_info.left_sum_gradient,
-      best_split_info.left_sum_hessian);
+                                      best_split_info.left_sum_gradient,
+                                      best_split_info.left_sum_hessian, depth);
     larger_leaf_splits_global_->Init(*right_leaf, this->data_partition_.get(),
-      best_split_info.right_sum_gradient,
-      best_split_info.right_sum_hessian);
+                                     best_split_info.right_sum_gradient,
+                                     best_split_info.right_sum_hessian, depth);
   } else {
     smaller_leaf_splits_global_->Init(*right_leaf, this->data_partition_.get(),
-      best_split_info.right_sum_gradient,
-      best_split_info.right_sum_hessian);
+                                      best_split_info.right_sum_gradient,
+                                      best_split_info.right_sum_hessian, depth);
     larger_leaf_splits_global_->Init(*left_leaf, this->data_partition_.get(),
-      best_split_info.left_sum_gradient,
-      best_split_info.left_sum_hessian);
+                                     best_split_info.left_sum_gradient,
+                                     best_split_info.left_sum_hessian, depth);
     p_left = larger_leaf_splits_global_.get();
     p_right = smaller_leaf_splits_global_.get();
   }

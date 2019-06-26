@@ -346,7 +346,7 @@ void SerialTreeLearner::BeforeTrain() {
 
   } else {
     // use bagging, only use part of data
-    smaller_leaf_splits_->Init(0, data_partition_.get(), gradients_, hessians_);
+    smaller_leaf_splits_->Init(0, data_partition_.get(), gradients_, hessians_, 0.);
   }
 
   larger_leaf_splits_->Init();
@@ -739,20 +739,26 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
                              current_split_info.default_left, *right_leaf);
     }
 
+    int depth = tree->leaf_depth(*left_leaf);
+    #ifdef DEBUG
+    CHECK(depth == tree->leaf_depth(*right_leaf));
+    #endif
     if (current_split_info.left_count < current_split_info.right_count) {
       left_smaller = true;
       smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                                  current_split_info.left_sum_gradient,
-                                 current_split_info.left_sum_hessian);
+                                 current_split_info.left_sum_hessian, depth);
       larger_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                 current_split_info.right_sum_gradient,
-                                current_split_info.right_sum_hessian);
+                                current_split_info.right_sum_hessian, depth);
     } else {
       left_smaller = false;
       smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
-                                 current_split_info.right_sum_gradient, current_split_info.right_sum_hessian);
+                                 current_split_info.right_sum_gradient,
+                                 current_split_info.right_sum_hessian, depth);
       larger_leaf_splits_->Init(*left_leaf, data_partition_.get(),
-                                current_split_info.left_sum_gradient, current_split_info.left_sum_hessian);
+                                current_split_info.left_sum_gradient,
+                                current_split_info.left_sum_hessian, depth);
     }
 
     left = Json();
@@ -837,14 +843,24 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   auto p_left = smaller_leaf_splits_.get();
   auto p_right = larger_leaf_splits_.get();
   // init the leaves that used on next iteration
+  int depth = tree->leaf_depth(*left_leaf);
+  #ifdef DEBUG
+  CHECK(depth == tree->leaf_depth(*right_leaf));
+  #endif
   if (best_split_info.left_count < best_split_info.right_count) {
-    smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
-    larger_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
+    smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
+                               best_split_info.left_sum_gradient,
+                               best_split_info.left_sum_hessian, depth);
+    larger_leaf_splits_->Init(*right_leaf, data_partition_.get(),
+                              best_split_info.right_sum_gradient,
+                              best_split_info.right_sum_hessian, depth);
   } else {
-    smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
-    larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
-    p_right = smaller_leaf_splits_.get();
-    p_left = larger_leaf_splits_.get();
+    smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
+                               best_split_info.right_sum_gradient,
+                               best_split_info.right_sum_hessian, depth);
+    larger_leaf_splits_->Init(*left_leaf, data_partition_.get(),
+                              best_split_info.left_sum_gradient,
+                              best_split_info.left_sum_hessian, depth);
   }
   p_left->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
   p_right->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
