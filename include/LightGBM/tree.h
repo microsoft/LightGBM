@@ -60,7 +60,7 @@ class Tree {
   int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
             double threshold_double, double left_value, double right_value,
             int left_cnt, int right_cnt, double left_weight, double right_weight,
-            float gain, MissingType missing_type, bool default_left);
+            float gain, MissingType missing_type, bool default_left, bool feature_is_monotone);
 
   /*!
   * \brief Performing a split on tree leaves, with categorical feature
@@ -80,9 +80,14 @@ class Tree {
   * \param gain Split gain
   * \return The index of new leaf.
   */
-  int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
-                       const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                       int left_cnt, int right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type);
+
+  int SplitCategorical(int leaf, int feature, int real_feature,
+                       const uint32_t *threshold_bin, int num_threshold_bin,
+                       const uint32_t *threshold, int num_threshold,
+                       double left_value, double right_value, int left_cnt,
+                       int right_cnt, double left_weight, double right_weight,
+                       float gain, MissingType missing_type,
+                       bool feature_is_monotone);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -320,8 +325,10 @@ class Tree {
     }
   }
 
-  inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value, int left_cnt, int right_cnt,
-                    double left_weight, double right_weight, float gain);
+  inline void Split(int leaf, int feature, int real_feature, double left_value,
+                    double right_value, int left_cnt, int right_cnt, double left_weight,
+                    double right_weight,float gain, bool feature_is_monotone);
+
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -428,8 +435,14 @@ class Tree {
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
                         double left_value, double right_value, int left_cnt, int right_cnt,
-                        double left_weight, double right_weight, float gain) {
+                        double left_weight, double right_weight, float gain, bool feature_is_monotone) {
   int new_node_idx = num_leaves_ - 1;
+
+  // Update if there is a monotone split above the leaf
+  if (feature_is_monotone || leaf_is_in_monotone_subtree_[leaf]) {
+    leaf_is_in_monotone_subtree_[leaf] = true;
+    leaf_is_in_monotone_subtree_[num_leaves_] = true;
+  }
   // update parent info
   int parent = leaf_parent_[leaf];
   if (parent >= 0) {
