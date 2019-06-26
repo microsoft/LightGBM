@@ -191,13 +191,16 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
                                     this->smaller_leaf_histogram_array_[feature_index].RawData());
     SplitInfo smaller_split;
     // find best threshold for smaller child
+    // FIXME Fill the vectors with the actual constraints and thresholds
+    std::vector<double> max_constraints;
+    std::vector<double> min_constraints;
+    std::vector<uint32_t> thresholds;
     this->smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-      this->smaller_leaf_splits_->sum_gradients(),
-      this->smaller_leaf_splits_->sum_hessians(),
-      GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
-      this->smaller_leaf_splits_->min_constraint(),
-      this->smaller_leaf_splits_->max_constraint(),
-      &smaller_split);
+        this->smaller_leaf_splits_->sum_gradients(),
+        this->smaller_leaf_splits_->sum_hessians(),
+        GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
+        &smaller_split, max_constraints, min_constraints, max_constraints,
+        min_constraints, thresholds, thresholds);
     smaller_split.feature = real_feature_index;
     if (smaller_split > smaller_bests_per_thread[tid] && smaller_node_used_features[feature_index]) {
       smaller_bests_per_thread[tid] = smaller_split;
@@ -211,13 +214,13 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
       this->smaller_leaf_histogram_array_[feature_index]);
     SplitInfo larger_split;
     // find best threshold for larger child
+    // FIXME Fill the vectors with the actual constraints and thresholds
     this->larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-      this->larger_leaf_splits_->sum_gradients(),
-      this->larger_leaf_splits_->sum_hessians(),
-      GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
-      this->larger_leaf_splits_->min_constraint(),
-      this->larger_leaf_splits_->max_constraint(),
-      &larger_split);
+        this->larger_leaf_splits_->sum_gradients(),
+        this->larger_leaf_splits_->sum_hessians(),
+        GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
+        &larger_split, max_constraints, min_constraints, max_constraints,
+        min_constraints, thresholds, thresholds);
     larger_split.feature = real_feature_index;
     if (larger_split > larger_bests_per_thread[tid] && larger_node_used_features[feature_index]) {
       larger_bests_per_thread[tid] = larger_split;

@@ -596,26 +596,20 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) { continue; }
     const int tid = omp_get_thread_num();
-    SplitInfo smaller_split;
+
     train_data_->FixHistogram(feature_index,
                               smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
                               smaller_leaf_splits_->num_data_in_leaf(),
                               smaller_leaf_histogram_array_[feature_index].RawData());
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
-    smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-      smaller_leaf_splits_->sum_gradients(),
-      smaller_leaf_splits_->sum_hessians(),
-      smaller_leaf_splits_->num_data_in_leaf(),
-      smaller_leaf_splits_->min_constraint(),
-      smaller_leaf_splits_->max_constraint(),
-      &smaller_split);
-    smaller_split.feature = real_fidx;
-    if (cegb_ != nullptr) {
-      smaller_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, smaller_leaf_splits_->LeafIndex(), smaller_leaf_splits_->num_data_in_leaf(), smaller_split);
-    }
-    if (smaller_split > smaller_best[tid] && smaller_node_used_features[feature_index]) {
-      smaller_best[tid] = smaller_split;
-    }
+
+    ComputeBestSplitForFeature(smaller_leaf_splits_->sum_gradients(),
+                               smaller_leaf_splits_->sum_hessians(),
+                               smaller_leaf_splits_->num_data_in_leaf(),
+                               feature_index, smaller_leaf_histogram_array_,
+                               smaller_best, smaller_leaf_splits_->LeafIndex(),
+                               smaller_leaf_splits_->depth(), tid, real_fidx,
+                               tree);
     // only has root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
 
@@ -626,22 +620,14 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
                                 larger_leaf_splits_->num_data_in_leaf(),
                                 larger_leaf_histogram_array_[feature_index].RawData());
     }
-    SplitInfo larger_split;
-    // find best threshold for larger child
-    larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-      larger_leaf_splits_->sum_gradients(),
-      larger_leaf_splits_->sum_hessians(),
-      larger_leaf_splits_->num_data_in_leaf(),
-      larger_leaf_splits_->min_constraint(),
-      larger_leaf_splits_->max_constraint(),
-      &larger_split);
-    larger_split.feature = real_fidx;
-    if (cegb_ != nullptr) {
-      larger_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, larger_leaf_splits_->LeafIndex(), larger_leaf_splits_->num_data_in_leaf(), larger_split);
-    }
-    if (larger_split > larger_best[tid] && larger_node_used_features[feature_index]) {
-      larger_best[tid] = larger_split;
-    }
+
+    ComputeBestSplitForFeature(larger_leaf_splits_->sum_gradients(),
+                               larger_leaf_splits_->sum_hessians(),
+                               larger_leaf_splits_->num_data_in_leaf(),
+                               feature_index, larger_leaf_histogram_array_,
+                               larger_best, larger_leaf_splits_->LeafIndex(),
+                               larger_leaf_splits_->depth(), tid, real_fidx,
+                               tree);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -839,6 +825,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
 
 void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) {
   const SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
+  double previous_leaf_output = tree->LeafOutput(best_leaf);
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
   if (cegb_ != nullptr) {
     cegb_->UpdateLeafBestSplits(tree, best_leaf, &best_split_info, &best_split_per_leaf_);
@@ -896,8 +883,6 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   #ifdef DEBUG
   CHECK(best_split_info.left_count == data_partition_->leaf_count(best_leaf));
   #endif
-  auto p_left = smaller_leaf_splits_.get();
-  auto p_right = larger_leaf_splits_.get();
   // init the leaves that used on next iteration
   int depth = tree->leaf_depth(*left_leaf);
   #ifdef DEBUG
@@ -918,17 +903,36 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                               best_split_info.left_sum_gradient,
                               best_split_info.left_sum_hessian, depth);
   }
-  p_left->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
-  p_right->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
-  if (is_numerical_split) {
-    double mid = (best_split_info.left_output + best_split_info.right_output) / 2.0f;
-    if (best_split_info.monotone_type < 0) {
-      p_left->SetValueConstraint(mid, best_split_info.max_constraint);
-      p_right->SetValueConstraint(best_split_info.min_constraint, mid);
-    } else if (best_split_info.monotone_type > 0) {
-      p_left->SetValueConstraint(best_split_info.min_constraint, mid);
-      p_right->SetValueConstraint(mid, best_split_info.max_constraint);
+
+  // when the monotone precise mode is disabled it is very easy to compute the constraints of
+  // the children of a leaf, but when it is enabled, one needs to go through the tree to do so,
+  // and it is done directly before computing best splits
+  if (!config_->monotone_precise_mode) {
+    constraints_per_leaf_[*right_leaf] = constraints_per_leaf_[*left_leaf];
+    if (is_numerical_split) {
+      // depending on the monotone type we set constraints on the future splits
+      // these constraints may be updated later in the algorithm
+      if (best_split_info.monotone_type < 0) {
+        constraints_per_leaf_[*left_leaf]
+            .SetMinConstraint(best_split_info.right_output);
+        constraints_per_leaf_[*right_leaf]
+            .SetMaxConstraint(best_split_info.left_output);
+      } else if (best_split_info.monotone_type > 0) {
+        constraints_per_leaf_[*left_leaf]
+            .SetMaxConstraint(best_split_info.right_output);
+        constraints_per_leaf_[*right_leaf]
+            .SetMinConstraint(best_split_info.left_output);
+      }
     }
+  }
+
+  // if there is a monotone split above, we need to make sure the new
+  // values don't clash with existing constraints in the subtree,
+  // and if they do, the existing splits need to be updated
+  if (tree->leaf_is_in_monotone_subtree(*right_leaf)) {
+    GoUpToFindLeavesToUpdate(tree, tree->leaf_parent(*right_leaf),
+                             inner_feature_index, best_split_info,
+                             previous_leaf_output, best_split_info.threshold);
   }
 }
 
@@ -1638,7 +1642,11 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
 #endif
 
   SplitInfo new_split;
-  // FIXME Need to call histogram_array_[feature_index].FindBestThreshold
+  histogram_array_[feature_index].FindBestThreshold(
+      sum_gradient, sum_hessian, num_data, &new_split, min_constraints[tid],
+      dummy_min_constraints[tid], max_constraints[tid],
+      dummy_max_constraints[tid], thresholds_min_constraints[tid],
+      thresholds_max_constraints[tid]);
 
   if (tree->leaf_is_in_monotone_subtree(leaf_index)) {
     InitializeConstraints(tid);

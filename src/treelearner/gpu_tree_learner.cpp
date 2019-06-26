@@ -1085,6 +1085,7 @@ void GPUTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right
       double smaller_max = smaller_leaf_splits_->max_constraint();
       double larger_min = larger_leaf_splits_->min_constraint();
       double larger_max = larger_leaf_splits_->max_constraint();
+      // FIXME This part of the code has not been updated
       smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
       larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
       smaller_leaf_splits_->SetValueConstraint(smaller_min, smaller_max);

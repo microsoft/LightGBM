@@ -303,13 +303,17 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
       this->smaller_leaf_splits_->num_data_in_leaf(),
       this->smaller_leaf_histogram_array_[feature_index].RawData());
 
-    this->smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-      this->smaller_leaf_splits_->sum_gradients(),
-      this->smaller_leaf_splits_->sum_hessians(),
-      this->smaller_leaf_splits_->num_data_in_leaf(),
-      this->smaller_leaf_splits_->min_constraint(),
-      this->smaller_leaf_splits_->max_constraint(),
-      &smaller_bestsplit_per_features[feature_index]);
+    // FIXME Fill the vectors with the actual constraints and thresholds
+    std::vector<double> max_constraints;
+    std::vector<double> min_constraints;
+    std::vector<uint32_t> thresholds;
+    this->smaller_leaf_histogram_array_[feature_index]
+        .FindBestThreshold(this->smaller_leaf_splits_->sum_gradients(),
+                           this->smaller_leaf_splits_->sum_hessians(),
+                           this->smaller_leaf_splits_->num_data_in_leaf(),
+                           &smaller_bestsplit_per_features[feature_index],
+                           max_constraints, min_constraints, max_constraints,
+                           min_constraints, thresholds, thresholds);
     smaller_bestsplit_per_features[feature_index].feature = real_feature_index;
     // only has root leaf
     if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->LeafIndex() < 0) { continue; }
@@ -322,13 +326,14 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
         this->larger_leaf_histogram_array_[feature_index].RawData());
     }
     // find best threshold for larger child
-    this->larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-      this->larger_leaf_splits_->sum_gradients(),
-      this->larger_leaf_splits_->sum_hessians(),
-      this->larger_leaf_splits_->num_data_in_leaf(),
-      this->larger_leaf_splits_->min_constraint(),
-      this->larger_leaf_splits_->max_constraint(),
-      &larger_bestsplit_per_features[feature_index]);
+    // FIXME Fill the vectors with the actual constraints and thresholds
+    this->larger_leaf_histogram_array_[feature_index]
+        .FindBestThreshold(this->larger_leaf_splits_->sum_gradients(),
+                           this->larger_leaf_splits_->sum_hessians(),
+                           this->larger_leaf_splits_->num_data_in_leaf(),
+                           &larger_bestsplit_per_features[feature_index],
+                           max_constraints, min_constraints, max_constraints,
+                           min_constraints, thresholds, thresholds);
     larger_bestsplit_per_features[feature_index].feature = real_feature_index;
     OMP_LOOP_EX_END();
   }
@@ -414,13 +419,16 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
                                       smaller_leaf_histogram_array_global_[feature_index].RawData());
 
       // find best threshold
+      // FIXME Fill the vectors with the actual constraints and thresholds
+      std::vector<double> max_constraints;
+      std::vector<double> min_constraints;
+      std::vector<uint32_t> thresholds;
       smaller_leaf_histogram_array_global_[feature_index].FindBestThreshold(
-        smaller_leaf_splits_global_->sum_gradients(),
-        smaller_leaf_splits_global_->sum_hessians(),
-        GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
-        smaller_leaf_splits_global_->min_constraint(),
-        smaller_leaf_splits_global_->max_constraint(),
-        &smaller_split);
+          smaller_leaf_splits_global_->sum_gradients(),
+          smaller_leaf_splits_global_->sum_hessians(),
+          GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
+          &smaller_split, max_constraints, min_constraints, max_constraints,
+          min_constraints, thresholds, thresholds);
       smaller_split.feature = real_feature_index;
       if (smaller_split > smaller_bests_per_thread[tid] && smaller_node_used_features[feature_index]) {
         smaller_bests_per_thread[tid] = smaller_split;
@@ -438,13 +446,17 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
                                       larger_leaf_histogram_array_global_[feature_index].RawData());
 
       // find best threshold
+      // FIXME Fill the vectors with the actual constraints and thresholds
+      std::vector<double> max_constraints;
+      std::vector<double> min_constraints;
+      std::vector<uint32_t> thresholds;
+
       larger_leaf_histogram_array_global_[feature_index].FindBestThreshold(
-        larger_leaf_splits_global_->sum_gradients(),
-        larger_leaf_splits_global_->sum_hessians(),
-        GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
-        larger_leaf_splits_global_->min_constraint(),
-        larger_leaf_splits_global_->max_constraint(),
-        &larger_split);
+          larger_leaf_splits_global_->sum_gradients(),
+          larger_leaf_splits_global_->sum_hessians(),
+          GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
+          &larger_split, max_constraints, min_constraints, max_constraints,
+          min_constraints, thresholds, thresholds);
       larger_split.feature = real_feature_index;
       if (larger_split > larger_best_per_thread[tid] && larger_node_used_features[feature_index]) {
         larger_best_per_thread[tid] = larger_split;
@@ -488,8 +500,6 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, 
   // set the global number of data for leaves
   global_data_count_in_leaf_[*left_leaf] = best_split_info.left_count;
   global_data_count_in_leaf_[*right_leaf] = best_split_info.right_count;
-  auto p_left = smaller_leaf_splits_global_.get();
-  auto p_right = larger_leaf_splits_global_.get();
   // init the global sumup info
   int depth = tree->leaf_depth(*left_leaf);
   #ifdef DEBUG
@@ -509,22 +519,6 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, 
     larger_leaf_splits_global_->Init(*left_leaf, this->data_partition_.get(),
                                      best_split_info.left_sum_gradient,
                                      best_split_info.left_sum_hessian, depth);
-    p_left = larger_leaf_splits_global_.get();
-    p_right = smaller_leaf_splits_global_.get();
-  }
-  const int inner_feature_index = this->train_data_->InnerFeatureIndex(best_split_info.feature);
-  bool is_numerical_split = this->train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin;
-  p_left->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
-  p_right->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
-  if (is_numerical_split) {
-    double mid = (best_split_info.left_output + best_split_info.right_output) / 2.0f;
-    if (best_split_info.monotone_type < 0) {
-      p_left->SetValueConstraint(mid, best_split_info.max_constraint);
-      p_right->SetValueConstraint(best_split_info.min_constraint, mid);
-    } else if (best_split_info.monotone_type > 0) {
-      p_left->SetValueConstraint(best_split_info.min_constraint, mid);
-      p_right->SetValueConstraint(mid, best_split_info.max_constraint);
-    }
   }
 }
 
