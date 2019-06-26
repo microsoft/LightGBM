@@ -269,7 +269,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::CopyLocalHistogram(const std::vec
 }
 
 template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
+void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
   // use local data to find local best splits
   std::vector<int8_t> is_feature_used(this->num_features_, 0);
 #pragma omp parallel for schedule(static)
@@ -380,11 +380,12 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, sizeof(HistogramBinEntry), block_start_.data(), block_len_.data(),
                          output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramBinEntry::SumReducer);
 
-  this->FindBestSplitsFromHistograms(is_feature_used, false);
+  this->FindBestSplitsFromHistograms(is_feature_used, false, tree);
 }
 
 template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
+void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
+    const std::vector<int8_t> &, bool, const Tree *tree) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->num_threads_);
   std::vector<SplitInfo> larger_best_per_thread(this->num_threads_);
   std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);

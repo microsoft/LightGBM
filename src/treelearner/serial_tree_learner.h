@@ -91,11 +91,13 @@ class SerialTreeLearner: public TreeLearner {
   */
   virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf);
 
-  virtual void FindBestSplits();
+  virtual void FindBestSplits(const Tree* tree);
 
   virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
-  virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
+  virtual void
+  FindBestSplitsFromHistograms(const std::vector<int8_t> &is_feature_used,
+                               bool use_subtract, const Tree *tree);
 
   /*!
   * \brief Partition tree and data according best split.

@@ -208,7 +208,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       init_split_time += std::chrono::steady_clock::now() - start_time;
       #endif
       // find best threshold for every feature
-      FindBestSplits();
+      FindBestSplits(tree.get());
     } else if (aborted_last_force_split) {
       aborted_last_force_split = false;
     }
@@ -476,7 +476,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
   return true;
 }
 
-void SerialTreeLearner::FindBestSplits() {
+void SerialTreeLearner::FindBestSplits(const Tree* tree) {
   std::vector<int8_t> is_feature_used(num_features_, 0);
   #pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
@@ -490,7 +490,7 @@ void SerialTreeLearner::FindBestSplits() {
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
   ConstructHistograms(is_feature_used, use_subtract);
-  FindBestSplitsFromHistograms(is_feature_used, use_subtract);
+  FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
 }
 
 void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
@@ -521,7 +521,9 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
   #endif
 }
 
-void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
+void SerialTreeLearner::FindBestSplitsFromHistograms(
+    const std::vector<int8_t> &is_feature_used, bool use_subtract,
+    const Tree *tree) {
   #ifdef TIMETAG
   auto start_time = std::chrono::steady_clock::now();
   #endif
@@ -620,7 +622,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
     // before processing next node from queue, store info for current left/right leaf
     // store "best split" for left and right, even if they might be overwritten by forced split
     if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
-      FindBestSplits();
+      FindBestSplits(tree);
     }
     // then, compute own splits
     SplitInfo left_split;
