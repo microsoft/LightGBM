@@ -20,6 +20,8 @@ namespace LightGBM {
 
 class CostEfficientGradientBoosting {
  public:
+  std::vector<SplitInfo> splits_per_leaf_;
+
   explicit CostEfficientGradientBoosting(const SerialTreeLearner* tree_learner):tree_learner_(tree_learner) {
   }
   static bool IsEnable(const Config* config) {
@@ -106,7 +108,6 @@ class CostEfficientGradientBoosting {
   }
 
   const SerialTreeLearner* tree_learner_;
-  std::vector<SplitInfo> splits_per_leaf_;
   std::vector<bool> is_feature_used_in_split_;
   std::vector<uint32_t> feature_used_in_data_;
 };

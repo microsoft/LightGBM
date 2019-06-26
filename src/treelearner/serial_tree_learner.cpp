@@ -27,6 +27,8 @@ std::chrono::duration<double, std::milli> split_time;
 std::chrono::duration<double, std::milli> ordered_bin_time;
 #endif  // TIMETAG
 
+double EPS = 1e-12;
+
 SerialTreeLearner::SerialTreeLearner(const Config* config)
   :config_(config) {
   random_ = Random(config_->feature_fraction_seed);
@@ -930,6 +932,308 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   }
 }
 
+// this function is only used if the monotone precise mode is enabled
+// it computes the constraints for a given leaf and a given feature
+// (there can be many constraints because the constraints can depend on thresholds)
+void SerialTreeLearner::ComputeConstraintsPerThreshold(
+    int feature, const Tree *tree, int node_idx, unsigned int tid,
+    bool per_threshold, bool compute_min, bool compute_max, uint32_t it_start,
+    uint32_t it_end) {
+  int parent_idx = (node_idx < 0) ? tree->leaf_parent(~node_idx)
+                                  : tree->node_parent(node_idx);
+
+  if (parent_idx != -1) {
+    int inner_feature = tree->split_feature_inner(parent_idx);
+    int8_t monotone_type = train_data_->FeatureMonotone(inner_feature);
+    bool is_right_split = tree->right_child(parent_idx) == node_idx;
+    bool split_contains_new_information = true;
+    bool is_split_numerical = (train_data_->FeatureBinMapper(inner_feature)
+                                   ->bin_type()) == BinType::NumericalBin;
+    uint32_t threshold = tree->threshold_in_bin(parent_idx);
+
+    // when we go up, we can get more information about the position of the original leaf
+    // so the starting and ending thresholds can be updated, which will save some time later
+    if ((feature == inner_feature) && is_split_numerical) {
+      if (is_right_split) {
+        it_start = std::max(threshold, it_start);
+      } else {
+        it_end = std::min(threshold + 1, it_end);
+      }
+#ifdef DEBUG
+      CHECK(it_start < it_end);
+#endif
+    }
+
+    // only branches that contain leaves that are contiguous to the original leaf need to be visited
+    for (unsigned int i = 0; i < features[tid].size(); ++i) {
+      if (features[tid][i] == inner_feature && is_split_numerical &&
+          is_in_right_split[tid][i] == is_right_split) {
+        split_contains_new_information = false;
+        break;
+      }
+    }
+
+    if (split_contains_new_information) {
+      if (monotone_type != 0) {
+        int left_child_idx = tree->left_child(parent_idx);
+        int right_child_idx = tree->right_child(parent_idx);
+        bool left_child_is_curr_idx = (left_child_idx == node_idx);
+
+        bool take_min = (monotone_type < 0) ? left_child_is_curr_idx
+                                            : !left_child_is_curr_idx;
+        if ((take_min && compute_min) || (!take_min && compute_max)) {
+          int node_idx_to_pass =
+              (left_child_is_curr_idx) ? right_child_idx : left_child_idx;
+
+          // we go down in the opposite branch to see if some
+          // constraints that would apply to the original leaf can be found
+          ComputeConstraintsPerThresholdInSubtree(
+              feature, inner_feature, tree, node_idx_to_pass, take_min,
+              it_start, it_end, features[tid], thresholds[tid],
+              is_in_right_split[tid], tid, per_threshold);
+        }
+      }
+
+      is_in_right_split[tid].push_back(is_right_split);
+      thresholds[tid].push_back(threshold);
+      features[tid].push_back(inner_feature);
+    }
+
+    // we keep going up the tree to find constraints that could come from somewhere else
+    if (parent_idx != 0) {
+      ComputeConstraintsPerThreshold(feature, tree, parent_idx, tid,
+                                     per_threshold, compute_min, compute_max,
+                                     it_start, it_end);
+    }
+  }
+}
+
+// this function checks if the original leaf and the children of the node that is
+// currently being visited are contiguous, and if so, the children should be visited too
+std::pair<bool, bool> SerialTreeLearner::ShouldKeepGoingLeftRight(
+    const Tree *tree, int node_idx, const std::vector<int> &features,
+    const std::vector<uint32_t> &thresholds,
+    const std::vector<bool> &is_in_right_split) {
+  int inner_feature = tree->split_feature_inner(node_idx);
+  uint32_t threshold = tree->threshold_in_bin(node_idx);
+  bool is_split_numerical = train_data_->FeatureBinMapper(inner_feature)
+                                ->bin_type() == BinType::NumericalBin;
+
+  bool keep_going_right = true;
+  bool keep_going_left = true;
+  // we check if the left and right node are contiguous with the original leaf
+  // if so we should keep going down these nodes to update constraints
+  for (unsigned int i = 0; i < features.size(); ++i) {
+    if (features[i] == inner_feature) {
+      if (is_split_numerical) {
+        if (threshold >= thresholds[i] && !is_in_right_split[i]) {
+          keep_going_right = false;
+        }
+        if (threshold <= thresholds[i] && is_in_right_split[i]) {
+          keep_going_left = false;
+        }
+      }
+    }
+  }
+  return std::pair<bool, bool>(keep_going_left, keep_going_right);
+}
+
+// this function is called only when computing constraints when the monotone
+// precise mode is set to true
+// it makes sure that it is worth it to visit a branch, as it could
+// not contain any relevant constraint (for example if the a branch
+// with bigger values is also constraining the original leaf, then
+// it is useless to visit the branch with smaller values)
+std::pair<bool, bool> SerialTreeLearner::LeftRightContainsRelevantInformation(
+    bool maximum, int inner_feature, bool split_feature_is_inner_feature) {
+  if (split_feature_is_inner_feature) {
+    return std::pair<bool, bool>(true, true);
+  }
+  int8_t monotone_type = train_data_->FeatureMonotone(inner_feature);
+  if (monotone_type == 0) {
+    return std::pair<bool, bool>(true, true);
+  }
+  if ((monotone_type == -1 && maximum) || (monotone_type == 1 && !maximum)) {
+    return std::pair<bool, bool>(true, false);
+  }
+  if ((monotone_type == 1 && maximum) || (monotone_type == -1 && !maximum)) {
+    return std::pair<bool, bool>(false, true);
+  }
+}
+
+// at any point in time, for an index i, the constraint constraint[i] has to be valid on
+// [threshold[i]: threshold[i + 1]) (or [threshold[i]: +inf) if i is the last index of the array)
+// therefore, when a constraint is added on a leaf, it must be done very carefully
+void SerialTreeLearner::UpdateConstraints(
+    std::vector<std::vector<double> > &constraints,
+    std::vector<std::vector<uint32_t> > &thresholds, double extremum,
+    uint32_t it_start, uint32_t it_end, int split_feature, int tid,
+    bool maximum) {
+  bool start_done = false;
+  bool end_done = false;
+  // one must always keep track of the previous constraint
+  // for example when adding a constraints cstr2 on thresholds [1:2),
+  // on an existing constraints cstr1 on thresholds [0, +inf),
+  // the thresholds and constraints must become
+  // [0, 1, 2] and  [cstr1, cstr2, cstr1]
+  // so since we loop through thresholds only once,
+  // the previous constraint that still applies needs to be recorded
+  double previous_constraint;
+  double current_constraint;
+  for (unsigned int i = 0; i < thresholds[tid].size();) {
+    current_constraint = constraints[tid][i];
+    // this is the easy case when the thresholds match
+    if (thresholds[tid][i] == it_start) {
+      constraints[tid][i] = (maximum) ? std::max(extremum, constraints[tid][i])
+                                      : std::min(extremum, constraints[tid][i]);
+      start_done = true;
+    }
+    if (thresholds[tid][i] > it_start) {
+      // existing constraint is updated if there is a need for it
+      if (thresholds[tid][i] < it_end) {
+        constraints[tid][i] = (maximum)
+                                  ? std::max(extremum, constraints[tid][i])
+                                  : std::min(extremum, constraints[tid][i]);
+      }
+      // when thresholds don't match, a new threshold
+      // and a new constraint may need to be inserted
+      if (!start_done) {
+        start_done = true;
+        if ((maximum && extremum > previous_constraint) ||
+            (!maximum && extremum < previous_constraint)) {
+          constraints[tid].insert(constraints[tid].begin() + i, extremum);
+          thresholds[tid].insert(thresholds[tid].begin() + i, it_start);
+          i += 1;
+        }
+      }
+    }
+    // easy case when the thresholds match again
+    if (thresholds[tid][i] == it_end) {
+      end_done = true;
+      i += 1;
+      break;
+    }
+    // if they don't then, the previous constraint needs to be added back where the current one ends
+    if (thresholds[tid][i] > it_end) {
+      if (i != 0 && previous_constraint != constraints[tid][i - 1]) {
+        constraints[tid]
+            .insert(constraints[tid].begin() + i, previous_constraint);
+        thresholds[tid].insert(thresholds[tid].begin() + i, it_end);
+      }
+      end_done = true;
+      i += 1;
+      break;
+    }
+    // If 2 successive constraints are the same then the second one may as well be deleted
+    if (i != 0 && constraints[tid][i] == constraints[tid][i - 1]) {
+      constraints[tid].erase(constraints[tid].begin() + i);
+      thresholds[tid].erase(thresholds[tid].begin() + i);
+      previous_constraint = current_constraint;
+      i -= 1;
+    }
+    previous_constraint = current_constraint;
+    i += 1;
+  }
+  // if the loop didn't get to an index greater than it_start, it needs to be added at the end
+  if (!start_done) {
+    if ((maximum && extremum > constraints[tid].back()) ||
+        (!maximum && extremum < constraints[tid].back())) {
+      constraints[tid].push_back(extremum);
+      thresholds[tid].push_back(it_start);
+    } else {
+      end_done = true;
+    }
+  }
+  // if we didn't get to an index after it_end, then the previous constraint needs to be set back
+  // unless it_end goes up to the last bin of the feature
+  if (!end_done &&
+      static_cast<int>(it_end) != train_data_->NumBin(split_feature) &&
+      previous_constraint != constraints[tid].back()) {
+    constraints[tid].push_back(previous_constraint);
+    thresholds[tid].push_back(it_end);
+  }
+}
+
+// this function goes down in a subtree to find the constraints that would apply
+void SerialTreeLearner::ComputeConstraintsPerThresholdInSubtree(
+    int split_feature, int monotone_feature, const Tree *tree, int node_idx,
+    bool maximum, uint32_t it_start, uint32_t it_end,
+    const std::vector<int> &features, const std::vector<uint32_t> &thresholds,
+    const std::vector<bool> &is_in_right_split, unsigned int tid,
+    bool per_threshold) {
+  bool is_original_split_numerical =
+      train_data_->FeatureBinMapper(split_feature)->bin_type() ==
+      BinType::NumericalBin;
+  double extremum;
+  // if we just got to a leaf, then we update
+  // the constraints using the leaf value
+  if (node_idx < 0) {
+    extremum = tree->LeafOutput(~node_idx);
+#ifdef DEBUG
+    CHECK(it_start < it_end);
+#endif
+    // if the constraints per threshold are needed then monotone
+    // precise mode is enabled and we are not refitting leaves
+    if (per_threshold && is_original_split_numerical) {
+      std::vector<std::vector<double> > &constraints =
+          (maximum) ? min_constraints : max_constraints;
+      std::vector<std::vector<uint32_t> > &thresholds =
+          (maximum) ? thresholds_min_constraints : thresholds_max_constraints;
+      UpdateConstraints(constraints, thresholds, extremum, it_start, it_end,
+                        split_feature, tid, maximum);
+    } else { // otherwise the constraints can be updated just by performing a min / max
+      if (maximum) {
+        min_constraints[tid][0] = std::max(min_constraints[tid][0], extremum);
+      } else {
+        max_constraints[tid][0] = std::min(max_constraints[tid][0], extremum);
+      }
+    }
+  }
+  // if the function got to a node, it keeps going down the tree
+  else {
+    // check if the children are contiguous to the original leaf
+    std::pair<bool, bool> keep_going_left_right = ShouldKeepGoingLeftRight(
+        tree, node_idx, features, thresholds, is_in_right_split);
+    int inner_feature = tree->split_feature_inner(node_idx);
+    uint32_t threshold = tree->threshold_in_bin(node_idx);
+
+    bool split_feature_is_inner_feature = (inner_feature == split_feature);
+    bool split_feature_is_monotone_feature =
+        (monotone_feature == split_feature);
+    // it is made sure that both children contain values that could potentially
+    // help determine the true constraints for the original leaf
+    std::pair<bool, bool> left_right_contain_relevant_information =
+        LeftRightContainsRelevantInformation(
+            maximum, inner_feature, split_feature_is_inner_feature &&
+                                        !split_feature_is_monotone_feature);
+    // if a child does not contain relevant information compared to the other child,
+    // and if the other child is not contiguous, then we still need to go down the first child
+    if (keep_going_left_right.first &&
+        (left_right_contain_relevant_information.first ||
+         !keep_going_left_right.second)) {
+      uint32_t new_it_end =
+          (split_feature_is_inner_feature && is_original_split_numerical)
+              ? std::min(threshold + 1, it_end)
+              : it_end;
+      ComputeConstraintsPerThresholdInSubtree(
+          split_feature, monotone_feature, tree, tree->left_child(node_idx),
+          maximum, it_start, new_it_end, features, thresholds,
+          is_in_right_split, tid, per_threshold);
+    }
+    if (keep_going_left_right.second &&
+        (left_right_contain_relevant_information.second ||
+         !keep_going_left_right.first)) {
+      uint32_t new_it_start =
+          (split_feature_is_inner_feature && is_original_split_numerical)
+              ? std::max(threshold + 1, it_start)
+              : it_start;
+      ComputeConstraintsPerThresholdInSubtree(
+          split_feature, monotone_feature, tree, tree->right_child(node_idx),
+          maximum, new_it_start, it_end, features, thresholds,
+          is_in_right_split, tid, per_threshold);
+    }
+  }
+}
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                                         data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
@@ -969,6 +1273,411 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       }
     }
   }
+}
+
+// this function goes through the tree to find how the split that was just made is
+// going to affect other leaves
+void SerialTreeLearner::GoDownToFindLeavesToUpdate(
+    const Tree *tree, int node_idx, const std::vector<int> &features,
+    const std::vector<uint32_t> &thresholds,
+    const std::vector<bool> &is_in_right_split, int maximum, int split_feature,
+    const SplitInfo &split_info, double previous_leaf_output,
+    bool use_left_leaf, bool use_right_leaf, uint32_t split_threshold) {
+  if (node_idx < 0) {
+    int leaf_idx = ~node_idx;
+
+    // if leaf is at max depth then there is no need to update it
+    int max_depth = config_->max_depth;
+    if (tree->leaf_depth(leaf_idx) >= max_depth && max_depth > 0) {
+      return;
+    }
+
+    // splits that are not to be used shall not be updated
+    if (best_split_per_leaf_[leaf_idx].gain == kMinScore) {
+      return;
+    }
+
+    std::pair<double, double> min_max_constraints;
+    bool something_changed;
+    if (use_right_leaf && use_left_leaf) {
+      min_max_constraints =
+          std::minmax(split_info.right_output, split_info.left_output);
+    } else if (use_right_leaf && !use_left_leaf) {
+      min_max_constraints = std::pair<double, double>(split_info.right_output,
+                                                      split_info.right_output);
+    } else {
+      min_max_constraints = std::pair<double, double>(split_info.left_output,
+                                                      split_info.left_output);
+    }
+
+#ifdef DEBUG
+    if (maximum) {
+      CHECK(min_max_constraints.first >= tree->LeafOutput(leaf_idx));
+    } else {
+      CHECK(min_max_constraints.second <= tree->LeafOutput(leaf_idx));
+    }
+#endif
+
+    if (!config_->monotone_precise_mode) {
+      if (!maximum) {
+        something_changed =
+            constraints_per_leaf_[leaf_idx]
+                .SetMinConstraintAndReturnChange(min_max_constraints.second);
+      } else {
+        something_changed =
+            constraints_per_leaf_[leaf_idx]
+                .SetMaxConstraintAndReturnChange(min_max_constraints.first);
+      }
+      if (!something_changed) {
+        return;
+      }
+    } else {
+      if (!maximum) {
+        // both functions need to be called in this order
+        // because they modify the struct
+        something_changed =
+            constraints_per_leaf_[leaf_idx]
+                .CrossesMinConstraint(min_max_constraints.second);
+        something_changed = constraints_per_leaf_[leaf_idx]
+                                .IsInMinConstraints(previous_leaf_output) ||
+                            something_changed;
+      } else {
+        // both functions need to be called in this order
+        // because they modify the struct
+        something_changed =
+            constraints_per_leaf_[leaf_idx]
+                .CrossesMaxConstraint(min_max_constraints.first);
+        something_changed = constraints_per_leaf_[leaf_idx]
+                                .IsInMaxConstraints(previous_leaf_output) ||
+                            something_changed;
+      }
+      // if constraints have changed, then best splits need to be updated
+      // otherwise, we can just continue and go to the next split
+      if (!something_changed) {
+        return;
+      }
+    }
+    UpdateBestSplitsFromHistograms(best_split_per_leaf_[leaf_idx], leaf_idx,
+                                   tree->leaf_depth(leaf_idx), tree);
+  } else {
+    // check if the children are contiguous with the original leaf
+    std::pair<bool, bool> keep_going_left_right = ShouldKeepGoingLeftRight(
+        tree, node_idx, features, thresholds, is_in_right_split);
+    int inner_feature = tree->split_feature_inner(node_idx);
+    uint32_t threshold = tree->threshold_in_bin(node_idx);
+    bool is_split_numerical = train_data_->FeatureBinMapper(inner_feature)
+                                  ->bin_type() == BinType::NumericalBin;
+    bool use_left_leaf_for_update = true;
+    bool use_right_leaf_for_update = true;
+    if (is_split_numerical && inner_feature == split_feature) {
+      if (threshold >= split_threshold) {
+        use_left_leaf_for_update = false;
+      }
+      if (threshold <= split_threshold) {
+        use_right_leaf_for_update = false;
+      }
+    }
+
+    if (keep_going_left_right.first) {
+      GoDownToFindLeavesToUpdate(
+          tree, tree->left_child(node_idx), features, thresholds,
+          is_in_right_split, maximum, split_feature, split_info,
+          previous_leaf_output, use_left_leaf,
+          use_right_leaf_for_update && use_right_leaf, split_threshold);
+    }
+    if (keep_going_left_right.second) {
+      GoDownToFindLeavesToUpdate(
+          tree, tree->right_child(node_idx), features, thresholds,
+          is_in_right_split, maximum, split_feature, split_info,
+          previous_leaf_output, use_left_leaf_for_update && use_left_leaf,
+          use_right_leaf, split_threshold);
+    }
+  }
+}
+
+// this function goes through the tree to find how the split that
+// has just been performed is going to affect the constraints of other leaves
+void SerialTreeLearner::GoUpToFindLeavesToUpdate(
+    const Tree *tree, int node_idx, std::vector<int> &features,
+    std::vector<uint32_t> &thresholds, std::vector<bool> &is_in_right_split,
+    int split_feature, const SplitInfo &split_info, double previous_leaf_output,
+    uint32_t split_threshold) {
+  int parent_idx = tree->node_parent(node_idx);
+  if (parent_idx != -1) {
+    int inner_feature = tree->split_feature_inner(parent_idx);
+    int8_t monotone_type = train_data_->FeatureMonotone(inner_feature);
+    bool is_right_split = tree->right_child(parent_idx) == node_idx;
+    bool split_contains_new_information = true;
+    bool is_split_numerical = train_data_->FeatureBinMapper(inner_feature)
+                                  ->bin_type() == BinType::NumericalBin;
+
+    // only branches containing leaves that are contiguous to the original leaf need to be updated
+    for (unsigned int i = 0; i < features.size(); ++i) {
+      if ((features[i] == inner_feature && is_split_numerical) &&
+          (is_in_right_split[i] == is_right_split)) {
+        split_contains_new_information = false;
+        break;
+      }
+    }
+
+    if (split_contains_new_information) {
+      if (monotone_type != 0) {
+        int left_child_idx = tree->left_child(parent_idx);
+        int right_child_idx = tree->right_child(parent_idx);
+        bool left_child_is_curr_idx = (left_child_idx == node_idx);
+        int node_idx_to_pass =
+            (left_child_is_curr_idx) ? right_child_idx : left_child_idx;
+        bool take_min = (monotone_type < 0) ? left_child_is_curr_idx
+                                            : !left_child_is_curr_idx;
+
+        GoDownToFindLeavesToUpdate(tree, node_idx_to_pass, features, thresholds,
+                                   is_in_right_split, take_min, split_feature,
+                                   split_info, previous_leaf_output, true, true,
+                                   split_threshold);
+      }
+
+      is_in_right_split.push_back(tree->right_child(parent_idx) == node_idx);
+      thresholds.push_back(tree->threshold_in_bin(parent_idx));
+      features.push_back(tree->split_feature_inner(parent_idx));
+    }
+
+    if (parent_idx != 0) {
+      GoUpToFindLeavesToUpdate(tree, parent_idx, features, thresholds,
+                               is_in_right_split, split_feature, split_info,
+                               previous_leaf_output, split_threshold);
+    }
+  }
+}
+
+// this function updates the best split for each leaf
+// it is called only when monotone constraints exist
+void SerialTreeLearner::UpdateBestSplitsFromHistograms(SplitInfo &split,
+                                                       int leaf, int depth,
+                                                       const Tree *tree) {
+  std::vector<SplitInfo> bests(num_threads_);
+  std::vector<bool> should_split_be_worse(num_threads_, false);
+
+  // the feature histogram is retrieved
+  FeatureHistogram *histogram_array_;
+  histogram_pool_.Get(leaf, &histogram_array_);
+
+  OMP_INIT_EX();
+#pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
+  for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    OMP_LOOP_EX_BEGIN();
+    // the feature that are supposed to be used are computed
+    if (!is_feature_used_[feature_index])
+      continue;
+    if (!histogram_array_[feature_index].is_splittable()) {
+      constraints_per_leaf_[leaf].are_actual_constraints_worse[feature_index] =
+          false;
+      continue;
+    }
+
+    // loop through the features to find the best one just like in the
+    // FindBestSplitsFromHistograms function
+    const int tid = omp_get_thread_num();
+    int real_fidx = train_data_->RealFeatureIndex(feature_index);
+
+    // if the monotone precise mode is disabled or if the constraints have to be updated,
+    // but are not exclusively worse, then we update the constraints and the best split
+    if (!config_->monotone_precise_mode ||
+        (constraints_per_leaf_[leaf].ToBeUpdated(feature_index) &&
+         !constraints_per_leaf_[leaf]
+              .AreActualConstraintsWorse(feature_index))) {
+
+      ComputeBestSplitForFeature(
+          split.left_sum_gradient + split.right_sum_gradient,
+          split.left_sum_hessian + split.right_sum_hessian,
+          split.left_count + split.right_count, feature_index, histogram_array_,
+          bests, leaf, depth, tid, real_fidx, tree, true);
+    } else {
+      if (cegb_->splits_per_leaf_[leaf * train_data_->num_features() + feature_index] >
+          bests[tid]) {
+        bests[tid] = cegb_->splits_per_leaf_
+            [leaf * train_data_->num_features() + feature_index];
+        should_split_be_worse[tid] =
+            constraints_per_leaf_[leaf]
+                .AreActualConstraintsWorse(feature_index);
+      }
+    }
+
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+
+  auto best_idx = ArrayArgs<SplitInfo>::ArgMax(bests);
+  // if the best split that has been found previously actually doesn't have the true constraints
+  // but worse ones that were not computed before to optimize the computation time,
+  // then we update every split and every constraints that should be updated
+  if (should_split_be_worse[best_idx]) {
+    std::fill(bests.begin(), bests.end(), SplitInfo());
+#pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
+    for (int feature_index = 0; feature_index < num_features_;
+         ++feature_index) {
+      OMP_LOOP_EX_BEGIN();
+      if (!is_feature_used_[feature_index])
+        continue;
+      if (!histogram_array_[feature_index].is_splittable()) {
+        continue;
+      }
+
+      const int tid = omp_get_thread_num();
+      int real_fidx = train_data_->RealFeatureIndex(feature_index);
+
+      if (constraints_per_leaf_[leaf]
+              .AreActualConstraintsWorse(feature_index)) {
+#ifdef DEBUG
+        CHECK(config_->monotone_precise_mode);
+        CHECK((constraints_per_leaf_[leaf].ToBeUpdated(feature_index)));
+#endif
+
+        ComputeBestSplitForFeature(
+            split.left_sum_gradient + split.right_sum_gradient,
+            split.left_sum_hessian + split.right_sum_hessian,
+            split.left_count + split.right_count, feature_index,
+            histogram_array_, bests, leaf, depth, tid, real_fidx, tree, true);
+      } else {
+#ifdef DEBUG
+        CHECK(!constraints_per_leaf_[leaf].ToBeUpdated(feature_index));
+#endif
+        if (cegb_->splits_per_leaf_
+                [leaf * train_data_->num_features() + feature_index] >
+            bests[tid]) {
+          bests[tid] = cegb_->splits_per_leaf_
+              [leaf * train_data_->num_features() + feature_index];
+        }
+      }
+
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+    best_idx = ArrayArgs<SplitInfo>::ArgMax(bests);
+  }
+
+  // note: the gains may differ for the same set of constraints due to the non-deterministic OMP reduction.
+  split = bests[best_idx];
+}
+
+// this function computes the best split for a given leaf and a given feature
+void SerialTreeLearner::ComputeBestSplitForFeature(
+    double sum_gradient, double sum_hessian, data_size_t num_data,
+    int feature_index, FeatureHistogram *histogram_array_,
+    std::vector<SplitInfo> &bests, int leaf_index, int depth, const int tid,
+    int real_fidx, const Tree *tree, bool update) {
+
+  // if this is not a subtree stemming from a monotone split, then no constraint apply
+  if (tree->leaf_is_in_monotone_subtree(leaf_index)) {
+    if (config_->monotone_precise_mode) {
+
+      ComputeConstraintsPerThreshold(
+          feature_index, tree, ~leaf_index, tid, config_->monotone_precise_mode,
+          constraints_per_leaf_[leaf_index].MinToBeUpdated(feature_index) ||
+              !update,
+          constraints_per_leaf_[leaf_index].MaxToBeUpdated(feature_index) ||
+              !update);
+
+      if (!constraints_per_leaf_[leaf_index].MinToBeUpdated(feature_index) &&
+          update) {
+        min_constraints[tid] =
+            constraints_per_leaf_[leaf_index].min_constraints[feature_index];
+        thresholds_min_constraints[tid] =
+            constraints_per_leaf_[leaf_index].min_thresholds[feature_index];
+      } else {
+        constraints_per_leaf_[leaf_index].min_constraints[feature_index] =
+            min_constraints[tid];
+        constraints_per_leaf_[leaf_index].min_thresholds[feature_index] =
+            thresholds_min_constraints[tid];
+      }
+
+      if (!constraints_per_leaf_[leaf_index].MaxToBeUpdated(feature_index) &&
+          update) {
+        max_constraints[tid] =
+            constraints_per_leaf_[leaf_index].max_constraints[feature_index];
+        thresholds_max_constraints[tid] =
+            constraints_per_leaf_[leaf_index].max_thresholds[feature_index];
+      } else {
+        constraints_per_leaf_[leaf_index].max_constraints[feature_index] =
+            max_constraints[tid];
+        constraints_per_leaf_[leaf_index].max_thresholds[feature_index] =
+            thresholds_max_constraints[tid];
+      }
+
+      dummy_min_constraints[tid] = min_constraints[tid];
+      dummy_max_constraints[tid] = max_constraints[tid];
+    }
+    if (!config_->monotone_precise_mode) {
+      dummy_min_constraints[tid][0] =
+          constraints_per_leaf_[leaf_index].min_constraints[0][0];
+      dummy_max_constraints[tid][0] =
+          constraints_per_leaf_[leaf_index].max_constraints[0][0];
+
+      min_constraints[tid][0] =
+          constraints_per_leaf_[leaf_index].min_constraints[0][0];
+      max_constraints[tid][0] =
+          constraints_per_leaf_[leaf_index].max_constraints[0][0];
+
+      thresholds_min_constraints[tid][0] =
+          constraints_per_leaf_[leaf_index].min_thresholds[0][0];
+      thresholds_max_constraints[tid][0] =
+          constraints_per_leaf_[leaf_index].max_thresholds[0][0];
+    }
+  }
+
+#ifdef DEBUG
+  CHECK(dummy_min_constraints[tid] == min_constraints[tid]);
+  CHECK(dummy_max_constraints[tid] == max_constraints[tid]);
+  for (const auto &x : max_constraints[tid]) {
+    CHECK(tree->LeafOutput(leaf_index) <= EPS + x);
+    CHECK(x > -std::numeric_limits<double>::max());
+  }
+  for (const auto &x : dummy_min_constraints[tid]) {
+    CHECK(tree->LeafOutput(leaf_index) + EPS >= x);
+    CHECK(x < std::numeric_limits<double>::max());
+  }
+#endif
+
+  SplitInfo new_split;
+  // FIXME Need to call histogram_array_[feature_index].FindBestThreshold
+
+  if (tree->leaf_is_in_monotone_subtree(leaf_index)) {
+    InitializeConstraints(tid);
+  }
+
+  new_split.feature = real_fidx;
+  if (cegb_ != nullptr) {
+      new_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, leaf_index, num_data, new_split);
+  }
+
+
+  if (new_split.monotone_type != 0) {
+    double penalty =
+        ComputeMonotoneSplitGainPenalty(depth, config_->monotone_penalty);
+    new_split.gain *= penalty;
+  }
+
+  if (new_split > bests[tid]) {
+    bests[tid] = new_split;
+  }
+
+  if (config_->monotone_precise_mode &&
+      tree->leaf_is_in_monotone_subtree(leaf_index)) {
+    constraints_per_leaf_[leaf_index].ResetUpdates(feature_index);
+  }
+
+#ifdef DEBUG
+  ComputeConstraintsPerThreshold(-1, tree, ~leaf_index, tid, false);
+  double min_constraint = min_constraints[tid][0];
+  double max_constraint = max_constraints[tid][0];
+  CHECK(tree->LeafOutput(leaf_index) >= min_constraint);
+  CHECK(tree->LeafOutput(leaf_index) <= max_constraint);
+
+  min_constraints[tid][0] = -std::numeric_limits<double>::max();
+  max_constraints[tid][0] = std::numeric_limits<double>::max();
+  thresholds[tid].clear();
+  is_in_right_split[tid].clear();
+  features[tid].clear();
+#endif
 }
 
 // initializing constraints is just writing that the constraints should +/- inf from threshold 0

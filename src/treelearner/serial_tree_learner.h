@@ -100,6 +100,9 @@ class SerialTreeLearner: public TreeLearner {
   FindBestSplitsFromHistograms(const std::vector<int8_t> &is_feature_used,
                                bool use_subtract, const Tree *tree);
 
+  virtual void UpdateBestSplitsFromHistograms(SplitInfo &split, int leaf,
+                                              int depth, const Tree *tree);
+
   /*!
   * \brief Partition tree and data according best split.
   * \param tree Current tree, will be splitted on this function.
@@ -121,10 +124,94 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
 
+  void ComputeBestSplitForFeature(double sum_gradient, double sum_hessian,
+                                  data_size_t num_data, int feature_index,
+                                  FeatureHistogram *histogram_array_,
+                                  std::vector<SplitInfo> &bests, int leaf_index,
+                                  int depth, const int tid, int real_fidx,
+                                  const Tree *tree, bool update = false);
+
+  void ComputeConstraintsPerThreshold(int feature, const Tree *tree,
+                                      int node_idx, unsigned int tid,
+                                      bool per_threshold, bool compute_min,
+                                      bool compute_max, uint32_t it_start,
+                                      uint32_t it_end);
+
+  void ComputeConstraintsPerThreshold(int feature, const Tree *tree,
+                                      int node_idx, unsigned int tid,
+                                      bool per_threshold = true,
+                                      bool compute_min = true,
+                                      bool compute_max = true) {
+    ComputeConstraintsPerThreshold(feature, tree, node_idx, tid, per_threshold,
+                                   compute_min, compute_max, 0,
+                                   train_data_->NumBin(feature));
+  }
+
+  void ComputeConstraintsPerThresholdInSubtree(
+      int split_feature, int monotone_feature, const Tree *tree, int node_idx,
+      bool maximum, uint32_t it_start, uint32_t it_end,
+      const std::vector<int> &features, const std::vector<uint32_t> &thresholds,
+      const std::vector<bool> &is_in_right_split, unsigned int tid,
+      bool per_threshold);
+
   static double ComputeMonotoneSplitGainPenalty(int depth, double penalization,
                                                 double epsilon = 1e-10);
 
+  void GoDownToFindLeavesToUpdate(const Tree *tree, int node_idx,
+                                  const std::vector<int> &features,
+                                  const std::vector<uint32_t> &thresholds,
+                                  const std::vector<bool> &is_in_right_split,
+                                  int maximum, int split_feature,
+                                  const SplitInfo &split_info,
+                                  double previous_leaf_output,
+                                  bool use_left_leaf, bool use_right_leaf,
+                                  uint32_t split_threshold);
+
+  /* Once we made a split, the constraints on other leaves may change.
+     We need to update them to remain coherent. */
+  void GoUpToFindLeavesToUpdate(const Tree *tree, int node_idx,
+                                std::vector<int> &features,
+                                std::vector<uint32_t> &thresholds,
+                                std::vector<bool> &is_in_right_split,
+                                int split_feature, const SplitInfo &split_info,
+                                double previous_leaf_output,
+                                uint32_t split_threshold);
+
+  void GoUpToFindLeavesToUpdate(const Tree *tree, int node_idx,
+                                int split_feature, const SplitInfo &split_info,
+                                double previous_leaf_output,
+                                uint32_t split_threshold) {
+    int depth = tree->leaf_depth(~tree->left_child(node_idx)) - 1;
+
+    std::vector<int> features;
+    std::vector<uint32_t> thresholds;
+    std::vector<bool> is_in_right_split;
+
+    features.reserve(depth);
+    thresholds.reserve(depth);
+    is_in_right_split.reserve(depth);
+
+    GoUpToFindLeavesToUpdate(tree, node_idx, features, thresholds,
+                             is_in_right_split, split_feature, split_info,
+                             previous_leaf_output, split_threshold);
+  }
+
+  std::pair<bool, bool>
+  ShouldKeepGoingLeftRight(const Tree *tree, int node_idx,
+                           const std::vector<int> &features,
+                           const std::vector<uint32_t> &thresholds,
+                           const std::vector<bool> &is_in_right_split);
+
+  std::pair<bool, bool>
+  LeftRightContainsRelevantInformation(bool maximum, int inner_feature,
+                                       bool split_feature_is_inner_feature);
+
   void InitializeConstraints(unsigned int tid);
+
+  void UpdateConstraints(std::vector<std::vector<double> > &constraints,
+                         std::vector<std::vector<uint32_t> > &thresholds,
+                         double extremum, uint32_t it_start, uint32_t it_end,
+                         int split_feature, int tid, bool maximum);
 
   /*! \brief number of data */
   data_size_t num_data_;
