@@ -71,6 +71,18 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   histogram_pool_.DynamicChangeSize(train_data_, config_, max_cache_size, config_->num_leaves);
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
+
+  // when the monotone precise mode is enabled, we need to store
+  // more constraints; hence the constructors are different
+  if (config_->monotone_precise_mode) {
+    constraints_per_leaf_.resize(config_->num_leaves,
+                                 Constraints(num_features_));
+  } else {
+    constraints_per_leaf_.resize(config_->num_leaves,
+                                 Constraints());
+  }
+  splits_per_leaf_.resize(config_->num_leaves*train_data_->num_features());
+
   // get ordered bin
   train_data_->CreateOrderedBins(&ordered_bins_);
 
@@ -337,6 +349,7 @@ void SerialTreeLearner::BeforeTrain() {
   // reset the splits for leaves
   for (int i = 0; i < config_->num_leaves; ++i) {
     best_split_per_leaf_[i].Reset();
+    constraints_per_leaf_[i].Reset();
   }
 
   // Sumup for root
