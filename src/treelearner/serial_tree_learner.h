@@ -205,6 +205,7 @@ class SerialTreeLearner: public TreeLearner {
   std::pair<bool, bool>
   LeftRightContainsRelevantInformation(bool maximum, int inner_feature,
                                        bool split_feature_is_inner_feature);
+  void ReFitLeaves(Tree* tree);
 
   void InitializeConstraints(unsigned int tid);
 

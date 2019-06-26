@@ -25,6 +25,7 @@ std::chrono::duration<double, std::milli> hist_time;
 std::chrono::duration<double, std::milli> find_split_time;
 std::chrono::duration<double, std::milli> split_time;
 std::chrono::duration<double, std::milli> ordered_bin_time;
+std::chrono::duration<double, std::milli> refit_leaves_time;
 #endif  // TIMETAG
 
 double EPS = 1e-12;
@@ -47,6 +48,7 @@ SerialTreeLearner::~SerialTreeLearner() {
   Log::Info("SerialTreeLearner::find_split costs %f", find_split_time * 1e-3);
   Log::Info("SerialTreeLearner::split costs %f", split_time * 1e-3);
   Log::Info("SerialTreeLearner::ordered_bin costs %f", ordered_bin_time * 1e-3);
+  Log::Info("SerialTreeLearner::refit_leaves costs %f", refit_leaves_time * 1e-3);
   #endif
 }
 
@@ -285,8 +287,82 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     #endif
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
+    #ifdef TIMETAG
+      start_time = std::chrono::steady_clock::now();
+    #endif
+      // when the monotone precise mode is enabled, some splits might unconstrain leaves in other branches
+      // if these leaves are not split before the tree is being fully built, then it might be possible to
+      // move their internal value (because they have been unconstrained) to achieve a better gain
+      if (config_->monotone_precise_mode) {
+        ReFitLeaves(tree.get());
+      }
+    #ifdef TIMETAG
+      refit_leaves_time += std::chrono::steady_clock::now() - start_time;
+    #endif
   Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
+}
+
+void SerialTreeLearner::ReFitLeaves(Tree *tree) {
+  CHECK(data_partition_->num_leaves() >= tree->num_leaves());
+  bool might_be_something_to_update = true;
+  std::vector<double> sum_grad(tree->num_leaves(), 0.0f);
+  std::vector<double> sum_hess(tree->num_leaves(), kEpsilon);
+  OMP_INIT_EX();
+  // first we need to compute gradients and hessians for each leaf
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < tree->num_leaves(); ++i) {
+    OMP_LOOP_EX_BEGIN();
+    if (!tree->leaf_is_in_monotone_subtree(i)) {
+      continue;
+    }
+    data_size_t cnt_leaf_data = 0;
+    auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
+    for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
+      auto idx = tmp_idx[j];
+      sum_grad[i] += gradients_[idx];
+      sum_hess[i] += hessians_[idx];
+    }
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+
+  while (might_be_something_to_update) {
+    might_be_something_to_update = false;
+    // this loop can't be multi-threaded easily because we could break
+    // monotonicity in the tree
+    for (int i = 0; i < tree->num_leaves(); ++i) {
+      if (!tree->leaf_is_in_monotone_subtree(i)) {
+        continue;
+      }
+      // we compute the constraints, and we only need one min and one max constraint this time
+      // because we are not going to split the leaf, we may just change its value
+      ComputeConstraintsPerThreshold(-1, tree, ~i, 0, false);
+      double min_constraint = min_constraints[0][0];
+      double max_constraint = max_constraints[0][0];
+#ifdef DEBUG
+      CHECK(tree->LeafOutput(i) >= min_constraint);
+      CHECK(tree->LeafOutput(i) <= max_constraint);
+#endif
+      double new_constrained_output =
+          FeatureHistogram::CalculateSplittedLeafOutput(
+              sum_grad[i], sum_hess[i], config_->lambda_l1, config_->lambda_l2,
+              config_->max_delta_step, min_constraint, max_constraint);
+      double old_output = tree->LeafOutput(i);
+      // a more accurate value may not immediately result in a loss reduction because of the shrinkage rate
+      if (fabs(old_output - new_constrained_output) > EPS) {
+        might_be_something_to_update = true;
+        tree->SetLeafOutput(i, new_constrained_output);
+      }
+
+      // we reset the constraints
+      min_constraints[0][0] = -std::numeric_limits<double>::max();
+      max_constraints[0][0] = std::numeric_limits<double>::max();
+      thresholds[0].clear();
+      is_in_right_split[0].clear();
+      features[0].clear();
+    }
+  }
 }
 
 Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
