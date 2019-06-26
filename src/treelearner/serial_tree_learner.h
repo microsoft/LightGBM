@@ -121,6 +121,9 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
 
+  static double ComputeMonotoneSplitGainPenalty(int depth, double penalization,
+                                                double epsilon = 1e-10);
+
   void InitializeConstraints(unsigned int tid);
 
   /*! \brief number of data */
