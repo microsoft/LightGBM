@@ -277,6 +277,42 @@ class TestSklearn(unittest.TestCase):
         self.assertListEqual(gbm5.booster_.pandas_categorical, cat_values)
         self.assertListEqual(gbm6.booster_.pandas_categorical, cat_values)
 
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_pandas_object_categorical(self):
+        import pandas as pd
+        np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
+        X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
+                          "B": np.random.permutation([1, 2, 3] * 100),  # int
+                          "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+                          "D": np.random.permutation([True, False] * 150),  # bool
+                          "E": pd.Categorical(np.random.permutation(['z', 'y', 'x', 'w', 'v'] * 60),
+                                              ordered=True)})  # str and ordered categorical
+        y = np.random.permutation([0, 1] * 150)
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),  # unseen category
+                               "B": np.random.permutation([1, 3] * 30),
+                               "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
+                               "D": np.random.permutation([True, False] * 30),
+                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                                                   ordered=True)})
+        np.random.seed()  # reset seed
+        cat_cols_actual = ["A"]
+        cat_cols_to_store = cat_cols_actual + ["E"]
+        cat_values = [X[col].astype('category').cat.categories.tolist() for col in cat_cols_to_store]
+
+        gbm0 = lgb.sklearn.LGBMClassifier().fit(X, pd.Series(y), categorical_feature=[0])
+        pred0 = gbm0.predict(X_test, raw_score=True)
+        gbm1 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A'])
+        pred1 = gbm1.predict(X_test, raw_score=True)
+        gbm1.booster_.save_model('categorical.model')
+        gbm2 = lgb.Booster(model_file='categorical.model')
+        pred2 = gbm2.predict(X_test)
+
+        np.testing.assert_allclose(pred0, pred1)
+        np.testing.assert_allclose(pred0, pred2)
+        self.assertListEqual(gbm0.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm1.booster_.pandas_categorical, cat_values)
+        self.assertListEqual(gbm2.booster_.pandas_categorical, cat_values)
+
     def test_predict(self):
         iris = load_iris()
         X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target,

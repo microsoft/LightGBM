@@ -260,6 +260,20 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             data = data.rename(columns=str)
         cat_cols = list(data.select_dtypes(include=['category']).columns)
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
+
+        if categorical_feature is not None and categorical_feature != 'auto':  # if user specified categorical features
+            features = set(data.columns)
+            is_column_names = all([col in features for col in categorical_feature])
+            if not is_column_names and max(categorical_feature) > len(features):
+                raise ValueError('Passed categorical column index is not contain in Dataset')
+            features = list(data.columns)
+            for col in categorical_feature:  # convert specified categorical features to category dtype
+                if not is_column_names:  # if user passed column indices instead of column names
+                    col = features[col]  # than we convert indices to appropriate column names
+                if data[col].dtype.name not in PANDAS_DTYPE_MAPPER:
+                    data[col] = data[col].astype('category')
+                    cat_cols.append(col)
+
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
         else:
