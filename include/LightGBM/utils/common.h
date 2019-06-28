@@ -172,7 +172,7 @@ inline void SplitToIntLike(const char *c_str, char delimiter,
   while (pos < str.length()) {
     if (str[pos] == delimiter) {
       if (i < pos) {
-        ret.push_back(T());
+        ret.push_back({});
         Atoi(str.substr(i, pos - i).c_str(), &ret.back());
       }
       ++pos;
@@ -182,7 +182,7 @@ inline void SplitToIntLike(const char *c_str, char delimiter,
     }
   }
   if (i < pos) {
-    ret.push_back(T());
+    ret.push_back({});
     Atoi(str.substr(i).c_str(), &ret.back());
   }
 }
