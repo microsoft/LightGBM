@@ -438,7 +438,11 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
 
     graph = Digraph(**kwargs)
     graph.attr("graph", nodesep="0.05", ranksep="0.1", rankdir="LR")
-    add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
+    if "internal_count" in tree_info['tree_structure']:
+        add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
+    else:
+        raise Exception("Cannnot plot trees with no split")
+
     if constraints:
         legend = """<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
