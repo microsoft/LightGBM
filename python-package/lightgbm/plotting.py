@@ -423,8 +423,8 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
             add(root['right_child'], total_count, name, r_dec)
         else:  # leaf
             name = 'leaf{0}'.format(root['leaf_index'])
-            label = 'leaf {0}:'.format(root['leaf_index'])
-            label += r'<br/> <B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
+            label = 'leaf {0}: '.format(root['leaf_index'])
+            label += r'<B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
             if 'leaf_count' in show_info:
                 label += r'<br/>leaf_count: {0}'.format(root['leaf_count'])
             if 'leaf_weight' in show_info:
