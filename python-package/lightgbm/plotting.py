@@ -383,11 +383,19 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
     def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
         if 'split_index' in root:  # non-leaf
+            if root['decision_type'] == '<=':
+                operator = "&#8804;"
+                l_dec, r_dec = "", ""
+            elif root['decision_type'] == '==':
+                operator = "="
+                l_dec, r_dec = 'is', "isn't"
+            else:
+                raise ValueError('Invalid decision type in tree model.')
             name = 'split{0}'.format(root['split_index'])
             if feature_names is not None:
-                label = '<B>{0}</B> = '.format(feature_names[root['split_feature']])
+                label = '<B>{0}</B> {1} '.format(feature_names[root['split_feature']], operator)
             else:
-                label = '<B>{0}</B> = '.format(root['split_feature'])
+                label = '<B>{0}</B> {1}; '.format(root['split_feature'], operator)
             label += r'{0}'.format(_float2str(root['threshold'], precision))
             for info in show_info:
                 if info in {'split_gain', 'internal_value', 'internal_weight'}:
@@ -413,12 +421,6 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
                     style = "filled" + style
             label = "<" + label + ">"
             graph.node(name, label=label, shape="rectangle", style=style, fillcolor=fillcolor)
-            if root['decision_type'] == '<=':
-                l_dec, r_dec = '&#8804;', '>'
-            elif root['decision_type'] == '==':
-                l_dec, r_dec = 'is', "isn't"
-            else:
-                raise ValueError('Invalid decision type in tree model.')
             add(root['left_child'], total_count, name, l_dec)
             add(root['right_child'], total_count, name, r_dec)
         else:  # leaf
@@ -437,7 +439,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
             graph.edge(parent, name, decision)
 
     graph = Digraph(**kwargs)
-    graph.attr("graph", nodesep="0.05", ranksep="0.1", rankdir="LR")
+    graph.attr("graph", nodesep="0.05", ranksep="0.3", rankdir="LR")
     if "internal_count" in tree_info['tree_structure']:
         add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
     else:
