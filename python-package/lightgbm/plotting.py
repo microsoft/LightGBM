@@ -439,22 +439,18 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
     add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
     if constraints:
         legend = """<
-            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="black">
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
              <TR>
-              <TD COLSPAN="2"><B>Legend</B></TD>
-             </TR>
-             <TR>
-              <TD>Monotone increasing</TD>
+              <TD>Increasing</TD>
               <TD BGCOLOR="#ddffdd"></TD>
              </TR>
              <TR>
-              <TD>Monotone decreasing</TD>
+              <TD>Decreasing</TD>
               <TD BGCOLOR="#ffdddd"></TD>
              </TR>
             </TABLE>
            >"""
         graph.node("legend", label=legend, shape="rectangle", color = "white")
-
     return graph
 
 
