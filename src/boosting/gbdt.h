@@ -504,6 +504,7 @@ class GBDT : public GBDTBase {
   bool need_re_bagging_;
   bool balanced_bagging_;
   std::string loaded_parameter_;
+  std::vector<int8_t> monotone_constraints_;
 
   Json forced_splits_json_;
 };
