@@ -429,6 +429,8 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
                 label += r'<br/>leaf_count: {0}'.format(root['leaf_count'])
             if 'leaf_weight' in show_info:
                 label += r'<br/>leaf_weight: {0}'.format(_float2str(root['leaf_weight'], precision))
+            if "data_percentage" in show_info:
+                label += r'<br/>{0}% of data'.format(_float2str(root['leaf_count'] / total_count * 100, 2))
             label = "<" + label + ">"
             graph.node(name, label=label)
         if parent is not None:
