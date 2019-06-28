@@ -369,7 +369,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraints={}, **kwargs):
+def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraints=None, **kwargs):
     """Convert specified tree to graphviz instance.
 
     See:
@@ -404,11 +404,11 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
 
             fillcolor = "white"
             style = ""
-            if feature_names is not None and feature_names[root['split_feature']] in constraints:
-                if constraints[feature_names[root['split_feature']]] == 1:
+            if constraints:
+                if constraints[root['split_feature']] == 1:
                     fillcolor = "#ddffdd"
                     style = "filled" + style
-                if constraints[feature_names[root['split_feature']]] == -1:
+                if constraints[root['split_feature']] == -1:
                     fillcolor = "#ffdddd"
                     style = "filled" + style
             label = "<" + label + ">"
@@ -456,7 +456,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, constraints = {}, show_info=None, precision=None,
+def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
                         old_name=None, old_comment=None, old_filename=None, old_directory=None,
                         old_format=None, old_engine=None, old_encoding=None, old_graph_attr=None,
                         old_node_attr=None, old_edge_attr=None, old_body=None, old_strict=False, **kwargs):
@@ -517,6 +517,11 @@ def create_tree_digraph(booster, tree_index=0, constraints = {}, show_info=None,
     else:
         feature_names = None
 
+    if 'monotone_constraints' in model:
+        monotone_constraints = model['monotone_constraints']
+    else:
+        monotone_constraints = None
+
     if tree_index < len(tree_infos):
         tree_info = tree_infos[tree_index]
     else:
@@ -525,7 +530,7 @@ def create_tree_digraph(booster, tree_index=0, constraints = {}, show_info=None,
     if show_info is None:
         show_info = []
 
-    graph = _to_graphviz(tree_info, show_info, feature_names, precision, constraints, **kwargs)
+    graph = _to_graphviz(tree_info, show_info, feature_names, precision, monotone_constraints, **kwargs)
 
     return graph
 
