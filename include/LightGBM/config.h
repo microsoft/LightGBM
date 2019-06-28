@@ -234,6 +234,30 @@ struct Config {
   // desc = **Note**: to enable bagging, ``bagging_freq`` should be set to a non zero value as well
   double bagging_fraction = 1.0;
 
+  // alias = pos_sub_row, pos_subsample, pos_bagging
+  // check = >0.0
+  // check = <=1.0
+  // desc = used only in ``binary`` application
+  // desc = used for imbalanced binary classification problem, will randomly sample ``#pos_samples * pos_bagging_fraction`` positive samples in bagging
+  // desc = should be used together with ``neg_bagging_fraction``
+  // desc = set this to ``1.0`` to disable
+  // desc = **Note**: to enable this, you need to set ``bagging_freq`` and ``neg_bagging_fraction`` as well
+  // desc = **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+  // desc = **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+  double pos_bagging_fraction = 1.0;
+
+  // alias = neg_sub_row, neg_subsample, neg_bagging
+  // check = >0.0
+  // check = <=1.0
+  // desc = used only in ``binary`` application
+  // desc = used for imbalanced binary classification problem, will randomly sample ``#neg_samples * neg_bagging_fraction`` negative samples in bagging
+  // desc = should be used together with ``pos_bagging_fraction``
+  // desc = set this to ``1.0`` to disable
+  // desc = **Note**: to enable this, you need to set ``bagging_freq`` and ``pos_bagging_fraction`` as well
+  // desc = **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+  // desc = **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+  double neg_bagging_fraction = 1.0;
+
   // alias = subsample_freq
   // desc = frequency for bagging
   // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration

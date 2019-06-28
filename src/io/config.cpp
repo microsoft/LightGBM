@@ -169,6 +169,9 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetTreeLearnerType(params, &tree_learner);
 
   GetMembersFromString(params);
+  
+  // sort eval_at
+  std::sort(eval_at.begin(), eval_at.end());
 
   if (valid_data_initscores.size() == 0 && valid.size() > 0) {
     valid_data_initscores = std::vector<std::string>(valid.size(), "");
@@ -262,6 +265,7 @@ void Config::CheckParamConflict() {
         && num_leaves == kDefaultNumLeaves) {
       Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
     }
+    num_leaves = std::min(num_leaves, 2 << max_depth);
   }
 }
 

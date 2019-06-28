@@ -1,5 +1,6 @@
 # coding: utf-8
 # pylint: skip-file
+import itertools
 import math
 import os
 import unittest
@@ -170,11 +171,11 @@ class TestSklearn(unittest.TestCase):
 
         for eval_set in gbm.evals_result_:
             for metric in gbm.evals_result_[eval_set]:
-                np.testing.assert_array_almost_equal(gbm.evals_result_[eval_set][metric],
-                                                     gbm_pickle.evals_result_[eval_set][metric])
+                np.testing.assert_allclose(gbm.evals_result_[eval_set][metric],
+                                           gbm_pickle.evals_result_[eval_set][metric])
         pred_origin = gbm.predict(X_test)
         pred_pickle = gbm_pickle.predict(X_test)
-        np.testing.assert_array_almost_equal(pred_origin, pred_pickle)
+        np.testing.assert_allclose(pred_origin, pred_pickle)
 
     def test_feature_importances_single_leaf(self):
         clf = lgb.LGBMClassifier(n_estimators=100)
@@ -254,19 +255,19 @@ class TestSklearn(unittest.TestCase):
         gbm6 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=[])
         pred6 = gbm6.predict(X_test, raw_score=True)
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred1)
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred2)
-        np.testing.assert_almost_equal(pred1, pred2)
-        np.testing.assert_almost_equal(pred0, pred3)
-        np.testing.assert_almost_equal(pred_prob, pred4)
+        np.testing.assert_allclose(pred1, pred2)
+        np.testing.assert_allclose(pred0, pred3)
+        np.testing.assert_allclose(pred_prob, pred4)
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred5)  # ordered cat features aren't treated as cat features by default
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred6)
         self.assertListEqual(gbm0.booster_.pandas_categorical, cat_values)
         self.assertListEqual(gbm1.booster_.pandas_categorical, cat_values)
@@ -602,7 +603,7 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
                       'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        np.testing.assert_array_equal(gbm.evals_result_['training']['l2'], np.inf)
+        np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.inf)
 
     def test_nan_handle(self):
         nrows = 1000
@@ -614,4 +615,38 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
                       'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-        np.testing.assert_array_equal(gbm.evals_result_['training']['l2'], np.nan)
+        np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
+
+    def test_class_weight(self):
+        X, y = load_digits(10, True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        y_train_str = y_train.astype('str')
+        y_test_str = y_test.astype('str')
+        gbm = lgb.LGBMClassifier(n_estimators=10, class_weight='balanced', silent=True)
+        gbm.fit(X_train, y_train,
+                eval_set=[(X_train, y_train), (X_test, y_test), (X_test, y_test),
+                          (X_test, y_test), (X_test, y_test)],
+                eval_class_weight=['balanced', None, 'balanced', {1: 10, 4: 20}, {5: 30, 2: 40}],
+                verbose=False)
+        for eval_set1, eval_set2 in itertools.combinations(gbm.evals_result_.keys(), 2):
+            for metric in gbm.evals_result_[eval_set1]:
+                np.testing.assert_raises(AssertionError,
+                                         np.testing.assert_allclose,
+                                         gbm.evals_result_[eval_set1][metric],
+                                         gbm.evals_result_[eval_set2][metric])
+        gbm_str = lgb.LGBMClassifier(n_estimators=10, class_weight='balanced', silent=True)
+        gbm_str.fit(X_train, y_train_str,
+                    eval_set=[(X_train, y_train_str), (X_test, y_test_str),
+                              (X_test, y_test_str), (X_test, y_test_str), (X_test, y_test_str)],
+                    eval_class_weight=['balanced', None, 'balanced', {'1': 10, '4': 20}, {'5': 30, '2': 40}],
+                    verbose=False)
+        for eval_set1, eval_set2 in itertools.combinations(gbm_str.evals_result_.keys(), 2):
+            for metric in gbm_str.evals_result_[eval_set1]:
+                np.testing.assert_raises(AssertionError,
+                                         np.testing.assert_allclose,
+                                         gbm_str.evals_result_[eval_set1][metric],
+                                         gbm_str.evals_result_[eval_set2][metric])
+        for eval_set in gbm.evals_result_:
+            for metric in gbm.evals_result_[eval_set]:
+                np.testing.assert_allclose(gbm.evals_result_[eval_set][metric],
+                                           gbm_str.evals_result_[eval_set][metric])

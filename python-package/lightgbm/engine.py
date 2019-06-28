@@ -188,7 +188,7 @@ def train(params, train_set, num_boost_round=100,
                     train_data_name = valid_names[i]
                 continue
             if not isinstance(valid_data, Dataset):
-                raise TypeError("Traninig only accepts Dataset object")
+                raise TypeError("Training only accepts Dataset object")
             reduced_valid_sets.append(valid_data._update_params(params).set_reference(train_set))
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
@@ -488,7 +488,7 @@ def cv(params, train_set, num_boost_round=100,
         ...}.
     """
     if not isinstance(train_set, Dataset):
-        raise TypeError("Traninig only accepts Dataset object")
+        raise TypeError("Training only accepts Dataset object")
 
     params = copy.deepcopy(params)
     if fobj is not None:

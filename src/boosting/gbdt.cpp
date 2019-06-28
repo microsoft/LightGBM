@@ -29,7 +29,8 @@ num_class_(1),
 num_iteration_for_pred_(0),
 shrinkage_rate_(0.1f),
 num_init_iteration_(0),
-need_re_bagging_(false) {
+need_re_bagging_(false),
+balanced_bagging_(false) {
   #pragma omp parallel
   #pragma omp master
   {
@@ -176,6 +177,35 @@ data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t
   return cur_left_cnt;
 }
 
+data_size_t GBDT::BalancedBaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer) {
+  if (cnt <= 0) {
+    return 0;
+  }
+  auto label_ptr = train_data_->metadata().label();
+  data_size_t cur_left_cnt = 0;
+  data_size_t cur_right_pos = cnt - 1;
+  // from right to left
+  auto right_buffer = buffer;
+  // random bagging, minimal unit is one record
+  for (data_size_t i = 0; i < cnt; ++i) {
+    bool is_pos = label_ptr[start + i] > 0;
+    bool is_in_bag = false;
+    if (is_pos) {
+      is_in_bag = cur_rand.NextFloat() < config_->pos_bagging_fraction;
+    } else {
+      is_in_bag = cur_rand.NextFloat() < config_->neg_bagging_fraction;
+    }
+    if (is_in_bag) {
+      buffer[cur_left_cnt++] = start + i;
+    } else {
+      right_buffer[cur_right_pos--] = start + i;
+    }
+  }
+  // reverse right buffer
+  std::reverse(buffer + cur_left_cnt, buffer + cnt);
+  return cur_left_cnt;
+}
+
 void GBDT::Bagging(int iter) {
   // if need bagging
   if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0)
@@ -195,7 +225,12 @@ void GBDT::Bagging(int iter) {
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
       Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
-      data_size_t cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+      data_size_t cur_left_count = 0;
+      if (balanced_bagging_) {
+        cur_left_count = BalancedBaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+      } else {
+        cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+      }
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
@@ -690,14 +725,25 @@ void GBDT::ResetConfig(const Config* config) {
 
 void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   // if need bagging, create buffer
-  if (config->bagging_fraction < 1.0 && config->bagging_freq > 0) {
+  data_size_t num_pos_data = 0;
+  if (objective_function_ != nullptr) {
+    num_pos_data = objective_function_->NumPositiveData();
+  }
+  bool balance_bagging_cond = (config->pos_bagging_fraction < 1.0 || config->neg_bagging_fraction < 1.0) && (num_pos_data > 0);
+  if ((config->bagging_fraction < 1.0 || balance_bagging_cond) && config->bagging_freq > 0) {
     need_re_bagging_ = false;
     if (!is_change_dataset &&
-      config_.get() != nullptr && config_->bagging_fraction == config->bagging_fraction && config_->bagging_freq == config->bagging_freq) {
+      config_.get() != nullptr && config_->bagging_fraction == config->bagging_fraction && config_->bagging_freq == config->bagging_freq
+      && config_->pos_bagging_fraction == config->pos_bagging_fraction && config_->neg_bagging_fraction == config->neg_bagging_fraction) {
       return;
     }
-    bag_data_cnt_ =
-      static_cast<data_size_t>(config->bagging_fraction * num_data_);
+    if (balance_bagging_cond) {
+      balanced_bagging_ = true;
+      bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config->pos_bagging_fraction) 
+                      + static_cast<data_size_t>((num_data_ - num_pos_data) * config->neg_bagging_fraction);
+    } else {
+      bag_data_cnt_ = static_cast<data_size_t>(config->bagging_fraction * num_data_);
+    }
     bag_data_indices_.resize(num_data_);
     tmp_indices_.resize(num_data_);
 
@@ -707,7 +753,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     left_write_pos_buf_.resize(num_threads_);
     right_write_pos_buf_.resize(num_threads_);
 
-    double average_bag_rate = config->bagging_fraction / config->bagging_freq;
+    double average_bag_rate = (bag_data_cnt_ / num_data_) / config->bagging_freq;
     int sparse_group = 0;
     for (int i = 0; i < train_data_->num_feature_groups(); ++i) {
       if (train_data_->FeatureGroupIsSparse(i)) {
