@@ -94,13 +94,19 @@ def record_evaluation(eval_result):
 
     def _init(env):
         for data_name, _, _, _ in env.evaluation_result_list:
-            eval_result.setdefault(data_name, collections.defaultdict(list))
+            eval_result.setdefault(data_name, collections.OrderedDict())
 
     def _callback(env):
         if not eval_result:
             _init(env)
+        processed_metric = collections.defaultdict(list)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
+            if eval_name in processed_metric[data_name]:
+                continue
+            if eval_name not in eval_result[data_name].keys():
+                eval_result[data_name][eval_name] = []
             eval_result[data_name][eval_name].append(result)
+            processed_metric[data_name].append(eval_name)
     _callback.order = 20
     return _callback
 
@@ -222,7 +228,14 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                         metric_list = [m for m in env.params[metric_alias] if m is not None]
                         eval_metric = metric_list[0]
                     else:
-                        eval_metric = env.params[metric_alias]
+                        if env.evaluation_result_list[0][0] == "cv_agg":
+                            for i in range(len(env.evaluation_result_list)):
+                                if (env.evaluation_result_list[i][1].find(" ") >= 0
+                                        and env.evaluation_result_list[i][1].split(" ")[0] != "train"):
+                                    eval_metric = env.evaluation_result_list[i][1].split(" ")[1]
+                                    break
+                        else:
+                            eval_metric = env.params[metric_alias]
                     break
             if eval_metric is None:
                 eval_metric = env.evaluation_result_list[0][1]
