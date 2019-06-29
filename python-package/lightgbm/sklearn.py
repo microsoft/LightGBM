@@ -502,7 +502,7 @@ class LGBMModel(_LGBMModelBase):
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
-        if params['first_metric_only'] and eval_metric is None:
+        if 'first_metric_only' in params.keys() and params['first_metric_only'] and eval_metric is None:
             raise LightGBMError("When `first_metric_only` used , `eval_metric` should not be None.")
         if callable(eval_metric):
             feval = _EvalFunctionWrapper(eval_metric)
