@@ -57,4 +57,4 @@ if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
     sh conda.sh -b -p $CONDA
 fi
 conda config --set always_yes yes --set changeps1 no
-conda update -q conda
+conda install -q -y conda=4.6.14  # temp fix, change to update later

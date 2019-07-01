@@ -28,7 +28,7 @@ install:
   - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
-  - conda update -q -y conda
+  - conda install -q -y conda=4.6.14  # temp fix, change to update later
   - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
   - activate test-env
   - set PATH=%CONDA_PREFIX%\Library\bin\graphviz;%PATH%  # temp graphviz hotfix
@@ -44,7 +44,7 @@ test_script:
   - pytest %APPVEYOR_BUILD_FOLDER%\tests\python_package_test
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide
   - ps: >-
-      @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
+      @("import matplotlib", "matplotlib.use('Agg')") +Â (Get-Content "plot_example.py") | Set-ContentÂ "plot_example.py"  # prevent interactive window mode
       (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"
   - ps: >-
       foreach ($file in @(Get-ChildItem *.py)) {
