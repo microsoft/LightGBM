@@ -215,6 +215,24 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 best_score.append(float('inf'))
                 cmp_op.append(lt)
 
+    def _metric_alias_matching(target_metric):
+        metrics_list = [["l1", ["mean_absolute_error", "mae", "regression_l1"]],
+                        ["l2", ["mean_squared_error", "mse", "regression_l2", "regression"]],
+                        ["l2_root", ["root_mean_squared_error", "rmse"]],
+                        ["mape", ["mean_absolute_percentage_error", ]],
+                        ["ndcg", ["lambdarank", ]],
+                        ["map", ["mean_average_precision", ]],
+                        ["binary_logloss", ["binary", ]],
+                        ["multi_logloss",
+                        ["multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr"]],
+                        ["xentropy", ["cross_entropy", ]],
+                        ["xentlambda", ["cross_entropy_lambda", ]],
+                        ["kldiv", ["kullback_leibler", ]]]
+        for metric, aliases in metrics_list:
+            if target_metric in aliases:
+                return metric
+        return target_metric
+
     def _callback(env):
         if not cmp_op:
             _init(env)
@@ -239,6 +257,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     break
             if eval_metric is None:
                 eval_metric = env.evaluation_result_list[0][1]
+            eval_metric = _metric_alias_matching(eval_metric)
         for i in range_(len(env.evaluation_result_list)):
             metric_key = env.evaluation_result_list[i][1]
             if env.evaluation_result_list[i][0] == "cv_agg":

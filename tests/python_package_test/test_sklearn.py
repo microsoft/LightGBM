@@ -646,16 +646,12 @@ class TestSklearn(unittest.TestCase):
 
         # training data as eval_set
         fit_and_check('training', ['l2'], 0, False)
-        with np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-                                            'When `first_metric_only` used , `eval_metric` should not be None.'):
-            fit_and_check('training', ['l2'], 0, True)
+        fit_and_check('training', ['l2'], 0, True)
 
         # single eval_set
         params_fit['eval_set'] = (X_test, y_test)
         fit_and_check('valid_0', ['l2'], 2, False)
-        with np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-                                            'When `first_metric_only` used , `eval_metric` should not be None.'):
-            fit_and_check('valid_0', ['l2'], 2, True)
+        fit_and_check('valid_0', ['l2'], 2, True)
 
         params_fit['eval_metric'] = "l2"
         fit_and_check('valid_0', ['l2'], 2, False)

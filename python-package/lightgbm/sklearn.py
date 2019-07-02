@@ -502,8 +502,6 @@ class LGBMModel(_LGBMModelBase):
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
-        if 'first_metric_only' in params.keys() and params['first_metric_only'] and eval_metric is None:
-            raise LightGBMError("When `first_metric_only` used , `eval_metric` should not be None.")
         if callable(eval_metric):
             feval = _EvalFunctionWrapper(eval_metric)
         else:
@@ -526,6 +524,7 @@ class LGBMModel(_LGBMModelBase):
             original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
             params['metric'] = [e for e in eval_metric if e not in original_metric] + original_metric
+            params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
