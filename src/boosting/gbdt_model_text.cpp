@@ -271,7 +271,10 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) cons
 
   ss << "feature_names=" << Common::Join(feature_names_, " ") << '\n';
 
-  ss << "monotone_constraints=" << Common::Join(monotone_constraints_, " ") << '\n';
+  if (monotone_constraints_.size() != 0) {
+    ss << "monotone_constraints=" << Common::Join(monotone_constraints_, " ")
+       << '\n';
+  }
 
   ss << "feature_infos=" << Common::Join(feature_infos_, " ") << '\n';
 
@@ -437,9 +440,6 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
       Log::Fatal("Wrong size of monotone_constraints");
       return false;
     }
-  } else {
-    Log::Fatal("Model file doesn't contain monotone_constraints");
-    return false;
   }
 
   if (key_vals.count("feature_infos")) {
