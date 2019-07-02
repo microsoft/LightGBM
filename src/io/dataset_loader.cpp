@@ -580,7 +580,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       BinType bin_type = BinType::NumericalBin;
       if (categorical_features_.count(i)) {
         bin_type = BinType::CategoricalBin;
-        bool categorical_feature_is_not_monotonically_constrained = (config_.monotone_constraints[i] == 0);
+        bool categorical_feature_is_not_monotonically_constrained = ((config_.monotone_constraints.size() == 0) || (config_.monotone_constraints[i] == 0));
         CHECK(categorical_feature_is_not_monotonically_constrained);
       }
       bin_mappers[i].reset(new BinMapper());
