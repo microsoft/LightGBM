@@ -216,6 +216,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 cmp_op.append(lt)
 
     def _metric_alias_matching(target_metric):
+        """Converting metric name from alias to representative in order to match the param[`metric`] to specify
+            the target of early stopping if `first_metric_only` == True."""
         metrics_list = [["l1", ["mean_absolute_error", "mae", "regression_l1"]],
                         ["l2", ["mean_squared_error", "mse", "regression_l2", "regression"]],
                         ["l2_root", ["root_mean_squared_error", "rmse"]],
@@ -239,6 +241,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         if not enabled[0]:
             return
         if first_metric_only:
+            # Choosing a target metric for early stopping from first element of metrics list as `eval_metric`
+            # if first_metric_only == True.
             eval_metric = None
             for metric_alias in ['metric', 'metrics', 'metric_types']:
                 if metric_alias in env.params.keys():
@@ -247,28 +251,36 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                         eval_metric = metric_list[0]
                     else:
                         if env.evaluation_result_list[0][0] == "cv_agg":
+                            # For lgb.cv
                             for i in range(len(env.evaluation_result_list)):
+                                # Removing training data
                                 if (env.evaluation_result_list[i][1].find(" ") >= 0
                                         and env.evaluation_result_list[i][1].split(" ")[0] != "train"):
                                     eval_metric = env.evaluation_result_list[i][1].split(" ")[1]
                                     break
                         else:
+                            # The other than lgb.cv
                             eval_metric = env.params[metric_alias]
                     break
             if eval_metric is None:
+                # if `eval_metric` was not chose from `env.params`, using first element of env.evaluation_result_list
+                # for early stopping
                 eval_metric = env.evaluation_result_list[0][1]
             eval_metric = _metric_alias_matching(eval_metric)
         for i in range_(len(env.evaluation_result_list)):
             metric_key = env.evaluation_result_list[i][1]
             if env.evaluation_result_list[i][0] == "cv_agg":
+                # For lgb.cv
                 if metric_key.split(" ")[0] == "train":
-                    continue  # train metric doesn't used on early stopping.
+                    continue  # Train metric doesn't used on early stopping.
                 if ((first_metric_only and eval_metric is not None and eval_metric != ""
                      and metric_key != "valid {}".format(eval_metric) and metric_key != eval_metric)):
                     continue
             elif env.evaluation_result_list[i][0] == "training":
+                # For training set, early stopping is not applied.
                 continue
             else:
+                # For lgb.train and sklearn wrapper.
                 if first_metric_only:
                     if metric_key != eval_metric:
                         continue
