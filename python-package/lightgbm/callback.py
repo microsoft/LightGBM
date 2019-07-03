@@ -216,8 +216,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 cmp_op.append(lt)
 
     def _metric_alias_matching(target_metric):
-        """Convert metric name from alias to representative in order to match the param[``metric``] to specify
-        the target of early stopping if ``first_metric_only`` == True."""
+        """Convert metric name for early stopping from alias to representative in order to match the param metric."""
         metrics_list = [["l1", ["mean_absolute_error", "mae", "regression_l1"]],
                         ["l2", ["mean_squared_error", "mse", "regression_l2", "regression"]],
                         ["l2_root", ["root_mean_squared_error", "rmse"]],
