@@ -773,6 +773,30 @@ class TestEngine(unittest.TestCase):
         sliced_pred = train_and_get_predictions(sliced_csr, sliced_labels)
         np.testing.assert_allclose(origin_pred, sliced_pred)
 
+    def test_init_with_subset(self):
+        data = np.random.random((500, 2))
+        y = [1]  * 250 + [0] * 250
+        lgb_train = lgb.Dataset(data, y, free_raw_data=False)
+        subset_index_1 = np.random.choice(np.arange(500), 300, replace=False)
+        subset_data_1 = lgb_train.subset(subset_index_1)
+        subset_index_2 = np.random.choice(np.arange(500), 200, replace=False)
+        subset_data_2 = lgb_train.subset(subset_index_2)
+        params = {
+            'objective': 'binary',
+            'verbose': -1
+        }
+        init_gbm = lgb.train(params=params,
+                             train_set=subset_data_1,
+                             num_boost_round=10,
+                             keep_training_booster=True)
+        gbm = lgb.train(params=params,
+                        train_set=subset_data_2,
+                        num_boost_round=10,
+                        init_model=init_gbm)
+        self.assertEqual(lgb_train.get_data().shape[0], 500)
+        self.assertEqual(subset_data_1.get_data().shape[0], 300)
+        self.assertEqual(subset_data_2.get_data().shape[0], 200)
+
     def test_monotone_constraint(self):
         def is_increasing(y):
             return (np.diff(y) >= 0.0).all()
