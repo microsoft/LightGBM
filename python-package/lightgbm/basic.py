@@ -726,6 +726,21 @@ class Dataset(object):
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
         return self
+    
+    def _set_init_score_by_predictor(self, data):
+        init_score = self.predictor.predict(data,
+                                            raw_score=True,
+                                            data_has_header=self.data_has_header,
+                                            is_reshape=False)
+        if self.predictor.num_class > 1:
+            # need re group init score
+            new_init_score = np.zeros(init_score.size, dtype=np.float32)
+            num_data = self.num_data()
+            for i in range_(num_data):
+                for j in range_(self.predictor.num_class):
+                    new_init_score[j * num_data + i] = init_score[i * self.predictor.num_class + j]
+            init_score = new_init_score
+        self.set_init_score(init_score)
 
     def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
@@ -827,19 +842,7 @@ class Dataset(object):
             if self.predictor is not None:
                 warnings.warn("The prediction of init_model will be overridden by init_score.")
         elif isinstance(self.predictor, _InnerPredictor):
-            init_score = self.predictor.predict(data,
-                                                raw_score=True,
-                                                data_has_header=self.data_has_header,
-                                                is_reshape=False)
-            if self.predictor.num_class > 1:
-                # need re group init score
-                new_init_score = np.zeros(init_score.size, dtype=np.float32)
-                num_data = self.num_data()
-                for i in range_(num_data):
-                    for j in range_(self.predictor.num_class):
-                        new_init_score[j * num_data + i] = init_score[i * self.predictor.num_class + j]
-                init_score = new_init_score
-            self.set_init_score(init_score)
+            self._set_init_score_by_predictor(data)
         elif self.predictor is not None:
             raise TypeError('wrong predictor type {}'.format(type(self.predictor).__name__))
         # set feature names
@@ -1000,12 +1003,13 @@ class Dataset(object):
                         ctypes.c_int(used_indices.shape[0]),
                         c_str(params_str),
                         ctypes.byref(self.handle)))
-                    self.data = self.reference.data
                     self.get_data()
                     if self.group is not None:
                         self.set_group(self.group)
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
+                    if isinstance(self.predictor, _InnerPredictor) and self.predictor != self.reference.predictor:
+                        self._set_init_score_by_predictor(data)
             else:
                 # create train
                 self._lazy_init(self.data, label=self.label,
@@ -1068,7 +1072,7 @@ class Dataset(object):
         """
         if params is None:
             params = self.params
-        ret = Dataset(None, reference=self, feature_name=self.feature_name,
+        ret = Dataset(data, reference=self, feature_name=self.feature_name,
                       categorical_feature=self.categorical_feature, params=params,
                       free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
