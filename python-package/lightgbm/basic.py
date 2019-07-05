@@ -1072,7 +1072,7 @@ class Dataset(object):
         """
         if params is None:
             params = self.params
-        ret = Dataset(data, reference=self, feature_name=self.feature_name,
+        ret = Dataset(self.data, reference=self, feature_name=self.feature_name,
                       categorical_feature=self.categorical_feature, params=params,
                       free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
