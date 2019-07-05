@@ -2362,7 +2362,9 @@ class Booster(object):
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         train_set = Dataset(data, label, silent=True)
-        new_booster = Booster(self.params, train_set, silent=True)
+        new_params = copy.deepcopy(self.params)
+        new_params['refit_decay_rate'] = decay_rate
+        new_booster = Booster(new_params, train_set, silent=True)
         # Copy models
         _safe_call(_LIB.LGBM_BoosterMerge(
             new_booster.handle,
