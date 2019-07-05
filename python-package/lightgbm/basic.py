@@ -727,18 +727,18 @@ class Dataset(object):
             self.handle = None
         return self
     
-    def _set_init_score_by_predictor(self, data):
-        init_score = self.predictor.predict(data,
+    def _set_init_score_by_predictor(self, predictor, data):
+        init_score = predictor.predict(data,
                                             raw_score=True,
                                             data_has_header=self.data_has_header,
                                             is_reshape=False)
-        if self.predictor.num_class > 1:
+        if predictor.num_class > 1:
             # need re group init score
             new_init_score = np.zeros(init_score.size, dtype=np.float32)
             num_data = self.num_data()
             for i in range_(num_data):
-                for j in range_(self.predictor.num_class):
-                    new_init_score[j * num_data + i] = init_score[i * self.predictor.num_class + j]
+                for j in range_(predictor.num_class):
+                    new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
             init_score = new_init_score
         self.set_init_score(init_score)
 
@@ -768,7 +768,6 @@ class Dataset(object):
                 warnings.warn('{0} keyword has been found in `params` and will be ignored.\n'
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'
                               .format(key))
-        self.predictor = predictor
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
             params["verbose"] = -1
@@ -839,12 +838,12 @@ class Dataset(object):
         # load init score
         if init_score is not None:
             self.set_init_score(init_score)
-            if self.predictor is not None:
+            if predictor is not None:
                 warnings.warn("The prediction of init_model will be overridden by init_score.")
-        elif isinstance(self.predictor, _InnerPredictor):
-            self._set_init_score_by_predictor(data)
-        elif self.predictor is not None:
-            raise TypeError('wrong predictor type {}'.format(type(self.predictor).__name__))
+        elif isinstance(predictor, _InnerPredictor):
+            self._set_init_score_by_predictor(predictor, data)
+        elif predictor is not None:
+            raise TypeError('wrong predictor type {}'.format(type(predictor).__name__))
         # set feature names
         return self.set_feature_name(feature_name)
 
@@ -1008,8 +1007,8 @@ class Dataset(object):
                         self.set_group(self.group)
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
-                    if isinstance(self.predictor, _InnerPredictor) and self.predictor != self.reference.predictor:
-                        self._set_init_score_by_predictor(data)
+                    if isinstance(self._predictor, _InnerPredictor) and self._predictor != self.reference._predictor:
+                        self._set_init_score_by_predictor(self._predictor, data)
             else:
                 # create train
                 self._lazy_init(self.data, label=self.label,
