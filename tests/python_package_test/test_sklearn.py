@@ -621,7 +621,7 @@ class TestSklearn(unittest.TestCase):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
 
-        params = {'n_estimators': 25,
+        params = {'n_estimators': 30,
                   'learning_rate': 0.8,
                   'num_leaves': 15,
                   'verbose': -1,
@@ -638,10 +638,11 @@ class TestSklearn(unittest.TestCase):
             self.assertIn(eval_set_name, gbm.evals_result_)
             for metric_name in metric_names:
                 self.assertIn(metric_name, gbm.evals_result_[eval_set_name])
-                self.assertEqual(len(gbm.evals_result_[eval_set_name][metric_name]),
-                                 assumed_iteration + (params_fit['early_stopping_rounds']
-                                                      if eval_set_name != 'training'
-                                                      else params['n_estimators']))
+
+                actual = len(gbm.evals_result_[eval_set_name][metric_name])
+                expected = assumed_iteration + (params_fit['early_stopping_rounds']
+                                                if eval_set_name != 'training' else params['n_estimators'])
+                self.assertEqual(actual, expected)
                 self.assertEqual(assumed_iteration, gbm.best_iteration_)
 
         # training data as eval_set
@@ -649,46 +650,52 @@ class TestSklearn(unittest.TestCase):
         fit_and_check('training', ['l2'], 0, True)
 
         # single eval_set
+        iter_1 = 2
+        iter_2 = 8
         params_fit['eval_set'] = (X_test, y_test)
-        fit_and_check('valid_0', ['l2'], 2, False)
-        fit_and_check('valid_0', ['l2'], 2, True)
+        fit_and_check('valid_0', ['l2'], iter_1, False)
+        fit_and_check('valid_0', ['l2'], iter_1, True)
 
         params_fit['eval_metric'] = "l2"
-        fit_and_check('valid_0', ['l2'], 2, False)
-        fit_and_check('valid_0', ['l2'], 2, True)
+        fit_and_check('valid_0', ['l2'], iter_1, False)
+        fit_and_check('valid_0', ['l2'], iter_1, True)
 
         params_fit['eval_metric'] = "l1"
-        fit_and_check('valid_0', ['l1', 'l2'], 2, False)
-        fit_and_check('valid_0', ['l1', 'l2'], 8, True)
+        fit_and_check('valid_0', ['l1', 'l2'], iter_1, False)
+        fit_and_check('valid_0', ['l1', 'l2'], iter_2, True)
 
         params_fit['eval_metric'] = ["l1", "l2"]
-        fit_and_check('valid_0', ['l1', 'l2'], 2, False)
-        fit_and_check('valid_0', ['l1', 'l2'], 8, True)
+        fit_and_check('valid_0', ['l1', 'l2'], iter_1, False)
+        fit_and_check('valid_0', ['l1', 'l2'], iter_2, True)
 
         params_fit['eval_metric'] = ["l2", "l1"]
-        fit_and_check('valid_0', ['l1', 'l2'], 2, False)
-        fit_and_check('valid_0', ['l1', 'l2'], 2, True)
+        fit_and_check('valid_0', ['l1', 'l2'], iter_1, False)
+        fit_and_check('valid_0', ['l1', 'l2'], iter_1, True)
 
         # two eval_set
-        params_fit['eval_set'] = [(X_train, y_train), (X_test, y_test)]
-        fit_and_check('valid_1', ['l2'], 2, False)
-        fit_and_check('valid_1', ['l2'], 2, True)
+        X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=71)
+        params['learning_rate'] = 0.4
+        iter_1 = 6
+        iter_2 = 23
+        params_fit['eval_set'] = [(X_test1, y_test1), (X_test2, y_test2)]
+        fit_and_check('valid_1', ['l2'], iter_1, False)
+        fit_and_check('valid_1', ['l2'], iter_1, True)
 
         params_fit['eval_metric'] = "l2"
-        fit_and_check('valid_1', ['l2'], 2, False)
-        fit_and_check('valid_1', ['l2'], 2, True)
+        fit_and_check('valid_1', ['l2'], iter_1, False)
+        fit_and_check('valid_1', ['l2'], iter_1, True)
 
         params_fit['eval_metric'] = "l1"
-        fit_and_check('valid_1', ['l1', 'l2'], 2, False)
-        fit_and_check('valid_1', ['l1', 'l2'], 8, True)
+        fit_and_check('valid_1', ['l1', 'l2'], iter_1, False)
+        fit_and_check('valid_1', ['l1', 'l2'], iter_2, True)
 
         params_fit['eval_metric'] = ["l1", "l2"]
-        fit_and_check('valid_1', ['l1', 'l2'], 2, False)
-        fit_and_check('valid_1', ['l1', 'l2'], 8, True)
+        fit_and_check('valid_1', ['l1', 'l2'], iter_1, False)
+        fit_and_check('valid_1', ['l1', 'l2'], iter_2, True)
 
         params_fit['eval_metric'] = ["l2", "l1"]
-        fit_and_check('valid_1', ['l1', 'l2'], 2, False)
-        fit_and_check('valid_1', ['l1', 'l2'], 2, True)
+        fit_and_check('valid_1', ['l1', 'l2'], iter_1, False)
+        fit_and_check('valid_1', ['l1', 'l2'], iter_1, True)
 
     def test_class_weight(self):
         X, y = load_digits(10, True)
