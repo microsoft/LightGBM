@@ -727,11 +727,26 @@ class Dataset(object):
             self.handle = None
         return self
     
-    def _set_init_score_by_predictor(self, predictor, data):
+    def _set_init_score_by_predictor(self, predictor, data, used_indices=None):
+        data_has_header = False
+        if isinstance(data, string_type):
+            # check data has header or not
+            if str(params.get("has_header", "")).lower() == "true" \
+                    or str(params.get("header", "")).lower() == "true":
+                data_has_header = True
         init_score = predictor.predict(data,
-                                            raw_score=True,
-                                            data_has_header=self.data_has_header,
-                                            is_reshape=False)
+                                       raw_score=True,
+                                       data_has_header=data_has_header,
+                                       is_reshape=False)
+        if used_indices is not None:
+            assert self.need_slice == False
+            if isinstance(data, string_type):
+                sub_init_score = [0 for _ in range(self.num_data() * predictor.num_class)]
+                assert self.num_data() == len(used_indices)
+                for i in range_(len(used_indices)):
+                    for j in range_(predictor.num_class):
+                        sub_init_score[i * redictor.num_class + j] = init_score[used_indices[i] * redictor.num_class + j]
+                init_score = sub_init_score
         if predictor.num_class > 1:
             # need re group init score
             new_init_score = np.zeros(init_score.size, dtype=np.float32)
@@ -757,7 +772,7 @@ class Dataset(object):
                                                                                              categorical_feature,
                                                                                              self.pandas_categorical)
         label = _label_from_pandas(label)
-        self.data_has_header = False
+        
         # process for args
         params = {} if params is None else params
         args_names = (getattr(self.__class__, '_lazy_init')
@@ -801,10 +816,6 @@ class Dataset(object):
             raise TypeError('Reference dataset should be None or dataset instance')
         # start construct data
         if isinstance(data, string_type):
-            # check data has header or not
-            if str(params.get("has_header", "")).lower() == "true" \
-                    or str(params.get("header", "")).lower() == "true":
-                self.data_has_header = True
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
                 c_str(data),
@@ -1008,7 +1019,7 @@ class Dataset(object):
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
                     if isinstance(self._predictor, _InnerPredictor) and self._predictor != self.reference._predictor:
-                        self._set_init_score_by_predictor(self._predictor, self.data)
+                        self._set_init_score_by_predictor(self._predictor, self.data, used_indices)
             else:
                 # create train
                 self._lazy_init(self.data, label=self.label,
