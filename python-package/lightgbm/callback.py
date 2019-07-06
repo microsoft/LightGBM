@@ -217,18 +217,18 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
 
     def _metric_alias_matching(target_metric):
         """Convert metric name for early stopping from alias to representative in order to match the param metric."""
-        metrics_list = [["l1", ["mean_absolute_error", "mae", "regression_l1"]],
-                        ["l2", ["mean_squared_error", "mse", "regression_l2", "regression"]],
-                        ["l2_root", ["root_mean_squared_error", "rmse"]],
-                        ["mape", ["mean_absolute_percentage_error", ]],
-                        ["ndcg", ["lambdarank", ]],
-                        ["map", ["mean_average_precision", ]],
-                        ["binary_logloss", ["binary", ]],
-                        ["multi_logloss",
-                        ["multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr"]],
-                        ["xentropy", ["cross_entropy", ]],
-                        ["xentlambda", ["cross_entropy_lambda", ]],
-                        ["kldiv", ["kullback_leibler", ]]]
+        metrics_list = [("l1", {"mean_absolute_error", "mae", "regression_l1"}),
+                        ("l2", {"mean_squared_error", "mse", "regression_l2", "regression"}),
+                        ("l2_root", {"root_mean_squared_error", "rmse"}),
+                        ("mape", {"mean_absolute_percentage_error"}),
+                        ("ndcg", {"lambdarank"}),
+                        ("map", {"mean_average_precision"}),
+                        ("binary_logloss", {"binary"}),
+                        ("multi_logloss",
+                        {"multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr"}),
+                        ("xentropy", {"cross_entropy"}),
+                        ("xentlambda", {"cross_entropy_lambda"}),
+                        ("kldiv", {"kullback_leibler"})]
         for metric, aliases in metrics_list:
             if target_metric in aliases:
                 return metric
@@ -241,45 +241,40 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             return
         if first_metric_only:
             # Choosing a target metric for early stopping from first element of metrics list as `eval_metric`
-            # if first_metric_only == True.
+            # if first_metric_only == True
             eval_metric = None
             for metric_alias in ['metric', 'metrics', 'metric_types']:
                 if metric_alias in env.params.keys():
                     if isinstance(env.params[metric_alias], (tuple, list)):
                         metric_list = [m for m in env.params[metric_alias] if m is not None]
                         eval_metric = metric_list[0]
-                    else:
-                        if env.evaluation_result_list[0][0] == "cv_agg":
-                            # For lgb.cv
+                    else:  # string
+                        if env.evaluation_result_list[0][0] == "cv_agg":  # for lgb.cv
                             for i in range(len(env.evaluation_result_list)):
                                 # Removing training data
-                                if (env.evaluation_result_list[i][1].find(" ") >= 0
-                                        and env.evaluation_result_list[i][1].split(" ")[0] != "train"):
+                                if ((env.evaluation_result_list[i][1].find(" ") >= 0
+                                     and env.evaluation_result_list[i][1].split(" ")[0] != "train")):
                                     eval_metric = env.evaluation_result_list[i][1].split(" ")[1]
                                     break
-                        else:
-                            # The other than lgb.cv
+                        else:  # the other than lgb.cv
                             eval_metric = env.params[metric_alias]
                     break
             if eval_metric is None:
-                # if `eval_metric` was not chose from `env.params`, using first element of env.evaluation_result_list
-                # for early stopping
+                # If `eval_metric` was not chosen from `env.params`,
+                # using first element of env.evaluation_result_list for early stopping
                 eval_metric = env.evaluation_result_list[0][1]
             eval_metric = _metric_alias_matching(eval_metric)
         for i in range_(len(env.evaluation_result_list)):
             metric_key = env.evaluation_result_list[i][1]
-            if env.evaluation_result_list[i][0] == "cv_agg":
-                # For lgb.cv
+            if env.evaluation_result_list[i][0] == "cv_agg":  # for lgb.cv
                 if metric_key.split(" ")[0] == "train":
-                    continue  # Train metric doesn't used on early stopping.
+                    continue  # train metric is not used on early stopping
                 if ((first_metric_only and eval_metric is not None and eval_metric != ""
                      and metric_key != "valid {}".format(eval_metric) and metric_key != eval_metric)):
                     continue
             elif env.evaluation_result_list[i][0] == "training":
-                # For training set, early stopping is not applied.
-                continue
-            else:
-                # For lgb.train and sklearn wrapper.
+                continue  # for training set, early stopping is not applied
+            else:  # for lgb.train and sklearn wrapper
                 if first_metric_only:
                     if metric_key != eval_metric:
                         continue
@@ -293,14 +288,14 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     print('Early stopping, best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print("Evaluating only: {}".format(metric_key))
+                        print("Evaluated only: {}".format(metric_key))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             if env.iteration == env.end_iteration - 1:
                 if verbose:
                     print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print("Evaluating only: {}".format(metric_key))
+                        print("Evaluated only: {}".format(metric_key))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
     _callback.order = 30
     _callback.first_metric_only = first_metric_only

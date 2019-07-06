@@ -1429,7 +1429,7 @@ class TestEngine(unittest.TestCase):
             'objective': 'regression',
             'metric': 'None',
             'verbose': -1,
-            'seed': 123,
+            'seed': 123
         }
         with np.testing.assert_raises_regex(lgb.basic.LightGBMError,
                                             '`first_metric_only` and `feval` are not available*'):
