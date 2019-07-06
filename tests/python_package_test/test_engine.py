@@ -775,7 +775,7 @@ class TestEngine(unittest.TestCase):
 
     def test_init_with_subset(self):
         data = np.random.random((500, 2))
-        y = [1]  * 250 + [0] * 250
+        y = [1] * 250 + [0] * 250
         lgb_train = lgb.Dataset(data, y, free_raw_data=False)
         subset_index_1 = np.random.choice(np.arange(500), 300, replace=False)
         subset_data_1 = lgb_train.subset(subset_index_1)

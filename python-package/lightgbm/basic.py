@@ -726,7 +726,7 @@ class Dataset(object):
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
         return self
-    
+
     def _set_init_score_by_predictor(self, predictor, data, used_indices=None):
         data_has_header = False
         if isinstance(data, string_type):
@@ -739,7 +739,7 @@ class Dataset(object):
                                        data_has_header=data_has_header,
                                        is_reshape=False)
         if used_indices is not None:
-            assert self.need_slice == False
+            assert not self.need_slice
             if isinstance(data, string_type):
                 sub_init_score = [0 for _ in range(self.num_data() * predictor.num_class)]
                 assert self.num_data() == len(used_indices)
@@ -772,7 +772,7 @@ class Dataset(object):
                                                                                              categorical_feature,
                                                                                              self.pandas_categorical)
         label = _label_from_pandas(label)
-        
+
         # process for args
         params = {} if params is None else params
         args_names = (getattr(self.__class__, '_lazy_init')
