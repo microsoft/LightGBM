@@ -819,7 +819,7 @@ Metric Parameters
 
       -  ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
 
-      -  ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+      -  ``rmse``, root square loss, aliases: ``root_mean_squared_error``, ``l2_root``
 
       -  ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
 
