@@ -1473,7 +1473,7 @@ class Dataset(object):
                     self.data = self.data[self.used_indices, :]
                 else:
                     warnings.warn("Cannot subset {} type of raw data.\n"
-                                "Returning original raw data".format(type(self.data).__name__))
+                                  "Returning original raw data".format(type(self.data).__name__))
                     self.data = None
             self.need_slice = False
         return self.data
