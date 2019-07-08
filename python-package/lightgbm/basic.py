@@ -725,32 +725,34 @@ class Dataset(object):
         if self.handle is not None:
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
+        self.need_slice = True
+        if self.used_indices is not None:
+            self.data = None
         return self
 
     def _set_init_score_by_predictor(self, predictor, data, used_indices=None):
         data_has_header = False
         if isinstance(data, string_type):
             # check data has header or not
-            if str(params.get("has_header", "")).lower() == "true" \
-                    or str(params.get("header", "")).lower() == "true":
+            if params.get("has_header", False) or params.get("header", False):
                 data_has_header = True
         init_score = predictor.predict(data,
                                        raw_score=True,
                                        data_has_header=data_has_header,
                                        is_reshape=False)
+        num_data = self.num_data()
         if used_indices is not None:
             assert not self.need_slice
             if isinstance(data, string_type):
-                sub_init_score = [0 for _ in range(self.num_data() * predictor.num_class)]
-                assert self.num_data() == len(used_indices)
+                sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
+                assert num_data == len(used_indices)
                 for i in range_(len(used_indices)):
                     for j in range_(predictor.num_class):
                         sub_init_score[i * redictor.num_class + j] = init_score[used_indices[i] * redictor.num_class + j]
                 init_score = sub_init_score
         if predictor.num_class > 1:
-            # need re group init score
+            # need to regroup init_score
             new_init_score = np.zeros(init_score.size, dtype=np.float32)
-            num_data = self.num_data()
             for i in range_(num_data):
                 for j in range_(predictor.num_class):
                     new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
@@ -854,7 +856,7 @@ class Dataset(object):
         elif isinstance(predictor, _InnerPredictor):
             self._set_init_score_by_predictor(predictor, data)
         elif predictor is not None:
-            raise TypeError('wrong predictor type {}'.format(type(predictor).__name__))
+            raise TypeError('Wrong predictor type {}'.format(type(predictor).__name__))
         # set feature names
         return self.set_feature_name(feature_name)
 
@@ -1018,7 +1020,7 @@ class Dataset(object):
                         self.set_group(self.group)
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
-                    if isinstance(self._predictor, _InnerPredictor) and self._predictor != self.reference._predictor:
+                    if isinstance(self._predictor, _InnerPredictor) and self._predictor is not self.reference._predictor:
                         self._set_init_score_by_predictor(self._predictor, self.data, used_indices)
             else:
                 # create train
@@ -1082,7 +1084,7 @@ class Dataset(object):
         """
         if params is None:
             params = self.params
-        ret = Dataset(self.data, reference=self, feature_name=self.feature_name,
+        ret = Dataset(None, reference=self, feature_name=self.feature_name,
                       categorical_feature=self.categorical_feature, params=params,
                       free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
@@ -1251,7 +1253,7 @@ class Dataset(object):
         """
         if predictor is self._predictor:
             return self
-        if self.data is not None:
+        if self.data is not None or (self.used_indices is not None and self.reference is not None and self.reference.data is not None):
             self._predictor = predictor
             return self._free_handle()
         else:
@@ -1458,16 +1460,21 @@ class Dataset(object):
         """
         if self.handle is None:
             raise Exception("Cannot get data before construct Dataset")
-        if self.data is not None and self.used_indices is not None and self.need_slice:
-            if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
-                self.data = self.data[self.used_indices, :]
-            elif isinstance(self.data, DataFrame):
-                self.data = self.data.iloc[self.used_indices].copy()
-            elif isinstance(self.data, DataTable):
-                self.data = self.data[self.used_indices, :]
+        if self.need_slice and self.used_indices is not None and self.reference is not None:
+            self.data = self.reference.data
+            if self.data is None:
+                warnings.warn("The raw data of the subset reference is released, cannot call get_data().")
             else:
-                warnings.warn("Cannot subset {} type of raw data.\n"
-                              "Returning original raw data".format(type(self.data).__name__))
+                if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
+                    self.data = self.data[self.used_indices, :]
+                elif isinstance(self.data, DataFrame):
+                    self.data = self.data.iloc[self.used_indices].copy()
+                elif isinstance(self.data, DataTable):
+                    self.data = self.data[self.used_indices, :]
+                else:
+                    warnings.warn("Cannot subset {} type of raw data.\n"
+                                "Returning original raw data".format(type(self.data).__name__))
+                    self.data = None
             self.need_slice = False
         return self.data
 
