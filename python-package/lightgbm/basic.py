@@ -734,7 +734,7 @@ class Dataset(object):
         data_has_header = False
         if isinstance(data, string_type):
             # check data has header or not
-            if params.get("has_header", False) or params.get("header", False):
+            if self.params.get("has_header", False) or self.params.get("header", False):
                 data_has_header = True
         init_score = predictor.predict(data,
                                        raw_score=True,
