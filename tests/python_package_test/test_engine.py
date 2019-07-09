@@ -813,7 +813,6 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(subset_data_3.get_data(), "lgb_train_data.bin")
         self.assertEqual(subset_data_4.get_data(), "lgb_train_data.bin")
 
-
     def test_monotone_constraint(self):
         def is_increasing(y):
             return (np.diff(y) >= 0.0).all()
