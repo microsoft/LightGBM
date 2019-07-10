@@ -1597,7 +1597,7 @@ class Booster(object):
         self.handle = None
         self.network = False
         self.__need_reload_eval_info = True
-        self.__train_data_name = "training"
+        self._train_data_name = "training"
         self.__attr = {}
         self.__set_objective_to_none = False
         self.best_iteration = -1
@@ -1786,7 +1786,7 @@ class Booster(object):
         self : Booster
             Booster with set training Dataset name.
         """
-        self.__train_data_name = name
+        self._train_data_name = name
         return self
 
     def add_valid(self, data, name):
@@ -2073,7 +2073,7 @@ class Booster(object):
         result : list
             List with evaluation results.
         """
-        return self.__inner_eval(self.__train_data_name, 0, feval)
+        return self.__inner_eval(self._train_data_name, 0, feval)
 
     def eval_valid(self, feval=None):
         """Evaluate for validation data.
