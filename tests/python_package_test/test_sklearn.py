@@ -645,7 +645,8 @@ class TestSklearn(unittest.TestCase):
                     expected = assumed_iteration + (params_fit['early_stopping_rounds']
                                                     if eval_set_name != 'training' else params['n_estimators'])
                     self.assertEqual(actual, expected)
-                    self.assertEqual(assumed_iteration, gbm.best_iteration_)
+                    self.assertEqual(assumed_iteration if eval_set_name != 'training' else params['n_estimators'],
+                                     gbm.best_iteration_)
 
         # training data as eval_set
         params_fit['eval_set'] = (X_train, y_train)
