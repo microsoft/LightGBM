@@ -1475,6 +1475,8 @@ class TestEngine(unittest.TestCase):
         best_iter_l1 = 16
         best_iter_l2 = 19
         best_iter_min = min([best_iter_l1, best_iter_l2])
+        metrics_combination_train_regression([], best_iter_l2, False)
+        metrics_combination_train_regression([], best_iter_l2, True)
         metrics_combination_train_regression(None, best_iter_l2, False)
         metrics_combination_train_regression(None, best_iter_l2, True)
         metrics_combination_train_regression('l2', best_iter_l2, True)

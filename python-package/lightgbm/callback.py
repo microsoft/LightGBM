@@ -247,7 +247,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 if metric_alias in env.params.keys():
                     if isinstance(env.params[metric_alias], (tuple, list)):
                         metric_list = [m for m in env.params[metric_alias] if m is not None]
-                        eval_metric = metric_list[0]
+                        eval_metric = metric_list[0] if len(metric_list) > 0 else None
                     else:  # string
                         if env.evaluation_result_list[0][0] == "cv_agg":  # for lgb.cv
                             for i in range(len(env.evaluation_result_list)):
