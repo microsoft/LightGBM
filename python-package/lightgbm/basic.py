@@ -1464,9 +1464,7 @@ class Dataset(object):
             raise Exception("Cannot get data before construct Dataset")
         if self.need_slice and self.used_indices is not None and self.reference is not None:
             self.data = self.reference.data
-            if self.data is None:
-                warnings.warn("The raw data of the subset reference is released, cannot call get_data().")
-            else:
+            if self.data is not None:
                 if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, DataFrame):
@@ -1477,6 +1475,8 @@ class Dataset(object):
                     warnings.warn("Cannot subset {} type of raw data.\n"
                                   "Returning original raw data".format(type(self.data).__name__))
             self.need_slice = False
+        if self.data is None:
+            warnings.warn("The raw data is released, please set `free_raw_data=False`")
         return self.data
 
     def get_group(self):
