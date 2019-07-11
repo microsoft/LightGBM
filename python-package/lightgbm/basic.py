@@ -1015,7 +1015,8 @@ class Dataset(object):
                         ctypes.c_int(used_indices.shape[0]),
                         c_str(params_str),
                         ctypes.byref(self.handle)))
-                    self.get_data()
+                    if not self.free_raw_data:
+                        self.get_data()
                     if self.group is not None:
                         self.set_group(self.group)
                     if self.get_label() is None:
