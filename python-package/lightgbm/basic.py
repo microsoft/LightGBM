@@ -1022,6 +1022,7 @@ class Dataset(object):
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
                     if isinstance(self._predictor, _InnerPredictor) and self._predictor is not self.reference._predictor:
+                        self.get_data()
                         self._set_init_score_by_predictor(self._predictor, self.data, used_indices)
             else:
                 # create train
