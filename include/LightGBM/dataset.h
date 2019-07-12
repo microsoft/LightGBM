@@ -624,6 +624,7 @@ class Dataset {
   std::vector<double> feature_penalty_;
   bool is_finish_load_;
   int max_bin_;
+  std::vector<int32_t> max_bin_by_feature_;
   int bin_construct_sample_cnt_;
   int min_data_in_bin_;
   bool use_missing_;
