@@ -1476,8 +1476,8 @@ class Dataset(object):
                                   "Returning original raw data".format(type(self.data).__name__))
             self.need_slice = False
         if self.data is None:
-            raise LightGBMError("Cannot call `get_data` after freed raw data, " 
-                                "set free_raw_data=False when construct Dataset to avoid this.") 
+            raise LightGBMError("Cannot call `get_data` after freed raw data, "
+                                "set free_raw_data=False when construct Dataset to avoid this.")
         return self.data
 
     def get_group(self):
