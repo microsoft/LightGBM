@@ -443,6 +443,12 @@ struct Config {
   // desc = LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
   int max_bin = 255;
 
+  // type = multi-int
+  // default = None
+  // desc = max number of bins for each feature
+  // desc = if not specified, will use ``max_bin`` for all features
+  std::vector<int32_t> max_bin_by_feature;  
+
   // check = >0
   // desc = minimal number of data inside one bin
   // desc = use this to avoid one-data-one-bin (potential over-fitting)
@@ -732,7 +738,7 @@ struct Config {
   // descl2 = ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``, ``null``, ``custom``
   // descl2 = ``l1``, absolute loss, aliases: ``mean_absolute_error``, ``mae``, ``regression_l1``
   // descl2 = ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
-  // descl2 = ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+  // descl2 = ``rmse``, root square loss, aliases: ``root_mean_squared_error``, ``l2_root``
   // descl2 = ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
   // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
   // descl2 = ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__

@@ -480,6 +480,31 @@ class TestEngine(unittest.TestCase):
             self.assertAlmostEqual(l1, mae, places=5)
         os.remove(model_name)
 
+    def test_continue_train_dart(self):
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'boosting_type': 'dart',
+            'objective': 'regression',
+            'metric': 'l1',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=False)
+        init_gbm = lgb.train(params, lgb_train, num_boost_round=50)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=50,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result,
+                        init_model=init_gbm)
+        ret = mean_absolute_error(y_test, gbm.predict(X_test))
+        self.assertLess(ret, 3.5)
+        self.assertAlmostEqual(evals_result['valid_0']['l1'][-1], ret, places=5)
+        for l1, mae in zip(evals_result['valid_0']['l1'], evals_result['valid_0']['mae']):
+            self.assertAlmostEqual(l1, mae, places=5)
+
     def test_continue_train_multiclass(self):
         X, y = load_iris(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -773,6 +798,46 @@ class TestEngine(unittest.TestCase):
         sliced_pred = train_and_get_predictions(sliced_csr, sliced_labels)
         np.testing.assert_allclose(origin_pred, sliced_pred)
 
+    def test_init_with_subset(self):
+        data = np.random.random((500, 2))
+        y = [1] * 250 + [0] * 250
+        lgb_train = lgb.Dataset(data, y, free_raw_data=False)
+        subset_index_1 = np.random.choice(np.arange(500), 300, replace=False)
+        subset_data_1 = lgb_train.subset(subset_index_1)
+        subset_index_2 = np.random.choice(np.arange(500), 200, replace=False)
+        subset_data_2 = lgb_train.subset(subset_index_2)
+        params = {
+            'objective': 'binary',
+            'verbose': -1
+        }
+        init_gbm = lgb.train(params=params,
+                             train_set=subset_data_1,
+                             num_boost_round=10,
+                             keep_training_booster=True)
+        gbm = lgb.train(params=params,
+                        train_set=subset_data_2,
+                        num_boost_round=10,
+                        init_model=init_gbm)
+        self.assertEqual(lgb_train.get_data().shape[0], 500)
+        self.assertEqual(subset_data_1.get_data().shape[0], 300)
+        self.assertEqual(subset_data_2.get_data().shape[0], 200)
+        lgb_train.save_binary("lgb_train_data.bin")
+        lgb_train_from_file = lgb.Dataset('lgb_train_data.bin', free_raw_data=False)
+        subset_data_3 = lgb_train_from_file.subset(subset_index_1)
+        subset_data_4 = lgb_train_from_file.subset(subset_index_2)
+        init_gbm_2 = lgb.train(params=params,
+                               train_set=subset_data_3,
+                               num_boost_round=10,
+                               keep_training_booster=True)
+        with np.testing.assert_raises_regex(lgb.basic.LightGBMError, "Unknown format of training data"):
+            gbm = lgb.train(params=params,
+                            train_set=subset_data_4,
+                            num_boost_round=10,
+                            init_model=init_gbm_2)
+        self.assertEqual(lgb_train_from_file.get_data(), "lgb_train_data.bin")
+        self.assertEqual(subset_data_3.get_data(), "lgb_train_data.bin")
+        self.assertEqual(subset_data_4.get_data(), "lgb_train_data.bin")
+
     def test_monotone_constraint(self):
         def is_increasing(y):
             return (np.diff(y) >= 0.0).all()
@@ -812,6 +877,29 @@ class TestEngine(unittest.TestCase):
         }
         constrained_model = lgb.train(params, trainset)
         self.assertTrue(is_correctly_constrained(constrained_model))
+
+    def test_max_bin_by_feature(self):
+        col1 = np.arange(0, 100)[:, np.newaxis]
+        col2 = np.zeros((100, 1))
+        col2[20:] = 1
+        X = np.concatenate([col1, col2], axis=1)
+        y = np.arange(0, 100)
+        params = {
+            'objective': 'regression_l2',
+            'verbose': -1,
+            'num_leaves': 100,
+            'min_data_in_leaf': 1,
+            'min_sum_hessian_in_leaf': 0,
+            'min_data_in_bin': 1,
+            'max_bin_by_feature': [100, 2]
+        }
+        lgb_data = lgb.Dataset(X, label=y)
+        est = lgb.train(params, lgb_data, num_boost_round=1)
+        self.assertEqual(len(np.unique(est.predict(X))), 100)
+        params['max_bin_by_feature'] = [2, 100]
+        lgb_data = lgb.Dataset(X, label=y)
+        est = lgb.train(params, lgb_data, num_boost_round=1)
+        self.assertEqual(len(np.unique(est.predict(X))), 3)
 
     def test_refit(self):
         X, y = load_breast_cancer(True)
