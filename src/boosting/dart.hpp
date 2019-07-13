@@ -171,8 +171,8 @@ class DART: public GBDT {
           train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
         }
         if (!config_->uniform_drop) {
-          sum_weight_ -= tree_weight_[i] * (1.0f / (k + 1.0f));
-          tree_weight_[i] *= (k / (k + 1.0f));
+          sum_weight_ -= tree_weight_[i - num_init_iteration_] * (1.0f / (k + 1.0f));
+          tree_weight_[i - num_init_iteration_] *= (k / (k + 1.0f));
         }
       }
     } else {
@@ -189,8 +189,8 @@ class DART: public GBDT {
           train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
         }
         if (!config_->uniform_drop) {
-          sum_weight_ -= tree_weight_[i] * (1.0f / (k + config_->learning_rate));;
-          tree_weight_[i] *= (k / (k + config_->learning_rate));
+          sum_weight_ -= tree_weight_[i - num_init_iteration_] * (1.0f / (k + config_->learning_rate));;
+          tree_weight_[i - num_init_iteration_] *= (k / (k + config_->learning_rate));
         }
       }
     }
