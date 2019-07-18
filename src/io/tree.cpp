@@ -481,7 +481,7 @@ std::string Tree::NodeToIfElseByMap(int index, bool predict_leaf_index) const {
 Tree::Tree(const char* str, size_t* used_len) {
   auto p = str;
   std::unordered_map<std::string, std::string> key_vals;
-  const int max_num_line = 15;
+  const int max_num_line = 17;
   int read_line = 0;
   while (read_line < max_num_line) {
     if (*p == '\r' || *p == '\n') break;
