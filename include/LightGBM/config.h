@@ -234,6 +234,30 @@ struct Config {
   // desc = **Note**: to enable bagging, ``bagging_freq`` should be set to a non zero value as well
   double bagging_fraction = 1.0;
 
+  // alias = pos_sub_row, pos_subsample, pos_bagging
+  // check = >0.0
+  // check = <=1.0
+  // desc = used only in ``binary`` application
+  // desc = used for imbalanced binary classification problem, will randomly sample ``#pos_samples * pos_bagging_fraction`` positive samples in bagging
+  // desc = should be used together with ``neg_bagging_fraction``
+  // desc = set this to ``1.0`` to disable
+  // desc = **Note**: to enable this, you need to set ``bagging_freq`` and ``neg_bagging_fraction`` as well
+  // desc = **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+  // desc = **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+  double pos_bagging_fraction = 1.0;
+
+  // alias = neg_sub_row, neg_subsample, neg_bagging
+  // check = >0.0
+  // check = <=1.0
+  // desc = used only in ``binary`` application
+  // desc = used for imbalanced binary classification problem, will randomly sample ``#neg_samples * neg_bagging_fraction`` negative samples in bagging
+  // desc = should be used together with ``pos_bagging_fraction``
+  // desc = set this to ``1.0`` to disable
+  // desc = **Note**: to enable this, you need to set ``bagging_freq`` and ``pos_bagging_fraction`` as well
+  // desc = **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+  // desc = **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+  double neg_bagging_fraction = 1.0;
+
   // alias = subsample_freq
   // desc = frequency for bagging
   // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration
@@ -418,6 +442,12 @@ struct Config {
   // desc = small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
   // desc = LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
   int max_bin = 255;
+
+  // type = multi-int
+  // default = None
+  // desc = max number of bins for each feature
+  // desc = if not specified, will use ``max_bin`` for all features
+  std::vector<int32_t> max_bin_by_feature;  
 
   // check = >0
   // desc = minimal number of data inside one bin
@@ -708,7 +738,7 @@ struct Config {
   // descl2 = ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``, ``null``, ``custom``
   // descl2 = ``l1``, absolute loss, aliases: ``mean_absolute_error``, ``mae``, ``regression_l1``
   // descl2 = ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
-  // descl2 = ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+  // descl2 = ``rmse``, root square loss, aliases: ``root_mean_squared_error``, ``l2_root``
   // descl2 = ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
   // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
   // descl2 = ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__

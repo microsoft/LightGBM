@@ -152,7 +152,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        np.testing.assert_almost_equal(pred, y)
+        np.testing.assert_allclose(pred, y)
         ret = roc_auc_score(y_train, pred)
         self.assertGreater(ret, 0.999)
         self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
@@ -184,7 +184,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        np.testing.assert_almost_equal(pred, y)
+        np.testing.assert_allclose(pred, y)
         ret = roc_auc_score(y_train, pred)
         self.assertGreater(ret, 0.999)
         self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
@@ -254,7 +254,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        np.testing.assert_almost_equal(pred, y)
+        np.testing.assert_allclose(pred, y)
         ret = roc_auc_score(y_train, pred)
         self.assertGreater(ret, 0.999)
         self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
@@ -291,7 +291,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        np.testing.assert_almost_equal(pred, y)
+        np.testing.assert_allclose(pred, y)
         ret = roc_auc_score(y_train, pred)
         self.assertGreater(ret, 0.999)
         self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
@@ -384,10 +384,10 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
         predict_1 = est.predict(X)
         # check that default gives same result as k = 1
-        np.testing.assert_array_almost_equal(predict_1, predict_default, 5)
+        np.testing.assert_allclose(predict_1, predict_default)
         # check against independent calculation for k = 1
         err = top_k_error(y, predict_1, 1)
-        np.testing.assert_almost_equal(results['train']['multi_error'][-1], err, 5)
+        np.testing.assert_allclose(results['train']['multi_error'][-1], err)
         # check against independent calculation for k = 2
         params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 2,
                   'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
@@ -395,7 +395,7 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
         predict_2 = est.predict(X)
         err = top_k_error(y, predict_2, 2)
-        np.testing.assert_almost_equal(results['train']['multi_error@2'][-1], err, 5)
+        np.testing.assert_allclose(results['train']['multi_error@2'][-1], err)
         # check against independent calculation for k = 10
         params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 10,
                   'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
@@ -403,7 +403,7 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
         predict_2 = est.predict(X)
         err = top_k_error(y, predict_2, 10)
-        np.testing.assert_almost_equal(results['train']['multi_error@10'][-1], err, 5)
+        np.testing.assert_allclose(results['train']['multi_error@10'][-1], err)
         # check case where predictions are equal
         X = np.array([[0, 0], [0, 0]])
         y = np.array([0, 1])
@@ -412,13 +412,13 @@ class TestEngine(unittest.TestCase):
                   'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
         results = {}
         lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
-        np.testing.assert_almost_equal(results['train']['multi_error'][-1], 1, 5)
+        np.testing.assert_allclose(results['train']['multi_error'][-1], 1)
         lgb_data = lgb.Dataset(X, label=y)
         params = {'objective': 'multiclass', 'num_classes': 2, 'metric': 'multi_error', 'multi_error_top_k': 2,
                   'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
         results = {}
         lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
-        np.testing.assert_almost_equal(results['train']['multi_error@2'][-1], 0, 5)
+        np.testing.assert_allclose(results['train']['multi_error@2'][-1], 0)
 
     def test_early_stopping(self):
         X, y = load_breast_cancer(True)
@@ -480,6 +480,31 @@ class TestEngine(unittest.TestCase):
             self.assertAlmostEqual(l1, mae, places=5)
         os.remove(model_name)
 
+    def test_continue_train_dart(self):
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'boosting_type': 'dart',
+            'objective': 'regression',
+            'metric': 'l1',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=False)
+        init_gbm = lgb.train(params, lgb_train, num_boost_round=50)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=50,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result,
+                        init_model=init_gbm)
+        ret = mean_absolute_error(y_test, gbm.predict(X_test))
+        self.assertLess(ret, 3.5)
+        self.assertAlmostEqual(evals_result['valid_0']['l1'][-1], ret, places=5)
+        for l1, mae in zip(evals_result['valid_0']['l1'], evals_result['valid_0']['mae']):
+            self.assertAlmostEqual(l1, mae, places=5)
+
     def test_continue_train_multiclass(self):
         X, y = load_iris(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -539,7 +564,7 @@ class TestEngine(unittest.TestCase):
                             verbose_eval=False)
         cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
                             verbose_eval=False)
-        np.testing.assert_almost_equal(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
+        np.testing.assert_allclose(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
         # lambdarank
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                            '../../examples/lambdarank/rank.train'))
@@ -561,7 +586,7 @@ class TestEngine(unittest.TestCase):
         cv_res_lambda_obj = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10,
                                    folds=GroupKFold(n_splits=3),
                                    verbose_eval=False)
-        np.testing.assert_almost_equal(cv_res_lambda['ndcg@3-mean'], cv_res_lambda_obj['ndcg@3-mean'])
+        np.testing.assert_allclose(cv_res_lambda['ndcg@3-mean'], cv_res_lambda_obj['ndcg@3-mean'])
 
     def test_feature_name(self):
         X, y = load_boston(True)
@@ -669,21 +694,21 @@ class TestEngine(unittest.TestCase):
         pred8 = gbm7.predict(X_test)
         self.assertListEqual(lgb_train.categorical_feature, [])
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred1)
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred2)
-        np.testing.assert_almost_equal(pred1, pred2)
-        np.testing.assert_almost_equal(pred0, pred3)
-        np.testing.assert_almost_equal(pred0, pred4)
-        np.testing.assert_almost_equal(pred0, pred5)
-        np.testing.assert_almost_equal(pred0, pred6)
+        np.testing.assert_allclose(pred1, pred2)
+        np.testing.assert_allclose(pred0, pred3)
+        np.testing.assert_allclose(pred0, pred4)
+        np.testing.assert_allclose(pred0, pred5)
+        np.testing.assert_allclose(pred0, pred6)
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred7)  # ordered cat features aren't treated as cat features by default
         self.assertRaises(AssertionError,
-                          np.testing.assert_almost_equal,
+                          np.testing.assert_allclose,
                           pred0, pred8)
         self.assertListEqual(gbm0.pandas_categorical, cat_values)
         self.assertListEqual(gbm1.pandas_categorical, cat_values)
@@ -750,7 +775,7 @@ class TestEngine(unittest.TestCase):
         stacked_labels = np.column_stack((labels, np.ones(num_samples, dtype=np.float32)))
         sliced_labels = stacked_labels[:, 0]
         sliced_pred = train_and_get_predictions(features, sliced_labels)
-        np.testing.assert_almost_equal(origin_pred, sliced_pred)
+        np.testing.assert_allclose(origin_pred, sliced_pred)
         # append some columns
         stacked_features = np.column_stack((np.ones(num_samples, dtype=np.float32), features))
         stacked_features = np.column_stack((np.ones(num_samples, dtype=np.float32), stacked_features))
@@ -765,13 +790,53 @@ class TestEngine(unittest.TestCase):
         sliced_features = stacked_features[2:102, 2:7]
         self.assertTrue(np.all(sliced_features == features))
         sliced_pred = train_and_get_predictions(sliced_features, sliced_labels)
-        np.testing.assert_almost_equal(origin_pred, sliced_pred)
+        np.testing.assert_allclose(origin_pred, sliced_pred)
         # test sliced CSR
         stacked_csr = csr_matrix(stacked_features)
         sliced_csr = stacked_csr[2:102, 2:7]
         self.assertTrue(np.all(sliced_csr == features))
         sliced_pred = train_and_get_predictions(sliced_csr, sliced_labels)
-        np.testing.assert_almost_equal(origin_pred, sliced_pred)
+        np.testing.assert_allclose(origin_pred, sliced_pred)
+
+    def test_init_with_subset(self):
+        data = np.random.random((500, 2))
+        y = [1] * 250 + [0] * 250
+        lgb_train = lgb.Dataset(data, y, free_raw_data=False)
+        subset_index_1 = np.random.choice(np.arange(500), 300, replace=False)
+        subset_data_1 = lgb_train.subset(subset_index_1)
+        subset_index_2 = np.random.choice(np.arange(500), 200, replace=False)
+        subset_data_2 = lgb_train.subset(subset_index_2)
+        params = {
+            'objective': 'binary',
+            'verbose': -1
+        }
+        init_gbm = lgb.train(params=params,
+                             train_set=subset_data_1,
+                             num_boost_round=10,
+                             keep_training_booster=True)
+        gbm = lgb.train(params=params,
+                        train_set=subset_data_2,
+                        num_boost_round=10,
+                        init_model=init_gbm)
+        self.assertEqual(lgb_train.get_data().shape[0], 500)
+        self.assertEqual(subset_data_1.get_data().shape[0], 300)
+        self.assertEqual(subset_data_2.get_data().shape[0], 200)
+        lgb_train.save_binary("lgb_train_data.bin")
+        lgb_train_from_file = lgb.Dataset('lgb_train_data.bin', free_raw_data=False)
+        subset_data_3 = lgb_train_from_file.subset(subset_index_1)
+        subset_data_4 = lgb_train_from_file.subset(subset_index_2)
+        init_gbm_2 = lgb.train(params=params,
+                               train_set=subset_data_3,
+                               num_boost_round=10,
+                               keep_training_booster=True)
+        with np.testing.assert_raises_regex(lgb.basic.LightGBMError, "Unknown format of training data"):
+            gbm = lgb.train(params=params,
+                            train_set=subset_data_4,
+                            num_boost_round=10,
+                            init_model=init_gbm_2)
+        self.assertEqual(lgb_train_from_file.get_data(), "lgb_train_data.bin")
+        self.assertEqual(subset_data_3.get_data(), "lgb_train_data.bin")
+        self.assertEqual(subset_data_4.get_data(), "lgb_train_data.bin")
 
     def test_monotone_constraint(self):
         def is_increasing(y):
@@ -812,6 +877,29 @@ class TestEngine(unittest.TestCase):
         }
         constrained_model = lgb.train(params, trainset)
         self.assertTrue(is_correctly_constrained(constrained_model))
+
+    def test_max_bin_by_feature(self):
+        col1 = np.arange(0, 100)[:, np.newaxis]
+        col2 = np.zeros((100, 1))
+        col2[20:] = 1
+        X = np.concatenate([col1, col2], axis=1)
+        y = np.arange(0, 100)
+        params = {
+            'objective': 'regression_l2',
+            'verbose': -1,
+            'num_leaves': 100,
+            'min_data_in_leaf': 1,
+            'min_sum_hessian_in_leaf': 0,
+            'min_data_in_bin': 1,
+            'max_bin_by_feature': [100, 2]
+        }
+        lgb_data = lgb.Dataset(X, label=y)
+        est = lgb.train(params, lgb_data, num_boost_round=1)
+        self.assertEqual(len(np.unique(est.predict(X))), 100)
+        params['max_bin_by_feature'] = [2, 100]
+        lgb_data = lgb.Dataset(X, label=y)
+        est = lgb.train(params, lgb_data, num_boost_round=1)
+        self.assertEqual(len(np.unique(est.predict(X))), 3)
 
     def test_refit(self):
         X, y = load_breast_cancer(True)
@@ -1355,20 +1443,20 @@ class TestEngine(unittest.TestCase):
         self.assertTupleEqual(gbm.get_split_value_histogram(bins=6, **params).shape, (5, 2))
         self.assertTupleEqual(gbm.get_split_value_histogram(bins=7, **params).shape, (6, 2))
         if lgb.compat.PANDAS_INSTALLED:
-            np.testing.assert_almost_equal(
+            np.testing.assert_allclose(
                 gbm.get_split_value_histogram(0, xgboost_style=True).values,
                 gbm.get_split_value_histogram(gbm.feature_name()[0], xgboost_style=True).values
             )
-            np.testing.assert_almost_equal(
+            np.testing.assert_allclose(
                 gbm.get_split_value_histogram(X.shape[-1] - 1, xgboost_style=True).values,
                 gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1], xgboost_style=True).values
             )
         else:
-            np.testing.assert_almost_equal(
+            np.testing.assert_allclose(
                 gbm.get_split_value_histogram(0, xgboost_style=True),
                 gbm.get_split_value_histogram(gbm.feature_name()[0], xgboost_style=True)
             )
-            np.testing.assert_almost_equal(
+            np.testing.assert_allclose(
                 gbm.get_split_value_histogram(X.shape[-1] - 1, xgboost_style=True),
                 gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1], xgboost_style=True)
             )
@@ -1396,11 +1484,11 @@ class TestEngine(unittest.TestCase):
         hist_idx, bins_idx = gbm.get_split_value_histogram(0)
         hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[0])
         np.testing.assert_array_equal(hist_idx, hist_name)
-        np.testing.assert_almost_equal(bins_idx, bins_name)
+        np.testing.assert_allclose(bins_idx, bins_name)
         hist_idx, bins_idx = gbm.get_split_value_histogram(X.shape[-1] - 1)
         hist_name, bins_name = gbm.get_split_value_histogram(gbm.feature_name()[X.shape[-1] - 1])
         np.testing.assert_array_equal(hist_idx, hist_name)
-        np.testing.assert_almost_equal(bins_idx, bins_name)
+        np.testing.assert_allclose(bins_idx, bins_name)
         # test bins string type
         if np.__version__ > '1.11.0':
             hist_vals, bin_edges = gbm.get_split_value_histogram(0, bins='auto')
@@ -1408,11 +1496,11 @@ class TestEngine(unittest.TestCase):
             if lgb.compat.PANDAS_INSTALLED:
                 mask = hist_vals > 0
                 np.testing.assert_array_equal(hist_vals[mask], hist['Count'].values)
-                np.testing.assert_almost_equal(bin_edges[1:][mask], hist['SplitValue'].values)
+                np.testing.assert_allclose(bin_edges[1:][mask], hist['SplitValue'].values)
             else:
                 mask = hist_vals > 0
                 np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
-                np.testing.assert_almost_equal(bin_edges[1:][mask], hist[:, 0])
+                np.testing.assert_allclose(bin_edges[1:][mask], hist[:, 0])
         # test histogram is disabled for categorical features
         self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
 

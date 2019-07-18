@@ -210,6 +210,38 @@ Learning Control Parameters
 
    -  **Note**: to enable bagging, ``bagging_freq`` should be set to a non zero value as well
 
+-  ``pos_bagging_fraction`` :raw-html:`<a id="pos_bagging_fraction" title="Permalink to this parameter" href="#pos_bagging_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``pos_sub_row``, ``pos_subsample``, ``pos_bagging``, constraints: ``0.0 < pos_bagging_fraction <= 1.0``
+
+   -  used only in ``binary`` application
+
+   -  used for imbalanced binary classification problem, will randomly sample ``#pos_samples * pos_bagging_fraction`` positive samples in bagging
+
+   -  should be used together with ``neg_bagging_fraction``
+
+   -  set this to ``1.0`` to disable
+
+   -  **Note**: to enable this, you need to set ``bagging_freq`` and ``neg_bagging_fraction`` as well
+
+   -  **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+
+   -  **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+
+-  ``neg_bagging_fraction`` :raw-html:`<a id="neg_bagging_fraction" title="Permalink to this parameter" href="#neg_bagging_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``neg_sub_row``, ``neg_subsample``, ``neg_bagging``, constraints: ``0.0 < neg_bagging_fraction <= 1.0``
+
+   -  used only in ``binary`` application
+
+   -  used for imbalanced binary classification problem, will randomly sample ``#neg_samples * neg_bagging_fraction`` negative samples in bagging
+
+   -  should be used together with ``pos_bagging_fraction``
+
+   -  set this to ``1.0`` to disable
+
+   -  **Note**: to enable this, you need to set ``bagging_freq`` and ``pos_bagging_fraction`` as well
+
+   -  **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+
+   -  **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+
 -  ``bagging_freq`` :raw-html:`<a id="bagging_freq" title="Permalink to this parameter" href="#bagging_freq">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``subsample_freq``
 
    -  frequency for bagging
@@ -414,6 +446,12 @@ IO Parameters
    -  small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
 
    -  LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
+
+-  ``max_bin_by_feature`` :raw-html:`<a id="max_bin_by_feature" title="Permalink to this parameter" href="#max_bin_by_feature">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-int
+
+   -  max number of bins for each feature
+
+   -  if not specified, will use ``max_bin`` for all features
 
 -  ``min_data_in_bin`` :raw-html:`<a id="min_data_in_bin" title="Permalink to this parameter" href="#min_data_in_bin">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int, constraints: ``min_data_in_bin > 0``
 
@@ -787,7 +825,7 @@ Metric Parameters
 
       -  ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
 
-      -  ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+      -  ``rmse``, root square loss, aliases: ``root_mean_squared_error``, ``l2_root``
 
       -  ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
 

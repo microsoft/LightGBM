@@ -387,6 +387,16 @@ class GBDT : public GBDTBase {
   */
   data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
 
+
+  /*!
+  * \brief Helper function for bagging, used for multi-threading optimization, balanced sampling
+  * \param start start indice of bagging
+  * \param cnt count
+  * \param buffer output buffer
+  * \return count of left size
+  */
+  data_size_t BalancedBaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
+
   /*!
   * \brief calculate the object function
   */
@@ -492,6 +502,7 @@ class GBDT : public GBDTBase {
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;
   bool need_re_bagging_;
+  bool balanced_bagging_;
   std::string loaded_parameter_;
 
   Json forced_splits_json_;
