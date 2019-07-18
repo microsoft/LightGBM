@@ -895,6 +895,15 @@ static T SafeLog(T x) {
   }
 }
 
+inline bool CheckASCII(const std::string& s) {
+  for (auto c : s) {
+    if (static_cast<unsigned char>(c) > 127) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM

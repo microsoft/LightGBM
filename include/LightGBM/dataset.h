@@ -8,6 +8,7 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
@@ -556,10 +557,8 @@ class Dataset {
     bool spaceInFeatureName = false;
     for (auto& feature_name : feature_names_) {
       // check ascii
-      for (auto c: feature_name) {
-        if (static_cast<unsigned char>(c) > 127) {
-          Log::Fatal("Do not support non-ascii characters in feature name.");
-        }
+      if (!Common::CheckASCII(feature_name)) {
+        Log::Fatal("Do not support non-ascii characters in feature name.");
       }
       if (feature_name.find(' ') != std::string::npos) {
         spaceInFeatureName = true;
