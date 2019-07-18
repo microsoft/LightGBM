@@ -684,6 +684,8 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
                                 static_cast<double>(current_split_info.right_output),
                                 static_cast<data_size_t>(current_split_info.left_count),
                                 static_cast<data_size_t>(current_split_info.right_count),
+                                static_cast<double>(current_split_info.left_sum_hessian),
+                                static_cast<double>(current_split_info.right_sum_hessian),
                                 static_cast<float>(current_split_info.gain),
                                 train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                                 current_split_info.default_left);
@@ -711,6 +713,8 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
                                            static_cast<double>(current_split_info.right_output),
                                            static_cast<data_size_t>(current_split_info.left_count),
                                            static_cast<data_size_t>(current_split_info.right_count),
+                                           static_cast<double>(current_split_info.left_sum_hessian),
+                                           static_cast<double>(current_split_info.right_sum_hessian),
                                            static_cast<float>(current_split_info.gain),
                                            train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
       data_partition_->Split(current_leaf, train_data_, inner_feature_index,
@@ -792,6 +796,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                               static_cast<double>(best_split_info.right_output),
                               static_cast<data_size_t>(best_split_info.left_count),
                               static_cast<data_size_t>(best_split_info.right_count),
+                              static_cast<double>(best_split_info.left_sum_hessian),
+                              static_cast<double>(best_split_info.right_sum_hessian),
                               static_cast<float>(best_split_info.gain),
                               train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                               best_split_info.default_left);
@@ -815,6 +821,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                                          static_cast<double>(best_split_info.right_output),
                                          static_cast<data_size_t>(best_split_info.left_count),
                                          static_cast<data_size_t>(best_split_info.right_count),
+                                         static_cast<double>(best_split_info.left_sum_hessian),
+                                         static_cast<double>(best_split_info.right_sum_hessian),
                                          static_cast<float>(best_split_info.gain),
                                          train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,

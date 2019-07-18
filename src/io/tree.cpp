@@ -26,14 +26,17 @@ Tree::Tree(int max_leaves)
   split_gain_.resize(max_leaves_ - 1);
   leaf_parent_.resize(max_leaves_);
   leaf_value_.resize(max_leaves_);
+  leaf_weight_.resize(max_leaves_);
   leaf_count_.resize(max_leaves_);
   internal_value_.resize(max_leaves_ - 1);
+  internal_weight_.resize(max_leaves_ - 1);
   internal_count_.resize(max_leaves_ - 1);
   leaf_depth_.resize(max_leaves_);
   // root is in the depth 0
   leaf_depth_[0] = 0;
   num_leaves_ = 1;
   leaf_value_[0] = 0.0f;
+  leaf_weight_[0] = 0.0f;
   leaf_parent_[0] = -1;
   shrinkage_ = 1.0f;
   num_cat_ = 0;
@@ -47,8 +50,8 @@ Tree::~Tree() {
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
-                int left_cnt, int right_cnt, float gain, MissingType missing_type, bool default_left) {
-  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
+                int left_cnt, int right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type, bool default_left) {
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
@@ -68,8 +71,8 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
 
 int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                            const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                           data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type) {
-  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
+                           data_size_t left_cnt, data_size_t right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type) {
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
@@ -221,10 +224,14 @@ std::string Tree::ToString() const {
     << Common::ArrayToStringFast(right_child_, num_leaves_ - 1) << '\n';
   str_buf << "leaf_value="
     << Common::ArrayToString(leaf_value_, num_leaves_) << '\n';
+  str_buf << "leaf_weight="
+    << Common::ArrayToString(leaf_weight_, num_leaves_) << '\n';
   str_buf << "leaf_count="
     << Common::ArrayToStringFast(leaf_count_, num_leaves_) << '\n';
   str_buf << "internal_value="
     << Common::ArrayToStringFast(internal_value_, num_leaves_ - 1) << '\n';
+  str_buf << "internal_weight="
+    << Common::ArrayToStringFast(internal_weight_, num_leaves_ - 1) << '\n';
   str_buf << "internal_count="
     << Common::ArrayToStringFast(internal_count_, num_leaves_ - 1) << '\n';
   if (num_cat_ > 0) {
@@ -294,6 +301,7 @@ std::string Tree::NodeToJSON(int index) const {
       str_buf << "\"missing_type\":\"NaN\"," << '\n';
     }
     str_buf << "\"internal_value\":" << internal_value_[index] << "," << '\n';
+    str_buf << "\"internal_weight\":" << internal_weight_[index] << "," << '\n';
     str_buf << "\"internal_count\":" << internal_count_[index] << "," << '\n';
     str_buf << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << '\n';
     str_buf << "\"right_child\":" << NodeToJSON(right_child_[index]) << '\n';
@@ -304,6 +312,7 @@ std::string Tree::NodeToJSON(int index) const {
     str_buf << "{" << '\n';
     str_buf << "\"leaf_index\":" << index << "," << '\n';
     str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << '\n';
+    str_buf << "\"leaf_weight\":" << leaf_weight_[index] << "," << '\n';
     str_buf << "\"leaf_count\":" << leaf_count_[index] << '\n';
     str_buf << "}";
   }
@@ -555,6 +564,20 @@ Tree::Tree(const char* str, size_t* used_len) {
     internal_value_ = Common::StringToArrayFast<double>(key_vals["internal_value"], num_leaves_ - 1);
   } else {
     internal_value_.resize(num_leaves_ - 1);
+  }
+
+  if (key_vals.count("internal_weight")) {
+    internal_weight_ = Common::StringToArrayFast<double>(key_vals["internal_weight"], num_leaves_ - 1);
+  }
+  else {
+    internal_weight_.resize(num_leaves_ - 1);
+  }
+
+  if (key_vals.count("leaf_weight")) {
+    leaf_weight_ = Common::StringToArrayFast<double>(key_vals["leaf_weight"], num_leaves_);
+  }
+  else {
+    leaf_weight_.resize(num_leaves_);
   }
 
   if (key_vals.count("leaf_count")) {
