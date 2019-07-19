@@ -390,7 +390,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
                 label = 'split_feature_index: {0}'.format(root['split_feature'])
             label += r'\nthreshold: {0}'.format(_float2str(root['threshold'], precision))
             for info in show_info:
-                if info in {'split_gain', 'internal_value'}:
+                if info in {'split_gain', 'internal_value', 'internal_weight'}:
                     label += r'\n{0}: {1}'.format(info, _float2str(root[info], precision))
                 elif info == 'internal_count':
                     label += r'\n{0}: {1}'.format(info, root[info])
@@ -409,6 +409,8 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
             label += r'\nleaf_value: {0}'.format(_float2str(root['leaf_value'], precision))
             if 'leaf_count' in show_info:
                 label += r'\nleaf_count: {0}'.format(root['leaf_count'])
+            if 'leaf_weight' in show_info:
+                label += r'\nleaf_weight: {0}'.format(_float2str(root['leaf_weight'], precision))
             graph.node(name, label=label)
         if parent is not None:
             graph.edge(parent, name, decision)
@@ -438,7 +440,8 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
         The index of a target tree to convert.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
-        Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
+        Possible values of list items:
+        'split_gain', 'internal_value', 'internal_count', 'internal_weight', 'leaf_count', 'leaf_weight'.
     precision : int or None, optional (default=None)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
@@ -515,7 +518,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         Figure size.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
-        Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
+        Possible values of list items:
+        'split_gain', 'internal_value', 'internal_count', 'internal_weight', 'leaf_count', 'leaf_weight'.
     precision : int or None, optional (default=None)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
