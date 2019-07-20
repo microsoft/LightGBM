@@ -857,11 +857,11 @@ Metric Parameters
 
       -  ``multi_error``, error rate for multi-class classification
 
-      -  ``xentropy``, cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+      -  ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
 
-      -  ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
+      -  ``cross_entropy_lambda``, "intensity-weighted" cross-entropy, aliases: ``xentlambda``
 
-      -  ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
+      -  ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
 
    -  support multiple metrics, separated by ``,``
 
