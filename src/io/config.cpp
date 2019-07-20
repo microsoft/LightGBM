@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/config.h>
+#include <LightGBM/metric.h>
 
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
@@ -74,30 +75,14 @@ void GetObjectiveType(const std::unordered_map<std::string, std::string>& params
 void GetMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
   std::string value;
   if (Config::GetString(params, "metric", &value)) {
-    // clear old metrics
-    metric->clear();
-    // to lower
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    // split
-    std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
-    // remove duplicate
-    std::unordered_set<std::string> metric_sets;
-    for (auto& met : metrics) {
-      std::transform(met.begin(), met.end(), met.begin(), Common::tolower);
-      if (metric_sets.count(met) <= 0) {
-        metric_sets.insert(met);
-      }
-    }
-    for (auto& met : metric_sets) {
-      metric->push_back(met);
-    }
-    metric->shrink_to_fit();
+    Metric::ParseMetrics(value, metric);
   }
   // add names of objective function if not providing metric
   if (metric->empty() && value.size() == 0) {
     if (Config::GetString(params, "objective", &value)) {
       std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-      metric->push_back(value);
+      Metric::ParseMetrics(value, metric);
     }
   }
 }
