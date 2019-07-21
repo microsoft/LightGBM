@@ -87,14 +87,14 @@ std::string GetMetricType(const std::string& type) {
   return type;
 }
 
-void Metric::ParseMetrics(const std::string& value, std::vector<std::string>* metric) {
+void Metric::ParseMetrics(const std::string& value, std::vector<std::string>* out_metric) {
   std::unordered_set<std::string> metric_sets;
-  metric->clear();
+  out_metric->clear();
   std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
   for (auto& met : metrics) {
     auto type = GetMetricType(met);
     if (metric_sets.count(type) <= 0) {
-      metric->push_back(type);
+      out_metric->push_back(type);
       metric_sets.insert(type);
     }
   }

@@ -56,7 +56,7 @@ class Metric {
   */
   LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const Config& config);
 
-  static void ParseMetrics(const std::string& val, std::vector<std::string>* metric);
+  static void ParseMetrics(const std::string& type, std::vector<std::string>* out_metric);
 };
 
 /*!

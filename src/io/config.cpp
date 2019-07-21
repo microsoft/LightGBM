@@ -4,6 +4,7 @@
  */
 #include <LightGBM/config.h>
 #include <LightGBM/metric.h>
+#include <LightGBM/objective_function.h>
 
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
@@ -68,7 +69,7 @@ void GetObjectiveType(const std::unordered_map<std::string, std::string>& params
   std::string value;
   if (Config::GetString(params, "objective", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    *objective = value;
+    *objective = ObjectiveFunction::ParseObjective(value);
   }
 }
 
