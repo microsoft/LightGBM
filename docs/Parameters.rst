@@ -55,9 +55,9 @@ Core Parameters
 
    -  regression application
 
-      -  ``regression``, L2 loss, aliases: ``regression_l2``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
+      -  ``regression``, L2 loss, aliases: ``regression_l2``, ``l2``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
 
-      -  ``regression_l1``, L1 loss, aliases: ``mean_absolute_error``, ``mae``
+      -  ``regression_l1``, L1 loss, aliases: ``l1``, ``mean_absolute_error``, ``mae``
 
       -  ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
 
