@@ -88,7 +88,6 @@ class ObjectiveFunction {
   * \brief Load objective function from string object
   */
   LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& str);
-
 };
 
 }  // namespace LightGBM

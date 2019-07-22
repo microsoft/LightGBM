@@ -3,8 +3,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/config.h>
-#include <LightGBM/metric.h>
-#include <LightGBM/objective_function.h>
 
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
@@ -67,10 +65,11 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
 
 std::string ParseObjectiveAlias(const std::string& type) {
   if (type == std::string("regression") || type == std::string("regression_l2")
-    || type == std::string("mean_squared_error") || type == std::string("mse")
+    || type == std::string("mean_squared_error") || type == std::string("mse") || type == std::string("l2")
     || type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
     return "regression";
-  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
+  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error") 
+    || type == std::string("l1") || type == std::string("mae")) {
     return "regression_l1";
   } else if (type == std::string("multiclass") || type == std::string("softmax")) {
     return "multiclass";
@@ -111,6 +110,8 @@ std::string ParseMetricAlias(const std::string& type) {
     return "kullback_leibler";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
+    return "custom";
   }
   return type;
 }
@@ -245,20 +246,13 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 }
 
 bool CheckMultiClassObjective(const std::string& objective) {
-  return (objective == std::string("multiclass")
-          || objective == std::string("multiclassova")
-          || objective == std::string("softmax")
-          || objective == std::string("multiclass_ova")
-          || objective == std::string("ova")
-          || objective == std::string("ovr"));
+  return (objective == std::string("multiclass") || objective == std::string("multiclassova"));
 }
 
 void Config::CheckParamConflict() {
   // check if objective, metric, and num_class match
   int num_class_check = num_class;
-  bool objective_custom = objective == std::string("none") || objective == std::string("null")
-                                       || objective == std::string("custom") || objective == std::string("na");
-  bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective_custom && num_class_check > 1);
+  bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective == std::string("custom") && num_class_check > 1);
 
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
@@ -270,12 +264,10 @@ void Config::CheckParamConflict() {
     }
   }
   for (std::string metric_type : metric) {
-    bool metric_custom_or_none = metric_type == std::string("none") || metric_type == std::string("null")
-                                 || metric_type == std::string("custom") || metric_type == std::string("na");
     bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
                                    || metric_type == std::string("multi_logloss")
                                    || metric_type == std::string("multi_error")
-                                   || (metric_custom_or_none && num_class_check > 1));
+                                   || (metric_type == std::string("custom") && num_class_check > 1));
     if ((objective_type_multiclass && !metric_type_multiclass)
         || (!objective_type_multiclass && metric_type_multiclass)) {
       Log::Fatal("Multiclass objective and metrics don't match");
