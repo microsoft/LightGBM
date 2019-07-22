@@ -89,7 +89,6 @@ class ObjectiveFunction {
   */
   LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& str);
 
-  static std::string ParseObjective(const std::string& type);
 };
 
 }  // namespace LightGBM

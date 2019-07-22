@@ -51,7 +51,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& str) {
   auto strs = Common::Split(str.c_str(), ' ');
-  auto type = ObjectiveFunction::ParseObjective(strs[0]);
+  auto type = strs[0];
   if (type == std::string("regression")) {
     return new RegressionL2loss(strs);
   } else if (type == std::string("regression_l1")) {
@@ -86,29 +86,6 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return nullptr;
   }
   Log::Fatal("Unknown objective type name: %s", type.c_str());
-}
-
-std::string ObjectiveFunction::ParseObjective(const std::string& type) {
-  if (type == std::string("regression") || type == std::string("regression_l2")
-    || type == std::string("mean_squared_error") || type == std::string("mse")
-    || type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
-    return "regression";
-  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
-    return "regression_l1";
-  } else if (type == std::string("multiclass") || type == std::string("softmax")) {
-    return "multiclass";
-  } else if (type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
-    return "multiclassova";
-  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
-    return "cross_entropy";
-  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
-    return "cross_entropy_lambda";
-  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
-    return "mape";
-  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
-    return "custom";
-  }
-  return type;
 }
 
 }  // namespace LightGBM
