@@ -127,7 +127,7 @@ jobs:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Enable conda
   - script: |
-      conda install -q -y conda=4.6.14
+      conda update -q -y conda
       conda create -q -y -n %CONDA_ENV% python=%PYTHON_VERSION% matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
       cmd /c "activate %CONDA_ENV% & powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
