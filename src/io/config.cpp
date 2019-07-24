@@ -172,7 +172,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetTreeLearnerType(params, &tree_learner);
 
   GetMembersFromString(params);
-  
+
   // sort eval_at
   std::sort(eval_at.begin(), eval_at.end());
 

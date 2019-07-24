@@ -239,23 +239,23 @@ class RegressionL1loss: public RegressionL2loss {
     const double alpha = 0.5;
     if (weights_ == nullptr) {
       if (bagging_mapper == nullptr) {
-        #define data_reader(i) (residual_getter(label_,index_mapper[i]))
+        #define data_reader(i) (residual_getter(label_, index_mapper[i]))
         PercentileFun(double, data_reader, num_data_in_leaf, alpha);
         #undef data_reader
       } else {
-        #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
+        #define data_reader(i) (residual_getter(label_, bagging_mapper[index_mapper[i]]))
         PercentileFun(double, data_reader, num_data_in_leaf, alpha);
         #undef data_reader
       }
     } else {
       if (bagging_mapper == nullptr) {
-        #define data_reader(i) (residual_getter(label_,index_mapper[i]))
+        #define data_reader(i) (residual_getter(label_, index_mapper[i]))
         #define weight_reader(i) (weights_[index_mapper[i]])
         WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
         #undef data_reader
         #undef weight_reader
       } else {
-        #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
+        #define data_reader(i) (residual_getter(label_, bagging_mapper[index_mapper[i]]))
         #define weight_reader(i) (weights_[bagging_mapper[index_mapper[i]]])
         WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
         #undef data_reader
@@ -526,23 +526,23 @@ class RegressionQuantileloss : public RegressionL2loss {
                          data_size_t num_data_in_leaf) const override {
     if (weights_ == nullptr) {
       if (bagging_mapper == nullptr) {
-        #define data_reader(i) (residual_getter(label_,index_mapper[i]))
+        #define data_reader(i) (residual_getter(label_, index_mapper[i]))
         PercentileFun(double, data_reader, num_data_in_leaf, alpha_);
         #undef data_reader
       } else {
-        #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
+        #define data_reader(i) (residual_getter(label_, bagging_mapper[index_mapper[i]]))
         PercentileFun(double, data_reader, num_data_in_leaf, alpha_);
         #undef data_reader
       }
     } else {
       if (bagging_mapper == nullptr) {
-        #define data_reader(i) (residual_getter(label_,index_mapper[i]))
+        #define data_reader(i) (residual_getter(label_, index_mapper[i]))
         #define weight_reader(i) (weights_[index_mapper[i]])
         WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha_);
         #undef data_reader
         #undef weight_reader
       } else {
-        #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
+        #define data_reader(i) (residual_getter(label_, bagging_mapper[index_mapper[i]]))
         #define weight_reader(i) (weights_[bagging_mapper[index_mapper[i]]])
         WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha_);
         #undef data_reader
@@ -627,13 +627,13 @@ class RegressionMAPELOSS : public RegressionL1loss {
                          data_size_t num_data_in_leaf) const override {
     const double alpha = 0.5;
     if (bagging_mapper == nullptr) {
-      #define data_reader(i) (residual_getter(label_,index_mapper[i]))
+      #define data_reader(i) (residual_getter(label_, index_mapper[i]))
       #define weight_reader(i) (label_weight_[index_mapper[i]])
       WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
       #undef data_reader
       #undef weight_reader
     } else {
-      #define data_reader(i) (residual_getter(label_,bagging_mapper[index_mapper[i]]))
+      #define data_reader(i) (residual_getter(label_, bagging_mapper[index_mapper[i]]))
       #define weight_reader(i) (label_weight_[bagging_mapper[index_mapper[i]]])
       WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
       #undef data_reader
