@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 
-const std::string kModelVersion = "v2";
+const std::string kModelVersion = "v3";
 
 std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   std::stringstream str_buf;
