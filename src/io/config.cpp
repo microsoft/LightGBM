@@ -68,7 +68,7 @@ std::string ParseObjectiveAlias(const std::string& type) {
     || type == std::string("mean_squared_error") || type == std::string("mse") || type == std::string("l2")
     || type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
     return "regression";
-  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error") 
+  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error")
     || type == std::string("l1") || type == std::string("mae")) {
     return "regression_l1";
   } else if (type == std::string("multiclass") || type == std::string("softmax")) {
