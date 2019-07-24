@@ -367,8 +367,6 @@ namespace LightGBM {
         // Use MissingType::None to represent this bin contains all categoricals
         if (cur_cat == distinct_values_int.size() && na_cnt == 0) {
           missing_type_ = MissingType::None;
-        } else if (na_cnt == 0) {
-          missing_type_ = MissingType::Zero;
         } else {
           missing_type_ = MissingType::NaN;
         }

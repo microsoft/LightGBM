@@ -120,7 +120,7 @@ class TestBasic(unittest.TestCase):
         self.assertRaises(IndexError, lgb.create_tree_digraph, gbm, tree_index=83)
 
         graph = lgb.create_tree_digraph(gbm, tree_index=3,
-                                        show_info=['split_gain', 'internal_value'],
+                                        show_info=['split_gain', 'internal_value', 'internal_weight'],
                                         name='Tree4', node_attr={'color': 'red'})
         graph.render(view=False)
         self.assertIsInstance(graph, graphviz.Digraph)
@@ -137,8 +137,10 @@ class TestBasic(unittest.TestCase):
         self.assertIn('leaf_index', graph_body)
         self.assertIn('split_gain', graph_body)
         self.assertIn('internal_value', graph_body)
+        self.assertIn('internal_weight', graph_body)
         self.assertNotIn('internal_count', graph_body)
         self.assertNotIn('leaf_count', graph_body)
+        self.assertNotIn('leaf_weight', graph_body)
 
     @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
     def test_plot_metrics(self):

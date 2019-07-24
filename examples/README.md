@@ -8,6 +8,8 @@ Comments in configuration files might be outdated. Actual information about para
 Machine Learning Challenge Winning Solutions
 ============================================
 
+**LightGBM is used in the most winning solutions, so we do not update this table anymore.**
+
 | Place         | Competition   | Solution  | Date |
 | ------------- |:------------- | --------- | -----|
 | 1st     | [TalkingData AdTracking Fraud Detection Challenge](https://www.kaggle.com/c/talkingdata-adtracking-fraud-detection) | [link](https://www.kaggle.com/c/talkingdata-adtracking-fraud-detection/discussion/56475)| 2018.5 |
