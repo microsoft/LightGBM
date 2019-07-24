@@ -27,6 +27,7 @@ install:
       }
   - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
+  - activate
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q -y conda
   - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
