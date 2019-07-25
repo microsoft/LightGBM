@@ -74,6 +74,7 @@ extensions = [
     'sphinx.ext.napoleon',
 ]
 
+autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
 autodoc_default_options = {
     "members": True,
     "inherited-members": True,
