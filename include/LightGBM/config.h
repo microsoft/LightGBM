@@ -447,7 +447,7 @@ struct Config {
   // default = None
   // desc = max number of bins for each feature
   // desc = if not specified, will use ``max_bin`` for all features
-  std::vector<int32_t> max_bin_by_feature;  
+  std::vector<int32_t> max_bin_by_feature;
 
   // check = >0
   // desc = minimal number of data inside one bin

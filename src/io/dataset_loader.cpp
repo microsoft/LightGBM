@@ -584,13 +584,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       bin_mappers[i].reset(new BinMapper());
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
-                                config_.max_bin, config_.min_data_in_bin, filter_cnt, 
+                                config_.max_bin, config_.min_data_in_bin, filter_cnt,
                                 bin_type, config_.use_missing, config_.zero_as_missing);
       } else {
         bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
-                                config_.max_bin_by_feature[i], config_.min_data_in_bin, 
-                                filter_cnt, bin_type, config_.use_missing, 
-          config_.zero_as_missing);
+                                config_.max_bin_by_feature[i], config_.min_data_in_bin,
+                                filter_cnt, bin_type, config_.use_missing,
+                                config_.zero_as_missing);
       }
       OMP_LOOP_EX_END();
     }
@@ -628,13 +628,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       }
       bin_mappers[i].reset(new BinMapper());
       if (config_.max_bin_by_feature.empty()) {
-        bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i], 
-                                total_sample_size, config_.max_bin, config_.min_data_in_bin, 
+        bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
+                                total_sample_size, config_.max_bin, config_.min_data_in_bin,
                                 filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
       } else {
-        bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i], 
-                                total_sample_size, config_.max_bin_by_feature[start[rank] + i], 
-                                config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, 
+        bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
+                                total_sample_size, config_.max_bin_by_feature[start[rank] + i],
+                                config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing,
                                 config_.zero_as_missing);
       }
       OMP_LOOP_EX_END();
@@ -908,12 +908,12 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       bin_mappers[i].reset(new BinMapper());
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
-                                sample_data.size(), config_.max_bin, config_.min_data_in_bin, 
+                                sample_data.size(), config_.max_bin, config_.min_data_in_bin,
                                 filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
       } else {
         bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
-                                sample_data.size(), config_.max_bin_by_feature[i], 
-                                config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing, 
+                                sample_data.size(), config_.max_bin_by_feature[i],
+                                config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing,
                                 config_.zero_as_missing);
       }
       OMP_LOOP_EX_END();
@@ -952,16 +952,16 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       }
       bin_mappers[i].reset(new BinMapper());
       if (config_.max_bin_by_feature.empty()) {
-        bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(), 
+        bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
-                                sample_data.size(), config_.max_bin, config_.min_data_in_bin, 
+                                sample_data.size(), config_.max_bin, config_.min_data_in_bin,
                                 filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
       } else {
-        bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(), 
+        bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
-                                sample_data.size(), config_.max_bin_by_feature[i], 
-                                config_.min_data_in_bin, filter_cnt, bin_type, 
-          config_.use_missing, config_.zero_as_missing);
+                                sample_data.size(), config_.max_bin_by_feature[i],
+                                config_.min_data_in_bin, filter_cnt, bin_type,
+                                config_.use_missing, config_.zero_as_missing);
       }
       OMP_LOOP_EX_END();
     }
