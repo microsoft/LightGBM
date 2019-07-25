@@ -102,11 +102,11 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
+  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, cross_entropy, cross_entropy_lambda, lambdarank
   // alias = objective_type, app, application
   // desc = regression application
-  // descl2 = ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
-  // descl2 = ``regression_l1``, L1 loss, aliases: ``mean_absolute_error``, ``mae``
+  // descl2 = ``regression``, L2 loss, aliases: ``regression_l2``, ``l2``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
+  // descl2 = ``regression_l1``, L1 loss, aliases: ``l1``, ``mean_absolute_error``, ``mae``
   // descl2 = ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
   // descl2 = ``fair``, `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
   // descl2 = ``poisson``, `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__
@@ -120,8 +120,8 @@ struct Config {
   // descl2 = ``multiclassova``, `One-vs-All <https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest>`__ binary objective function, aliases: ``multiclass_ova``, ``ova``, ``ovr``
   // descl2 = ``num_class`` should be set as well
   // desc = cross-entropy application
-  // descl2 = ``xentropy``, objective function for cross-entropy (with optional linear weights), aliases: ``cross_entropy``
-  // descl2 = ``xentlambda``, alternative parameterization of cross-entropy, aliases: ``cross_entropy_lambda``
+  // descl2 = ``cross_entropy``, objective function for cross-entropy (with optional linear weights), aliases: ``xentropy``
+  // descl2 = ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
   // descl2 = label is anything in interval [0, 1]
   // desc = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
   // descl2 = label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
@@ -754,9 +754,9 @@ struct Config {
   // descl2 = ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
   // descl2 = ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
   // descl2 = ``multi_error``, error rate for multi-class classification
-  // descl2 = ``xentropy``, cross-entropy (with optional linear weights), aliases: ``cross_entropy``
-  // descl2 = ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
-  // descl2 = ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
+  // descl2 = ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
+  // descl2 = ``cross_entropy_lambda``, "intensity-weighted" cross-entropy, aliases: ``xentlambda``
+  // descl2 = ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 

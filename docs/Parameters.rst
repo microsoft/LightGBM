@@ -51,13 +51,13 @@ Core Parameters
 
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
 
--  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gamma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
+-  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gamma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``cross_entropy``, ``cross_entropy_lambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
 
    -  regression application
 
-      -  ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
+      -  ``regression``, L2 loss, aliases: ``regression_l2``, ``l2``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
 
-      -  ``regression_l1``, L1 loss, aliases: ``mean_absolute_error``, ``mae``
+      -  ``regression_l1``, L1 loss, aliases: ``l1``, ``mean_absolute_error``, ``mae``
 
       -  ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
 
@@ -85,9 +85,9 @@ Core Parameters
 
    -  cross-entropy application
 
-      -  ``xentropy``, objective function for cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+      -  ``cross_entropy``, objective function for cross-entropy (with optional linear weights), aliases: ``xentropy``
 
-      -  ``xentlambda``, alternative parameterization of cross-entropy, aliases: ``cross_entropy_lambda``
+      -  ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
 
       -  label is anything in interval [0, 1]
 
@@ -857,11 +857,11 @@ Metric Parameters
 
       -  ``multi_error``, error rate for multi-class classification
 
-      -  ``xentropy``, cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+      -  ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
 
-      -  ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
+      -  ``cross_entropy_lambda``, "intensity-weighted" cross-entropy, aliases: ``xentlambda``
 
-      -  ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
+      -  ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
 
    -  support multiple metrics, separated by ``,``
 
