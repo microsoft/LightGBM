@@ -1,4 +1,0 @@
-# docs-specific .gitignore
-
-# `sphinx.ext.autosummary` should output to `pythonapi/` using :toctree:
-pythonapi/

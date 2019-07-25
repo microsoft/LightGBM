@@ -74,7 +74,7 @@ extensions = [
     'sphinx.ext.napoleon',
 ]
 
-autodoc_default_flags = ['members', 'inherited-members']
+autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -123,7 +123,7 @@ pygments_style = 'default'
 todo_include_todos = False
 
 # Both the class' and the __init__ method's docstring are concatenated and inserted.
-autoclass_content = 'both'
+autoclass_content = 'class'
 
 # -- Configuration for C API docs generation ------------------------------
 
