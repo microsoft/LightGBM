@@ -6,12 +6,13 @@ import os
 import psutil
 import random
 import unittest
+from pathlib import Path
 
 import lightgbm as lgb
 import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris, load_svmlight_file)
+                              load_iris, load_svmlight_file, make_classification)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
 
@@ -1591,3 +1592,150 @@ class TestEngine(unittest.TestCase):
         metrics_combination_cv_regression(['l1', 'l2'], best_iter_l1, True, True)
         metrics_combination_cv_regression(['l2', 'l1'], best_iter_min, False, True)
         metrics_combination_cv_regression(['l1', 'l2'], best_iter_min, False, True)
+
+        # composite name metrics(lambdarank)
+        p = Path(os.path.dirname(__file__))
+        base_path = p.parent.parent
+        X_train, y_train = load_svmlight_file(os.path.join(base_path, "examples/lambdarank/rank.train"))
+        X_test, y_test = load_svmlight_file(os.path.join(base_path, "examples/lambdarank/rank.test"))
+        q_train = np.loadtxt(os.path.join(base_path, "examples/lambdarank/rank.train.query"))
+        q_test = np.loadtxt(os.path.join(base_path, "examples/lambdarank/rank.test.query"))
+        lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, group=q_test)
+
+        def metrics_combination_train_lambdarank(metric_list, assumed_iteration, first_metric_only):
+            params_lambdarank = {'objective': 'lambdarank', 'metric': metric_list,
+                                 'verbose': -1, 'eval_at': 3, "first_metric_only": first_metric_only}
+            gbm = lgb.train(params_lambdarank, lgb_train,
+                            num_boost_round=25, valid_sets=[lgb_eval],
+                            early_stopping_rounds=5, verbose_eval=False)
+            self.assertEqual(assumed_iteration, gbm.best_iteration)
+
+        def metrics_combination_cv_lambdarank(metric_list, assumed_iteration, first_metric_only, eval_train_metric):
+            params_lambdarank = {'objective': 'lambdarank', 'metric': metric_list,
+                                 'verbose': -1, 'eval_at': 3, "first_metric_only": first_metric_only}
+            ret = lgb.cv(params_lambdarank, lgb_train,
+                         num_boost_round=25, eval_train_metric=eval_train_metric,
+                         early_stopping_rounds=5, verbose_eval=False)
+            self.assertEqual(assumed_iteration, len(ret[list(ret.keys())[0]]))
+
+        best_iter_ndcg = 6
+        best_iter_l2 = 1
+        best_iter_min = min([best_iter_ndcg, best_iter_l2])
+        metrics_combination_train_lambdarank(None, best_iter_ndcg, False)
+        metrics_combination_train_lambdarank(None, best_iter_ndcg, True)
+        metrics_combination_train_lambdarank([], best_iter_ndcg, False)
+        metrics_combination_train_lambdarank([], best_iter_ndcg, True)
+        metrics_combination_train_lambdarank("ndcg", best_iter_ndcg, False)
+        metrics_combination_train_lambdarank("ndcg", best_iter_ndcg, True)
+        metrics_combination_train_lambdarank("lambdarank", best_iter_ndcg, False)
+        metrics_combination_train_lambdarank("lambdarank", best_iter_ndcg, True)
+        metrics_combination_train_lambdarank("l2", best_iter_l2, False)
+        metrics_combination_train_lambdarank("l2", best_iter_l2, True)
+        metrics_combination_train_lambdarank(["ndcg", "l2"], best_iter_min, False)
+        metrics_combination_train_lambdarank(["ndcg", "l2"], best_iter_ndcg, True)
+        metrics_combination_train_lambdarank(["l2", "ndcg"], best_iter_min, False)
+        metrics_combination_train_lambdarank(["l2", "ndcg"], best_iter_l2, True)
+
+        best_iter_ndcg = 11
+        best_iter_l2 = 1
+        best_iter_min = min([best_iter_ndcg, best_iter_l2])
+        metrics_combination_cv_lambdarank(None, best_iter_ndcg, False, True)
+        metrics_combination_cv_lambdarank(None, best_iter_ndcg, True, True)
+        metrics_combination_cv_lambdarank([], best_iter_ndcg, False, True)
+        metrics_combination_cv_lambdarank([], best_iter_ndcg, True, True)
+        metrics_combination_cv_lambdarank("ndcg", best_iter_ndcg, False, True)
+        metrics_combination_cv_lambdarank("ndcg", best_iter_ndcg, True, True)
+        metrics_combination_cv_lambdarank("lambdarank", best_iter_ndcg, False, True)
+        metrics_combination_cv_lambdarank("lambdarank", best_iter_ndcg, True, True)
+        metrics_combination_cv_lambdarank("l2", best_iter_l2, False, True)
+        metrics_combination_cv_lambdarank("l2", best_iter_l2, True, True)
+        metrics_combination_cv_lambdarank(["ndcg", "l2"], best_iter_min, False, True)
+        metrics_combination_cv_lambdarank(["ndcg", "l2"], best_iter_ndcg, True, True)
+        metrics_combination_cv_lambdarank(["l2", "ndcg"], best_iter_min, False, True)
+        metrics_combination_cv_lambdarank(["l2", "ndcg"], best_iter_l2, True, True)
+
+        metrics_combination_cv_lambdarank(None, best_iter_ndcg, False, False)
+        metrics_combination_cv_lambdarank(None, best_iter_ndcg, True, False)
+        metrics_combination_cv_lambdarank([], best_iter_ndcg, False, False)
+        metrics_combination_cv_lambdarank([], best_iter_ndcg, True, False)
+        metrics_combination_cv_lambdarank("ndcg", best_iter_ndcg, False, False)
+        metrics_combination_cv_lambdarank("ndcg", best_iter_ndcg, True, False)
+        metrics_combination_cv_lambdarank("lambdarank", best_iter_ndcg, False, False)
+        metrics_combination_cv_lambdarank("lambdarank", best_iter_ndcg, True, False)
+        metrics_combination_cv_lambdarank("l2", best_iter_l2, False, False)
+        metrics_combination_cv_lambdarank("l2", best_iter_l2, True, False)
+        metrics_combination_cv_lambdarank(["ndcg", "l2"], best_iter_min, False, False)
+        metrics_combination_cv_lambdarank(["ndcg", "l2"], best_iter_ndcg, True, False)
+        metrics_combination_cv_lambdarank(["l2", "ndcg"], best_iter_min, False, False)
+        metrics_combination_cv_lambdarank(["l2", "ndcg"], best_iter_l2, True, False)
+
+        # composite name metrics(multi error)
+        X, y = make_classification(n_features=10, n_redundant=0, n_informative=10,
+                                   n_clusters_per_class=3, n_classes=10, random_state=71)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+
+        def metrics_combination_train_multi_err(metric_list, assumed_iteration, first_metric_only):
+            params = {'objective': 'multiclass', 'num_classes': 10, 'multi_error_top_k': 2,
+                      'metric': metric_list, "first_metric_only": first_metric_only,
+                      'num_leaves': 20, 'seed': 0, 'num_rounds': 30, 'verbose': -1}
+            gbm = lgb.train(params, lgb_train,
+                            num_boost_round=25, valid_sets=[lgb_eval],
+                            early_stopping_rounds=5, verbose_eval=False)
+            self.assertEqual(assumed_iteration, gbm.best_iteration)
+
+        def metrics_combination_cv_multi_err(metric_list, assumed_iteration, first_metric_only, eval_train_metric):
+            params = {'objective': 'multiclass', 'num_classes': 10, 'multi_error_top_k': 2,
+                      'metric': metric_list, "first_metric_only": first_metric_only,
+                      'num_leaves': 20, 'seed': 0, 'num_rounds': 30, 'verbose': -1}
+            ret = lgb.cv(params, lgb_train,
+                         num_boost_round=25, eval_train_metric=eval_train_metric,
+                         early_stopping_rounds=5, verbose_eval=False)
+            self.assertEqual(assumed_iteration, len(ret[list(ret.keys())[0]]))
+
+        best_iter_err = 1
+        best_iter_logloss = 14
+        best_iter_min = min([best_iter_err, best_iter_logloss])
+        metrics_combination_train_multi_err(None, best_iter_logloss, False)
+        metrics_combination_train_multi_err(None, best_iter_logloss, True)
+        metrics_combination_train_multi_err([], best_iter_logloss, False)
+        metrics_combination_train_multi_err([], best_iter_logloss, True)
+        metrics_combination_train_multi_err("multi_error", best_iter_err, False)
+        metrics_combination_train_multi_err("multi_error", best_iter_err, True)
+        metrics_combination_train_multi_err("multi_logloss", best_iter_logloss, False)
+        metrics_combination_train_multi_err("multi_logloss", best_iter_logloss, True)
+        metrics_combination_train_multi_err(["multi_error", "multi_logloss"], best_iter_min, False)
+        metrics_combination_train_multi_err(["multi_error", "multi_logloss"], best_iter_err, True)
+        metrics_combination_train_multi_err(["multi_logloss", "multi_error"], best_iter_min, False)
+        metrics_combination_train_multi_err(["multi_logloss", "multi_error"], best_iter_logloss, True)
+
+        best_iter_err = 8
+        best_iter_logloss = 21
+        best_iter_min = min([best_iter_err, best_iter_logloss])
+        metrics_combination_cv_multi_err(None, best_iter_logloss, False, True)
+        metrics_combination_cv_multi_err(None, best_iter_logloss, True, True)
+        metrics_combination_cv_multi_err([], best_iter_logloss, False, True)
+        metrics_combination_cv_multi_err([], best_iter_logloss, True, True)
+        metrics_combination_cv_multi_err("multi_error", best_iter_err, False, True)
+        metrics_combination_cv_multi_err("multi_error", best_iter_err, True, True)
+        metrics_combination_cv_multi_err("multi_logloss", best_iter_logloss, False, True)
+        metrics_combination_cv_multi_err("multi_logloss", best_iter_logloss, True, True)
+        metrics_combination_cv_multi_err(["multi_error", "multi_logloss"], best_iter_min, False, True)
+        metrics_combination_cv_multi_err(["multi_error", "multi_logloss"], best_iter_err, True, True)
+        metrics_combination_cv_multi_err(["multi_logloss", "multi_error"], best_iter_min, False, True)
+        metrics_combination_cv_multi_err(["multi_logloss", "multi_error"], best_iter_logloss, True, True)
+
+        metrics_combination_cv_multi_err(None, best_iter_logloss, False, False)
+        metrics_combination_cv_multi_err(None, best_iter_logloss, True, False)
+        metrics_combination_cv_multi_err([], best_iter_logloss, False, False)
+        metrics_combination_cv_multi_err([], best_iter_logloss, True, False)
+        metrics_combination_cv_multi_err("multi_error", best_iter_err, False, False)
+        metrics_combination_cv_multi_err("multi_error", best_iter_err, True, False)
+        metrics_combination_cv_multi_err("multi_logloss", best_iter_logloss, False, False)
+        metrics_combination_cv_multi_err("multi_logloss", best_iter_logloss, True, False)
+        metrics_combination_cv_multi_err(["multi_error", "multi_logloss"], best_iter_min, False, False)
+        metrics_combination_cv_multi_err(["multi_error", "multi_logloss"], best_iter_err, True, False)
+        metrics_combination_cv_multi_err(["multi_logloss", "multi_error"], best_iter_min, False, False)
+        metrics_combination_cv_multi_err(["multi_logloss", "multi_error"], best_iter_logloss, True, False)

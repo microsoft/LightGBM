@@ -239,7 +239,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             if eval_metric[0] is None:
                 # if `eval_metric` was not chose from `env.params`, using first element of env.evaluation_result_list
                 # for early stopping
-                eval_metric[0] = env.evaluation_result_list[0][1]
+                # choose first element without train metric
+                eval_metric[0] = [e[1] for e in env.evaluation_result_list if e[1].split(" ")[0].find("train") == -1][0]
             eval_metric[0] = _metric_alias_matching(eval_metric[0])
 
     def _metric_alias_matching(target_metric):
@@ -268,6 +269,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             return
         for i in range_(len(env.evaluation_result_list)):
             metric_key = env.evaluation_result_list[i][1]
+            if first_metric_only and "@" not in eval_metric[0] and "@" in metric_key:
+                metric_key = metric_key.split("@")[0]
             if env.evaluation_result_list[i][0] == "cv_agg":  # for lgb.cv
                 if metric_key.split(" ")[0] == "train":
                     continue  # train metric is not used on early stopping
