@@ -68,13 +68,24 @@ if needs_sphinx > sphinx.__version__:
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
 ]
 
+autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
+autodoc_default_options = {
+    "members": True,
+    "inherited-members": True,
+    "show-inheritance": True,
+}
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+# Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
+autosummary_generate = True
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -117,7 +128,7 @@ pygments_style = 'default'
 todo_include_todos = False
 
 # Both the class' and the __init__ method's docstring are concatenated and inserted.
-autoclass_content = 'both'
+autoclass_content = 'class'
 
 # -- Configuration for C API docs generation ------------------------------
 
