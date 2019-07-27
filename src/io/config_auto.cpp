@@ -58,6 +58,12 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"sub_row", "bagging_fraction"},
   {"subsample", "bagging_fraction"},
   {"bagging", "bagging_fraction"},
+  {"pos_sub_row", "pos_bagging_fraction"},
+  {"pos_subsample", "pos_bagging_fraction"},
+  {"pos_bagging", "pos_bagging_fraction"},
+  {"neg_sub_row", "neg_bagging_fraction"},
+  {"neg_subsample", "neg_bagging_fraction"},
+  {"neg_bagging", "neg_bagging_fraction"},
   {"subsample_freq", "bagging_freq"},
   {"bagging_fraction_seed", "bagging_seed"},
   {"sub_feature", "feature_fraction"},
@@ -176,6 +182,8 @@ std::unordered_set<std::string> Config::parameter_set({
   "min_data_in_leaf",
   "min_sum_hessian_in_leaf",
   "bagging_fraction",
+  "pos_bagging_fraction",
+  "neg_bagging_fraction",
   "bagging_freq",
   "bagging_seed",
   "feature_fraction",
@@ -210,6 +218,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "cegb_penalty_feature_coupled",
   "verbosity",
   "max_bin",
+  "max_bin_by_feature",
   "min_data_in_bin",
   "bin_construct_sample_cnt",
   "histogram_pool_size",
@@ -301,6 +310,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "bagging_fraction", &bagging_fraction);
   CHECK(bagging_fraction >0.0);
   CHECK(bagging_fraction <=1.0);
+
+  GetDouble(params, "pos_bagging_fraction", &pos_bagging_fraction);
+  CHECK(pos_bagging_fraction >0.0);
+  CHECK(pos_bagging_fraction <=1.0);
+
+  GetDouble(params, "neg_bagging_fraction", &neg_bagging_fraction);
+  CHECK(neg_bagging_fraction >0.0);
+  CHECK(neg_bagging_fraction <=1.0);
 
   GetInt(params, "bagging_freq", &bagging_freq);
 
@@ -401,6 +418,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
+
+  if (GetString(params, "max_bin_by_feature", &tmp_str)) {
+    max_bin_by_feature = Common::StringToArray<int32_t>(tmp_str, ',');
+  }
 
   GetInt(params, "min_data_in_bin", &min_data_in_bin);
   CHECK(min_data_in_bin >0);
@@ -558,6 +579,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
   str_buf << "[bagging_fraction: " << bagging_fraction << "]\n";
+  str_buf << "[pos_bagging_fraction: " << pos_bagging_fraction << "]\n";
+  str_buf << "[neg_bagging_fraction: " << neg_bagging_fraction << "]\n";
   str_buf << "[bagging_freq: " << bagging_freq << "]\n";
   str_buf << "[bagging_seed: " << bagging_seed << "]\n";
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";
@@ -592,6 +615,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
+  str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
   str_buf << "[bin_construct_sample_cnt: " << bin_construct_sample_cnt << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";

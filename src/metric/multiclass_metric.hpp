@@ -20,7 +20,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class MulticlassMetric: public Metric {
  public:
-  explicit MulticlassMetric(const Config& config) :config_(config){
+  explicit MulticlassMetric(const Config& config) :config_(config) {
     num_class_ = config.num_class;
   }
 
@@ -149,8 +149,11 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
   }
 
   inline static const std::string Name(const Config& config) {
-    if (config.multi_error_top_k == 1) return "multi_error";
-    else return "multi_error@" + std::to_string(config.multi_error_top_k);
+    if (config.multi_error_top_k == 1) {
+      return "multi_error";
+    } else {
+      return "multi_error@" + std::to_string(config.multi_error_top_k);
+    }
   }
 };
 

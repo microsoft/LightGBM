@@ -50,6 +50,8 @@ class Tree {
   * \param right_value Model Right child output
   * \param left_cnt Count of left child
   * \param right_cnt Count of right child
+  * \param left_weight Weight of left child
+  * \param right_weight Weight of right child
   * \param gain Split gain
   * \param missing_type missing type
   * \param default_left default direction for missing value
@@ -57,7 +59,8 @@ class Tree {
   */
   int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
             double threshold_double, double left_value, double right_value,
-            int left_cnt, int right_cnt, float gain, MissingType missing_type, bool default_left);
+            int left_cnt, int right_cnt, double left_weight, double right_weight,
+            float gain, MissingType missing_type, bool default_left);
 
   /*!
   * \brief Performing a split on tree leaves, with categorical feature
@@ -72,12 +75,14 @@ class Tree {
   * \param right_value Model Right child output
   * \param left_cnt Count of left child
   * \param right_cnt Count of right child
+  * \param left_weight Weight of left child
+  * \param right_weight Weight of right child
   * \param gain Split gain
   * \return The index of new leaf.
   */
   int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                        const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                       int left_cnt, int right_cnt, float gain, MissingType missing_type);
+                       int left_cnt, int right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -297,8 +302,8 @@ class Tree {
     }
   }
 
-  inline void Split(int leaf, int feature, int real_feature,
-                    double left_value, double right_value, int left_cnt, int right_cnt, float gain);
+  inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value, int left_cnt, int right_cnt,
+                    double left_weight, double right_weight, float gain);
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -383,10 +388,14 @@ class Tree {
   std::vector<int> leaf_parent_;
   /*! \brief Output of leaves */
   std::vector<double> leaf_value_;
+  /*! \brief weight of leaves */
+  std::vector<double> leaf_weight_;
   /*! \brief DataCount of leaves */
   std::vector<int> leaf_count_;
   /*! \brief Output of non-leaf nodes */
   std::vector<double> internal_value_;
+  /*! \brief weight of non-leaf nodes */
+  std::vector<double> internal_weight_;
   /*! \brief DataCount of non-leaf nodes */
   std::vector<int> internal_count_;
   /*! \brief Depth for leaves */
@@ -396,7 +405,8 @@ class Tree {
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
-                        double left_value, double right_value, int left_cnt, int right_cnt, float gain) {
+                        double left_value, double right_value, int left_cnt, int right_cnt,
+                        double left_weight, double right_weight, float gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info
   int parent = leaf_parent_[leaf];
@@ -420,11 +430,14 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   leaf_parent_[leaf] = new_node_idx;
   leaf_parent_[num_leaves_] = new_node_idx;
   // save current leaf value to internal node before change
+  internal_weight_[new_node_idx] = leaf_weight_[leaf];
   internal_value_[new_node_idx] = leaf_value_[leaf];
   internal_count_[new_node_idx] = left_cnt + right_cnt;
   leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;
+  leaf_weight_[leaf] = left_weight;
   leaf_count_[leaf] = left_cnt;
   leaf_value_[num_leaves_] = std::isnan(right_value) ? 0.0f : right_value;
+  leaf_weight_[num_leaves_] = right_weight;
   leaf_count_[num_leaves_] = right_cnt;
   // update leaf depth
   leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
