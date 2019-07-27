@@ -405,7 +405,7 @@ class Tree {
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
-                        double left_value, double right_value, int left_cnt, int right_cnt, 
+                        double left_value, double right_value, int left_cnt, int right_cnt,
                         double left_weight, double right_weight, float gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info

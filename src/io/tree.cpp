@@ -515,7 +515,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   } else {
     Log::Fatal("Tree model string format error, should contain leaf_value field");
   }
-  
+
   if (key_vals.count("shrinkage")) {
     Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
   } else {
@@ -568,15 +568,13 @@ Tree::Tree(const char* str, size_t* used_len) {
 
   if (key_vals.count("internal_weight")) {
     internal_weight_ = Common::StringToArrayFast<double>(key_vals["internal_weight"], num_leaves_ - 1);
-  }
-  else {
+  } else {
     internal_weight_.resize(num_leaves_ - 1);
   }
 
   if (key_vals.count("leaf_weight")) {
     leaf_weight_ = Common::StringToArrayFast<double>(key_vals["leaf_weight"], num_leaves_);
-  }
-  else {
+  } else {
     leaf_weight_.resize(num_leaves_);
   }
 
