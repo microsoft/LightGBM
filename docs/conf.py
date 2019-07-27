@@ -220,4 +220,5 @@ def setup(app):
         app.connect("builder-inited", generate_doxygen_xml)
     else:
         app.add_directive('doxygenfile', IgnoredDirective)
-    app.add_javascript("js/script.js")
+    add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
+    add_js_file("js/script.js")
