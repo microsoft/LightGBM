@@ -70,13 +70,24 @@ if needs_sphinx > sphinx.__version__:
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
 ]
 
+autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
+autodoc_default_options = {
+    "members": True,
+    "inherited-members": True,
+    "show-inheritance": True,
+}
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+# Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
+autosummary_generate = True
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -119,7 +130,7 @@ pygments_style = 'default'
 todo_include_todos = False
 
 # Both the class' and the __init__ method's docstring are concatenated and inserted.
-autoclass_content = 'both'
+autoclass_content = 'class'
 
 # -- Configuration for C API docs generation ------------------------------
 
@@ -277,4 +288,5 @@ def setup(app):
         app.connect("build-finished",
                     lambda app, exception: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
                                                      os.path.join(app.outdir, "R"), verbose=0))
-    app.add_javascript("js/script.js")
+    add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
+    add_js_file("js/script.js")
