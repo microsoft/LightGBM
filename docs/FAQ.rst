@@ -171,9 +171,9 @@ LightGBM
 
 -  **Solution 12**: Early stopping involves choosing a validation set, a special type of holdout which is used to evaluate the current state of the model after each iteration to see if training can stop.
 
-    In ``LightGBM``, `we have decided to require that users specify this set directly <./Python-Intro.html#early-stopping>`_. Many options exist for splitting training data into training, test, and validation sets.
+   In ``LightGBM``, `we have decided to require that users specify this set directly <./Parameters.html#valid>`_. Many options exist for splitting training data into training, test, and validation sets.
 
-    The appropriate splitting strategy depends on the task and domain of the data, information that a modeler has but which ``LightGBM`` as a general-purpose tool does not.
+   The appropriate splitting strategy depends on the task and domain of the data, information that a modeler has but which ``LightGBM`` as a general-purpose tool does not.
 
 --------------
 
