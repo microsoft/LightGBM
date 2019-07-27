@@ -274,7 +274,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 if ((first_metric_only and eval_metric[0] is not None and eval_metric[0] != ""
                      and metric_key != "valid {}".format(eval_metric[0]) and metric_key != eval_metric[0])):
                     continue
-            elif getattr(env.model, '__train_data_name', False) and env.model._train_data_name == "training":
+            elif env.evaluation_result_list[i][0] == "training":
                 continue  # for training set, early stopping is not applied
             else:  # for lgb.train and sklearn wrapper
                 if first_metric_only:

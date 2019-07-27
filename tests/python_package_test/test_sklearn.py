@@ -643,15 +643,14 @@ class TestSklearn(unittest.TestCase):
 
                     actual = len(gbm.evals_result_[eval_set_name][metric_name])
                     expected = assumed_iteration + (params_fit['early_stopping_rounds']
-                                                    if eval_set_name != 'training' else params['n_estimators'])
+                                                    if eval_set_name != 'training' else 0)
                     self.assertEqual(actual, expected)
-                    self.assertEqual(assumed_iteration if eval_set_name != 'training' else params['n_estimators'],
-                                     gbm.best_iteration_)
+                    self.assertEqual(assumed_iteration if eval_set_name != 'training' else 0, gbm.best_iteration_)
 
         # training data as eval_set
         params_fit['eval_set'] = (X_train, y_train)
-        fit_and_check(['training'], ['l2'], 0, False)
-        fit_and_check(['training'], ['l2'], 0, True)
+        fit_and_check(['training'], ['l2'], 30, False)
+        fit_and_check(['training'], ['l2'], 30, True)
 
         # single eval_set
         iter_1 = 2
