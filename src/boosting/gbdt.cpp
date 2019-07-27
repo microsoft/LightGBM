@@ -136,7 +136,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
     valid_metrics_.back().push_back(metric);
   }
   valid_metrics_.back().shrink_to_fit();
-  
+
   if (early_stopping_round_ > 0) {
     auto num_metrics = valid_metrics.size();
     if (es_first_metric_only_) { num_metrics = 1; }
@@ -739,7 +739,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     }
     if (balance_bagging_cond) {
       balanced_bagging_ = true;
-      bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config->pos_bagging_fraction) 
+      bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config->pos_bagging_fraction)
                       + static_cast<data_size_t>((num_data_ - num_pos_data) * config->neg_bagging_fraction);
     } else {
       bag_data_cnt_ = static_cast<data_size_t>(config->bagging_fraction * num_data_);
