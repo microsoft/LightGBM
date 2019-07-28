@@ -850,7 +850,7 @@ struct Config {
 inline bool Config::GetString(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, std::string* out) {
-  if (params.count(name) > 0) {
+  if (params.count(name) > 0 && !params.at(name).empty()) {
     *out = params.at(name);
     return true;
   }
@@ -860,7 +860,7 @@ inline bool Config::GetString(
 inline bool Config::GetInt(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, int* out) {
-  if (params.count(name) > 0) {
+  if (params.count(name) > 0 && !params.at(name).empty()) {
     if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
       Log::Fatal("Parameter %s should be of type int, got \"%s\"",
                  name.c_str(), params.at(name).c_str());
@@ -873,7 +873,7 @@ inline bool Config::GetInt(
 inline bool Config::GetDouble(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, double* out) {
-  if (params.count(name) > 0) {
+  if (params.count(name) > 0 && !params.at(name).empty()) {
     if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
       Log::Fatal("Parameter %s should be of type double, got \"%s\"",
                  name.c_str(), params.at(name).c_str());
@@ -886,7 +886,7 @@ inline bool Config::GetDouble(
 inline bool Config::GetBool(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, bool* out) {
-  if (params.count(name) > 0) {
+  if (params.count(name) > 0 && !params.at(name).empty()) {
     std::string value = params.at(name);
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("false") || value == std::string("-")) {
