@@ -242,8 +242,8 @@ or check `this thread on stackoverflow <http://stackoverflow.com/questions/18085
 
 ---
 
-2. Error messages: ``Cannot ... before construct dataset``
-----------------------------------------------------------
+2. Error messages: ``Cannot ... before construct dataset``.
+-----------------------------------------------------------
 
 I see error messages like...
 
