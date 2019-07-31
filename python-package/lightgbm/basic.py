@@ -848,13 +848,12 @@ class Dataset(object):
             self.set_weight(weight)
         if group is not None:
             self.set_group(group)
-        # load init score
-        if init_score is not None:
-            self.set_init_score(init_score)
-            if predictor is not None:
-                warnings.warn("The prediction of init_model will be overridden by init_score.")
-        elif isinstance(predictor, _InnerPredictor):
+        if isinstance(predictor, _InnerPredictor):
+            if self._predictor is None and init_score is not None:
+                warnings.warn("The init_score will be overridden by the prediction of init_model.")
             self._set_init_score_by_predictor(predictor, data)
+        elif init_score is not None:
+            self.set_init_score(init_score)
         elif predictor is not None:
             raise TypeError('Wrong predictor type {}'.format(type(predictor).__name__))
         # set feature names
