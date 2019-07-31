@@ -7,7 +7,7 @@ For the build of Python-package and R-package, please refer to `Python-package`_
 
 Also you can download artifacts of the latest successful build in master branch: |download artifacts|.
 
-.. contents:: Contents
+.. contents:: **Contents**
     :depth: 1
     :local:
     :backlinks: none
