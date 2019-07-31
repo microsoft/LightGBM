@@ -901,6 +901,25 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_data, num_boost_round=1)
         self.assertEqual(len(np.unique(est.predict(X))), 3)
 
+    def test_small_max_bin(self):
+        np.random.seed(0)
+        y = np.random.choice([0, 1], 100)
+        x = np.zeros((100, 1))
+        x[:30, 0] = -1
+        x[30:60, 0] = 1
+        x[60:, 0] = 2
+        params = {'objective': 'binary',
+                  'seed': 0,
+                  'min_data_in_leaf': 1,
+                  'verbose': -1,
+                  'max_bin': 2}
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=5)
+        x[0, 0] = np.nan
+        params['max_bin'] = 3
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=5)
+
     def test_refit(self):
         X, y = load_breast_cancer(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
