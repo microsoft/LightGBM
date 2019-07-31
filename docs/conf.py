@@ -84,12 +84,11 @@ autodoc_default_options = {
 # Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
 autosummary_generate = ['Python-API.rst']
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# Only the class' docstring is inserted.
+autoclass_content = 'class'
 
-# The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-# source_suffix = ['.rst', '.md']
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = False
 
 # The master toctree document.
 master_doc = 'index'
@@ -123,12 +122,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'default'
-
-# If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
-
-# Both the class' and the __init__ method's docstring are concatenated and inserted.
-autoclass_content = 'class'
 
 # -- Configuration for C API docs generation ------------------------------
 
