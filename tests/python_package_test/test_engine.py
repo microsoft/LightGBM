@@ -895,7 +895,7 @@ class TestEngine(unittest.TestCase):
         }
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
-        self.assertEqual(len(np.unique(est.predict(X))), 100)
+        self.assertEqual(len(np.unique(est.predict(X))), 99)
         params['max_bin_by_feature'] = [2, 100]
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
