@@ -919,6 +919,8 @@ class TestEngine(unittest.TestCase):
         params['max_bin'] = 3
         lgb_x = lgb.Dataset(x, label=y)
         est = lgb.train(params, lgb_x, num_boost_round=5)
+        np.random.seed()  # reset seed
+
 
     def test_refit(self):
         X, y = load_breast_cancer(True)

@@ -290,7 +290,6 @@ namespace LightGBM {
         }
       } else if (missing_type_ == MissingType::None) {
         bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
-
       } else {
         bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin - 1, total_sample_cnt - na_cnt, min_data_in_bin);
         bin_upper_bound_.push_back(NaN);
