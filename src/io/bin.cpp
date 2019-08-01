@@ -192,7 +192,12 @@ namespace LightGBM {
     }
 
     if (bin_upper_bound.size() == 0) {
-      if (max_bin > 1) {
+      if (max_bin > 2) {
+        // create zero bin
+        bin_upper_bound.push_back(-kZeroThreshold);
+        bin_upper_bound.push_back(kZeroThreshold);
+      }
+      else if (max_bin > 1) {
         bin_upper_bound.push_back(kZeroThreshold);
       }
     } else {

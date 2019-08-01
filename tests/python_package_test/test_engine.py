@@ -921,7 +921,6 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_x, num_boost_round=5)
         np.random.seed()  # reset seed
 
-
     def test_refit(self):
         X, y = load_breast_cancer(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
