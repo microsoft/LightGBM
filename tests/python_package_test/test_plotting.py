@@ -140,6 +140,18 @@ class TestBasic(unittest.TestCase):
         self.assertNotIn('leaf_count', graph_body)
         self.assertNotIn('leaf_weight', graph_body)
 
+    @unittest.skipIf(not GRAPHVIZ_INSTALLED, 'graphviz is not installed')
+    def test_create_tree_digraph_with_monotone_constraints(self):
+        constraints = [-1, 1] * int(self.X_train.shape[1] / 2)
+        gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True, monotone_constraints=constraints)
+        gbm.fit(self.X_train, self.y_train, verbose=False)
+        graph = lgb.create_tree_digraph(gbm, tree_index=3)
+        graph.render(view=False)
+        graph_body = ''.join(graph.body)
+
+        self.assertIn('#ffdddd', graph_body)
+        self.assertIn('#ddffdd', graph_body)
+
     @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
     def test_plot_metrics(self):
         test_data = lgb.Dataset(self.X_test, self.y_test, reference=self.train_data)
