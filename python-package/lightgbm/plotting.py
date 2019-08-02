@@ -457,7 +457,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
              </TR>
             </TABLE>
            >"""
-        graph.node("legend", label=legend, shape="rectangle", color = "white")
+        graph.node("legend", label=legend, shape="rectangle", color="white")
     return graph
 
 
