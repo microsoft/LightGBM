@@ -394,7 +394,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
             if feature_names is not None:
                 label = '<B>{0}</B> {1} '.format(feature_names[root['split_feature']], operator)
             else:
-                label = '<B>{0}</B> {1}; '.format(root['split_feature'], operator)
+                label = '<B>{0}</B> {1} '.format(root['split_feature'], operator)
             label += r'{0}'.format(_float2str(root['threshold'], precision))
             for info in show_info:
                 if info in {'split_gain', 'internal_value', 'internal_weight'}:
