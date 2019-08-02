@@ -88,6 +88,7 @@ def train(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
+        The output cannot be monotonically constrained with respect to a categorical feature.
     early_stopping_rounds : int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
         Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
@@ -451,6 +452,7 @@ def cv(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
+        The output cannot be monotonically constrained with respect to a categorical feature.
     early_stopping_rounds : int or None, optional (default=None)
         Activates early stopping.
         CV score needs to improve at least every ``early_stopping_rounds`` round(s)
