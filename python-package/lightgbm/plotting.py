@@ -395,7 +395,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
                 label = '<B>{0}</B> {1} '.format(feature_names[root['split_feature']], operator)
             else:
                 label = 'feature <B>{0}</B> {1} '.format(root['split_feature'], operator)
-            label += r'{0}'.format(_float2str(root['threshold'], precision))
+            label += '{0}'.format(_float2str(root['threshold'], precision))
             for info in show_info:
                 if info in {'split_gain', 'internal_value', 'internal_weight'}:
                     output = info
@@ -403,11 +403,11 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
                         output = "gain"
                     elif info == "internal_value":
                         output = "value"
-                    label += r'<br/>{1} {0}'.format(output, _float2str(root[info], precision))
+                    label += '<br/>{1} {0}'.format(output, _float2str(root[info], precision))
                 elif info == 'internal_count':
-                    label += r'<br/>{0}: {1}'.format(info, root[info])
+                    label += '<br/>{0}: {1}'.format(info, root[info])
                 elif info == "data_percentage":
-                    label += r'<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
+                    label += '<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
 
             fillcolor = "white"
             style = ""
@@ -425,13 +425,13 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
         else:  # leaf
             name = 'leaf{0}'.format(root['leaf_index'])
             label = 'leaf {0}: '.format(root['leaf_index'])
-            label += r'<B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
+            label += '<B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
             if 'leaf_count' in show_info:
-                label += r'<br/>leaf_count: {0}'.format(root['leaf_count'])
+                label += '<br/>leaf_count: {0}'.format(root['leaf_count'])
             if 'leaf_weight' in show_info:
-                label += r'<br/>leaf_weight: {0}'.format(_float2str(root['leaf_weight'], precision))
+                label += '<br/>leaf_weight: {0}'.format(_float2str(root['leaf_weight'], precision))
             if "data_percentage" in show_info:
-                label += r'<br/>{0}% of data'.format(_float2str(root['leaf_count'] / total_count * 100, 2))
+                label += '<br/>{0}% of data'.format(_float2str(root['leaf_count'] / total_count * 100, 2))
             label = "<" + label + ">"
             graph.node(name, label=label)
         if parent is not None:
