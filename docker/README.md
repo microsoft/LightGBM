@@ -70,3 +70,26 @@ After build finished, run the container:
 ```
 docker run --rm -it lightgbm
 ```
+
+## Running the R-package Сontainer
+
+Build the container based on the [`verse` Rocker image](https://www.rocker-project.org/images/), for R users:
+
+```
+mkdir lightgbm-docker
+cd lightgbm-docker
+wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/dockerfile-r
+docker build -t lightgbm-r -f dockerfile-python .
+```
+
+After build finished, run the container:
+
+```
+docker run --rm -it -e PASSWORD=lightgbm -p 8787:8787 lightgbm-r
+```
+
+Open the browser at http://localhost:8787 and load the package:
+
+```
+library("lightgbm")
+```
