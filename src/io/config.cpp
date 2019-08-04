@@ -14,9 +14,12 @@ namespace LightGBM {
 
 void Config::KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv) {
   std::vector<std::string> tmp_strs = Common::Split(kv, '=');
-  if (tmp_strs.size() == 2) {
+  if (tmp_strs.size() == 2 || tmp_strs.size() == 1) {
     std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
-    std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
+    std::string value = "";
+    if (tmp_strs.size() == 2) {
+      value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
+    }
     if (!Common::CheckASCII(key) || !Common::CheckASCII(value)) {
       Log::Fatal("Do not support non-ascii characters in config.");
     }

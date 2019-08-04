@@ -730,7 +730,7 @@ Objective Parameters
 
 -  ``is_unbalance`` :raw-html:`<a id="is_unbalance" title="Permalink to this parameter" href="#is_unbalance">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``unbalance``, ``unbalanced_sets``
 
-   -  used only in ``binary`` application
+   -  used only in ``binary`` and ``multiclassova``
 
    -  set this to ``true`` if training data are unbalanced
 
@@ -740,7 +740,7 @@ Objective Parameters
 
 -  ``scale_pos_weight`` :raw-html:`<a id="scale_pos_weight" title="Permalink to this parameter" href="#scale_pos_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
 
-   -  used only in ``binary`` application
+   -  used only in ``binary`` and ``multiclassova``
 
    -  weight of labels with positive class
 
