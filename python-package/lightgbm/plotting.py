@@ -411,10 +411,9 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
             if constraints:
                 if constraints[root['split_feature']] == 1:
                     fillcolor = "#ddffdd" # light green
-                    style = "filled" + style
                 if constraints[root['split_feature']] == -1:
                     fillcolor = "#ffdddd" # light red
-                    style = "filled" + style
+                style = "filled"
             label = "<" + label + ">"
             graph.node(name, label=label, shape="rectangle", style=style, fillcolor=fillcolor)
             add(root['left_child'], total_count, name, l_dec)
