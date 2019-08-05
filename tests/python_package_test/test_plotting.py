@@ -114,7 +114,8 @@ class TestBasic(unittest.TestCase):
 
     @unittest.skipIf(not GRAPHVIZ_INSTALLED, 'graphviz is not installed')
     def test_create_tree_digraph(self):
-        gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
+        constraints = [-1, 1] * int(self.X_train.shape[1] / 2)
+        gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True, monotone_constraints=constraints)
         gbm.fit(self.X_train, self.y_train, verbose=False)
 
         self.assertRaises(IndexError, lgb.create_tree_digraph, gbm, tree_index=83)
@@ -134,23 +135,11 @@ class TestBasic(unittest.TestCase):
         self.assertIn('leaf', graph_body)
         self.assertIn('gain', graph_body)
         self.assertIn('value', graph_body)
-        self.assertIn('internal_weight', graph_body)
-        self.assertNotIn('leaf_data', graph_body)
-        self.assertNotIn('internal_count', graph_body)
-        self.assertNotIn('leaf_count', graph_body)
-        self.assertNotIn('leaf_weight', graph_body)
-
-    @unittest.skipIf(not GRAPHVIZ_INSTALLED, 'graphviz is not installed')
-    def test_create_tree_digraph_with_monotone_constraints(self):
-        constraints = [-1, 1] * int(self.X_train.shape[1] / 2)
-        gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True, monotone_constraints=constraints)
-        gbm.fit(self.X_train, self.y_train, verbose=False)
-        graph = lgb.create_tree_digraph(gbm, tree_index=3)
-        graph.render(view=False)
-        graph_body = ''.join(graph.body)
-
+        self.assertIn('weight', graph_body)
         self.assertIn('#ffdddd', graph_body)
         self.assertIn('#ddffdd', graph_body)
+        self.assertNotIn('data', graph_body)
+        self.assertNotIn('count', graph_body)
 
     @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
     def test_plot_metrics(self):
