@@ -581,7 +581,9 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       if (categorical_features_.count(i)) {
         bin_type = BinType::CategoricalBin;
         bool feat_is_unconstrained = ((config_.monotone_constraints.size() == 0) || (config_.monotone_constraints[i] == 0));
-        CHECK(feat_is_unconstrained);
+        if (!feat_is_unconstrained) {
+            Log::Fatal("The output cannot be monotone with respect to categorical features");
+        }
       }
       bin_mappers[i].reset(new BinMapper());
       if (config_.max_bin_by_feature.empty()) {
