@@ -398,11 +398,11 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
                 label = 'feature <B>{0}</B> {1} '.format(root['split_feature'], operator)
             label += '{0}'.format(_float2str(root['threshold'], precision))
             for info in show_info:
+                output = info.split('_')[-1]
                 if info in {'split_gain', 'internal_value', 'internal_weight'}:
-                    output = info.split('_')[-1]
                     label += '<br/>{0} {1}'.format(_float2str(root[info], precision), output)
                 elif info == 'internal_count':
-                    label += '<br/>{0}: {1}'.format(info, root[info])
+                    label += '<br/>{0}: {1}'.format(output, root[info])
                 elif info == "data_percentage":
                     label += '<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
 
