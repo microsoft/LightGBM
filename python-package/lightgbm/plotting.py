@@ -384,7 +384,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
     def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
         if 'split_index' in root:  # non-leaf
-            l_dec, r_dec = 'is', "isn't"
+            l_dec, r_dec = 'yes', "no"
             if root['decision_type'] == '<=':
                 operator = "&#8804;"
             elif root['decision_type'] == '==':
