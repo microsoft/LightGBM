@@ -410,10 +410,10 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
             style = ""
             if constraints:
                 if constraints[root['split_feature']] == 1:
-                    fillcolor = "#ddffdd"
+                    fillcolor = "#ddffdd" # light green
                     style = "filled" + style
                 if constraints[root['split_feature']] == -1:
-                    fillcolor = "#ffdddd"
+                    fillcolor = "#ffdddd" # light red
                     style = "filled" + style
             label = "<" + label + ">"
             graph.node(name, label=label, shape="rectangle", style=style, fillcolor=fillcolor)
@@ -442,6 +442,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
         raise Exception("Cannnot plot trees with no split")
 
     if constraints:
+        # "#ddffdd" is light green, "#ffdddd" is light red
         legend = """<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
              <TR>
