@@ -370,7 +370,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraints=None, **kwargs):
+def _to_graphviz(tree_info, show_info, feature_names, precision=3, constraints=None, **kwargs):
     """Convert specified tree to graphviz instance.
 
     See:
@@ -458,7 +458,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, constraint
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
+def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
                         old_name=None, old_comment=None, old_filename=None, old_directory=None,
                         old_format=None, old_engine=None, old_encoding=None, old_graph_attr=None,
                         old_node_attr=None, old_edge_attr=None, old_body=None, old_strict=False, **kwargs):
@@ -480,7 +480,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
         Possible values of list items:
         'split_gain', 'internal_value', 'internal_count', 'internal_weight',
         'leaf_count', 'leaf_weight', 'data_percentage'.
-    precision : int or None, optional (default=None)
+    precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
@@ -564,7 +564,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         Possible values of list items:
         'split_gain', 'internal_value', 'internal_count', 'internal_weight',
         'leaf_count', 'leaf_weight', 'data_percentage'.
-    precision : int or None, optional (default=None)
+    precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
