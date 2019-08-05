@@ -478,7 +478,8 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items:
-        'split_gain', 'internal_value', 'internal_count', 'internal_weight', 'leaf_count', 'leaf_weight'.
+        'split_gain', 'internal_value', 'internal_count', 'internal_weight',
+        'leaf_count', 'leaf_weight', 'data_percentage'.
     precision : int or None, optional (default=None)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
@@ -561,7 +562,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items:
-        'split_gain', 'internal_value', 'internal_count', 'internal_weight', 'leaf_count', 'leaf_weight'.
+        'split_gain', 'internal_value', 'internal_count', 'internal_weight',
+        'leaf_count', 'leaf_weight', 'data_percentage'.
     precision : int or None, optional (default=None)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
