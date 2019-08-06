@@ -2,7 +2,7 @@ FROM rocker/verse:latest
 
 WORKDIR /lgbm
 
-# Python
+# R
 RUN apt-get update && \
     apt-get install -y build-essential && \
     git clone --recursive --branch stable https://github.com/Microsoft/LightGBM && \

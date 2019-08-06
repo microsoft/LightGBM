@@ -79,17 +79,35 @@ Build the container based on the [`verse` Rocker image](https://www.rocker-proje
 mkdir lightgbm-docker
 cd lightgbm-docker
 wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/dockerfile-r
-docker build -t lightgbm-r -f dockerfile-python .
+docker build -t lightgbm-r -f dockerfile-r .
 ```
 
-After build finished, run the container:
+After the build is finished you have two options to run the container:
+
+1. Start [RStudio](), an interactive development environment, so that you can develop your analysis using LightGBM or simply try out the R package.
+2. Start a regular R session.
+
+In both cases you can simply call
+
+```
+library("lightgbm")
+```
+
+to load the installed LightGBM R package.
+
+**RStudio**
 
 ```
 docker run --rm -it -e PASSWORD=lightgbm -p 8787:8787 lightgbm-r
 ```
 
-Open the browser at http://localhost:8787 and load the package:
+Open the browser at http://localhost:8787 and log in.
+See the [`rocker/rstudio`](https://hub.docker.com/r/rocker/rstudio) image documentation for further configuration options.
+
+**Regular R**
+
+If you just want a vanilla R process, change the executable of the container:
 
 ```
-library("lightgbm")
+docker run --rm -it lightgbm-r R
 ```
