@@ -7,25 +7,10 @@ For the build of Python-package and R-package, please refer to `Python-package`_
 
 Also you can download artifacts of the latest successful build in master branch: |download artifacts|.
 
-**Contents**
-
--  `Windows <#windows>`__
-
--  `Linux <#linux>`__
-
--  `macOS <#macos>`__
-
--  `Docker <#docker>`__
-
-- `Threadless Version (not Recommended) <#build-threadless-version-not-recommended>`__
-
--  `MPI Version <#build-mpi-version>`__
-
--  `GPU Version <#build-gpu-version>`__
-
--  `HDFS Version <#build-hdfs-version>`__
-
--  `Java Wrapper <#build-java-wrapper>`__
+.. contents:: **Contents**
+    :depth: 1
+    :local:
+    :backlinks: none
 
 Windows
 ~~~~~~~
