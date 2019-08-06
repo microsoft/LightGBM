@@ -84,7 +84,7 @@ docker build -t lightgbm-r -f dockerfile-r .
 
 After the build is finished you have two options to run the container:
 
-1. Start [RStudio](), an interactive development environment, so that you can develop your analysis using LightGBM or simply try out the R package.
+1. Start [RStudio](https://www.rstudio.com/products/rstudio/), an interactive development environment, so that you can develop your analysis using LightGBM or simply try out the R package. You can open RStudio in your web browser.
 2. Start a regular R session.
 
 In both cases you can simply call
