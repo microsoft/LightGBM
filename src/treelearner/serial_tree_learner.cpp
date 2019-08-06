@@ -1549,8 +1549,10 @@ void SerialTreeLearner::UpdateBestSplitsFromHistograms(SplitInfo &split,
     if (!is_feature_used_[feature_index])
       continue;
     if (!histogram_array_[feature_index].is_splittable()) {
-      constraints_per_leaf_[leaf].are_actual_constraints_worse[feature_index] =
-          false;
+      if (config_->monotone_precise_mode) {
+        constraints_per_leaf_[leaf]
+            .are_actual_constraints_worse[feature_index] = false;
+      }
       continue;
     }
 
