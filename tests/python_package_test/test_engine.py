@@ -865,9 +865,10 @@ class TestEngine(unittest.TestCase):
 
         def is_correctly_constrained(learner, number_categories):
             n = 1000
+            iterations = 10
             variable_x = np.linspace(0, 1, n).reshape((n, 1))
             fixed_xs_values = np.linspace(0, 1, n)
-            for i in range(n):
+            for i in range(iterations):
                 fixed_x = fixed_xs_values[i] * np.ones((n, 1))
                 monotonically_increasing_x = np.column_stack((variable_x, fixed_x,
                                                               (fixed_x * number_categories).astype(int)))
@@ -943,10 +944,11 @@ class TestEngine(unittest.TestCase):
             return (np.diff(y) < 0.0).any() and (np.diff(y) > 0.0).any()
 
         def is_correctly_constrained(learner):
+            iterations = 10
             n = 1000
             variable_x = np.linspace(0, 1, n).reshape((n, 1))
             fixed_xs_values = np.linspace(0, 1, n)
-            for i in range(n):
+            for i in range(iterations):
                 fixed_x = fixed_xs_values[i] * np.ones((n, 1))
                 monotonically_increasing_x = np.column_stack((variable_x, fixed_x, fixed_x))
                 monotonically_increasing_y = learner.predict(monotonically_increasing_x)
