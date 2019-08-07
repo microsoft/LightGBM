@@ -1115,7 +1115,7 @@ class Dataset(object):
         if self.handle is not None and params is not None:
             _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(params))))
         if not self.params:
-            self.params = params
+            self.params = copy.deepcopy(params)
         else:
             self.params_back_up = copy.deepcopy(self.params)
             self.params.update(params)
