@@ -287,8 +287,9 @@ class TestSklearn(unittest.TestCase):
         X_test = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 2] * 30)),
                                "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
                                "C": pd.SparseArray(np.random.permutation([True, False] * 30))})
-        for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
-            self.assertTrue(pd.api.types.is_sparse(dtype))
+        if pd.__version__ >= '0.24.0':
+            for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
+                self.assertTrue(pd.api.types.is_sparse(dtype))
         gbm = lgb.sklearn.LGBMClassifier().fit(X, y)
         pred = gbm.predict(X_test)
 
