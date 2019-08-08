@@ -291,7 +291,12 @@ class TestSklearn(unittest.TestCase):
             for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
                 self.assertTrue(pd.api.types.is_sparse(dtype))
         gbm = lgb.sklearn.LGBMClassifier().fit(X, y)
-        pred = gbm.predict(X_test)
+        pred_sparse = gbm.predict(X_test, raw_score=True)
+        if hasattr(X_test, 'sparse'):
+            pred_dense = gbm.predict(X_test.sparse.to_dense(), raw_score=True)
+        else:
+            pred_dense = gbm.predict(X_test.to_dense(), raw_score=True)
+        np.testing.assert_allclose(pred_sparse, pred_dense)
 
     def test_predict(self):
         iris = load_iris()

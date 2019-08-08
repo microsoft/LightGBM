@@ -738,7 +738,12 @@ class TestEngine(unittest.TestCase):
         }
         lgb_train = lgb.Dataset(X, y)
         gbm = lgb.train(params, lgb_train, num_boost_round=10)
-        pred = gbm.predict(X_test)
+        pred_sparse = gbm.predict(X_test, raw_score=True)
+        if hasattr(X_test, 'sparse'):
+            pred_dense = gbm.predict(X_test.sparse.to_dense(), raw_score=True)
+        else:
+            pred_dense = gbm.predict(X_test.to_dense(), raw_score=True)
+        np.testing.assert_allclose(pred_sparse, pred_dense)
 
     def test_reference_chain(self):
         X = np.random.normal(size=(100, 2))
