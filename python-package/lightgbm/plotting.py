@@ -421,10 +421,10 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3, constraints=N
             name = 'leaf{0}'.format(root['leaf_index'])
             label = 'leaf {0}: '.format(root['leaf_index'])
             label += '<B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
-            if 'leaf_count' in show_info:
-                label += '<br/>count: {0}'.format(root['leaf_count'])
             if 'leaf_weight' in show_info:
                 label += '<br/>{0} weight'.format(_float2str(root['leaf_weight'], precision))
+            if 'leaf_count' in show_info:
+                label += '<br/>count: {0}'.format(root['leaf_count'])
             if "data_percentage" in show_info:
                 label += '<br/>{0}% of data'.format(_float2str(root['leaf_count'] / total_count * 100, 2))
             label = "<" + label + ">"
