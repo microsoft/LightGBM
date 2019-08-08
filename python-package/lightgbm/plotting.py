@@ -396,14 +396,15 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3, constraints=N
             else:
                 label = 'feature <B>{0}</B> {1} '.format(root['split_feature'], operator)
             label += '<B>{0}</B>'.format(_float2str(root['threshold'], precision))
-            for info in show_info:
-                output = info.split('_')[-1]
-                if info in {'split_gain', 'internal_value', 'internal_weight'}:
-                    label += '<br/>{0} {1}'.format(_float2str(root[info], precision), output)
-                elif info == 'internal_count':
-                    label += '<br/>{0}: {1}'.format(output, root[info])
-                elif info == "data_percentage":
-                    label += '<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
+            for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
+                if info in show_info:
+                    output = info.split('_')[-1]
+                    if info in {'split_gain', 'internal_value', 'internal_weight'}:
+                        label += '<br/>{0} {1}'.format(_float2str(root[info], precision), output)
+                    elif info == 'internal_count':
+                        label += '<br/>{0}: {1}'.format(output, root[info])
+                    elif info == "data_percentage":
+                        label += '<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
 
             fillcolor = "white"
             style = ""
