@@ -445,6 +445,9 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3, constraints=N
         legend = """<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
              <TR>
+              <TD COLSPAN="2"><B>Monotone constraints</B></TD>
+             </TR>
+             <TR>
               <TD>Increasing</TD>
               <TD BGCOLOR="#ddffdd"></TD>
              </TR>
