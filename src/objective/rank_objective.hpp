@@ -147,10 +147,10 @@ class LambdarankNDCG: public ObjectiveFunction {
         }
         // calculate lambda for this pair
         double p_lambda = GetSigmoid(delta_score);
-        double p_hessian = p_lambda * (2.0f - p_lambda);
+        double p_hessian = p_lambda * (1.0f - p_lambda);
         // update
-        p_lambda *= -delta_pair_NDCG;
-        p_hessian *= 2 * delta_pair_NDCG;
+        p_lambda *= -sigmoid_ * delta_pair_NDCG;
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
         high_sum_lambda += p_lambda;
         high_sum_hessian += p_hessian;
         lambdas[low] -= static_cast<score_t>(p_lambda);
@@ -193,7 +193,7 @@ class LambdarankNDCG: public ObjectiveFunction {
     // cache
     for (size_t i = 0; i < _sigmoid_bins; ++i) {
       const double score = i / sigmoid_table_idx_factor_ + min_sigmoid_input_;
-      sigmoid_table_[i] = 2.0f / (1.0f + std::exp(2.0f * score * sigmoid_));
+      sigmoid_table_[i] = 1.0f / (1.0f + std::exp(score * sigmoid_));
     }
   }
 
