@@ -9,7 +9,7 @@ RUN apt-get update && \
         git && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone --recursive --branch stable https://github.com/Microsoft/LightGBM && \
+RUN git clone --recursive --branch stable --depth 1 https://github.com/Microsoft/LightGBM && \
     mkdir LightGBM/build && \
     cd LightGBM/build && \
     cmake .. && \
