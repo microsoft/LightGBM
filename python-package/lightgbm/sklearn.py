@@ -371,7 +371,7 @@ class LGBMModel(_LGBMModelBase):
         return self
 
     def fit(self, X, y,
-            sample_weight=None, init_score=None, group=None,
+            sample_weight=None, init_score=None, init_model=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
             eval_metric=None, early_stopping_rounds=None, verbose=True,
@@ -588,6 +588,7 @@ class LGBMModel(_LGBMModelBase):
                               self.n_estimators, valid_sets=valid_sets, valid_names=eval_names,
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self._fobj, feval=feval,
+                              init_model=init_model,
                               verbose_eval=verbose, feature_name=feature_name,
                               categorical_feature=categorical_feature,
                               callbacks=callbacks)
@@ -601,7 +602,8 @@ class LGBMModel(_LGBMModelBase):
         self._best_score = self._Booster.best_score
 
         # free dataset
-        self.booster_.free_dataset()
+        if init_model is None:
+            self.booster_.free_dataset()
         del train_set, valid_sets
         return self
 
