@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/dataset_loader.h>
-
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/log.h>
@@ -458,6 +457,21 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     }
     dataset->feature_names_.emplace_back(str_buf.str());
   }
+  // get forced_bin_bounds_
+  dataset->forced_bin_bounds_ = std::vector<std::vector<double>>(dataset->num_total_features_, std::vector<double>());
+  for (int i = 0; i < dataset->num_total_features_; ++i) {
+    int num_bounds = *(reinterpret_cast<const int*>(mem_ptr));
+    mem_ptr += sizeof(int);
+    dataset->forced_bin_bounds_[i] = std::vector<double>();
+    const double* tmp_ptr_forced_bounds = reinterpret_cast<const double*>(mem_ptr);
+    
+    for (int j = 0; j < num_bounds; ++j) {
+      double bound = tmp_ptr_forced_bounds[j];
+      dataset->forced_bin_bounds_[i].push_back(bound);
+    }
+    mem_ptr += num_bounds * sizeof(double);
+   
+  }
 
   // read size of meta data
   read_cnt = reader->Read(buffer.data(), sizeof(size_t));
@@ -549,6 +563,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   return dataset.release();
 }
 
+
 Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
                                                int** sample_indices, int num_col, const int* num_per_col,
                                                size_t total_sample_size, data_size_t num_data) {
@@ -565,6 +580,11 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     CHECK(static_cast<size_t>(num_col) == config_.max_bin_by_feature.size());
     CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
   }
+
+  // get forced split
+  std::string forced_bins_path = config_.forcedbins_filename;
+  std::vector<std::vector<double>> forced_bin_bounds = Dataset::GetForcedBins(forced_bins_path, num_col);
+
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
   if (Network::num_machines() == 1) {
@@ -585,12 +605,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
                                 config_.max_bin, config_.min_data_in_bin, filter_cnt,
-                                bin_type, config_.use_missing, config_.zero_as_missing);
+                                bin_type, config_.use_missing, config_.zero_as_missing,
+                                forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
                                 config_.max_bin_by_feature[i], config_.min_data_in_bin,
                                 filter_cnt, bin_type, config_.use_missing,
-                                config_.zero_as_missing);
+                                config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
@@ -630,12 +651,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
                                 total_sample_size, config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing, 
+                                forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
                                 total_sample_size, config_.max_bin_by_feature[start[rank] + i],
                                 config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing,
-                                config_.zero_as_missing);
+                                config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
@@ -872,6 +894,10 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
   }
 
+  // get forced split
+  std::string forced_bins_path = config_.forcedbins_filename;
+  std::vector<std::vector<double>> forced_bin_bounds = Dataset::GetForcedBins(forced_bins_path, dataset->num_total_features_);
+
   // check the range of label_idx, weight_idx and group_idx
   CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
   CHECK(weight_idx_ < 0 || weight_idx_ < dataset->num_total_features_);
@@ -909,12 +935,13 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
                                 sample_data.size(), config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing,
+                                forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
                                 sample_data.size(), config_.max_bin_by_feature[i],
                                 config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing,
-                                config_.zero_as_missing);
+                                config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
@@ -955,13 +982,14 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
                                 sample_data.size(), config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing, 
+                                forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
                                 sample_data.size(), config_.max_bin_by_feature[i],
                                 config_.min_data_in_bin, filter_cnt, bin_type,
-                                config_.use_missing, config_.zero_as_missing);
+                                config_.use_missing, config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
