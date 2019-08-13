@@ -408,6 +408,11 @@ struct Config {
   // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
+  // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
+  // desc = ``.json`` file should contain an array of objects, each containing the name ``feature`` (integer feature number) and ``bin_upper_bounds`` (array of thresolds for binning)
+  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/tests/data/forced_bins.json>`__ as an example
+  std::string forcedbins_filename = "";
+
   // check = >=0.0
   // check = <=1.0
   // desc = decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees

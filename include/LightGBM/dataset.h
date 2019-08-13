@@ -596,6 +596,8 @@ class Dataset {
 
   void addFeaturesFrom(Dataset* other);
 
+  static std::vector<std::vector<double>> GetForcedBins(std::string forced_bins_path, int num_total_features);
+
  private:
   std::string data_filename_;
   /*! \brief Store used features */
@@ -630,6 +632,7 @@ class Dataset {
   bool is_finish_load_;
   int max_bin_;
   std::vector<int32_t> max_bin_by_feature_;
+  std::vector<std::vector<double>> forced_bin_bounds_;
   int bin_construct_sample_cnt_;
   int min_data_in_bin_;
   bool use_missing_;

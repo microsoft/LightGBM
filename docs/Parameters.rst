@@ -412,6 +412,14 @@ Learning Control Parameters
 
    -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
 
+-  ``forcedbins_filename`` :raw-html:`<a id="forcedbins_filename" title="Permalink to this parameter" href="#forcedbins_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  path to a ``.json`` file that specifies bin upper bounds for some or all features
+
+   -  ``.json`` file should contain an array of objects, each containing the name ``feature`` (integer feature number) and ``bin_upper_bounds`` (array of thresolds for binning)
+
+   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/tests/data/forced_bins.json>`__ as an example
+
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
 
    -  decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees
