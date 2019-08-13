@@ -8,12 +8,17 @@
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
+#include <LightGBM/json11.hpp>
 
 #include <limits>
 #include <chrono>
 #include <cstdio>
 #include <sstream>
 #include <unordered_map>
+#include <fstream>
+
+using namespace json11;
+
 
 namespace LightGBM {
 
@@ -324,6 +329,7 @@ void Dataset::Construct(
     max_bin_by_feature_.resize(num_total_features_);
     max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(), io_config.max_bin_by_feature.end());
   }
+  forced_bin_bounds_ = Dataset::GetForcedBins(io_config.forcedbins_filename, num_total_features_);
   max_bin_ = io_config.max_bin;
   min_data_in_bin_ = io_config.min_data_in_bin;
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
@@ -355,6 +361,12 @@ void Dataset::ResetConfig(const char* parameters) {
   }
   if (param.count("sparse_threshold") && io_config.sparse_threshold != sparse_threshold_) {
     Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
+  }
+  if (param.count("forcedbins_filename")) {
+    std::vector<std::vector<double>> config_bounds = Dataset::GetForcedBins(io_config.forcedbins_filename, num_total_features_);
+    if (config_bounds != forced_bin_bounds_) {
+      Log::Warning("Cannot change forced bins after constructed Dataset handle.");
+    }
   }
 
   if (!io_config.monotone_constraints.empty()) {
@@ -657,6 +669,10 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header += feature_names_[i].size() + sizeof(int);
     }
+    // size of forced bins
+    for (int i = 0; i < num_total_features_; ++i) {
+      size_of_header += forced_bin_bounds_[i].size() * sizeof(double) + sizeof(int);
+    }
     writer->Write(&size_of_header, sizeof(size_of_header));
     // write header
     writer->Write(&num_data_, sizeof(num_data_));
@@ -704,6 +720,15 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       writer->Write(&str_len, sizeof(int));
       const char* c_str = feature_names_[i].c_str();
       writer->Write(c_str, sizeof(char) * str_len);
+    }
+    // write forced bins
+    for (int i = 0; i < num_total_features_; ++i) {
+      int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
+      writer->Write(&num_bounds, sizeof(int));
+      
+      for (int j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+        writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
+      }
     }
 
     // get size of meta data
@@ -753,6 +778,13 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fprintf(file, "\n");
   for (auto n : feature_names_) {
     fprintf(file, "%s, ", n.c_str());
+  }
+  fprintf(file, "\nforced_bins: ");
+  for (int i = 0; i < num_total_features_; ++i) {
+    fprintf(file, "\nfeature %d: ", i);
+    for (int j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+      fprintf(file, "%lf, ", forced_bin_bounds_[i][j]);
+    }
   }
   std::vector<std::unique_ptr<BinIterator>> iterators;
   iterators.reserve(num_features_);
@@ -1005,6 +1037,7 @@ void Dataset::addFeaturesFrom(Dataset* other) {
   PushVector(feature_names_, other->feature_names_);
   PushVector(feature2subfeature_, other->feature2subfeature_);
   PushVector(group_feature_cnt_, other->group_feature_cnt_);
+  PushVector(forced_bin_bounds_, other->forced_bin_bounds_);
   feature_groups_.reserve(other->feature_groups_.size());
   for (auto& fg : other->feature_groups_) {
     feature_groups_.emplace_back(new FeatureGroup(*fg));
@@ -1027,10 +1060,39 @@ void Dataset::addFeaturesFrom(Dataset* other) {
 
   PushClearIfEmpty(monotone_types_, num_total_features_, other->monotone_types_, other->num_total_features_, (int8_t)0);
   PushClearIfEmpty(feature_penalty_, num_total_features_, other->feature_penalty_, other->num_total_features_, 1.0);
-
+  PushClearIfEmpty(max_bin_by_feature_, num_total_features_, other->max_bin_by_feature_, other->num_total_features_, -1);
   num_features_ += other->num_features_;
   num_total_features_ += other->num_total_features_;
   num_groups_ += other->num_groups_;
 }
+
+
+std::vector<std::vector<double>> Dataset::GetForcedBins(std::string forced_bins_path, int num_total_features) {
+  std::vector<std::vector<double>> forced_bins(num_total_features, std::vector<double>());
+  if (forced_bins_path != "") {
+    std::ifstream forced_bins_stream(forced_bins_path.c_str());
+    std::stringstream buffer;
+    buffer << forced_bins_stream.rdbuf();
+    std::string err;
+    Json forced_bins_json = Json::parse(buffer.str(), err);
+    CHECK(forced_bins_json.is_array());
+    std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
+    for (int i = 0; i < forced_bins_arr.size(); ++i) {
+      int feature_num = forced_bins_arr[i]["feature"].int_value();
+      CHECK(feature_num < num_total_features);
+      std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
+      for (int j = 0; j < bounds_arr.size(); ++j) {
+        forced_bins[feature_num].push_back(bounds_arr[j].number_value());
+      }
+    }
+    // remove duplicates
+    for (int i = 0; i < num_total_features; ++i) {
+      auto new_end = std::unique(forced_bins[i].begin(), forced_bins[i].end());
+      forced_bins[i].erase(new_end, forced_bins[i].end());
+    }
+  }
+  return forced_bins;
+}
+
 
 }  // namespace LightGBM

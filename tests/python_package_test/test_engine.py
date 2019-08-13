@@ -921,7 +921,7 @@ class TestEngine(unittest.TestCase):
         }
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
-        self.assertEqual(len(np.unique(est.predict(X))), 100)
+        self.assertEqual(len(np.unique(est.predict(X))), 99)
         params['max_bin_by_feature'] = [2, 100]
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
@@ -1590,3 +1590,33 @@ class TestEngine(unittest.TestCase):
                                                          decreasing_metric(preds, train_data)],
                         early_stopping_rounds=5, verbose_eval=False)
         self.assertEqual(gbm.best_iteration, 1)
+
+    def test_forced_bins(self):
+        x = np.zeros((100, 2))
+        x[:, 0] = np.arange(0, 1, 0.01)
+        x[:, 1] = -np.arange(0, 1, 0.01)
+        y = np.arange(0, 1, 0.01)
+        forcedbins_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/forced_bins.json')
+        params = {'objective': 'regression_l1',
+                  'max_bin': 6,
+                  'forcedbins_filename': forcedbins_filename,
+                  'num_leaves': 2,
+                  'min_data_in_leaf': 1,
+                  'verbose': -1,
+                  'seed': 0}
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=100)
+        new_x = np.zeros((3, x.shape[1]))
+        new_x[:, 0] = [0.31, 0.37, 0.41]
+        new_x[:, 1] = [0, 0, 0]
+        predicted = est.predict(new_x)
+        self.assertEqual(len(np.unique(predicted)), 3)
+        new_x[:, 0] = [0, 0, 0]
+        new_x[:, 1] = [-0.25, -0.5, -0.9]
+        predicted = est.predict(new_x)
+        self.assertEqual(len(np.unique(predicted)), 1)
+        params['forcedbins_filename'] = ''
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=100)
+        predicted = est.predict(new_x)
+        self.assertEqual(len(np.unique(predicted)), 3)
