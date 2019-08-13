@@ -721,13 +721,13 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
     """LightGBM regressor."""
 
     def fit(self, X, y,
-            sample_weight=None, init_score=None,
+            sample_weight=None, init_score=None, init_model=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
             verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None):
         """Docstring is inherited from the LGBMModel."""
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
-                                       init_score=init_score, eval_set=eval_set,
+                                       init_score=init_score, init_model=init_model, eval_set=eval_set,
                                        eval_names=eval_names,
                                        eval_sample_weight=eval_sample_weight,
                                        eval_init_score=eval_init_score,
@@ -747,7 +747,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
     """LightGBM classifier."""
 
     def fit(self, X, y,
-            sample_weight=None, init_score=None,
+            sample_weight=None, init_score=None, init_model=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
@@ -788,7 +788,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                     eval_set[i] = (valid_x, self._le.transform(valid_y))
 
         super(LGBMClassifier, self).fit(X, _y, sample_weight=sample_weight,
-                                        init_score=init_score, eval_set=eval_set,
+                                        init_score=init_score, 
+                                        init_model=init_model,
+                                        eval_set=eval_set,
                                         eval_names=eval_names,
                                         eval_sample_weight=eval_sample_weight,
                                         eval_class_weight=eval_class_weight,
@@ -880,7 +882,7 @@ class LGBMRanker(LGBMModel):
     """LightGBM ranker."""
 
     def fit(self, X, y,
-            sample_weight=None, init_score=None, group=None,
+            sample_weight=None, init_score=None, init_model=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
             eval_at=[1], early_stopping_rounds=None, verbose=True,
@@ -904,7 +906,9 @@ class LGBMRanker(LGBMModel):
 
         self._eval_at = eval_at
         super(LGBMRanker, self).fit(X, y, sample_weight=sample_weight,
-                                    init_score=init_score, group=group,
+                                    init_score=init_score, 
+                                    init_model=init_model,
+                                    group=group,
                                     eval_set=eval_set, eval_names=eval_names,
                                     eval_sample_weight=eval_sample_weight,
                                     eval_init_score=eval_init_score, eval_group=eval_group,
