@@ -5,6 +5,6 @@ WORKDIR /lgbm
 # R
 RUN apt-get update && \
     apt-get install -y build-essential && \
-    git clone --recursive --branch stable https://github.com/Microsoft/LightGBM && \
+    git clone --recursive --branch stable --depth 1 https://github.com/Microsoft/LightGBM && \
     cd LightGBM && \
     Rscript build_r.R

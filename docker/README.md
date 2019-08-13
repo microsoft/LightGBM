@@ -1,14 +1,14 @@
-# Using LightGBM via Docker
+﻿# Using LightGBM via Docker
 
-This directory contains `Dockerfile` to make it easy to build and run LightGBM via [Docker](http://www.docker.com/).
+This directory contains `Dockerfile`s to make it easy to build and run LightGBM via [Docker](https://www.docker.com/).
 
 ## Installing Docker
 
-Follow the general installation instructions
-[on the Docker site](https://docs.docker.com/installation/):
+Follow the general installation instructions [on the Docker site](https://docs.docker.com/install/):
 
-* [macOS](https://docs.docker.com/installation/mac/): [docker toolbox](https://www.docker.com/toolbox)
-* [Ubuntu](https://docs.docker.com/installation/ubuntulinux/)
+* [macOS](https://docs.docker.com/docker-for-mac/install/)
+* [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+* [Windows](https://docs.docker.com/docker-for-windows/install/)
 
 ## Using CLI Version of LightGBM via Docker
 
@@ -34,7 +34,7 @@ lightgbm-cli \
 config=lgbm.conf
 ```
 
-In the above example, three volumes are [mounted](https://docs.docker.com/engine/reference/commandline/run/#mount-volume--v-read-only)
+In the above example, three volumes are [mounted](https://docs.docker.com/engine/reference/commandline/run/#mount-volume--v---read-only)
 from the host machine to the Docker container:
 
 * `lgbm.conf` - task config, for example
@@ -51,8 +51,7 @@ convert_model_language=cpp
 * `model.txt` - an input file for the task, could be training data or, in this case, a pre-trained model.
 * `out` - a directory to store the output of the task, notice that `convert_model` in the task config is using it.
 
-`config=lgbm.conf` is a command-line argument passed to the `lightgbm` executable, more arguments can
-be passed if required.
+`config=lgbm.conf` is a command-line argument passed to the `lightgbm` executable, more arguments can be passed if required.
 
 ## Running the Python-package Сontainer
 
