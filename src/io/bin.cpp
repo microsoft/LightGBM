@@ -178,16 +178,6 @@ namespace LightGBM {
     if (left_cnt < 0) {
       left_cnt = num_distinct_values;
     }
-
-    if ((left_cnt > 0) && (max_bin > 1)) {
-      int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - cnt_zero) * (max_bin - 1));
-      left_max_bin = std::max(1, left_max_bin);
-      bin_upper_bound = GreedyFindBin(distinct_values, counts, left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
-      if (bin_upper_bound.size() > 0) {
-        bin_upper_bound.back() = -kZeroThreshold;
-      }
-    }
-
     int right_start = -1;
     for (int i = left_cnt; i < num_distinct_values; ++i) {
       if (distinct_values[i] > kZeroThreshold) {
@@ -196,13 +186,60 @@ namespace LightGBM {
       }
     }
 
-    int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound.size());
-    if (right_start >= 0 && right_max_bin > 0) {
-      auto right_bounds = GreedyFindBin(distinct_values + right_start, counts + right_start,
-        num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
+    // include zero bounds if possible
+    if (max_bin == 2) {
+      if (left_cnt == 0) {
+        bin_upper_bound.push_back(kZeroThreshold);
+      } else {
+        bin_upper_bound.push_back(-kZeroThreshold);
+      }
+    } else if (max_bin >= 3) {
+      bin_upper_bound.push_back(-kZeroThreshold);
       bin_upper_bound.push_back(kZeroThreshold);
     }
-    CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
+    
+    // add forced bounds, excluding zeros since we have already added zero bounds
+    int i = 0;
+    while (i < forced_upper_bounds.size()) {
+      if (std::fabs(forced_upper_bounds[i]) <= kZeroThreshold) {
+        forced_upper_bounds.erase(forced_upper_bounds.begin() + i);
+      } else {
+        ++i;
+      }
+    }
+    bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
+    int max_to_insert = max_bin - static_cast<int>(bin_upper_bound.size());
+    int num_to_insert = std::min(max_to_insert, static_cast<int>(forced_upper_bounds.size()));
+    if (num_to_insert > 0) {
+      bin_upper_bound.insert(bin_upper_bound.end(), forced_upper_bounds.begin(), forced_upper_bounds.begin() + num_to_insert);
+    }
+    std::sort(bin_upper_bound.begin(), bin_upper_bound.end());
+
+    // find remaining bounds
+    std::vector<double> bounds_to_add;
+    int value_ind = 0;
+    for (int i = 0; i < bin_upper_bound.size(); ++i) {
+      int cnt_in_bin = 0;
+      int distinct_cnt_in_bin = 0;
+      int bin_start = value_ind;
+      while ((value_ind < num_distinct_values) && (distinct_values[value_ind] < bin_upper_bound[i])) {
+        cnt_in_bin += counts[value_ind];
+        ++distinct_cnt_in_bin;
+        ++value_ind;
+      }
+      int bins_remaining = max_bin - static_cast<int>(bin_upper_bound.size()) - static_cast<int>(bounds_to_add.size());
+      int num_sub_bins = static_cast<int>(std::lround((static_cast<double>(cnt_in_bin) * bins_remaining / total_sample_cnt)));
+      num_sub_bins = std::min(num_sub_bins, bins_remaining) + 1;
+      if (i == bin_upper_bound.size() - 1) {
+        num_sub_bins = bins_remaining + 1;
+      }
+      std::vector<double> new_upper_bounds = GreedyFindBin(distinct_values + bin_start, counts + bin_start, distinct_cnt_in_bin, 
+                                                            num_sub_bins, cnt_in_bin, min_data_in_bin);
+      bounds_to_add.insert(bounds_to_add.end(), new_upper_bounds.begin(), new_upper_bounds.end() - 1);  // last bound is infinity
+    }
+    bin_upper_bound.insert(bin_upper_bound.end(), bounds_to_add.begin(), bounds_to_add.end());
+    std::sort(bin_upper_bound.begin(), bin_upper_bound.end());
+    CHECK(bin_upper_bound.size() <= max_bin);
     return bin_upper_bound;
   }
 

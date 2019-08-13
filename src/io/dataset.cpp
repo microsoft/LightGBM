@@ -9,6 +9,7 @@
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
+#include <LightGBM/json11.hpp>
 
 #include <limits>
 #include <chrono>
