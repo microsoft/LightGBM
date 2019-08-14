@@ -1550,7 +1550,8 @@ class TestEngine(unittest.TestCase):
         x[:, 0] = np.arange(0, 1, 0.01)
         x[:, 1] = -np.arange(0, 1, 0.01)
         y = np.arange(0, 1, 0.01)
-        forcedbins_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/forced_bins.json')
+        forcedbins_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                           '../../examples/regression/forced_bins.json')
         params = {'objective': 'regression_l1',
                   'max_bin': 6,
                   'forcedbins_filename': forcedbins_filename,
