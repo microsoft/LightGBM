@@ -416,9 +416,9 @@ Learning Control Parameters
 
    -  path to a ``.json`` file that specifies bin upper bounds for some or all features
 
-   -  ``.json`` file should contain an array of objects, each containing the name ``feature`` (integer feature number) and ``bin_upper_bounds`` (array of thresolds for binning)
+   -  ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bounds`` (array of thresholds for binning)
 
-   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/tests/data/forced_bins.json>`__ as an example
+   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
 
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
 
