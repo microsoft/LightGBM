@@ -213,7 +213,7 @@ namespace LightGBM {
     if (num_to_insert > 0) {
       bin_upper_bound.insert(bin_upper_bound.end(), forced_upper_bounds.begin(), forced_upper_bounds.begin() + num_to_insert);
     }
-    std::sort(bin_upper_bound.begin(), bin_upper_bound.end());
+    std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
 
     // find remaining bounds
     std::vector<double> bounds_to_add;
@@ -238,7 +238,7 @@ namespace LightGBM {
       bounds_to_add.insert(bounds_to_add.end(), new_upper_bounds.begin(), new_upper_bounds.end() - 1);  // last bound is infinity
     }
     bin_upper_bound.insert(bin_upper_bound.end(), bounds_to_add.begin(), bounds_to_add.end());
-    std::sort(bin_upper_bound.begin(), bin_upper_bound.end());
+    std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
     CHECK(bin_upper_bound.size() <= max_bin);
     return bin_upper_bound;
   }
