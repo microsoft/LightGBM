@@ -403,8 +403,8 @@ struct Config {
   std::string forcedsplits_filename = "";
 
   // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
-  // desc = ``.json`` file should contain an array of objects, each containing the name ``feature`` (integer feature number) and ``bin_upper_bounds`` (array of thresolds for binning)
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/tests/data/forced_bins.json>`__ as an example
+  // desc = ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bounds`` (array of thresholds for binning)
+  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
   // check = >=0.0

@@ -5,10 +5,10 @@
 #include <LightGBM/dataset.h>
 
 #include <LightGBM/feature_group.h>
+#include <LightGBM/json11.hpp>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/json11.hpp>
 
 #include <limits>
 #include <chrono>
@@ -1071,24 +1071,28 @@ std::vector<std::vector<double>> Dataset::GetForcedBins(std::string forced_bins_
   std::vector<std::vector<double>> forced_bins(num_total_features, std::vector<double>());
   if (forced_bins_path != "") {
     std::ifstream forced_bins_stream(forced_bins_path.c_str());
-    std::stringstream buffer;
-    buffer << forced_bins_stream.rdbuf();
-    std::string err;
-    Json forced_bins_json = Json::parse(buffer.str(), err);
-    CHECK(forced_bins_json.is_array());
-    std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
-    for (int i = 0; i < forced_bins_arr.size(); ++i) {
-      int feature_num = forced_bins_arr[i]["feature"].int_value();
-      CHECK(feature_num < num_total_features);
-      std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
-      for (int j = 0; j < bounds_arr.size(); ++j) {
-        forced_bins[feature_num].push_back(bounds_arr[j].number_value());
+    if (forced_bins_stream.fail()) {
+      Log::Warning("Could not open %s. Will ignore.", forced_bins_path.c_str());
+    } else {
+      std::stringstream buffer;
+      buffer << forced_bins_stream.rdbuf();
+      std::string err;
+      Json forced_bins_json = Json::parse(buffer.str(), err);
+      CHECK(forced_bins_json.is_array());
+      std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
+      for (int i = 0; i < forced_bins_arr.size(); ++i) {
+        int feature_num = forced_bins_arr[i]["feature"].int_value();
+        CHECK(feature_num < num_total_features);
+        std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
+        for (int j = 0; j < bounds_arr.size(); ++j) {
+          forced_bins[feature_num].push_back(bounds_arr[j].number_value());
+        }
       }
-    }
-    // remove duplicates
-    for (int i = 0; i < num_total_features; ++i) {
-      auto new_end = std::unique(forced_bins[i].begin(), forced_bins[i].end());
-      forced_bins[i].erase(new_end, forced_bins[i].end());
+      // remove duplicates
+      for (int i = 0; i < num_total_features; ++i) {
+        auto new_end = std::unique(forced_bins[i].begin(), forced_bins[i].end());
+        forced_bins[i].erase(new_end, forced_bins[i].end());
+      }
     }
   }
   return forced_bins;
