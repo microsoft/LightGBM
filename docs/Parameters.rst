@@ -408,7 +408,7 @@ Learning Control Parameters
 
    -  path to a ``.json`` file that specifies bin upper bounds for some or all features
 
-   -  ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bounds`` (array of thresholds for binning)
+   -  ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
 
    -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
 
