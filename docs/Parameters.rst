@@ -99,7 +99,7 @@ Core Parameters
 
       -  all values in ``label`` must be smaller than number of elements in ``label_gain``
 
--  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``gbrt``, ``rf``, ``random_forest``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
+-  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
 
    -  ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
 
@@ -730,7 +730,7 @@ Objective Parameters
 
 -  ``is_unbalance`` :raw-html:`<a id="is_unbalance" title="Permalink to this parameter" href="#is_unbalance">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``unbalance``, ``unbalanced_sets``
 
-   -  used only in ``binary`` application
+   -  used only in ``binary`` and ``multiclassova`` applications
 
    -  set this to ``true`` if training data are unbalanced
 
@@ -740,7 +740,7 @@ Objective Parameters
 
 -  ``scale_pos_weight`` :raw-html:`<a id="scale_pos_weight" title="Permalink to this parameter" href="#scale_pos_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
 
-   -  used only in ``binary`` application
+   -  used only in ``binary`` and ``multiclassova`` applications
 
    -  weight of labels with positive class
 
@@ -756,7 +756,7 @@ Objective Parameters
 
 -  ``boost_from_average`` :raw-html:`<a id="boost_from_average" title="Permalink to this parameter" href="#boost_from_average">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
-   -  used only in ``regression``, ``binary`` and ``cross-entropy`` applications
+   -  used only in ``regression``, ``binary``, ``multiclassova`` and ``cross-entropy`` applications
 
    -  adjusts initial score to the mean of labels for faster convergence
 

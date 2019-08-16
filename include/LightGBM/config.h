@@ -132,7 +132,7 @@ struct Config {
   // [doc-only]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, gbrt, rf, random_forest, dart, goss
+  // options = gbdt, rf, dart, goss
   // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
@@ -663,14 +663,14 @@ struct Config {
   int num_class = 1;
 
   // alias = unbalance, unbalanced_sets
-  // desc = used only in ``binary`` application
+  // desc = used only in ``binary`` and ``multiclassova`` applications
   // desc = set this to ``true`` if training data are unbalanced
   // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
   bool is_unbalance = false;
 
   // check = >0.0
-  // desc = used only in ``binary`` application
+  // desc = used only in ``binary`` and ``multiclassova`` applications
   // desc = weight of labels with positive class
   // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
@@ -681,7 +681,7 @@ struct Config {
   // desc = parameter for the sigmoid function
   double sigmoid = 1.0;
 
-  // desc = used only in ``regression``, ``binary`` and ``cross-entropy`` applications
+  // desc = used only in ``regression``, ``binary``, ``multiclassova`` and ``cross-entropy`` applications
   // desc = adjusts initial score to the mean of labels for faster convergence
   bool boost_from_average = true;
 
