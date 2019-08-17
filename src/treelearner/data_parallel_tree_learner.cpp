@@ -169,7 +169,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
   std::vector<SplitInfo> larger_bests_per_thread(this->num_threads_, SplitInfo());
   std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
   std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
-  if (config_->feature_fraction_bynode) {
+  if (this->config_->feature_fraction_bynode) {
     smaller_node_used_features = this->GetUsedFeatures();
     larger_node_used_features = this->GetUsedFeatures();
   }
