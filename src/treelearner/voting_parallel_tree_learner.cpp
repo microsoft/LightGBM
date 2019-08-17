@@ -377,11 +377,11 @@ template <typename TREELEARNER_T>
 void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->num_threads_);
   std::vector<SplitInfo> larger_best_per_thread(this->num_threads_);
-  std::vector<int8_t> smaller_node_used_features(num_features_, 1);
-  std::vector<int8_t> larger_node_used_features(num_features_, 1);
+  std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
+  std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
   if (config_->feature_fraction_bynode) {
-    smaller_node_used_features = GetUsedFeatures();
-    larger_node_used_features = GetUsedFeatures();
+    smaller_node_used_features = this->GetUsedFeatures();
+    larger_node_used_features = this->GetUsedFeatures();
   }
   // find best split from local aggregated histograms
 
