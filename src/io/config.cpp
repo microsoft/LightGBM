@@ -14,9 +14,15 @@ namespace LightGBM {
 
 void Config::KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv) {
   std::vector<std::string> tmp_strs = Common::Split(kv, '=');
-  if (tmp_strs.size() == 2) {
+  if (tmp_strs.size() == 2 || tmp_strs.size() == 1) {
     std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
-    std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
+    std::string value = "";
+    if (tmp_strs.size() == 2) {
+      value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
+    }
+    if (!Common::CheckASCII(key) || !Common::CheckASCII(value)) {
+      Log::Fatal("Do not support non-ascii characters in config.");
+    }
     if (key.size() > 0) {
       auto value_search = params.find(key);
       if (value_search == params.end()) {  // not set
@@ -60,41 +66,91 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
   }
 }
 
+std::string ParseObjectiveAlias(const std::string& type) {
+  if (type == std::string("regression") || type == std::string("regression_l2")
+    || type == std::string("mean_squared_error") || type == std::string("mse") || type == std::string("l2")
+    || type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
+    return "regression";
+  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error")
+    || type == std::string("l1") || type == std::string("mae")) {
+    return "regression_l1";
+  } else if (type == std::string("multiclass") || type == std::string("softmax")) {
+    return "multiclass";
+  } else if (type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
+    return "multiclassova";
+  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
+    return "cross_entropy";
+  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
+    return "cross_entropy_lambda";
+  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
+    return "mape";
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
+    return "custom";
+  }
+  return type;
+}
+
+std::string ParseMetricAlias(const std::string& type) {
+  if (type == std::string("regression") || type == std::string("regression_l2") || type == std::string("l2") || type == std::string("mean_squared_error") || type == std::string("mse")) {
+    return "l2";
+  } else if (type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
+    return "rmse";
+  } else if (type == std::string("regression_l1") || type == std::string("l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
+    return "l1";
+  } else if (type == std::string("binary_logloss") || type == std::string("binary")) {
+    return "binary_logloss";
+  } else if (type == std::string("ndcg") || type == std::string("lambdarank")) {
+    return "ndcg";
+  } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
+    return "map";
+  } else if (type == std::string("multi_logloss") || type == std::string("multiclass") || type == std::string("softmax") || type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
+    return "multi_logloss";
+  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
+    return "cross_entropy";
+  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
+    return "cross_entropy_lambda";
+  } else if (type == std::string("kldiv") || type == std::string("kullback_leibler")) {
+    return "kullback_leibler";
+  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
+    return "mape";
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
+    return "custom";
+  }
+  return type;
+}
+
+void ParseMetrics(const std::string& value, std::vector<std::string>* out_metric) {
+  std::unordered_set<std::string> metric_sets;
+  out_metric->clear();
+  std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
+  for (auto& met : metrics) {
+    auto type = ParseMetricAlias(met);
+    if (metric_sets.count(type) <= 0) {
+      out_metric->push_back(type);
+      metric_sets.insert(type);
+    }
+  }
+}
+
 void GetObjectiveType(const std::unordered_map<std::string, std::string>& params, std::string* objective) {
   std::string value;
   if (Config::GetString(params, "objective", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    *objective = value;
+    *objective = ParseObjectiveAlias(value);
   }
 }
 
 void GetMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
   std::string value;
   if (Config::GetString(params, "metric", &value)) {
-    // clear old metrics
-    metric->clear();
-    // to lower
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    // split
-    std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
-    // remove duplicate
-    std::unordered_set<std::string> metric_sets;
-    for (auto& met : metrics) {
-      std::transform(met.begin(), met.end(), met.begin(), Common::tolower);
-      if (metric_sets.count(met) <= 0) {
-        metric_sets.insert(met);
-      }
-    }
-    for (auto& met : metric_sets) {
-      metric->push_back(met);
-    }
-    metric->shrink_to_fit();
+    ParseMetrics(value, metric);
   }
   // add names of objective function if not providing metric
   if (metric->empty() && value.size() == 0) {
     if (Config::GetString(params, "objective", &value)) {
       std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-      metric->push_back(value);
+      ParseMetrics(value, metric);
     }
   }
 }
@@ -170,6 +226,9 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 
   GetMembersFromString(params);
 
+  // sort eval_at
+  std::sort(eval_at.begin(), eval_at.end());
+
   if (valid_data_initscores.size() == 0 && valid.size() > 0) {
     valid_data_initscores = std::vector<std::string>(valid.size(), "");
   }
@@ -190,20 +249,13 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 }
 
 bool CheckMultiClassObjective(const std::string& objective) {
-  return (objective == std::string("multiclass")
-          || objective == std::string("multiclassova")
-          || objective == std::string("softmax")
-          || objective == std::string("multiclass_ova")
-          || objective == std::string("ova")
-          || objective == std::string("ovr"));
+  return (objective == std::string("multiclass") || objective == std::string("multiclassova"));
 }
 
 void Config::CheckParamConflict() {
   // check if objective, metric, and num_class match
   int num_class_check = num_class;
-  bool objective_custom = objective == std::string("none") || objective == std::string("null")
-                                       || objective == std::string("custom") || objective == std::string("na");
-  bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective_custom && num_class_check > 1);
+  bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective == std::string("custom") && num_class_check > 1);
 
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
@@ -215,12 +267,10 @@ void Config::CheckParamConflict() {
     }
   }
   for (std::string metric_type : metric) {
-    bool metric_custom_or_none = metric_type == std::string("none") || metric_type == std::string("null")
-                                 || metric_type == std::string("custom") || metric_type == std::string("na");
     bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
                                    || metric_type == std::string("multi_logloss")
                                    || metric_type == std::string("multi_error")
-                                   || (metric_custom_or_none && num_class_check > 1));
+                                   || (metric_type == std::string("custom") && num_class_check > 1));
     if ((objective_type_multiclass && !metric_type_multiclass)
         || (!objective_type_multiclass && metric_type_multiclass)) {
       Log::Fatal("Multiclass objective and metrics don't match");
@@ -262,6 +312,7 @@ void Config::CheckParamConflict() {
         && num_leaves == kDefaultNumLeaves) {
       Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
     }
+    num_leaves = std::min(num_leaves, 2 << max_depth);
   }
 }
 

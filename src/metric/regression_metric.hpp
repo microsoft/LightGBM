@@ -287,7 +287,7 @@ class GammaDevianceMetric : public RegressionMetric<GammaDevianceMetric> {
     return tmp - Common::SafeLog(tmp) - 1;
   }
   inline static const char* Name() {
-    return "gamma-deviance";
+    return "gamma_deviance";
   }
   inline static double AverageLoss(double sum_loss, double) {
     return sum_loss * 2;

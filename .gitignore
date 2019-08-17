@@ -339,6 +339,10 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/pythonapi/
+
+# Doxygen documentation
+docs/doxyoutput/
 
 # PyBuilder
 target/

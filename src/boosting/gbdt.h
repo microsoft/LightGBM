@@ -387,6 +387,16 @@ class GBDT : public GBDTBase {
   */
   data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
 
+
+  /*!
+  * \brief Helper function for bagging, used for multi-threading optimization, balanced sampling
+  * \param start start indice of bagging
+  * \param cnt count
+  * \param buffer output buffer
+  * \return count of left size
+  */
+  data_size_t BalancedBaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
+
   /*!
   * \brief calculate the object function
   */
@@ -434,6 +444,8 @@ class GBDT : public GBDTBase {
   std::vector<std::vector<const Metric*>> valid_metrics_;
   /*! \brief Number of rounds for early stopping */
   int early_stopping_round_;
+  /*! \brief Only use first metric for early stopping */
+  bool es_first_metric_only_;
   /*! \brief Best iteration(s) for early stopping */
   std::vector<std::vector<int>> best_iter_;
   /*! \brief Best score(s) for early stopping */
@@ -490,6 +502,7 @@ class GBDT : public GBDTBase {
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;
   bool need_re_bagging_;
+  bool balanced_bagging_;
   std::string loaded_parameter_;
 
   Json forced_splits_json_;

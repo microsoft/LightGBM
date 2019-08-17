@@ -13,7 +13,7 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, DataFrame, Series,
+from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
                      DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
@@ -59,7 +59,7 @@ def is_numeric(obj):
 
 
 def is_numpy_1d_array(data):
-    """Check whether data is a 1-D numpy array."""
+    """Check whether data is a numpy 1-D array."""
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
 
@@ -69,7 +69,7 @@ def is_1d_list(data):
 
 
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
-    """Convert data to 1-D numpy array."""
+    """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
         if data.dtype == dtype:
             return data
@@ -78,7 +78,12 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, Series):
-        return data.values.astype(dtype)
+        if _get_bad_pandas_dtypes([data.dtypes]):
+            raise ValueError('Series.dtypes must be int, float or bool')
+        if hasattr(data.values, 'values'):  # SparseArray
+            return data.values.values.astype(dtype)
+        else:
+            return data.values.astype(dtype)
     else:
         raise TypeError("Wrong type({0}) for {1}.\n"
                         "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
@@ -194,11 +199,6 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "feature_penalty": C_API_DTYPE_FLOAT64,
                      "monotone_constraints": C_API_DTYPE_INT8}
 
-PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
-                       'int64': 'int', 'uint8': 'int', 'uint16': 'int',
-                       'uint32': 'int', 'uint64': 'int', 'bool': 'int',
-                       'float16': 'float', 'float32': 'float', 'float64': 'float'}
-
 
 def convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
@@ -252,6 +252,17 @@ def c_int_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
+def _get_bad_pandas_dtypes(dtypes):
+    pandas_dtype_mapper = {'int8': 'int', 'int16': 'int', 'int32': 'int',
+                           'int64': 'int', 'uint8': 'int', 'uint16': 'int',
+                           'uint32': 'int', 'uint64': 'int', 'bool': 'int',
+                           'float16': 'float', 'float32': 'float', 'float64': 'float'}
+    bad_indices = [i for i, dtype in enumerate(dtypes) if (dtype.name not in pandas_dtype_mapper
+                                                           and (not is_dtype_sparse(dtype)
+                                                                or dtype.subtype.name not in pandas_dtype_mapper))]
+    return bad_indices
+
+
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
@@ -280,13 +291,11 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 categorical_feature = list(categorical_feature)
         if feature_name == 'auto':
             feature_name = list(data.columns)
-        data_dtypes = data.dtypes
-        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
-            bad_fields = [data.columns[i] for i, dtype in
-                          enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
+        bad_indices = _get_bad_pandas_dtypes(data.dtypes)
+        if bad_indices:
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
-                             + ', '.join(bad_fields))
+                             + ', '.join(data.columns[bad_indices]))
         data = data.values.astype('float')
     else:
         if feature_name == 'auto':
@@ -300,8 +309,7 @@ def _label_from_pandas(label):
     if isinstance(label, DataFrame):
         if len(label.columns) > 1:
             raise ValueError('DataFrame for label cannot have multiple columns')
-        label_dtypes = label.dtypes
-        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in label_dtypes):
+        if _get_bad_pandas_dtypes(label.dtypes):
             raise ValueError('DataFrame.dtypes for label must be int, float or bool')
         label = label.values.astype('float').flatten()
     return label
@@ -725,7 +733,39 @@ class Dataset(object):
         if self.handle is not None:
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
+        self.need_slice = True
+        if self.used_indices is not None:
+            self.data = None
         return self
+
+    def _set_init_score_by_predictor(self, predictor, data, used_indices=None):
+        data_has_header = False
+        if isinstance(data, string_type):
+            # check data has header or not
+            if self.params.get("has_header", False) or self.params.get("header", False):
+                data_has_header = True
+        init_score = predictor.predict(data,
+                                       raw_score=True,
+                                       data_has_header=data_has_header,
+                                       is_reshape=False)
+        num_data = self.num_data()
+        if used_indices is not None:
+            assert not self.need_slice
+            if isinstance(data, string_type):
+                sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
+                assert num_data == len(used_indices)
+                for i in range_(len(used_indices)):
+                    for j in range_(predictor.num_class):
+                        sub_init_score[i * redictor.num_class + j] = init_score[used_indices[i] * redictor.num_class + j]
+                init_score = sub_init_score
+        if predictor.num_class > 1:
+            # need to regroup init_score
+            new_init_score = np.zeros(init_score.size, dtype=np.float32)
+            for i in range_(num_data):
+                for j in range_(predictor.num_class):
+                    new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
+            init_score = new_init_score
+        self.set_init_score(init_score)
 
     def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
@@ -742,7 +782,7 @@ class Dataset(object):
                                                                                              categorical_feature,
                                                                                              self.pandas_categorical)
         label = _label_from_pandas(label)
-        self.data_has_header = False
+
         # process for args
         params = {} if params is None else params
         args_names = (getattr(self.__class__, '_lazy_init')
@@ -753,7 +793,6 @@ class Dataset(object):
                 warnings.warn('{0} keyword has been found in `params` and will be ignored.\n'
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'
                               .format(key))
-        self.predictor = predictor
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
             params["verbose"] = -1
@@ -787,10 +826,6 @@ class Dataset(object):
             raise TypeError('Reference dataset should be None or dataset instance')
         # start construct data
         if isinstance(data, string_type):
-            # check data has header or not
-            if str(params.get("has_header", "")).lower() == "true" \
-                    or str(params.get("header", "")).lower() == "true":
-                self.data_has_header = True
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
                 c_str(data),
@@ -821,27 +856,14 @@ class Dataset(object):
             self.set_weight(weight)
         if group is not None:
             self.set_group(group)
-        # load init score
-        if init_score is not None:
+        if isinstance(predictor, _InnerPredictor):
+            if self._predictor is None and init_score is not None:
+                warnings.warn("The init_score will be overridden by the prediction of init_model.")
+            self._set_init_score_by_predictor(predictor, data)
+        elif init_score is not None:
             self.set_init_score(init_score)
-            if self.predictor is not None:
-                warnings.warn("The prediction of init_model will be overridden by init_score.")
-        elif isinstance(self.predictor, _InnerPredictor):
-            init_score = self.predictor.predict(data,
-                                                raw_score=True,
-                                                data_has_header=self.data_has_header,
-                                                is_reshape=False)
-            if self.predictor.num_class > 1:
-                # need re group init score
-                new_init_score = np.zeros(init_score.size, dtype=np.float32)
-                num_data = self.num_data()
-                for i in range_(num_data):
-                    for j in range_(self.predictor.num_class):
-                        new_init_score[j * num_data + i] = init_score[i * self.predictor.num_class + j]
-                init_score = new_init_score
-            self.set_init_score(init_score)
-        elif self.predictor is not None:
-            raise TypeError('wrong predictor type {}'.format(type(self.predictor).__name__))
+        elif predictor is not None:
+            raise TypeError('Wrong predictor type {}'.format(type(predictor).__name__))
         # set feature names
         return self.set_feature_name(feature_name)
 
@@ -1000,12 +1022,15 @@ class Dataset(object):
                         ctypes.c_int(used_indices.shape[0]),
                         c_str(params_str),
                         ctypes.byref(self.handle)))
-                    self.data = self.reference.data
-                    self.get_data()
+                    if not self.free_raw_data:
+                        self.get_data()
                     if self.group is not None:
                         self.set_group(self.group)
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
+                    if isinstance(self._predictor, _InnerPredictor) and self._predictor is not self.reference._predictor:
+                        self.get_data()
+                        self._set_init_score_by_predictor(self._predictor, self.data, used_indices)
             else:
                 # create train
                 self._lazy_init(self.data, label=self.label,
@@ -1098,7 +1123,7 @@ class Dataset(object):
         if self.handle is not None and params is not None:
             _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(params))))
         if not self.params:
-            self.params = params
+            self.params = copy.deepcopy(params)
         else:
             self.params_back_up = copy.deepcopy(self.params)
             self.params.update(params)
@@ -1237,7 +1262,7 @@ class Dataset(object):
         """
         if predictor is self._predictor:
             return self
-        if self.data is not None:
+        if self.data is not None or (self.used_indices is not None and self.reference is not None and self.reference.data is not None):
             self._predictor = predictor
             return self._free_handle()
         else:
@@ -1444,17 +1469,22 @@ class Dataset(object):
         """
         if self.handle is None:
             raise Exception("Cannot get data before construct Dataset")
-        if self.data is not None and self.used_indices is not None and self.need_slice:
-            if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
-                self.data = self.data[self.used_indices, :]
-            elif isinstance(self.data, DataFrame):
-                self.data = self.data.iloc[self.used_indices].copy()
-            elif isinstance(self.data, DataTable):
-                self.data = self.data[self.used_indices, :]
-            else:
-                warnings.warn("Cannot subset {} type of raw data.\n"
-                              "Returning original raw data".format(type(self.data).__name__))
+        if self.need_slice and self.used_indices is not None and self.reference is not None:
+            self.data = self.reference.data
+            if self.data is not None:
+                if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
+                    self.data = self.data[self.used_indices, :]
+                elif isinstance(self.data, DataFrame):
+                    self.data = self.data.iloc[self.used_indices].copy()
+                elif isinstance(self.data, DataTable):
+                    self.data = self.data[self.used_indices, :]
+                else:
+                    warnings.warn("Cannot subset {} type of raw data.\n"
+                                  "Returning original raw data".format(type(self.data).__name__))
             self.need_slice = False
+        if self.data is None:
+            raise LightGBMError("Cannot call `get_data` after freed raw data, "
+                                "set free_raw_data=False when construct Dataset to avoid this.")
         return self.data
 
     def get_group(self):
@@ -1853,9 +1883,20 @@ class Booster(object):
             If None, last training data is used.
         fobj : callable or None, optional (default=None)
             Customized objective function.
+            Should accept two parameters: preds, train_data,
+            and return (grad, hess).
 
-            For multi-class task, the score is group by class_id first, then group by row_id.
-            If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
+                preds : list or numpy 1-D array
+                    The predicted values.
+                train_data : Dataset
+                    The training dataset.
+                grad : list or numpy 1-D array
+                    The value of the first order derivative (gradient) for each sample point.
+                hess : list or numpy 1-D array
+                    The value of the second order derivative (Hessian) for each sample point.
+
+            For multi-class task, the preds is group by class_id first, then group by row_id.
+            If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
 
         Returns
@@ -1902,9 +1943,9 @@ class Booster(object):
 
         Parameters
         ----------
-        grad : 1-D numpy array or 1-D list
+        grad : list or numpy 1-D array
             The first order derivative (gradient).
-        hess : 1-D numpy array or 1-D list
+        hess : list or numpy 1-D array
             The second order derivative (Hessian).
 
         Returns
@@ -1994,8 +2035,20 @@ class Booster(object):
             Name of the data.
         feval : callable or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, train_data,
+            Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+
+                preds : list or numpy 1-D array
+                    The predicted values.
+                eval_data : Dataset
+                    The evaluation dataset.
+                eval_name : string
+                    The name of evaluation function.
+                eval_result : float
+                    The eval result.
+                is_higher_better : bool
+                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2030,6 +2083,18 @@ class Booster(object):
             Customized evaluation function.
             Should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+
+                preds : list or numpy 1-D array
+                    The predicted values.
+                train_data : Dataset
+                    The training dataset.
+                eval_name : string
+                    The name of evaluation function.
+                eval_result : float
+                    The eval result.
+                is_higher_better : bool
+                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2047,8 +2112,20 @@ class Booster(object):
         ----------
         feval : callable or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, train_data,
+            Should accept two parameters: preds, valid_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
+
+                preds : list or numpy 1-D array
+                    The predicted values.
+                valid_data : Dataset
+                    The validation dataset.
+                eval_name : string
+                    The name of evaluation function.
+                eval_result : float
+                    The eval result.
+                is_higher_better : bool
+                    Is eval result higher better, e.g. AUC is ``is_higher_better``.
+
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2315,7 +2392,9 @@ class Booster(object):
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         train_set = Dataset(data, label, silent=True)
-        new_booster = Booster(self.params, train_set, silent=True)
+        new_params = copy.deepcopy(self.params)
+        new_params['refit_decay_rate'] = decay_rate
+        new_booster = Booster(new_params, train_set, silent=True)
         # Copy models
         _safe_call(_LIB.LGBM_BoosterMerge(
             new_booster.handle,

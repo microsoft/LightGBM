@@ -5,7 +5,7 @@ This document gives a basic walkthrough of LightGBM Python-package.
 
 **List of other helpful links**
 
--  `Python Examples <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`__
+-  `Python Examples <https://github.com/microsoft/LightGBM/tree/master/examples/python-guide>`__
 
 -  `Python API <./Python-API.rst>`__
 
@@ -141,7 +141,7 @@ For instance:
 
    .. code:: python
 
-       param = {'num_leaves': 31, 'num_trees': 100, 'objective': 'binary'}
+       param = {'num_leaves': 31, 'objective': 'binary'}
        param['metric'] = 'auc'
 
 -  You can also specify multiple eval metrics:
@@ -185,7 +185,6 @@ Training with 5-fold CV:
 
 .. code:: python
 
-    num_round = 10
     lgb.cv(param, train_data, num_round, nfold=5)
 
 Early Stopping
@@ -196,7 +195,7 @@ Early stopping requires at least one set in ``valid_sets``. If there is more tha
 
 .. code:: python
 
-    bst = lgb.train(param, train_data, num_round, valid_sets=valid_sets, early_stopping_rounds=10)
+    bst = lgb.train(param, train_data, num_round, valid_sets=valid_sets, early_stopping_rounds=5)
     bst.save_model('model.txt', num_iteration=bst.best_iteration)
 
 The model will train until the validation score stops improving.
@@ -207,7 +206,7 @@ Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC, etc.).
 Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
-However, you can change this behavior and make LightGBM check only the first metric for early stopping by creating ``early_stopping`` callback with ``first_metric_only=True``.
+However, you can change this behavior and make LightGBM check only the first metric for early stopping by passing ``first_metric_only=True`` in ``param`` or ``early_stopping`` callback constructor.
 
 Prediction
 ----------
@@ -226,4 +225,4 @@ If early stopping is enabled during training, you can get predictions from the b
 
     ypred = bst.predict(data, num_iteration=bst.best_iteration)
 
-.. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
+.. _Python-package: https://github.com/microsoft/LightGBM/tree/master/python-package

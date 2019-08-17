@@ -8,6 +8,7 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
@@ -555,6 +556,10 @@ class Dataset {
     // replace ' ' in feature_names with '_'
     bool spaceInFeatureName = false;
     for (auto& feature_name : feature_names_) {
+      // check ascii
+      if (!Common::CheckASCII(feature_name)) {
+        Log::Fatal("Do not support non-ascii characters in feature name.");
+      }
       if (feature_name.find(' ') != std::string::npos) {
         spaceInFeatureName = true;
         std::replace(feature_name.begin(), feature_name.end(), ' ', '_');
@@ -624,6 +629,7 @@ class Dataset {
   std::vector<double> feature_penalty_;
   bool is_finish_load_;
   int max_bin_;
+  std::vector<int32_t> max_bin_by_feature_;
   int bin_construct_sample_cnt_;
   int min_data_in_bin_;
   bool use_missing_;

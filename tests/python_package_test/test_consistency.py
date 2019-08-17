@@ -21,7 +21,7 @@ class FileLoader(object):
                 if line and not line.startswith('#'):
                     key, value = [token.strip() for token in line.split('=')]
                     if 'early_stopping' not in key:  # disable early_stopping
-                        self.params[key] = value
+                        self.params[key] = value if key != 'num_trees' else int(value)
 
     def load_dataset(self, suffix, is_sparse=False):
         filename = self.path(suffix)
@@ -42,8 +42,8 @@ class FileLoader(object):
         gbm = lgb.train(self.params, lgb_train)
         y_pred = gbm.predict(X_test)
         cpp_pred = gbm.predict(X_test_fn)
-        np.testing.assert_array_almost_equal(y_pred, cpp_pred, decimal=5)
-        np.testing.assert_array_almost_equal(y_pred, sk_pred, decimal=5)
+        np.testing.assert_allclose(y_pred, cpp_pred)
+        np.testing.assert_allclose(y_pred, sk_pred)
 
     def file_load_check(self, lgb_train, name):
         lgb_train_f = lgb.Dataset(self.path(name), params=self.params).construct()
@@ -55,7 +55,7 @@ class FileLoader(object):
             elif a is None:
                 assert np.all(b == 1), f
             elif isinstance(b, (list, np.ndarray)):
-                np.testing.assert_array_almost_equal(a, b)
+                np.testing.assert_allclose(a, b)
             else:
                 assert a == b, f
 

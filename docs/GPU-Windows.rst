@@ -257,7 +257,7 @@ Now, we can fetch LightGBM repository for GitHub. Run Git Bash and the following
     cd C:/
     mkdir github_repos
     cd github_repos
-    git clone --recursive https://github.com/Microsoft/LightGBM
+    git clone --recursive https://github.com/microsoft/LightGBM
 
 Your LightGBM repository copy should now be under ``C:\github_repos\LightGBM``.
 You are free to use any folder you want, but you have to adapt.
@@ -597,6 +597,6 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _CMake: https://cmake.org/download/
 
-.. _here: https://github.com/Microsoft/LightGBM/issues
+.. _here: https://github.com/microsoft/LightGBM/issues
 
 .. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/

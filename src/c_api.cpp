@@ -711,11 +711,11 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
 }
 
 int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
-                              int num_rows,
-                              int64_t num_col,
-                              const char* parameters,
-                              const DatasetHandle reference,
-                              DatasetHandle* out) {
+                                  int num_rows,
+                                  int64_t num_col,
+                                  const char* parameters,
+                                  const DatasetHandle reference,
+                                  DatasetHandle* out) {
   API_BEGIN();
 
   auto get_row_fun = *static_cast<std::function<void(int idx, std::vector<std::pair<int, double>>&)>*>(get_row_funptr);
@@ -767,10 +767,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   for (int i = 0; i < num_rows; ++i) {
     OMP_LOOP_EX_BEGIN();
     {
-            const int tid = omp_get_thread_num();
-            get_row_fun(i, threadBuffer);
-
-            ret->PushOneRow(tid, i, threadBuffer);
+      const int tid = omp_get_thread_num();
+      get_row_fun(i, threadBuffer);
+      ret->PushOneRow(tid, i, threadBuffer);
     }
     OMP_LOOP_EX_END();
   }
@@ -1291,19 +1290,19 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 }
 
 int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
-                              const void* indptr,
-                              int indptr_type,
-                              const int32_t* indices,
-                              const void* data,
-                              int data_type,
-                              int64_t nindptr,
-                              int64_t nelem,
-                              int64_t,
-                              int predict_type,
-                              int num_iteration,
-                              const char* parameter,
-                              int64_t* out_len,
-                              double* out_result) {
+                                       const void* indptr,
+                                       int indptr_type,
+                                       const int32_t* indices,
+                                       const void* data,
+                                       int data_type,
+                                       int64_t nindptr,
+                                       int64_t nelem,
+                                       int64_t,
+                                       int predict_type,
+                                       int num_iteration,
+                                       const char* parameter,
+                                       int64_t* out_len,
+                                       double* out_result) {
   API_BEGIN();
   auto param = Config::Str2Map(parameter);
   Config config;
@@ -1313,8 +1312,7 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  ref_booster->PredictSingleRow(num_iteration, predict_type, get_row_fun,
-                       config, out_result, out_len);
+  ref_booster->PredictSingleRow(num_iteration, predict_type, get_row_fun, config, out_result, out_len);
   API_END();
 }
 
@@ -1397,15 +1395,15 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
 }
 
 int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
-                              const void* data,
-                              int data_type,
-                              int32_t ncol,
-                              int is_row_major,
-                              int predict_type,
-                              int num_iteration,
-                              const char* parameter,
-                              int64_t* out_len,
-                              double* out_result) {
+                                       const void* data,
+                                       int data_type,
+                                       int32_t ncol,
+                                       int is_row_major,
+                                       int predict_type,
+                                       int num_iteration,
+                                       const char* parameter,
+                                       int64_t* out_len,
+                                       double* out_result) {
   API_BEGIN();
   auto param = Config::Str2Map(parameter);
   Config config;
@@ -1415,8 +1413,7 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, is_row_major);
-  ref_booster->PredictSingleRow(num_iteration, predict_type, get_row_fun,
-                       config, out_result, out_len);
+  ref_booster->PredictSingleRow(num_iteration, predict_type, get_row_fun, config, out_result, out_len);
   API_END();
 }
 
@@ -1440,8 +1437,7 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseRows(data, ncol, data_type);
-  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
-                       config, out_result, out_len);
+  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun, config, out_result, out_len);
   API_END();
 }
 

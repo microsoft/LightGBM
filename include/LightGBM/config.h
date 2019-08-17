@@ -102,11 +102,11 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gammma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
+  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, cross_entropy, cross_entropy_lambda, lambdarank
   // alias = objective_type, app, application
   // desc = regression application
-  // descl2 = ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
-  // descl2 = ``regression_l1``, L1 loss, aliases: ``mean_absolute_error``, ``mae``
+  // descl2 = ``regression``, L2 loss, aliases: ``regression_l2``, ``l2``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
+  // descl2 = ``regression_l1``, L1 loss, aliases: ``l1``, ``mean_absolute_error``, ``mae``
   // descl2 = ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
   // descl2 = ``fair``, `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
   // descl2 = ``poisson``, `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__
@@ -120,8 +120,8 @@ struct Config {
   // descl2 = ``multiclassova``, `One-vs-All <https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest>`__ binary objective function, aliases: ``multiclass_ova``, ``ova``, ``ovr``
   // descl2 = ``num_class`` should be set as well
   // desc = cross-entropy application
-  // descl2 = ``xentropy``, objective function for cross-entropy (with optional linear weights), aliases: ``cross_entropy``
-  // descl2 = ``xentlambda``, alternative parameterization of cross-entropy, aliases: ``cross_entropy_lambda``
+  // descl2 = ``cross_entropy``, objective function for cross-entropy (with optional linear weights), aliases: ``xentropy``
+  // descl2 = ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
   // descl2 = label is anything in interval [0, 1]
   // desc = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
   // descl2 = label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
@@ -132,7 +132,7 @@ struct Config {
   // [doc-only]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, gbrt, rf, random_forest, dart, goss
+  // options = gbdt, rf, dart, goss
   // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
@@ -212,7 +212,7 @@ struct Config {
   #pragma region Learning Control Parameters
 
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
-  // desc = ``< 0`` means no limit
+  // desc = ``<= 0`` means no limit
   int max_depth = -1;
 
   // alias = min_data_per_leaf, min_data, min_child_samples
@@ -233,6 +233,30 @@ struct Config {
   // desc = can be used to deal with over-fitting
   // desc = **Note**: to enable bagging, ``bagging_freq`` should be set to a non zero value as well
   double bagging_fraction = 1.0;
+
+  // alias = pos_sub_row, pos_subsample, pos_bagging
+  // check = >0.0
+  // check = <=1.0
+  // desc = used only in ``binary`` application
+  // desc = used for imbalanced binary classification problem, will randomly sample ``#pos_samples * pos_bagging_fraction`` positive samples in bagging
+  // desc = should be used together with ``neg_bagging_fraction``
+  // desc = set this to ``1.0`` to disable
+  // desc = **Note**: to enable this, you need to set ``bagging_freq`` and ``neg_bagging_fraction`` as well
+  // desc = **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+  // desc = **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+  double pos_bagging_fraction = 1.0;
+
+  // alias = neg_sub_row, neg_subsample, neg_bagging
+  // check = >0.0
+  // check = <=1.0
+  // desc = used only in ``binary`` application
+  // desc = used for imbalanced binary classification problem, will randomly sample ``#neg_samples * neg_bagging_fraction`` negative samples in bagging
+  // desc = should be used together with ``pos_bagging_fraction``
+  // desc = set this to ``1.0`` to disable
+  // desc = **Note**: to enable this, you need to set ``bagging_freq`` and ``pos_bagging_fraction`` as well
+  // desc = **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+  // desc = **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+  double neg_bagging_fraction = 1.0;
 
   // alias = subsample_freq
   // desc = frequency for bagging
@@ -259,6 +283,9 @@ struct Config {
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
   // desc = ``<= 0`` means disable
   int early_stopping_round = 0;
+
+  // desc = set this to ``true``, if you want to use only the first metric for early stopping
+  bool first_metric_only = false;
 
   // alias = max_tree_output, max_leaf_output
   // desc = used to limit the max output of tree leaves
@@ -372,7 +399,7 @@ struct Config {
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
   // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
-  // desc = see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
   // check = >=0.0
@@ -415,6 +442,12 @@ struct Config {
   // desc = small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
   // desc = LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
   int max_bin = 255;
+
+  // type = multi-int
+  // default = None
+  // desc = max number of bins for each feature
+  // desc = if not specified, will use ``max_bin`` for all features
+  std::vector<int32_t> max_bin_by_feature;
 
   // check = >0
   // desc = minimal number of data inside one bin
@@ -630,14 +663,14 @@ struct Config {
   int num_class = 1;
 
   // alias = unbalance, unbalanced_sets
-  // desc = used only in ``binary`` application
+  // desc = used only in ``binary`` and ``multiclassova`` applications
   // desc = set this to ``true`` if training data are unbalanced
   // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
   bool is_unbalance = false;
 
   // check = >0.0
-  // desc = used only in ``binary`` application
+  // desc = used only in ``binary`` and ``multiclassova`` applications
   // desc = weight of labels with positive class
   // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
@@ -648,7 +681,7 @@ struct Config {
   // desc = parameter for the sigmoid function
   double sigmoid = 1.0;
 
-  // desc = used only in ``regression``, ``binary`` and ``cross-entropy`` applications
+  // desc = used only in ``regression``, ``binary``, ``multiclassova`` and ``cross-entropy`` applications
   // desc = adjusts initial score to the mean of labels for faster convergence
   bool boost_from_average = true;
 
@@ -705,7 +738,7 @@ struct Config {
   // descl2 = ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``, ``null``, ``custom``
   // descl2 = ``l1``, absolute loss, aliases: ``mean_absolute_error``, ``mae``, ``regression_l1``
   // descl2 = ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
-  // descl2 = ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+  // descl2 = ``rmse``, root square loss, aliases: ``root_mean_squared_error``, ``l2_root``
   // descl2 = ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
   // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
   // descl2 = ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
@@ -721,9 +754,9 @@ struct Config {
   // descl2 = ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
   // descl2 = ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
   // descl2 = ``multi_error``, error rate for multi-class classification
-  // descl2 = ``xentropy``, cross-entropy (with optional linear weights), aliases: ``cross_entropy``
-  // descl2 = ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
-  // descl2 = ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
+  // descl2 = ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
+  // descl2 = ``cross_entropy_lambda``, "intensity-weighted" cross-entropy, aliases: ``xentlambda``
+  // descl2 = ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 
@@ -743,6 +776,14 @@ struct Config {
   // desc = used only with ``ndcg`` and ``map`` metrics
   // desc = `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ and `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__ evaluation positions, separated by ``,``
   std::vector<int> eval_at;
+
+  // check = >0
+  // desc = used only with ``multi_error`` metric
+  // desc = threshold for top-k multi-error metric
+  // desc = the error on each sample is ``0`` if the true class is among the top ``multi_error_top_k`` predictions, and ``1`` otherwise
+  // descl2 = more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
+  // desc = when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
+  int multi_error_top_k = 1;
 
   #pragma endregion
 
@@ -809,7 +850,7 @@ struct Config {
 inline bool Config::GetString(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, std::string* out) {
-  if (params.count(name) > 0) {
+  if (params.count(name) > 0 && !params.at(name).empty()) {
     *out = params.at(name);
     return true;
   }
@@ -819,7 +860,7 @@ inline bool Config::GetString(
 inline bool Config::GetInt(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, int* out) {
-  if (params.count(name) > 0) {
+  if (params.count(name) > 0 && !params.at(name).empty()) {
     if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
       Log::Fatal("Parameter %s should be of type int, got \"%s\"",
                  name.c_str(), params.at(name).c_str());
@@ -832,7 +873,7 @@ inline bool Config::GetInt(
 inline bool Config::GetDouble(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, double* out) {
-  if (params.count(name) > 0) {
+  if (params.count(name) > 0 && !params.at(name).empty()) {
     if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
       Log::Fatal("Parameter %s should be of type double, got \"%s\"",
                  name.c_str(), params.at(name).c_str());
@@ -845,7 +886,7 @@ inline bool Config::GetDouble(
 inline bool Config::GetBool(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, bool* out) {
-  if (params.count(name) > 0) {
+  if (params.count(name) > 0 && !params.at(name).empty()) {
     std::string value = params.at(name);
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("false") || value == std::string("-")) {

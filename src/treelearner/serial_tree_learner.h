@@ -74,10 +74,7 @@ class SerialTreeLearner: public TreeLearner {
     }
   }
 
-  void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
-                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
-
-  void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, double prediction,
+  void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
  protected:

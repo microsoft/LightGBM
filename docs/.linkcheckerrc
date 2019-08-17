@@ -6,7 +6,8 @@ sslverify=0
 [filtering]
 ignore=
   public.tableau.com
-  http://www.intel.com/software/products/support
+  https://www.open-mpi.org
+  https://readthedocs.org
 ignorewarnings=http-robots-denied,https-certificate-error
 
 [output]

@@ -173,7 +173,7 @@ class TestBasic(unittest.TestCase):
         X = np.random.random((1000, 1))
         d = lgb.Dataset(X, params={'feature_penalty': [0.5],
                                    'monotone_constraints': [1]}).construct()
-        np.testing.assert_almost_equal(d.get_feature_penalty(), [0.5])
+        np.testing.assert_allclose(d.get_feature_penalty(), [0.5])
         np.testing.assert_array_equal(d.get_monotone_constraints(), [1])
         d = lgb.Dataset(X).construct()
         self.assertIsNone(d.get_feature_penalty())
@@ -196,7 +196,7 @@ class TestBasic(unittest.TestCase):
             if expected is None:
                 self.assertIsNone(actual)
             else:
-                np.testing.assert_almost_equal(actual, expected)
+                np.testing.assert_allclose(actual, expected)
 
     def test_add_features_monotone_types(self):
         X = np.random.random((1000, 2))

@@ -684,6 +684,8 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
                                 static_cast<double>(current_split_info.right_output),
                                 static_cast<data_size_t>(current_split_info.left_count),
                                 static_cast<data_size_t>(current_split_info.right_count),
+                                static_cast<double>(current_split_info.left_sum_hessian),
+                                static_cast<double>(current_split_info.right_sum_hessian),
                                 static_cast<float>(current_split_info.gain),
                                 train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                                 current_split_info.default_left);
@@ -711,6 +713,8 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
                                            static_cast<double>(current_split_info.right_output),
                                            static_cast<data_size_t>(current_split_info.left_count),
                                            static_cast<data_size_t>(current_split_info.right_count),
+                                           static_cast<double>(current_split_info.left_sum_hessian),
+                                           static_cast<double>(current_split_info.right_sum_hessian),
                                            static_cast<float>(current_split_info.gain),
                                            train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
       data_partition_->Split(current_leaf, train_data_, inner_feature_index,
@@ -792,6 +796,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                               static_cast<double>(best_split_info.right_output),
                               static_cast<data_size_t>(best_split_info.left_count),
                               static_cast<data_size_t>(best_split_info.right_count),
+                              static_cast<double>(best_split_info.left_sum_hessian),
+                              static_cast<double>(best_split_info.right_sum_hessian),
                               static_cast<float>(best_split_info.gain),
                               train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                               best_split_info.default_left);
@@ -815,6 +821,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                                          static_cast<double>(best_split_info.right_output),
                                          static_cast<data_size_t>(best_split_info.left_count),
                                          static_cast<data_size_t>(best_split_info.right_count),
+                                         static_cast<double>(best_split_info.left_sum_hessian),
+                                         static_cast<double>(best_split_info.right_sum_hessian),
                                          static_cast<float>(best_split_info.gain),
                                          train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
@@ -851,7 +859,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
 }
 
 
-void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
+void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                                         data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
@@ -869,47 +877,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       auto index_mapper = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       if (cnt_leaf_data > 0) {
         // bag_mapper[index_mapper[i]]
-        const double new_output = obj->RenewTreeOutput(output, prediction, index_mapper, bag_mapper, cnt_leaf_data);
-        tree->SetLeafOutput(i, new_output);
-      } else {
-        CHECK(num_machines > 1);
-        tree->SetLeafOutput(i, 0.0);
-        n_nozeroworker_perleaf[i] = 0;
-      }
-    }
-    if (num_machines > 1) {
-      std::vector<double> outputs(tree->num_leaves());
-      for (int i = 0; i < tree->num_leaves(); ++i) {
-        outputs[i] = static_cast<double>(tree->LeafOutput(i));
-      }
-      Network::GlobalSum(outputs);
-      Network::GlobalSum(n_nozeroworker_perleaf);
-      for (int i = 0; i < tree->num_leaves(); ++i) {
-        tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
-      }
-    }
-  }
-}
-
-void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, double prediction,
-  data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
-  if (obj != nullptr && obj->IsRenewTreeOutput()) {
-    CHECK(tree->num_leaves() <= data_partition_->num_leaves());
-    const data_size_t* bag_mapper = nullptr;
-    if (total_num_data != num_data_) {
-      CHECK(bag_cnt == num_data_);
-      bag_mapper = bag_indices;
-    }
-    std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
-    int num_machines = Network::num_machines();
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < tree->num_leaves(); ++i) {
-      const double output = static_cast<double>(tree->LeafOutput(i));
-      data_size_t cnt_leaf_data = 0;
-      auto index_mapper = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-      if (cnt_leaf_data > 0) {
-        // bag_mapper[index_mapper[i]]
-        const double new_output = obj->RenewTreeOutput(output, prediction, index_mapper, bag_mapper, cnt_leaf_data);
+        const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
       } else {
         CHECK(num_machines > 1);

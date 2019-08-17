@@ -159,7 +159,7 @@ Known issues:
 
 .. _ROCm: https://rocm.github.io/
 
-.. _our GitHub repo: https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+.. _our GitHub repo: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
 
 .. _NVIDIA CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 

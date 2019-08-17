@@ -319,7 +319,7 @@ if __name__ == "__main__":
           packages=find_packages(),
           include_package_data=True,
           license='The MIT License (Microsoft)',
-          url='https://github.com/Microsoft/LightGBM',
+          url='https://github.com/microsoft/LightGBM',
           classifiers=['Development Status :: 5 - Production/Stable',
                        'Intended Audience :: Science/Research',
                        'License :: OSI Approved :: MIT License',

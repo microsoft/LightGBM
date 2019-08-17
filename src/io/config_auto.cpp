@@ -58,6 +58,12 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"sub_row", "bagging_fraction"},
   {"subsample", "bagging_fraction"},
   {"bagging", "bagging_fraction"},
+  {"pos_sub_row", "pos_bagging_fraction"},
+  {"pos_subsample", "pos_bagging_fraction"},
+  {"pos_bagging", "pos_bagging_fraction"},
+  {"neg_sub_row", "neg_bagging_fraction"},
+  {"neg_subsample", "neg_bagging_fraction"},
+  {"neg_bagging", "neg_bagging_fraction"},
   {"subsample_freq", "bagging_freq"},
   {"bagging_fraction_seed", "bagging_seed"},
   {"sub_feature", "feature_fraction"},
@@ -176,11 +182,14 @@ std::unordered_set<std::string> Config::parameter_set({
   "min_data_in_leaf",
   "min_sum_hessian_in_leaf",
   "bagging_fraction",
+  "pos_bagging_fraction",
+  "neg_bagging_fraction",
   "bagging_freq",
   "bagging_seed",
   "feature_fraction",
   "feature_fraction_seed",
   "early_stopping_round",
+  "first_metric_only",
   "max_delta_step",
   "lambda_l1",
   "lambda_l2",
@@ -209,6 +218,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "cegb_penalty_feature_coupled",
   "verbosity",
   "max_bin",
+  "max_bin_by_feature",
   "min_data_in_bin",
   "bin_construct_sample_cnt",
   "histogram_pool_size",
@@ -259,6 +269,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "metric_freq",
   "is_provide_training_metric",
   "eval_at",
+  "multi_error_top_k",
   "num_machines",
   "local_listen_port",
   "time_out",
@@ -300,6 +311,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(bagging_fraction >0.0);
   CHECK(bagging_fraction <=1.0);
 
+  GetDouble(params, "pos_bagging_fraction", &pos_bagging_fraction);
+  CHECK(pos_bagging_fraction >0.0);
+  CHECK(pos_bagging_fraction <=1.0);
+
+  GetDouble(params, "neg_bagging_fraction", &neg_bagging_fraction);
+  CHECK(neg_bagging_fraction >0.0);
+  CHECK(neg_bagging_fraction <=1.0);
+
   GetInt(params, "bagging_freq", &bagging_freq);
 
   GetInt(params, "bagging_seed", &bagging_seed);
@@ -311,6 +330,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
 
   GetInt(params, "early_stopping_round", &early_stopping_round);
+
+  GetBool(params, "first_metric_only", &first_metric_only);
 
   GetDouble(params, "max_delta_step", &max_delta_step);
 
@@ -397,6 +418,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
+
+  if (GetString(params, "max_bin_by_feature", &tmp_str)) {
+    max_bin_by_feature = Common::StringToArray<int32_t>(tmp_str, ',');
+  }
 
   GetInt(params, "min_data_in_bin", &min_data_in_bin);
   CHECK(min_data_in_bin >0);
@@ -518,6 +543,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     eval_at = Common::StringToArray<int>(tmp_str, ',');
   }
 
+  GetInt(params, "multi_error_top_k", &multi_error_top_k);
+  CHECK(multi_error_top_k >0);
+
   GetInt(params, "num_machines", &num_machines);
   CHECK(num_machines >0);
 
@@ -551,11 +579,14 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
   str_buf << "[bagging_fraction: " << bagging_fraction << "]\n";
+  str_buf << "[pos_bagging_fraction: " << pos_bagging_fraction << "]\n";
+  str_buf << "[neg_bagging_fraction: " << neg_bagging_fraction << "]\n";
   str_buf << "[bagging_freq: " << bagging_freq << "]\n";
   str_buf << "[bagging_seed: " << bagging_seed << "]\n";
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";
   str_buf << "[feature_fraction_seed: " << feature_fraction_seed << "]\n";
   str_buf << "[early_stopping_round: " << early_stopping_round << "]\n";
+  str_buf << "[first_metric_only: " << first_metric_only << "]\n";
   str_buf << "[max_delta_step: " << max_delta_step << "]\n";
   str_buf << "[lambda_l1: " << lambda_l1 << "]\n";
   str_buf << "[lambda_l2: " << lambda_l2 << "]\n";
@@ -584,6 +615,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
+  str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
   str_buf << "[bin_construct_sample_cnt: " << bin_construct_sample_cnt << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
@@ -633,6 +665,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
+  str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[num_machines: " << num_machines << "]\n";
   str_buf << "[local_listen_port: " << local_listen_port << "]\n";
   str_buf << "[time_out: " << time_out << "]\n";

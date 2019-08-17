@@ -22,13 +22,15 @@ GBDT::GBDT() : iter_(0),
 train_data_(nullptr),
 objective_function_(nullptr),
 early_stopping_round_(0),
+es_first_metric_only_(false),
 max_feature_idx_(0),
 num_tree_per_iteration_(1),
 num_class_(1),
 num_iteration_for_pred_(0),
 shrinkage_rate_(0.1f),
 num_init_iteration_(0),
-need_re_bagging_(false) {
+need_re_bagging_(false),
+balanced_bagging_(false) {
   #pragma omp parallel
   #pragma omp master
   {
@@ -51,6 +53,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   num_class_ = config->num_class;
   config_ = std::unique_ptr<Config>(new Config(*config));
   early_stopping_round_ = config_->early_stopping_round;
+  es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
   std::string forced_splits_path = config->forcedsplits_filename;
@@ -129,20 +132,18 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
   }
   valid_score_updater_.push_back(std::move(new_score_updater));
   valid_metrics_.emplace_back();
-  if (early_stopping_round_ > 0) {
-    best_iter_.emplace_back();
-    best_score_.emplace_back();
-    best_msg_.emplace_back();
-  }
   for (const auto& metric : valid_metrics) {
     valid_metrics_.back().push_back(metric);
-    if (early_stopping_round_ > 0) {
-      best_iter_.back().push_back(0);
-      best_score_.back().push_back(kMinScore);
-      best_msg_.back().emplace_back();
-    }
   }
   valid_metrics_.back().shrink_to_fit();
+
+  if (early_stopping_round_ > 0) {
+    auto num_metrics = valid_metrics.size();
+    if (es_first_metric_only_) { num_metrics = 1; }
+    best_iter_.emplace_back(num_metrics, 0);
+    best_score_.emplace_back(num_metrics, kMinScore);
+    best_msg_.emplace_back(num_metrics);
+  }
 }
 
 void GBDT::Boosting() {
@@ -176,6 +177,35 @@ data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t
   return cur_left_cnt;
 }
 
+data_size_t GBDT::BalancedBaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer) {
+  if (cnt <= 0) {
+    return 0;
+  }
+  auto label_ptr = train_data_->metadata().label();
+  data_size_t cur_left_cnt = 0;
+  data_size_t cur_right_pos = cnt - 1;
+  // from right to left
+  auto right_buffer = buffer;
+  // random bagging, minimal unit is one record
+  for (data_size_t i = 0; i < cnt; ++i) {
+    bool is_pos = label_ptr[start + i] > 0;
+    bool is_in_bag = false;
+    if (is_pos) {
+      is_in_bag = cur_rand.NextFloat() < config_->pos_bagging_fraction;
+    } else {
+      is_in_bag = cur_rand.NextFloat() < config_->neg_bagging_fraction;
+    }
+    if (is_in_bag) {
+      buffer[cur_left_cnt++] = start + i;
+    } else {
+      right_buffer[cur_right_pos--] = start + i;
+    }
+  }
+  // reverse right buffer
+  std::reverse(buffer + cur_left_cnt, buffer + cnt);
+  return cur_left_cnt;
+}
+
 void GBDT::Bagging(int iter) {
   // if need bagging
   if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0)
@@ -195,7 +225,12 @@ void GBDT::Bagging(int iter) {
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
       Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
-      data_size_t cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+      data_size_t cur_left_count = 0;
+      if (balanced_bagging_) {
+        cur_left_count = BalancedBaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+      } else {
+        cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+      }
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
@@ -364,7 +399,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 
     if (new_tree->num_leaves() > 1) {
       should_continue = true;
-      tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, train_score_updater_->score() + bias,
+      auto score_ptr = train_score_updater_->score() + bias;
+      auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
+      tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
                                      num_data_, bag_data_indices_.data(), bag_data_cnt_);
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
@@ -512,6 +549,7 @@ std::string GBDT::OutputMetric(int iter) {
             msg_buf << tmp_buf.str() << '\n';
           }
         }
+        if (es_first_metric_only_ && j > 0) { continue; }
         if (ret.empty() && early_stopping_round_ > 0) {
           auto cur_score = valid_metrics_[i][j]->factor_to_bigger_better() * test_scores.back();
           if (cur_score > best_score_[i][j]) {
@@ -687,9 +725,25 @@ void GBDT::ResetConfig(const Config* config) {
 
 void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   // if need bagging, create buffer
-  if (config->bagging_fraction < 1.0 && config->bagging_freq > 0) {
-    bag_data_cnt_ =
-      static_cast<data_size_t>(config->bagging_fraction * num_data_);
+  data_size_t num_pos_data = 0;
+  if (objective_function_ != nullptr) {
+    num_pos_data = objective_function_->NumPositiveData();
+  }
+  bool balance_bagging_cond = (config->pos_bagging_fraction < 1.0 || config->neg_bagging_fraction < 1.0) && (num_pos_data > 0);
+  if ((config->bagging_fraction < 1.0 || balance_bagging_cond) && config->bagging_freq > 0) {
+    need_re_bagging_ = false;
+    if (!is_change_dataset &&
+      config_.get() != nullptr && config_->bagging_fraction == config->bagging_fraction && config_->bagging_freq == config->bagging_freq
+      && config_->pos_bagging_fraction == config->pos_bagging_fraction && config_->neg_bagging_fraction == config->neg_bagging_fraction) {
+      return;
+    }
+    if (balance_bagging_cond) {
+      balanced_bagging_ = true;
+      bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config->pos_bagging_fraction)
+                      + static_cast<data_size_t>((num_data_ - num_pos_data) * config->neg_bagging_fraction);
+    } else {
+      bag_data_cnt_ = static_cast<data_size_t>(config->bagging_fraction * num_data_);
+    }
     bag_data_indices_.resize(num_data_);
     tmp_indices_.resize(num_data_);
 
@@ -699,7 +753,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     left_write_pos_buf_.resize(num_threads_);
     right_write_pos_buf_.resize(num_threads_);
 
-    double average_bag_rate = config->bagging_fraction / config->bagging_freq;
+    double average_bag_rate = (bag_data_cnt_ / num_data_) / config->bagging_freq;
     int sparse_group = 0;
     for (int i = 0; i < train_data_->num_feature_groups(); ++i) {
       if (train_data_->FeatureGroupIsSparse(i)) {
@@ -719,9 +773,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
       Log::Debug("Use subset for bagging");
     }
 
-    if (is_change_dataset) {
-      need_re_bagging_ = true;
-    }
+    need_re_bagging_ = true;
 
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
       if (objective_function_ == nullptr) {

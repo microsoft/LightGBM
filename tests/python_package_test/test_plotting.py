@@ -60,6 +60,45 @@ class TestBasic(unittest.TestCase):
         self.assertTupleEqual(ax2.patches[2].get_facecolor(), (0, .5, 0, 1.))  # g
         self.assertTupleEqual(ax2.patches[3].get_facecolor(), (0, 0, 1., 1.))  # b
 
+    @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
+    def test_plot_split_value_histogram(self):
+        gbm0 = lgb.train(self.params, self.train_data, num_boost_round=10)
+        ax0 = lgb.plot_split_value_histogram(gbm0, 27)
+        self.assertIsInstance(ax0, matplotlib.axes.Axes)
+        self.assertEqual(ax0.get_title(), 'Split value histogram for feature with index 27')
+        self.assertEqual(ax0.get_xlabel(), 'Feature split value')
+        self.assertEqual(ax0.get_ylabel(), 'Count')
+        self.assertLessEqual(len(ax0.patches), 2)
+
+        gbm1 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
+        gbm1.fit(self.X_train, self.y_train)
+
+        ax1 = lgb.plot_split_value_histogram(gbm1, gbm1.booster_.feature_name()[27], figsize=(10, 5),
+                                             title='Histogram for feature @index/name@ @feature@',
+                                             xlabel='x', ylabel='y', color='r')
+        self.assertIsInstance(ax1, matplotlib.axes.Axes)
+        self.assertEqual(ax1.get_title(),
+                         'Histogram for feature name {}'.format(gbm1.booster_.feature_name()[27]))
+        self.assertEqual(ax1.get_xlabel(), 'x')
+        self.assertEqual(ax1.get_ylabel(), 'y')
+        self.assertLessEqual(len(ax1.patches), 2)
+        for patch in ax1.patches:
+            self.assertTupleEqual(patch.get_facecolor(), (1., 0, 0, 1.))  # red
+
+        ax2 = lgb.plot_split_value_histogram(gbm0, 27, bins=10, color=['r', 'y', 'g', 'b'],
+                                             title=None, xlabel=None, ylabel=None)
+        self.assertIsInstance(ax2, matplotlib.axes.Axes)
+        self.assertEqual(ax2.get_title(), '')
+        self.assertEqual(ax2.get_xlabel(), '')
+        self.assertEqual(ax2.get_ylabel(), '')
+        self.assertEqual(len(ax2.patches), 10)
+        self.assertTupleEqual(ax2.patches[0].get_facecolor(), (1., 0, 0, 1.))  # r
+        self.assertTupleEqual(ax2.patches[1].get_facecolor(), (.75, .75, 0, 1.))  # y
+        self.assertTupleEqual(ax2.patches[2].get_facecolor(), (0, .5, 0, 1.))  # g
+        self.assertTupleEqual(ax2.patches[3].get_facecolor(), (0, 0, 1., 1.))  # b
+
+        self.assertRaises(ValueError, lgb.plot_split_value_histogram, gbm0, 0)  # was not used in splitting
+
     @unittest.skipIf(not MATPLOTLIB_INSTALLED or not GRAPHVIZ_INSTALLED, 'matplotlib or graphviz is not installed')
     def test_plot_tree(self):
         gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
@@ -81,7 +120,7 @@ class TestBasic(unittest.TestCase):
         self.assertRaises(IndexError, lgb.create_tree_digraph, gbm, tree_index=83)
 
         graph = lgb.create_tree_digraph(gbm, tree_index=3,
-                                        show_info=['split_gain', 'internal_value'],
+                                        show_info=['split_gain', 'internal_value', 'internal_weight'],
                                         name='Tree4', node_attr={'color': 'red'})
         graph.render(view=False)
         self.assertIsInstance(graph, graphviz.Digraph)
@@ -98,8 +137,10 @@ class TestBasic(unittest.TestCase):
         self.assertIn('leaf_index', graph_body)
         self.assertIn('split_gain', graph_body)
         self.assertIn('internal_value', graph_body)
+        self.assertIn('internal_weight', graph_body)
         self.assertNotIn('internal_count', graph_body)
         self.assertNotIn('leaf_count', graph_body)
+        self.assertNotIn('leaf_weight', graph_body)
 
     @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
     def test_plot_metrics(self):

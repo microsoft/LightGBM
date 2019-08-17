@@ -27,6 +27,7 @@ For more details, please refer to `Features <./Features.rst>`__.
    Experiments <Experiments>
    Parameters <Parameters>
    Parameters Tuning <Parameters-Tuning>
+   C API <C-API>
    Python API <Python-API>
    Parallel Learning Guide <Parallel-Learning-Guide>
    GPU Tutorial <GPU-Tutorial>

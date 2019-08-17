@@ -74,7 +74,7 @@ class CrossEntropyMetric : public Metric {
   virtual ~CrossEntropyMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back("xentropy");
+    name_.emplace_back("cross_entropy");
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();
@@ -169,7 +169,7 @@ class CrossEntropyLambdaMetric : public Metric {
   virtual ~CrossEntropyLambdaMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back("xentlambda");
+    name_.emplace_back("cross_entropy_lambda");
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();
@@ -252,7 +252,7 @@ class KullbackLeiblerDivergence : public Metric {
   virtual ~KullbackLeiblerDivergence() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back("kldiv");
+    name_.emplace_back("kullback_leibler");
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();

@@ -5,16 +5,21 @@
 # Sys.setenv("CXX" = "/usr/local/bin/g++-8")
 # Sys.setenv("CC" = "/usr/local/bin/gcc-8")
 
-library(testthat)
-library(roxygen2)
-library(devtools)
-
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
   if (!res) {
     stop("Copying files failed!")
   }
+}
+
+# system() will not raise an R exception if the process called
+# fails. Wrapping it here to get that behavior
+.run_shell_command <- function(cmd, ...){
+    exit_code <- system(cmd, ...)
+    if (exit_code != 0){
+        stop(paste0("Command failed with exit code: ", exit_code))
+    }
 }
 
 # Make a new temporary folder to work in
@@ -51,15 +56,12 @@ result <- file.copy(from = "CMakeLists.txt",
                     overwrite = TRUE)
 .handle_result(result)
 
-# rebuild documentation
-# devtools::document(pkg = "lightgbm_r")
-
 # Build the package
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-devtools::build(pkg = "lightgbm_r",
-                args = c("--keep-empty-dirs"))
+cmd <- "R CMD build lightgbm_r --keep_empty-dirs"
+.run_shell_command(cmd)
 
 # Install the package
 version <- gsub(
@@ -73,7 +75,8 @@ version <- gsub(
 )
 tarball <- file.path(getwd(), sprintf("lightgbm_%s.tar.gz", version))
 
-system(sprintf("R CMD INSTALL %s --no-multiarch", tarball))
+cmd <- sprintf("R CMD INSTALL %s --no-multiarch", tarball)
+.run_shell_command(cmd)
 
 # Run R CMD CHECK
 # R CMD CHECK lightgbm_2.1.2.tar.gz --as-cran | tee check.log | cat
