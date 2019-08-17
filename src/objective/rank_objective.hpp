@@ -104,13 +104,6 @@ class LambdarankNDCG: public ObjectiveFunction {
     }
     std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
                      [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
-    // get best and worst score
-    const double best_score = score[sorted_idx[0]];
-    data_size_t worst_idx = cnt - 1;
-    if (worst_idx > 0 && score[sorted_idx[worst_idx]] == kMinScore) {
-      worst_idx -= 1;
-    }
-    const double wrost_score = score[sorted_idx[worst_idx]];
     // start accmulate lambdas by pairs
     for (data_size_t i = 0; i < cnt; ++i) {
       const data_size_t high = sorted_idx[i];
@@ -141,16 +134,12 @@ class LambdarankNDCG: public ObjectiveFunction {
         const double paired_discount = fabs(high_discount - low_discount);
         // get delta NDCG
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
-        // regular the delta_pair_NDCG by score distance
-        if (high_label != low_label && best_score != wrost_score) {
-          delta_pair_NDCG /= (0.01f + fabs(delta_score));
-        }
         // calculate lambda for this pair
         double p_lambda = GetSigmoid(delta_score);
-        double p_hessian = p_lambda * (2.0f - p_lambda);
+        double p_hessian = p_lambda * (1.0f - p_lambda);
         // update
-        p_lambda *= -delta_pair_NDCG;
-        p_hessian *= 2 * delta_pair_NDCG;
+        p_lambda *= -sigmoid_ * delta_pair_NDCG;
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
         high_sum_lambda += p_lambda;
         high_sum_hessian += p_hessian;
         lambdas[low] -= static_cast<score_t>(p_lambda);
@@ -193,7 +182,7 @@ class LambdarankNDCG: public ObjectiveFunction {
     // cache
     for (size_t i = 0; i < _sigmoid_bins; ++i) {
       const double score = i / sigmoid_table_idx_factor_ + min_sigmoid_input_;
-      sigmoid_table_[i] = 2.0f / (1.0f + std::exp(2.0f * score * sigmoid_));
+      sigmoid_table_[i] = 1.0f / (1.0f + std::exp(score * sigmoid_));
     }
   }
 
