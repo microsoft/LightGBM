@@ -802,6 +802,12 @@ Objective Parameters
 
    -  optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
 
+-  ``lambdamart_norm`` :raw-html:`<a id="lambdamart_norm" title="Permalink to this parameter" href="#lambdamart_norm">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  set this to ``true`` to normalize the lambdas for different queries, and improve the performance of unbalanced data
+
+   -  set this to ``false`` to enforce the original lambdamart algorithm
+
 -  ``label_gain`` :raw-html:`<a id="label_gain" title="Permalink to this parameter" href="#label_gain">&#x1F517;&#xFE0E;</a>`, default = ``0,1,3,7,15,31,63,...,2^30-1``, type = multi-double
 
    -  used only in ``lambdarank`` application

@@ -718,6 +718,10 @@ struct Config {
   // desc = optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
   int max_position = 20;
 
+  // desc = set this to ``true`` to normalize the lambdas for different queries, and improve the performance of unbalanced data
+  // desc = set this to ``false`` to enforce the original lambdamart algorithm
+  bool lambdamart_norm = true;
+
   // type = multi-double
   // default = 0,1,3,7,15,31,63,...,2^30-1
   // desc = used only in ``lambdarank`` application
