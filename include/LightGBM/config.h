@@ -269,9 +269,9 @@ struct Config {
   int bagging_seed = 3;
 
   // alias = sub_feature_bynode, colsample_bytree_bynode
-  // desc = set to ``true`` will randomly select part of features for each node
-  // desc = set to ``false`` will randomly select part of features for each true (use the same sub features for each tree)
-  // desc = **Note**: set to ``false`` can speed up the training linearly
+  // desc = set this to ``true`` to randomly select part of features for each node
+  // desc = set this to ``false`` to randomly select part of features for each tree (use the same sub features for each tree)
+  // desc = **Note**: set this to ``true`` cannot speed up the training, but set this to ``false`` can speed up the training linearly
   bool feature_fraction_bynode = false;
 
   // alias = sub_feature, colsample_bytree

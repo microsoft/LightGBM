@@ -256,11 +256,11 @@ Learning Control Parameters
 
 -  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``sub_feature_bynode``, ``colsample_bytree_bynode``
 
-   -  set to ``true`` will randomly select part of features for each node
+   -  set this to ``true`` to randomly select part of features for each node
 
-   -  set to ``false`` will randomly select part of features for each true (use the same sub features for each tree)
+   -  set this to ``false`` to randomly select part of features for each tree (use the same sub features for each tree)
 
-   -  **Note**: set to ``false`` can speed up the training linearly
+   -  **Note**: set this to ``true`` cannot speed up the training, but set this to ``false`` can speed up the training linearly
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
