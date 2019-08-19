@@ -39,7 +39,6 @@
 #' tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 #'
 #' @importFrom data.table as.data.table
-#' @importFrom magrittr %>% %T>%
 #' @export
 lgb.interprete <- function(model,
                            data,
@@ -56,12 +55,18 @@ lgb.interprete <- function(model,
   tree_interpretation_dt_list <- vector(mode = "list", length = length(idxset))
 
   # Get parsed predictions of data
-  leaf_index_mat_list <- model$predict(data[idxset, , drop = FALSE],
-                                       num_iteration = num_iteration,
-                                       predleaf = TRUE) %>%
-    t(.) %>%
-    data.table::as.data.table(.) %>%
-    lapply(., FUN = function(x) matrix(x, ncol = num_class, byrow = TRUE))
+  pred_mat <- t(
+    model$predict(
+      data[idxset, , drop = FALSE]
+      , num_iteration = num_iteration
+      , predleaf = TRUE
+    )
+  )
+  leaf_index_dt <- data.table::as.data.table(pred_mat)
+  leaf_index_mat_list <- lapply(
+    X = leaf_index_dt
+    , FUN = function(x) matrix(x, ncol = num_class, byrow = TRUE)
+  )
 
   # Get list of trees
   tree_index_mat_list <- lapply(leaf_index_mat_list,
@@ -121,20 +126,39 @@ single.tree.interprete <- function(tree_dt,
 
 }
 
-#' @importFrom data.table rbindlist
-#' @importFrom magrittr %>% extract
+#' @importFrom data.table := rbindlist setorder
 multiple.tree.interprete <- function(tree_dt,
                                      tree_index,
                                      leaf_index) {
 
   # Apply each trees
-  mapply(single.tree.interprete,
-         tree_id = tree_index, leaf_id = leaf_index,
-         MoreArgs = list(tree_dt = tree_dt),
-         SIMPLIFY = FALSE, USE.NAMES = TRUE) %>%
-    data.table::rbindlist(., use.names = TRUE) %>%
-    magrittr::extract(., j = .(Contribution = sum(Contribution)), by = "Feature") %>%
-    magrittr::extract(., i = order(abs(Contribution), decreasing = TRUE))
+  interp_dt <- data.table::rbindlist(
+    l = mapply(
+      FUN = single.tree.interprete
+      , tree_id = tree_index
+      , leaf_id = leaf_index
+      , MoreArgs = list(
+        tree_dt = tree_dt
+      )
+      , SIMPLIFY = FALSE
+      , USE.NAMES = TRUE
+    )
+    , use.names = TRUE
+  )
+
+  interp_dt <- interp_dt[, .(Contribution = sum(Contribution)), by = "Feature"]
+
+  # Sort features in descending order by contribution
+  interp_dt[, abs_contribution := abs(Contribution)]
+  data.table::setorder(
+    x = interp_dt
+    , -abs_contribution
+  )
+
+  # Drop absolute value of contribution (only needed for sorting)
+  interp_dt[, abs_contribution := NULL]
+
+  return(interp_dt)
 
 }
 
@@ -147,13 +171,21 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
   # Loop throughout each class
   for (i in seq_len(num_class)) {
 
-    tree_interpretation[[i]] <- multiple.tree.interprete(tree_dt, tree_index_mat[,i], leaf_index_mat[,i]) %T>% {
+    next_interp_dt <- multiple.tree.interprete(
+      tree_dt = tree_dt
+      , tree_index = tree_index_mat[,i]
+      , leaf_index = leaf_index_mat[,i]
+    )
 
-      # Number of classes larger than 1 requires adjustment
-      if (num_class > 1) {
-        data.table::setnames(., old = "Contribution", new = paste("Class", i - 1))
-      }
+    if (num_class > 1){
+      data.table::setnames(
+        next_interp_dt
+        , old = "Contribution"
+        , new = paste("Class", i - 1)
+      )
     }
+
+    tree_interpretation[[i]] <- next_interp_dt
 
   }
 

@@ -39,7 +39,6 @@ Imports:
     data.table (>= 1.9.6),
     graphics,
     jsonlite (>= 1.0),
-    magrittr (>= 1.5),
     Matrix (>= 1.1-0),
     methods
 RoxygenNote: 6.0.1
