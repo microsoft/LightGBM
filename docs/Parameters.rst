@@ -804,6 +804,8 @@ Objective Parameters
 
 -  ``lambdamart_norm`` :raw-html:`<a id="lambdamart_norm" title="Permalink to this parameter" href="#lambdamart_norm">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
+   -  used only in ``lambdarank`` application
+
    -  set this to ``true`` to normalize the lambdas for different queries, and improve the performance of unbalanced data
 
    -  set this to ``false`` to enforce the original lambdamart algorithm

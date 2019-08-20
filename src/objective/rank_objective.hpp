@@ -107,11 +107,11 @@ class LambdarankNDCG: public ObjectiveFunction {
                      [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
     // get best and worst score	
     const double best_score = score[sorted_idx[0]];
-    data_size_t worst_idx = cnt - 1;
-    if (worst_idx > 0 && score[sorted_idx[worst_idx]] == kMinScore) {
-      worst_idx -= 1;
+    data_size_t wrost_idx = cnt - 1;
+    if (wrost_idx > 0 && score[sorted_idx[wrost_idx]] == kMinScore) {
+      wrost_idx -= 1;
     }
-    const double wrost_score = score[sorted_idx[worst_idx]];
+    const double wrost_score = score[sorted_idx[wrost_idx]];
     double sum_lambdas = 0.0;
     // start accmulate lambdas by pairs
     for (data_size_t i = 0; i < cnt; ++i) {
