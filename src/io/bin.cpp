@@ -186,7 +186,7 @@ namespace LightGBM {
       }
     }
 
-    // include zero bounds if possible
+    // include zero bounds and infinity bound
     if (max_bin == 2) {
       if (left_cnt == 0) {
         bin_upper_bound.push_back(kZeroThreshold);
@@ -194,9 +194,14 @@ namespace LightGBM {
         bin_upper_bound.push_back(-kZeroThreshold);
       }
     } else if (max_bin >= 3) {
-      bin_upper_bound.push_back(-kZeroThreshold);
-      bin_upper_bound.push_back(kZeroThreshold);
+      if (left_cnt > 0) {
+        bin_upper_bound.push_back(-kZeroThreshold);
+      }
+      if (right_start >= 0) {
+        bin_upper_bound.push_back(kZeroThreshold);
+      }
     }
+    bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
     
     // add forced bounds, excluding zeros since we have already added zero bounds
     int i = 0;
@@ -207,7 +212,6 @@ namespace LightGBM {
         ++i;
       }
     }
-    bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
     int max_to_insert = max_bin - static_cast<int>(bin_upper_bound.size());
     int num_to_insert = std::min(max_to_insert, static_cast<int>(forced_upper_bounds.size()));
     if (num_to_insert > 0) {
@@ -239,7 +243,7 @@ namespace LightGBM {
     }
     bin_upper_bound.insert(bin_upper_bound.end(), bounds_to_add.begin(), bounds_to_add.end());
     std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
-    CHECK(bin_upper_bound.size() <= max_bin);
+    CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
     return bin_upper_bound;
   }
 
