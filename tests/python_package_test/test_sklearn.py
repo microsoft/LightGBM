@@ -79,7 +79,7 @@ class TestSklearn(unittest.TestCase):
                                          '../../examples/lambdarank/rank.test.query'))
         gbm = lgb.LGBMRanker()
         gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
-                eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=5, verbose=False,
+                eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
                 callbacks=[lgb.reset_parameter(learning_rate=lambda x: 0.95 ** x * 0.1)])
         self.assertLessEqual(gbm.best_iteration_, 12)
         self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6173)
