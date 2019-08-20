@@ -921,7 +921,7 @@ class TestEngine(unittest.TestCase):
         }
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
-        self.assertEqual(len(np.unique(est.predict(X))), 99)
+        self.assertEqual(len(np.unique(est.predict(X))), 100)
         params['max_bin_by_feature'] = [2, 100]
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
@@ -1599,7 +1599,7 @@ class TestEngine(unittest.TestCase):
         forcedbins_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                            '../../examples/regression/forced_bins.json')
         params = {'objective': 'regression_l1',
-                  'max_bin': 6,
+                  'max_bin': 5,
                   'forcedbins_filename': forcedbins_filename,
                   'num_leaves': 2,
                   'min_data_in_leaf': 1,
@@ -1613,7 +1613,7 @@ class TestEngine(unittest.TestCase):
         predicted = est.predict(new_x)
         self.assertEqual(len(np.unique(predicted)), 3)
         new_x[:, 0] = [0, 0, 0]
-        new_x[:, 1] = [-0.25, -0.5, -0.9]
+        new_x[:, 1] = [-0.9, -0.6, -0.3]
         predicted = est.predict(new_x)
         self.assertEqual(len(np.unique(predicted)), 1)
         params['forcedbins_filename'] = ''
@@ -1621,3 +1621,28 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_x, num_boost_round=100)
         predicted = est.predict(new_x)
         self.assertEqual(len(np.unique(predicted)), 3)
+
+    def test_binning_same_sign(self):
+        # test that binning works properly for features with only positive or only negative values
+        x = np.zeros((99, 2))
+        x[:, 0] = np.arange(0.01, 1, 0.01)
+        x[:, 1] = -np.arange(0.01, 1, 0.01)
+        y = np.arange(0.01, 1, 0.01)
+        params = {'objective': 'regression_l1',
+                  'max_bin': 5,
+                  'num_leaves': 2,
+                  'min_data_in_leaf': 1,
+                  'verbose': -1,
+                  'seed': 0}
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=100)
+        new_x = np.zeros((3, 2))
+        new_x[:, 0] = [-1, 0, 1]
+        predicted = est.predict(new_x)
+        self.assertAlmostEqual(predicted[0], predicted[1])
+        self.assertNotAlmostEqual(predicted[1], predicted[2])
+        new_x = np.zeros((3, 2))
+        new_x[:, 1] = [-1, 0, 1]
+        predicted = est.predict(new_x)
+        self.assertNotAlmostEqual(predicted[0], predicted[1])
+        self.assertAlmostEqual(predicted[1], predicted[2])
