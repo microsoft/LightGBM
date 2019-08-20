@@ -203,7 +203,7 @@ namespace LightGBM {
     } else {
       bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
     }
-    CHECK(bin_upper_bound.size() <= max_bin);
+    CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
     return bin_upper_bound;
   }
 
