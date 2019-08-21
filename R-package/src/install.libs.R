@@ -48,11 +48,11 @@ if (!use_precompile) {
   # Using this kind-of complicated pattern to avoid matching to
   # things like "pgcc"
   using_gcc <- grepl(
-    pattern = '^gcc$|[/\\]+gcc|^gcc\\-[0-9]+$|[/\\]+gcc\\-[0-9]+$'
+    pattern = '^gcc$|[/\\]+gcc$|^gcc\\-[0-9]+$|[/\\]+gcc\\-[0-9]+$'
     , x = Sys.getenv('CC', '')
   )
   using_gpp <- grepl(
-    pattern = '^g\\+\\+$|[/\\]+g\\+\\+|^g\\+\\+\\-[0-9]+$|[/\\]+g\\+\\+\\-[0-9]+$'
+    pattern = '^g\\+\\+$|[/\\]+g\\+\\+$|^g\\+\\+\\-[0-9]+$|[/\\]+g\\+\\+\\-[0-9]+$'
     , x = Sys.getenv('CXX', '')
   )
   on_mac <- Sys.info()['sysname'] == 'Darwin'
