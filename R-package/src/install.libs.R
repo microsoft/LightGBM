@@ -45,7 +45,18 @@ if (!use_precompile) {
   }
 
   # Could NOT find OpenMP_C on Mojave workaround
-  if (Sys.info()['sysname'] == 'Darwin' && !(grepl('^gcc', Sys.getenv('CC', '')) & grepl('^g\\+\\+', Sys.getenv('CXX', '')))) {
+  # Using this kind-of complicated pattern to avoid matching to
+  # things like "pgcc"
+  using_gcc <- grepl(
+    pattern = '^gcc$|[/\\]+gcc|^gcc\\-[0-9]+$|[/\\]+gcc\\-[0-9]+$'
+    , x = Sys.getenv('CC', '')
+  )
+  using_gpp <- grepl(
+    pattern = '^g\\+\\+$|[/\\]+g\\+\\+|^g\\+\\+\\-[0-9]+$|[/\\]+g\\+\\+\\-[0-9]+$'
+    , x = Sys.getenv('CXX', '')
+  )
+  on_mac <- Sys.info()['sysname'] == 'Darwin'
+  if (on_mac && !(using_gcc & using_gpp)) {
     cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" ')
     cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_C_LIB_NAMES="omp" ')
     cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" ')
