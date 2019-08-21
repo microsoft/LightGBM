@@ -107,11 +107,11 @@ class LambdarankNDCG: public ObjectiveFunction {
                      [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
     // get best and worst score	
     const double best_score = score[sorted_idx[0]];
-    data_size_t wrost_idx = cnt - 1;
-    if (wrost_idx > 0 && score[sorted_idx[wrost_idx]] == kMinScore) {
-      wrost_idx -= 1;
+    data_size_t worst_idx = cnt - 1;
+    if (worst_idx > 0 && score[sorted_idx[worst_idx]] == kMinScore) {
+      worst_idx -= 1;
     }
-    const double wrost_score = score[sorted_idx[wrost_idx]];
+    const double worst_score = score[sorted_idx[worst_idx]];
     double sum_lambdas = 0.0;
     // start accmulate lambdas by pairs
     for (data_size_t i = 0; i < cnt; ++i) {
@@ -144,7 +144,7 @@ class LambdarankNDCG: public ObjectiveFunction {
         // get delta NDCG
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
         // regular the delta_pair_NDCG by score distance	
-        if (norm_ && high_label != low_label && best_score != wrost_score) {
+        if (norm_ && high_label != low_label && best_score != worst_score) {
           delta_pair_NDCG /= (0.01f + fabs(delta_score));
         }
         // calculate lambda for this pair
