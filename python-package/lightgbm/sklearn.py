@@ -525,7 +525,7 @@ class LGBMModel(_LGBMModelBase):
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
             params['metric'] = set(original_metric + eval_metric)
 
-        if not isinstance(X, (DataFrame, DataTable)):
+        if not isinstance(X, DataTable):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
             _LGBMCheckConsistentLength(_X, _y, sample_weight)
         else:

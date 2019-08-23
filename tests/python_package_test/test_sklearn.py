@@ -298,6 +298,35 @@ class TestSklearn(unittest.TestCase):
             pred_dense = gbm.predict(X_test.to_dense(), raw_score=True)
         np.testing.assert_allclose(pred_sparse, pred_dense)
 
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_nan_y_pd(self):
+        import pandas as pd
+
+        nrows = 1000
+        ncols = 10
+        X = pd.DataFrame(np.random.randn(nrows, ncols))
+        y = pd.Series(np.full(nrows, np.nan))
+        weight = np.zeros(nrows)
+        params = {'n_estimators': 20, 'verbose': -1}
+        params_fit = {'X': X, 'y': y}
+        gbm = lgb.LGBMRegressor(**params)
+        self.assertRaises(ValueError, gbm.fit, **params_fit)
+
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_nan_handle_pd(self):
+        import pandas as pd
+
+        nrows = 1000
+        ncols = 10
+        X = pd.DataFrame(np.random.randn(nrows, ncols))
+        y = pd.Series(np.random.randn(nrows) + np.full(nrows, 1e30))
+        weight = np.zeros(nrows)
+        params = {'n_estimators': 20, 'verbose': -1}
+        params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
+                      'verbose': False, 'early_stopping_rounds': 5}
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
+        np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
+
     def test_predict(self):
         iris = load_iris()
         X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target,
@@ -637,6 +666,17 @@ class TestSklearn(unittest.TestCase):
                       'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
+
+    def test_nan_y_np(self):
+        nrows = 1000
+        ncols = 10
+        X = np.random.randn(nrows, ncols)
+        y = np.full(nrows, np.nan)
+        weight = np.zeros(nrows)
+        params = {'n_estimators': 20, 'verbose': -1}
+        params_fit = {'X': X, 'y': y}
+        gbm = lgb.LGBMRegressor(**params)
+        self.assertRaises(ValueError, gbm.fit, **params_fit)
 
     def test_class_weight(self):
         X, y = load_digits(10, True)
