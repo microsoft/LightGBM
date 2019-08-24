@@ -719,7 +719,7 @@ struct Config {
   int max_position = 20;
 
   // desc = used only in ``lambdarank`` application
-  // desc = set this to ``true`` to normalize the lambdas for different queries, and improve the performance of unbalanced data
+  // desc = set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data
   // desc = set this to ``false`` to enforce the original lambdamart algorithm
   bool lambdamart_norm = true;
 
