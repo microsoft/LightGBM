@@ -806,7 +806,7 @@ Objective Parameters
 
    -  used only in ``lambdarank`` application
 
-   -  set this to ``true`` to normalize the lambdas for different queries, and improve the performance of unbalanced data
+   -  set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data
 
    -  set this to ``false`` to enforce the original lambdamart algorithm
 
