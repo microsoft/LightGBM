@@ -46,6 +46,8 @@ catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
 catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
 
+const int PREDICTOR_TYPES = 4;
+
 class Booster {
  public:
   explicit Booster(const char* filename) {
@@ -205,8 +207,15 @@ class Booster {
                const Config& config,
                double* out_result, int64_t* out_len) {
     std::lock_guard<std::mutex> lock(mutex_);
-
-    if (single_row_predictor_.get() == nullptr) {
+    if (single_row_predictor_[predict_type].get() == nullptr ||
+	single_row_predictor_pred_early_stop[predict_type] != config.pred_early_stop ||
+	single_row_predictor_pred_early_stop_freq[predict_type] != config.pred_early_stop_freq ||
+	single_row_predictor_pred_early_stop_margin[predict_type] != config.pred_early_stop_margin ||
+	single_row_predictor_iter_[predict_type] != num_iteration) {
+      single_row_predictor_iter_[predict_type] = num_iteration;
+      single_row_predictor_pred_early_stop[predict_type] = config.pred_early_stop;
+      single_row_predictor_pred_early_stop_freq[predict_type] = config.pred_early_stop_freq;
+      single_row_predictor_pred_early_stop_margin[predict_type] = config.pred_early_stop_margin;
       bool is_predict_leaf = false;
       bool is_raw_score = false;
       bool predict_contrib = false;
@@ -221,17 +230,17 @@ class Booster {
       }
 
       // TODO(eisber): config could be optimized away... (maybe using lambda callback?)
-      single_row_predictor_.reset(new Predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+      single_row_predictor_[predict_type].reset(new Predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                                                 config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
-      single_row_num_pred_in_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, predict_contrib);
-      single_row_predict_function_ = single_row_predictor_->GetPredictFunction();
+      single_row_num_pred_in_one_row_[predict_type] = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, predict_contrib);
+      single_row_predict_function_[predict_type] = single_row_predictor_[predict_type]->GetPredictFunction();
     }
 
     auto one_row = get_row_fun(0);
     auto pred_wrt_ptr = out_result;
-    single_row_predict_function_(one_row, pred_wrt_ptr);
+    single_row_predict_function_[predict_type](one_row, pred_wrt_ptr);
 
-    *out_len = single_row_num_pred_in_one_row_;
+    *out_len = single_row_num_pred_in_one_row_[predict_type];
   }
 
 
@@ -364,9 +373,13 @@ class Booster {
  private:
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
-  std::unique_ptr<Predictor> single_row_predictor_;
-  PredictFunction single_row_predict_function_;
-  int64_t single_row_num_pred_in_one_row_;
+  std::unique_ptr<Predictor> single_row_predictor_[PREDICTOR_TYPES];
+  bool single_row_predictor_pred_early_stop[PREDICTOR_TYPES];
+  int single_row_predictor_pred_early_stop_freq[PREDICTOR_TYPES];
+  double single_row_predictor_pred_early_stop_margin[PREDICTOR_TYPES];
+  int single_row_predictor_iter_[PREDICTOR_TYPES];
+  PredictFunction single_row_predict_function_[PREDICTOR_TYPES];
+  int64_t single_row_num_pred_in_one_row_[PREDICTOR_TYPES];
 
   /*! \brief All configs */
   Config config_;
