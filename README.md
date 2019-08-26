@@ -84,7 +84,7 @@ ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
 SHAP (model output explainer): https://github.com/slundberg/shap
 
-MMLSpark (Spark-package): https://github.com/Azure/mmlspark
+MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
 
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
