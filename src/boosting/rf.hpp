@@ -81,7 +81,7 @@ class RF : public GBDT {
 
   void Boosting() override {
     if (objective_function_ == nullptr) {
-      Log::Fatal("No object function provided");
+      Log::Fatal("RF mode do not support custom objective function, please use built-in objectives.");
     }
     init_scores_.resize(num_tree_per_iteration_, 0.0);
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {

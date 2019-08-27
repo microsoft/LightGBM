@@ -76,6 +76,6 @@ test_that("training continuation works", {
 test_that("cv works", {
   dtrain <- lgb.Dataset(train$data, label=train$label)
   params <- list(objective="regression", metric="l2,l1")
-  bst <- lgb.cv(params, dtrain, 10, nflod=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
+  bst <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
   expect_false(is.null(bst$record_evals))
 })
