@@ -719,6 +719,32 @@ class TestEngine(unittest.TestCase):
         self.assertListEqual(gbm6.pandas_categorical, cat_values)
         self.assertListEqual(gbm7.pandas_categorical, cat_values)
 
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_pandas_sparse(self):
+        import pandas as pd
+        X = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                          "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                          "C": pd.SparseArray(np.random.permutation([True, False] * 150))})
+        y = pd.Series(pd.SparseArray(np.random.permutation([0, 1] * 150)))
+        X_test = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 2] * 30)),
+                               "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                               "C": pd.SparseArray(np.random.permutation([True, False] * 30))})
+        if pd.__version__ >= '0.24.0':
+            for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
+                self.assertTrue(pd.api.types.is_sparse(dtype))
+        params = {
+            'objective': 'binary',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X, y)
+        gbm = lgb.train(params, lgb_train, num_boost_round=10)
+        pred_sparse = gbm.predict(X_test, raw_score=True)
+        if hasattr(X_test, 'sparse'):
+            pred_dense = gbm.predict(X_test.sparse.to_dense(), raw_score=True)
+        else:
+            pred_dense = gbm.predict(X_test.to_dense(), raw_score=True)
+        np.testing.assert_allclose(pred_sparse, pred_dense)
+
     def test_reference_chain(self):
         X = np.random.normal(size=(100, 2))
         y = np.random.normal(size=100)
@@ -900,6 +926,26 @@ class TestEngine(unittest.TestCase):
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
         self.assertEqual(len(np.unique(est.predict(X))), 3)
+
+    def test_small_max_bin(self):
+        np.random.seed(0)
+        y = np.random.choice([0, 1], 100)
+        x = np.zeros((100, 1))
+        x[:30, 0] = -1
+        x[30:60, 0] = 1
+        x[60:, 0] = 2
+        params = {'objective': 'binary',
+                  'seed': 0,
+                  'min_data_in_leaf': 1,
+                  'verbose': -1,
+                  'max_bin': 2}
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=5)
+        x[0, 0] = np.nan
+        params['max_bin'] = 3
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=5)
+        np.random.seed()  # reset seed
 
     def test_refit(self):
         X, y = load_breast_cancer(True)

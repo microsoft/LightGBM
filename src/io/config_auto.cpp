@@ -264,6 +264,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "poisson_max_delta_step",
   "tweedie_variance_power",
   "max_position",
+  "lambdamart_norm",
   "label_gain",
   "metric",
   "metric_freq",
@@ -530,6 +531,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "max_position", &max_position);
   CHECK(max_position >0);
 
+  GetBool(params, "lambdamart_norm", &lambdamart_norm);
+
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
@@ -661,6 +664,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[poisson_max_delta_step: " << poisson_max_delta_step << "]\n";
   str_buf << "[tweedie_variance_power: " << tweedie_variance_power << "]\n";
   str_buf << "[max_position: " << max_position << "]\n";
+  str_buf << "[lambdamart_norm: " << lambdamart_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";

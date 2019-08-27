@@ -663,7 +663,9 @@ inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& dat
 }
 
 inline static double AvoidInf(double x) {
-  if (x >= 1e300) {
+  if (std::isnan(x)) {
+    return 0.0;
+  } else if (x >= 1e300) {
     return 1e300;
   } else if (x <= -1e300) {
     return -1e300;
@@ -673,7 +675,9 @@ inline static double AvoidInf(double x) {
 }
 
 inline static float AvoidInf(float x) {
-  if (x >= 1e38) {
+  if (std::isnan(x)){
+    return 0.0f;
+  } else if (x >= 1e38) {
     return 1e38f;
   } else if (x <= -1e38) {
     return -1e38f;
