@@ -99,14 +99,10 @@ def record_evaluation(eval_result):
     def _callback(env):
         if not eval_result:
             _init(env)
-        processed_metric = collections.defaultdict(list)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
-            if eval_name in processed_metric[data_name]:
-                continue
             if eval_name not in eval_result[data_name].keys():
                 eval_result[data_name][eval_name] = []
             eval_result[data_name][eval_name].append(result)
-            processed_metric[data_name].append(eval_name)
     _callback.order = 20
     return _callback
 
@@ -221,9 +217,12 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         if not enabled[0]:
             return
         for i in range_(len(env.evaluation_result_list)):
-            metric_key = env.evaluation_result_list[i][1]
-            if env.evaluation_result_list[i][0] == "cv_agg" and metric_key.split(" ")[0] == "train":
+            if env.evaluation_result_list[i][0] == "cv_agg" and \
+               env.evaluation_result_list[i][1].split(" ")[0] == "train":
                 # train data for lgb.cv
+                continue
+            elif env.evaluation_result_list[i][0] == env.model._train_data_name:
+                # train data for sklearn wrapper
                 continue
             score = env.evaluation_result_list[i][2]
             if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
@@ -235,14 +234,14 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     print('Early stopping, best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print("Evaluated only: {}".format(metric_key))
+                        print("Evaluated only: {}".format(env.evaluation_result_list[i][1]))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             if env.iteration == env.end_iteration - 1:
                 if verbose:
                     print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print("Evaluated only: {}".format(metric_key))
+                        print("Evaluated only: {}".format(env.evaluation_result_list[i][1]))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             if first_metric_only:
                 break

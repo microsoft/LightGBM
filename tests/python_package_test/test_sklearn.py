@@ -645,15 +645,14 @@ class TestSklearn(unittest.TestCase):
                     expected = assumed_iteration + (params_fit['early_stopping_rounds']
                                                     if eval_set_name != 'training' else 0)
                     self.assertEqual(actual, expected)
-                    #self.assertEqual(assumed_iteration if eval_set_name != 'training' else 0, gbm.best_iteration_)
-                    self.assertEqual(assumed_iteration, gbm.best_iteration_)
+                    self.assertEqual(assumed_iteration if eval_set_name != 'training' else 0, gbm.best_iteration_)
 
         # training data as eval_set
         params_fit['eval_set'] = (X_train, y_train)
         fit_and_check(['training'], ['l2'], 30, False)
         fit_and_check(['training'], ['l2'], 30, True)
 
-        # # single eval_set
+        # single eval_set
         iter_1 = 2
         iter_2 = 8
         params_fit['eval_set'] = (X_test, y_test)
@@ -688,8 +687,8 @@ class TestSklearn(unittest.TestCase):
         iter_l2_val1 = 23
         iter_l1_val0 = 4
         iter_l1_val1 = 23
-        iter_l2_min =  min([iter_l2_val0, iter_l2_val1])
-        iter_l1_min =  min([iter_l1_val0, iter_l1_val1])
+        iter_l2_min = min([iter_l2_val0, iter_l2_val1])
+        iter_l1_min = min([iter_l1_val0, iter_l1_val1])
         best_iter_min = min([iter_l2_val0, iter_l2_val1, iter_l1_val0, iter_l1_val1])
         params_fit['eval_set'] = [(X_test1, y_test1), (X_test2, y_test2)]
         fit_and_check(['valid_0', 'valid_1'], ['l2'], iter_l2_val0, True)
