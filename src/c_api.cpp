@@ -72,7 +72,7 @@ class SingleRowPredictor {
     early_stop_margin_ = config.pred_early_stop_margin;
     iter_ = iter;
     predictor_.reset(new Predictor(&boosting, iter_, is_raw_score, is_predict_leaf, predict_contrib,
-				   early_stop_, early_stop_freq_, early_stop_margin_));
+                                   early_stop_, early_stop_freq_, early_stop_margin_));
     num_pred_in_one_row = boosting.NumPredictOneRow(iter_, is_predict_leaf, predict_contrib);
     predict_function = predictor_->GetPredictFunction();
     num_total_model_ = boosting.NumberOfTotalModel();
@@ -255,9 +255,9 @@ class Booster {
                double* out_result, int64_t* out_len) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (single_row_predictor_[predict_type].get() == nullptr ||
-	!single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, *boosting_.get())) {
+        !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, *boosting_.get())) {
       single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, *boosting_.get(),
-								       config, num_iteration));
+                                                                       config, num_iteration));
     }
 
     auto one_row = get_row_fun(0);
