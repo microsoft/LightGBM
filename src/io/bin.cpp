@@ -181,6 +181,9 @@ namespace LightGBM {
       int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - cnt_zero) * (max_bin - 1));
       left_max_bin = std::max(1, left_max_bin);
       bin_upper_bound = GreedyFindBin(distinct_values, counts, left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
+      if (bin_upper_bound.size() > 0) {
+        bin_upper_bound.back() = -kZeroThreshold;
+      }
     }
 
     int right_start = -1;
@@ -191,27 +194,11 @@ namespace LightGBM {
       }
     }
 
-    if (bin_upper_bound.size() == 0) {
-      if (max_bin > 2) {
-        // create zero bin
-        bin_upper_bound.push_back(-kZeroThreshold);
-        bin_upper_bound.push_back(kZeroThreshold);
-      }
-      else if (max_bin > 1) {
-        bin_upper_bound.push_back(kZeroThreshold);
-      }
-    } else {
-      bin_upper_bound.back() = -kZeroThreshold;
-      if (max_bin > 2) {
-        // create zero bin
-        bin_upper_bound.push_back(kZeroThreshold);
-      }
-    }
-
-    int right_max_bin = max_bin - static_cast<int>(bin_upper_bound.size());
-    if ((right_start >= 0) && (right_max_bin > 0)) {
+    int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound.size());
+    if (right_start >= 0 && right_max_bin > 0) {
       auto right_bounds = GreedyFindBin(distinct_values + right_start, counts + right_start,
         num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
+      bin_upper_bound.push_back(kZeroThreshold);
       bin_upper_bound.insert(bin_upper_bound.end(), right_bounds.begin(), right_bounds.end());
     } else {
       bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
