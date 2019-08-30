@@ -217,13 +217,10 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         if not enabled[0]:
             return
         for i in range_(len(env.evaluation_result_list)):
-            if env.evaluation_result_list[i][0] == "cv_agg" and \
-               env.evaluation_result_list[i][1].split(" ")[0] == "train":
-                # train data for lgb.cv
-                continue
-            elif env.evaluation_result_list[i][0] == env.model._train_data_name:
-                # train data for sklearn wrapper
-                continue
+            if (((env.evaluation_result_list[i][0] == "cv_agg"
+                  and env.evaluation_result_list[i][1].split(" ")[0] == "train")
+                 or env.evaluation_result_list[i][0] == env.model._train_data_name)):
+                continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             score = env.evaluation_result_list[i][2]
             if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
