@@ -1614,9 +1614,6 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
         params['feature_fraction'] = 0.5
         gbm2 = lgb.train(params, lgb_train,
-                         num_boost_round=25,
-                         valid_sets=lgb_eval,
-                         verbose_eval=False,
-                         evals_result=evals_result)
+                         num_boost_round=25)
         ret2 = log_loss(y_test, gbm2.predict(X_test))
         self.assertNotEqual(ret, ret2)
