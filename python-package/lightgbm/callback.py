@@ -89,7 +89,7 @@ def record_evaluation(eval_result):
         The callback that records the evaluation history into the passed dictionary.
     """
     if not isinstance(eval_result, dict):
-        raise TypeError('Eval_result should be a dictionary')
+        raise TypeError('eval_result should be a dictionary')
     eval_result.clear()
 
     def _init(env):
@@ -135,7 +135,7 @@ def reset_parameter(**kwargs):
             if key in ['num_class', 'num_classes',
                        'boosting', 'boost', 'boosting_type',
                        'metric', 'metrics', 'metric_types']:
-                raise RuntimeError("cannot reset {} during training".format(repr(key)))
+                raise RuntimeError("Cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
                     raise ValueError("Length of list {} has to equal to 'num_boost_round'."
@@ -199,7 +199,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                              'at least one dataset and eval metric is required for evaluation')
 
         if verbose:
-            msg = "Training until validation scores don't improve for {} rounds."
+            msg = "Training until validation scores don't improve for {} rounds"
             print(msg.format(stopping_rounds))
 
         for eval_ret in env.evaluation_result_list:
