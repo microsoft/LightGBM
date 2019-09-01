@@ -221,11 +221,12 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         if not enabled[0]:
             return
         for i in range_(len(env.evaluation_result_list)):
+            # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
+            eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
             if first_metric_only:
-                if first_metic[0] != env.evaluation_result_list[i][1].split(" ")[-1]:
+                if first_metic[0] != eval_name_splitted[-1]:
                     continue  # use only the first metric for early stopping
-            if (((env.evaluation_result_list[i][0] == "cv_agg"
-                  and env.evaluation_result_list[i][1].split(" ")[0] == "train")
+            if ((env.evaluation_result_list[i][0] == "cv_agg" and eval_name_splitted[0] == "train"
                  or env.evaluation_result_list[i][0] == env.model._train_data_name)):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             score = env.evaluation_result_list[i][2]
