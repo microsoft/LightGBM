@@ -185,6 +185,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     best_score_list = []
     cmp_op = []
     enabled = [True]
+    first_metic = ['']
 
     def _init(env):
         enabled[0] = not any((boost_alias in env.params
@@ -202,6 +203,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             msg = "Training until validation scores don't improve for {} rounds"
             print(msg.format(stopping_rounds))
 
+        # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
+        first_metic = [env.evaluation_result_list[0][1].split(" ")[-1]]
         for eval_ret in env.evaluation_result_list:
             best_iter.append(0)
             best_score_list.append(None)
@@ -219,14 +222,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             return
         for i in range_(len(env.evaluation_result_list)):
             if first_metric_only:
-                # If metric format consists of "<dataset type> <metric>" (e.g. "train l1") , then split and get the metric.
-                first_metic = env.evaluation_result_list[0][1]
-                target_metric = env.evaluation_result_list[i][1]
-                first_metic = first_metic.split(" ")[-1] if first_metic.find(" ") != -1 else first_metic
-                target_metric = target_metric.split(" ")[-1] if target_metric.find(" ") != -1 else target_metric
-                if first_metic != target_metric:
-                    # Only use first metric for early stopping.
-                    continue
+                if first_metic[0] != env.evaluation_result_list[i][1].split(" ")[-1]:
+                    continue  # use only the first metric for early stopping
             if (((env.evaluation_result_list[i][0] == "cv_agg"
                   and env.evaluation_result_list[i][1].split(" ")[0] == "train")
                  or env.evaluation_result_list[i][0] == env.model._train_data_name)):
