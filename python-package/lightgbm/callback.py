@@ -101,8 +101,6 @@ def record_evaluation(eval_result):
         if not eval_result:
             _init(env)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
-            if eval_name not in eval_result[data_name].keys():
-                eval_result[data_name][eval_name] = []
             eval_result[data_name][eval_name].append(result)
     _callback.order = 20
     return _callback
