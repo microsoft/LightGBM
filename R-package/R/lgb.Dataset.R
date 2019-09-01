@@ -1,4 +1,3 @@
-
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 Dataset <- R6::R6Class(
@@ -1057,7 +1056,6 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @return passed dataset
 #'
 #' @examples
-#'
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
