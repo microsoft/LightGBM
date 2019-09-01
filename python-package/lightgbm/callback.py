@@ -93,8 +93,9 @@ def record_evaluation(eval_result):
     eval_result.clear()
 
     def _init(env):
-        for data_name, _, _, _ in env.evaluation_result_list:
+        for data_name, eval_name, _, _ in env.evaluation_result_list:
             eval_result.setdefault(data_name, collections.OrderedDict())
+            eval_result[data_name].setdefault(eval_name, [])
 
     def _callback(env):
         if not eval_result:
