@@ -499,10 +499,8 @@ class TestEngine(unittest.TestCase):
                         evals_result=evals_result,
                         init_model=init_gbm)
         ret = mean_absolute_error(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 3.5)
+        self.assertLess(ret, 2.5)
         self.assertAlmostEqual(evals_result['valid_0']['l1'][-1], ret, places=5)
-        for l1, mae in zip(evals_result['valid_0']['l1'], evals_result['valid_0']['mae']):
-            self.assertAlmostEqual(l1, mae, places=5)
 
     def test_continue_train_multiclass(self):
         X, y = load_iris(True)
