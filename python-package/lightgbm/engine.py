@@ -368,8 +368,7 @@ def _agg_cv_result(raw_results, eval_train_metric=False):
             else:
                 key = one_line[1]
             metric_type[key] = one_line[3]
-            if key not in cvmap.keys():
-                cvmap[key] = []
+            cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
