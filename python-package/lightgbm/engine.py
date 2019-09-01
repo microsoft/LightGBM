@@ -269,10 +269,8 @@ def train(params, train_set, num_boost_round=100,
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
-    booster.best_score = collections.OrderedDict()
+    booster.best_score = collections.defaultdict(OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
-        if dataset_name not in booster.best_score.keys():
-            booster.best_score[dataset_name] = collections.OrderedDict()
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
         booster.model_from_string(booster.model_to_string(), False).free_dataset()
