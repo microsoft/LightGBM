@@ -183,7 +183,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     best_score_list = []
     cmp_op = []
     enabled = [True]
-    first_metic = ['']
+    first_metric = ['']
 
     def _init(env):
         enabled[0] = not any((boost_alias in env.params
@@ -202,7 +202,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             print(msg.format(stopping_rounds))
 
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
-        first_metic = [env.evaluation_result_list[0][1].split(" ")[-1]]
+        first_metric[0] = env.evaluation_result_list[0][1].split(" ")[-1]
         for eval_ret in env.evaluation_result_list:
             best_iter.append(0)
             best_score_list.append(None)
@@ -221,9 +221,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         for i in range_(len(env.evaluation_result_list)):
             # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
             eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
-            if first_metric_only:
-                if first_metic[0] != eval_name_splitted[-1]:
-                    continue  # use only the first metric for early stopping
+            if first_metric_only and first_metric[0] != eval_name_splitted[-1]:
+                continue  # use only the first metric for early stopping
             if ((env.evaluation_result_list[i][0] == "cv_agg" and eval_name_splitted[0] == "train"
                  or env.evaluation_result_list[i][0] == env.model._train_data_name)):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
