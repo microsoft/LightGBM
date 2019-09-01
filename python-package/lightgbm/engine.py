@@ -546,6 +546,8 @@ def cv(params, train_set, num_boost_round=100,
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
     if early_stopping_rounds is not None:
+        if first_metric_only and feval is not None:
+            raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
