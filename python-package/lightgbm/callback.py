@@ -217,13 +217,19 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         if not enabled[0]:
             return
         for i in range_(len(env.evaluation_result_list)):
-            if env.evaluation_result_list[i][0] == "cv_agg" and \
-               env.evaluation_result_list[i][1].split(" ")[0] == "train":
-                # train data for lgb.cv
-                continue
-            elif env.evaluation_result_list[i][0] == env.model._train_data_name:
-                # train data for sklearn wrapper
-                continue
+            if first_metric_only:
+                # If metric format consists of "<dataset type> <metric>" (e.g. "train l1") , then split and get the metric.
+                first_metic = env.evaluation_result_list[0][1]
+                target_metric = env.evaluation_result_list[i][1]
+                first_metic = first_metic.split(" ")[-1] if first_metic.find(" ") != -1 else first_metic
+                target_metric = target_metric.split(" ")[-1] if target_metric.find(" ") != -1 else target_metric
+                if first_metic != target_metric:
+                    # Only use first metric for early stopping.
+                    continue
+            if (((env.evaluation_result_list[i][0] == "cv_agg"
+                  and env.evaluation_result_list[i][1].split(" ")[0] == "train")
+                 or env.evaluation_result_list[i][0] == env.model._train_data_name)):
+                continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             score = env.evaluation_result_list[i][2]
             if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
@@ -243,8 +249,6 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     if first_metric_only:
                         print("Evaluated only: {}".format(env.evaluation_result_list[i][1]))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
-            if first_metric_only:
-                break
     _callback.order = 30
     _callback.first_metric_only = first_metric_only
     return _callback
