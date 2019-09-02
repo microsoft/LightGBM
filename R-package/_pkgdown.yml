@@ -6,6 +6,9 @@ site:
   root: ''
   title: LightGBM, Light Gradient Boosting Machine
 
+development:
+  mode: unreleased
+
 authors:
   Guolin Ke:
     href: https://github.com/guolinke
