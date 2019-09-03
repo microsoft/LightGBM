@@ -635,9 +635,9 @@ Dataset <- R6::R6Class(
   )
 )
 
-#' Construct lgb.Dataset object
+#' Construct \code{lgb.Dataset} object
 #'
-#' Construct lgb.Dataset object from dense matrix, sparse matrix
+#' Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
 #' or local file (that was created previously by saving an \code{lgb.Dataset}).
 #'
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
@@ -646,7 +646,7 @@ Dataset <- R6::R6Class(
 #' @param colnames names of columns
 #' @param categorical_feature categorical features
 #' @param free_raw_data TRUE for need to free raw data after construct
-#' @param info a list of information of the lgb.Dataset object
+#' @param info a list of information of the \code{lgb.Dataset} object
 #' @param ... other information to pass to \code{info} or parameters pass to \code{params}
 #'
 #' @return constructed dataset
@@ -690,7 +690,7 @@ lgb.Dataset <- function(data,
 #'
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
-#' @param info a list of information of the lgb.Dataset object
+#' @param info a list of information of the \code{lgb.Dataset} object
 #' @param ... other information to pass to \code{info}.
 #'
 #' @return constructed dataset
@@ -741,7 +741,7 @@ lgb.Dataset.construct <- function(dataset) {
 
 }
 
-#' Dimensions of an lgb.Dataset
+#' Dimensions of an \code{lgb.Dataset}
 #'
 #' Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 #' @param x Object of class \code{lgb.Dataset}
@@ -852,9 +852,9 @@ dimnames.lgb.Dataset <- function(x) {
 #' Slice a dataset
 #'
 #' Get a new \code{lgb.Dataset} containing the specified rows of
-#' original lgb.Dataset object
+#' original \code{lgb.Dataset} object
 #'
-#' @param dataset Object of class "lgb.Dataset"
+#' @param dataset Object of class \code{lgb.Dataset}
 #' @param idxset a integer vector of indices of rows needed
 #' @param ... other parameters (currently not used)
 #' @return constructed sub dataset
@@ -888,7 +888,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
 }
 
-#' Get information of an lgb.Dataset object
+#' Get information of an \code{lgb.Dataset} object
 #'
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the information field to get (see details)
@@ -901,8 +901,8 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' \itemize{
 #'     \item \code{label}: label lightgbm learn from ;
 #'     \item \code{weight}: to do a weight rescale ;
-#'     \item \code{group}: group size
-#'     \item \code{init_score}: initial score is the base prediction lightgbm will boost from ;
+#'     \item \code{group}: group size ;
+#'     \item \code{init_score}: initial score is the base prediction lightgbm will boost from.
 #' }
 #'
 #' @examples
@@ -937,9 +937,9 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
 }
 
-#' Set information of an lgb.Dataset object
+#' Set information of an \code{lgb.Dataset} object
 #'
-#' @param dataset Object of class "lgb.Dataset"
+#' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the field to get
 #' @param info the specific field of information to set
 #' @param ... other parameters
