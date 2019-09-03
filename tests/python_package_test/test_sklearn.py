@@ -1,6 +1,7 @@
 # coding: utf-8
 # pylint: skip-file
 import itertools
+import joblib
 import math
 import os
 import unittest
@@ -12,7 +13,6 @@ from sklearn.base import clone
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.exceptions import SkipTestWarning
-from sklearn.externals import joblib
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
