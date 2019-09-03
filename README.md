@@ -92,6 +92,8 @@ LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
 Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
 
+Ruby gem: https://github.com/ankane/lightgbm
+
 Support
 -------
 
