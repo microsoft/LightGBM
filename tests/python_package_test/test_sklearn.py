@@ -619,13 +619,6 @@ class TestSklearn(unittest.TestCase):
 
     def test_first_metric_only(self):
 
-        def iteration_pre_calculation(metric, valid_data):
-            params['first_metric_only'] = True
-            params_fit['eval_metric'] = metric
-            params_fit['eval_set'] = valid_data
-            gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-            return gbm.best_iteration_
-
         def fit_and_check(eval_set_names, metric_names, assumed_iteration, first_metric_only):
             params['first_metric_only'] = first_metric_only
             gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
@@ -643,11 +636,11 @@ class TestSklearn(unittest.TestCase):
                     self.assertEqual(assumed_iteration if eval_set_name != 'training' else 0, gbm.best_iteration_)
 
         X, y = load_boston(True)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=43)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=72)
-        params = {'n_estimators': 100,
-                  'learning_rate': 0.2,
-                  'num_leaves': 10,
+        params = {'n_estimators': 30,
+                  'learning_rate': 0.8,
+                  'num_leaves': 15,
                   'verbose': -1,
                   'seed': 123}
         params_fit = {'X': X_train,
@@ -655,76 +648,60 @@ class TestSklearn(unittest.TestCase):
                       'early_stopping_rounds': 5,
                       'verbose': False}
 
-        iter_valid_l1 = iteration_pre_calculation(["l1"], (X_test, y_test))
-        iter_valid_l2 = iteration_pre_calculation(["l2"], (X_test, y_test))
-        iter_valid0_l1 = iteration_pre_calculation(["l1"], (X_test1, y_test1))
-        iter_valid0_l2 = iteration_pre_calculation(["l2"], (X_test1, y_test1))
-        iter_valid1_l1 = iteration_pre_calculation(["l1"], (X_test2, y_test2))
-        iter_valid1_l2 = iteration_pre_calculation(["l2"], (X_test2, y_test2))
-        assumed_iter = [iter_valid_l1, iter_valid_l2, iter_valid0_l1, iter_valid0_l2, iter_valid1_l1, iter_valid1_l2]
-        assert len(np.unique(assumed_iter)) == 6, assumed_iter
-        iter_min_l1 = np.min([iter_valid0_l1, iter_valid1_l1])
-        iter_min_l2 = np.min([iter_valid0_l2, iter_valid1_l2])
+        iter_valid1_l1 = 3
+        iter_valid1_l2 = 18
+        iter_valid2_l1 = 11
+        iter_valid2_l2 = 7
+        self.assertEqual(len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])), 4)
+        iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
+        iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
+        iter_min = min([iter_min_l1, iter_min_l2])
+        iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
 
         # training data as eval_set
         params_fit['eval_set'] = (X_train, y_train)
-        fit_and_check(['training'], ['l2'], params['n_estimators'], False)
-        fit_and_check(['training'], ['l2'], params['n_estimators'], True)
+        fit_and_check(['training'], ['l2'], 30, False)
+        fit_and_check(['training'], ['l2'], 30, True)
 
         # single eval_set
-        params_fit['eval_set'] = (X_test, y_test)
-        fit_and_check(['valid_0'], ['l2'], iter_valid_l2, False)
-        fit_and_check(['valid_0'], ['l2'], iter_valid_l2, True)
+        params_fit['eval_set'] = (X_test1, y_test1)
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, False)
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, True)
 
         params_fit['eval_metric'] = "l2"
-        fit_and_check(['valid_0'], ['l2'], iter_valid_l2, False)
-        fit_and_check(['valid_0'], ['l2'], iter_valid_l2, True)
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, False)
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, True)
+
         params_fit['eval_metric'] = "l1"
-        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid_l1, False)
-        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid_l1, True)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_min_valid1, False)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid1_l1, True)
 
         params_fit['eval_metric'] = ["l1", "l2"]
-        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid_l1, False)
-        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid_l1, True)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_min_valid1, False)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid1_l1, True)
 
         params_fit['eval_metric'] = ["l2", "l1"]
-        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid_l1, False)
-        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid_l2, True)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_min_valid1, False)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid1_l2, True)
+
+        params_fit['eval_metric'] = ["l2", "regression", "mse"]  # test aliases
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, False)
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, True)
 
         # two eval_set
         params_fit['eval_set'] = [(X_test1, y_test1), (X_test2, y_test2)]
-        params_fit['eval_metric'] = "l2"
-        fit_and_check(['valid_0', 'valid_1'], ['l2'], iter_min_l2, True)
-        fit_and_check(['valid_0', 'valid_1'], ['l2'], iter_min_l2, False)
-
-        params_fit['eval_metric'] = "l1"
-        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, True)
-        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, False)
-
         params_fit['eval_metric'] = ["l1", "l2"]
         fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, True)
-        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, False)
-
         params_fit['eval_metric'] = ["l2", "l1"]
         fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l2, True)
-        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, False)
 
         params_fit['eval_set'] = [(X_test2, y_test2), (X_test1, y_test1)]
-        params_fit['eval_metric'] = "l2"
-        fit_and_check(['valid_0', 'valid_1'], ['l2'], iter_min_l2, False)
-        fit_and_check(['valid_0', 'valid_1'], ['l2'], iter_min_l2, True)
-
-        params_fit['eval_metric'] = "l1"
-        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, False)
-        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, True)
-
         params_fit['eval_metric'] = ["l1", "l2"]
+        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min, False)
         fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, True)
-        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, False)
-
         params_fit['eval_metric'] = ["l2", "l1"]
+        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min, False)
         fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l2, True)
-        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, False)
 
     def test_class_weight(self):
         X, y = load_digits(10, True)
