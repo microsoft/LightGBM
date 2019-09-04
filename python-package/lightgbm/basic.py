@@ -296,7 +296,9 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
                              + ', '.join(data.columns[bad_indices]))
-        data = data.values.astype('float')
+        data = data.values
+        if data.dtype != 'float':
+            data = data.astype('float')
     else:
         if feature_name == 'auto':
             feature_name = None
