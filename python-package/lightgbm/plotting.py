@@ -383,9 +383,11 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3, constraints=N
     def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
         if 'split_index' in root:  # non-leaf
-            l_dec, r_dec = 'yes', "no"
+            l_dec = 'yes'
+            r_dec = 'no'
             if root['decision_type'] == '<=':
-                operator = "&#8804;"
+                lte_symbol = "&#8804;"
+                operator = lte_symbol
             elif root['decision_type'] == '==':
                 operator = "="
             else:
@@ -523,10 +525,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     else:
         feature_names = None
 
-    if 'monotone_constraints' in model:
-        monotone_constraints = model['monotone_constraints']
-    else:
-        monotone_constraints = None
+    monotone_constraints = model.get('monotone_constraints', None)
 
     if tree_index < len(tree_infos):
         tree_info = tree_infos[tree_index]
