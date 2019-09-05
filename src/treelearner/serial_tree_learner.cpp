@@ -289,6 +289,18 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
       CHECK(inner_feature_index >= 0);
       ret[inner_feature_index] = 1;
     }
+  } else if(used_feature_indices_.size() <= 0) {
+    int used_feature_cnt = static_cast<int>(valid_feature_indices_.size() * config_->feature_fraction_bynode);
+    used_feature_cnt = std::max(used_feature_cnt, 1);
+    auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
+    int omp_loop_size = static_cast<int>(sampled_indices.size());
+    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
+    for (int i = 0; i < omp_loop_size; ++i) {
+      int used_feature = valid_feature_indices_[sampled_indices[i]];
+      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
+      CHECK(inner_feature_index >= 0);
+      ret[inner_feature_index] = 1;
+    }
   } else {
     int used_feature_cnt = static_cast<int>(used_feature_indices_.size() * config_->feature_fraction_bynode);
     used_feature_cnt = std::max(used_feature_cnt, 1);
