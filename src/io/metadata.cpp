@@ -60,7 +60,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
 
   label_ = std::vector<label_t>(num_used_indices);
   #pragma omp parallel for schedule(static)
-  for (data_size_t i = 0; i < num_used_indices; i++) {
+  for (data_size_t i = 0; i < num_used_indices; ++i) {
     label_[i] = fullset.label_[used_indices[i]];
   }
 
@@ -68,7 +68,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
     weights_ = std::vector<label_t>(num_used_indices);
     num_weights_ = num_used_indices;
     #pragma omp parallel for schedule(static)
-    for (data_size_t i = 0; i < num_used_indices; i++) {
+    for (data_size_t i = 0; i < num_used_indices; ++i) {
       weights_[i] = fullset.weights_[used_indices[i]];
     }
   } else {
@@ -83,7 +83,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
     for (int k = 0; k < num_class; ++k) {
       const size_t offset_dest = static_cast<size_t>(k) * num_data_;
       const size_t offset_src = static_cast<size_t>(k) * fullset.num_data_;
-      for (data_size_t i = 0; i < num_used_indices; i++) {
+      for (data_size_t i = 0; i < num_used_indices; ++i) {
         init_score_[offset_dest + i] = fullset.init_score_[offset_src + used_indices[i]];
       }
     }
