@@ -1,4 +1,4 @@
-#' saveRDS for lgb.Booster models
+#' saveRDS for \code{lgb.Booster} models
 #'
 #' Attempts to save a model using RDS. Has an additional parameter (\code{raw}) which decides whether to save the raw model or not.
 #'
