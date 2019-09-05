@@ -44,7 +44,7 @@ params <- list(
     , min_data_in_leaf = 1
     , min_sum_hessian_in_leaf = 1
 )
-model <- lgb.train(params, dtrain, 20)
+model <- lgb.train(params, dtrain, 10)
 
 tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 
