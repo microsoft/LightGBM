@@ -80,10 +80,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     elif isinstance(data, Series):
         if _get_bad_pandas_dtypes([data.dtypes]):
             raise ValueError('Series.dtypes must be int, float or bool')
-        if hasattr(data.values, 'values'):  # SparseArray
-            return data.values.values.astype(dtype, copy=False)
-        else:
-            return data.values.astype(dtype, copy=False)
+        return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
     else:
         raise TypeError("Wrong type({0}) for {1}.\n"
                         "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
