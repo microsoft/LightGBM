@@ -80,7 +80,10 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     elif isinstance(data, Series):
         if _get_bad_pandas_dtypes([data.dtypes]):
             raise ValueError('Series.dtypes must be int, float or bool')
-        return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
+        if data.dtype == np.float32 or data.dtype == np.float64:
+            return np.array(data, dtype=data.dtype, copy=False)
+        else:
+            return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
     else:
         raise TypeError("Wrong type({0}) for {1}.\n"
                         "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
@@ -310,7 +313,7 @@ def _label_from_pandas(label):
             raise ValueError('DataFrame for label cannot have multiple columns')
         if _get_bad_pandas_dtypes(label.dtypes):
             raise ValueError('DataFrame.dtypes for label must be int, float or bool')
-        label = label.values.flatten()
+        label = np.ravel(label.values)
         if label.dtype != np.float32 and label.dtype != np.float64:
             label = label.astype(np.float32)
     return label
