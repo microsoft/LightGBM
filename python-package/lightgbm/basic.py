@@ -491,7 +491,7 @@ class _InnerPredictor(object):
             preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
         elif isinstance(data, list):
             try:
-                data = np.array(data, copy=False)
+                data = np.array(data)
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
             preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
