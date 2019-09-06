@@ -2509,7 +2509,7 @@ class Booster(object):
             ctypes.c_int(importance_type_int),
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if importance_type_int == 0:
-            return result.astype(int)
+            return result.astype(np.int32)
         else:
             return result
 
