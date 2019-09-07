@@ -1173,7 +1173,7 @@ class Dataset(object):
         elif data.dtype == np.int32:
             ptr_data, type_data, _ = c_int_array(data)
         else:
-            raise TypeError("Excepted np.float32/64 or np.int32, meet type({})".format(data.dtype))
+            raise TypeError("Expected np.float32/64 or np.int32, met type({})".format(data.dtype))
         if type_data != FIELD_TYPE_MAPPER[field_name]:
             raise TypeError("Input type error for set_field")
         _safe_call(_LIB.LGBM_DatasetSetField(
