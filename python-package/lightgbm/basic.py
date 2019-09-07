@@ -202,7 +202,7 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
 
 def convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
-    if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
+    if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
             warnings.warn("Usage of np.ndarray subset (sliced data) is not recommended "
                           "due to it will double the peak memory cost in LightGBM.")
