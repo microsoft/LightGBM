@@ -16,6 +16,7 @@ env:
     - TASK=regular PYTHON_VERSION=3.6
     - TASK=sdist PYTHON_VERSION=2.7
     - TASK=bdist
+    - TASK=if-else
     - TASK=pylint
     - TASK=check-docs
     - TASK=mpi METHOD=source
