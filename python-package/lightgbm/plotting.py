@@ -440,7 +440,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3, constraints=N
     if "internal_count" in tree_info['tree_structure']:
         add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
     else:
-        raise Exception("Cannnot plot trees with no split")
+        raise Exception("Cannot plot trees with no split")
 
     if constraints:
         # "#ddffdd" is light green, "#ffdddd" is light red
