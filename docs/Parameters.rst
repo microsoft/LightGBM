@@ -659,6 +659,8 @@ IO Parameters
 
    -  **Note**: all negative values will be treated as **missing values**
 
+   -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
+
 -  ``predict_raw_score`` :raw-html:`<a id="predict_raw_score" title="Permalink to this parameter" href="#predict_raw_score">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
 
    -  used only in ``prediction`` task

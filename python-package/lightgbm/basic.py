@@ -698,6 +698,7 @@ class Dataset(object):
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
+            The output cannot be monotonically constrained with respect to a categorical feature.
         params : dict or None, optional (default=None)
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)

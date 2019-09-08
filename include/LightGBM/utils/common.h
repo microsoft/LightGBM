@@ -162,6 +162,31 @@ inline static const char* Atoi(const char* p, T* out) {
   return p;
 }
 
+template <typename T>
+inline void SplitToIntLike(const char *c_str, char delimiter,
+                           std::vector<T> &ret) {
+  CHECK(ret.empty());
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = 0;
+  while (pos < str.length()) {
+    if (str[pos] == delimiter) {
+      if (i < pos) {
+        ret.push_back({});
+        Atoi(str.substr(i, pos - i).c_str(), &ret.back());
+      }
+      ++pos;
+      i = pos;
+    } else {
+      ++pos;
+    }
+  }
+  if (i < pos) {
+    ret.push_back({});
+    Atoi(str.substr(i).c_str(), &ret.back());
+  }
+}
+
 template<typename T>
 inline static double Pow(T base, int power) {
   if (power < 0) {
@@ -547,6 +572,21 @@ inline static std::string Join(const std::vector<T>& strs, const char* delimiter
   for (size_t i = 1; i < strs.size(); ++i) {
     str_buf << delimiter;
     str_buf << strs[i];
+  }
+  return str_buf.str();
+}
+
+template<>
+inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter) {
+  if (strs.empty()) {
+    return std::string("");
+  }
+  std::stringstream str_buf;
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  str_buf << static_cast<int16_t>(strs[0]);
+  for (size_t i = 1; i < strs.size(); ++i) {
+    str_buf << delimiter;
+    str_buf << static_cast<int16_t>(strs[i]);
   }
   return str_buf.str();
 }
