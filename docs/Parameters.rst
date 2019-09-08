@@ -264,13 +264,13 @@ Learning Control Parameters
 
 -  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature_bynode``, ``colsample_bynode``, constraints: ``0.0 < feature_fraction_bynode <= 1.0``
 
-   -  LightGBM will randomly select part of features on each tree node if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node.
+   -  LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node.
 
    -  can be used to deal with over-fitting
 
    -  **Note**: unlike ``feature_fraction``, this cannot speed up training
 
-   -  **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than 1.0, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
+   -  **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
 
 -  ``feature_fraction_seed`` :raw-html:`<a id="feature_fraction_seed" title="Permalink to this parameter" href="#feature_fraction_seed">&#x1F517;&#xFE0E;</a>`, default = ``2``, type = int
 
