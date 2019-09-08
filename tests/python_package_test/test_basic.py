@@ -299,8 +299,7 @@ class TestBasic(unittest.TestCase):
             self.assertFalse(np.isinf(data.init_score[1]))
             self.assertTrue(np.all(np.isclose([data.label[0], data.weight[0], data.init_score[0]],
                                               data.label[0])))
-            self.assertTrue(np.all(np.isclose([data.label[1], data.weight[1], data.init_score[1]],
-                                              data.label[1])))
+            self.assertAlmostEqual(data.label[1], data.weight[1])
 
         X, y = load_breast_cancer(True)
         sequence = np.ones(y.shape[0])
