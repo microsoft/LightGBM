@@ -279,10 +279,10 @@ struct Config {
   // alias = sub_feature_bynode, colsample_bynode
   // check = >0.0
   // check = <=1.0
-  // desc = LightGBM will randomly select part of features on each tree node if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node.
+  // desc = LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node.
   // desc = can be used to deal with over-fitting
   // desc = **Note**: unlike ``feature_fraction``, this cannot speed up training
-  // desc = **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than 1.0, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
+  // desc = **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
   double feature_fraction_bynode = 1.0;
 
   // desc = random seed for ``feature_fraction``
