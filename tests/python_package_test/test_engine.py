@@ -1504,14 +1504,12 @@ class TestEngine(unittest.TestCase):
         self.assertRaises(lgb.basic.LightGBMError, gbm.get_split_value_histogram, 2)
 
     def test_early_stopping_for_only_first_metric(self):
-        # test that first_metric_only and feval cannot be used together
         def constant_metric(preds, train_data):
             return ('constant_metric', 0.0, False)
 
-        # test various combination of metrics
-        def metrics_combination_train_regression(metric_list, assumed_iteration, first_metric_only):
+        def metrics_combination_train_regression(metric_list, assumed_iteration, first_metric_only, feval=None):
             params["metric"] = metric_list
-            gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
+            gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train, feval=feval,
                             valid_sets=[lgb_eval],
                             early_stopping_rounds=5, verbose_eval=verbose_eval)
             self.assertEqual(assumed_iteration, gbm.best_iteration)
@@ -1566,19 +1564,6 @@ class TestEngine(unittest.TestCase):
 
         params = {
             'objective': 'regression',
-            'metric': 'None',
-            'verbose': -1,
-            'seed': 123
-        }
-        with np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-                                            '`first_metric_only` and `feval` are not available*'):
-            lgb.train(dict(params, first_metric_only=True), lgb_train,
-                      num_boost_round=20, valid_sets=[lgb_eval],
-                      feval=constant_metric,
-                      early_stopping_rounds=5, verbose_eval=verbose_eval)
-
-        params = {
-            'objective': 'regression',
             'num_boost_round': 100,
             'learning_rate': 0.2,
             'num_leaves': 10,
@@ -1614,6 +1599,10 @@ class TestEngine(unittest.TestCase):
         metrics_combination_train_regression(['l1', 'l2'], iter_valid_l1, True)
         metrics_combination_train_regression(['l2', 'l1'], np.min([iter_valid_l1, iter_valid_l2]), False)
         metrics_combination_train_regression(['l1', 'l2'], np.min([iter_valid_l1, iter_valid_l2]), False)
+
+        # test for feval
+        metrics_combination_train_regression(['l2', 'l1'], iter_valid_l2, True, feval=constant_metric)
+        metrics_combination_train_regression(['l2', 'l1'], 1, False, feval=constant_metric)
 
         # two valid data
         metrics_combination_train_regression_valid_split(['l1', 'l2'], iter_min_l1, True, False)

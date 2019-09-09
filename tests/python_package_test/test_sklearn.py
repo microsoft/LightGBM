@@ -632,15 +632,18 @@ class TestSklearn(unittest.TestCase):
             self.assertEqual(len(gbm.evals_result_), len(eval_set_names))
             for eval_set_name in eval_set_names:
                 self.assertIn(eval_set_name, gbm.evals_result_)
-                self.assertEqual(len(gbm.evals_result_[eval_set_name]), len(metric_names))
+                self.assertEqual(len(gbm.evals_result_[eval_set_name]),
+                                 len(metric_names) + 1 if callable(params_fit['eval_metric']) else len(metric_names))
                 for metric_name in metric_names:
                     self.assertIn(metric_name, gbm.evals_result_[eval_set_name])
-
                     actual = len(gbm.evals_result_[eval_set_name][metric_name])
                     expected = assumed_iteration + (params_fit['early_stopping_rounds']
                                                     if eval_set_name != 'training' else 0)
                     self.assertEqual(expected, actual)
                     self.assertEqual(assumed_iteration if eval_set_name != 'training' else 0, gbm.best_iteration_)
+
+        def constant_metric(preds, train_data):
+            return ('constant_metric', 0.0, False)
 
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=43)
@@ -653,6 +656,7 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X_train,
                       'y': y_train,
                       'early_stopping_rounds': 5,
+                      'eval_metric': None,
                       'verbose': False}
 
         iter_valid_l1 = iteration_pre_calculation(["l1"], (X_test, y_test))
@@ -690,6 +694,11 @@ class TestSklearn(unittest.TestCase):
         params_fit['eval_metric'] = ["l2", "l1"]
         fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid_l1, False)
         fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid_l2, True)
+
+        # add feval
+        params_fit['eval_metric'] = constant_metric
+        fit_and_check(['valid_0'], ['l2'], iter_valid_l2, True)
+        fit_and_check(['valid_0'], ['l2'], 1, False)
 
         # two eval_set
         params_fit['eval_set'] = [(X_test1, y_test1), (X_test2, y_test2)]
