@@ -370,54 +370,48 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.2)
 
     def test_multi_class_error(self):
-        X, y = load_digits(return_X_y=True)
-        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'num_leaves': 4, 'seed': 0,
-                  'num_rounds': 30, 'verbose': -1}
+        X, y = load_digits(10, True)
+        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error',
+                  'num_leaves': 4, 'verbose': -1}
         lgb_data = lgb.Dataset(X, label=y)
-        results = {}
-        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        est = lgb.train(params, lgb_data, num_boost_round=10)
         predict_default = est.predict(X)
-        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 1,
-                  'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
         results = {}
-        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        est = lgb.train(dict(params, multi_error_top_k=1), lgb_data, num_boost_round=10,
+                        valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
         predict_1 = est.predict(X)
         # check that default gives same result as k = 1
         np.testing.assert_allclose(predict_1, predict_default)
         # check against independent calculation for k = 1
         err = top_k_error(y, predict_1, 1)
-        np.testing.assert_allclose(results['train']['multi_error'][-1], err)
+        self.assertAlmostEqual(results['training']['multi_error'][-1], err)
         # check against independent calculation for k = 2
-        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 2,
-                  'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
         results = {}
-        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
+        est = lgb.train(dict(params, multi_error_top_k=2), lgb_data, num_boost_round=10,
+                        valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
         predict_2 = est.predict(X)
         err = top_k_error(y, predict_2, 2)
-        np.testing.assert_allclose(results['train']['multi_error@2'][-1], err)
+        self.assertAlmostEqual(results['training']['multi_error@2'][-1], err)
         # check against independent calculation for k = 10
-        params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error', 'multi_error_top_k': 10,
-                  'num_leaves': 4, 'seed': 0, 'num_rounds': 30, 'verbose': -1, 'metric_freq': 10}
         results = {}
-        est = lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
-        predict_2 = est.predict(X)
-        err = top_k_error(y, predict_2, 10)
-        np.testing.assert_allclose(results['train']['multi_error@10'][-1], err)
-        # check case where predictions are equal
+        est = lgb.train(dict(params, multi_error_top_k=10), lgb_data, num_boost_round=10,
+                        valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
+        predict_3 = est.predict(X)
+        err = top_k_error(y, predict_3, 10)
+        self.assertAlmostEqual(results['training']['multi_error@10'][-1], err)
+        # check cases where predictions are equal
         X = np.array([[0, 0], [0, 0]])
         y = np.array([0, 1])
         lgb_data = lgb.Dataset(X, label=y)
-        params = {'objective': 'multiclass', 'num_classes': 2, 'metric': 'multi_error', 'multi_error_top_k': 1,
-                  'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
+        params['num_classes'] = 2
         results = {}
-        lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
-        np.testing.assert_allclose(results['train']['multi_error'][-1], 1)
-        lgb_data = lgb.Dataset(X, label=y)
-        params = {'objective': 'multiclass', 'num_classes': 2, 'metric': 'multi_error', 'multi_error_top_k': 2,
-                  'num_leaves': 4, 'seed': 0, 'num_rounds': 1, 'verbose': -1, 'metric_freq': 10}
+        lgb.train(params, lgb_data, num_boost_round=10,
+                  valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
+        self.assertAlmostEqual(results['training']['multi_error'][-1], 1)
         results = {}
-        lgb.train(params, lgb_data, valid_sets=[lgb_data], valid_names=['train'], evals_result=results)
-        np.testing.assert_allclose(results['train']['multi_error@2'][-1], 0)
+        lgb.train(dict(params, multi_error_top_k=2), lgb_data, num_boost_round=10,
+                  valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
+        self.assertAlmostEqual(results['training']['multi_error@2'][-1], 0)
 
     def test_early_stopping(self):
         X, y = load_breast_cancer(True)
@@ -718,6 +712,32 @@ class TestEngine(unittest.TestCase):
         self.assertListEqual(gbm6.pandas_categorical, cat_values)
         self.assertListEqual(gbm7.pandas_categorical, cat_values)
 
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_pandas_sparse(self):
+        import pandas as pd
+        X = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                          "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                          "C": pd.SparseArray(np.random.permutation([True, False] * 150))})
+        y = pd.Series(pd.SparseArray(np.random.permutation([0, 1] * 150)))
+        X_test = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 2] * 30)),
+                               "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                               "C": pd.SparseArray(np.random.permutation([True, False] * 30))})
+        if pd.__version__ >= '0.24.0':
+            for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
+                self.assertTrue(pd.api.types.is_sparse(dtype))
+        params = {
+            'objective': 'binary',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X, y)
+        gbm = lgb.train(params, lgb_train, num_boost_round=10)
+        pred_sparse = gbm.predict(X_test, raw_score=True)
+        if hasattr(X_test, 'sparse'):
+            pred_dense = gbm.predict(X_test.sparse.to_dense(), raw_score=True)
+        else:
+            pred_dense = gbm.predict(X_test.to_dense(), raw_score=True)
+        np.testing.assert_allclose(pred_sparse, pred_dense)
+
     def test_reference_chain(self):
         X = np.random.normal(size=(100, 2))
         y = np.random.normal(size=100)
@@ -899,6 +919,26 @@ class TestEngine(unittest.TestCase):
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=1)
         self.assertEqual(len(np.unique(est.predict(X))), 3)
+
+    def test_small_max_bin(self):
+        np.random.seed(0)
+        y = np.random.choice([0, 1], 100)
+        x = np.zeros((100, 1))
+        x[:30, 0] = -1
+        x[30:60, 0] = 1
+        x[60:, 0] = 2
+        params = {'objective': 'binary',
+                  'seed': 0,
+                  'min_data_in_leaf': 1,
+                  'verbose': -1,
+                  'max_bin': 2}
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=5)
+        x[0, 0] = np.nan
+        params['max_bin'] = 3
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=5)
+        np.random.seed()  # reset seed
 
     def test_refit(self):
         X, y = load_breast_cancer(True)
@@ -1625,3 +1665,30 @@ class TestEngine(unittest.TestCase):
         metrics_combination_cv_regression(['l1', 'l2'], iter_cv_l1, True, True)
         metrics_combination_cv_regression(['l2', 'l1'], min([iter_cv_l1, iter_cv_l2]), False, True)
         metrics_combination_cv_regression(['l1', 'l2'], min([iter_cv_l1, iter_cv_l2]), False, True)
+
+    def test_node_level_subcol(self):
+        X, y = load_breast_cancer(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'feature_fraction': 0.8,
+            'feature_fraction_bynode': True,
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=25,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        ret = log_loss(y_test, gbm.predict(X_test))
+        self.assertLess(ret, 0.13)
+        self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
+        params['feature_fraction'] = 0.5
+        gbm2 = lgb.train(params, lgb_train,
+                         num_boost_round=25)
+        ret2 = log_loss(y_test, gbm2.predict(X_test))
+        self.assertNotEqual(ret, ret2)

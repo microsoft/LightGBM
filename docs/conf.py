@@ -22,6 +22,7 @@ import os
 import sys
 import sphinx
 
+from distutils.dir_util import copy_tree
 from docutils.parsers.rst import Directive
 from sphinx.errors import VersionRequirementError
 from subprocess import PIPE, Popen
@@ -56,6 +57,7 @@ class IgnoredDirective(Directive):
 
 os.environ['LIGHTGBM_BUILD_DOC'] = '1'
 C_API = os.environ.get('C_API', '').lower().strip() != 'no'
+RTD = bool(os.environ.get('READTHEDOCS', ''))
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
@@ -68,17 +70,27 @@ if needs_sphinx > sphinx.__version__:
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
 ]
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
+autodoc_default_options = {
+    "members": True,
+    "inherited-members": True,
+    "show-inheritance": True,
+}
 
-# The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-# source_suffix = ['.rst', '.md']
+# Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
+autosummary_generate = ['Python-API.rst']
+
+# Only the class' docstring is inserted.
+autoclass_content = 'class'
+
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = False
 
 # The master toctree document.
 master_doc = 'index'
@@ -112,12 +124,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'default'
-
-# If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
-
-# Both the class' and the __init__ method's docstring are concatenated and inserted.
-autoclass_content = 'both'
 
 # -- Configuration for C API docs generation ------------------------------
 
@@ -208,6 +214,52 @@ def generate_doxygen_xml(app):
         raise Exception("An error has occurred while executing Doxygen\n" + str(e))
 
 
+def generate_r_docs(app):
+    """Generate documentation for R-package.
+
+    Parameters
+    ----------
+    app : object
+        The application object representing the Sphinx process.
+    """
+    commands = """
+    echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile
+    /home/docs/.conda/bin/conda create -q -y -n r_env \
+        r-base=3.5.1=h1e0a451_2 \
+        r-devtools=1.13.6=r351h6115d3f_0 \
+        r-data.table=1.11.4=r351h96ca727_0 \
+        r-jsonlite=1.5=r351h96ca727_0 \
+        r-magrittr=1.5=r351h6115d3f_4 \
+        r-matrix=1.2_14=r351h96ca727_0 \
+        r-testthat=2.0.0=r351h29659fb_0 \
+        cmake=3.14.0=h52cb24c_0
+    /home/docs/.conda/bin/conda install -q -y -n r_env -c conda-forge \
+        r-pkgdown=1.3.0=r351h6115d3f_1000
+    source /home/docs/.conda/bin/activate r_env
+    export TAR=/bin/tar
+    cd {0}
+    sed -i'.bak' '/# Build the package (do not touch this line!)/q' build_r.R
+    Rscript build_r.R
+    Rscript build_r_site.R
+    """.format(os.path.join(CURR_PATH, os.path.pardir))
+    try:
+        # Warning! The following code can cause buffer overflows on RTD.
+        # Consider suppressing output completely if RTD project silently fails.
+        # Refer to https://github.com/svenevs/exhale
+        # /blob/fe7644829057af622e467bb529db6c03a830da99/exhale/deploy.py#L99-L111
+        process = Popen(['/bin/bash'],
+                        stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                        universal_newlines=True)
+        stdout, stderr = process.communicate(commands)
+        output = '\n'.join([i for i in (stdout, stderr) if i is not None])
+        if process.returncode != 0:
+            raise RuntimeError(output)
+        else:
+            print(output)
+    except BaseException as e:
+        raise Exception("An error has occurred while generating documentation for R-package\n" + str(e))
+
+
 def setup(app):
     """Add new elements at Sphinx initialization time.
 
@@ -216,8 +268,18 @@ def setup(app):
     app : object
         The application object representing the Sphinx process.
     """
+    first_run = not os.path.exists(os.path.join(CURR_PATH, '_FIRST_RUN.flag'))
+    if first_run and RTD:
+        open(os.path.join(CURR_PATH, '_FIRST_RUN.flag'), 'w').close()
     if C_API:
         app.connect("builder-inited", generate_doxygen_xml)
     else:
         app.add_directive('doxygenfile', IgnoredDirective)
-    app.add_javascript("js/script.js")
+    if RTD:  # build R docs only on Read the Docs site
+        if first_run:
+            app.connect("builder-inited", generate_r_docs)
+        app.connect("build-finished",
+                    lambda app, exception: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
+                                                     os.path.join(app.outdir, "R"), verbose=0))
+    add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
+    add_js_file("js/script.js")

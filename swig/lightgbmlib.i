@@ -17,6 +17,7 @@
 %include "various.i"
 %include "carrays.i"
 %include "cpointer.i"
+%include "stdint.i"
 
 /* Note: instead of using array_functions for string array we apply a typemap instead.
    Future char** parameter names should be added to the typemap.

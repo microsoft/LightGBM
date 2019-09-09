@@ -1,11 +1,11 @@
-#' readRDS for lgb.Booster models
+#' readRDS for \code{lgb.Booster} models
 #'
 #' Attempts to load a model using RDS.
 #'
 #' @param file a connection or the name of the file where the R object is saved to or read from.
 #' @param refhook a hook function for handling reference objects.
 #'
-#' @return lgb.Booster.
+#' @return \code{lgb.Booster}.
 #'
 #' @examples
 #' library(lightgbm)
@@ -19,11 +19,11 @@
 #' valids <- list(test = dtest)
 #' model <- lgb.train(params,
 #'                    dtrain,
-#'                    100,
+#'                    10,
 #'                    valids,
 #'                    min_data = 1,
 #'                    learning_rate = 1,
-#'                    early_stopping_rounds = 10)
+#'                    early_stopping_rounds = 5)
 #' saveRDS.lgb.Booster(model, "model.rds")
 #' new_model <- readRDS.lgb.Booster("model.rds")
 #'
