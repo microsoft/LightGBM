@@ -1434,8 +1434,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
 
 
   if (new_split.monotone_type != 0) {
-    double penalty =
-        ComputeMonotoneSplitGainPenalty(depth, config_->monotone_penalty);
+    double penalty = Constraints::ComputeMonotoneSplitGainPenalty(depth, config_->monotone_penalty);
     new_split.gain *= penalty;
   }
 
@@ -1466,18 +1465,6 @@ void SerialTreeLearner::InitializeConstraints(unsigned int tid) {
 
   thresholds_min_constraints[tid][0] = 0;
   thresholds_max_constraints[tid][0] = 0;
-}
-
-double SerialTreeLearner::ComputeMonotoneSplitGainPenalty(int depth,
-                                                          double penalization,
-                                                          double epsilon) {
-  if (penalization >= depth + 1.) {
-    return epsilon;
-  }
-  if (penalization <= 1.) {
-    return 1. - penalization / pow(2., depth) + epsilon;
-  }
-  return 1. - pow(2, penalization - 1. - depth) + epsilon;
 }
 
 }  // namespace LightGBM
