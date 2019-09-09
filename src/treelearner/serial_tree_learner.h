@@ -137,22 +137,6 @@ class SerialTreeLearner: public TreeLearner {
                                       bool compute_max, uint32_t it_start,
                                       uint32_t it_end);
 
-  void ComputeConstraintsPerThreshold(int feature, const Tree *tree,
-                                      int node_idx, unsigned int tid,
-                                      bool per_threshold = true,
-                                      bool compute_min = true,
-                                      bool compute_max = true) {
-    ComputeConstraintsPerThreshold(feature, tree, node_idx, tid, per_threshold,
-                                   compute_min, compute_max, 0,
-                                   train_data_->NumBin(feature));
-  }
-
-  void ComputeConstraintsPerThresholdInSubtree(
-      int split_feature, int monotone_feature, const Tree *tree, int node_idx,
-      bool maximum, uint32_t it_start, uint32_t it_end,
-      const std::vector<int> &features, const std::vector<uint32_t> &thresholds,
-      const std::vector<bool> &is_in_right_split, unsigned int tid,
-      bool per_threshold);
 
   static double ComputeMonotoneSplitGainPenalty(int depth, double penalization,
                                                 double epsilon = 1e-10);
@@ -202,10 +186,6 @@ class SerialTreeLearner: public TreeLearner {
                            const std::vector<uint32_t> &thresholds,
                            const std::vector<bool> &is_in_right_split);
 
-  std::pair<bool, bool>
-  LeftRightContainsRelevantInformation(bool maximum, int inner_feature,
-                                       bool split_feature_is_inner_feature);
-  void ReFitLeaves(Tree* tree);
 
   void InitializeConstraints(unsigned int tid);
 
