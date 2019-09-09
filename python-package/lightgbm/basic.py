@@ -1339,6 +1339,7 @@ class Dataset(object):
         if self.handle is not None:
             label = list_to_1d_numpy(_label_from_pandas(label), name='label')
             self.set_field('label', label)
+            self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
     def set_weight(self, weight):
@@ -1360,6 +1361,7 @@ class Dataset(object):
         if self.handle is not None and weight is not None:
             weight = list_to_1d_numpy(weight, name='weight')
             self.set_field('weight', weight)
+            self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
 
     def set_init_score(self, init_score):
@@ -1379,6 +1381,7 @@ class Dataset(object):
         if self.handle is not None and init_score is not None:
             init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
             self.set_field('init_score', init_score)
+            self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
 
     def set_group(self, group):

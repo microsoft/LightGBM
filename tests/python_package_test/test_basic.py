@@ -281,3 +281,34 @@ class TestBasic(unittest.TestCase):
             with open(p2name, 'rt') as f:
                 p2txt = f.read()
             self.assertEqual(p1txt, p2txt)
+
+    def test_consistent_state_for_dataset_fields(self):
+
+        def check_asserts(data):
+            np.testing.assert_allclose(data.label, data.get_label())
+            np.testing.assert_allclose(data.label, data.get_field('label'))
+            self.assertFalse(np.isnan(data.label[0]))
+            self.assertFalse(np.isinf(data.label[1]))
+            np.testing.assert_allclose(data.weight, data.get_weight())
+            np.testing.assert_allclose(data.weight, data.get_field('weight'))
+            self.assertFalse(np.isnan(data.weight[0]))
+            self.assertFalse(np.isinf(data.weight[1]))
+            np.testing.assert_allclose(data.init_score, data.get_init_score())
+            np.testing.assert_allclose(data.init_score, data.get_field('init_score'))
+            self.assertFalse(np.isnan(data.init_score[0]))
+            self.assertFalse(np.isinf(data.init_score[1]))
+            self.assertTrue(np.all(np.isclose([data.label[0], data.weight[0], data.init_score[0]],
+                                              data.label[0])))
+            self.assertAlmostEqual(data.label[1], data.weight[1])
+
+        X, y = load_breast_cancer(True)
+        sequence = np.ones(y.shape[0])
+        sequence[0] = np.nan
+        sequence[1] = np.inf
+        lgb_data = lgb.Dataset(X, sequence, weight=sequence, init_score=sequence).construct()
+        check_asserts(lgb_data)
+        lgb_data = lgb.Dataset(X, y).construct()
+        lgb_data.set_label(sequence)
+        lgb_data.set_weight(sequence)
+        lgb_data.set_init_score(sequence)
+        check_asserts(lgb_data)
