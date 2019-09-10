@@ -65,7 +65,7 @@ def train(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -430,7 +430,7 @@ def cv(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool

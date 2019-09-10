@@ -121,7 +121,7 @@ class _EvalFunctionWrapper(object):
                 group : array-like
                     Group/query data, used for ranking task.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
@@ -147,7 +147,7 @@ class _EvalFunctionWrapper(object):
         Returns
         -------
         eval_name : string
-            The name of evaluation function.
+            The name of evaluation function (without whitespaces).
         eval_result : float
             The eval result.
         is_higher_better : bool
@@ -464,7 +464,7 @@ class LGBMModel(_LGBMModelBase):
             group : array-like
                 Group/query data, used for ranking task.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool

@@ -2044,7 +2044,7 @@ class Booster(object):
                 eval_data : Dataset
                     The evaluation dataset.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
@@ -2090,7 +2090,7 @@ class Booster(object):
                 train_data : Dataset
                     The training dataset.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
@@ -2121,7 +2121,7 @@ class Booster(object):
                 valid_data : Dataset
                     The validation dataset.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
