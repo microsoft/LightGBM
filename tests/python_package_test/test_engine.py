@@ -1550,7 +1550,6 @@ class TestEngine(unittest.TestCase):
         def constant_metric(preds, train_data):
             return ('constant_metric', 0.0, False)
 
-        # test various combination of metrics
         def metrics_combination_train_regression(valid_sets, metric_list, assumed_iteration,
                                                  first_metric_only, feval=None):
             params = {
