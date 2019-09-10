@@ -2,7 +2,7 @@
 % Please edit documentation in R/saveRDS.lgb.Booster.R
 \name{saveRDS.lgb.Booster}
 \alias{saveRDS.lgb.Booster}
-\title{saveRDS for lgb.Booster models}
+\title{saveRDS for \code{lgb.Booster} models}
 \usage{
 saveRDS.lgb.Booster(object, file = "", ascii = FALSE, version = NULL,
   compress = TRUE, refhook = NULL, raw = TRUE)
@@ -41,11 +41,11 @@ valids <- list(test = dtest)
 model <- lgb.train(
     params
     , dtrain
-    , 100
+    , 10
     , valids
     , min_data = 1
     , learning_rate = 1
-    , early_stopping_rounds = 10
+    , early_stopping_rounds = 5
 )
 saveRDS.lgb.Booster(model, "model.rds")
 }

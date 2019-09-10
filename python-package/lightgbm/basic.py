@@ -13,7 +13,7 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, DataFrame, Series,
+from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
                      DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
@@ -78,7 +78,12 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, Series):
-        return data.values.astype(dtype)
+        if _get_bad_pandas_dtypes([data.dtypes]):
+            raise ValueError('Series.dtypes must be int, float or bool')
+        if hasattr(data.values, 'values'):  # SparseArray
+            return data.values.values.astype(dtype)
+        else:
+            return data.values.astype(dtype)
     else:
         raise TypeError("Wrong type({0}) for {1}.\n"
                         "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
@@ -194,15 +199,10 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "feature_penalty": C_API_DTYPE_FLOAT64,
                      "monotone_constraints": C_API_DTYPE_INT8}
 
-PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
-                       'int64': 'int', 'uint8': 'int', 'uint16': 'int',
-                       'uint32': 'int', 'uint64': 'int', 'bool': 'int',
-                       'float16': 'float', 'float32': 'float', 'float64': 'float'}
-
 
 def convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
-    if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
+    if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
             warnings.warn("Usage of np.ndarray subset (sliced data) is not recommended "
                           "due to it will double the peak memory cost in LightGBM.")
@@ -252,6 +252,17 @@ def c_int_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
+def _get_bad_pandas_dtypes(dtypes):
+    pandas_dtype_mapper = {'int8': 'int', 'int16': 'int', 'int32': 'int',
+                           'int64': 'int', 'uint8': 'int', 'uint16': 'int',
+                           'uint32': 'int', 'uint64': 'int', 'bool': 'int',
+                           'float16': 'float', 'float32': 'float', 'float64': 'float'}
+    bad_indices = [i for i, dtype in enumerate(dtypes) if (dtype.name not in pandas_dtype_mapper
+                                                           and (not is_dtype_sparse(dtype)
+                                                                or dtype.subtype.name not in pandas_dtype_mapper))]
+    return bad_indices
+
+
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
@@ -280,13 +291,11 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 categorical_feature = list(categorical_feature)
         if feature_name == 'auto':
             feature_name = list(data.columns)
-        data_dtypes = data.dtypes
-        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
-            bad_fields = [data.columns[i] for i, dtype in
-                          enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
+        bad_indices = _get_bad_pandas_dtypes(data.dtypes)
+        if bad_indices:
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
-                             + ', '.join(bad_fields))
+                             + ', '.join(data.columns[bad_indices]))
         data = data.values.astype('float')
     else:
         if feature_name == 'auto':
@@ -300,8 +309,7 @@ def _label_from_pandas(label):
     if isinstance(label, DataFrame):
         if len(label.columns) > 1:
             raise ValueError('DataFrame for label cannot have multiple columns')
-        label_dtypes = label.dtypes
-        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in label_dtypes):
+        if _get_bad_pandas_dtypes(label.dtypes):
             raise ValueError('DataFrame.dtypes for label must be int, float or bool')
         label = label.values.astype('float').flatten()
     return label
@@ -690,6 +698,7 @@ class Dataset(object):
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
+            The output cannot be monotonically constrained with respect to a categorical feature.
         params : dict or None, optional (default=None)
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
@@ -848,13 +857,12 @@ class Dataset(object):
             self.set_weight(weight)
         if group is not None:
             self.set_group(group)
-        # load init score
-        if init_score is not None:
-            self.set_init_score(init_score)
-            if predictor is not None:
-                warnings.warn("The prediction of init_model will be overridden by init_score.")
-        elif isinstance(predictor, _InnerPredictor):
+        if isinstance(predictor, _InnerPredictor):
+            if self._predictor is None and init_score is not None:
+                warnings.warn("The init_score will be overridden by the prediction of init_model.")
             self._set_init_score_by_predictor(predictor, data)
+        elif init_score is not None:
+            self.set_init_score(init_score)
         elif predictor is not None:
             raise TypeError('Wrong predictor type {}'.format(type(predictor).__name__))
         # set feature names
@@ -1116,7 +1124,7 @@ class Dataset(object):
         if self.handle is not None and params is not None:
             _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(params))))
         if not self.params:
-            self.params = params
+            self.params = copy.deepcopy(params)
         else:
             self.params_back_up = copy.deepcopy(self.params)
             self.params.update(params)
@@ -1166,7 +1174,7 @@ class Dataset(object):
         elif data.dtype == np.int32:
             ptr_data, type_data, _ = c_int_array(data)
         else:
-            raise TypeError("Excepted np.float32/64 or np.int32, meet type({})".format(data.dtype))
+            raise TypeError("Expected np.float32/64 or np.int32, met type({})".format(data.dtype))
         if type_data != FIELD_TYPE_MAPPER[field_name]:
             raise TypeError("Input type error for set_field")
         _safe_call(_LIB.LGBM_DatasetSetField(
@@ -1331,6 +1339,7 @@ class Dataset(object):
         if self.handle is not None:
             label = list_to_1d_numpy(_label_from_pandas(label), name='label')
             self.set_field('label', label)
+            self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
     def set_weight(self, weight):
@@ -1352,6 +1361,7 @@ class Dataset(object):
         if self.handle is not None and weight is not None:
             weight = list_to_1d_numpy(weight, name='weight')
             self.set_field('weight', weight)
+            self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
 
     def set_init_score(self, init_score):
@@ -1371,6 +1381,7 @@ class Dataset(object):
         if self.handle is not None and init_score is not None:
             init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
             self.set_field('init_score', init_score)
+            self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
 
     def set_group(self, group):

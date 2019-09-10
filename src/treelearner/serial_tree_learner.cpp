@@ -268,26 +268,34 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vect
   return FitByExistingTree(old_tree, gradients, hessians);
 }
 
+std::vector<int8_t> SerialTreeLearner::GetUsedFeatures() {
+  std::vector<int8_t> ret(num_features_, 1);
+  if (config_->feature_fraction >= 1.0f) {
+    return ret;
+  }
+  int used_feature_cnt = static_cast<int>(valid_feature_indices_.size()*config_->feature_fraction);
+  // at least use one feature
+  used_feature_cnt = std::max(used_feature_cnt, 1);
+  // initialize used features
+  std::memset(ret.data(), 0, sizeof(int8_t) * num_features_);
+  auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
+  int omp_loop_size = static_cast<int>(sampled_indices.size());
+  #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
+  for (int i = 0; i < omp_loop_size; ++i) {
+    int used_feature = valid_feature_indices_[sampled_indices[i]];
+    int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
+    CHECK(inner_feature_index >= 0);
+    ret[inner_feature_index] = 1;
+  }
+  return ret;
+}
+
 void SerialTreeLearner::BeforeTrain() {
   // reset histogram pool
   histogram_pool_.ResetMap();
 
-  if (config_->feature_fraction < 1) {
-    int used_feature_cnt = static_cast<int>(valid_feature_indices_.size()*config_->feature_fraction);
-    // at least use one feature
-    used_feature_cnt = std::max(used_feature_cnt, 1);
-    // initialize used features
-    std::memset(is_feature_used_.data(), 0, sizeof(int8_t) * num_features_);
-    // Get used feature at current tree
-    auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
-    int omp_loop_size = static_cast<int>(sampled_indices.size());
-    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
-    for (int i = 0; i < omp_loop_size; ++i) {
-      int used_feature = valid_feature_indices_[sampled_indices[i]];
-      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK(inner_feature_index >= 0);
-      is_feature_used_[inner_feature_index] = 1;
-    }
+  if (config_->feature_fraction < 1 && !config_->feature_fraction_bynode) {
+    is_feature_used_ = GetUsedFeatures();
   } else {
     #pragma omp parallel for schedule(static, 512) if (num_features_ >= 1024)
     for (int i = 0; i < num_features_; ++i) {
@@ -513,6 +521,12 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
   #endif
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
+  std::vector<int8_t> smaller_node_used_features(num_features_, 1);
+  std::vector<int8_t> larger_node_used_features(num_features_, 1);
+  if (config_->feature_fraction_bynode) {
+    smaller_node_used_features = GetUsedFeatures();
+    larger_node_used_features = GetUsedFeatures();
+  }
   OMP_INIT_EX();
   // find splits
   #pragma omp parallel for schedule(static)
@@ -542,7 +556,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       smaller_split.gain -= config_->cegb_tradeoff * CalculateOndemandCosts(real_fidx, smaller_leaf_splits_->LeafIndex());
     }
     splits_per_leaf_[smaller_leaf_splits_->LeafIndex()*train_data_->num_features() + feature_index] = smaller_split;
-    if (smaller_split > smaller_best[tid]) {
+    if (smaller_split > smaller_best[tid] && smaller_node_used_features[feature_index]) {
       smaller_best[tid] = smaller_split;
     }
     // only has root leaf
@@ -573,7 +587,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       larger_split.gain -= config_->cegb_tradeoff*CalculateOndemandCosts(real_fidx, larger_leaf_splits_->LeafIndex());
     }
     splits_per_leaf_[larger_leaf_splits_->LeafIndex()*train_data_->num_features() + feature_index] = larger_split;
-    if (larger_split > larger_best[tid]) {
+    if (larger_split > larger_best[tid] && larger_node_used_features[feature_index]) {
       larger_best[tid] = larger_split;
     }
     OMP_LOOP_EX_END();
