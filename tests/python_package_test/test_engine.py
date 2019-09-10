@@ -1,6 +1,7 @@
 # coding: utf-8
 # pylint: skip-file
 import copy
+import itertools
 import math
 import os
 import psutil
@@ -1543,11 +1544,15 @@ class TestEngine(unittest.TestCase):
 
     def test_early_stopping_for_only_first_metric(self):
 
+        def decreasing_metric(preds, train_data):
+            return ('decreasing_metric', next(decreasing_generator), False)
+
         def constant_metric(preds, train_data):
             return ('constant_metric', 0.0, False)
 
         # test various combination of metrics
-        def metrics_combination_train_regression(valid_sets, metric_list, assumed_iteration, first_metric_only):
+        def metrics_combination_train_regression(valid_sets, metric_list, assumed_iteration,
+                                                 first_metric_only, feval=None):
             params = {
                 'objective': 'regression',
                 'learning_rate': 1.1,
@@ -1557,12 +1562,12 @@ class TestEngine(unittest.TestCase):
                 'seed': 123
             }
             gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
-                            num_boost_round=25, valid_sets=valid_sets,
+                            num_boost_round=25, valid_sets=valid_sets, feval=feval,
                             early_stopping_rounds=5, verbose_eval=False)
             self.assertEqual(assumed_iteration, gbm.best_iteration)
 
         def metrics_combination_cv_regression(metric_list, assumed_iteration,
-                                              first_metric_only, eval_train_metric):
+                                              first_metric_only, eval_train_metric, feval=None):
             params = {
                 'objective': 'regression',
                 'learning_rate': 0.9,
@@ -1573,26 +1578,19 @@ class TestEngine(unittest.TestCase):
                 'gpu_use_dp': True
             }
             ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
-                         stratified=False,
-                         train_set=lgb_train,
-                         num_boost_round=25,
+                         train_set=lgb_train, num_boost_round=25,
+                         stratified=False, feval=feval,
                          early_stopping_rounds=5, verbose_eval=False,
                          eval_train_metric=eval_train_metric)
             self.assertEqual(assumed_iteration, len(ret[list(ret.keys())[0]]))
 
+        decreasing_generator = itertools.count(0, -1)
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=73)
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_valid1 = lgb.Dataset(X_test1, y_test1, reference=lgb_train)
         lgb_valid2 = lgb.Dataset(X_test2, y_test2, reference=lgb_train)
-
-        # test that first_metric_only and feval cannot be used together
-        with np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-                                            '`first_metric_only` and `feval` are not available*'):
-            lgb.train(dict({'objective': 'regression', 'verbose': -1, 'seed': 123}, first_metric_only=True),
-                      lgb_train, num_boost_round=20, valid_sets=[lgb_valid1],
-                      feval=constant_metric, early_stopping_rounds=5, verbose_eval=False)
 
         iter_valid1_l1 = 3
         iter_valid1_l2 = 14
@@ -1621,6 +1619,17 @@ class TestEngine(unittest.TestCase):
         metrics_combination_train_regression(lgb_valid1, ['l2', 'l1'], iter_min_valid1, False)
         metrics_combination_train_regression(lgb_valid1, ['l1', 'l2'], iter_min_valid1, False)
 
+        # test feval for lgb.train
+        metrics_combination_train_regression(lgb_valid1, 'None', 1, False,
+                                             feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                                              constant_metric(preds, train_data)])
+        metrics_combination_train_regression(lgb_valid1, 'None', 25, True,
+                                             feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                                              constant_metric(preds, train_data)])
+        metrics_combination_train_regression(lgb_valid1, 'None', 1, True,
+                                             feval=lambda preds, train_data: [constant_metric(preds, train_data),
+                                                                              decreasing_metric(preds, train_data)])
+
         # test with two valid data for lgb.train
         metrics_combination_train_regression([lgb_valid1, lgb_valid2], ['l2', 'l1'], iter_min_l2, True)
         metrics_combination_train_regression([lgb_valid2, lgb_valid1], ['l2', 'l1'], iter_min_l2, True)
@@ -1642,6 +1651,17 @@ class TestEngine(unittest.TestCase):
         metrics_combination_cv_regression(['l1', 'l2'], iter_cv_l1, True, True)
         metrics_combination_cv_regression(['l2', 'l1'], iter_cv_min, False, True)
         metrics_combination_cv_regression(['l1', 'l2'], iter_cv_min, False, True)
+
+        # test feval for lgb.cv
+        metrics_combination_cv_regression('None', 1, False, False,
+                                          feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                                           constant_metric(preds, train_data)])
+        metrics_combination_cv_regression('None', 25, True, False,
+                                          feval=lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                                           constant_metric(preds, train_data)])
+        metrics_combination_cv_regression('None', 1, True, False,
+                                          feval=lambda preds, train_data: [constant_metric(preds, train_data),
+                                                                           decreasing_metric(preds, train_data)])
 
     def test_node_level_subcol(self):
         X, y = load_breast_cancer(True)

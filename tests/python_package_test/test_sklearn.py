@@ -640,6 +640,12 @@ class TestSklearn(unittest.TestCase):
 
     def test_first_metric_only(self):
 
+        def decreasing_metric(y_true, y_pred):
+            return ('decreasing_metric', next(decreasing_generator), False)
+
+        def constant_metric(y_true, y_pred):
+            return ('constant_metric', 0.0, False)
+
         def fit_and_check(eval_set_names, metric_names, assumed_iteration, first_metric_only):
             params['first_metric_only'] = first_metric_only
             gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
@@ -652,10 +658,12 @@ class TestSklearn(unittest.TestCase):
 
                     actual = len(gbm.evals_result_[eval_set_name][metric_name])
                     expected = assumed_iteration + (params_fit['early_stopping_rounds']
-                                                    if eval_set_name != 'training' else 0)
+                                                    if eval_set_name != 'training'
+                                                    and assumed_iteration != gbm.n_estimators else 0)
                     self.assertEqual(expected, actual)
                     self.assertEqual(assumed_iteration if eval_set_name != 'training' else 0, gbm.best_iteration_)
 
+        decreasing_generator = itertools.count(0, -1)
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=72)
@@ -684,8 +692,20 @@ class TestSklearn(unittest.TestCase):
         fit_and_check(['training'], ['l2'], 30, False)
         fit_and_check(['training'], ['l2'], 30, True)
 
-        # single eval_set
+        # feval
+        params['metric'] = 'None'
+        params_fit['eval_metric'] = lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                               constant_metric(preds, train_data)]
         params_fit['eval_set'] = (X_test1, y_test1)
+        fit_and_check(['valid_0'], ['decreasing_metric', 'constant_metric'], 1, False)
+        fit_and_check(['valid_0'], ['decreasing_metric', 'constant_metric'], 30, True)
+        params_fit['eval_metric'] = lambda preds, train_data: [constant_metric(preds, train_data),
+                                                               decreasing_metric(preds, train_data)]
+        fit_and_check(['valid_0'], ['decreasing_metric', 'constant_metric'], 1, True)
+
+        # single eval_set
+        params.pop('metric')
+        params_fit.pop('eval_metric')
         fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, False)
         fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, True)
 
