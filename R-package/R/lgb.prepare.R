@@ -1,10 +1,13 @@
 #' Data preparator for LightGBM datasets (numeric)
 #'
-#' Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}. Factors and characters are converted to numeric without integers. Please use \code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
+#' Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+#' Factors and characters are converted to numeric without integers. Please use
+#' \code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
 #'
 #' @param data A data.frame or data.table to prepare.
 #'
-#' @return The cleaned dataset. It must be converted to a matrix format (\code{as.matrix}) for input in \code{lgb.Dataset}.
+#' @return The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
+#' for input in \code{lgb.Dataset}.
 #'
 #' @examples
 #' library(lightgbm)
@@ -71,7 +74,11 @@ lgb.prepare <- function(data) {
     } else {
 
       # What do you think you are doing here? Throw error.
-      stop("lgb.prepare2: you provided ", paste(class(data), collapse = " & "), " but data should have class data.frame")
+      stop(
+        "lgb.prepare2: you provided "
+        , paste(class(data), collapse = " & ")
+        , " but data should have class data.frame"
+      )
 
     }
 

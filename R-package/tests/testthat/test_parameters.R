@@ -1,5 +1,8 @@
-data(agaricus.train, package='lightgbm')
-data(agaricus.test, package='lightgbm')
+
+context("feature penalties")
+
+data(agaricus.train, package = 'lightgbm')
+data(agaricus.test, package = 'lightgbm')
 train <- agaricus.train
 test <- agaricus.test
 
@@ -12,15 +15,15 @@ test_that("Feature penalties work properly", {
     feature_penalties <- rep(1, ncol(train$data))
     feature_penalties[var_index] <- x
     lightgbm(
-      data = train$data,
-      label = train$label,
-      num_leaves = 5,
-      learning_rate = 0.05,
-      nrounds = 20,
-      objective = "binary",
-      feature_penalty = paste0(feature_penalties, collapse = ","),
-      metric="binary_error",
-      verbose = -1
+      data = train$data
+      , label = train$label
+      , num_leaves = 5
+      , learning_rate = 0.05
+      , nrounds = 20
+      , objective = "binary"
+      , feature_penalty = paste0(feature_penalties, collapse = ",")
+      , metric = "binary_error"
+      , verbose = -1
     )
   })
 

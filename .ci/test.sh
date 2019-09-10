@@ -59,6 +59,13 @@ if [[ $TASK == "lint" ]]; then
     exit 0
 fi
 
+if [[ $TASK == "rlint" ]]; then
+    conda install -c r \
+        r-argparse \
+        r-lintr
+    ./.ci/lint_r.sh $(pwd)
+fi
+
 if [[ $TASK == "if-else" ]]; then
     conda install -q -y -n $CONDA_ENV numpy
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake "${CMAKE_OPTS[@]}" .. && make lightgbm -j4 || exit -1

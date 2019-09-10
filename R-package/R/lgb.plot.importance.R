@@ -43,7 +43,11 @@ lgb.plot.importance <- function(tree_imp,
                                 cex = NULL) {
 
   # Check for measurement (column names) correctness
-  measure <- match.arg(measure, choices = c("Gain", "Cover", "Frequency"), several.ok = FALSE)
+  measure <- match.arg(
+    measure
+    , choices = c("Gain", "Cover", "Frequency")
+    , several.ok = FALSE
+  )
 
   # Get top N importance (defaults to 10)
   top_n <- min(top_n, nrow(tree_imp))
@@ -72,14 +76,14 @@ lgb.plot.importance <- function(tree_imp,
   # Do plot
   tree_imp[.N:1,
            graphics::barplot(
-               height = get(measure),
-               names.arg = Feature,
-               horiz = TRUE,
-               border = NA,
-               main = "Feature Importance",
-               xlab = measure,
-               cex.names = cex,
-               las = 1
+               height = get(measure)
+               , names.arg = Feature
+               , horiz = TRUE
+               , border = NA
+               , main = "Feature Importance"
+               , xlab = measure
+               , cex.names = cex
+               , las = 1
            )]
 
   # Return invisibly

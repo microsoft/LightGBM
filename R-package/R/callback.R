@@ -39,7 +39,11 @@ cb.reset.parameters <- function(new_params) {
     # since changing them would simply wreck some chaos
     not_allowed <- c("num_class", "metric", "boosting_type")
     if (any(pnames %in% not_allowed)) {
-      stop("Parameters ", paste0(pnames[pnames %in% not_allowed], collapse = ", "), " cannot be changed during boosting")
+      stop(
+        "Parameters "
+        , paste0(pnames[pnames %in% not_allowed], collapse = ", ")
+        , " cannot be changed during boosting"
+      )
     }
 
     # Check parameter names
@@ -244,8 +248,14 @@ cb.record.evaluation <- function() {
       name <- eval_res$name
 
       # Store evaluation data
-      env$model$record_evals[[data_name]][[name]]$eval <- c(env$model$record_evals[[data_name]][[name]]$eval, eval_res$value)
-      env$model$record_evals[[data_name]][[name]]$eval_err <- c(env$model$record_evals[[data_name]][[name]]$eval_err, eval_err)
+      env$model$record_evals[[data_name]][[name]]$eval <- c(
+        env$model$record_evals[[data_name]][[name]]$eval
+        , eval_res$value
+      )
+      env$model$record_evals[[data_name]][[name]]$eval_err <- c(
+        env$model$record_evals[[data_name]][[name]]$eval_err
+        , eval_err
+      )
 
     }
 
@@ -391,7 +401,9 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
 }
 
 # Extract callback names from the list of callbacks
-callback.names <- function(cb_list) { unlist(lapply(cb_list, attr, "name")) }
+callback.names <- function(cb_list) {
+  unlist(lapply(cb_list, attr, "name"))
+}
 
 add.cb <- function(cb_list, cb) {
 

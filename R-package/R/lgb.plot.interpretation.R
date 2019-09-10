@@ -26,9 +26,14 @@
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #'
-#' params <- list(objective = "binary",
-#'                learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'                min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
+#' params <- list(
+#'   objective = "binary"
+#'   , learning_rate = 0.01
+#'   , num_leaves = 63
+#'   , max_depth = -1
+#'   , min_data_in_leaf = 1
+#'   , min_sum_hessian_in_leaf = 1
+#' )
 #' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_interpretation <- lgb.interprete(model, test$data, 1:5)
@@ -67,16 +72,21 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
   if (num_class == 1) {
 
     # Only one class, plot straight away
-    multiple.tree.plot.interpretation(tree_interpretation_dt,
-                                      top_n = top_n,
-                                      title = NULL,
-                                      cex = cex)
+    multiple.tree.plot.interpretation(
+      tree_interpretation_dt
+      , top_n = top_n
+      , title = NULL
+      , cex = cex
+    )
 
   } else {
 
     # More than one class, shape data first
-    layout_mat <- matrix(seq.int(to = cols * ceiling(num_class / cols)),
-                         ncol = cols, nrow = ceiling(num_class / cols))
+    layout_mat <- matrix(
+      seq.int(to = cols * ceiling(num_class / cols))
+      , ncol = cols
+      , nrow = ceiling(num_class / cols)
+    )
 
     # Shape output
     graphics::par(mfcol = c(nrow(layout_mat), ncol(layout_mat)))
@@ -119,14 +129,14 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
   # Do plot
   tree_interpretation[.N:1,
                       graphics::barplot(
-                          height = Contribution,
-                          names.arg = Feature,
-                          horiz = TRUE,
-                          col = ifelse(Contribution > 0, "firebrick", "steelblue"),
-                          border = NA,
-                          main = title,
-                          cex.names = cex,
-                          las = 1
+                          height = Contribution
+                          , names.arg = Feature
+                          , horiz = TRUE
+                          , col = ifelse(Contribution > 0, "firebrick", "steelblue")
+                          , border = NA
+                          , main = title
+                          , cex.names = cex
+                          , las = 1
                       )]
 
   # Return invisibly

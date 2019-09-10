@@ -76,9 +76,18 @@ lightgbm <- function(data,
   }
 
   # Train a model using the regular way
-  bst <- lgb.train(params, dtrain, nrounds, valids, verbose = verbose, eval_freq = eval_freq,
-                   early_stopping_rounds = early_stopping_rounds,
-                   init_model = init_model, callbacks = callbacks, ...)
+  bst <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = valids
+    , verbose = verbose
+    , eval_freq = eval_freq
+    , early_stopping_rounds = early_stopping_rounds
+    , init_model = init_model
+    , callbacks = callbacks
+    , ...
+  )
 
   # Store model under a specific name
   bst$save_model(save_name)

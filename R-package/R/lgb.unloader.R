@@ -18,13 +18,15 @@
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' params <- list(objective = "regression", metric = "l2")
 #' valids <- list(test = dtest)
-#' model <- lgb.train(params,
-#'                    dtrain,
-#'                    10,
-#'                    valids,
-#'                    min_data = 1,
-#'                    learning_rate = 1,
-#'                    early_stopping_rounds = 5)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , valids = valids
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #'
 #' \dontrun{
 #' lgb.unloader(restore = FALSE, wipe = FALSE, envir = .GlobalEnv)
@@ -43,8 +45,18 @@ lgb.unloader <- function(restore = TRUE, wipe = FALSE, envir = .GlobalEnv) {
 
   # Should we wipe variables? (lgb.Booster, lgb.Dataset)
   if (wipe) {
-    boosters <- Filter(function(x) inherits(get(x, envir = envir), "lgb.Booster"), ls(envir = envir))
-    datasets <- Filter(function(x) inherits(get(x, envir = envir), "lgb.Dataset"), ls(envir = envir))
+    boosters <- Filter(
+      f = function(x){
+        inherits(get(x, envir = envir), "lgb.Booster")
+      }
+      , x = ls(envir = envir)
+    )
+    datasets <- Filter(
+      f = function(x){
+        inherits(get(x, envir = envir), "lgb.Dataset")
+      }
+      , x = ls(envir = envir)
+    )
     rm(list = c(boosters, datasets), envir = envir)
     gc(verbose = FALSE)
   }

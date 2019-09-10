@@ -13,7 +13,11 @@ Predictor <- R6::R6Class(
       if (private$need_free_handle && !lgb.is.null.handle(private$handle)) {
 
         # Freeing up handle
-        lgb.call("LGBM_BoosterFree_R", ret = NULL, private$handle)
+        lgb.call(
+          "LGBM_BoosterFree_R"
+          , ret = NULL
+          , private$handle
+        )
         private$handle <- NULL
 
       }
@@ -31,7 +35,11 @@ Predictor <- R6::R6Class(
       if (is.character(modelfile)) {
 
         # Create handle on it
-        handle <- lgb.call("LGBM_BoosterCreateFromModelfile_R", ret = handle, lgb.c_str(modelfile))
+        handle <- lgb.call(
+          "LGBM_BoosterCreateFromModelfile_R"
+          , ret = handle
+          , lgb.c_str(modelfile)
+        )
         private$need_free_handle <- TRUE
 
       } else if (methods::is(modelfile, "lgb.Booster.handle")) {
@@ -57,7 +65,11 @@ Predictor <- R6::R6Class(
     current_iter = function() {
 
       cur_iter <- 0L
-      lgb.call("LGBM_BoosterGetCurrentIteration_R",  ret = cur_iter, private$handle)
+      lgb.call(
+        "LGBM_BoosterGetCurrentIteration_R"
+        , ret = cur_iter
+        , private$handle
+      )
 
     },
 
@@ -86,14 +98,19 @@ Predictor <- R6::R6Class(
         on.exit(unlink(tmp_filename), add = TRUE)
 
         # Predict from temporary file
-        lgb.call("LGBM_BoosterPredictForFile_R", ret = NULL, private$handle, data,
-          as.integer(header),
-          as.integer(rawscore),
-          as.integer(predleaf),
-          as.integer(predcontrib),
-          as.integer(num_iteration),
-          private$params,
-          lgb.c_str(tmp_filename))
+        lgb.call(
+          "LGBM_BoosterPredictForFile_R"
+          , ret = NULL
+          , private$handle
+          , data
+          , as.integer(header)
+          , as.integer(rawscore)
+          , as.integer(predleaf)
+          , as.integer(predcontrib)
+          , as.integer(num_iteration)
+          , private$params
+          , lgb.c_str(tmp_filename)
+        )
 
         # Get predictions from file
         preds <- read.delim(tmp_filename, header = FALSE, sep = "\t")
@@ -108,51 +125,57 @@ Predictor <- R6::R6Class(
         npred <- 0L
 
         # Check number of predictions to do
-        npred <- lgb.call("LGBM_BoosterCalcNumPredict_R",
-                          ret = npred,
-                          private$handle,
-                          as.integer(num_row),
-                          as.integer(rawscore),
-                          as.integer(predleaf),
-                          as.integer(predcontrib),
-                          as.integer(num_iteration))
+        npred <- lgb.call(
+          "LGBM_BoosterCalcNumPredict_R"
+          , ret = npred
+          , private$handle
+          , as.integer(num_row)
+          , as.integer(rawscore)
+          , as.integer(predleaf)
+          , as.integer(predcontrib)
+          , as.integer(num_iteration)
+        )
 
         # Pre-allocate empty vector
         preds <- numeric(npred)
 
         # Check if data is a matrix
         if (is.matrix(data)) {
-          preds <- lgb.call("LGBM_BoosterPredictForMat_R",
-                            ret = preds,
-                            private$handle,
-                            data,
-                            as.integer(nrow(data)),
-                            as.integer(ncol(data)),
-                            as.integer(rawscore),
-                            as.integer(predleaf),
-                            as.integer(predcontrib),
-                            as.integer(num_iteration),
-                            private$params)
+          preds <- lgb.call(
+            "LGBM_BoosterPredictForMat_R"
+            , ret = preds
+            , private$handle
+            , data
+            , as.integer(nrow(data))
+            , as.integer(ncol(data))
+            , as.integer(rawscore)
+            , as.integer(predleaf)
+            , as.integer(predcontrib)
+            , as.integer(num_iteration)
+            , private$params
+          )
 
         } else if (methods::is(data, "dgCMatrix")) {
           if (length(data@p) > 2147483647) {
             stop("Cannot support large CSC matrix")
           }
           # Check if data is a dgCMatrix (sparse matrix, column compressed format)
-          preds <- lgb.call("LGBM_BoosterPredictForCSC_R",
-                            ret = preds,
-                            private$handle,
-                            data@p,
-                            data@i,
-                            data@x,
-                            length(data@p),
-                            length(data@x),
-                            nrow(data),
-                            as.integer(rawscore),
-                            as.integer(predleaf),
-                            as.integer(predcontrib),
-                            as.integer(num_iteration),
-                            private$params)
+          preds <- lgb.call(
+            "LGBM_BoosterPredictForCSC_R"
+            , ret = preds
+            , private$handle
+            , data@p
+            , data@i
+            , data@x
+            , length(data@p)
+            , length(data@x)
+            , nrow(data)
+            , as.integer(rawscore)
+            , as.integer(predleaf)
+            , as.integer(predcontrib)
+            , as.integer(num_iteration)
+            , private$params
+          )
 
         } else {
 
@@ -165,7 +188,12 @@ Predictor <- R6::R6Class(
 
       # Check if number of rows is strange (not a multiple of the dataset rows)
       if (length(preds) %% num_row != 0) {
-        stop("predict: prediction length ", sQuote(length(preds))," is not a multiple of nrows(data): ", sQuote(num_row))
+        stop(
+          "predict: prediction length "
+          , sQuote(length(preds))
+          ," is not a multiple of nrows(data): "
+          , sQuote(num_row)
+        )
       }
 
       # Get number of cases per row
@@ -192,7 +220,9 @@ Predictor <- R6::R6Class(
     }
 
   ),
-  private = list(handle = NULL,
-                 need_free_handle = FALSE,
-                 params = "")
+  private = list(
+    handle = NULL
+    , need_free_handle = FALSE
+    , params = ""
+  )
 )

@@ -69,12 +69,21 @@ lgb.interprete <- function(model,
   )
 
   # Get list of trees
-  tree_index_mat_list <- lapply(leaf_index_mat_list,
-                                FUN = function(x) matrix(seq_len(length(x)) - 1, ncol = num_class, byrow = TRUE))
+  tree_index_mat_list <- lapply(
+    X = leaf_index_mat_list
+    , FUN = function(x){
+      matrix(seq_len(length(x)) - 1, ncol = num_class, byrow = TRUE)
+    }
+  )
 
   # Sequence over idxset
   for (i in seq_along(idxset)) {
-    tree_interpretation_dt_list[[i]] <- single.row.interprete(tree_dt, num_class, tree_index_mat_list[[i]], leaf_index_mat_list[[i]])
+    tree_interpretation_dt_list[[i]] <- single.row.interprete(
+      tree_dt
+      , num_class
+      , tree_index_mat_list[[i]]
+      , leaf_index_mat_list[[i]]
+    )
   }
 
   # Return interpretation list
@@ -122,7 +131,10 @@ single.tree.interprete <- function(tree_dt,
   leaf_to_root(leaf_dt[["leaf_parent"]], leaf_dt[["leaf_value"]])
 
   # Return formatted data.table
-  data.table::data.table(Feature = feature_seq, Contribution = diff.default(value_seq))
+  data.table::data.table(
+    Feature = feature_seq
+    , Contribution = diff.default(value_seq)
+  )
 
 }
 
@@ -198,16 +210,19 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
   } else {
 
     # Full interpretation elements
-    tree_interpretation_dt <- Reduce(f = function(x, y) merge(x, y, by = "Feature", all = TRUE),
+    tree_interpretation_dt <- Reduce(
+      f = function(x, y) merge(x, y, by = "Feature", all = TRUE),
                                      x = tree_interpretation)
 
     # Loop throughout each tree
     for (j in 2:ncol(tree_interpretation_dt)) {
 
-      data.table::set(tree_interpretation_dt,
-                      i = which(is.na(tree_interpretation_dt[[j]])),
-                      j = j,
-                      value = 0)
+      data.table::set(
+        tree_interpretation_dt
+        , i = which(is.na(tree_interpretation_dt[[j]])),
+        , j = j
+        , value = 0
+      )
 
     }
 

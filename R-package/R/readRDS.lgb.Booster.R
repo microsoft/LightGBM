@@ -17,13 +17,15 @@
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' params <- list(objective = "regression", metric = "l2")
 #' valids <- list(test = dtest)
-#' model <- lgb.train(params,
-#'                    dtrain,
-#'                    10,
-#'                    valids,
-#'                    min_data = 1,
-#'                    learning_rate = 1,
-#'                    early_stopping_rounds = 5)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , valids = valids
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #' saveRDS.lgb.Booster(model, "model.rds")
 #' new_model <- readRDS.lgb.Booster("model.rds")
 #'

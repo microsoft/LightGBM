@@ -35,9 +35,14 @@
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
-#' params <- list(objective = "binary",
-#'                learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'                min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
+#' params <- list(
+#'   objective = "binary"
+#'   , learning_rate = 0.01
+#'   , num_leaves = 63
+#'   , max_depth = -1
+#'   , min_data_in_leaf = 1
+#'   , min_sum_hessian_in_leaf = 1
+#' )
 #' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_dt <- lgb.model.dt.tree(model)
@@ -51,11 +56,13 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   json_model <- lgb.dump(model, num_iteration = num_iteration)
 
   # Parse json model second
-  parsed_json_model <- jsonlite::fromJSON(json_model,
-                                          simplifyVector = TRUE,
-                                          simplifyDataFrame = FALSE,
-                                          simplifyMatrix = FALSE,
-                                          flatten = FALSE)
+  parsed_json_model <- jsonlite::fromJSON(
+    json_model
+    , simplifyVector = TRUE
+    , simplifyDataFrame = FALSE
+    , simplifyMatrix = FALSE
+    , flatten = FALSE
+  )
 
   # Parse tree model third
   tree_list <- lapply(parsed_json_model$tree_info, single.tree.parse)
@@ -89,21 +96,23 @@ single.tree.parse <- function(lgb_tree) {
     if (is.null(env)) {
       # Setup initial default data.table with default types
       env <- new.env(parent = emptyenv())
-      env$single_tree_dt <- data.table::data.table(tree_index = integer(0),
-                                                   depth = integer(0),
-                                                   split_index = integer(0),
-                                                   split_feature = integer(0),
-                                                   node_parent = integer(0),
-                                                   leaf_index = integer(0),
-                                                   leaf_parent = integer(0),
-                                                   split_gain = numeric(0),
-                                                   threshold = numeric(0),
-                                                   decision_type = character(0),
-                                                   default_left = character(0),
-                                                   internal_value = integer(0),
-                                                   internal_count = integer(0),
-                                                   leaf_value = integer(0),
-                                                   leaf_count = integer(0))
+      env$single_tree_dt <- data.table::data.table(
+        tree_index = integer(0)
+        , depth = integer(0)
+        , split_index = integer(0)
+        , split_feature = integer(0)
+        , node_parent = integer(0)
+        , leaf_index = integer(0)
+        , leaf_parent = integer(0)
+        , split_gain = numeric(0)
+        , threshold = numeric(0)
+        , decision_type = character(0)
+        , default_left = character(0)
+        , internal_value = integer(0)
+        , internal_count = integer(0)
+        , leaf_value = integer(0)
+        , leaf_count = integer(0)
+      )
       # start tree traversal
       pre_order_traversal(env, tree_node_leaf, current_depth, parent_index)
     } else {
@@ -127,14 +136,18 @@ single.tree.parse <- function(lgb_tree) {
                                                     fill = TRUE)
 
         # Traverse tree again both left and right
-        pre_order_traversal(env,
-                            tree_node_leaf$left_child,
-                            current_depth = current_depth + 1L,
-                            parent_index = tree_node_leaf$split_index)
-        pre_order_traversal(env,
-                            tree_node_leaf$right_child,
-                            current_depth = current_depth + 1L,
-                            parent_index = tree_node_leaf$split_index)
+        pre_order_traversal(
+          env
+          , tree_node_leaf$left_child
+          , current_depth = current_depth + 1L
+          , parent_index = tree_node_leaf$split_index
+        )
+        pre_order_traversal(
+          env
+          , tree_node_leaf$right_child
+          , current_depth = current_depth + 1L
+          , parent_index = tree_node_leaf$split_index
+        )
 
       } else if (!is.null(tree_node_leaf$leaf_index)) {
 
