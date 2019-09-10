@@ -9,7 +9,7 @@ Installation
 Preparation
 '''''''''''
 
-32-bit Python is not supported. Please install 64-bit version.
+32-bit Python is not supported. Please install 64-bit version. If you have a strong need to install with 32-bit Python, refer to `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__.
 
 `setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
@@ -132,7 +132,19 @@ Build with MinGW-w64 on Windows
 
 `CMake`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
-It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#lightgbm>`__ Question 4 and Question 8).
+It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems
+(see `Question 4 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#4-i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#8-cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
+
+Build 32-bit Version with 32-bit Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--bit32
+
+By default, installation in environment with 32-bit Python is prohibited. However, you can remove this prohibition on your own risk by passing ``bit32`` option.
+
+It is **strongly not recommended** to use this version of LightGBM!
 
 Install from GitHub
 '''''''''''''''''''
@@ -161,6 +173,8 @@ Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **W
 Run ``python setup.py install --gpu`` to enable GPU support. All remarks from `Build GPU Version section <#build-gpu-version>`__ are actual in this case. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
 Run ``python setup.py install --hdfs`` to enable HDFS support. All remarks from `Build HDFS Version section <#build-hdfs-version>`__ are actual in this case.
+
+Run ``python setup.py install --bit32``, if you want to use 32-bit version. All remarks from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ are actual in this case.
 
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
 

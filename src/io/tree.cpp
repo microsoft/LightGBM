@@ -64,7 +64,7 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
     SetMissingType(&decision_type_[new_node_idx], 2);
   }
   threshold_in_bin_[new_node_idx] = threshold_bin;
-  threshold_[new_node_idx] = Common::AvoidInf(threshold_double);
+  threshold_[new_node_idx] = threshold_double;
   ++num_leaves_;
   return num_leaves_ - 1;
 }
@@ -268,7 +268,7 @@ std::string Tree::NodeToJSON(int index) const {
     str_buf << "{" << '\n';
     str_buf << "\"split_index\":" << index << "," << '\n';
     str_buf << "\"split_feature\":" << split_feature_[index] << "," << '\n';
-    str_buf << "\"split_gain\":" << split_gain_[index] << "," << '\n';
+    str_buf << "\"split_gain\":" << Common::AvoidInf(split_gain_[index]) << "," << '\n';
     if (GetDecisionType(decision_type_[index], kCategoricalMask)) {
       int cat_idx = static_cast<int>(threshold_[index]);
       std::vector<int> cats;

@@ -103,6 +103,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   // get feature names
   feature_names_ = train_data_->feature_names();
   feature_infos_ = train_data_->feature_infos();
+  monotone_constraints_ = config->monotone_constraints;
 
   // if need bagging, create buffer
   ResetBaggingConfig(config_.get(), true);

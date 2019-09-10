@@ -30,7 +30,7 @@
 #'     , min_sum_hessian_in_leaf = 1
 #' )
 #'
-#' model <- lgb.train(params, dtrain, 20)
+#' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_imp <- lgb.importance(model, percentage = TRUE)
 #' lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")

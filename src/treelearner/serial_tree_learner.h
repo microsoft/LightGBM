@@ -78,6 +78,8 @@ class SerialTreeLearner: public TreeLearner {
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
  protected:
+
+  virtual std::vector<int8_t> GetUsedFeatures();
   /*!
   * \brief Some initial works before training
   */

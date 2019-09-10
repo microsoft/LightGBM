@@ -62,6 +62,7 @@ def json_default_with_numpy(obj):
 """pandas"""
 try:
     from pandas import Series, DataFrame
+    from pandas.api.types import is_sparse as is_dtype_sparse
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
@@ -75,6 +76,8 @@ except ImportError:
         """Dummy class for pandas.DataFrame."""
 
         pass
+
+    is_dtype_sparse = None
 
 """matplotlib"""
 try:

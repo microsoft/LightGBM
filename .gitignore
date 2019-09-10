@@ -339,6 +339,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/pythonapi/
 
 # Doxygen documentation
 docs/doxyoutput/
@@ -372,9 +373,10 @@ ENV/
 # R testing artefact
 lightgbm.model
 
-# saved or dumped model
+# saved or dumped model/data
 *.model
 *.pkl
+*.bin
 
 # macOS
 **/.DS_Store

@@ -66,6 +66,8 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"neg_bagging", "neg_bagging_fraction"},
   {"subsample_freq", "bagging_freq"},
   {"bagging_fraction_seed", "bagging_seed"},
+  {"sub_feature_bynode", "feature_fraction_bynode"},
+  {"colsample_bytree_bynode", "feature_fraction_bynode"},
   {"sub_feature", "feature_fraction"},
   {"colsample_bytree", "feature_fraction"},
   {"early_stopping_rounds", "early_stopping_round"},
@@ -186,6 +188,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "neg_bagging_fraction",
   "bagging_freq",
   "bagging_seed",
+  "feature_fraction_bynode",
   "feature_fraction",
   "feature_fraction_seed",
   "early_stopping_round",
@@ -264,6 +267,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "poisson_max_delta_step",
   "tweedie_variance_power",
   "max_position",
+  "lambdamart_norm",
   "label_gain",
   "metric",
   "metric_freq",
@@ -322,6 +326,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "bagging_freq", &bagging_freq);
 
   GetInt(params, "bagging_seed", &bagging_seed);
+
+  GetBool(params, "feature_fraction_bynode", &feature_fraction_bynode);
 
   GetDouble(params, "feature_fraction", &feature_fraction);
   CHECK(feature_fraction >0.0);
@@ -530,6 +536,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "max_position", &max_position);
   CHECK(max_position >0);
 
+  GetBool(params, "lambdamart_norm", &lambdamart_norm);
+
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
@@ -583,6 +591,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[neg_bagging_fraction: " << neg_bagging_fraction << "]\n";
   str_buf << "[bagging_freq: " << bagging_freq << "]\n";
   str_buf << "[bagging_seed: " << bagging_seed << "]\n";
+  str_buf << "[feature_fraction_bynode: " << feature_fraction_bynode << "]\n";
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";
   str_buf << "[feature_fraction_seed: " << feature_fraction_seed << "]\n";
   str_buf << "[early_stopping_round: " << early_stopping_round << "]\n";
@@ -661,6 +670,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[poisson_max_delta_step: " << poisson_max_delta_step << "]\n";
   str_buf << "[tweedie_variance_power: " << tweedie_variance_power << "]\n";
   str_buf << "[max_position: " << max_position << "]\n";
+  str_buf << "[lambdamart_norm: " << lambdamart_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";

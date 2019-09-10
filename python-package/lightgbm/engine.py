@@ -88,6 +88,7 @@ def train(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
+        The output cannot be monotonically constrained with respect to a categorical feature.
     early_stopping_rounds : int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
         Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
@@ -199,8 +200,6 @@ def train(params, train_set, num_boost_round=100,
         callbacks = set()
     else:
         for i, cb in enumerate(callbacks):
-            if getattr(cb, 'first_metric_only', False) and feval is not None:
-                raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
 
@@ -211,8 +210,6 @@ def train(params, train_set, num_boost_round=100,
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
-        if first_metric_only and feval is not None:
-            raise LightGBMError("`first_metric_only` and `feval` are not available at the same time.")
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
@@ -311,7 +308,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
         if hasattr(folds, 'split'):
             group_info = full_data.get_group()
             if group_info is not None:
-                group_info = group_info.astype(int)
+                group_info = np.array(group_info, dtype=int)
                 flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=int)
@@ -321,7 +318,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             if not SKLEARN_INSTALLED:
                 raise LightGBMError('Scikit-learn is required for lambdarank cv.')
             # lambdarank task, split according to groups
-            group_info = full_data.get_group().astype(int)
+            group_info = np.array(full_data.get_group(), dtype=int)
             flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
@@ -456,6 +453,7 @@ def cv(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
+        The output cannot be monotonically constrained with respect to a categorical feature.
     early_stopping_rounds : int or None, optional (default=None)
         Activates early stopping.
         CV score needs to improve at least every ``early_stopping_rounds`` round(s)
