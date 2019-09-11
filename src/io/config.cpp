@@ -315,12 +315,12 @@ void Config::CheckParamConflict() {
     
     const int MAX_LEAVES = 2 << 16;
     if (num_leaves > MAX_LEAVES) {
-        Log::Fatal("num_leaves (%d) is larger than maximum allowed leaves (%d)", num_leaves, MAX_LEAVES);
+      Log::Fatal("num_leaves (%d) is larger than maximum allowed leaves (%d)", num_leaves, MAX_LEAVES);
     }
 
     if (full_num_leaves < MAX_LEAVES && full_num_leaves < num_leaves) {
-        // Fits in an int, and is more restrictive than the current num_leaves
-        num_leaves = static_cast<int>(full_num_leaves);
+      // Fits in an int, and is more restrictive than the current num_leaves
+      num_leaves = static_cast<int>(full_num_leaves);
     }
   }
 }
