@@ -10,7 +10,7 @@ namespace LightGBM {
 // one min and one max constraint
 // but if the monotone precise mode is enabled, then it may store a
 // large number of constraints for different thresholds and features
-struct Constraints {
+struct LeafConstraints {
   std::vector<std::vector<double> > min_constraints;
   std::vector<std::vector<double> > max_constraints;
   // the constraint number i is valid on the slice [thresholds[i]:threshold[i+1])
@@ -137,7 +137,7 @@ struct Constraints {
 
   // when the monotone precise mode is disabled, then we can just store
   // 1 min and 1 max constraints per leaf, so we call this constructor
-  Constraints() {
+  LeafConstraints() {
     min_constraints.push_back(
         std::vector<double>(1, -std::numeric_limits<double>::max()));
     max_constraints.push_back(
@@ -148,7 +148,7 @@ struct Constraints {
 
   // when the monotone precise mode is enabled, then for each feature,
   // we need to sort an array of constraints
-  Constraints(unsigned int num_features) {
+  LeafConstraints(unsigned int num_features) {
     min_constraints.resize(num_features);
     max_constraints.resize(num_features);
 
@@ -193,7 +193,7 @@ struct Constraints {
     return max_to_be_updated[feature_idx];
   }
 
-  Constraints(const Constraints &constraints)
+  LeafConstraints(const LeafConstraints &constraints)
       : min_constraints(constraints.min_constraints),
         max_constraints(constraints.max_constraints),
         min_thresholds(constraints.min_thresholds),

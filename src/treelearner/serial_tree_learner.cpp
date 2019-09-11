@@ -82,7 +82,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     ;
   } else {
     constraints_per_leaf_.resize(config_->num_leaves,
-                                 Constraints());
+                                 LeafConstraints());
   }
   splits_per_leaf_.resize(config_->num_leaves*train_data_->num_features());
 
@@ -1434,7 +1434,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
 
 
   if (new_split.monotone_type != 0) {
-    double penalty = Constraints::ComputeMonotoneSplitGainPenalty(depth, config_->monotone_penalty);
+    double penalty = LeafConstraints::ComputeMonotoneSplitGainPenalty(depth, config_->monotone_penalty);
     new_split.gain *= penalty;
   }
 
