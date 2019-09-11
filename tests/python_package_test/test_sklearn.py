@@ -661,7 +661,8 @@ class TestSklearn(unittest.TestCase):
                                                     if eval_set_name != 'training'
                                                     and assumed_iteration != gbm.n_estimators else 0)
                     self.assertEqual(expected, actual)
-                    self.assertEqual(assumed_iteration if eval_set_name != 'training' else 0, gbm.best_iteration_)
+                    self.assertEqual(assumed_iteration if eval_set_name != 'training' else params['n_estimators'],
+                                     gbm.best_iteration_)
 
         decreasing_generator = itertools.count(0, -1)
         X, y = load_boston(True)
