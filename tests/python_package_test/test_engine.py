@@ -1591,8 +1591,8 @@ class TestEngine(unittest.TestCase):
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
-            'feature_fraction': 0.8,
-            'feature_fraction_bynode': True,
+            'feature_fraction_bynode': 0.8,
+            'feature_fraction': 1.0,
             'verbose': -1
         }
         lgb_train = lgb.Dataset(X_train, y_train)
