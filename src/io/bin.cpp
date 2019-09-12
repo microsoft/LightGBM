@@ -149,7 +149,6 @@ namespace LightGBM {
     return bin_upper_bound;
   }
 
-
   std::vector<double> FindBinWithZeroAsOneBin(const double* distinct_values, const int* counts,
     int num_distinct_values, int max_bin, size_t total_sample_cnt, int min_data_in_bin) {
     std::vector<double> bin_upper_bound;
@@ -159,11 +158,9 @@ namespace LightGBM {
     for (int i = 0; i < num_distinct_values; ++i) {
       if (distinct_values[i] <= -kZeroThreshold) {
         left_cnt_data += counts[i];
-      }
-      else if (distinct_values[i] > kZeroThreshold) {
+      } else if (distinct_values[i] > kZeroThreshold) {
         right_cnt_data += counts[i];
-      }
-      else {
+      } else {
         cnt_zero += counts[i];
       }
     }
@@ -203,8 +200,7 @@ namespace LightGBM {
         num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
       bin_upper_bound.push_back(kZeroThreshold);
       bin_upper_bound.insert(bin_upper_bound.end(), right_bounds.begin(), right_bounds.end());
-    }
-    else {
+    } else {
       bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
     }
     CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
@@ -300,7 +296,7 @@ namespace LightGBM {
         num_sub_bins = bins_remaining + 1;
       }
       std::vector<double> new_upper_bounds = GreedyFindBin(distinct_values + bin_start, counts + bin_start, distinct_cnt_in_bin, 
-                                                            num_sub_bins, cnt_in_bin, min_data_in_bin);
+                                                           num_sub_bins, cnt_in_bin, min_data_in_bin);
       bounds_to_add.insert(bounds_to_add.end(), new_upper_bounds.begin(), new_upper_bounds.end() - 1);  // last bound is infinity
     }
     bin_upper_bound.insert(bin_upper_bound.end(), bounds_to_add.begin(), bounds_to_add.end());
@@ -379,7 +375,6 @@ namespace LightGBM {
     int num_distinct_values = static_cast<int>(distinct_values.size());
     if (bin_type_ == BinType::NumericalBin) {
       if (missing_type_ == MissingType::Zero) {
-        auto empty_vec = std::vector<double>();
         if (forced_upper_bounds.size() == 0) {
           bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt,
                                                      min_data_in_bin);
