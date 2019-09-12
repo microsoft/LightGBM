@@ -124,43 +124,22 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     cegb_->Init();
   }
 
-  dummy_min_constraints.resize(num_threads_);
-  min_constraints.resize(num_threads_);
-  dummy_max_constraints.resize(num_threads_);
-  max_constraints.resize(num_threads_);
-
-  thresholds_min_constraints.resize(num_threads_);
-  thresholds_max_constraints.resize(num_threads_);
+  current_constraints.Init(num_threads_, config_);
 
   features.resize(num_threads_);
   is_in_right_split.resize(num_threads_);
   thresholds.resize(num_threads_);
 
-  // the number 32 has no real meaning here, but during our experiments,
-  // we found that the number of constraints per feature was well below 32, so by
-  // allocating this space, we may save some time because we won't have to allocate it later
-  int space_to_reserve = 32;
-  if (!config_->monotone_precise_mode) {
-    space_to_reserve = 1;
-  }
-
   for (int i = 0; i < num_threads_; ++i) {
-    dummy_min_constraints[i].reserve(space_to_reserve);
-    min_constraints[i].reserve(space_to_reserve);
-    dummy_max_constraints[i].reserve(space_to_reserve);
-    max_constraints[i].reserve(space_to_reserve);
-
-    thresholds_min_constraints[i].reserve(space_to_reserve);
-    thresholds_max_constraints[i].reserve(space_to_reserve);
-
     if (!config_->monotone_constraints.empty()) {
       // the number 100 has no real meaning here, same as before
       features[i].reserve(std::max(100, config_->max_depth));
       is_in_right_split[i].reserve(std::max(100, config_->max_depth));
       thresholds[i].reserve(std::max(100, config_->max_depth));
     }
-
-    InitializeConstraints(i);
+    thresholds[i].clear();
+    is_in_right_split[i].clear();
+    features[i].clear();
   }
 }
 
@@ -1386,45 +1365,23 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   // if this is not a subtree stemming from a monotone split, then no constraint apply
   if (tree->leaf_is_in_monotone_subtree(leaf_index)) {
     if (!config_->monotone_precise_mode) {
-      dummy_min_constraints[tid][0] =
-          constraints_per_leaf_[leaf_index].min_constraints[0][0];
-      dummy_max_constraints[tid][0] =
-          constraints_per_leaf_[leaf_index].max_constraints[0][0];
-
-      min_constraints[tid][0] =
-          constraints_per_leaf_[leaf_index].min_constraints[0][0];
-      max_constraints[tid][0] =
-          constraints_per_leaf_[leaf_index].max_constraints[0][0];
-
-      thresholds_min_constraints[tid][0] =
-          constraints_per_leaf_[leaf_index].min_thresholds[0][0];
-      thresholds_max_constraints[tid][0] =
-          constraints_per_leaf_[leaf_index].max_thresholds[0][0];
+      current_constraints.Set(constraints_per_leaf_[leaf_index], tid);
     }
   }
 
 #ifdef DEBUG
-  CHECK(dummy_min_constraints[tid] == min_constraints[tid]);
-  CHECK(dummy_max_constraints[tid] == max_constraints[tid]);
-  for (const auto &x : max_constraints[tid]) {
-    CHECK(tree->LeafOutput(leaf_index) <= EPS + x);
-    CHECK(x > -std::numeric_limits<double>::max());
-  }
-  for (const auto &x : dummy_min_constraints[tid]) {
-    CHECK(tree->LeafOutput(leaf_index) + EPS >= x);
-    CHECK(x < std::numeric_limits<double>::max());
-  }
+  current_constraints.CheckCoherenceWithLeafOutput(tree->LeafOutput(leaf_index), tid, EPS)
 #endif
 
   SplitInfo new_split;
   histogram_array_[feature_index].FindBestThreshold(
-      sum_gradient, sum_hessian, num_data, &new_split, min_constraints[tid],
-      dummy_min_constraints[tid], max_constraints[tid],
-      dummy_max_constraints[tid], thresholds_min_constraints[tid],
-      thresholds_max_constraints[tid]);
+      sum_gradient, sum_hessian, num_data, &new_split, current_constraints.min_constraints[tid],
+      current_constraints.dummy_min_constraints[tid], current_constraints.max_constraints[tid],
+      current_constraints.dummy_max_constraints[tid], current_constraints.thresholds_min_constraints[tid],
+      current_constraints.thresholds_max_constraints[tid]);
 
   if (tree->leaf_is_in_monotone_subtree(leaf_index)) {
-    InitializeConstraints(tid);
+    current_constraints.InitializeConstraints(tid);
   }
 
   new_split.feature = real_fidx;
@@ -1442,29 +1399,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     bests[tid] = new_split;
   }
 
-}
-
-// initializing constraints is just writing that the constraints should +/- inf from threshold 0
-void SerialTreeLearner::InitializeConstraints(unsigned int tid) {
-  thresholds[tid].clear();
-  is_in_right_split[tid].clear();
-  features[tid].clear();
-
-  thresholds_min_constraints[tid].resize(1);
-  thresholds_max_constraints[tid].resize(1);
-
-  dummy_min_constraints[tid].resize(1);
-  min_constraints[tid].resize(1);
-  dummy_max_constraints[tid].resize(1);
-  max_constraints[tid].resize(1);
-
-  dummy_min_constraints[tid][0] = -std::numeric_limits<double>::max();
-  min_constraints[tid][0] = -std::numeric_limits<double>::max();
-  dummy_max_constraints[tid][0] = std::numeric_limits<double>::max();
-  max_constraints[tid][0] = std::numeric_limits<double>::max();
-
-  thresholds_min_constraints[tid][0] = 0;
-  thresholds_max_constraints[tid][0] = 0;
 }
 
 }  // namespace LightGBM

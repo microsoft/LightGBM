@@ -231,5 +231,98 @@ struct LeafConstraints {
   }
 };
 
+struct CurrentConstraints {
+  std::vector<std::vector<double> > dummy_min_constraints;
+  std::vector<std::vector<double> > min_constraints;
+  std::vector<std::vector<double> > dummy_max_constraints;
+  std::vector<std::vector<double> > max_constraints;
+
+  std::vector<std::vector<uint32_t> > thresholds_min_constraints;
+  std::vector<std::vector<uint32_t> > thresholds_max_constraints;
+
+  const int space_to_reserve_non_monotone_precise_mode;
+  const int space_to_reserve_monotone_precise_mode;
+
+  // the number 32 has no real meaning here, but during our experiments,
+  // we found that the number of constraints per feature was well below 32, so
+  // by allocating this space, we may save some time because we won't have to
+  // allocate it later
+  CurrentConstraints()
+      : space_to_reserve_non_monotone_precise_mode(1),
+        space_to_reserve_monotone_precise_mode(32) {};
+
+  void Init(int num_threads_, const Config *config_) {
+    dummy_min_constraints.resize(num_threads_);
+    min_constraints.resize(num_threads_);
+    dummy_max_constraints.resize(num_threads_);
+    max_constraints.resize(num_threads_);
+
+    thresholds_min_constraints.resize(num_threads_);
+    thresholds_max_constraints.resize(num_threads_);
+
+    int space_to_reserve = space_to_reserve_monotone_precise_mode;
+    if (!config_->monotone_precise_mode) {
+      space_to_reserve = space_to_reserve_non_monotone_precise_mode;
+    }
+
+    for (int i = 0; i < num_threads_; ++i) {
+      dummy_min_constraints[i].reserve(space_to_reserve);
+      min_constraints[i].reserve(space_to_reserve);
+      dummy_max_constraints[i].reserve(space_to_reserve);
+      max_constraints[i].reserve(space_to_reserve);
+
+      thresholds_min_constraints[i].reserve(space_to_reserve);
+      thresholds_max_constraints[i].reserve(space_to_reserve);
+
+      InitializeConstraints(i);
+    }
+  }
+
+  // initializing constraints is just writing that the constraints should +/-
+  // inf from threshold 0
+  void InitializeConstraints(unsigned int tid) {
+    thresholds_min_constraints[tid].resize(1);
+    thresholds_max_constraints[tid].resize(1);
+
+    dummy_min_constraints[tid].resize(1);
+    min_constraints[tid].resize(1);
+    dummy_max_constraints[tid].resize(1);
+    max_constraints[tid].resize(1);
+
+    dummy_min_constraints[tid][0] = -std::numeric_limits<double>::max();
+    min_constraints[tid][0] = -std::numeric_limits<double>::max();
+    dummy_max_constraints[tid][0] = std::numeric_limits<double>::max();
+    max_constraints[tid][0] = std::numeric_limits<double>::max();
+
+    thresholds_min_constraints[tid][0] = 0;
+    thresholds_max_constraints[tid][0] = 0;
+  }
+
+  void Set(const LeafConstraints &leaf_constraints, unsigned int tid) {
+    dummy_min_constraints[tid][0] = leaf_constraints.min_constraints[0][0];
+    dummy_max_constraints[tid][0] = leaf_constraints.max_constraints[0][0];
+
+    min_constraints[tid][0] = leaf_constraints.min_constraints[0][0];
+    max_constraints[tid][0] = leaf_constraints.max_constraints[0][0];
+
+    thresholds_min_constraints[tid][0] = leaf_constraints.min_thresholds[0][0];
+    thresholds_max_constraints[tid][0] = leaf_constraints.max_thresholds[0][0];
+  }
+
+  void CheckCoherenceWithLeafOutput(double leaf_output, unsigned int tid,
+                                    double EPS) {
+    CHECK(dummy_min_constraints[tid] == min_constraints[tid]);
+    CHECK(dummy_max_constraints[tid] == max_constraints[tid]);
+    for (const auto &x : max_constraints[tid]) {
+      CHECK(leaf_output <= EPS + x);
+      CHECK(x > -std::numeric_limits<double>::max());
+    }
+    for (const auto &x : dummy_min_constraints[tid]) {
+      CHECK(leaf_output + EPS >= x);
+      CHECK(x < std::numeric_limits<double>::max());
+    }
+  }
+};
+
 } // namespace LightGBM
 #endif // LightGBM_TREELEARNER_MONOTONE_CONSTRAINTS_H_

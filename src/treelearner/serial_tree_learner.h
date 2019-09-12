@@ -264,8 +264,7 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<std::vector<double> > dummy_max_constraints;
   std::vector<std::vector<double> > max_constraints;
 
-  std::vector<std::vector<uint32_t> > thresholds_min_constraints;
-  std::vector<std::vector<uint32_t> > thresholds_max_constraints;
+  CurrentConstraints current_constraints;
 
   std::vector<std::vector<int> > features;
   std::vector<std::vector<uint32_t> > thresholds;
