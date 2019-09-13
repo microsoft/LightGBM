@@ -204,7 +204,7 @@ namespace LightGBM {
     bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
 
     // add forced bounds, excluding zeros since we have already added zero bounds
-    int i = 0;
+    size_t i = 0;
     while (i < forced_upper_bounds.size()) {
       if (std::fabs(forced_upper_bounds[i]) <= kZeroThreshold) {
         forced_upper_bounds.erase(forced_upper_bounds.begin() + i);
@@ -222,7 +222,7 @@ namespace LightGBM {
     // find remaining bounds
     std::vector<double> bounds_to_add;
     int value_ind = 0;
-    for (int i = 0; i < bin_upper_bound.size(); ++i) {
+    for (size_t i = 0; i < bin_upper_bound.size(); ++i) {
       int cnt_in_bin = 0;
       int distinct_cnt_in_bin = 0;
       int bin_start = value_ind;

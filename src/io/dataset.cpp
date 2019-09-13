@@ -10,10 +10,10 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
 
+#include <limits>
 #include <chrono>
 #include <cstdio>
 #include <fstream>
-#include <limits>
 #include <sstream>
 #include <unordered_map>
 
@@ -726,7 +726,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
       writer->Write(&num_bounds, sizeof(int));
       
-      for (int j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+      for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
         writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
       }
     }
@@ -782,7 +782,7 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fprintf(file, "\nforced_bins: ");
   for (int i = 0; i < num_total_features_; ++i) {
     fprintf(file, "\nfeature %d: ", i);
-    for (int j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+    for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
       fprintf(file, "%lf, ", forced_bin_bounds_[i][j]);
     }
   }
@@ -1080,11 +1080,11 @@ std::vector<std::vector<double>> Dataset::GetForcedBins(std::string forced_bins_
       Json forced_bins_json = Json::parse(buffer.str(), err);
       CHECK(forced_bins_json.is_array());
       std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
-      for (int i = 0; i < forced_bins_arr.size(); ++i) {
+      for (size_t i = 0; i < forced_bins_arr.size(); ++i) {
         int feature_num = forced_bins_arr[i]["feature"].int_value();
         CHECK(feature_num < num_total_features);
         std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
-        for (int j = 0; j < bounds_arr.size(); ++j) {
+        for (size_t j = 0; j < bounds_arr.size(); ++j) {
           forced_bins[feature_num].push_back(bounds_arr[j].number_value());
         }
       }
