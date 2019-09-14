@@ -277,9 +277,10 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     return ret;
   }
   std::memset(ret.data(), 0, sizeof(int8_t) * num_features_);
+  int min_used_features = std::min(2, static_cast<int>(valid_feature_indices_.size()));
   if (is_tree_level) {
     int used_feature_cnt = static_cast<int>(valid_feature_indices_.size() * config_->feature_fraction);
-    used_feature_cnt = std::max(used_feature_cnt, 1);
+    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
     used_feature_indices_ = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
     int omp_loop_size = static_cast<int>(used_feature_indices_.size());
     #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
@@ -291,7 +292,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     }
   } else if(used_feature_indices_.size() <= 0) {
     int used_feature_cnt = static_cast<int>(valid_feature_indices_.size() * config_->feature_fraction_bynode);
-    used_feature_cnt = std::max(used_feature_cnt, 1);
+    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
     auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
     int omp_loop_size = static_cast<int>(sampled_indices.size());
     #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
@@ -303,7 +304,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     }
   } else {
     int used_feature_cnt = static_cast<int>(used_feature_indices_.size() * config_->feature_fraction_bynode);
-    used_feature_cnt = std::max(used_feature_cnt, 1);
+    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
     auto sampled_indices = random_.Sample(static_cast<int>(used_feature_indices_.size()), used_feature_cnt);
     int omp_loop_size = static_cast<int>(sampled_indices.size());
     #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
