@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include "serial_tree_learner.h"
+#include "cost_effective_gradient_boosting.hpp"
 
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
@@ -69,8 +70,6 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   histogram_pool_.DynamicChangeSize(train_data_, config_, max_cache_size, config_->num_leaves);
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
-  splits_per_leaf_.resize(config_->num_leaves*train_data_->num_features());
-
   // get ordered bin
   train_data_->CreateOrderedBins(&ordered_bins_);
 
@@ -104,15 +103,9 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     }
   }
   Log::Info("Number of data: %d, number of used features: %d", num_data_, num_features_);
-  is_feature_used_in_split_.clear();
-  is_feature_used_in_split_.resize(train_data->num_features());
-
-  if (!config_->cegb_penalty_feature_coupled.empty()) {
-    CHECK(config_->cegb_penalty_feature_coupled.size() == static_cast<size_t>(train_data_->num_total_features()));
-  }
-  if (!config_->cegb_penalty_feature_lazy.empty()) {
-    CHECK(config_->cegb_penalty_feature_lazy.size() == static_cast<size_t>(train_data_->num_total_features()));
-    feature_used_in_data = Common::EmptyBitset(train_data->num_features() * num_data_);
+  if (CostEfficientGradientBoosting::IsEnable(config_)) {
+    cegb_.reset(new CostEfficientGradientBoosting(this));
+    cegb_->Init();
   }
 }
 
@@ -138,6 +131,9 @@ void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
   if (has_ordered_bin_) {
     is_data_in_leaf_.resize(num_data_);
     std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), static_cast<char>(0));
+  }
+  if (cegb_ != nullptr) {
+    cegb_->Init();
   }
 }
 
@@ -166,8 +162,11 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   } else {
     config_ = config;
   }
-
   histogram_pool_.ResetConfig(config_);
+  if (CostEfficientGradientBoosting::IsEnable(config_)) {
+    cegb_.reset(new CostEfficientGradientBoosting(this));
+    cegb_->Init();
+  }
 }
 
 Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, Json& forced_split_json) {
@@ -520,28 +519,6 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
   #endif
 }
 
-double SerialTreeLearner::CalculateOndemandCosts(int feature_index, int leaf_index) {
-  if (config_->cegb_penalty_feature_lazy.empty())
-    return 0.0f;
-
-  double penalty = config_->cegb_penalty_feature_lazy[feature_index];
-
-  const int inner_fidx = train_data_->InnerFeatureIndex(feature_index);
-
-  double total = 0.0f;
-  data_size_t cnt_leaf_data = 0;
-  auto tmp_idx = data_partition_->GetIndexOnLeaf(leaf_index, &cnt_leaf_data);
-
-  for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
-    int real_idx = tmp_idx[i_input];
-    if (Common::FindInBitset(feature_used_in_data.data(), train_data_->num_data()*train_data_->num_features(), train_data_->num_data() * inner_fidx + real_idx))
-      continue;
-    total += penalty;
-  }
-
-  return total;
-}
-
 void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   #ifdef TIMETAG
   auto start_time = std::chrono::steady_clock::now();
@@ -575,14 +552,9 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       smaller_leaf_splits_->max_constraint(),
       &smaller_split);
     smaller_split.feature = real_fidx;
-    smaller_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_split * smaller_leaf_splits_->num_data_in_leaf();
-    if (!config_->cegb_penalty_feature_coupled.empty() && !is_feature_used_in_split_[feature_index]) {
-      smaller_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_feature_coupled[real_fidx];
+    if (cegb_ != nullptr) {
+      smaller_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, smaller_leaf_splits_->LeafIndex(), smaller_leaf_splits_->num_data_in_leaf(), smaller_split);
     }
-    if (!config_->cegb_penalty_feature_lazy.empty()) {
-      smaller_split.gain -= config_->cegb_tradeoff * CalculateOndemandCosts(real_fidx, smaller_leaf_splits_->LeafIndex());
-    }
-    splits_per_leaf_[smaller_leaf_splits_->LeafIndex()*train_data_->num_features() + feature_index] = smaller_split;
     if (smaller_split > smaller_best[tid] && smaller_node_used_features[feature_index]) {
       smaller_best[tid] = smaller_split;
     }
@@ -606,14 +578,9 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       larger_leaf_splits_->max_constraint(),
       &larger_split);
     larger_split.feature = real_fidx;
-    larger_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_split * larger_leaf_splits_->num_data_in_leaf();
-    if (!config_->cegb_penalty_feature_coupled.empty() && !is_feature_used_in_split_[feature_index]) {
-      larger_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_feature_coupled[real_fidx];
+    if (cegb_ != nullptr) {
+      larger_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, larger_leaf_splits_->LeafIndex(), larger_leaf_splits_->num_data_in_leaf(), larger_split);
     }
-    if (!config_->cegb_penalty_feature_lazy.empty()) {
-      larger_split.gain -= config_->cegb_tradeoff*CalculateOndemandCosts(real_fidx, larger_leaf_splits_->LeafIndex());
-    }
-    splits_per_leaf_[larger_leaf_splits_->LeafIndex()*train_data_->num_features() + feature_index] = larger_split;
     if (larger_split > larger_best[tid] && larger_node_used_features[feature_index]) {
       larger_best[tid] = larger_split;
     }
@@ -802,26 +769,9 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
 void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) {
   const SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
-  if (!config_->cegb_penalty_feature_coupled.empty() && !is_feature_used_in_split_[inner_feature_index]) {
-    is_feature_used_in_split_[inner_feature_index] = true;
-    for (int i = 0; i < tree->num_leaves(); ++i) {
-      if (i == best_leaf) continue;
-      auto split = &splits_per_leaf_[i*train_data_->num_features() + inner_feature_index];
-      split->gain += config_->cegb_tradeoff*config_->cegb_penalty_feature_coupled[best_split_info.feature];
-      if (*split > best_split_per_leaf_[i])
-        best_split_per_leaf_[i] = *split;
-    }
+  if (cegb_ != nullptr) {
+    cegb_->UpdateLeafBestSplits(tree, best_leaf, &best_split_info, &best_split_per_leaf_);
   }
-
-  if (!config_->cegb_penalty_feature_lazy.empty()) {
-    data_size_t cnt_leaf_data = 0;
-    auto tmp_idx = data_partition_->GetIndexOnLeaf(best_leaf, &cnt_leaf_data);
-    for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
-      int real_idx = tmp_idx[i_input];
-      Common::InsertBitset(feature_used_in_data, train_data_->num_data() * inner_feature_index + real_idx);
-    }
-  }
-
   // left = parent
   *left_leaf = best_leaf;
   bool is_numerical_split = train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin;
