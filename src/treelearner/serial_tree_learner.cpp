@@ -277,7 +277,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     return ret;
   }
   std::memset(ret.data(), 0, sizeof(int8_t) * num_features_);
-  int min_used_features = std::min(2, static_cast<int>(valid_feature_indices_.size()));
+  const int min_used_features = std::min(2, static_cast<int>(valid_feature_indices_.size()));
   if (is_tree_level) {
     int used_feature_cnt = static_cast<int>(valid_feature_indices_.size() * config_->feature_fraction);
     used_feature_cnt = std::max(used_feature_cnt, min_used_features);
