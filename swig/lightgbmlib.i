@@ -157,11 +157,11 @@
       // get the size, indices and values
       auto indices = (jintArray)jenv->CallObjectMethod(objSparseVec, sparseVectorIndices);
       if (jenv->ExceptionCheck()) {
-	return -1;
+        return -1;
       }
       auto values = (jdoubleArray)jenv->CallObjectMethod(objSparseVec, sparseVectorValues);
       if (jenv->ExceptionCheck()) {
-	return -1;
+        return -1;
       }
       int size = jenv->GetArrayLength(indices);
 
