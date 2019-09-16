@@ -8,7 +8,6 @@ ignore=
   public.tableau.com
   https://www.open-mpi.org
   https://readthedocs.org
-  .*R/reference$
 ignorewarnings=http-robots-denied,https-certificate-error
 
 [output]
