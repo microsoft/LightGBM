@@ -133,13 +133,15 @@
           int size;
   };
 
-  void check_exception(JNIEnv *jenv) {
+  int check_exception(JNIEnv *jenv) {
     jboolean flag = jenv->ExceptionCheck();
     if (flag) {
       jthrowable jerror = jenv->ExceptionOccurred();
       jenv->ExceptionClear();
       jenv->Throw(jerror);
+      return -1;
     }
+    return 0;
   }
 
   int LGBM_DatasetCreateFromCSRSpark(JNIEnv *jenv,
@@ -165,9 +167,13 @@
 
       // get the size, indices and values
       auto indices = (jintArray)jenv->CallObjectMethod(objSparseVec, sparseVectorIndices);
-      check_exception(jenv);
+      if (check_exception(jenv) < 0) {
+	return -1;
+      }
       auto values = (jdoubleArray)jenv->CallObjectMethod(objSparseVec, sparseVectorValues);
-      check_exception(jenv);
+      if (check_exception(jenv) < 0) {
+	return -1;
+      }
       int size = jenv->GetArrayLength(indices);
 
       // Note: when testing on larger data (e.g. 288k rows per partition and 36mio rows total)
