@@ -118,6 +118,16 @@ Apple Clang
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
+Install Using ``Homebrew``
+**************************
+
+   .. code::
+
+     brew install lightgbm
+
+Install from GitHub
+*******************
+
 1. Install `CMake`_ (3.12 or higher):
 
    .. code::
