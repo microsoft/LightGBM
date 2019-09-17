@@ -192,15 +192,13 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
     SplitInfo smaller_split;
     // find best threshold for smaller child
     // FIXME Fill the vectors with the actual constraints and thresholds
-    std::vector<double> max_constraints;
-    std::vector<double> min_constraints;
+    SplittingConstraints constraints;
     std::vector<uint32_t> thresholds;
     this->smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
         this->smaller_leaf_splits_->sum_gradients(),
         this->smaller_leaf_splits_->sum_hessians(),
         GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
-        &smaller_split, max_constraints, min_constraints, max_constraints,
-        min_constraints, thresholds, thresholds);
+        &smaller_split, constraints);
     smaller_split.feature = real_feature_index;
     if (smaller_split > smaller_bests_per_thread[tid] && smaller_node_used_features[feature_index]) {
       smaller_bests_per_thread[tid] = smaller_split;
@@ -219,8 +217,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
         this->larger_leaf_splits_->sum_gradients(),
         this->larger_leaf_splits_->sum_hessians(),
         GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
-        &larger_split, max_constraints, min_constraints, max_constraints,
-        min_constraints, thresholds, thresholds);
+        &larger_split, constraints);
     larger_split.feature = real_feature_index;
     if (larger_split > larger_bests_per_thread[tid] && larger_node_used_features[feature_index]) {
       larger_bests_per_thread[tid] = larger_split;

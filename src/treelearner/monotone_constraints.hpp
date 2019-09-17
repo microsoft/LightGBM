@@ -231,6 +231,165 @@ struct LeafConstraints {
   }
 };
 
+struct SplittingConstraints {
+  std::vector<double> cumulative_min_constraint_right_to_left;
+  std::vector<double> cumulative_max_constraint_right_to_left;
+  std::vector<double> cumulative_min_constraint_left_to_right;
+  std::vector<double> cumulative_max_constraint_left_to_right;
+
+  std::vector<uint32_t> thresholds_min_constraints;
+  std::vector<uint32_t> thresholds_max_constraints;
+
+  unsigned int index_min_constraint_left_to_right;
+  unsigned int index_min_constraint_right_to_left;
+  unsigned int index_max_constraint_left_to_right;
+  unsigned int index_max_constraint_right_to_left;
+  bool update_is_necessary;
+
+  SplittingConstraints() {};
+
+  SplittingConstraints(
+      std::vector<double> &cumulative_min_constraint_right_to_left,
+      std::vector<double> &cumulative_min_constraint_left_to_right,
+      std::vector<double> &cumulative_max_constraint_right_to_left,
+      std::vector<double> &cumulative_max_constraint_left_to_right,
+      std::vector<uint32_t> &thresholds_min_constraints,
+      std::vector<uint32_t> &thresholds_max_constraints) {
+    this->cumulative_min_constraint_right_to_left =
+        cumulative_min_constraint_right_to_left;
+    this->cumulative_min_constraint_left_to_right =
+        cumulative_min_constraint_left_to_right;
+    this->cumulative_max_constraint_right_to_left =
+        cumulative_max_constraint_right_to_left;
+    this->cumulative_max_constraint_left_to_right =
+        cumulative_max_constraint_left_to_right;
+
+    this->thresholds_min_constraints = thresholds_min_constraints;
+    this->thresholds_max_constraints = thresholds_max_constraints;
+  }
+
+  static void CumulativeExtremum(
+      const double &(*extremum_function)(const double &, const double &),
+      bool is_direction_from_left_to_right,
+      std::vector<double> &cumulative_extremum) {
+    if (cumulative_extremum.size() == 1) {
+      return;
+    }
+#ifdef DEBUG
+    CHECK(cumulative_extremum.size() != 0);
+#endif
+
+    std::size_t n_exts = cumulative_extremum.size();
+    int step = is_direction_from_left_to_right ? 1 : -1;
+    std::size_t start = is_direction_from_left_to_right ? 0 : n_exts - 1;
+    std::size_t end = is_direction_from_left_to_right ? n_exts - 1 : 0;
+
+    for (auto i = start; i != end; i = i + step) {
+      cumulative_extremum[i + step] = extremum_function(
+          cumulative_extremum[i + step], cumulative_extremum[i]);
+    }
+  }
+
+  void ComputeCumulativeExtremums() {
+    const double &(*min)(const double &, const double &) = std::min<double>;
+    const double &(*max)(const double &, const double &) = std::max<double>;
+
+    CumulativeExtremum(max, true, cumulative_min_constraint_left_to_right);
+    CumulativeExtremum(max, false, cumulative_min_constraint_right_to_left);
+    CumulativeExtremum(min, true, cumulative_max_constraint_left_to_right);
+    CumulativeExtremum(min, false, cumulative_max_constraint_right_to_left);
+  }
+
+  void InitializeIndices(int dir) {
+    if (dir == -1) {
+      index_min_constraint_left_to_right = thresholds_min_constraints.size() - 1;
+      index_min_constraint_right_to_left = thresholds_min_constraints.size() - 1;
+      index_max_constraint_left_to_right = thresholds_max_constraints.size() - 1;
+      index_max_constraint_right_to_left = thresholds_max_constraints.size() - 1;
+      update_is_necessary = !(thresholds_max_constraints.size() == 1 &&
+                              thresholds_min_constraints.size() == 1);
+    } else {
+      index_min_constraint_left_to_right = 0;
+      index_min_constraint_right_to_left = 0;
+      index_max_constraint_left_to_right = 0;
+      index_max_constraint_right_to_left = 0;
+    }
+  }
+
+  void UpdateIndices(int dir, const int8_t bias, int t) {
+    if (dir == -1) {
+      if (update_is_necessary) {
+        while (
+            static_cast<int>(
+                thresholds_min_constraints[index_min_constraint_left_to_right]) >
+            t + bias - 1) {
+          index_min_constraint_left_to_right -= 1;
+        }
+        while (
+            static_cast<int>(
+                thresholds_min_constraints[index_min_constraint_right_to_left]) >
+            t + bias) {
+          index_min_constraint_right_to_left -= 1;
+        }
+        while (
+            static_cast<int>(
+                thresholds_max_constraints[index_max_constraint_left_to_right]) >
+            t + bias - 1) {
+          index_max_constraint_left_to_right -= 1;
+        }
+        while (
+            static_cast<int>(
+                thresholds_max_constraints[index_max_constraint_right_to_left]) >
+            t + bias) {
+          index_max_constraint_right_to_left -= 1;
+        }
+      }
+#ifdef DEBUG
+      CHECK(index_min_constraint_left_to_right <
+            thresholds_min_constraint.size());
+      CHECK(index_min_constraint_right_to_left <
+            thresholds_min_constraint.size());
+      CHECK(index_max_constraint_left_to_right <
+            thresholds_max_constraint.size());
+      CHECK(index_max_constraint_right_to_left <
+            thresholds_max_constraint.size());
+#endif
+    } else {
+// current split gain
+#ifdef DEBUG
+      CHECK(index_min_constraint_left_to_right <
+            thresholds_min_constraint.size());
+      CHECK(index_min_constraint_right_to_left <
+            thresholds_min_constraint.size());
+      CHECK(index_max_constraint_left_to_right <
+            thresholds_max_constraint.size());
+      CHECK(index_max_constraint_right_to_left <
+            thresholds_max_constraint.size());
+#endif
+    }
+  }
+
+  double CurrentMinConstraintRight() const {
+    return cumulative_min_constraint_right_to_left
+        [index_min_constraint_right_to_left];
+  }
+
+  double CurrentMaxConstraintRight() const {
+    return cumulative_max_constraint_right_to_left
+        [index_max_constraint_right_to_left];
+  }
+
+  double CurrentMinConstraintLeft() const {
+    return cumulative_min_constraint_left_to_right
+        [index_min_constraint_left_to_right];
+  }
+
+  double CurrentMaxConstraintLeft() const {
+    return cumulative_max_constraint_left_to_right
+        [index_max_constraint_left_to_right];
+  }
+};
+
 struct CurrentConstraints {
   std::vector<std::vector<double> > dummy_min_constraints;
   std::vector<std::vector<double> > min_constraints;
@@ -321,6 +480,13 @@ struct CurrentConstraints {
       CHECK(leaf_output + EPS >= x);
       CHECK(x < std::numeric_limits<double>::max());
     }
+  }
+
+  SplittingConstraints GetSplittingConstraints(int tid) {
+    return SplittingConstraints(
+        dummy_min_constraints[tid], min_constraints[tid],
+        dummy_max_constraints[tid], max_constraints[tid],
+        thresholds_min_constraints[tid], thresholds_max_constraints[tid]);
   }
 };
 

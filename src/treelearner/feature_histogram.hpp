@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "split_info.hpp"
+#include "monotone_constraints.hpp"
 
 namespace LightGBM {
 
@@ -60,16 +61,12 @@ class FeatureHistogram {
       find_best_threshold_fun_ = std::bind(
           &FeatureHistogram::FindBestThresholdNumerical, this,
           std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-          std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
-          std::placeholders::_7, std::placeholders::_8, std::placeholders::_9,
-          std::placeholders::_10);
+          std::placeholders::_4, std::placeholders::_5);
     } else {
       find_best_threshold_fun_ = std::bind(
           &FeatureHistogram::FindBestThresholdCategorical, this,
           std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-          std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
-          std::placeholders::_7, std::placeholders::_8, std::placeholders::_9,
-          std::placeholders::_10);
+          std::placeholders::_4, std::placeholders::_5);
     }
   }
 
@@ -88,91 +85,49 @@ class FeatureHistogram {
     }
   }
 
-  void FindBestThreshold(
-      double sum_gradient, double sum_hessian, data_size_t num_data,
-      SplitInfo *output,
-      std::vector<double> &cumulative_min_constraint_left_to_right,
-      std::vector<double> &cumulative_min_constraint_right_to_left,
-      std::vector<double> &cumulative_max_constraint_left_to_right,
-      std::vector<double> &cumulative_max_constraint_right_to_left,
-      const std::vector<uint32_t> &thresholds_min_constraint,
-      const std::vector<uint32_t> &thresholds_max_constraint) {
+  void FindBestThreshold(double sum_gradient, double sum_hessian,
+                         data_size_t num_data, SplitInfo *output,
+                         SplittingConstraints &constraints) {
     output->default_left = true;
     output->gain = kMinScore;
     find_best_threshold_fun_(sum_gradient, sum_hessian + 2 * kEpsilon, num_data,
-                             output, cumulative_min_constraint_left_to_right,
-                             cumulative_min_constraint_right_to_left,
-                             cumulative_max_constraint_left_to_right,
-                             cumulative_max_constraint_right_to_left,
-                             thresholds_min_constraint,
-                             thresholds_max_constraint);
+                             output, constraints);
     output->gain *= meta_->penalty;
   }
 
-  void FindBestThresholdNumerical(
-      double sum_gradient, double sum_hessian, data_size_t num_data,
-      SplitInfo *output,
-      std::vector<double> &cumulative_min_constraint_left_to_right,
-      std::vector<double> &cumulative_min_constraint_right_to_left,
-      std::vector<double> &cumulative_max_constraint_left_to_right,
-      std::vector<double> &cumulative_max_constraint_right_to_left,
-      const std::vector<uint32_t> &thresholds_min_constraint,
-      const std::vector<uint32_t> &thresholds_max_constraint) {
+  void FindBestThresholdNumerical(double sum_gradient, double sum_hessian,
+                                  data_size_t num_data, SplitInfo *output,
+                                  SplittingConstraints &constraints) {
     is_splittable_ = false;
     could_be_splittable_ = false;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
 
-    const double &(*min)(const double &, const double &) = std::min<double>;
-    const double &(*max)(const double &, const double &) = std::max<double>;
     // at this point, the following arrays contain the constraints applied on every part of the leaf
     // since we are splitting the leaf in 2, we can compute the cumulative / minimum maximum in both directions
-    CumulativeExtremum(max, true, cumulative_min_constraint_left_to_right);
-    CumulativeExtremum(max, false, cumulative_min_constraint_right_to_left);
-    CumulativeExtremum(min, true, cumulative_max_constraint_left_to_right);
-    CumulativeExtremum(min, false, cumulative_max_constraint_right_to_left);
+    constraints.ComputeCumulativeExtremums();
 
     if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
       if (meta_->missing_type == MissingType::Zero) {
         FindBestThresholdSequence(
             sum_gradient, sum_hessian, num_data, min_gain_shift, output, -1,
-            true, false, cumulative_min_constraint_left_to_right,
-            cumulative_min_constraint_right_to_left,
-            cumulative_max_constraint_left_to_right,
-            cumulative_max_constraint_right_to_left, thresholds_min_constraint,
-            thresholds_max_constraint);
+            true, false, constraints);
         FindBestThresholdSequence(
             sum_gradient, sum_hessian, num_data, min_gain_shift, output, 1,
-            true, false, cumulative_min_constraint_left_to_right,
-            cumulative_min_constraint_right_to_left,
-            cumulative_max_constraint_left_to_right,
-            cumulative_max_constraint_right_to_left, thresholds_min_constraint,
-            thresholds_max_constraint);
+            true, false, constraints);
       } else {
         FindBestThresholdSequence(
             sum_gradient, sum_hessian, num_data, min_gain_shift, output, -1,
-            false, true, cumulative_min_constraint_left_to_right,
-            cumulative_min_constraint_right_to_left,
-            cumulative_max_constraint_left_to_right,
-            cumulative_max_constraint_right_to_left, thresholds_min_constraint,
-            thresholds_max_constraint);
+            false, true, constraints);
         FindBestThresholdSequence(
             sum_gradient, sum_hessian, num_data, min_gain_shift, output, 1,
-            false, true, cumulative_min_constraint_left_to_right,
-            cumulative_min_constraint_right_to_left,
-            cumulative_max_constraint_left_to_right,
-            cumulative_max_constraint_right_to_left, thresholds_min_constraint,
-            thresholds_max_constraint);
+            false, true, constraints);
       }
     } else {
       FindBestThresholdSequence(
           sum_gradient, sum_hessian, num_data, min_gain_shift, output, -1,
-          false, false, cumulative_min_constraint_left_to_right,
-          cumulative_min_constraint_right_to_left,
-          cumulative_max_constraint_left_to_right,
-          cumulative_max_constraint_right_to_left, thresholds_min_constraint,
-          thresholds_max_constraint);
+          false, false, constraints);
       // fix the direction error when only have 2 bins
       if (meta_->missing_type == MissingType::NaN) {
         output->default_left = false;
@@ -184,13 +139,7 @@ class FeatureHistogram {
 
   void FindBestThresholdCategorical(
       double sum_gradient, double sum_hessian, data_size_t num_data,
-      SplitInfo *output,
-      std::vector<double> &cumulative_min_constraint_left_to_right,
-      std::vector<double> &cumulative_min_constraint_right_to_left,
-      std::vector<double> &cumulative_max_constraint_left_to_right,
-      std::vector<double> &cumulative_max_constraint_right_to_left,
-      const std::vector<uint32_t> &thresholds_min_constraint,
-      const std::vector<uint32_t> &thresholds_max_constraint) {
+      SplitInfo *output, SplittingConstraints& constraints) {
     output->default_left = false;
     double best_gain = kMinScore;
     data_size_t best_left_count = 0;
@@ -207,6 +156,8 @@ class FeatureHistogram {
     bool use_onehot = meta_->num_bin <= meta_->config->max_cat_to_onehot;
     int best_threshold = -1;
     int best_dir = 1;
+
+    constraints.InitializeIndices(1);
 
     if (use_onehot) {
       for (int t = 0; t < used_bin; ++t) {
@@ -232,10 +183,10 @@ class FeatureHistogram {
             sum_other_gradient, sum_other_hessian, data_[t].sum_gradients,
             data_[t].sum_hessians + kEpsilon, meta_->config->lambda_l1, l2,
             meta_->config->max_delta_step,
-            cumulative_min_constraint_right_to_left[0],
-            cumulative_max_constraint_right_to_left[0],
-            cumulative_min_constraint_left_to_right[0],
-            cumulative_max_constraint_left_to_right[0], 0);
+            constraints.CurrentMinConstraintRight(),
+            constraints.CurrentMaxConstraintRight(),
+            constraints.CurrentMinConstraintLeft(),
+            constraints.CurrentMaxConstraintLeft(), 0);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
 
@@ -310,10 +261,10 @@ class FeatureHistogram {
               sum_left_gradient, sum_left_hessian, sum_right_gradient,
               sum_right_hessian, meta_->config->lambda_l1, l2,
               meta_->config->max_delta_step,
-              cumulative_min_constraint_right_to_left[0],
-              cumulative_max_constraint_right_to_left[0],
-              cumulative_min_constraint_left_to_right[0],
-              cumulative_max_constraint_left_to_right[0], 0);
+              constraints.CurrentMinConstraintRight(),
+              constraints.CurrentMaxConstraintRight(),
+              constraints.CurrentMinConstraintLeft(),
+              constraints.CurrentMaxConstraintLeft(), 0);
 
           if (current_gain <= min_gain_shift) continue;
           is_splittable_ = true;
@@ -333,8 +284,8 @@ class FeatureHistogram {
       output->left_output = CalculateSplittedLeafOutput(
           best_sum_left_gradient, best_sum_left_hessian,
           meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
-          cumulative_min_constraint_left_to_right[0],
-          cumulative_max_constraint_left_to_right[0]);
+          constraints.CurrentMinConstraintLeft(),
+          constraints.CurrentMaxConstraintLeft());
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
@@ -342,8 +293,8 @@ class FeatureHistogram {
           sum_gradient - best_sum_left_gradient,
           sum_hessian - best_sum_left_hessian, meta_->config->lambda_l1, l2,
           meta_->config->max_delta_step,
-          cumulative_min_constraint_right_to_left[0],
-          cumulative_max_constraint_right_to_left[0]);
+          constraints.CurrentMinConstraintRight(),
+          constraints.CurrentMaxConstraintRight());
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
@@ -561,29 +512,6 @@ class FeatureHistogram {
     }
   }
 
-  static void CumulativeExtremum(
-      const double &(*extremum_function)(const double &, const double &),
-      bool is_direction_from_left_to_right,
-      std::vector<double> &cumulative_extremum) {
-    if (cumulative_extremum.size() == 1) {
-      return;
-    }
-
-#ifdef DEBUG
-    CHECK(cumulative_extremum.size() != 0);
-#endif
-
-    std::size_t n_exts = cumulative_extremum.size();
-    int step = is_direction_from_left_to_right ? 1 : -1;
-    std::size_t start = is_direction_from_left_to_right ? 0 : n_exts - 1;
-    std::size_t end = is_direction_from_left_to_right ? n_exts - 1 : 0;
-
-    for (auto i = start; i != end; i = i + step) {
-      cumulative_extremum[i + step] = extremum_function(
-          cumulative_extremum[i + step], cumulative_extremum[i]);
-    }
-  }
-
   /*!
   * \brief Calculate the output of a leaf based on regularized sum_gradients and sum_hessians
   * \param sum_gradients
@@ -633,16 +561,11 @@ class FeatureHistogram {
     return -(2.0 * sg_l1 * output + (sum_hessians + l2) * output * output);
   }
 
-  void FindBestThresholdSequence(
-      double sum_gradient, double sum_hessian, data_size_t num_data,
-      double min_gain_shift, SplitInfo *output, int dir, bool skip_default_bin,
-      bool use_na_as_missing,
-      const std::vector<double> &cumulative_min_constraint_left_to_right,
-      const std::vector<double> &cumulative_min_constraint_right_to_left,
-      const std::vector<double> &cumulative_max_constraint_left_to_right,
-      const std::vector<double> &cumulative_max_constraint_right_to_left,
-      const std::vector<uint32_t> &thresholds_min_constraint,
-      const std::vector<uint32_t> &thresholds_max_constraint) {
+  void FindBestThresholdSequence(double sum_gradient, double sum_hessian,
+                                 data_size_t num_data, double min_gain_shift,
+                                 SplitInfo *output, int dir,
+                                 bool skip_default_bin, bool use_na_as_missing,
+                                 SplittingConstraints &constraints) {
     const int8_t bias = meta_->bias;
 
     double best_sum_left_gradient = NAN;
@@ -666,16 +589,7 @@ class FeatureHistogram {
 
       int t = meta_->num_bin - 1 - bias - use_na_as_missing;
       const int t_end = 1 - bias;
-      unsigned int index_min_constraint_left_to_right =
-          thresholds_min_constraint.size() - 1;
-      unsigned int index_min_constraint_right_to_left =
-          thresholds_min_constraint.size() - 1;
-      unsigned int index_max_constraint_left_to_right =
-          thresholds_max_constraint.size() - 1;
-      unsigned int index_max_constraint_right_to_left =
-          thresholds_max_constraint.size() - 1;
-      bool update_is_necessary = !(thresholds_max_constraint.size() == 1 &&
-                                   thresholds_min_constraint.size() == 1);
+      constraints.InitializeIndices(dir);
 
       // from right to left, and we don't need data in bin0
       for (; t >= t_end; --t) {
@@ -703,39 +617,7 @@ class FeatureHistogram {
 
         // when the monotone precise mode in enabled, as t changes, the constraints applied on
         // each child may change, because the constraints may depend on thresholds
-        if (update_is_necessary) {
-          while (static_cast<int>(thresholds_min_constraint
-                                      [index_min_constraint_left_to_right]) >
-                 t + bias - 1) {
-            index_min_constraint_left_to_right -= 1;
-          }
-          while (static_cast<int>(thresholds_min_constraint
-                                      [index_min_constraint_right_to_left]) >
-                 t + bias) {
-            index_min_constraint_right_to_left -= 1;
-          }
-          while (static_cast<int>(thresholds_max_constraint
-                                      [index_max_constraint_left_to_right]) >
-                 t + bias - 1) {
-            index_max_constraint_left_to_right -= 1;
-          }
-          while (static_cast<int>(thresholds_max_constraint
-                                      [index_max_constraint_right_to_left]) >
-                 t + bias) {
-            index_max_constraint_right_to_left -= 1;
-          }
-        }
-
-#ifdef DEBUG
-        CHECK(index_min_constraint_left_to_right <
-              thresholds_min_constraint.size());
-        CHECK(index_min_constraint_right_to_left <
-              thresholds_min_constraint.size());
-        CHECK(index_max_constraint_left_to_right <
-              thresholds_max_constraint.size());
-        CHECK(index_max_constraint_right_to_left <
-              thresholds_max_constraint.size());
-#endif
+        constraints.UpdateIndices(dir, bias, t);
 
         // when the algorithm goes through the thresholds we use the same index for cumulative arrays
         // in both directions but each leaf is constrained according to the corresponding array
@@ -744,15 +626,10 @@ class FeatureHistogram {
             sum_left_gradient, sum_left_hessian, sum_right_gradient,
             sum_right_hessian, meta_->config->lambda_l1,
             meta_->config->lambda_l2, meta_->config->max_delta_step,
-            cumulative_min_constraint_right_to_left
-                [index_min_constraint_right_to_left],
-            cumulative_max_constraint_right_to_left
-                [index_max_constraint_right_to_left],
-            cumulative_min_constraint_left_to_right
-                [index_min_constraint_left_to_right],
-            cumulative_max_constraint_left_to_right
-                [index_max_constraint_left_to_right],
-            meta_->monotone_type);
+            constraints.CurrentMinConstraintRight(),
+            constraints.CurrentMaxConstraintRight(),
+            constraints.CurrentMinConstraintLeft(),
+            constraints.CurrentMaxConstraintLeft(), meta_->monotone_type);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
 
@@ -767,14 +644,10 @@ class FeatureHistogram {
           best_threshold = static_cast<uint32_t>(t - 1 + bias);
           best_gain = current_gain;
 
-          best_min_constraint_right = cumulative_min_constraint_right_to_left
-              [index_min_constraint_right_to_left];
-          best_max_constraint_right = cumulative_max_constraint_right_to_left
-              [index_max_constraint_right_to_left];
-          best_min_constraint_left = cumulative_min_constraint_left_to_right
-              [index_min_constraint_left_to_right];
-          best_max_constraint_left = cumulative_max_constraint_left_to_right
-              [index_max_constraint_left_to_right];
+          best_min_constraint_right = constraints.CurrentMinConstraintRight();
+          best_max_constraint_right = constraints.CurrentMaxConstraintRight();
+          best_min_constraint_left = constraints.CurrentMinConstraintLeft();
+          best_max_constraint_left = constraints.CurrentMaxConstraintLeft();
         }
       }
     } else {
@@ -797,10 +670,7 @@ class FeatureHistogram {
         t = -1;
       }
 
-      unsigned int index_min_constraint_left_to_right = 0;
-      unsigned int index_min_constraint_right_to_left = 0;
-      unsigned int index_max_constraint_left_to_right = 0;
-      unsigned int index_max_constraint_right_to_left = 0;
+      constraints.InitializeIndices(dir);
 
       for (; t <= t_end; ++t) {
         // need to skip default bin
@@ -825,31 +695,15 @@ class FeatureHistogram {
 
         double sum_right_gradient = sum_gradient - sum_left_gradient;
 
-        // current split gain
-#ifdef DEBUG
-        CHECK(index_min_constraint_left_to_right <
-              thresholds_min_constraint.size());
-        CHECK(index_min_constraint_right_to_left <
-              thresholds_min_constraint.size());
-        CHECK(index_max_constraint_left_to_right <
-              thresholds_max_constraint.size());
-        CHECK(index_max_constraint_right_to_left <
-              thresholds_max_constraint.size());
-#endif
-
+        constraints.UpdateIndices(1, bias, t);
         double current_gain = GetSplitGains(
             sum_left_gradient, sum_left_hessian, sum_right_gradient,
             sum_right_hessian, meta_->config->lambda_l1,
             meta_->config->lambda_l2, meta_->config->max_delta_step,
-            cumulative_min_constraint_right_to_left
-                [index_min_constraint_right_to_left],
-            cumulative_max_constraint_right_to_left
-                [index_max_constraint_right_to_left],
-            cumulative_min_constraint_left_to_right
-                [index_min_constraint_left_to_right],
-            cumulative_max_constraint_left_to_right
-                [index_max_constraint_left_to_right],
-            meta_->monotone_type);
+            constraints.CurrentMinConstraintRight(),
+            constraints.CurrentMaxConstraintRight(),
+            constraints.CurrentMinConstraintLeft(),
+            constraints.CurrentMaxConstraintLeft(), meta_->monotone_type);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
 
@@ -863,14 +717,10 @@ class FeatureHistogram {
           best_threshold = static_cast<uint32_t>(t + bias);
           best_gain = current_gain;
 
-          best_max_constraint_left = cumulative_max_constraint_left_to_right
-              [index_max_constraint_left_to_right];
-          best_min_constraint_left = cumulative_min_constraint_left_to_right
-              [index_min_constraint_left_to_right];
-          best_max_constraint_right = cumulative_max_constraint_right_to_left
-              [index_max_constraint_right_to_left];
-          best_min_constraint_right = cumulative_min_constraint_right_to_left
-              [index_min_constraint_right_to_left];
+          best_min_constraint_right = constraints.CurrentMinConstraintRight();
+          best_max_constraint_right = constraints.CurrentMaxConstraintRight();
+          best_min_constraint_left = constraints.CurrentMinConstraintLeft();
+          best_max_constraint_left = constraints.CurrentMaxConstraintLeft();
         }
       }
     }
@@ -908,10 +758,7 @@ class FeatureHistogram {
   bool could_be_splittable_ = true;
 
   std::function<void(double, double, data_size_t, SplitInfo *,
-                     std::vector<double> &, std::vector<double> &,
-                     std::vector<double> &, std::vector<double> &,
-                     const std::vector<uint32_t> &,
-                     const std::vector<uint32_t> &)> find_best_threshold_fun_;
+                     SplittingConstraints &)> find_best_threshold_fun_;
 };
 class HistogramPool {
  public:
