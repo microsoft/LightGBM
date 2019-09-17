@@ -388,16 +388,62 @@ struct SplittingConstraints {
     return cumulative_max_constraint_left_to_right
         [index_max_constraint_left_to_right];
   }
+
+  void Reserve(int space_to_reserve) {
+    cumulative_max_constraint_right_to_left.reserve(space_to_reserve);
+    cumulative_max_constraint_left_to_right.reserve(space_to_reserve);
+    cumulative_min_constraint_right_to_left.reserve(space_to_reserve);
+    cumulative_min_constraint_left_to_right.reserve(space_to_reserve);
+    thresholds_max_constraints.reserve(space_to_reserve);
+    thresholds_min_constraints.reserve(space_to_reserve);
+  }
+
+  void InitializeConstraints() {
+    thresholds_min_constraints.resize(1);
+    thresholds_max_constraints.resize(1);
+
+    cumulative_min_constraint_right_to_left.resize(1);
+    cumulative_min_constraint_left_to_right.resize(1);
+    cumulative_max_constraint_right_to_left.resize(1);
+    cumulative_max_constraint_left_to_right.resize(1);
+
+    cumulative_min_constraint_right_to_left[0] = -std::numeric_limits<double>::max();
+    cumulative_min_constraint_left_to_right[0] = -std::numeric_limits<double>::max();
+    cumulative_max_constraint_right_to_left[0] = std::numeric_limits<double>::max();
+    cumulative_max_constraint_left_to_right[0] = std::numeric_limits<double>::max();
+
+    thresholds_min_constraints[0] = 0;
+    thresholds_max_constraints[0] = 0;
+  }
+
+  void Set(const LeafConstraints &leaf_constraints) {
+    cumulative_min_constraint_right_to_left[0] = leaf_constraints.min_constraints[0][0];
+    cumulative_max_constraint_right_to_left[0] = leaf_constraints.max_constraints[0][0];
+
+    cumulative_min_constraint_left_to_right[0] = leaf_constraints.min_constraints[0][0];
+    cumulative_max_constraint_left_to_right[0] = leaf_constraints.max_constraints[0][0];
+
+    thresholds_min_constraints[0] = leaf_constraints.min_thresholds[0][0];
+    thresholds_max_constraints[0] = leaf_constraints.max_thresholds[0][0];
+  }
+
+  void CheckCoherenceWithLeafOutput(double leaf_output,
+                                    double EPS) {
+    CHECK(cumulative_min_constraint_left_to_right == cumulative_min_constraint_right_to_left);
+    CHECK(cumulative_max_constraint_left_to_right == cumulative_max_constraint_right_to_left);
+    for (const auto &x : cumulative_max_constraint_left_to_right) {
+      CHECK(leaf_output <= EPS + x);
+      CHECK(x > -std::numeric_limits<double>::max());
+    }
+    for (const auto &x : cumulative_min_constraint_right_to_left) {
+      CHECK(leaf_output + EPS >= x);
+      CHECK(x < std::numeric_limits<double>::max());
+    }
+  }
 };
 
 struct CurrentConstraints {
-  std::vector<std::vector<double> > dummy_min_constraints;
-  std::vector<std::vector<double> > min_constraints;
-  std::vector<std::vector<double> > dummy_max_constraints;
-  std::vector<std::vector<double> > max_constraints;
-
-  std::vector<std::vector<uint32_t> > thresholds_min_constraints;
-  std::vector<std::vector<uint32_t> > thresholds_max_constraints;
+  std::vector<SplittingConstraints> splitting_constraints_vector;
 
   const int space_to_reserve_non_monotone_precise_mode;
   const int space_to_reserve_monotone_precise_mode;
@@ -411,13 +457,7 @@ struct CurrentConstraints {
         space_to_reserve_monotone_precise_mode(32) {};
 
   void Init(int num_threads_, const Config *config_) {
-    dummy_min_constraints.resize(num_threads_);
-    min_constraints.resize(num_threads_);
-    dummy_max_constraints.resize(num_threads_);
-    max_constraints.resize(num_threads_);
-
-    thresholds_min_constraints.resize(num_threads_);
-    thresholds_max_constraints.resize(num_threads_);
+    splitting_constraints_vector.resize(num_threads_);
 
     int space_to_reserve = space_to_reserve_monotone_precise_mode;
     if (!config_->monotone_precise_mode) {
@@ -425,68 +465,29 @@ struct CurrentConstraints {
     }
 
     for (int i = 0; i < num_threads_; ++i) {
-      dummy_min_constraints[i].reserve(space_to_reserve);
-      min_constraints[i].reserve(space_to_reserve);
-      dummy_max_constraints[i].reserve(space_to_reserve);
-      max_constraints[i].reserve(space_to_reserve);
-
-      thresholds_min_constraints[i].reserve(space_to_reserve);
-      thresholds_max_constraints[i].reserve(space_to_reserve);
-
+      splitting_constraints_vector[i].Reserve(space_to_reserve);
       InitializeConstraints(i);
     }
+  }
+
+  SplittingConstraints& operator[](unsigned int i) {
+    return splitting_constraints_vector[i];
   }
 
   // initializing constraints is just writing that the constraints should +/-
   // inf from threshold 0
   void InitializeConstraints(unsigned int tid) {
-    thresholds_min_constraints[tid].resize(1);
-    thresholds_max_constraints[tid].resize(1);
-
-    dummy_min_constraints[tid].resize(1);
-    min_constraints[tid].resize(1);
-    dummy_max_constraints[tid].resize(1);
-    max_constraints[tid].resize(1);
-
-    dummy_min_constraints[tid][0] = -std::numeric_limits<double>::max();
-    min_constraints[tid][0] = -std::numeric_limits<double>::max();
-    dummy_max_constraints[tid][0] = std::numeric_limits<double>::max();
-    max_constraints[tid][0] = std::numeric_limits<double>::max();
-
-    thresholds_min_constraints[tid][0] = 0;
-    thresholds_max_constraints[tid][0] = 0;
+    splitting_constraints_vector[tid].InitializeConstraints();
   }
 
   void Set(const LeafConstraints &leaf_constraints, unsigned int tid) {
-    dummy_min_constraints[tid][0] = leaf_constraints.min_constraints[0][0];
-    dummy_max_constraints[tid][0] = leaf_constraints.max_constraints[0][0];
-
-    min_constraints[tid][0] = leaf_constraints.min_constraints[0][0];
-    max_constraints[tid][0] = leaf_constraints.max_constraints[0][0];
-
-    thresholds_min_constraints[tid][0] = leaf_constraints.min_thresholds[0][0];
-    thresholds_max_constraints[tid][0] = leaf_constraints.max_thresholds[0][0];
+    splitting_constraints_vector[tid].Set(leaf_constraints);
   }
 
   void CheckCoherenceWithLeafOutput(double leaf_output, unsigned int tid,
                                     double EPS) {
-    CHECK(dummy_min_constraints[tid] == min_constraints[tid]);
-    CHECK(dummy_max_constraints[tid] == max_constraints[tid]);
-    for (const auto &x : max_constraints[tid]) {
-      CHECK(leaf_output <= EPS + x);
-      CHECK(x > -std::numeric_limits<double>::max());
-    }
-    for (const auto &x : dummy_min_constraints[tid]) {
-      CHECK(leaf_output + EPS >= x);
-      CHECK(x < std::numeric_limits<double>::max());
-    }
-  }
-
-  SplittingConstraints GetSplittingConstraints(int tid) {
-    return SplittingConstraints(
-        dummy_min_constraints[tid], min_constraints[tid],
-        dummy_max_constraints[tid], max_constraints[tid],
-        thresholds_min_constraints[tid], thresholds_max_constraints[tid]);
+    splitting_constraints_vector[tid]
+        .CheckCoherenceWithLeafOutput(leaf_output, EPS);
   }
 };
 
