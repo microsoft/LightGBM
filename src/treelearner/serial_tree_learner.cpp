@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include "serial_tree_learner.h"
-#include "cost_effective_gradient_boosting.hpp"
 
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
@@ -14,6 +13,8 @@
 #include <queue>
 #include <unordered_map>
 #include <utility>
+
+#include "cost_effective_gradient_boosting.hpp"
 
 namespace LightGBM {
 
