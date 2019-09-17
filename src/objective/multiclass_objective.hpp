@@ -5,6 +5,7 @@
 #ifndef LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 
+#include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
 #include <string>
