@@ -79,7 +79,8 @@ class CostEfficientGradientBoosting {
       }
     }
   }
-  private:
+
+ private:
   double CalculateOndemandCosts(int feature_index, int real_fidx, int leaf_index) const {
     if (tree_learner_->config_->cegb_penalty_feature_lazy.empty()) {
       return 0.0f;
@@ -107,5 +108,5 @@ class CostEfficientGradientBoosting {
   std::vector<uint32_t> feature_used_in_data_;
 };
 
-}  // namespace LightGBM
+} // namespace LightGBM
 #endif // LIGHTGBM_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
