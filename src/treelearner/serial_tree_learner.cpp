@@ -28,8 +28,6 @@ std::chrono::duration<double, std::milli> ordered_bin_time;
 std::chrono::duration<double, std::milli> refit_leaves_time;
 #endif  // TIMETAG
 
-double EPS = 1e-12;
-
 SerialTreeLearner::SerialTreeLearner(const Config* config)
   :config_(config) {
   random_ = Random(config_->feature_fraction_seed);
@@ -1370,7 +1368,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   }
 
 #ifdef DEBUG
-  current_constraints.CheckCoherenceWithLeafOutput(tree->LeafOutput(leaf_index), tid, EPS)
+  current_constraints.CheckCoherenceWithLeafOutput(tree->LeafOutput(leaf_index), tid, kEpsilon)
 #endif
 
   SplitInfo new_split;
