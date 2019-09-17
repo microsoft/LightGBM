@@ -1642,6 +1642,15 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_x, num_boost_round=100)
         predicted = est.predict(new_x)
         self.assertEqual(len(np.unique(predicted)), 3)
+        params['forcedbins_filename'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                     '../../examples/regression/forced_bins2.json')
+        params['max_bin'] = 11
+        lgb_x = lgb.Dataset(x[:, :1], label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=100)
+        predicted = est.predict(x[1:, :1])
+        vals, counts = np.unique(predicted, return_counts=True)
+        self.assertGreaterEqual(min(counts), 9)
+        self.assertLessEqual(max(counts), 11)
 
     def test_binning_same_sign(self):
         # test that binning works properly for features with only positive or only negative values

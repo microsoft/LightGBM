@@ -220,6 +220,7 @@ namespace LightGBM {
     std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
 
     // find remaining bounds
+    int free_bins = max_bin - static_cast<int>(bin_upper_bound.size());
     std::vector<double> bounds_to_add;
     int value_ind = 0;
     for (size_t i = 0; i < bin_upper_bound.size(); ++i) {
@@ -232,7 +233,7 @@ namespace LightGBM {
         ++value_ind;
       }
       int bins_remaining = max_bin - static_cast<int>(bin_upper_bound.size()) - static_cast<int>(bounds_to_add.size());
-      int num_sub_bins = static_cast<int>(std::lround((static_cast<double>(cnt_in_bin) * bins_remaining / total_sample_cnt)));
+      int num_sub_bins = static_cast<int>(std::lround((static_cast<double>(cnt_in_bin) * free_bins / total_sample_cnt)));
       num_sub_bins = std::min(num_sub_bins, bins_remaining) + 1;
       if (i == bin_upper_bound.size() - 1) {
         num_sub_bins = bins_remaining + 1;
