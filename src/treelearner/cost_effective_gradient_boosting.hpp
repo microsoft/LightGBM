@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2019 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
@@ -36,11 +36,14 @@ class CostEfficientGradientBoosting {
     is_feature_used_in_split_.clear();
     is_feature_used_in_split_.resize(train_data->num_features());
 
-    if (!tree_learner_->config_->cegb_penalty_feature_coupled.empty()) {
-      CHECK(tree_learner_->config_->cegb_penalty_feature_coupled.size() == static_cast<size_t>(train_data->num_total_features()));
+    if (!tree_learner_->config_->cegb_penalty_feature_coupled.empty() 
+        && tree_learner_->config_->cegb_penalty_feature_coupled.size() != static_cast<size_t>(train_data->num_total_features())) {
+      Log::Fatal("cegb_penalty_feature_coupled should be the same size as feature number.");
     }
     if (!tree_learner_->config_->cegb_penalty_feature_lazy.empty()) {
-      CHECK(tree_learner_->config_->cegb_penalty_feature_lazy.size() == static_cast<size_t>(train_data->num_total_features()));
+      if (tree_learner_->config_->cegb_penalty_feature_lazy.size() != static_cast<size_t>(train_data->num_total_features())) {
+        Log::Fatal("cegb_penalty_feature_lazy should be the same size as feature number.");
+      }
       feature_used_in_data_ = Common::EmptyBitset(train_data->num_features() * tree_learner_->num_data_);
     }
   }
@@ -108,5 +111,6 @@ class CostEfficientGradientBoosting {
   std::vector<uint32_t> feature_used_in_data_;
 };
 
-} // namespace LightGBM
-#endif // LIGHTGBM_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
+}  // namespace LightGBM
+
+#endif  // LIGHTGBM_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
