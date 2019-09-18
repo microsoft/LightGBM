@@ -20,6 +20,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <unordered_map>
 
 namespace LightGBM {
 
@@ -287,6 +288,8 @@ class Dataset {
   LIGHTGBM_EXPORT Dataset();
 
   LIGHTGBM_EXPORT Dataset(data_size_t num_data);
+
+  void ConstructCtrBins(const Config& io_config, const Dataset* reference);
 
   void Construct(
     std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
@@ -596,6 +599,8 @@ class Dataset {
 
   void addFeaturesFrom(Dataset* other);
 
+  FeatureGroup* CreateNewSingleFeatureGroup(const Config& io_config, BinMapper* bin_mapper, bool for_train);
+
  private:
   std::string data_filename_;
   /*! \brief Store used features */
@@ -634,6 +639,10 @@ class Dataset {
   int min_data_in_bin_;
   bool use_missing_;
   bool zero_as_missing_;
+  /*! \brief Map inner feature index of a categorical feature to feature index of its ctr feature */
+  std::unordered_map<int, int> cat_fid_2_ctr_fid_;
+  /*! \brief Map inner feature index of a categorical feature to its ctr values */
+  std::unordered_map<int, std::vector<double>> cat_fid_2_ctr_values_;
 };
 
 }  // namespace LightGBM

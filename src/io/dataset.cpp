@@ -212,6 +212,222 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
   return ret;
 }
 
+FeatureGroup* Dataset::CreateNewSingleFeatureGroup(const Config& io_config, BinMapper* bin_mapper, bool for_train) {
+  std::vector<std::unique_ptr<BinMapper>> bin_mappers;
+  if(for_train) {
+    bin_mappers.emplace_back(std::unique_ptr<BinMapper>(bin_mapper));
+  }
+  else {
+    bin_mappers.emplace_back(std::unique_ptr<BinMapper>(new BinMapper(*bin_mapper)));
+  }
+  FeatureGroup* new_feature_group = new FeatureGroup(1, bin_mappers, num_data_, sparse_threshold_, io_config.is_enable_sparse); 
+  used_feature_map_.push_back(num_features_);
+  real_feature_idx_.push_back(num_total_features_);
+  feature2group_.push_back(num_groups_);
+  feature2subfeature_.push_back(0);
+  ++num_total_features_;
+  ++num_features_;
+  ++num_groups_; 
+
+  int num_total_bin = group_bin_boundaries_.back();
+  num_total_bin += new_feature_group->num_total_bin_;
+  group_bin_boundaries_.push_back(num_total_bin);
+
+  feature_groups_.emplace_back(new_feature_group);
+
+  group_feature_start_.push_back(num_features_ - 1);
+  group_feature_cnt_.push_back(1);
+
+  if(!monotone_types_.empty()) {
+    monotone_types_.push_back(0);
+  }
+  if(!feature_penalty_.empty()) {
+    feature_penalty_.push_back(1.0);
+  }
+
+  return new_feature_group;
+}
+
+void Dataset::ConstructCtrBins(const Config& io_config, const Dataset* reference) {  
+  if(reference == nullptr) {
+    std::vector<std::mt19937*> thread_generator(io_config.num_threads, nullptr);
+    for(int thread_id = 0; thread_id < io_config.num_threads; ++thread_id) {
+      thread_generator[thread_id] = new std::mt19937(io_config.data_random_seed + thread_id);
+    }
+    const std::vector<double> fold_prob(io_config.num_ctr_fold, 1.0 / io_config.num_ctr_fold);
+    std::discrete_distribution<int> fold_distribution(fold_prob.begin(), fold_prob.end());
+    int num_ctr_fold = io_config.num_ctr_fold;
+    std::vector<int> fold_ids(num_data_, 0);
+    const label_t* label =  metadata_.label();
+
+    #pragma omp parallel num_threads(io_config.num_threads)
+    {
+      int thread_id = omp_get_thread_num();
+      #pragma omp parallel for schedule(static)
+      for(int i = 0; i < num_data_; ++i) {
+        fold_ids[i] = fold_distribution(*thread_generator[thread_id]);
+      }
+    }
+
+    std::vector<int> inner_feature_index_of_categorical;
+    for(int fid = 0; fid < num_features_; ++fid) {
+      const BinMapper* bin_mapper = FeatureBinMapper(fid);
+      if(bin_mapper->bin_type() == BinType::CategoricalBin && bin_mapper->num_bin() > io_config.max_cat_to_onehot) {
+        inner_feature_index_of_categorical.push_back(fid);
+      }
+    }
+
+    double prior = 0.0;
+    #pragma omp parallel for schedule(static) num_threads(io_config.num_threads) reduction(+:prior)
+    for(data_size_t idx = 0; idx < num_data_; ++idx) {
+      prior += label[idx];
+    }
+    prior /= num_data_;
+
+    auto ctr_func = [prior](double value1, double value2) {
+      return (value1 + prior) / (value2 + 1.0);
+    };
+
+    std::vector<BinIterator*> bin_iterators(io_config.num_threads, nullptr);
+    std::vector<std::vector<std::vector<double>>> thread_bin_total_counts(io_config.num_threads);
+    std::vector<std::vector<std::vector<double>>> thread_bin_target_counts(io_config.num_threads);
+    std::vector<std::vector<double>> bin_total_counts(num_ctr_fold);
+    std::vector<std::vector<double>> bin_target_counts(num_ctr_fold);
+    std::vector<double> ctr_value(num_data_, 0.0), ctr_value_copy(num_data_, 0.0);
+    std::vector<std::vector<double>> fold_ctr_value(num_ctr_fold);
+
+    #pragma omp parallel for schedule(static) num_threads(io_config.num_threads)
+    for(int thread_id = 0; thread_id < io_config.num_threads; ++thread_id) {
+      thread_bin_total_counts[thread_id].resize(io_config.num_ctr_fold);
+      thread_bin_target_counts[thread_id].resize(io_config.num_ctr_fold);
+    }
+    for(size_t idx = 0; idx < inner_feature_index_of_categorical.size(); ++idx) {
+      int fid = inner_feature_index_of_categorical[idx];
+      int num_bin = FeatureBinMapper(fid)->num_bin();
+      for(int fold_id = 0; fold_id < num_ctr_fold; ++fold_id) {
+        bin_total_counts[fold_id].resize(num_bin, 0.0);
+        bin_target_counts[fold_id].resize(num_bin, 0.0);
+      }
+      for(int thread_id = 0; thread_id < io_config.num_threads; ++thread_id) {
+        bin_iterators[thread_id] = FeatureIterator(fid);
+      }
+      int block_size = (num_data_ + io_config.num_threads - 1) / io_config.num_threads;
+      #pragma omp parallel num_threads(io_config.num_threads)
+      {
+        #pragma omp for schedule(static) 
+        for(int thread_id = 0; thread_id < io_config.num_threads; ++thread_id) {
+          int start = block_size * thread_id;
+          int end = std::min(start + block_size, num_data_);
+          for(int fold_id = 0; fold_id < io_config.num_ctr_fold; ++fold_id) {
+            thread_bin_total_counts[thread_id][fold_id].resize(num_bin, 0.0);
+            thread_bin_target_counts[thread_id][fold_id].resize(num_bin, 0.0);
+          }
+          bin_iterators[thread_id]->Reset(start);
+          for(int index = start; index < end; ++index) {
+            auto bin = bin_iterators[thread_id]->Get(index);
+            int fold_id = fold_ids[index];
+            ++thread_bin_total_counts[thread_id][fold_id][bin];
+            thread_bin_target_counts[thread_id][fold_id][bin] += label[index];
+          }
+        }
+        #pragma omp barrier
+
+        #pragma omp for schedule(static) 
+        for(int bin_id = 0; bin_id < num_bin; ++bin_id) {
+          for(int fold_id = 0; fold_id < num_ctr_fold; ++fold_id) {
+            for(int thread_id = 0; thread_id < io_config.num_threads; ++thread_id) {
+              bin_total_counts[fold_id][bin_id] += thread_bin_total_counts[thread_id][fold_id][bin_id];
+              bin_target_counts[fold_id][bin_id] += thread_bin_target_counts[thread_id][fold_id][bin_id];
+            }
+          }
+        }
+      }
+
+      for(int fold_id = 0; fold_id < num_ctr_fold; ++fold_id) {
+        fold_ctr_value[fold_id].resize(num_bin, 0.0);
+      }
+
+      cat_fid_2_ctr_values_[fid].resize(num_bin, 0.0);
+      #pragma omp parallel for schedule(static) num_threads(io_config.num_threads)
+      for(int bin_id = 0; bin_id < num_bin; ++bin_id) {
+        double total_count = 0.0, target_count = 0.0;
+        for(int fold_id = 0; fold_id < num_ctr_fold; ++fold_id) {
+          total_count += bin_total_counts[fold_id][bin_id];
+          target_count += bin_target_counts[fold_id][bin_id];
+        }
+        cat_fid_2_ctr_values_[fid][bin_id] = ctr_func(target_count, total_count);
+        for(int fold_id = 0; fold_id < num_ctr_fold; ++fold_id) {
+          fold_ctr_value[fold_id][bin_id] = ctr_func(target_count - bin_target_counts[fold_id][bin_id], total_count - bin_total_counts[fold_id][bin_id]);
+        }
+      }
+
+      #pragma omp parallel num_threads(io_config.num_threads)
+      {
+        #pragma omp for schedule(static) 
+        for(int thread_id = 0; thread_id < io_config.num_threads; ++thread_id) {
+          int start = block_size * thread_id;
+          int end = std::min(start + block_size, num_data_);       
+          bin_iterators[thread_id]->Reset(start);
+          for(int index = start; index < end; ++index) {
+            auto bin = bin_iterators[thread_id]->Get(index);
+            int fold_id = fold_ids[index];
+            ctr_value[index] = ctr_value_copy[index] = fold_ctr_value[fold_id][bin];
+          }
+        }
+      }
+
+      BinMapper* new_bin_mapper = new BinMapper();
+      new_bin_mapper->FindBin(ctr_value.data(), num_data_, num_data_, io_config.max_bin,
+          io_config.min_data_in_bin, io_config.min_data_in_leaf, BinType::NumericalBin, io_config.use_missing,
+          io_config.zero_as_missing);
+      Log::Warning("find num bin %d", new_bin_mapper->num_bin());
+          
+      cat_fid_2_ctr_fid_[fid] = num_features_; 
+      FeatureGroup* new_feature_group = CreateNewSingleFeatureGroup(io_config, new_bin_mapper, true);
+      feature_names_.push_back("@ctr_for_" + std::to_string(RealFeatureIndex(fid)));  
+      #pragma omp parallel num_threads(io_config.num_threads)
+      {
+        int thread_id = omp_get_thread_num(); 
+        #pragma omp for schedule(static)
+        for(int index = 0; index < num_data_; ++index) {
+          new_feature_group->PushData(thread_id, 0, index, ctr_value_copy[index]);
+        }
+      }
+    }
+    for(int thread_id = 0; thread_id < io_config.num_threads; ++thread_id) {
+      delete thread_generator[thread_id];
+    }
+    ctr_value.clear();
+    ctr_value.shrink_to_fit();
+    ctr_value_copy.clear();
+    ctr_value_copy.shrink_to_fit();
+  }
+  else {
+    std::vector<int> inner_feature_index_of_categorical;
+    for(int fid = 0; fid < num_features_; ++fid) {
+      const BinMapper* bin_mapper = FeatureBinMapper(fid);
+      if(bin_mapper->bin_type() == BinType::CategoricalBin && bin_mapper->num_bin() > io_config.max_cat_to_onehot) {
+        inner_feature_index_of_categorical.push_back(fid);
+      }
+    }
+
+    #pragma omp parallel for schedule(static) num_threads(io_config.num_threads)
+    for(size_t i = 0; i < inner_feature_index_of_categorical.size(); ++i) {
+      int tid = omp_get_thread_num();
+      int fid = inner_feature_index_of_categorical[i];
+      BinIterator* bin_iterator = FeatureIterator(fid);
+      int ctr_fid = cat_fid_2_ctr_fid_[fid];
+      int group_id = Feature2Group(ctr_fid);
+      const std::vector<double>& ctr_value_from_cat_fid = cat_fid_2_ctr_values_[fid];
+      for(int index = 0; index < num_data_; ++index) {
+        auto bin = bin_iterator->Get(index);
+        double ctr_val = ctr_value_from_cat_fid[bin];
+        feature_groups_[group_id]->PushData(tid, 0, index, ctr_val);
+      }
+    }
+  }
+}
+
 void Dataset::Construct(
   std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
   int** sample_non_zero_indices,
@@ -484,6 +700,8 @@ void Dataset::CreateValid(const Dataset* dataset) {
   }
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
+  cat_fid_2_ctr_fid_ = dataset->cat_fid_2_ctr_fid_;
+  cat_fid_2_ctr_values_ = dataset->cat_fid_2_ctr_values_;
 }
 
 void Dataset::ReSize(data_size_t num_data) {

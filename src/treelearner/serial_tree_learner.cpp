@@ -485,6 +485,10 @@ void SerialTreeLearner::FindBestSplits() {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
       continue;
     }
+    /*if(train_data_->FeatureBinMapper(feature_index)->bin_type() == BinType::CategoricalBin && 
+        config_->use_ctr) {
+      continue;
+    }*/
     is_feature_used[feature_index] = 1;
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;

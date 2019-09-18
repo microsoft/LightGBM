@@ -378,6 +378,14 @@ struct Config {
   // desc = this can reduce the effect of noises in categorical features, especially for categories with few data
   double cat_smooth = 10.0;
 
+  // check >= 2
+  // desc = used for the encoding the categorical features
+  // desc = divide the data into num_ctr_fold partitions and then do target encoding by cross validation
+  int num_ctr_fold = 4;
+
+  //desc = whether use target encoding for categorical features
+  bool use_ctr = true;
+
   // check = >0
   // desc = when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
   int max_cat_to_onehot = 4;

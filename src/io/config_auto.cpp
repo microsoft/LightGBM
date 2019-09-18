@@ -209,6 +209,8 @@ std::unordered_set<std::string> Config::parameter_set({
   "max_cat_threshold",
   "cat_l2",
   "cat_smooth",
+  "num_ctr_fold",
+  "use_ctr",
   "max_cat_to_onehot",
   "top_k",
   "monotone_constraints",
@@ -387,6 +389,11 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetDouble(params, "cat_smooth", &cat_smooth);
   CHECK(cat_smooth >=0.0);
+
+  GetInt(params, "num_ctr_fold", &num_ctr_fold);
+  CHECK(num_ctr_fold >= 2);
+
+  GetBool(params, "use_ctr", &use_ctr);
 
   GetInt(params, "max_cat_to_onehot", &max_cat_to_onehot);
   CHECK(max_cat_to_onehot >0);

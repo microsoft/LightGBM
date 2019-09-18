@@ -191,6 +191,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       // extract features
       ExtractFeaturesFromMemory(text_data, parser.get(), dataset.get());
+      if(config_.use_ctr) {
+        dataset->ConstructCtrBins(config_, nullptr);
+      }
       text_data.clear();
     } else {
       // sample data from file
@@ -207,6 +210,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
 
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
+      if(config_.use_ctr) {
+        dataset->ConstructCtrBins(config_, nullptr);
+      }
     }
   } else {
     // load data from binary file
@@ -243,6 +249,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       dataset->CreateValid(train_data);
       // extract features
       ExtractFeaturesFromMemory(text_data, parser.get(), dataset.get());
+      if(config_.use_ctr) {
+        dataset->ConstructCtrBins(config_, train_data);
+      }
       text_data.clear();
     } else {
       TextReader<data_size_t> text_reader(filename, config_.header);
@@ -254,6 +263,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       dataset->CreateValid(train_data);
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
+      if(config_.use_ctr) {
+        dataset->ConstructCtrBins(config_, train_data);
+      }
     }
   } else {
     // load data from binary file
