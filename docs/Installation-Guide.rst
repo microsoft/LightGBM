@@ -111,7 +111,7 @@ Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 macOS
 ~~~~~
 
-On macOS LightGBM can be built using **CMake** and **Apple Clang** or **gcc**.
+On macOS LightGBM can be installed using **Homebrew**, or can be built using **CMake** and **Apple Clang** or **gcc**.
 
 Apple Clang
 ^^^^^^^^^^^
@@ -125,8 +125,8 @@ Install Using ``Homebrew``
 
   brew install lightgbm
 
-Install from GitHub
-*******************
+Build from GitHub
+*****************
 
 1. Install `CMake`_ (3.12 or higher):
 
