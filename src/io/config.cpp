@@ -306,10 +306,6 @@ void Config::CheckParamConflict() {
     }
   }
   // Check max_depth and num_leaves
-  if (num_leaves > kMaxNumLeaves) {
-    Log::Fatal("num_leaves (%d) is larger than maximum allowed leaves (%d)", num_leaves, kMaxNumLeaves);
-  }
-
   if (max_depth > 0) {
     double full_num_leaves = std::pow(2, max_depth);
     if (full_num_leaves > num_leaves

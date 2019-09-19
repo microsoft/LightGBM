@@ -27,7 +27,7 @@ enum TaskType {
   kTrain, kPredict, kConvertModel, KRefitTree
 };
 const int kDefaultNumLeaves = 31;
-const int kMaxNumLeaves = 2 << 16;
+const int kMaxNumLeaves = 131072;
 
 struct Config {
  public:
@@ -167,6 +167,7 @@ struct Config {
   // default = 31
   // alias = num_leaf, max_leaves, max_leaf
   // check = >1
+  // check = <=131072
   // desc = max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
 
