@@ -306,19 +306,18 @@ void Config::CheckParamConflict() {
     }
   }
   // Check max_depth and num_leaves
+  if (num_leaves > kMaxNumLeaves) {
+    Log::Fatal("num_leaves (%d) is larger than maximum allowed leaves (%d)", num_leaves, kMaxNumLeaves);
+  }
+
   if (max_depth > 0) {
     double full_num_leaves = std::pow(2, max_depth);
     if (full_num_leaves > num_leaves
         && num_leaves == kDefaultNumLeaves) {
       Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
     }
-    
-    const int MAX_LEAVES = 2 << 16;
-    if (num_leaves > MAX_LEAVES) {
-      Log::Fatal("num_leaves (%d) is larger than maximum allowed leaves (%d)", num_leaves, MAX_LEAVES);
-    }
 
-    if (full_num_leaves < MAX_LEAVES && full_num_leaves < num_leaves) {
+    if (full_num_leaves < kMaxNumLeaves && full_num_leaves < num_leaves) {
       // Fits in an int, and is more restrictive than the current num_leaves
       num_leaves = static_cast<int>(full_num_leaves);
     }

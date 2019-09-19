@@ -27,6 +27,7 @@ enum TaskType {
   kTrain, kPredict, kConvertModel, KRefitTree
 };
 const int kDefaultNumLeaves = 31;
+const int kMaxNumLeaves = 2 << 16;
 
 struct Config {
  public:
