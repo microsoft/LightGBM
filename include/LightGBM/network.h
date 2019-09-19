@@ -188,7 +188,6 @@ class Network {
     });
     return global;
   }
-
   template<class T>
   static T GlobalSyncUpByMax(T& local) {
     T global = local;
@@ -214,25 +213,30 @@ class Network {
   }
 
   template<class T>
-  static T GlobalSyncUpByMean(T& local) {
+  static T GlobalSyncUpBySum(T& local) {
     T global = (T)0;
     Allreduce(reinterpret_cast<char*>(&local),
-              sizeof(local), sizeof(local),
-              reinterpret_cast<char*>(&global),
-              [](const char* src, char* dst, int type_size, comm_size_t len) {
-      comm_size_t used_size = 0;
-      const T *p1;
-      T *p2;
-      while (used_size < len) {
-        p1 = reinterpret_cast<const T *>(src);
-        p2 = reinterpret_cast<T *>(dst);
-        *p2 += *p1;
-        src += type_size;
-        dst += type_size;
-        used_size += type_size;
-      }
-    });
-    return static_cast<T>(global / num_machines_);
+      sizeof(local), sizeof(local),
+      reinterpret_cast<char*>(&global),
+      [](const char* src, char* dst, int type_size, comm_size_t len) {
+        comm_size_t used_size = 0;
+        const T* p1;
+        T* p2;
+        while (used_size < len) {
+          p1 = reinterpret_cast<const T*>(src);
+          p2 = reinterpret_cast<T*>(dst);
+          *p2 += *p1;
+          src += type_size;
+          dst += type_size;
+          used_size += type_size;
+        }
+      });
+    return static_cast<T>(global);
+  }
+
+  template<class T>
+  static T GlobalSyncUpByMean(T& local) {
+    return static_cast<T>(GlobalSyncUpBySum(local) / num_machines_);
   }
 
   template<class T>
