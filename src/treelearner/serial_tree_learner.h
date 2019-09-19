@@ -79,7 +79,7 @@ class SerialTreeLearner: public TreeLearner {
 
  protected:
 
-  virtual std::vector<int8_t> GetUsedFeatures();
+  virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
   * \brief Some initial works before training
   */
@@ -135,6 +135,8 @@ class SerialTreeLearner: public TreeLearner {
   Random random_;
   /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
   std::vector<int8_t> is_feature_used_;
+  /*! \brief used feature indices in current tree */
+  std::vector<int> used_feature_indices_;
   /*! \brief pointer to histograms array of parent of current leaves */
   FeatureHistogram* parent_leaf_histogram_array_;
   /*! \brief pointer to histograms array of smaller leaf */
@@ -179,7 +181,7 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
 
-  std::vector<bool> feature_used;
+  std::vector<bool> is_feature_used_in_split_;
   std::vector<uint32_t> feature_used_in_data;
 };
 

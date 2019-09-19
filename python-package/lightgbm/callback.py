@@ -89,12 +89,13 @@ def record_evaluation(eval_result):
         The callback that records the evaluation history into the passed dictionary.
     """
     if not isinstance(eval_result, dict):
-        raise TypeError('Eval_result should be a dictionary')
+        raise TypeError('eval_result should be a dictionary')
     eval_result.clear()
 
     def _init(env):
-        for data_name, _, _, _ in env.evaluation_result_list:
-            eval_result.setdefault(data_name, collections.defaultdict(list))
+        for data_name, eval_name, _, _ in env.evaluation_result_list:
+            eval_result.setdefault(data_name, collections.OrderedDict())
+            eval_result[data_name].setdefault(eval_name, [])
 
     def _callback(env):
         if not eval_result:
@@ -132,7 +133,7 @@ def reset_parameter(**kwargs):
             if key in ['num_class', 'num_classes',
                        'boosting', 'boost', 'boosting_type',
                        'metric', 'metrics', 'metric_types']:
-                raise RuntimeError("cannot reset {} during training".format(repr(key)))
+                raise RuntimeError("Cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
                     raise ValueError("Length of list {} has to equal to 'num_boost_round'."
@@ -182,6 +183,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     best_score_list = []
     cmp_op = []
     enabled = [True]
+    first_metric = ['']
 
     def _init(env):
         enabled[0] = not any((boost_alias in env.params
@@ -196,9 +198,11 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                              'at least one dataset and eval metric is required for evaluation')
 
         if verbose:
-            msg = "Training until validation scores don't improve for {} rounds."
+            msg = "Training until validation scores don't improve for {} rounds"
             print(msg.format(stopping_rounds))
 
+        # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
+        first_metric[0] = env.evaluation_result_list[0][1].split(" ")[-1]
         for eval_ret in env.evaluation_result_list:
             best_iter.append(0)
             best_score_list.append(None)
@@ -208,6 +212,15 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             else:
                 best_score.append(float('inf'))
                 cmp_op.append(lt)
+
+    def _final_iteration_check(env, eval_name_splitted, i):
+        if env.iteration == env.end_iteration - 1:
+            if verbose:
+                print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
+                    best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
+                if first_metric_only:
+                    print("Evaluated only: {}".format(eval_name_splitted[-1]))
+            raise EarlyStopException(best_iter[i], best_score_list[i])
 
     def _callback(env):
         if not cmp_op:
@@ -220,17 +233,21 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 best_score[i] = score
                 best_iter[i] = env.iteration
                 best_score_list[i] = env.evaluation_result_list
+            # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
+            eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
+            if first_metric_only and first_metric[0] != eval_name_splitted[-1]:
+                continue  # use only the first metric for early stopping
+            if ((env.evaluation_result_list[i][0] == "cv_agg" and eval_name_splitted[0] == "train"
+                 or env.evaluation_result_list[i][0] == env.model._train_data_name)):
+                _final_iteration_check(env, eval_name_splitted, i)
+                continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             elif env.iteration - best_iter[i] >= stopping_rounds:
                 if verbose:
                     print('Early stopping, best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
+                    if first_metric_only:
+                        print("Evaluated only: {}".format(eval_name_splitted[-1]))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
-            if env.iteration == env.end_iteration - 1:
-                if verbose:
-                    print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
-                        best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
-                raise EarlyStopException(best_iter[i], best_score_list[i])
-            if first_metric_only:  # the only first metric is used for early stopping
-                break
+            _final_iteration_check(env, eval_name_splitted, i)
     _callback.order = 30
     return _callback

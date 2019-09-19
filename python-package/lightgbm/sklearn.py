@@ -121,7 +121,7 @@ class _EvalFunctionWrapper(object):
                 group : array-like
                     Group/query data, used for ranking task.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
@@ -147,7 +147,7 @@ class _EvalFunctionWrapper(object):
         Returns
         -------
         eval_name : string
-            The name of evaluation function.
+            The name of evaluation function (without whitespaces).
         eval_result : float
             The eval result.
         is_higher_better : bool
@@ -464,7 +464,7 @@ class LGBMModel(_LGBMModelBase):
             group : array-like
                 Group/query data, used for ranking task.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -524,7 +524,8 @@ class LGBMModel(_LGBMModelBase):
             # concatenate metric from params (or default if not provided in params) and eval_metric
             original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
-            params['metric'] = set(original_metric + eval_metric)
+            params['metric'] = [e for e in eval_metric if e not in original_metric] + original_metric
+            params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
