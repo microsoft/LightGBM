@@ -485,10 +485,6 @@ void SerialTreeLearner::FindBestSplits() {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
       continue;
     }
-    /*if(train_data_->FeatureBinMapper(feature_index)->bin_type() == BinType::CategoricalBin && 
-        config_->use_ctr) {
-      continue;
-    }*/
     is_feature_used[feature_index] = 1;
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
@@ -828,7 +824,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
 
   // left = parent
   *left_leaf = best_leaf;
-  bool is_numerical_split = train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin;
+  bool is_numerical_split = train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin && 
+    !train_data_->FeatureBinMapper(inner_feature_index)->is_ctr();
   if (is_numerical_split) {
     auto threshold_double = train_data_->RealThreshold(inner_feature_index, best_split_info.threshold);
     // split tree, will return right leaf
@@ -846,6 +843,40 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                               static_cast<float>(best_split_info.gain),
                               train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                               best_split_info.default_left);
+    data_partition_->Split(best_leaf, train_data_, inner_feature_index,
+                           &best_split_info.threshold, 1, best_split_info.default_left, *right_leaf);
+  } else if(train_data_->FeatureBinMapper(inner_feature_index)->is_ctr()) {
+    auto threshold_double = train_data_->RealThreshold(inner_feature_index, best_split_info.threshold);
+  
+    int inner_cat_fid = train_data_->FeatureBinMapper(inner_feature_index)->cat_fid();
+    const std::vector<double>& ctr_value = train_data_->FeatureBinMapper(inner_feature_index)->ctr_value();
+    std::vector<uint32_t> cat_threshold;
+    for(size_t i = 0; i < ctr_value.size(); ++i) {
+      if(ctr_value[i] <= threshold_double) {
+        cat_threshold.push_back(static_cast<uint32_t>(i));
+      }
+    }
+    std::vector<uint32_t> cat_bitset_inner = Common::ConstructBitset(cat_threshold.data(), static_cast<int>(cat_threshold.size()));
+    std::vector<int> threshold_int(cat_threshold.size());
+    for (size_t i = 0; i < cat_threshold.size(); ++i) {
+      threshold_int[i] = static_cast<int>(train_data_->RealThreshold(inner_cat_fid, cat_threshold[i]));
+    }
+    std::vector<uint32_t> cat_bitset = Common::ConstructBitset(threshold_int.data(), static_cast<int>(cat_threshold.size()));
+    *right_leaf = tree->SplitCategorical(best_leaf,
+                                         inner_cat_fid,
+                                         train_data_->RealFeatureIndex(inner_cat_fid),
+                                         cat_bitset_inner.data(),
+                                         static_cast<int>(cat_bitset_inner.size()),
+                                         cat_bitset.data(),
+                                         static_cast<int>(cat_bitset.size()),
+                                         static_cast<double>(best_split_info.left_output),
+                                         static_cast<double>(best_split_info.right_output),
+                                         static_cast<data_size_t>(best_split_info.left_count),
+                                         static_cast<data_size_t>(best_split_info.right_count),
+                                         static_cast<double>(best_split_info.left_sum_hessian),
+                                         static_cast<double>(best_split_info.right_sum_hessian),
+                                         static_cast<float>(best_split_info.gain),
+                                         train_data_->FeatureBinMapper(inner_cat_fid)->missing_type());
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
                            &best_split_info.threshold, 1, best_split_info.default_left, *right_leaf);
   } else {

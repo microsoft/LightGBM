@@ -188,6 +188,27 @@ class BinMapper {
     }
   }
 
+  inline void set_ctr_value(const std::vector<double>& ctr_value) {
+    ctr_value_ = ctr_value;
+  }
+
+  inline void set_is_ctr(int inner_cat_fid) {
+    is_ctr_ = true;
+    cat_fid_ = inner_cat_fid;
+  }
+
+  inline bool is_ctr() const {
+    return is_ctr_;
+  }
+
+  inline const std::vector<double>& ctr_value() const {
+    return ctr_value_;
+  }
+
+  inline int cat_fid() const {
+    return cat_fid_;
+  }
+
  private:
   /*! \brief Number of bins */
   int num_bin_;
@@ -210,6 +231,12 @@ class BinMapper {
   double max_val_;
   /*! \brief bin value of feature value 0 */
   uint32_t default_bin_;
+  /*! \brief is ctr */
+  bool is_ctr_ = false;
+  /*! \brief inner feature index of categorical feature, if is_ctr_ == true */
+  int cat_fid_ = -1;
+  /*! \brief ctr values for bins */
+  std::vector<double> ctr_value_;
 };
 
 /*!

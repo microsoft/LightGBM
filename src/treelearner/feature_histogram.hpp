@@ -175,8 +175,9 @@ class FeatureHistogram {
       }
       used_bin = static_cast<int>(sorted_idx.size());
 
-      l2 += meta_->config->cat_l2;
+      //l2 += meta_->config->cat_l2;
 
+      //remove old sorting with gradients, consider only the count of categories in the whole training data only
       //auto ctr_fun = [this](double sum_grad, double sum_hess) {
       //  return (sum_grad) / (sum_hess + meta_->config->cat_smooth);
       //};

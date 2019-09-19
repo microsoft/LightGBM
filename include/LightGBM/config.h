@@ -485,6 +485,7 @@ struct Config {
 
   // alias = data_seed
   // desc = random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
+  // desc = when using ctr for categorical features, it is also used as the random seed for data partition into folds for calculating ctr
   int data_random_seed = 1;
 
   // alias = model_output, model_out
