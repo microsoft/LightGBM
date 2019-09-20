@@ -313,7 +313,7 @@ void Config::CheckParamConflict() {
       Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
     }
 
-    if (full_num_leaves < kMaxNumLeaves && full_num_leaves < num_leaves) {
+    if (full_num_leaves < num_leaves) {
       // Fits in an int, and is more restrictive than the current num_leaves
       num_leaves = static_cast<int>(full_num_leaves);
     }
