@@ -49,7 +49,7 @@ class SerialTreeLearner: public TreeLearner {
   void ResetConfig(const Config* config) override;
 
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
-              Json& forced_split_json) override;
+              const Json& forced_split_json) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
@@ -106,7 +106,7 @@ class SerialTreeLearner: public TreeLearner {
   virtual void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
-  virtual int32_t ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+  virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
                               int* right_leaf, int* cur_depth,
                               bool *aborted_last_force_split);
 

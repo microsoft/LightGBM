@@ -54,7 +54,7 @@ class SingleRowPredictor {
   PredictFunction predict_function;
   int64_t num_pred_in_one_row;
 
-  SingleRowPredictor(int predict_type, Boosting& boosting, const Config& config, int iter) {
+  SingleRowPredictor(int predict_type, Boosting* boosting, const Config& config, int iter) {
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     bool predict_contrib = false;
@@ -71,21 +71,20 @@ class SingleRowPredictor {
     early_stop_freq_ = config.pred_early_stop_freq;
     early_stop_margin_ = config.pred_early_stop_margin;
     iter_ = iter;
-    predictor_.reset(new Predictor(&boosting, iter_, is_raw_score, is_predict_leaf, predict_contrib,
+    predictor_.reset(new Predictor(boosting, iter_, is_raw_score, is_predict_leaf, predict_contrib,
                                    early_stop_, early_stop_freq_, early_stop_margin_));
-    num_pred_in_one_row = boosting.NumPredictOneRow(iter_, is_predict_leaf, predict_contrib);
+    num_pred_in_one_row = boosting->NumPredictOneRow(iter_, is_predict_leaf, predict_contrib);
     predict_function = predictor_->GetPredictFunction();
-    num_total_model_ = boosting.NumberOfTotalModel();
+    num_total_model_ = boosting->NumberOfTotalModel();
   }
   ~SingleRowPredictor() {}
-  bool IsPredictorEqual(const Config& config, int iter, Boosting& boosting) {
+  bool IsPredictorEqual(const Config& config, int iter, Boosting* boosting) {
     return early_stop_ != config.pred_early_stop ||
       early_stop_freq_ != config.pred_early_stop_freq ||
       early_stop_margin_ != config.pred_early_stop_margin ||
       iter_ != iter ||
-      num_total_model_ != boosting.NumberOfTotalModel();
+      num_total_model_ != boosting->NumberOfTotalModel();
   }
-  
  private:
   std::unique_ptr<Predictor> predictor_;
   bool early_stop_;
@@ -255,8 +254,8 @@ class Booster {
                double* out_result, int64_t* out_len) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (single_row_predictor_[predict_type].get() == nullptr ||
-        !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, *boosting_.get())) {
-      single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, *boosting_.get(),
+        !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, boosting_.get())) {
+      single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, boosting_.get(),
                                                                        config, num_iteration));
     }
 
@@ -645,8 +644,8 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
-                                            Common::Vector2Ptr<int>(sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
+                                            Common::Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, total_nrow));
@@ -716,8 +715,8 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
-                                            Common::Vector2Ptr<int>(sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
+                                            Common::Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
@@ -781,8 +780,8 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
-                                            Common::Vector2Ptr<int>(sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
+                                            Common::Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
@@ -854,8 +853,8 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     }
     OMP_THROW_EX();
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
-                                            Common::Vector2Ptr<int>(sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
+                                            Common::Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));

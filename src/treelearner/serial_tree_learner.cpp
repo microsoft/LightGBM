@@ -170,7 +170,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   histogram_pool_.ResetConfig(config_);
 }
 
-Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, Json& forced_split_json) {
+Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, const Json& forced_split_json) {
   gradients_ = gradients;
   hessians_ = hessians;
   is_constant_hessian_ = is_constant_hessian;
@@ -636,7 +636,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
   #endif
 }
 
-int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
                                        int* right_leaf, int *cur_depth,
                                        bool *aborted_last_force_split) {
   int32_t result_count = 0;
@@ -819,7 +819,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
     auto tmp_idx = data_partition_->GetIndexOnLeaf(best_leaf, &cnt_leaf_data);
     for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
       int real_idx = tmp_idx[i_input];
-      Common::InsertBitset(feature_used_in_data, train_data_->num_data() * inner_feature_index + real_idx);
+      Common::InsertBitset(&feature_used_in_data, train_data_->num_data() * inner_feature_index + real_idx);
     }
   }
 
@@ -932,8 +932,8 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       for (int i = 0; i < tree->num_leaves(); ++i) {
         outputs[i] = static_cast<double>(tree->LeafOutput(i));
       }
-      Network::GlobalSum(outputs);
-      Network::GlobalSum(n_nozeroworker_perleaf);
+      outputs = Network::GlobalSum(&outputs);
+      n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
       for (int i = 0; i < tree->num_leaves(); ++i) {
         tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
       }

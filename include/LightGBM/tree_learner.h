@@ -53,7 +53,7 @@ class TreeLearner {
   * \return A trained tree
   */
   virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian,
-                      Json& forced_split_json) = 0;
+                      const Json& forced_split_json) = 0;
 
   /*!
   * \brief use a existing tree to fit the new gradients and hessians.

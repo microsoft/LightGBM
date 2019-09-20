@@ -210,7 +210,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
     Random rand(seed);
-    int int_max = std::numeric_limits<short>::max();
+    int int_max = std::numeric_limits<int16_t>::max();
     data_random_seed = static_cast<int>(rand.NextShort(0, int_max));
     bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
     drop_seed = static_cast<int>(rand.NextShort(0, int_max));

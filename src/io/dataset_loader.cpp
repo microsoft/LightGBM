@@ -798,7 +798,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
   TextReader<data_size_t> text_reader(filename, config_.header);
   std::vector<std::string> out_data;
   if (num_machines == 1 || config_.pre_partition) {
-    *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile(random_, sample_cnt, &out_data));
+    *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile(&random_, sample_cnt, &out_data));
   } else {  // need partition data
             // get query data
     const data_size_t* query_boundaries = metadata.query_boundaries();
@@ -811,7 +811,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
         } else {
           return false;
         }
-      }, used_data_indices, random_, sample_cnt, &out_data);
+      }, used_data_indices, &random_, sample_cnt, &out_data);
     } else {
       // if contain query file, minimal sample unit is one query
       data_size_t num_queries = metadata.num_queries();
@@ -833,7 +833,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
           ++qid;
         }
         return is_query_used;
-      }, used_data_indices, random_, sample_cnt, &out_data);
+      }, used_data_indices, &random_, sample_cnt, &out_data);
     }
   }
   return out_data;
@@ -1018,7 +1018,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     }
   }
   sample_values.clear();
-  dataset->Construct(bin_mappers, Common::Vector2Ptr<int>(sample_indices).data(),
+  dataset->Construct(bin_mappers, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::VectorSize<int>(sample_indices).data(), sample_data.size(), config_);
 }
 

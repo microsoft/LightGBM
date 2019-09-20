@@ -166,7 +166,7 @@ class Network {
                             const ReduceFunction& reducer);
 
   template<class T>
-  static T GlobalSyncUpByMin(T& local) {
+  static T GlobalSyncUpByMin(T local) {
     T global = local;
     Allreduce(reinterpret_cast<char*>(&local),
               sizeof(local), sizeof(local),
@@ -189,7 +189,7 @@ class Network {
     return global;
   }
   template<class T>
-  static T GlobalSyncUpByMax(T& local) {
+  static T GlobalSyncUpByMax(T local) {
     T global = local;
     Allreduce(reinterpret_cast<char*>(&local),
               sizeof(local), sizeof(local),
@@ -213,7 +213,7 @@ class Network {
   }
 
   template<class T>
-  static T GlobalSyncUpBySum(T& local) {
+  static T GlobalSyncUpBySum(T local) {
     T global = (T)0;
     Allreduce(reinterpret_cast<char*>(&local),
       sizeof(local), sizeof(local),
@@ -235,15 +235,15 @@ class Network {
   }
 
   template<class T>
-  static T GlobalSyncUpByMean(T& local) {
+  static T GlobalSyncUpByMean(T local) {
     return static_cast<T>(GlobalSyncUpBySum(local) / num_machines_);
   }
 
   template<class T>
-  static void GlobalSum(std::vector<T>& local) {
-    std::vector<T> global(local.size(), 0);
-    Allreduce(reinterpret_cast<char*>(local.data()),
-              static_cast<comm_size_t>(sizeof(T) * local.size()), sizeof(T),
+  static std::vector<T> GlobalSum(std::vector<T>* local) {
+    std::vector<T> global(local->size(), 0);
+    Allreduce(reinterpret_cast<char*>(local->data()),
+              static_cast<comm_size_t>(sizeof(T) * local->size()), sizeof(T),
               reinterpret_cast<char*>(global.data()),
               [](const char* src, char* dst, int type_size, comm_size_t len) {
       comm_size_t used_size = 0;
@@ -258,9 +258,7 @@ class Network {
         used_size += type_size;
       }
     });
-    for (size_t i = 0; i < local.size(); ++i) {
-      local[i] = global[i];
-    }
+    return global;
   }
 
  private:

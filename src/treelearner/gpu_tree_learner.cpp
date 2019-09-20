@@ -184,8 +184,8 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
   // copy the results asynchronously. Size depends on if double precision is used
   size_t output_size = num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
   boost::compute::event histogram_wait_event;
-  host_histogram_outputs_ = (void*)queue_.enqueue_map_buffer_async(device_histogram_outputs_, boost::compute::command_queue::map_read,
-                                                                   0, output_size, histogram_wait_event, kernel_wait_obj_);
+  host_histogram_outputs_ = reinterpret_cast<void*>(queue_.enqueue_map_buffer_async(device_histogram_outputs_, boost::compute::command_queue::map_read,
+                                                                   0, output_size, histogram_wait_event, kernel_wait_obj_));
   // we will wait for this object in WaitAndGetHistograms
   histograms_wait_obj_ = boost::compute::wait_list(histogram_wait_event);
 }
