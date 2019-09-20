@@ -27,13 +27,13 @@ void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt)
   }
 }
 
-int GetLabelIdxForLibsvm(std::string& str, int num_features, int label_idx) {
+int GetLabelIdxForLibsvm(const std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }
-  str = Common::Trim(str);
-  auto pos_space = str.find_first_of(" \f\n\r\t\v");
-  auto pos_colon = str.find_first_of(":");
+  auto str2 = Common::Trim(str);
+  auto pos_space = str2.find_first_of(" \f\n\r\t\v");
+  auto pos_colon = str2.find_first_of(":");
   if (pos_space == std::string::npos || pos_space < pos_colon) {
     return label_idx;
   } else {
@@ -45,8 +45,8 @@ int GetLabelIdxForTSV(std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }
-  str = Common::Trim(str);
-  auto tokens = Common::Split(str.c_str(), '\t');
+  auto str2 = Common::Trim(str);
+  auto tokens = Common::Split(str2.c_str(), '\t');
   if (static_cast<int>(tokens.size()) == num_features) {
     return -1;
   } else {
@@ -58,8 +58,8 @@ int GetLabelIdxForCSV(std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }
-  str = Common::Trim(str);
-  auto tokens = Common::Split(str.c_str(), ',');
+  auto str2 = Common::Trim(str);
+  auto tokens = Common::Split(str2.c_str(), ',');
   if (static_cast<int>(tokens.size()) == num_features) {
     return -1;
   } else {
@@ -74,18 +74,18 @@ enum DataType {
   LIBSVM
 };
 
-void getline(std::stringstream& ss, std::string& line, const VirtualFileReader* reader, std::vector<char>& buffer, size_t buffer_size) {
-  std::getline(ss, line);
-  while (ss.eof()) {
-    size_t read_len = reader->Read(buffer.data(), buffer_size);
+void GetLine(std::stringstream* ss, std::string* line, const VirtualFileReader* reader, std::vector<char>* buffer, size_t buffer_size) {
+  std::getline(*ss, *line);
+  while (ss->eof()) {
+    size_t read_len = reader->Read(buffer->data(), buffer_size);
     if (read_len <= 0) {
       break;
     }
-    ss.clear();
-    ss.str(std::string(buffer.data(), read_len));
+    ss->clear();
+    ss->str(std::string(buffer->data(), read_len));
     std::string tmp;
-    std::getline(ss, tmp);
-    line += tmp;
+    std::getline(*ss, tmp);
+    *line += tmp;
   }
 }
 
@@ -105,16 +105,16 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   std::stringstream tmp_file(std::string(buffer.data(), read_len));
   if (header) {
     if (!tmp_file.eof()) {
-      getline(tmp_file, line1, reader.get(), buffer, buffer_size);
+      GetLine(&tmp_file, &line1, reader.get(), &buffer, buffer_size);
     }
   }
   if (!tmp_file.eof()) {
-    getline(tmp_file, line1, reader.get(), buffer, buffer_size);
+    GetLine(&tmp_file, &line1, reader.get(), &buffer, buffer_size);
   } else {
     Log::Fatal("Data file %s should have at least one line", filename);
   }
   if (!tmp_file.eof()) {
-    getline(tmp_file, line2, reader.get(), buffer, buffer_size);
+    GetLine(&tmp_file, &line2, reader.get(), &buffer, buffer_size);
   } else {
     Log::Warning("Data file %s only has one line", filename);
   }

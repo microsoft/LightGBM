@@ -290,7 +290,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
       CHECK(inner_feature_index >= 0);
       ret[inner_feature_index] = 1;
     }
-  } else if(used_feature_indices_.size() <= 0) {
+  } else if (used_feature_indices_.size() <= 0) {
     int used_feature_cnt = static_cast<int>(std::round(valid_feature_indices_.size() * config_->feature_fraction_bynode));
     used_feature_cnt = std::max(used_feature_cnt, min_used_features);
     auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
@@ -502,7 +502,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
   train_data_->ConstructHistograms(is_feature_used,
                                    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
                                    smaller_leaf_splits_->LeafIndex(),
-                                   ordered_bins_, gradients_, hessians_,
+                                   &ordered_bins_, gradients_, hessians_,
                                    ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
                                    ptr_smaller_leaf_hist_data);
 
@@ -512,7 +512,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
     train_data_->ConstructHistograms(is_feature_used,
                                      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
                                      larger_leaf_splits_->LeafIndex(),
-                                     ordered_bins_, gradients_, hessians_,
+                                     &ordered_bins_, gradients_, hessians_,
                                      ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
                                      ptr_larger_leaf_hist_data);
   }

@@ -6,6 +6,12 @@
 #define LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #ifdef USE_SOCKET
 
+#include <LightGBM/utils/log.h>
+
+#include <string>
+#include <cstdlib>
+#include <unordered_set>
+
 #if defined(_WIN32)
 #ifdef _MSC_VER
 #define NOMINMAX
@@ -16,9 +22,9 @@
 
 #else
 
+#include <cerrno>
 #include <fcntl.h>
 #include <netdb.h>
-#include <cerrno>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -29,12 +35,6 @@
 #include <netinet/tcp.h>
 
 #endif
-
-#include <LightGBM/utils/log.h>
-
-#include <string>
-#include <cstdlib>
-#include <unordered_set>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")

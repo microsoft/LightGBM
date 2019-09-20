@@ -12,7 +12,7 @@
 
 namespace LightGBM {
 
-void Config::KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv) {
+void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv) {
   std::vector<std::string> tmp_strs = Common::Split(kv, '=');
   if (tmp_strs.size() == 2 || tmp_strs.size() == 1) {
     std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
@@ -24,9 +24,9 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>& params, const 
       Log::Fatal("Do not support non-ascii characters in config.");
     }
     if (key.size() > 0) {
-      auto value_search = params.find(key);
-      if (value_search == params.end()) {  // not set
-        params.emplace(key, value);
+      auto value_search = params->find(key);
+      if (value_search == params->end()) {  // not set
+        params->emplace(key, value);
       } else {
         Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
           key.c_str(), value_search->second.c_str(), key.c_str(), value.c_str(),
@@ -42,7 +42,7 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
   std::unordered_map<std::string, std::string> params;
   auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
-    KV2Map(params, Common::Trim(arg).c_str());
+    KV2Map(&params, Common::Trim(arg).c_str());
   }
   ParameterAlias::KeyAliasTransform(&params);
   return params;
