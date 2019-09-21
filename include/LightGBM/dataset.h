@@ -596,7 +596,8 @@ class Dataset {
 
   void addFeaturesFrom(Dataset* other);
 
-  static std::vector<std::vector<double>> GetForcedBins(std::string forced_bins_path, int num_total_features);
+  static std::vector<std::vector<double>> GetForcedBins(std::string forced_bins_path, int num_total_features, 
+                                                        std::unordered_set<int> categorical_features);
 
  private:
   std::string data_filename_;

@@ -584,7 +584,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
 
   // get forced split
   std::string forced_bins_path = config_.forcedbins_filename;
-  std::vector<std::vector<double>> forced_bin_bounds = Dataset::GetForcedBins(forced_bins_path, num_col);
+  std::vector<std::vector<double>> forced_bin_bounds = Dataset::GetForcedBins(forced_bins_path, num_col, categorical_features_);
 
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
@@ -901,7 +901,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
   // get forced split
   std::string forced_bins_path = config_.forcedbins_filename;
-  std::vector<std::vector<double>> forced_bin_bounds = Dataset::GetForcedBins(forced_bins_path, dataset->num_total_features_);
+  std::vector<std::vector<double>> forced_bin_bounds = Dataset::GetForcedBins(forced_bins_path, dataset->num_total_features_, 
+                                                                              categorical_features_);
 
   // check the range of label_idx, weight_idx and group_idx
   CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
