@@ -85,6 +85,7 @@ class SingleRowPredictor {
       iter_ != iter ||
       num_total_model_ != boosting->NumberOfTotalModel();
   }
+
  private:
   std::unique_ptr<Predictor> predictor_;
   bool early_stop_;

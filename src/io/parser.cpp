@@ -41,7 +41,7 @@ int GetLabelIdxForLibsvm(const std::string& str, int num_features, int label_idx
   }
 }
 
-int GetLabelIdxForTSV(std::string& str, int num_features, int label_idx) {
+int GetLabelIdxForTSV(const std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }
@@ -54,7 +54,7 @@ int GetLabelIdxForTSV(std::string& str, int num_features, int label_idx) {
   }
 }
 
-int GetLabelIdxForCSV(std::string& str, int num_features, int label_idx) {
+int GetLabelIdxForCSV(const std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }

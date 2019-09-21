@@ -8,21 +8,18 @@
 
 #include <LightGBM/utils/log.h>
 
-#include <string>
-#include <cstdlib>
-#include <unordered_set>
-
 #if defined(_WIN32)
+
 #ifdef _MSC_VER
 #define NOMINMAX
 #endif
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 
 #else
 
-#include <cerrno>
 #include <fcntl.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -35,6 +32,11 @@
 #include <netinet/tcp.h>
 
 #endif
+
+#include <cerrno>
+#include <cstdlib>
+#include <string>
+#include <unordered_set>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")
