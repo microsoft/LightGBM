@@ -1078,7 +1078,7 @@ void Dataset::addFeaturesFrom(Dataset* other) {
 
 
 std::vector<std::vector<double>> Dataset::GetForcedBins(std::string forced_bins_path, int num_total_features, 
-                                                        std::unordered_set<int> categorical_features) {
+                                                        const std::unordered_set<int>& categorical_features) {
   std::vector<std::vector<double>> forced_bins(num_total_features, std::vector<double>());
   if (forced_bins_path != "") {
     std::ifstream forced_bins_stream(forced_bins_path.c_str());

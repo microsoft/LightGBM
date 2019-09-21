@@ -150,7 +150,7 @@ namespace LightGBM {
   }
 
   std::vector<double> FindBinWithPredefinedBin(const double* distinct_values, const int* counts,
-    int num_distinct_values, int max_bin, size_t total_sample_cnt, int min_data_in_bin, std::vector<double>& forced_upper_bounds) {
+    int num_distinct_values, int max_bin, size_t total_sample_cnt, int min_data_in_bin, const std::vector<double>& forced_upper_bounds) {
     std::vector<double> bin_upper_bound;
 
     // get list of distinct values
@@ -204,18 +204,16 @@ namespace LightGBM {
     bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
 
     // add forced bounds, excluding zeros since we have already added zero bounds
-    size_t i = 0;
-    while (i < forced_upper_bounds.size()) {
-      if (std::fabs(forced_upper_bounds[i]) <= kZeroThreshold) {
-        forced_upper_bounds.erase(forced_upper_bounds.begin() + i);
-      } else {
-        ++i;
-      }
-    }
     int max_to_insert = max_bin - static_cast<int>(bin_upper_bound.size());
-    int num_to_insert = std::min(max_to_insert, static_cast<int>(forced_upper_bounds.size()));
-    if (num_to_insert > 0) {
-      bin_upper_bound.insert(bin_upper_bound.end(), forced_upper_bounds.begin(), forced_upper_bounds.begin() + num_to_insert);
+    int num_inserted = 0;
+    for (size_t i = 0; i < forced_upper_bounds.size(); ++i) {
+      if (std::fabs(forced_upper_bounds[i]) > kZeroThreshold) {
+        bin_upper_bound.push_back(forced_upper_bounds[i]);
+        ++num_inserted;
+      }
+      if (num_inserted >= max_to_insert) {
+        break;
+      }
     }
     std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
 
@@ -307,7 +305,7 @@ namespace LightGBM {
   }
 
   std::vector<double> FindBinWithZeroAsOneBin(const double* distinct_values, const int* counts, int num_distinct_values,
-    int max_bin, size_t total_sample_cnt, int min_data_in_bin, std::vector<double>& forced_upper_bounds) {
+    int max_bin, size_t total_sample_cnt, int min_data_in_bin, const std::vector<double>& forced_upper_bounds) {
     if (forced_upper_bounds.empty()) {
       return FindBinWithZeroAsOneBin(distinct_values, counts, num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
     } else {
@@ -318,7 +316,7 @@ namespace LightGBM {
 
   void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
     int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type, bool use_missing, bool zero_as_missing, 
-    std::vector<double> forced_upper_bounds) {
+    const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
     int tmp_num_sample_values = 0;
     for (int i = 0; i < num_sample_values; ++i) {
