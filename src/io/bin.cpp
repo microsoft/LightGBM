@@ -150,7 +150,7 @@ namespace LightGBM {
   }
 
   std::vector<double> FindBinWithPredefinedBin(const double* distinct_values, const int* counts,
-    int num_distinct_values, int max_bin, size_t total_sample_cnt, int min_data_in_bin, std::vector<double> forced_upper_bounds) {
+    int num_distinct_values, int max_bin, size_t total_sample_cnt, int min_data_in_bin, std::vector<double>& forced_upper_bounds) {
     std::vector<double> bin_upper_bound;
 
     // get list of distinct values
@@ -307,7 +307,7 @@ namespace LightGBM {
   }
 
   std::vector<double> FindBinWithZeroAsOneBin(const double* distinct_values, const int* counts, int num_distinct_values,
-    int max_bin, size_t total_sample_cnt, int min_data_in_bin, std::vector<double> forced_upper_bounds) {
+    int max_bin, size_t total_sample_cnt, int min_data_in_bin, std::vector<double>& forced_upper_bounds) {
     if (forced_upper_bounds.empty()) {
       return FindBinWithZeroAsOneBin(distinct_values, counts, num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
     } else {
