@@ -105,7 +105,7 @@ class LambdarankNDCG: public ObjectiveFunction {
     }
     std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
                      [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
-    // get best and worst score	
+    // get best and worst score
     const double best_score = score[sorted_idx[0]];
     data_size_t worst_idx = cnt - 1;
     if (worst_idx > 0 && score[sorted_idx[worst_idx]] == kMinScore) {
@@ -143,7 +143,7 @@ class LambdarankNDCG: public ObjectiveFunction {
         const double paired_discount = fabs(high_discount - low_discount);
         // get delta NDCG
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
-        // regular the delta_pair_NDCG by score distance	
+        // regular the delta_pair_NDCG by score distance
         if (norm_ && high_label != low_label && best_score != worst_score) {
           delta_pair_NDCG /= (0.01f + fabs(delta_score));
         }

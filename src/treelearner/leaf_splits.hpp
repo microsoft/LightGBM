@@ -19,7 +19,7 @@ namespace LightGBM {
 */
 class LeafSplits {
  public:
-  LeafSplits(data_size_t num_data)
+  explicit LeafSplits(data_size_t num_data)
     :num_data_in_leaf_(num_data), num_data_(num_data),
     data_indices_(nullptr) {
   }

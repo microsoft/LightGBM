@@ -141,7 +141,7 @@ class GBDT : public GBDTBase {
   * \param hessians nullptr for using default objective, otherwise use self-defined boosting
   * \return True if cannot train any more
   */
-  virtual bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
+  bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
 
   /*!
   * \brief Rollback one iteration
@@ -177,14 +177,14 @@ class GBDT : public GBDTBase {
   * \param out_len length of returned score
   * \return training score
   */
-  virtual const double* GetTrainingScore(int64_t* out_len) override;
+  const double* GetTrainingScore(int64_t* out_len) override;
 
   /*!
   * \brief Get size of prediction at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \return The size of prediction
   */
-  virtual int64_t GetNumPredictAt(int data_idx) const override {
+  int64_t GetNumPredictAt(int data_idx) const override {
     CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
     data_size_t num_data = train_data_->num_data();
     if (data_idx > 0) {
@@ -272,7 +272,7 @@ class GBDT : public GBDTBase {
   * \param filename Filename that want to save to
   * \return is_finish Is training finished or not
   */
-  virtual bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const override;
+  bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const override;
 
   /*!
   * \brief Save model to string
@@ -280,7 +280,7 @@ class GBDT : public GBDTBase {
   * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
-  virtual std::string SaveModelToString(int start_iteration, int num_iterations) const override;
+  std::string SaveModelToString(int start_iteration, int num_iterations) const override;
 
   /*!
   * \brief Restore from a serialized buffer
@@ -359,7 +359,7 @@ class GBDT : public GBDTBase {
   /*!
   * \brief Get Type name of this boosting object
   */
-  virtual const char* SubModelName() const override { return "tree"; }
+  const char* SubModelName() const override { return "tree"; }
 
  protected:
   /*!
@@ -385,7 +385,7 @@ class GBDT : public GBDTBase {
   * \param buffer output buffer
   * \return count of left size
   */
-  data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
+  data_size_t BaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
 
 
   /*!
@@ -395,7 +395,7 @@ class GBDT : public GBDTBase {
   * \param buffer output buffer
   * \return count of left size
   */
-  data_size_t BalancedBaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
+  data_size_t BalancedBaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
 
   /*!
   * \brief calculate the object function

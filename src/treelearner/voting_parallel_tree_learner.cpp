@@ -135,7 +135,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     }
   });
 
-  std::memcpy((void*)&data, output_buffer_.data(), size);
+  std::memcpy(reinterpret_cast<void*>(&data), output_buffer_.data(), size);
 
   // set global sumup info
   smaller_leaf_splits_global_->Init(std::get<1>(data), std::get<2>(data));
