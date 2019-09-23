@@ -75,7 +75,7 @@ class SparseBin: public Bin {
   friend class SparseBinIterator<VAL_T>;
   friend class OrderedSparseBin<VAL_T>;
 
-  SparseBin(data_size_t num_data)
+  explicit SparseBin(data_size_t num_data)
     : num_data_(num_data) {
     int num_threads = 1;
 #pragma omp parallel
@@ -145,7 +145,7 @@ class SparseBin: public Bin {
     }
   }
 
-  virtual data_size_t Split(
+  data_size_t Split(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, MissingType missing_type, bool default_left,
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
@@ -208,7 +208,7 @@ class SparseBin: public Bin {
     return lte_count;
   }
 
-  virtual data_size_t SplitCategorical(
+  data_size_t SplitCategorical(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
     const uint32_t* threshold, int num_threahold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {

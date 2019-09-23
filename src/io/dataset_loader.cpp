@@ -190,7 +190,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       // extract features
-      ExtractFeaturesFromMemory(text_data, parser.get(), dataset.get());
+      ExtractFeaturesFromMemory(&text_data, parser.get(), dataset.get());
       text_data.clear();
     } else {
       // sample data from file
@@ -242,7 +242,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       dataset->CreateValid(train_data);
       // extract features
-      ExtractFeaturesFromMemory(text_data, parser.get(), dataset.get());
+      ExtractFeaturesFromMemory(&text_data, parser.get(), dataset.get());
       text_data.clear();
     } else {
       TextReader<data_size_t> text_reader(filename, config_.header);
@@ -692,7 +692,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->Construct(bin_mappers, sample_indices, num_per_col, total_sample_size, config_);
+  dataset->Construct(&bin_mappers, sample_indices, num_per_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
@@ -798,7 +798,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
   TextReader<data_size_t> text_reader(filename, config_.header);
   std::vector<std::string> out_data;
   if (num_machines == 1 || config_.pre_partition) {
-    *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile(random_, sample_cnt, &out_data));
+    *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile(&random_, sample_cnt, &out_data));
   } else {  // need partition data
             // get query data
     const data_size_t* query_boundaries = metadata.query_boundaries();
@@ -811,7 +811,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
         } else {
           return false;
         }
-      }, used_data_indices, random_, sample_cnt, &out_data);
+      }, used_data_indices, &random_, sample_cnt, &out_data);
     } else {
       // if contain query file, minimal sample unit is one query
       data_size_t num_queries = metadata.num_queries();
@@ -833,7 +833,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
           ++qid;
         }
         return is_query_used;
-      }, used_data_indices, random_, sample_cnt, &out_data);
+      }, used_data_indices, &random_, sample_cnt, &out_data);
     }
   }
   return out_data;
@@ -1018,12 +1018,12 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     }
   }
   sample_values.clear();
-  dataset->Construct(bin_mappers, Common::Vector2Ptr<int>(sample_indices).data(),
+  dataset->Construct(&bin_mappers, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::VectorSize<int>(sample_indices).data(), sample_data.size(), config_);
 }
 
 /*! \brief Extract local features from memory */
-void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_data, const Parser* parser, Dataset* dataset) {
+void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser, Dataset* dataset) {
   std::vector<std::pair<int, double>> oneline_features;
   double tmp_label = 0.0f;
   if (predict_fun_ == nullptr) {
@@ -1035,11 +1035,11 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       const int tid = omp_get_thread_num();
       oneline_features.clear();
       // parser
-      parser->ParseOneLine(text_data[i].c_str(), &oneline_features, &tmp_label);
+      parser->ParseOneLine(text_data->at(i).c_str(), &oneline_features, &tmp_label);
       // set label
       dataset->metadata_.SetLabelAt(i, static_cast<label_t>(tmp_label));
       // free processed line:
-      text_data[i].clear();
+      text_data->at(i).clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
@@ -1072,7 +1072,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       const int tid = omp_get_thread_num();
       oneline_features.clear();
       // parser
-      parser->ParseOneLine(text_data[i].c_str(), &oneline_features, &tmp_label);
+      parser->ParseOneLine(text_data->at(i).c_str(), &oneline_features, &tmp_label);
       // set initial score
       std::vector<double> oneline_init_score(num_class_);
       predict_fun_(oneline_features, oneline_init_score.data());
@@ -1110,7 +1110,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
   }
   dataset->FinishLoad();
   // text data can be free after loaded feature values
-  text_data.clear();
+  text_data->clear();
 }
 
 /*! \brief Extract local features from file */

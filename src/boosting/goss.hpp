@@ -88,7 +88,7 @@ class GOSS: public GBDT {
     bag_data_cnt_ = num_data_;
   }
 
-  data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer, data_size_t* buffer_right) {
+  data_size_t BaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer, data_size_t* buffer_right) {
     if (cnt <= 0) {
       return 0;
     }
@@ -123,7 +123,7 @@ class GOSS: public GBDT {
         data_size_t rest_need = other_k - sampled;
         data_size_t rest_all = (cnt - i) - (top_k - big_weight_cnt);
         double prob = (rest_need) / static_cast<double>(rest_all);
-        if (cur_rand.NextFloat() < prob) {
+        if (cur_rand->NextFloat() < prob) {
           buffer[cur_left_cnt++] = start + i;
           for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
             size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
@@ -157,7 +157,7 @@ class GOSS: public GBDT {
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
       Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
-      data_size_t cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt,
+      data_size_t cur_left_count = BaggingHelper(&cur_rand, cur_start, cur_cnt,
                                                  tmp_indices_.data() + cur_start, tmp_indice_right_.data() + cur_start);
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
