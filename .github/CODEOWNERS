@@ -35,3 +35,6 @@ docker/gpu/    @huanzhang12
 docs/GPU-*.rst    @huanzhang12
 src/treelearner/gpu_tree_learner.cpp    @huanzhang12 @guolinke @chivee
 src/treelearner/tree_learner.cpp    @huanzhang12 @guolinke @chivee
+
+# JAVA code
+swig/    @imatiach-msft
