@@ -370,10 +370,17 @@ void Dataset::ResetConfig(const char* parameters) {
     Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
   }
   if (param.count("forcedbins_filename")) {
-    /* Since the dataset is already constructed we don't know which bins are categorical.
-    Therefore read forced bins assuming no categorical features, and warn if not the same as original. */
+    // get categorical features from the bin types so that we can read the forced bin bounds
+    std::unordered_set<int> categorical_features;
+    for (int i = 0; i < num_total_features_; ++i) {
+      int fidx = used_feature_map_[i];
+      const BinMapper* bin_mapper = FeatureBinMapper(fidx);
+      if (bin_mapper->bin_type() == BinType::CategoricalBin) {
+        categorical_features.insert(i);
+      }
+    }
     std::vector<std::vector<double>> config_bounds = Dataset::GetForcedBins(io_config.forcedbins_filename, 
-                                                                            num_total_features_, std::unordered_set<int>());
+                                                                            num_total_features_, categorical_features);
     if (config_bounds != forced_bin_bounds_) {
       Log::Warning("Cannot change forced bins after constructed Dataset handle.");
     }
