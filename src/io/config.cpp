@@ -244,6 +244,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
         is_provide_training_metric = true;
       }
     }
+    valid = new_valid;
   }
 
   // check for conflicts
