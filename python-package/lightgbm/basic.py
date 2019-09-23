@@ -1588,7 +1588,7 @@ class Dataset(object):
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
         return self
 
-    def dump_text(self, filename):
+    def _dump_text(self, filename):
         """Save Dataset to a text file.
 
         This format cannot be loaded back in by LightGBM, but is useful for debugging purposes.
