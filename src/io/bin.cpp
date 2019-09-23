@@ -207,12 +207,12 @@ namespace LightGBM {
     int max_to_insert = max_bin - static_cast<int>(bin_upper_bound.size());
     int num_inserted = 0;
     for (size_t i = 0; i < forced_upper_bounds.size(); ++i) {
+      if (num_inserted >= max_to_insert) {
+        break;
+      }
       if (std::fabs(forced_upper_bounds[i]) > kZeroThreshold) {
         bin_upper_bound.push_back(forced_upper_bounds[i]);
         ++num_inserted;
-      }
-      if (num_inserted >= max_to_insert) {
-        break;
       }
     }
     std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
