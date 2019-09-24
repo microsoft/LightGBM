@@ -72,7 +72,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   # Get corresponding feature names. Positions in split_feature_indx
   # which are NA will result in an NA feature name
   feature_names <- parsed_json_model$feature_names[split_feature_indx]
-  tree_dt[, split_feaure := feature_names]
+  tree_dt[, split_feature := feature_names]
 
   # Return tree
   return(tree_dt)
