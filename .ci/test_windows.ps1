@@ -49,7 +49,6 @@ if ($env:TASK -eq "regular") {
     python $file ; Check-Output $?
   }  # run all examples
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
-  conda install -q -y -n $env:CONDA_ENV ipywidgets notebook
-  pip install --user pypiwin32  # temp fix for missing module
+  conda install -q -y -n $env:CONDA_ENV ipywidgets notebook pywin32
   jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $?  # run all notebooks
 }
