@@ -55,4 +55,5 @@ test_script:
       }  # run all examples
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
   - conda install -q -y -n test-env ipywidgets notebook
+  - pip install --user pypiwin32  # temp fix for missing module
   - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks
