@@ -64,6 +64,7 @@ if [[ $TASK == "rlint" ]]; then
         r-argparse \
         r-lintr
     ./.ci/lint_r.sh $(pwd)
+    exit 0
 fi
 
 if [[ $TASK == "if-else" ]]; then
