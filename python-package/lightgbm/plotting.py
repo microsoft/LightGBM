@@ -1,7 +1,7 @@
 # coding: utf-8
 # pylint: disable = C0103
 """Plotting library."""
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import warnings
 from copy import deepcopy
@@ -32,7 +32,7 @@ def plot_importance(booster, ax=None, height=0.2,
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
                     ignore_zero=True, figsize=None, grid=True,
-                    precision=None, **kwargs):
+                    precision=3, **kwargs):
     """Plot model's feature importances.
 
     Parameters
@@ -70,7 +70,7 @@ def plot_importance(booster, ax=None, height=0.2,
         Figure size.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
-    precision : int or None, optional (default=None)
+    precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
         Other parameters passed to ``ax.barh()``.
@@ -369,7 +369,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
+def _to_graphviz(tree_info, show_info, feature_names, precision=3, constraints=None, **kwargs):
     """Convert specified tree to graphviz instance.
 
     See:
@@ -380,48 +380,90 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
     else:
         raise ImportError('You must install graphviz to plot tree.')
 
-    def add(root, parent=None, decision=None):
+    def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
         if 'split_index' in root:  # non-leaf
-            name = 'split{0}'.format(root['split_index'])
-            if feature_names is not None:
-                label = 'split_feature_name: {0}'.format(feature_names[root['split_feature']])
-            else:
-                label = 'split_feature_index: {0}'.format(root['split_feature'])
-            label += r'\nthreshold: {0}'.format(_float2str(root['threshold'], precision))
-            for info in show_info:
-                if info in {'split_gain', 'internal_value', 'internal_weight'}:
-                    label += r'\n{0}: {1}'.format(info, _float2str(root[info], precision))
-                elif info == 'internal_count':
-                    label += r'\n{0}: {1}'.format(info, root[info])
-            graph.node(name, label=label)
+            l_dec = 'yes'
+            r_dec = 'no'
             if root['decision_type'] == '<=':
-                l_dec, r_dec = '<=', '>'
+                lte_symbol = "&#8804;"
+                operator = lte_symbol
             elif root['decision_type'] == '==':
-                l_dec, r_dec = 'is', "isn't"
+                operator = "="
             else:
                 raise ValueError('Invalid decision type in tree model.')
-            add(root['left_child'], name, l_dec)
-            add(root['right_child'], name, r_dec)
+            name = 'split{0}'.format(root['split_index'])
+            if feature_names is not None:
+                label = '<B>{0}</B> {1} '.format(feature_names[root['split_feature']], operator)
+            else:
+                label = 'feature <B>{0}</B> {1} '.format(root['split_feature'], operator)
+            label += '<B>{0}</B>'.format(_float2str(root['threshold'], precision))
+            for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
+                if info in show_info:
+                    output = info.split('_')[-1]
+                    if info in {'split_gain', 'internal_value', 'internal_weight'}:
+                        label += '<br/>{0} {1}'.format(_float2str(root[info], precision), output)
+                    elif info == 'internal_count':
+                        label += '<br/>{0}: {1}'.format(output, root[info])
+                    elif info == "data_percentage":
+                        label += '<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
+
+            fillcolor = "white"
+            style = ""
+            if constraints:
+                if constraints[root['split_feature']] == 1:
+                    fillcolor = "#ddffdd"  # light green
+                if constraints[root['split_feature']] == -1:
+                    fillcolor = "#ffdddd"  # light red
+                style = "filled"
+            label = "<" + label + ">"
+            graph.node(name, label=label, shape="rectangle", style=style, fillcolor=fillcolor)
+            add(root['left_child'], total_count, name, l_dec)
+            add(root['right_child'], total_count, name, r_dec)
         else:  # leaf
             name = 'leaf{0}'.format(root['leaf_index'])
-            label = 'leaf_index: {0}'.format(root['leaf_index'])
-            label += r'\nleaf_value: {0}'.format(_float2str(root['leaf_value'], precision))
-            if 'leaf_count' in show_info:
-                label += r'\nleaf_count: {0}'.format(root['leaf_count'])
+            label = 'leaf {0}: '.format(root['leaf_index'])
+            label += '<B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
             if 'leaf_weight' in show_info:
-                label += r'\nleaf_weight: {0}'.format(_float2str(root['leaf_weight'], precision))
+                label += '<br/>{0} weight'.format(_float2str(root['leaf_weight'], precision))
+            if 'leaf_count' in show_info:
+                label += '<br/>count: {0}'.format(root['leaf_count'])
+            if "data_percentage" in show_info:
+                label += '<br/>{0}% of data'.format(_float2str(root['leaf_count'] / total_count * 100, 2))
+            label = "<" + label + ">"
             graph.node(name, label=label)
         if parent is not None:
             graph.edge(parent, name, decision)
 
     graph = Digraph(**kwargs)
-    add(tree_info['tree_structure'])
+    graph.attr("graph", nodesep="0.05", ranksep="0.3", rankdir="LR")
+    if "internal_count" in tree_info['tree_structure']:
+        add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
+    else:
+        raise Exception("Cannot plot trees with no split")
 
+    if constraints:
+        # "#ddffdd" is light green, "#ffdddd" is light red
+        legend = """<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+             <TR>
+              <TD COLSPAN="2"><B>Monotone constraints</B></TD>
+             </TR>
+             <TR>
+              <TD>Increasing</TD>
+              <TD BGCOLOR="#ddffdd"></TD>
+             </TR>
+             <TR>
+              <TD>Decreasing</TD>
+              <TD BGCOLOR="#ffdddd"></TD>
+             </TR>
+            </TABLE>
+           >"""
+        graph.node("legend", label=legend, shape="rectangle", color="white")
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
+def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
                         old_name=None, old_comment=None, old_filename=None, old_directory=None,
                         old_format=None, old_engine=None, old_encoding=None, old_graph_attr=None,
                         old_node_attr=None, old_edge_attr=None, old_body=None, old_strict=False, **kwargs):
@@ -441,8 +483,9 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items:
-        'split_gain', 'internal_value', 'internal_count', 'internal_weight', 'leaf_count', 'leaf_weight'.
-    precision : int or None, optional (default=None)
+        'split_gain', 'internal_value', 'internal_count', 'internal_weight',
+        'leaf_count', 'leaf_weight', 'data_percentage'.
+    precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
@@ -482,6 +525,8 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
     else:
         feature_names = None
 
+    monotone_constraints = model.get('monotone_constraints', None)
+
     if tree_index < len(tree_infos):
         tree_info = tree_infos[tree_index]
     else:
@@ -490,14 +535,14 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
     if show_info is None:
         show_info = []
 
-    graph = _to_graphviz(tree_info, show_info, feature_names, precision, **kwargs)
+    graph = _to_graphviz(tree_info, show_info, feature_names, precision, monotone_constraints, **kwargs)
 
     return graph
 
 
 def plot_tree(booster, ax=None, tree_index=0, figsize=None,
               old_graph_attr=None, old_node_attr=None, old_edge_attr=None,
-              show_info=None, precision=None, **kwargs):
+              show_info=None, precision=3, **kwargs):
     """Plot specified tree.
 
     Note
@@ -519,8 +564,9 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items:
-        'split_gain', 'internal_value', 'internal_count', 'internal_weight', 'leaf_count', 'leaf_weight'.
-    precision : int or None, optional (default=None)
+        'split_gain', 'internal_value', 'internal_count', 'internal_weight',
+        'leaf_count', 'leaf_weight', 'data_percentage'.
+    precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.

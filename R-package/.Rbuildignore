@@ -1,7 +1,7 @@
 ^build_package.R$
 \.gitkeep$
 ^docs$
-^_pkgdown\.yml$
+^pkgdown$
 
 # Objects created by compilation
 \.o$

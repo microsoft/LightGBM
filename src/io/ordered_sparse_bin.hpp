@@ -36,7 +36,7 @@ class OrderedSparseBin: public OrderedBin {
     SparsePair() : ridx(0), bin(0) {}
   };
 
-  OrderedSparseBin(const SparseBin<VAL_T>* bin_data)
+  explicit OrderedSparseBin(const SparseBin<VAL_T>* bin_data)
     :bin_data_(bin_data) {
     data_size_t cur_pos = 0;
     data_size_t i_delta = -1;

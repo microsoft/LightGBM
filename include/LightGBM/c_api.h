@@ -309,15 +309,14 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetDumpText(DatasetHandle handle,
 /*!
  * \brief Set vector to a content in info.
  * \note
- * - \a monotone_constraints only works for ``C_API_DTYPE_INT8``;
  * - \a group only works for ``C_API_DTYPE_INT32``;
  * - \a label and \a weight only work for ``C_API_DTYPE_FLOAT32``;
- * - \a init_score and \a feature_penalty only work for ``C_API_DTYPE_FLOAT64``.
+ * - \a init_score only works for ``C_API_DTYPE_FLOAT64``.
  * \param handle Handle of dataset
- * \param field_name Field name, can be \a label, \a weight, \a init_score, \a group, \a feature_penalty, \a monotone_constraints
+ * \param field_name Field name, can be \a label, \a weight, \a init_score, \a group
  * \param field_data Pointer to data vector
  * \param num_element Number of elements in ``field_data``
- * \param type Type of ``field_data`` pointer, can be ``C_API_DTYPE_INT8``, ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param type Type of ``field_data`` pointer, can be ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,

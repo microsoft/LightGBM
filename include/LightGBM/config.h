@@ -75,7 +75,7 @@ struct Config {
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
-  static void KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv);
+  static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
   #pragma region Parameters
@@ -268,19 +268,22 @@ struct Config {
   // desc = random seed for bagging
   int bagging_seed = 3;
 
-  // alias = sub_feature_bynode, colsample_bytree_bynode
-  // desc = set this to ``true`` to randomly select part of features for each node
-  // desc = set this to ``false`` to randomly select part of features for each tree (use the same sub features for each tree)
-  // desc = **Note**: set this to ``true`` cannot speed up the training, but set this to ``false`` can speed up the training linearly
-  bool feature_fraction_bynode = false;
-
   // alias = sub_feature, colsample_bytree
   // check = >0.0
   // check = <=1.0
-  // desc = LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+  // desc = LightGBM will randomly select part of features on each iteration (tree) if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
   // desc = can be used to speed up training
   // desc = can be used to deal with over-fitting
   double feature_fraction = 1.0;
+
+  // alias = sub_feature_bynode, colsample_bynode
+  // check = >0.0
+  // check = <=1.0
+  // desc = LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+  // desc = can be used to deal with over-fitting
+  // desc = **Note**: unlike ``feature_fraction``, this cannot speed up training
+  // desc = **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
+  double feature_fraction_bynode = 1.0;
 
   // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
@@ -609,6 +612,7 @@ struct Config {
   // desc = **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
   // desc = **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
   // desc = **Note**: all negative values will be treated as **missing values**
+  // desc = **Note**: the output cannot be monotonically constrained with respect to a categorical feature
   std::string categorical_feature = "";
 
   // alias = is_predict_raw_score, predict_rawscore, raw_score

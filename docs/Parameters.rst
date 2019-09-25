@@ -254,21 +254,23 @@ Learning Control Parameters
 
    -  random seed for bagging
 
--  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``sub_feature_bynode``, ``colsample_bytree_bynode``
-
-   -  set this to ``true`` to randomly select part of features for each node
-
-   -  set this to ``false`` to randomly select part of features for each tree (use the same sub features for each tree)
-
-   -  **Note**: set this to ``true`` cannot speed up the training, but set this to ``false`` can speed up the training linearly
-
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
-   -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+   -  LightGBM will randomly select part of features on each iteration (tree) if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
    -  can be used to speed up training
 
    -  can be used to deal with over-fitting
+
+-  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature_bynode``, ``colsample_bynode``, constraints: ``0.0 < feature_fraction_bynode <= 1.0``
+
+   -  LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+
+   -  can be used to deal with over-fitting
+
+   -  **Note**: unlike ``feature_fraction``, this cannot speed up training
+
+   -  **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
 
 -  ``feature_fraction_seed`` :raw-html:`<a id="feature_fraction_seed" title="Permalink to this parameter" href="#feature_fraction_seed">&#x1F517;&#xFE0E;</a>`, default = ``2``, type = int
 
@@ -658,6 +660,8 @@ IO Parameters
    -  **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
 
    -  **Note**: all negative values will be treated as **missing values**
+
+   -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
 
 -  ``predict_raw_score`` :raw-html:`<a id="predict_raw_score" title="Permalink to this parameter" href="#predict_raw_score">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
 

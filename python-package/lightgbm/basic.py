@@ -199,7 +199,7 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
 
 def convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
-    if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
+    if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
             warnings.warn("Usage of np.ndarray subset (sliced data) is not recommended "
                           "due to it will double the peak memory cost in LightGBM.")
@@ -696,6 +696,7 @@ class Dataset(object):
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
+            The output cannot be monotonically constrained with respect to a categorical feature.
         params : dict or None, optional (default=None)
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
@@ -1169,7 +1170,7 @@ class Dataset(object):
         elif data.dtype == np.int32:
             ptr_data, type_data, _ = c_int_array(data)
         else:
-            raise TypeError("Excepted np.float32/64 or np.int32, meet type({})".format(data.dtype))
+            raise TypeError("Expected np.float32/64 or np.int32, met type({})".format(data.dtype))
         if type_data != FIELD_TYPE_MAPPER[field_name]:
             raise TypeError("Input type error for set_field")
         _safe_call(_LIB.LGBM_DatasetSetField(
@@ -1334,6 +1335,7 @@ class Dataset(object):
         if self.handle is not None:
             label = list_to_1d_numpy(_label_from_pandas(label), name='label')
             self.set_field('label', label)
+            self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
     def set_weight(self, weight):
@@ -1355,6 +1357,7 @@ class Dataset(object):
         if self.handle is not None and weight is not None:
             weight = list_to_1d_numpy(weight, name='weight')
             self.set_field('weight', weight)
+            self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
 
     def set_init_score(self, init_score):
@@ -1374,6 +1377,7 @@ class Dataset(object):
         if self.handle is not None and init_score is not None:
             init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
             self.set_field('init_score', init_score)
+            self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
 
     def set_group(self, group):
@@ -1623,7 +1627,7 @@ class Booster(object):
         self.handle = None
         self.network = False
         self.__need_reload_eval_info = True
-        self.__train_data_name = "training"
+        self._train_data_name = "training"
         self.__attr = {}
         self.__set_objective_to_none = False
         self.best_iteration = -1
@@ -1812,7 +1816,7 @@ class Booster(object):
         self : Booster
             Booster with set training Dataset name.
         """
-        self.__train_data_name = name
+        self._train_data_name = name
         return self
 
     def add_valid(self, data, name):
@@ -2039,7 +2043,7 @@ class Booster(object):
                 eval_data : Dataset
                     The evaluation dataset.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
@@ -2085,7 +2089,7 @@ class Booster(object):
                 train_data : Dataset
                     The training dataset.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
@@ -2099,7 +2103,7 @@ class Booster(object):
         result : list
             List with evaluation results.
         """
-        return self.__inner_eval(self.__train_data_name, 0, feval)
+        return self.__inner_eval(self._train_data_name, 0, feval)
 
     def eval_valid(self, feval=None):
         """Evaluate for validation data.
@@ -2116,7 +2120,7 @@ class Booster(object):
                 valid_data : Dataset
                     The validation dataset.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool

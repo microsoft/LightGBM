@@ -65,7 +65,7 @@ def train(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -88,6 +88,7 @@ def train(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
+        The output cannot be monotonically constrained with respect to a categorical feature.
     early_stopping_rounds : int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
         Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
@@ -265,7 +266,7 @@ def train(params, train_set, num_boost_round=100,
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
-    booster.best_score = collections.defaultdict(dict)
+    booster.best_score = collections.defaultdict(collections.OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
@@ -355,7 +356,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
 
 def _agg_cv_result(raw_results, eval_train_metric=False):
     """Aggregate cross-validation results."""
-    cvmap = collections.defaultdict(list)
+    cvmap = collections.OrderedDict()
     metric_type = {}
     for one_result in raw_results:
         for one_line in one_result:
@@ -364,6 +365,7 @@ def _agg_cv_result(raw_results, eval_train_metric=False):
             else:
                 key = one_line[1]
             metric_type[key] = one_line[3]
+            cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
@@ -428,7 +430,7 @@ def cv(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -451,6 +453,7 @@ def cv(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
+        The output cannot be monotonically constrained with respect to a categorical feature.
     early_stopping_rounds : int or None, optional (default=None)
         Activates early stopping.
         CV score needs to improve at least every ``early_stopping_rounds`` round(s)
