@@ -375,7 +375,8 @@ class LGBMModel(_LGBMModelBase):
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
             eval_metric=None, early_stopping_rounds=None, verbose=True,
-            feature_name='auto', categorical_feature='auto', callbacks=None):
+            feature_name='auto', categorical_feature='auto', 
+            init_model=None, callbacks=None):
         """Build a gradient boosting model from the training set (X, y).
 
         Parameters
@@ -438,6 +439,8 @@ class LGBMModel(_LGBMModelBase):
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
+        init_model : string, Booster or None, optional (default=None)
+            Filename of LightGBM model or Booster instance used for continue training.
         callbacks : list of callback functions or None, optional (default=None)
             List of callback functions that are applied at each iteration.
             See Callbacks in Python API for more information.
@@ -592,6 +595,7 @@ class LGBMModel(_LGBMModelBase):
                               evals_result=evals_result, fobj=self._fobj, feval=feval,
                               verbose_eval=verbose, feature_name=feature_name,
                               categorical_feature=categorical_feature,
+                              init_model=init_model,
                               callbacks=callbacks)
 
         if evals_result:
@@ -724,7 +728,8 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
-            verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None):
+            verbose=True, feature_name='auto', categorical_feature='auto', 
+            init_model=None, callbacks=None):
         """Docstring is inherited from the LGBMModel."""
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
                                        init_score=init_score, eval_set=eval_set,
@@ -735,6 +740,7 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
                                        early_stopping_rounds=early_stopping_rounds,
                                        verbose=verbose, feature_name=feature_name,
                                        categorical_feature=categorical_feature,
+                                       init_model=init_model,
                                        callbacks=callbacks)
         return self
 
@@ -751,7 +757,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            feature_name='auto', categorical_feature='auto', callbacks=None):
+            feature_name='auto', categorical_feature='auto', 
+            init_model=None, callbacks=None):
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
         _LGBMCheckClassificationTargets(y)
@@ -797,6 +804,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                                         early_stopping_rounds=early_stopping_rounds,
                                         verbose=verbose, feature_name=feature_name,
                                         categorical_feature=categorical_feature,
+                                        init_model=init_model,
                                         callbacks=callbacks)
         return self
 
@@ -884,7 +892,8 @@ class LGBMRanker(LGBMModel):
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
             eval_at=[1], early_stopping_rounds=None, verbose=True,
-            feature_name='auto', categorical_feature='auto', callbacks=None):
+            feature_name='auto', categorical_feature='auto', 
+            init_model=None, callbacks=None):
         """Docstring is inherited from the LGBMModel."""
         # check group data
         if group is None:
@@ -912,6 +921,7 @@ class LGBMRanker(LGBMModel):
                                     early_stopping_rounds=early_stopping_rounds,
                                     verbose=verbose, feature_name=feature_name,
                                     categorical_feature=categorical_feature,
+                                    init_model=init_model,
                                     callbacks=callbacks)
         return self
 
