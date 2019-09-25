@@ -375,8 +375,8 @@ class LGBMModel(_LGBMModelBase):
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
             eval_metric=None, early_stopping_rounds=None, verbose=True,
-            feature_name='auto', categorical_feature='auto', 
-            init_model=None, callbacks=None):
+            feature_name='auto', categorical_feature='auto',
+            callbacks=None, init_model=None):
         """Build a gradient boosting model from the training set (X, y).
 
         Parameters
@@ -728,8 +728,8 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
-            verbose=True, feature_name='auto', categorical_feature='auto', 
-            init_model=None, callbacks=None):
+            verbose=True, feature_name='auto', categorical_feature='auto',
+            callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
                                        init_score=init_score, eval_set=eval_set,
@@ -757,8 +757,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            feature_name='auto', categorical_feature='auto', 
-            init_model=None, callbacks=None):
+            feature_name='auto', categorical_feature='auto',
+            callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
         _LGBMCheckClassificationTargets(y)
@@ -892,8 +892,8 @@ class LGBMRanker(LGBMModel):
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
             eval_at=[1], early_stopping_rounds=None, verbose=True,
-            feature_name='auto', categorical_feature='auto', 
-            init_model=None, callbacks=None):
+            feature_name='auto', categorical_feature='auto',
+            callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         # check group data
         if group is None:
