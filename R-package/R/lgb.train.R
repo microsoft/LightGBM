@@ -207,30 +207,30 @@ lgb.train <- function(params = list(),
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
 
-  # Check for early stopping passed as parameter when adding early stopping callback
+  # If early stopping was passed as a parameter in params(), prefer that to keyword argument
+  # early_stopping_rounds by overwriting the value in 'early_stopping_rounds'
   early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change")
-  if (any(names(params) %in% early_stop)) {
-    if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
-      callbacks <- add.cb(
-        callbacks
-        , cb.early.stop(
-          params[[which(names(params) %in% early_stop)[1]]]
-          , verbose = verbose
-        )
+  early_stop_param_indx <- names(params) %in% early_stop
+  if (any(early_stop_param_indx)) {
+    first_early_stop_param <- which(early_stop_param_indx)[[1]]
+    first_early_stop_param_name <- names(params)[[first_early_stop_param]]
+    early_stopping_rounds <- params[[first_early_stop_param_name]]
+  }
+
+  using_early_stopping <- !is.null(early_stopping_rounds)
+  if (using_early_stopping && identical(params$boosting, "dart")){
+    warning("Early stopping is not available in 'dart' mode")
+    use_early_stopping <- FALSE
+  }
+
+  if (using_early_stopping){
+    callbacks <- add.cb(
+      callbacks
+      , cb.early.stop(
+        stopping_rounds = early_stopping_rounds
+        , verbose = verbose
       )
-    }
-  } else {
-    if (!is.null(early_stopping_rounds)) {
-      if (early_stopping_rounds > 0) {
-        callbacks <- add.cb(
-          callbacks
-          , cb.early.stop(
-            early_stopping_rounds
-            , verbose = verbose
-          )
-        )
-      }
-    }
+    )
   }
 
   # "Categorize" callbacks
