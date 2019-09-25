@@ -218,8 +218,8 @@ lgb.train <- function(params = list(),
   }
 
   using_early_stopping <- !is.null(early_stopping_rounds)
-  if (using_early_stopping && identical(params$boosting, "dart")){
-    warning("Early stopping is not available in 'dart' mode")
+  if (identical(params$boosting, "dart")){
+    warning("Early stopping is not available in 'dart' mode.")
     use_early_stopping <- FALSE
   }
 
