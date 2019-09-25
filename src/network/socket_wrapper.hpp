@@ -8,6 +8,11 @@
 
 #include <LightGBM/utils/log.h>
 
+#include <string>
+#include <cerrno>
+#include <cstdlib>
+#include <unordered_set>
+
 #if defined(_WIN32)
 
 #ifdef _MSC_VER
@@ -20,23 +25,18 @@
 
 #else
 
-#include <fcntl.h>
-#include <netdb.h>
-#include <unistd.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
+#include <fcntl.h>
 #include <ifaddrs.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#endif
-
-#include <cerrno>
-#include <cstdlib>
-#include <string>
-#include <unordered_set>
+#endif  // defined(_WIN32)
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")
