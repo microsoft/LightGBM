@@ -109,9 +109,9 @@ def record_evaluation(eval_result):
 def reset_parameter(**kwargs):
     """Create a callback that resets the parameter after the first iteration.
 
-    Note
-    ----
-    The initial parameter will still take in-effect on first iteration.
+    .. note::
+
+        The initial parameter will still take in-effect on first iteration.
 
     Parameters
     ----------
@@ -154,8 +154,6 @@ def reset_parameter(**kwargs):
 def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     """Create a callback that activates early stopping.
 
-    Note
-    ----
     Activates early stopping.
     The model will train until the validation score stops improving.
     Validation score needs to improve at least every ``early_stopping_rounds`` round(s)

@@ -357,9 +357,9 @@ class _InnerPredictor(object):
     Not exposed to user.
     Used only for prediction, usually used for continued training.
 
-    Note
-    ----
-    Can be converted from Booster, but cannot be converted to Booster.
+    .. note::
+
+        Can be converted from Booster, but cannot be converted to Booster.
     """
 
     def __init__(self, model_file=None, booster_handle=None, pred_parameter=None):
@@ -1939,11 +1939,11 @@ class Booster(object):
     def __boost(self, grad, hess):
         """Boost Booster for one iteration with customized gradient statistics.
 
-        Note
-        ----
-        For multi-class task, the score is group by class_id first, then group by row_id.
-        If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
-        and you should group grad and hess in this way as well.
+        .. note::
+
+            For multi-class task, the score is group by class_id first, then group by row_id.
+            If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
+            and you should group grad and hess in this way as well.
 
         Parameters
         ----------
@@ -2340,13 +2340,13 @@ class Booster(object):
         pred_contrib : bool, optional (default=False)
             Whether to predict feature contributions.
 
-            Note
-            ----
-            If you want to get more explanations for your model's predictions using SHAP values,
-            like SHAP interaction values,
-            you can install the shap package (https://github.com/slundberg/shap).
-            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
-            column, where the last column is the expected value.
+            .. note::
+
+                If you want to get more explanations for your model's predictions using SHAP values,
+                like SHAP interaction values,
+                you can install the shap package (https://github.com/slundberg/shap).
+                Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+                column, where the last column is the expected value.
 
         data_has_header : bool, optional (default=False)
             Whether the data has header.
@@ -2526,9 +2526,9 @@ class Booster(object):
             If int, interpreted as index.
             If string, interpreted as name.
 
-            Note
-            ----
-            Categorical features are not supported.
+            .. warning::
+
+                Categorical features are not supported.
 
         bins : int, string or None, optional (default=None)
             The maximum number of bins.
