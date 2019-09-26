@@ -124,12 +124,21 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
 
-  void ComputeBestSplitForFeature(double sum_gradient, double sum_hessian,
-                                  data_size_t num_data, int feature_index,
-                                  FeatureHistogram *histogram_array_,
-                                  std::vector<SplitInfo> &bests, int leaf_index,
-                                  int depth, const int tid, int real_fidx,
-                                  const Tree *tree, bool update = false);
+//  static double CalculateOndemandCosts(
+//      int feature_index, int leaf_index, const Dataset *train_data_,
+//      std::unique_ptr<DataPartition> &data_partition_,
+//      const std::vector<uint32_t> &feature_used_in_data, const Config *config_);
+
+  static void ComputeBestSplitForFeature(
+      double sum_gradient, double sum_hessian, data_size_t num_data,
+      int feature_index, FeatureHistogram *histogram_array_,
+      std::vector<SplitInfo> &bests, int leaf_index, int depth, const int tid,
+      int real_fidx, const Tree *tree, const Dataset *train_data_,
+      std::vector<SplitInfo> &splits_per_leaf_, const Config *config_,
+      CurrentConstraints &current_constraints,
+      std::unique_ptr<DataPartition> &data_partition_,
+      const std::vector<LeafConstraints> &constraints_per_leaf_,
+      std::unique_ptr<CostEfficientGradientBoosting>& cegb_, bool update = false);
 
   void ComputeConstraintsPerThreshold(int feature, const Tree *tree,
                                       int node_idx, unsigned int tid,

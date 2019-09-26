@@ -582,13 +582,16 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
                               smaller_leaf_histogram_array_[feature_index].RawData());
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
 
-    ComputeBestSplitForFeature(smaller_leaf_splits_->sum_gradients(),
-                               smaller_leaf_splits_->sum_hessians(),
-                               smaller_leaf_splits_->num_data_in_leaf(),
-                               feature_index, smaller_leaf_histogram_array_,
-                               smaller_best, smaller_leaf_splits_->LeafIndex(),
-                               smaller_leaf_splits_->depth(), tid, real_fidx,
-                               tree);
+    ComputeBestSplitForFeature(
+        smaller_leaf_splits_->sum_gradients(),
+        smaller_leaf_splits_->sum_hessians(),
+        smaller_leaf_splits_->num_data_in_leaf(), feature_index,
+        smaller_leaf_histogram_array_, smaller_best,
+        smaller_leaf_splits_->LeafIndex(), smaller_leaf_splits_->depth(), tid,
+        real_fidx, tree, train_data_, splits_per_leaf_, config_,
+        current_constraints, data_partition_, constraints_per_leaf_,
+        cegb_);
+
     // only has root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
 
@@ -600,13 +603,16 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
                                 larger_leaf_histogram_array_[feature_index].RawData());
     }
 
-    ComputeBestSplitForFeature(larger_leaf_splits_->sum_gradients(),
-                               larger_leaf_splits_->sum_hessians(),
-                               larger_leaf_splits_->num_data_in_leaf(),
-                               feature_index, larger_leaf_histogram_array_,
-                               larger_best, larger_leaf_splits_->LeafIndex(),
-                               larger_leaf_splits_->depth(), tid, real_fidx,
-                               tree);
+    ComputeBestSplitForFeature(
+        larger_leaf_splits_->sum_gradients(),
+        larger_leaf_splits_->sum_hessians(),
+        larger_leaf_splits_->num_data_in_leaf(), feature_index,
+        larger_leaf_histogram_array_, larger_best,
+        larger_leaf_splits_->LeafIndex(), larger_leaf_splits_->depth(), tid,
+        real_fidx, tree, train_data_, splits_per_leaf_, config_,
+        current_constraints, data_partition_, constraints_per_leaf_,
+        cegb_);
+
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -1293,7 +1299,9 @@ void SerialTreeLearner::UpdateBestSplitsFromHistograms(SplitInfo &split,
           split.left_sum_gradient + split.right_sum_gradient,
           split.left_sum_hessian + split.right_sum_hessian,
           split.left_count + split.right_count, feature_index, histogram_array_,
-          bests, leaf, depth, tid, real_fidx, tree, true);
+          bests, leaf, depth, tid, real_fidx, tree, train_data_,
+          splits_per_leaf_, config_, current_constraints,
+          data_partition_, constraints_per_leaf_, cegb_, true);
     } else {
       if (cegb_->splits_per_leaf_[leaf * train_data_->num_features() + feature_index] >
           bests[tid]) {
@@ -1358,7 +1366,12 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     double sum_gradient, double sum_hessian, data_size_t num_data,
     int feature_index, FeatureHistogram *histogram_array_,
     std::vector<SplitInfo> &bests, int leaf_index, int depth, const int tid,
-    int real_fidx, const Tree *tree, bool update) {
+    int real_fidx, const Tree *tree, const Dataset *train_data_,
+    std::vector<SplitInfo> &splits_per_leaf_, const Config *config_,
+    CurrentConstraints &current_constraints,
+    std::unique_ptr<DataPartition> &data_partition_,
+    const std::vector<LeafConstraints> &constraints_per_leaf_,
+    std::unique_ptr<CostEfficientGradientBoosting>& cegb_, bool update) {
 
   // if this is not a subtree stemming from a monotone split, then no constraint apply
   if (tree->leaf_is_in_monotone_subtree(leaf_index)) {
