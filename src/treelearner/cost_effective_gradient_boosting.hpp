@@ -78,7 +78,7 @@ class CostEfficientGradientBoosting {
       auto tmp_idx = tree_learner_->data_partition_->GetIndexOnLeaf(best_leaf, &cnt_leaf_data);
       for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
         int real_idx = tmp_idx[i_input];
-        Common::InsertBitset(feature_used_in_data_, train_data->num_data() * inner_feature_index + real_idx);
+        Common::InsertBitset(&feature_used_in_data_, train_data->num_data() * inner_feature_index + real_idx);
       }
     }
   }
