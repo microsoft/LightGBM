@@ -127,11 +127,11 @@ class TestBasic(unittest.TestCase):
             d1.add_features_from(d2)
             with tempfile.NamedTemporaryFile() as f:
                 d1name = f.name
-            d1.dump_text(d1name)
+            d1._dump_text(d1name)
             d = lgb.Dataset(X, feature_name=names).construct()
             with tempfile.NamedTemporaryFile() as f:
                 dname = f.name
-            d.dump_text(dname)
+            d._dump_text(dname)
             with open(d1name, 'rt') as d1f:
                 d1txt = d1f.read()
             with open(dname, 'rt') as df:
