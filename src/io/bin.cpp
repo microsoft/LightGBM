@@ -439,7 +439,7 @@ namespace LightGBM {
                        "Consider renumbering to consecutive integers started from zero");
         }
         // sort by counts
-        Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
+        Common::SortForPair<int, int>(&counts_int, &distinct_values_int, 0, true);
         // avoid first bin is zero
         if (distinct_values_int[0] == 0) {
           if (counts_int.size() == 1) {

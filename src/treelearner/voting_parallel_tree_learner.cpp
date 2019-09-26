@@ -135,7 +135,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     }
   });
 
-  std::memcpy((void*)&data, output_buffer_.data(), size);
+  std::memcpy(reinterpret_cast<void*>(&data), output_buffer_.data(), size);
 
   // set global sumup info
   smaller_leaf_splits_global_->Init(std::get<1>(data), std::get<2>(data));
@@ -379,9 +379,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
   std::vector<SplitInfo> larger_best_per_thread(this->num_threads_);
   std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
   std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
-  if (this->config_->feature_fraction_bynode) {
-    smaller_node_used_features = this->GetUsedFeatures();
-    larger_node_used_features = this->GetUsedFeatures();
+  if (this->config_->feature_fraction_bynode < 1.0f) {
+    smaller_node_used_features = this->GetUsedFeatures(false);
+    larger_node_used_features = this->GetUsedFeatures(false);
   }
   // find best split from local aggregated histograms
 

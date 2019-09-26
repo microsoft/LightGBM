@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 
-const std::string kModelVersion = "v3";
+const char* kModelVersion = "v3";
 
 std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   std::stringstream str_buf;
@@ -435,7 +435,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
 
   // get monotone_constraints
   if (key_vals.count("monotone_constraints")) {
-    Common::SplitToIntLike(key_vals["monotone_constraints"].c_str(), ' ', monotone_constraints_);
+    monotone_constraints_ = Common::StringToArray<int8_t>(key_vals["monotone_constraints"].c_str(), ' ');
     if (monotone_constraints_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of monotone_constraints");
       return false;

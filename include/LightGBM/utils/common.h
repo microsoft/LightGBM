@@ -162,31 +162,6 @@ inline static const char* Atoi(const char* p, T* out) {
   return p;
 }
 
-template <typename T>
-inline void SplitToIntLike(const char *c_str, char delimiter,
-                           std::vector<T> &ret) {
-  CHECK(ret.empty());
-  std::string str(c_str);
-  size_t i = 0;
-  size_t pos = 0;
-  while (pos < str.length()) {
-    if (str[pos] == delimiter) {
-      if (i < pos) {
-        ret.push_back({});
-        Atoi(str.substr(i, pos - i).c_str(), &ret.back());
-      }
-      ++pos;
-      i = pos;
-    } else {
-      ++pos;
-    }
-  }
-  if (i < pos) {
-    ret.push_back({});
-    Atoi(str.substr(i).c_str(), &ret.back());
-  }
-}
-
 template<typename T>
 inline static double Pow(T base, int power) {
   if (power < 0) {
@@ -664,10 +639,10 @@ std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<
 }
 
 template<typename T1, typename T2>
-inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
+inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, size_t start, bool is_reverse = false) {
   std::vector<std::pair<T1, T2>> arr;
-  for (size_t i = start; i < keys.size(); ++i) {
-    arr.emplace_back(keys[i], values[i]);
+  for (size_t i = start; i < keys->size(); ++i) {
+    arr.emplace_back(keys->at(i), values->at(i));
   }
   if (!is_reverse) {
     std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
@@ -679,16 +654,16 @@ inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, s
     });
   }
   for (size_t i = start; i < arr.size(); ++i) {
-    keys[i] = arr[i].first;
-    values[i] = arr[i].second;
+    keys->at(i) = arr[i].first;
+    values->at(i) = arr[i].second;
   }
 }
 
 template <typename T>
-inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>& data) {
-  std::vector<T*> ptr(data.size());
-  for (size_t i = 0; i < data.size(); ++i) {
-    ptr[i] = data[i].data();
+inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>* data) {
+  std::vector<T*> ptr(data->size());
+  for (size_t i = 0; i < data->size(); ++i) {
+    ptr[i] = data->at(i).data();
   }
   return ptr;
 }
@@ -715,7 +690,7 @@ inline static double AvoidInf(double x) {
 }
 
 inline static float AvoidInf(float x) {
-  if (std::isnan(x)){
+  if (std::isnan(x)) {
     return 0.0f;
   } else if (x >= 1e38) {
     return 1e38f;
@@ -865,13 +840,13 @@ inline static std::vector<uint32_t> EmptyBitset(int n) {
 }
 
 template<typename T>
-inline static void InsertBitset(std::vector<uint32_t>& vec, const T val) {
+inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
     int i1 = val / 32;
     int i2 = val % 32;
-    if (static_cast<int>(vec.size()) < i1 + 1) {
-      vec.resize(i1 + 1, 0);
+    if (static_cast<int>(vec->size()) < i1 + 1) {
+      vec->resize(i1 + 1, 0);
     }
-    vec[i1] |= (1 << i2);
+    vec->at(i1) |= (1 << i2);
 }
 
 template<typename T>

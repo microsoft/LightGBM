@@ -48,7 +48,7 @@ Application::~Application() {
 void Application::LoadParameters(int argc, char** argv) {
   std::unordered_map<std::string, std::string> params;
   for (int i = 1; i < argc; ++i) {
-    Config::KV2Map(params, argv[i]);
+    Config::KV2Map(&params, argv[i]);
   }
   // check for alias
   ParameterAlias::KeyAliasTransform(&params);
@@ -66,7 +66,7 @@ void Application::LoadParameters(int argc, char** argv) {
         if (line.size() == 0) {
           continue;
         }
-        Config::KV2Map(params, line.c_str());
+        Config::KV2Map(&params, line.c_str());
       }
     } else {
       Log::Warning("Config file %s doesn't exist, will ignore",
@@ -85,7 +85,6 @@ void Application::LoadData() {
   std::unique_ptr<Predictor> predictor;
   // prediction is needed if using input initial model(continued train)
   PredictFunction predict_fun = nullptr;
-  
   // need to continue training
   if (boosting_->NumberOfTotalModel() > 0 && config_.task != TaskType::KRefitTree) {
     predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, false, -1, -1));

@@ -32,7 +32,7 @@ def plot_importance(booster, ax=None, height=0.2,
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
                     ignore_zero=True, figsize=None, grid=True,
-                    precision=None, **kwargs):
+                    precision=3, **kwargs):
     """Plot model's feature importances.
 
     Parameters
@@ -70,7 +70,7 @@ def plot_importance(booster, ax=None, height=0.2,
         Figure size.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
-    precision : int or None, optional (default=None)
+    precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     **kwargs
         Other parameters passed to ``ax.barh()``.
@@ -440,7 +440,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3, constraints=N
     if "internal_count" in tree_info['tree_structure']:
         add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
     else:
-        raise Exception("Cannnot plot trees with no split")
+        raise Exception("Cannot plot trees with no split")
 
     if constraints:
         # "#ddffdd" is light green, "#ffdddd" is light red
@@ -469,10 +469,10 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
                         old_node_attr=None, old_edge_attr=None, old_body=None, old_strict=False, **kwargs):
     """Create a digraph representation of specified tree.
 
-    Note
-    ----
-    For more information please visit
-    https://graphviz.readthedocs.io/en/stable/api.html#digraph.
+    .. note::
+
+        For more information please visit
+        https://graphviz.readthedocs.io/en/stable/api.html#digraph.
 
     Parameters
     ----------
@@ -545,10 +545,10 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
               show_info=None, precision=3, **kwargs):
     """Plot specified tree.
 
-    Note
-    ----
-    It is preferable to use ``create_tree_digraph()`` because of its lossless quality
-    and returned objects can be also rendered and displayed directly inside a Jupyter notebook.
+    .. note::
+
+        It is preferable to use ``create_tree_digraph()`` because of its lossless quality
+        and returned objects can be also rendered and displayed directly inside a Jupyter notebook.
 
     Parameters
     ----------

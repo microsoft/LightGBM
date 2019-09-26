@@ -157,7 +157,7 @@ void GBDT::Boosting() {
     GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
 }
 
-data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer) {
+data_size_t GBDT::BaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer) {
   if (cnt <= 0) {
     return 0;
   }
@@ -168,7 +168,7 @@ data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t
   // random bagging, minimal unit is one record
   for (data_size_t i = 0; i < cnt; ++i) {
     float prob = (bag_data_cnt - cur_left_cnt) / static_cast<float>(cnt - i);
-    if (cur_rand.NextFloat() < prob) {
+    if (cur_rand->NextFloat() < prob) {
       buffer[cur_left_cnt++] = start + i;
     } else {
       right_buffer[cur_right_cnt++] = start + i;
@@ -178,7 +178,7 @@ data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t
   return cur_left_cnt;
 }
 
-data_size_t GBDT::BalancedBaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer) {
+data_size_t GBDT::BalancedBaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer) {
   if (cnt <= 0) {
     return 0;
   }
@@ -192,9 +192,9 @@ data_size_t GBDT::BalancedBaggingHelper(Random& cur_rand, data_size_t start, dat
     bool is_pos = label_ptr[start + i] > 0;
     bool is_in_bag = false;
     if (is_pos) {
-      is_in_bag = cur_rand.NextFloat() < config_->pos_bagging_fraction;
+      is_in_bag = cur_rand->NextFloat() < config_->pos_bagging_fraction;
     } else {
-      is_in_bag = cur_rand.NextFloat() < config_->neg_bagging_fraction;
+      is_in_bag = cur_rand->NextFloat() < config_->neg_bagging_fraction;
     }
     if (is_in_bag) {
       buffer[cur_left_cnt++] = start + i;
@@ -228,9 +228,9 @@ void GBDT::Bagging(int iter) {
       Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
       data_size_t cur_left_count = 0;
       if (balanced_bagging_) {
-        cur_left_count = BalancedBaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+        cur_left_count = BalancedBaggingHelper(&cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
       } else {
-        cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+        cur_left_count = BaggingHelper(&cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
       }
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;

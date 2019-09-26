@@ -65,7 +65,7 @@ def train(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -101,8 +101,8 @@ def train(params, train_set, num_boost_round=100,
     evals_result: dict or None, optional (default=None)
         This dictionary used to store all evaluation results of all the items in ``valid_sets``.
 
-        Example
-        -------
+        .. rubric:: Example
+
         With a ``valid_sets`` = [valid_set, train_set],
         ``valid_names`` = ['eval', 'train']
         and a ``params`` = {'metric': 'logloss'}
@@ -115,8 +115,8 @@ def train(params, train_set, num_boost_round=100,
         If int, the eval metric on the valid set is printed at every ``verbose_eval`` boosting stage.
         The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
 
-        Example
-        -------
+        .. rubric:: Example
+
         With ``verbose_eval`` = 4 and at least one item in ``valid_sets``,
         an evaluation metric is printed every 4 (instead of 1) boosting stages.
 
@@ -147,7 +147,7 @@ def train(params, train_set, num_boost_round=100,
             num_boost_round = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
-    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
+    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change"]:
         if alias in params:
             early_stopping_rounds = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
@@ -266,7 +266,7 @@ def train(params, train_set, num_boost_round=100,
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
-    booster.best_score = collections.defaultdict(dict)
+    booster.best_score = collections.defaultdict(collections.OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
@@ -356,7 +356,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
 
 def _agg_cv_result(raw_results, eval_train_metric=False):
     """Aggregate cross-validation results."""
-    cvmap = collections.defaultdict(list)
+    cvmap = collections.OrderedDict()
     metric_type = {}
     for one_result in raw_results:
         for one_line in one_result:
@@ -365,6 +365,7 @@ def _agg_cv_result(raw_results, eval_train_metric=False):
             else:
                 key = one_line[1]
             metric_type[key] = one_line[3]
+            cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
@@ -429,7 +430,7 @@ def cv(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -501,7 +502,7 @@ def cv(params, train_set, num_boost_round=100,
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = params.pop(alias)
             break
-    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
+    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change"]:
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             early_stopping_rounds = params.pop(alias)
