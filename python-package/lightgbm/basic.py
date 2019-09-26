@@ -80,10 +80,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     elif isinstance(data, Series):
         if _get_bad_pandas_dtypes([data.dtypes]):
             raise ValueError('Series.dtypes must be int, float or bool')
-        if hasattr(data.values, 'values'):  # SparseArray
-            return data.values.values.astype(dtype)
-        else:
-            return data.values.astype(dtype)
+        return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
     else:
         raise TypeError("Wrong type({0}) for {1}.\n"
                         "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
@@ -296,7 +293,9 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
                              + ', '.join(data.columns[bad_indices]))
-        data = data.values.astype('float')
+        data = data.values
+        if data.dtype != np.float32 and data.dtype != np.float64:
+            data = data.astype(np.float32)
     else:
         if feature_name == 'auto':
             feature_name = None
@@ -311,7 +310,7 @@ def _label_from_pandas(label):
             raise ValueError('DataFrame for label cannot have multiple columns')
         if _get_bad_pandas_dtypes(label.dtypes):
             raise ValueError('DataFrame.dtypes for label must be int, float or bool')
-        label = label.values.astype('float').flatten()
+        label = np.ravel(label.values.astype(np.float32, copy=False))
     return label
 
 
@@ -534,8 +533,7 @@ class _InnerPredictor(object):
         def inner_predict(mat, num_iteration, predict_type, preds=None):
             if mat.dtype == np.float32 or mat.dtype == np.float64:
                 data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
-            else:
-                """change non-float data to float data, need to copy"""
+            else:  # change non-float data to float data, need to copy
                 data = np.array(mat.reshape(mat.size), dtype=np.float32)
             ptr_data, type_ptr_data, _ = c_float_array(data)
             n_preds = self.__get_num_preds(num_iteration, mat.shape[0], predict_type)
@@ -876,8 +874,7 @@ class Dataset(object):
         self.handle = ctypes.c_void_p()
         if mat.dtype == np.float32 or mat.dtype == np.float64:
             data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
-        else:
-            # change non-float data to float data, need to copy
+        else:  # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data, _ = c_float_array(data)
@@ -915,8 +912,7 @@ class Dataset(object):
 
             if mat.dtype == np.float32 or mat.dtype == np.float64:
                 mats[i] = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
-            else:
-                # change non-float data to float data, need to copy
+            else:  # change non-float data to float data, need to copy
                 mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
 
             chunk_ptr_data, chunk_type_ptr_data, holder = c_float_array(mats[i])
@@ -1012,7 +1008,7 @@ class Dataset(object):
                     used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
                     assert used_indices.flags.c_contiguous
                     if self.reference.group is not None:
-                        group_info = np.array(self.reference.group).astype(int)
+                        group_info = np.array(self.reference.group).astype(np.int32, copy=False)
                         _, self.group = np.unique(np.repeat(range_(len(group_info)), repeats=group_info)[self.used_indices],
                                                   return_counts=True)
                     self.handle = ctypes.c_void_p()
@@ -2512,7 +2508,7 @@ class Booster(object):
             ctypes.c_int(importance_type_int),
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if importance_type_int == 0:
-            return result.astype(int)
+            return result.astype(np.int32)
         else:
             return result
 
