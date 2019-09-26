@@ -755,6 +755,8 @@ class HistogramPool {
     #pragma omp parallel for schedule(static, 512) if (size >= 1024)
     for (int i = 0; i < size; ++i) {
       feature_metas_[i].config = config;
+      feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
+      feature_metas_[i].penalty = train_data->FeaturePenalte(i);
     }
   }
   /*!
