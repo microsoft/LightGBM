@@ -72,6 +72,7 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"colsample_bynode", "feature_fraction_bynode"},
   {"early_stopping_rounds", "early_stopping_round"},
   {"early_stopping", "early_stopping_round"},
+  {"n_iter_no_change", "early_stopping_round"},
   {"max_tree_output", "max_delta_step"},
   {"max_leaf_output", "max_delta_step"},
   {"reg_alpha", "lambda_l1"},
