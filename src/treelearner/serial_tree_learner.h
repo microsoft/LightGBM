@@ -32,12 +32,14 @@
 using namespace json11;
 
 namespace LightGBM {
-
+/*! \brief forward declaration */
+class CostEfficientGradientBoosting;
 /*!
 * \brief Used for learning a tree by single machine
 */
 class SerialTreeLearner: public TreeLearner {
  public:
+  friend CostEfficientGradientBoosting;
   explicit SerialTreeLearner(const Config* config);
 
   ~SerialTreeLearner();
@@ -116,8 +118,6 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
 
-  double CalculateOndemandCosts(int feature_index, int leaf_index);
-
   /*! \brief number of data */
   data_size_t num_data_;
   /*! \brief number of features */
@@ -179,9 +179,7 @@ class SerialTreeLearner: public TreeLearner {
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
-
-  std::vector<bool> is_feature_used_in_split_;
-  std::vector<uint32_t> feature_used_in_data;
+  std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

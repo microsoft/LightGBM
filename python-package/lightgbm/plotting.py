@@ -469,10 +469,10 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
                         old_node_attr=None, old_edge_attr=None, old_body=None, old_strict=False, **kwargs):
     """Create a digraph representation of specified tree.
 
-    Note
-    ----
-    For more information please visit
-    https://graphviz.readthedocs.io/en/stable/api.html#digraph.
+    .. note::
+
+        For more information please visit
+        https://graphviz.readthedocs.io/en/stable/api.html#digraph.
 
     Parameters
     ----------
@@ -545,10 +545,10 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
               show_info=None, precision=3, **kwargs):
     """Plot specified tree.
 
-    Note
-    ----
-    It is preferable to use ``create_tree_digraph()`` because of its lossless quality
-    and returned objects can be also rendered and displayed directly inside a Jupyter notebook.
+    .. note::
+
+        It is preferable to use ``create_tree_digraph()`` because of its lossless quality
+        and returned objects can be also rendered and displayed directly inside a Jupyter notebook.
 
     Parameters
     ----------

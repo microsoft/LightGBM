@@ -156,7 +156,13 @@
 
       // get the size, indices and values
       auto indices = (jintArray)jenv->CallObjectMethod(objSparseVec, sparseVectorIndices);
+      if (jenv->ExceptionCheck()) {
+        return -1;
+      }
       auto values = (jdoubleArray)jenv->CallObjectMethod(objSparseVec, sparseVectorValues);
+      if (jenv->ExceptionCheck()) {
+        return -1;
+      }
       int size = jenv->GetArrayLength(indices);
 
       // Note: when testing on larger data (e.g. 288k rows per partition and 36mio rows total)
