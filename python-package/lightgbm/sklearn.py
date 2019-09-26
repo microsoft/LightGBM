@@ -439,11 +439,11 @@ class LGBMModel(_LGBMModelBase):
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
-        init_model : string, Booster or None, optional (default=None)
-            Filename of LightGBM model or Booster instance used for continue training.
         callbacks : list of callback functions or None, optional (default=None)
             List of callback functions that are applied at each iteration.
             See Callbacks in Python API for more information.
+        init_model : string, Booster or None, optional (default=None)
+            Filename of LightGBM model or Booster instance used for continue training.
 
         Returns
         -------
@@ -595,8 +595,7 @@ class LGBMModel(_LGBMModelBase):
                               evals_result=evals_result, fobj=self._fobj, feval=feval,
                               verbose_eval=verbose, feature_name=feature_name,
                               categorical_feature=categorical_feature,
-                              init_model=init_model,
-                              callbacks=callbacks)
+                              callbacks=callbacks, init_model=init_model)
 
         if evals_result:
             self._evals_result = evals_result
@@ -740,8 +739,7 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
                                        early_stopping_rounds=early_stopping_rounds,
                                        verbose=verbose, feature_name=feature_name,
                                        categorical_feature=categorical_feature,
-                                       init_model=init_model,
-                                       callbacks=callbacks)
+                                       callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
@@ -804,8 +802,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                                         early_stopping_rounds=early_stopping_rounds,
                                         verbose=verbose, feature_name=feature_name,
                                         categorical_feature=categorical_feature,
-                                        init_model=init_model,
-                                        callbacks=callbacks)
+                                        callbacks=callbacks, init_model=init_model)
         return self
 
     fit.__doc__ = LGBMModel.fit.__doc__
@@ -921,8 +918,7 @@ class LGBMRanker(LGBMModel):
                                     early_stopping_rounds=early_stopping_rounds,
                                     verbose=verbose, feature_name=feature_name,
                                     categorical_feature=categorical_feature,
-                                    init_model=init_model,
-                                    callbacks=callbacks)
+                                    callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
