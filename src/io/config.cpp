@@ -234,6 +234,19 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   }
   CHECK(valid.size() == valid_data_initscores.size());
 
+  if (valid_data_initscores.empty()) {
+    std::vector<std::string> new_valid;
+    for (size_t i = 0; i < valid.size(); ++i) {
+      if (valid[i] != data) {
+        // Only push the non-training data
+        new_valid.push_back(valid[i]);
+      } else {
+        is_provide_training_metric = true;
+      }
+    }
+    valid = new_valid;
+  }
+
   // check for conflicts
   CheckParamConflict();
 
