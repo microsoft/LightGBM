@@ -1,38 +1,23 @@
 #' Data preparator for LightGBM datasets with rules (numeric)
 #'
-#' Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric. In addition, keeps rules created so you can convert other datasets using this converter.
+#' Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}. Factors and characters are converted to numeric. In addition, keeps rules created so you can convert other datasets using this converter.
 #'
 #' @param data A data.frame or data.table to prepare.
 #' @param rules A set of rules from the data preparator, if already used.
 #'
-#' @return A list with the cleaned dataset (\code{data}) and the rules (\code{rules}). The data must be converted to a matrix format (\code{as.matrix}) for input in lgb.Dataset.
+#' @return A list with the cleaned dataset (\code{data}) and the rules (\code{rules}). The data must be converted to a matrix format (\code{as.matrix}) for input in \code{lgb.Dataset}.
 #'
 #' @examples
 #' library(lightgbm)
 #' data(iris)
 #'
 #' str(iris)
-#' # 'data.frame':	150 obs. of  5 variables:
-#' # $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
-#' # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
-#' # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
-#' # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-#' # $ Species     : Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 ...
 #'
 #' new_iris <- lgb.prepare_rules(data = iris) # Autoconverter
 #' str(new_iris$data)
-#' # 'data.frame':	150 obs. of  5 variables:
-#' # $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
-#' # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
-#' # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
-#' # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-#' # $ Species     : num  1 1 1 1 1 1 1 1 1 1 ...
 #'
 #' data(iris) # Erase iris dataset
 #' iris$Species[1] <- "NEW FACTOR" # Introduce junk factor (NA)
-#' # Warning message:
-#' # In `[<-.factor`(`*tmp*`, 1, value = c(NA, 1L, 1L, 1L, 1L, 1L, 1L,  :
-#' #  invalid factor level, NA generated
 #'
 #' # Use conversion using known rules
 #' # Unknown factors become 0, excellent for sparse datasets
@@ -40,14 +25,11 @@
 #'
 #' # Unknown factor is now zero, perfect for sparse datasets
 #' newer_iris$data[1, ] # Species became 0 as it is an unknown factor
-#' #   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
-#' # 1          5.1         3.5          1.4         0.2       0
 #'
 #' newer_iris$data[1, 5] <- 1 # Put back real initial value
 #'
 #' # Is the newly created dataset equal? YES!
 #' all.equal(new_iris$data, newer_iris$data)
-#' # [1] TRUE
 #'
 #' # Can we test our own rules?
 #' data(iris) # Erase iris dataset
@@ -58,12 +40,6 @@
 #'                                    "virginica" = 1))
 #' newest_iris <- lgb.prepare_rules(data = iris, rules = personal_rules)
 #' str(newest_iris$data) # SUCCESS!
-#' # 'data.frame':	150 obs. of  5 variables:
-#' # $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
-#' # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
-#' # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
-#' # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-#' # $ Species     : num  3 3 3 3 3 3 3 3 3 3 ...
 #'
 #' @importFrom data.table set
 #' @export

@@ -422,7 +422,7 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   split_feature_inner_[new_node_idx] = feature;
   split_feature_[new_node_idx] = real_feature;
 
-  split_gain_[new_node_idx] = Common::AvoidInf(gain);
+  split_gain_[new_node_idx] = gain;
   // add two new leaves
   left_child_[new_node_idx] = ~leaf;
   right_child_[new_node_idx] = ~num_leaves_;

@@ -12,7 +12,7 @@
 
 namespace LightGBM {
 
-void Config::KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv) {
+void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv) {
   std::vector<std::string> tmp_strs = Common::Split(kv, '=');
   if (tmp_strs.size() == 2 || tmp_strs.size() == 1) {
     std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
@@ -24,9 +24,9 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>& params, const 
       Log::Fatal("Do not support non-ascii characters in config.");
     }
     if (key.size() > 0) {
-      auto value_search = params.find(key);
-      if (value_search == params.end()) {  // not set
-        params.emplace(key, value);
+      auto value_search = params->find(key);
+      if (value_search == params->end()) {  // not set
+        params->emplace(key, value);
       } else {
         Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
           key.c_str(), value_search->second.c_str(), key.c_str(), value.c_str(),
@@ -42,7 +42,7 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
   std::unordered_map<std::string, std::string> params;
   auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
-    KV2Map(params, Common::Trim(arg).c_str());
+    KV2Map(&params, Common::Trim(arg).c_str());
   }
   ParameterAlias::KeyAliasTransform(&params);
   return params;
@@ -210,7 +210,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
     Random rand(seed);
-    int int_max = std::numeric_limits<short>::max();
+    int int_max = std::numeric_limits<int16_t>::max();
     data_random_seed = static_cast<int>(rand.NextShort(0, int_max));
     bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
     drop_seed = static_cast<int>(rand.NextShort(0, int_max));
@@ -233,6 +233,19 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
     valid_data_initscores = std::vector<std::string>(valid.size(), "");
   }
   CHECK(valid.size() == valid_data_initscores.size());
+
+  if (valid_data_initscores.empty()) {
+    std::vector<std::string> new_valid;
+    for (size_t i = 0; i < valid.size(); ++i) {
+      if (valid[i] != data) {
+        // Only push the non-training data
+        new_valid.push_back(valid[i]);
+      } else {
+        is_provide_training_metric = true;
+      }
+    }
+    valid = new_valid;
+  }
 
   // check for conflicts
   CheckParamConflict();

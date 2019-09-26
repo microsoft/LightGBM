@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{dim.lgb.Dataset}
 \alias{dim.lgb.Dataset}
-\title{Dimensions of an lgb.Dataset}
+\title{Dimensions of an \code{lgb.Dataset}}
 \usage{
 \method{dim}{lgb.Dataset}(x, ...)
 }

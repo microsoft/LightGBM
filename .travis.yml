@@ -16,7 +16,8 @@ env:
     - TASK=regular PYTHON_VERSION=3.6
     - TASK=sdist PYTHON_VERSION=2.7
     - TASK=bdist
-    - TASK=pylint
+    - TASK=if-else
+    - TASK=lint
     - TASK=check-docs
     - TASK=mpi METHOD=source
     - TASK=mpi METHOD=pip
@@ -30,7 +31,7 @@ matrix:
     - os: osx
       env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - os: osx
-      env: TASK=pylint
+      env: TASK=lint
     - os: osx
       env: TASK=check-docs
 

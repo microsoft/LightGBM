@@ -99,7 +99,7 @@ Core Parameters
 
       -  all values in ``label`` must be smaller than number of elements in ``label_gain``
 
--  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``gbrt``, ``rf``, ``random_forest``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
+-  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
 
    -  ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
 
@@ -256,17 +256,27 @@ Learning Control Parameters
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
-   -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+   -  LightGBM will randomly select part of features on each iteration (tree) if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
    -  can be used to speed up training
 
    -  can be used to deal with over-fitting
 
+-  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature_bynode``, ``colsample_bynode``, constraints: ``0.0 < feature_fraction_bynode <= 1.0``
+
+   -  LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+
+   -  can be used to deal with over-fitting
+
+   -  **Note**: unlike ``feature_fraction``, this cannot speed up training
+
+   -  **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
+
 -  ``feature_fraction_seed`` :raw-html:`<a id="feature_fraction_seed" title="Permalink to this parameter" href="#feature_fraction_seed">&#x1F517;&#xFE0E;</a>`, default = ``2``, type = int
 
    -  random seed for ``feature_fraction``
 
--  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``
+-  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``, ``n_iter_no_change``
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
 
@@ -651,6 +661,8 @@ IO Parameters
 
    -  **Note**: all negative values will be treated as **missing values**
 
+   -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
+
 -  ``predict_raw_score`` :raw-html:`<a id="predict_raw_score" title="Permalink to this parameter" href="#predict_raw_score">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
 
    -  used only in ``prediction`` task
@@ -730,7 +742,7 @@ Objective Parameters
 
 -  ``is_unbalance`` :raw-html:`<a id="is_unbalance" title="Permalink to this parameter" href="#is_unbalance">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``unbalance``, ``unbalanced_sets``
 
-   -  used only in ``binary`` application
+   -  used only in ``binary`` and ``multiclassova`` applications
 
    -  set this to ``true`` if training data are unbalanced
 
@@ -740,7 +752,7 @@ Objective Parameters
 
 -  ``scale_pos_weight`` :raw-html:`<a id="scale_pos_weight" title="Permalink to this parameter" href="#scale_pos_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
 
-   -  used only in ``binary`` application
+   -  used only in ``binary`` and ``multiclassova`` applications
 
    -  weight of labels with positive class
 
@@ -756,7 +768,7 @@ Objective Parameters
 
 -  ``boost_from_average`` :raw-html:`<a id="boost_from_average" title="Permalink to this parameter" href="#boost_from_average">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
-   -  used only in ``regression``, ``binary`` and ``cross-entropy`` applications
+   -  used only in ``regression``, ``binary``, ``multiclassova`` and ``cross-entropy`` applications
 
    -  adjusts initial score to the mean of labels for faster convergence
 
@@ -801,6 +813,14 @@ Objective Parameters
    -  used only in ``lambdarank`` application
 
    -  optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
+
+-  ``lambdamart_norm`` :raw-html:`<a id="lambdamart_norm" title="Permalink to this parameter" href="#lambdamart_norm">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  used only in ``lambdarank`` application
+
+   -  set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data
+
+   -  set this to ``false`` to enforce the original lambdamart algorithm
 
 -  ``label_gain`` :raw-html:`<a id="label_gain" title="Permalink to this parameter" href="#label_gain">&#x1F517;&#xFE0E;</a>`, default = ``0,1,3,7,15,31,63,...,2^30-1``, type = multi-double
 

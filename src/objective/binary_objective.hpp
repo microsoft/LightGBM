@@ -5,6 +5,7 @@
 #ifndef LIGHTGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
 
+#include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
 #include <string>
@@ -72,6 +73,11 @@ class BinaryLogloss: public ObjectiveFunction {
         ++cnt_negative;
       }
     }
+    num_pos_data_ = cnt_positive;
+    if (Network::num_machines() > 1) {
+      cnt_positive = Network::GlobalSyncUpBySum(cnt_positive);
+      cnt_negative = Network::GlobalSyncUpBySum(cnt_negative);
+    }
     need_train_ = true;
     if (cnt_negative == 0 || cnt_positive == 0) {
       Log::Warning("Contains only one class");
@@ -96,7 +102,6 @@ class BinaryLogloss: public ObjectiveFunction {
       }
     }
     label_weights_[1] *= scale_pos_weight_;
-    num_pos_data_ = cnt_positive;
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {

@@ -116,7 +116,7 @@ class ArrayArgs {
     std::vector<VAL_T>& ref = *arr;
     VAL_T v = ref[end - 1];
     for (;;) {
-      while (ref[++i] > v);
+      while (ref[++i] > v) {}
       while (v > ref[--j]) { if (j == start) { break; } }
       if (i >= j) { break; }
       std::swap(ref[i], ref[j]);

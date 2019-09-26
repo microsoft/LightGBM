@@ -187,19 +187,22 @@ void Linkers::Construct() {
   listener_->Listen(incoming_cnt);
   std::thread listen_thread(&Linkers::ListenThread, this, incoming_cnt);
   const int connect_fail_retry_cnt = 20;
-  const int connect_fail_delay_time = 10 * 1000;  // 10s
+  const int connect_fail_retry_first_delay_interval = 200; // 0.2 s
+  const float connect_fail_retry_delay_factor = 1.3f;
   // start connect
   for (auto it = need_connect.begin(); it != need_connect.end(); ++it) {
     int out_rank = it->first;
     // let smaller rank connect to larger rank
     if (out_rank > rank_) {
       TcpSocket cur_socket;
+      int connect_fail_delay_time = connect_fail_retry_first_delay_interval;
       for (int i = 0; i < connect_fail_retry_cnt; ++i) {
         if (cur_socket.Connect(client_ips_[out_rank].c_str(), client_ports_[out_rank])) {
           break;
         } else {
           Log::Warning("Connecting to rank %d failed, waiting for %d milliseconds", out_rank, connect_fail_delay_time);
           std::this_thread::sleep_for(std::chrono::milliseconds(connect_fail_delay_time));
+          connect_fail_delay_time = static_cast<int>(connect_fail_delay_time * connect_fail_retry_delay_factor);
         }
       }
       // send local rank

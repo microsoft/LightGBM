@@ -177,11 +177,13 @@ namespace LightGBM {
       left_cnt = num_distinct_values;
     }
 
-    if (left_cnt > 0) {
+    if ((left_cnt > 0) && (max_bin > 1)) {
       int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - cnt_zero) * (max_bin - 1));
       left_max_bin = std::max(1, left_max_bin);
       bin_upper_bound = GreedyFindBin(distinct_values, counts, left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
-      bin_upper_bound.back() = -kZeroThreshold;
+      if (bin_upper_bound.size() > 0) {
+        bin_upper_bound.back() = -kZeroThreshold;
+      }
     }
 
     int right_start = -1;
@@ -192,9 +194,8 @@ namespace LightGBM {
       }
     }
 
-    if (right_start >= 0) {
-      int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound.size());
-      CHECK(right_max_bin > 0);
+    int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound.size());
+    if (right_start >= 0 && right_max_bin > 0) {
       auto right_bounds = GreedyFindBin(distinct_values + right_start, counts + right_start,
         num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
       bin_upper_bound.push_back(kZeroThreshold);
@@ -202,6 +203,7 @@ namespace LightGBM {
     } else {
       bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
     }
+    CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
     return bin_upper_bound;
   }
 
@@ -326,7 +328,7 @@ namespace LightGBM {
                        "Consider renumbering to consecutive integers started from zero");
         }
         // sort by counts
-        Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
+        Common::SortForPair<int, int>(&counts_int, &distinct_values_int, 0, true);
         // avoid first bin is zero
         if (distinct_values_int[0] == 0) {
           if (counts_int.size() == 1) {

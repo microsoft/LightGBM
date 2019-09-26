@@ -36,10 +36,9 @@
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
 #' params <- list(objective = "binary",
-#'               learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'               min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-#'               model <- lgb.train(params, dtrain, 20)
-#' model <- lgb.train(params, dtrain, 20)
+#'                learning_rate = 0.01, num_leaves = 63, max_depth = -1,
+#'                min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
+#' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_dt <- lgb.model.dt.tree(model)
 #'
