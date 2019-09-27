@@ -4,10 +4,15 @@
  */
 #include <LightGBM/dataset_loader.h>
 
+#include <LightGBM/json11.hpp>
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <fstream>
+
+using namespace json11;
 
 namespace LightGBM {
 
@@ -584,7 +589,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
 
   // get forced split
   std::string forced_bins_path = config_.forcedbins_filename;
-  std::vector<std::vector<double>> forced_bin_bounds = Dataset::GetForcedBins(forced_bins_path, num_col, categorical_features_);
+  std::vector<std::vector<double>> forced_bin_bounds = DatasetLoader::GetForcedBins(forced_bins_path, num_col, categorical_features_);
 
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
@@ -901,8 +906,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
   // get forced split
   std::string forced_bins_path = config_.forcedbins_filename;
-  std::vector<std::vector<double>> forced_bin_bounds = Dataset::GetForcedBins(forced_bins_path, dataset->num_total_features_, 
-                                                                              categorical_features_);
+  std::vector<std::vector<double>> forced_bin_bounds = DatasetLoader::GetForcedBins(forced_bins_path, dataset->num_total_features_, 
+                                                                                    categorical_features_);
 
   // check the range of label_idx, weight_idx and group_idx
   CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
@@ -1235,6 +1240,44 @@ std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
   } else {
     return std::string();
   }
+}
+
+
+
+std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced_bins_path, int num_total_features,
+                                                              const std::unordered_set<int>& categorical_features) {
+  std::vector<std::vector<double>> forced_bins(num_total_features, std::vector<double>());
+  if (forced_bins_path != "") {
+    std::ifstream forced_bins_stream(forced_bins_path.c_str());
+    if (forced_bins_stream.fail()) {
+      Log::Warning("Could not open %s. Will ignore.", forced_bins_path.c_str());
+    } else {
+      std::stringstream buffer;
+      buffer << forced_bins_stream.rdbuf();
+      std::string err;
+      Json forced_bins_json = Json::parse(buffer.str(), err);
+      CHECK(forced_bins_json.is_array());
+      std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
+      for (size_t i = 0; i < forced_bins_arr.size(); ++i) {
+        int feature_num = forced_bins_arr[i]["feature"].int_value();
+        CHECK(feature_num < num_total_features);
+        if (categorical_features.count(feature_num)) {
+          Log::Warning("Feature %d is categorical. Will ignore forced bins for this  feature.", feature_num);
+        } else {
+          std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
+          for (size_t j = 0; j < bounds_arr.size(); ++j) {
+            forced_bins[feature_num].push_back(bounds_arr[j].number_value());
+          }
+        }
+      }
+      // remove duplicates
+      for (int i = 0; i < num_total_features; ++i) {
+        auto new_end = std::unique(forced_bins[i].begin(), forced_bins[i].end());
+        forced_bins[i].erase(new_end, forced_bins[i].end());
+      }
+    }
+  }
+  return forced_bins;
 }
 
 }  // namespace LightGBM

@@ -3,9 +3,9 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/dataset.h>
+#include <LightGBM/dataset_loader.h>
 
 #include <LightGBM/feature_group.h>
-#include <LightGBM/json11.hpp>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
@@ -13,11 +13,8 @@
 #include <limits>
 #include <chrono>
 #include <cstdio>
-#include <fstream>
 #include <sstream>
 #include <unordered_map>
-
-using namespace json11;
 
 
 namespace LightGBM {
@@ -336,7 +333,7 @@ void Dataset::Construct(
       categorical_features.insert(i);
     }
   }
-  forced_bin_bounds_ = Dataset::GetForcedBins(io_config.forcedbins_filename, num_total_features_, categorical_features);
+  forced_bin_bounds_ = DatasetLoader::GetForcedBins(io_config.forcedbins_filename, num_total_features_, categorical_features);
   max_bin_ = io_config.max_bin;
   min_data_in_bin_ = io_config.min_data_in_bin;
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
@@ -370,20 +367,7 @@ void Dataset::ResetConfig(const char* parameters) {
     Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
   }
   if (param.count("forcedbins_filename")) {
-    // get categorical features from the bin types so that we can read the forced bin bounds
-    std::unordered_set<int> categorical_features;
-    for (int i = 0; i < num_total_features_; ++i) {
-      int fidx = used_feature_map_[i];
-      const BinMapper* bin_mapper = FeatureBinMapper(fidx);
-      if (bin_mapper->bin_type() == BinType::CategoricalBin) {
-        categorical_features.insert(i);
-      }
-    }
-    std::vector<std::vector<double>> config_bounds = Dataset::GetForcedBins(io_config.forcedbins_filename, 
-                                                                            num_total_features_, categorical_features);
-    if (config_bounds != forced_bin_bounds_) {
-      Log::Warning("Cannot change forced bins after constructed Dataset handle.");
-    }
+    Log::Warning("Cannot change forced bins after constructed Dataset handle.");
   }
 
   if (!io_config.monotone_constraints.empty()) {
@@ -1083,43 +1067,5 @@ void Dataset::addFeaturesFrom(Dataset* other) {
   num_total_features_ += other->num_total_features_;
   num_groups_ += other->num_groups_;
 }
-
-
-std::vector<std::vector<double>> Dataset::GetForcedBins(std::string forced_bins_path, int num_total_features, 
-                                                        const std::unordered_set<int>& categorical_features) {
-  std::vector<std::vector<double>> forced_bins(num_total_features, std::vector<double>());
-  if (forced_bins_path != "") {
-    std::ifstream forced_bins_stream(forced_bins_path.c_str());
-    if (forced_bins_stream.fail()) {
-      Log::Warning("Could not open %s. Will ignore.", forced_bins_path.c_str());
-    } else {
-      std::stringstream buffer;
-      buffer << forced_bins_stream.rdbuf();
-      std::string err;
-      Json forced_bins_json = Json::parse(buffer.str(), err);
-      CHECK(forced_bins_json.is_array());
-      std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
-      for (size_t i = 0; i < forced_bins_arr.size(); ++i) {
-        int feature_num = forced_bins_arr[i]["feature"].int_value();
-        CHECK(feature_num < num_total_features);
-        if (categorical_features.count(feature_num)) {
-          Log::Warning("Feature %d is categorical. Will ignore forced bins for this feature.", feature_num);
-        } else {
-          std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
-          for (size_t j = 0; j < bounds_arr.size(); ++j) {
-            forced_bins[feature_num].push_back(bounds_arr[j].number_value());
-          }
-        }
-      }
-      // remove duplicates
-      for (int i = 0; i < num_total_features; ++i) {
-        auto new_end = std::unique(forced_bins[i].begin(), forced_bins[i].end());
-        forced_bins[i].erase(new_end, forced_bins[i].end());
-      }
-    }
-  }
-  return forced_bins;
-}
-
 
 }  // namespace LightGBM
