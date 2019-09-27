@@ -80,6 +80,16 @@ class SerialTreeLearner: public TreeLearner {
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
+  static void ComputeBestSplitForFeature(
+      double sum_gradient, double sum_hessian, data_size_t num_data,
+      int feature_index, FeatureHistogram *histogram_array_,
+      std::vector<SplitInfo> &bests, int leaf_index, int depth, const int tid,
+      int real_fidx, const Tree *tree,
+      const Config *config_,
+      CurrentConstraints &current_constraints,
+      const std::vector<LeafConstraints> &constraints_per_leaf_,
+      std::unique_ptr<CostEfficientGradientBoosting>& cegb_, bool update = false);
+
  protected:
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
@@ -99,9 +109,6 @@ class SerialTreeLearner: public TreeLearner {
   virtual void
   FindBestSplitsFromHistograms(const std::vector<int8_t> &is_feature_used,
                                bool use_subtract, const Tree *tree);
-
-  virtual void UpdateBestSplitsFromHistograms(SplitInfo &split, int leaf,
-                                              int depth, const Tree *tree);
 
   /*!
   * \brief Partition tree and data according best split.
@@ -128,80 +135,6 @@ class SerialTreeLearner: public TreeLearner {
 //      int feature_index, int leaf_index, const Dataset *train_data_,
 //      std::unique_ptr<DataPartition> &data_partition_,
 //      const std::vector<uint32_t> &feature_used_in_data, const Config *config_);
-
-  static void ComputeBestSplitForFeature(
-      double sum_gradient, double sum_hessian, data_size_t num_data,
-      int feature_index, FeatureHistogram *histogram_array_,
-      std::vector<SplitInfo> &bests, int leaf_index, int depth, const int tid,
-      int real_fidx, const Tree *tree, const Dataset *train_data_,
-      std::vector<SplitInfo> &splits_per_leaf_, const Config *config_,
-      CurrentConstraints &current_constraints,
-      std::unique_ptr<DataPartition> &data_partition_,
-      const std::vector<LeafConstraints> &constraints_per_leaf_,
-      std::unique_ptr<CostEfficientGradientBoosting>& cegb_, bool update = false);
-
-  void ComputeConstraintsPerThreshold(int feature, const Tree *tree,
-                                      int node_idx, unsigned int tid,
-                                      bool per_threshold, bool compute_min,
-                                      bool compute_max, uint32_t it_start,
-                                      uint32_t it_end);
-
-
-  static double ComputeMonotoneSplitGainPenalty(int depth, double penalization,
-                                                double epsilon = 1e-10);
-
-  void GoDownToFindLeavesToUpdate(const Tree *tree, int node_idx,
-                                  const std::vector<int> &features,
-                                  const std::vector<uint32_t> &thresholds,
-                                  const std::vector<bool> &is_in_right_split,
-                                  int maximum, int split_feature,
-                                  const SplitInfo &split_info,
-                                  double previous_leaf_output,
-                                  bool use_left_leaf, bool use_right_leaf,
-                                  uint32_t split_threshold);
-
-  /* Once we made a split, the constraints on other leaves may change.
-     We need to update them to remain coherent. */
-  void GoUpToFindLeavesToUpdate(const Tree *tree, int node_idx,
-                                std::vector<int> &features,
-                                std::vector<uint32_t> &thresholds,
-                                std::vector<bool> &is_in_right_split,
-                                int split_feature, const SplitInfo &split_info,
-                                double previous_leaf_output,
-                                uint32_t split_threshold);
-
-  void GoUpToFindLeavesToUpdate(const Tree *tree, int node_idx,
-                                int split_feature, const SplitInfo &split_info,
-                                double previous_leaf_output,
-                                uint32_t split_threshold) {
-    int depth = tree->leaf_depth(~tree->left_child(node_idx)) - 1;
-
-    std::vector<int> features;
-    std::vector<uint32_t> thresholds;
-    std::vector<bool> is_in_right_split;
-
-    features.reserve(depth);
-    thresholds.reserve(depth);
-    is_in_right_split.reserve(depth);
-
-    GoUpToFindLeavesToUpdate(tree, node_idx, features, thresholds,
-                             is_in_right_split, split_feature, split_info,
-                             previous_leaf_output, split_threshold);
-  }
-
-  std::pair<bool, bool>
-  ShouldKeepGoingLeftRight(const Tree *tree, int node_idx,
-                           const std::vector<int> &features,
-                           const std::vector<uint32_t> &thresholds,
-                           const std::vector<bool> &is_in_right_split);
-
-
-  void InitializeConstraints(unsigned int tid);
-
-  void UpdateConstraints(std::vector<std::vector<double> > &constraints,
-                         std::vector<std::vector<uint32_t> > &thresholds,
-                         double extremum, uint32_t it_start, uint32_t it_end,
-                         int split_feature, int tid, bool maximum);
 
   /*! \brief number of data */
   data_size_t num_data_;
@@ -274,10 +207,6 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<std::vector<double> > max_constraints;
 
   CurrentConstraints current_constraints;
-
-  std::vector<std::vector<int> > features;
-  std::vector<std::vector<uint32_t> > thresholds;
-  std::vector<std::vector<bool> > is_in_right_split;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

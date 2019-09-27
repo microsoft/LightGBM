@@ -2,8 +2,15 @@
 #define LIGHTGBM_TREELEARNER_MONOTONE_CONSTRAINTS_H_
 
 #include <vector>
+#include <LightGBM/network.h>
+#include "split_info.hpp"
+#include <LightGBM/tree.h>
 
 namespace LightGBM {
+
+struct CostEfficientGradientBoosting;
+struct CurrentConstraints;
+class HistogramPool;
 
 // the purpose of this structure is to store the constraints for one leaf
 // when the monotone precise mode is disabled, then it will just store
@@ -25,6 +32,74 @@ struct LeafConstraints {
   // features, because they could only be worse, and another better split was
   // available, so we didn't need to compute them yet, but we may need to in the future
   std::vector<bool> are_actual_constraints_worse;
+
+  static void GoUpToFindLeavesToUpdate(
+      const Tree *tree, int node_idx, std::vector<int> &features,
+      std::vector<uint32_t> &thresholds, std::vector<bool> &is_in_right_split,
+      int split_feature, const SplitInfo &split_info,
+      double previous_leaf_output, uint32_t split_threshold,
+      const Dataset *train_data_, const Config *config_,
+      CurrentConstraints &current_constraints,
+      std::vector<LeafConstraints> &constraints_per_leaf_,
+      std::vector<SplitInfo> &best_split_per_leaf_,
+      const std::vector<int8_t> &is_feature_used_, int num_threads_,
+      int num_features_, HistogramPool &histogram_pool_,
+      std::unique_ptr<CostEfficientGradientBoosting> &cegb_);
+
+  static void GoUpToFindLeavesToUpdate(
+      const Tree *tree, int node_idx, int split_feature,
+      const SplitInfo &split_info, double previous_leaf_output,
+      uint32_t split_threshold, const Dataset *train_data_,
+      const Config *config_, CurrentConstraints &current_constraints,
+      std::vector<LeafConstraints> &constraints_per_leaf_,
+      std::vector<SplitInfo> &best_split_per_leaf_,
+      const std::vector<int8_t> &is_feature_used_, int num_threads_,
+      int num_features_, HistogramPool &histogram_pool_,
+      std::unique_ptr<CostEfficientGradientBoosting> &cegb_) {
+    int depth = tree->leaf_depth(~tree->left_child(node_idx)) - 1;
+
+    std::vector<int> features;
+    std::vector<uint32_t> thresholds;
+    std::vector<bool> is_in_right_split;
+
+    features.reserve(depth);
+    thresholds.reserve(depth);
+    is_in_right_split.reserve(depth);
+
+    GoUpToFindLeavesToUpdate(
+        tree, node_idx, features, thresholds, is_in_right_split, split_feature,
+        split_info, previous_leaf_output, split_threshold, train_data_, config_,
+        current_constraints, constraints_per_leaf_, best_split_per_leaf_,
+        is_feature_used_, num_threads_, num_features_, histogram_pool_, cegb_);
+  }
+
+  static void GoDownToFindLeavesToUpdate(
+      const Tree *tree, int node_idx, const std::vector<int> &features,
+      const std::vector<uint32_t> &thresholds,
+      const std::vector<bool> &is_in_right_split, int maximum,
+      int split_feature, const SplitInfo &split_info,
+      double previous_leaf_output, bool use_left_leaf, bool use_right_leaf,
+      uint32_t split_threshold, const Dataset *train_data_,
+      const Config *config_, CurrentConstraints &current_constraints,
+      std::vector<LeafConstraints> &constraints_per_leaf_,
+      std::vector<SplitInfo> &best_split_per_leaf_,
+      const std::vector<int8_t> &is_feature_used_, int num_threads_,
+      int num_features_, HistogramPool &histogram_pool_,
+      std::unique_ptr<CostEfficientGradientBoosting> &cegb_);
+
+  static std::pair<bool, bool> ShouldKeepGoingLeftRight(
+      const Tree *tree, int node_idx, const std::vector<int> &features,
+      const std::vector<uint32_t> &thresholds,
+      const std::vector<bool> &is_in_right_split, const Dataset *train_data_);
+
+  static void UpdateBestSplitsFromHistograms(
+      SplitInfo &split, int leaf, int depth, const Tree *tree,
+      const Dataset *train_data_, const Config *config_,
+      CurrentConstraints &current_constraints,
+      std::vector<LeafConstraints> &constraints_per_leaf_,
+      const std::vector<int8_t> &is_feature_used_, int num_threads_,
+      int num_features_, HistogramPool &histogram_pool_,
+      std::unique_ptr<CostEfficientGradientBoosting> &cegb_);
 
   bool IsInConstraints(double element,
                        const std::vector<std::vector<double> > &constraints,
