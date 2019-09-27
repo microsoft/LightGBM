@@ -84,11 +84,7 @@ class SerialTreeLearner: public TreeLearner {
       double sum_gradient, double sum_hessian, data_size_t num_data,
       int feature_index, FeatureHistogram *histogram_array_,
       std::vector<SplitInfo> &bests, int leaf_index, int depth, const int tid,
-      int real_fidx, const Tree *tree,
-      const Config *config_,
-      CurrentConstraints &current_constraints,
-      const std::vector<LeafConstraints> &constraints_per_leaf_,
-      std::unique_ptr<CostEfficientGradientBoosting>& cegb_, bool update = false);
+      int real_fidx, LearnerState &learner_state, bool update = false);
 
  protected:
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);

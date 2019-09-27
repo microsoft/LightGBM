@@ -544,6 +544,9 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   #ifdef TIMETAG
   auto start_time = std::chrono::steady_clock::now();
   #endif
+    LearnerState learner_state(config_, data_partition_, train_data_,
+                               constraints_per_leaf_, tree, current_constraints,
+                               cegb_);
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
   std::vector<int8_t> smaller_node_used_features(num_features_, 1);
@@ -566,15 +569,13 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
                               smaller_leaf_histogram_array_[feature_index].RawData());
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
 
-    ComputeBestSplitForFeature(
-        smaller_leaf_splits_->sum_gradients(),
-        smaller_leaf_splits_->sum_hessians(),
-        smaller_leaf_splits_->num_data_in_leaf(), feature_index,
-        smaller_leaf_histogram_array_, smaller_best,
-        smaller_leaf_splits_->LeafIndex(), smaller_leaf_splits_->depth(), tid,
-        real_fidx, tree, config_,
-        current_constraints, constraints_per_leaf_,
-        cegb_);
+    ComputeBestSplitForFeature(smaller_leaf_splits_->sum_gradients(),
+                               smaller_leaf_splits_->sum_hessians(),
+                               smaller_leaf_splits_->num_data_in_leaf(),
+                               feature_index, smaller_leaf_histogram_array_,
+                               smaller_best, smaller_leaf_splits_->LeafIndex(),
+                               smaller_leaf_splits_->depth(), tid, real_fidx,
+                               learner_state);
 
     // only has root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
@@ -587,15 +588,13 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
                                 larger_leaf_histogram_array_[feature_index].RawData());
     }
 
-    ComputeBestSplitForFeature(
-        larger_leaf_splits_->sum_gradients(),
-        larger_leaf_splits_->sum_hessians(),
-        larger_leaf_splits_->num_data_in_leaf(), feature_index,
-        larger_leaf_histogram_array_, larger_best,
-        larger_leaf_splits_->LeafIndex(), larger_leaf_splits_->depth(), tid,
-        real_fidx, tree, config_,
-        current_constraints, constraints_per_leaf_,
-        cegb_);
+    ComputeBestSplitForFeature(larger_leaf_splits_->sum_gradients(),
+                               larger_leaf_splits_->sum_hessians(),
+                               larger_leaf_splits_->num_data_in_leaf(),
+                               feature_index, larger_leaf_histogram_array_,
+                               larger_best, larger_leaf_splits_->LeafIndex(),
+                               larger_leaf_splits_->depth(), tid, real_fidx,
+                               learner_state);
 
     OMP_LOOP_EX_END();
   }
@@ -887,12 +886,14 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   // values don't clash with existing constraints in the subtree,
   // and if they do, the existing splits need to be updated
   if (tree->leaf_is_in_monotone_subtree(*right_leaf) && !config_->monotone_constraints.empty()) {
+    LearnerState learner_state(config_, data_partition_, train_data_,
+                               constraints_per_leaf_, tree, current_constraints,
+                               cegb_);
     LeafConstraints::GoUpToFindLeavesToUpdate(
-        tree, tree->leaf_parent(*right_leaf), inner_feature_index,
+        tree->leaf_parent(*right_leaf), inner_feature_index,
         best_split_info, previous_leaf_output, best_split_info.threshold,
-        train_data_, config_, current_constraints, constraints_per_leaf_,
-        best_split_per_leaf_, is_feature_used_, num_threads_, num_features_,
-        histogram_pool_, cegb_);
+        best_split_per_leaf_, is_feature_used_,
+        num_threads_, num_features_, histogram_pool_, learner_state);
   }
 }
 
@@ -941,46 +942,45 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     double sum_gradient, double sum_hessian, data_size_t num_data,
     int feature_index, FeatureHistogram *histogram_array_,
     std::vector<SplitInfo> &bests, int leaf_index, int depth, const int tid,
-    int real_fidx, const Tree *tree,
-    const Config *config_,
-    CurrentConstraints &current_constraints,
-    const std::vector<LeafConstraints> &constraints_per_leaf_,
-    std::unique_ptr<CostEfficientGradientBoosting>& cegb_, bool update) {
+    int real_fidx, LearnerState &learner_state, bool update) {
 
-  // if this is not a subtree stemming from a monotone split, then no constraint apply
-  if (tree->leaf_is_in_monotone_subtree(leaf_index)) {
-    if (!config_->monotone_precise_mode) {
-      current_constraints.Set(constraints_per_leaf_[leaf_index], tid);
+  // if this is not a subtree stemming from a monotone split, then no constraint
+  // apply
+  if (learner_state.tree->leaf_is_in_monotone_subtree(leaf_index)) {
+    if (!learner_state.config_->monotone_precise_mode) {
+      learner_state.current_constraints.Set(learner_state.constraints_per_leaf_[leaf_index],
+                              tid);
     }
   }
 
 #ifdef DEBUG
-  current_constraints.CheckCoherenceWithLeafOutput(tree->LeafOutput(leaf_index), tid, kEpsilon)
+  learner_state.current_constraints.CheckCoherenceWithLeafOutput(
+      learner_state.tree->LeafOutput(leaf_index), tid, kEpsilon)
 #endif
+      SplitInfo new_split;
+  histogram_array_[feature_index]
+      .FindBestThreshold(sum_gradient, sum_hessian, num_data, &new_split,
+                         learner_state.current_constraints[tid]);
 
-  SplitInfo new_split;
-  histogram_array_[feature_index].FindBestThreshold(
-      sum_gradient, sum_hessian, num_data, &new_split, current_constraints[tid]);
-
-  if (tree->leaf_is_in_monotone_subtree(leaf_index)) {
-    current_constraints.InitializeConstraints(tid);
+  if (learner_state.tree->leaf_is_in_monotone_subtree(leaf_index)) {
+    learner_state.current_constraints.InitializeConstraints(tid);
   }
 
   new_split.feature = real_fidx;
-  if (cegb_ != nullptr) {
-      new_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, leaf_index, num_data, new_split);
+  if (learner_state.cegb_ != nullptr) {
+      new_split.gain -= learner_state.cegb_->DetlaGain(feature_index, real_fidx, leaf_index, num_data, new_split);
   }
 
 
   if (new_split.monotone_type != 0) {
-    double penalty = LeafConstraints::ComputeMonotoneSplitGainPenalty(depth, config_->monotone_penalty);
+    double penalty = LeafConstraints::ComputeMonotoneSplitGainPenalty(
+        depth, learner_state.config_->monotone_penalty);
     new_split.gain *= penalty;
   }
 
   if (new_split > bests[tid]) {
     bests[tid] = new_split;
   }
-
 }
 
 }  // namespace LightGBM
