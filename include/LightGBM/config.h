@@ -166,6 +166,7 @@ struct Config {
   // default = 31
   // alias = num_leaf, max_leaves, max_leaf
   // check = >1
+  // check = <=131072
   // desc = max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
 

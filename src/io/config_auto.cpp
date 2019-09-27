@@ -301,6 +301,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "num_leaves", &num_leaves);
   CHECK(num_leaves >1);
+  CHECK(num_leaves <=131072);
 
   GetInt(params, "num_threads", &num_threads);
 

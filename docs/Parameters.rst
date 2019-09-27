@@ -135,7 +135,7 @@ Core Parameters
 
    -  in ``dart``, it also affects on normalization weights of dropped trees
 
--  ``num_leaves`` :raw-html:`<a id="num_leaves" title="Permalink to this parameter" href="#num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, ``max_leaves``, ``max_leaf``, constraints: ``num_leaves > 1``
+-  ``num_leaves`` :raw-html:`<a id="num_leaves" title="Permalink to this parameter" href="#num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, ``max_leaves``, ``max_leaf``, constraints: ``1 < num_leaves <= 131072``
 
    -  max number of leaves in one tree
 
