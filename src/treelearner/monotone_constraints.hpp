@@ -33,6 +33,11 @@ struct LeafConstraints {
   // available, so we didn't need to compute them yet, but we may need to in the future
   std::vector<bool> are_actual_constraints_worse;
 
+  static void SetChildrenConstraintsFastMethod(
+      std::vector<LeafConstraints> &constraints_per_leaf, int *right_leaf,
+      int *left_leaf, int8_t monotone_type, double right_output,
+      double left_output, bool is_numerical_split);
+
   static void GoUpToFindLeavesToUpdate(
       const Tree *tree, int node_idx, std::vector<int> &features,
       std::vector<uint32_t> &thresholds, std::vector<bool> &is_in_right_split,

@@ -877,28 +877,16 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   // the children of a leaf, but when it is enabled, one needs to go through the tree to do so,
   // and it is done directly before computing best splits
   if (!config_->monotone_precise_mode) {
-    constraints_per_leaf_[*right_leaf] = constraints_per_leaf_[*left_leaf];
-    if (is_numerical_split) {
-      // depending on the monotone type we set constraints on the future splits
-      // these constraints may be updated later in the algorithm
-      if (best_split_info.monotone_type < 0) {
-        constraints_per_leaf_[*left_leaf]
-            .SetMinConstraint(best_split_info.right_output);
-        constraints_per_leaf_[*right_leaf]
-            .SetMaxConstraint(best_split_info.left_output);
-      } else if (best_split_info.monotone_type > 0) {
-        constraints_per_leaf_[*left_leaf]
-            .SetMaxConstraint(best_split_info.right_output);
-        constraints_per_leaf_[*right_leaf]
-            .SetMinConstraint(best_split_info.left_output);
-      }
-    }
+    LeafConstraints::SetChildrenConstraintsFastMethod(
+        constraints_per_leaf_, right_leaf, left_leaf,
+        best_split_info.monotone_type, best_split_info.right_output,
+        best_split_info.left_output, is_numerical_split);
   }
 
   // if there is a monotone split above, we need to make sure the new
   // values don't clash with existing constraints in the subtree,
   // and if they do, the existing splits need to be updated
-  if (tree->leaf_is_in_monotone_subtree(*right_leaf)) {
+  if (tree->leaf_is_in_monotone_subtree(*right_leaf) && !config_->monotone_constraints.empty()) {
     LeafConstraints::GoUpToFindLeavesToUpdate(
         tree, tree->leaf_parent(*right_leaf), inner_feature_index,
         best_split_info, previous_leaf_output, best_split_info.threshold,

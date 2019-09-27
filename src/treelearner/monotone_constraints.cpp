@@ -5,6 +5,24 @@
 
 namespace LightGBM {
 
+void LeafConstraints::SetChildrenConstraintsFastMethod(
+    std::vector<LeafConstraints> &constraints_per_leaf, int *right_leaf,
+    int *left_leaf, int8_t monotone_type, double right_output,
+    double left_output, bool is_numerical_split) {
+  constraints_per_leaf[*right_leaf] = constraints_per_leaf[*left_leaf];
+  if (is_numerical_split) {
+    // depending on the monotone type we set constraints on the future splits
+    // these constraints may be updated later in the algorithm
+    if (monotone_type < 0) {
+      constraints_per_leaf[*left_leaf].SetMinConstraint(right_output);
+      constraints_per_leaf[*right_leaf].SetMaxConstraint(left_output);
+    } else if (monotone_type > 0) {
+      constraints_per_leaf[*left_leaf].SetMaxConstraint(right_output);
+      constraints_per_leaf[*right_leaf].SetMinConstraint(left_output);
+    }
+  }
+}
+
 // this function goes through the tree to find how the split that
 // has just been performed is going to affect the constraints of other leaves
 void LeafConstraints::GoUpToFindLeavesToUpdate(
