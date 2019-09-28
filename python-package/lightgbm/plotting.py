@@ -1,5 +1,4 @@
 # coding: utf-8
-# pylint: disable = C0103
 """Plotting library."""
 from __future__ import absolute_import, division
 

@@ -1,5 +1,4 @@
 # coding: utf-8
-# pylint: disable = invalid-name, C0111
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
