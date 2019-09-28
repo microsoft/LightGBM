@@ -142,10 +142,8 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
       type = DataType::LIBSVM;
     } else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
       type = DataType::TSV;
-      CHECK(tab_cnt == tab_cnt2);
     } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
       type = DataType::CSV;
-      CHECK(comma_cnt == comma_cnt2);
     }
   }
   if (type == DataType::INVALID) {

@@ -253,7 +253,7 @@ class Booster {
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
-    if (ncol != boosting_->MaxFeatureIdx() + 1) {
+    if (ncol > 0 && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of feature in data (%d) is not same as in training (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
@@ -274,8 +274,8 @@ class Booster {
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
-    if (ncol != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of feature in data (%d) is not same as in training (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
+    if (ncol > 0 && ncol != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
@@ -430,6 +430,8 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type);
+
+int GuessNumColFromCSR(const void* indptr, int indptr_type, const int32_t* indices, int64_t nindptr);
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
@@ -1320,7 +1322,11 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int nrow = static_cast<int>(nindptr - 1);
-  ref_booster->Predict(num_iteration, predict_type, nrow, static_cast<int32_t>(num_col), get_row_fun,
+  int ncol = static_cast<int>(num_col);
+  if (ncol <= 0) {
+    ncol = GuessNumColFromCSR(indptr, indptr_type, indices, nindptr);
+  }
+  ref_booster->Predict(num_iteration, predict_type, nrow, ncol, get_row_fun,
                        config, out_result, out_len);
   API_END();
 }
@@ -1348,6 +1354,7 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+  // For single row, we cannot guess its num_col.
   ref_booster->PredictSingleRow(num_iteration, predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
   API_END();
 }
@@ -1664,6 +1671,25 @@ RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
     }
     return ret;
   };
+}
+
+int GuessNumColFromCSR(const void* indptr, int indptr_type, const int32_t* indices, int64_t nindptr) {
+  const int64_t used_row = std::min(static_cast<int64_t>(20), nindptr - 1);
+  int ncol = 0;
+  if (indptr_type == C_API_DTYPE_INT32) {
+    const int32_t* ptr_indptr = reinterpret_cast<const int32_t*>(indptr);
+    for (int64_t i = 0; i < used_row; ++i) {
+      auto col_idx = indices[ptr_indptr[i + 1]];
+      ncol = std::max(ncol, col_idx + 1);
+    }
+  } else if (indptr_type == C_API_DTYPE_INT64) {
+    const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
+    for(int64_t i = 0; i < used_row; ++i) {
+      auto col_idx = indices[ptr_indptr[i + 1]];
+      ncol = std::max(ncol, col_idx + 1);
+    }
+  }
+  return ncol;
 }
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
