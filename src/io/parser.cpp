@@ -92,7 +92,7 @@ void GetLine(std::stringstream* ss, std::string* line, const VirtualFileReader* 
 std::vector<std::string> ReadKLineFromFile(const char* filename, bool header, int k) {
   auto reader = VirtualFileReader::Make(filename);
   if (!reader->Init()) {
-    Log::Fatal("Data file %s doesn't exist", filename);
+    Log::Fatal("Data file %s doesn't exist.", filename);
   }
   std::vector<std::string> ret;
   std::string cur_line;
@@ -100,7 +100,7 @@ std::vector<std::string> ReadKLineFromFile(const char* filename, bool header, in
   auto buffer = std::vector<char>(buffer_size);
   size_t read_len = reader->Read(buffer.data(), buffer_size);
   if (read_len <= 0) {
-    Log::Fatal("Data file %s couldn't be read", filename);
+    Log::Fatal("Data file %s couldn't be read.", filename);
   }
   std::string read_str = std::string(buffer.data(), read_len);
   std::stringstream tmp_file(read_str);
@@ -118,9 +118,9 @@ std::vector<std::string> ReadKLineFromFile(const char* filename, bool header, in
     }
   }
   if (ret.empty()) {
-    Log::Fatal("Data file %s should have at least one line", filename);
+    Log::Fatal("Data file %s should have at least one line.", filename);
   } else if (ret.size() == 1) {
-    Log::Warning("Data file %s only has one line", filename);
+    Log::Warning("Data file %s only has one line.", filename);
   }
   return ret;
 }
@@ -154,22 +154,20 @@ DataType GetDataType(const std::vector<std::string>& lines, int* num_col) {
   } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
     type = DataType::CSV;
   }
-
-  // valid the type
-  for (size_t i = 2; i < lines.size(); ++i) {
-    GetStatistic(lines[i].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
-    if (type == DataType::TSV) {
-      if (tab_cnt2 != tab_cnt) {
+  if (type == DataType::TSV || type == DataType::CSV) {
+    // valid the type
+    for (size_t i = 2; i < lines.size(); ++i) {
+      GetStatistic(lines[i].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
+      if (type == DataType::TSV && tab_cnt2 != tab_cnt) {
         type = DataType::INVALID;
         break;
-      }
-    } else if (type == DataType::CSV) {
-      if (comma_cnt != comma_cnt2) {
+      } else if (type == DataType::CSV && comma_cnt != comma_cnt2) {
         type = DataType::INVALID;
         break;
       }
     }
   }
+
   if (type == DataType::LIBSVM) {
     int max_col_idx = 0;
     for (size_t i = 0; i < lines.size(); ++i) {
@@ -196,7 +194,7 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   int num_col = 0;
   DataType type = GetDataType(lines, &num_col);
   if (type == DataType::INVALID) {
-    Log::Fatal("Unknown format of training data");
+    Log::Fatal("Unknown format of training data.");
   }
   std::unique_ptr<Parser> ret;
   if (type == DataType::LIBSVM) {
@@ -211,7 +209,7 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   }
 
   if (label_idx < 0) {
-    Log::Info("Data file %s doesn't contain a label column", filename);
+    Log::Info("Data file %s doesn't contain a label column.", filename);
   }
   return ret.release();
 }
