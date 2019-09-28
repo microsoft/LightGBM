@@ -692,7 +692,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->Construct(&bin_mappers, sample_indices, num_per_col, total_sample_size, config_);
+  dataset->Construct(&bin_mappers, num_col, sample_indices, num_per_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
@@ -864,7 +864,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
   if (feature_names_.empty()) {
     // -1 means doesn't use this feature
-    dataset->num_total_features_ = std::max(static_cast<int>(sample_values.size()), parser->TotalColumns() - 1);
+    dataset->num_total_features_ = std::max(static_cast<int>(sample_values.size()), parser->NumFeatures());
     dataset->used_feature_map_ = std::vector<int>(dataset->num_total_features_, -1);
   } else {
     dataset->used_feature_map_ = std::vector<int>(feature_names_.size(), -1);
@@ -1018,7 +1018,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     }
   }
   sample_values.clear();
-  dataset->Construct(&bin_mappers, Common::Vector2Ptr<int>(&sample_indices).data(),
+  dataset->Construct(&bin_mappers, dataset->num_total_features_, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::VectorSize<int>(sample_indices).data(), sample_data.size(), config_);
 }
 
