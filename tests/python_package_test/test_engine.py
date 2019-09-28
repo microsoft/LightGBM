@@ -1688,3 +1688,68 @@ class TestEngine(unittest.TestCase):
                          num_boost_round=25)
         ret2 = log_loss(y_test, gbm2.predict(X_test))
         self.assertNotEqual(ret, ret2)
+
+    def test_forced_bins(self):
+        x = np.zeros((100, 2))
+        x[:, 0] = np.arange(0, 1, 0.01)
+        x[:, 1] = -np.arange(0, 1, 0.01)
+        y = np.arange(0, 1, 0.01)
+        forcedbins_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                           '../../examples/regression/forced_bins.json')
+        params = {'objective': 'regression_l1',
+                  'max_bin': 5,
+                  'forcedbins_filename': forcedbins_filename,
+                  'num_leaves': 2,
+                  'min_data_in_leaf': 1,
+                  'verbose': -1,
+                  'seed': 0}
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=100)
+        new_x = np.zeros((3, x.shape[1]))
+        new_x[:, 0] = [0.31, 0.37, 0.41]
+        new_x[:, 1] = [0, 0, 0]
+        predicted = est.predict(new_x)
+        self.assertEqual(len(np.unique(predicted)), 3)
+        new_x[:, 0] = [0, 0, 0]
+        new_x[:, 1] = [-0.9, -0.6, -0.3]
+        predicted = est.predict(new_x)
+        self.assertEqual(len(np.unique(predicted)), 1)
+        params['forcedbins_filename'] = ''
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=100)
+        predicted = est.predict(new_x)
+        self.assertEqual(len(np.unique(predicted)), 3)
+        params['forcedbins_filename'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                     '../../examples/regression/forced_bins2.json')
+        params['max_bin'] = 11
+        lgb_x = lgb.Dataset(x[:, :1], label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=100)
+        predicted = est.predict(x[1:, :1])
+        vals, counts = np.unique(predicted, return_counts=True)
+        self.assertGreaterEqual(min(counts), 9)
+        self.assertLessEqual(max(counts), 11)
+
+    def test_binning_same_sign(self):
+        # test that binning works properly for features with only positive or only negative values
+        x = np.zeros((99, 2))
+        x[:, 0] = np.arange(0.01, 1, 0.01)
+        x[:, 1] = -np.arange(0.01, 1, 0.01)
+        y = np.arange(0.01, 1, 0.01)
+        params = {'objective': 'regression_l1',
+                  'max_bin': 5,
+                  'num_leaves': 2,
+                  'min_data_in_leaf': 1,
+                  'verbose': -1,
+                  'seed': 0}
+        lgb_x = lgb.Dataset(x, label=y)
+        est = lgb.train(params, lgb_x, num_boost_round=100)
+        new_x = np.zeros((3, 2))
+        new_x[:, 0] = [-1, 0, 1]
+        predicted = est.predict(new_x)
+        self.assertAlmostEqual(predicted[0], predicted[1])
+        self.assertNotAlmostEqual(predicted[1], predicted[2])
+        new_x = np.zeros((3, 2))
+        new_x[:, 1] = [-1, 0, 1]
+        predicted = est.predict(new_x)
+        self.assertNotAlmostEqual(predicted[0], predicted[1])
+        self.assertAlmostEqual(predicted[1], predicted[2])
