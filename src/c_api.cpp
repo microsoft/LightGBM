@@ -693,7 +693,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                               DatasetHandle* out) {
   API_BEGIN();
   if (num_col <= 0) {
-    Log::Fatal("The number of columns should greater than zero.");
+    Log::Fatal("The number of columns should be greater than zero.");
   }
   auto param = Config::Str2Map(parameters);
   Config config;
@@ -757,7 +757,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                                   DatasetHandle* out) {
   API_BEGIN();
   if (num_col <= 0) {
-    Log::Fatal("The number of columns should greater than zero.");
+    Log::Fatal("The number of columns should be greater than zero.");
   }
   auto get_row_fun = *static_cast<std::function<void(int idx, std::vector<std::pair<int, double>>&)>*>(get_row_funptr);
   auto param = Config::Str2Map(parameters);
@@ -1316,7 +1316,7 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                               double* out_result) {
   API_BEGIN();
   if (num_col <= 0) {
-    Log::Fatal("The number of columns should greater than zero.");
+    Log::Fatal("The number of columns should be greater than zero.");
   }
   auto param = Config::Str2Map(parameter);
   Config config;
@@ -1329,7 +1329,7 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int nrow = static_cast<int>(nindptr - 1);
   int ncol = static_cast<int>(num_col);
   if (ncol <= 0) {
-    Log::Fatal("The number of columns should greater than zero.");
+    Log::Fatal("The number of columns should be greater than zero.");
   }
   ref_booster->Predict(num_iteration, predict_type, nrow, ncol, get_row_fun,
                        config, out_result, out_len);
@@ -1352,7 +1352,7 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
                                        double* out_result) {
   API_BEGIN();
   if (num_col <= 0) {
-    Log::Fatal("The number of columns should greater than zero.");
+    Log::Fatal("The number of columns should be greater than zero.");
   }
   auto param = Config::Str2Map(parameter);
   Config config;
