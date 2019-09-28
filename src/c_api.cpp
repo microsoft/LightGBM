@@ -1327,11 +1327,7 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int nrow = static_cast<int>(nindptr - 1);
-  int ncol = static_cast<int>(num_col);
-  if (ncol <= 0) {
-    Log::Fatal("The number of columns should be greater than zero.");
-  }
-  ref_booster->Predict(num_iteration, predict_type, nrow, ncol, get_row_fun,
+  ref_booster->Predict(num_iteration, predict_type, nrow, static_cast<int>(num_col), get_row_fun,
                        config, out_result, out_len);
   API_END();
 }
