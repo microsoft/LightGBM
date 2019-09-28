@@ -748,6 +748,7 @@ class HistogramPool {
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    train_data_ = train_data;
   }
 
   void ResetConfig(const Config* config) {
@@ -755,6 +756,8 @@ class HistogramPool {
     #pragma omp parallel for schedule(static, 512) if (size >= 1024)
     for (int i = 0; i < size; ++i) {
       feature_metas_[i].config = config;
+      feature_metas_[i].monotone_type = train_data_->FeatureMonotone(i);
+      feature_metas_[i].penalty = train_data_->FeaturePenalte(i);
     }
   }
   /*!
@@ -823,6 +826,7 @@ class HistogramPool {
   std::vector<int> inverse_mapper_;
   std::vector<int> last_used_time_;
   int cur_time_ = 0;
+  const Dataset* train_data_;
 };
 
 }  // namespace LightGBM

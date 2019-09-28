@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 
-const std::string kModelVersion = "v3";
+const char* kModelVersion = "v3";
 
 std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   std::stringstream str_buf;
@@ -31,9 +31,11 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
     str_buf << "\"objective\":\"" << objective_function_->ToString() << "\",\n";
   }
 
-  str_buf << "\"feature_names\":[\""
-    << Common::Join(feature_names_, "\",\"") << "\"],"
-    << '\n';
+  str_buf << "\"feature_names\":[\"" << Common::Join(feature_names_, "\",\"")
+          << "\"]," << '\n';
+
+  str_buf << "\"monotone_constraints\":["
+          << Common::Join(monotone_constraints_, ",") << "]," << '\n';
 
   str_buf << "\"tree_info\":[";
   int num_used_model = static_cast<int>(models_.size());
@@ -269,6 +271,11 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) cons
 
   ss << "feature_names=" << Common::Join(feature_names_, " ") << '\n';
 
+  if (monotone_constraints_.size() != 0) {
+    ss << "monotone_constraints=" << Common::Join(monotone_constraints_, " ")
+       << '\n';
+  }
+
   ss << "feature_infos=" << Common::Join(feature_infos_, " ") << '\n';
 
   int num_used_model = static_cast<int>(models_.size());
@@ -364,6 +371,8 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         } else if (strs.size() > 2) {
           if (strs[0] == "feature_names") {
             key_vals[strs[0]] = cur_line.substr(std::strlen("feature_names="));
+          } else if (strs[0] == "monotone_constraints") {
+            key_vals[strs[0]] = cur_line.substr(std::strlen("monotone_constraints="));
           } else {
             // Use first 128 chars to avoid exceed the message buffer.
             Log::Fatal("Wrong line at model file: %s", cur_line.substr(0, std::min<size_t>(128, cur_line.size())).c_str());
@@ -422,6 +431,15 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   } else {
     Log::Fatal("Model file doesn't contain feature_names");
     return false;
+  }
+
+  // get monotone_constraints
+  if (key_vals.count("monotone_constraints")) {
+    monotone_constraints_ = Common::StringToArray<int8_t>(key_vals["monotone_constraints"].c_str(), ' ');
+    if (monotone_constraints_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
+      Log::Fatal("Wrong size of monotone_constraints");
+      return false;
+    }
   }
 
   if (key_vals.count("feature_infos")) {

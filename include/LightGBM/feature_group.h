@@ -31,15 +31,15 @@ class FeatureGroup {
   * \param sparse_threshold Threshold for treating a feature as a sparse feature
   */
   FeatureGroup(int num_feature,
-    std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+    std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     data_size_t num_data, double sparse_threshold, bool is_enable_sparse) : num_feature_(num_feature) {
-    CHECK(static_cast<int>(bin_mappers.size()) == num_feature);
+    CHECK(static_cast<int>(bin_mappers->size()) == num_feature);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
     bin_offsets_.emplace_back(num_total_bin_);
     int cnt_non_zero = 0;
     for (int i = 0; i < num_feature_; ++i) {
-      bin_mappers_.emplace_back(bin_mappers[i].release());
+      bin_mappers_.emplace_back(bin_mappers->at(i).release());
       auto num_bin = bin_mappers_[i]->num_bin();
       if (bin_mappers_[i]->GetDefaultBin() == 0) {
         num_bin -= 1;
@@ -54,14 +54,14 @@ class FeatureGroup {
   }
 
   FeatureGroup(int num_feature,
-               std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+               std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                data_size_t num_data, bool is_sparse) : num_feature_(num_feature) {
-    CHECK(static_cast<int>(bin_mappers.size()) == num_feature);
+    CHECK(static_cast<int>(bin_mappers->size()) == num_feature);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
     bin_offsets_.emplace_back(num_total_bin_);
     for (int i = 0; i < num_feature_; ++i) {
-      bin_mappers_.emplace_back(bin_mappers[i].release());
+      bin_mappers_.emplace_back(bin_mappers->at(i).release());
       auto num_bin = bin_mappers_[i]->num_bin();
       if (bin_mappers_[i]->GetDefaultBin() == 0) {
         num_bin -= 1;

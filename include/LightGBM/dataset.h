@@ -289,7 +289,8 @@ class Dataset {
   LIGHTGBM_EXPORT Dataset(data_size_t num_data);
 
   void Construct(
-    std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+    std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+    const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
     const int* num_per_col,
     size_t total_sample_cnt,
@@ -407,7 +408,7 @@ class Dataset {
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                            const data_size_t* data_indices, data_size_t num_data,
                            int leaf_idx,
-                           std::vector<std::unique_ptr<OrderedBin>>& ordered_bins,
+                           std::vector<std::unique_ptr<OrderedBin>>* ordered_bins,
                            const score_t* gradients, const score_t* hessians,
                            score_t* ordered_gradients, score_t* ordered_hessians,
                            bool is_constant_hessian,
@@ -630,6 +631,7 @@ class Dataset {
   bool is_finish_load_;
   int max_bin_;
   std::vector<int32_t> max_bin_by_feature_;
+  std::vector<std::vector<double>> forced_bin_bounds_;
   int bin_construct_sample_cnt_;
   int min_data_in_bin_;
   bool use_missing_;

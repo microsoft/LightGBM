@@ -36,6 +36,9 @@ class DatasetLoader {
   /*! \brief Disable copy */
   DatasetLoader(const DatasetLoader&) = delete;
 
+  static std::vector<std::vector<double>> GetForcedBins(std::string forced_bins_path, int num_total_features,
+                                                        const std::unordered_set<int>& categorical_features);
+
  private:
   Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
@@ -52,7 +55,7 @@ class DatasetLoader {
   void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data, const Parser* parser, Dataset* dataset);
 
   /*! \brief Extract local features from memory */
-  void ExtractFeaturesFromMemory(std::vector<std::string>& text_data, const Parser* parser, Dataset* dataset);
+  void ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser, Dataset* dataset);
 
   /*! \brief Extract local features from file */
   void ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset);

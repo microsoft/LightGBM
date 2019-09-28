@@ -11,9 +11,7 @@
 #include <cmath>
 #include <vector>
 
-namespace {
-
-using namespace LightGBM;
+namespace LightGBM {
 
 PredictionEarlyStopInstance CreateNone(const PredictionEarlyStopConfig&) {
   return PredictionEarlyStopInstance{
@@ -73,10 +71,6 @@ PredictionEarlyStopInstance CreateBinary(const PredictionEarlyStopConfig& config
     config.round_period
   };
 }
-
-}  // namespace
-
-namespace LightGBM {
 
 PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string& type,
                                                               const PredictionEarlyStopConfig& config) {
