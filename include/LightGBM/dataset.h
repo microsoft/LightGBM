@@ -290,6 +290,7 @@ class Dataset {
 
   void Construct(
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+    std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
     const int* num_per_col,
     size_t total_sample_cnt,

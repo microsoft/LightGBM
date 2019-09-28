@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/dataset.h>
-#include <LightGBM/dataset_loader.h>
 
 #include <LightGBM/feature_group.h>
 #include <LightGBM/utils/array_args.h>
@@ -216,6 +215,7 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
 
 void Dataset::Construct(
   std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+  std::vector<std::vector<double>>& forced_bins,
   int** sample_non_zero_indices,
   const int* num_per_col,
   size_t total_sample_cnt,
@@ -326,14 +326,7 @@ void Dataset::Construct(
     max_bin_by_feature_.resize(num_total_features_);
     max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(), io_config.max_bin_by_feature.end());
   }
-  // get categorical features from the bin types so that we can read the forced bin bounds
-  std::unordered_set<int> categorical_features;
-  for (int i = 0; i < num_total_features_; ++i){
-    if ((bin_mappers->at(i) != nullptr) && (bin_mappers->at(i)->bin_type() == BinType::CategoricalBin)){
-      categorical_features.insert(i);
-    }
-  }
-  forced_bin_bounds_ = DatasetLoader::GetForcedBins(io_config.forcedbins_filename, num_total_features_, categorical_features);
+  forced_bin_bounds_ = forced_bins;
   max_bin_ = io_config.max_bin;
   min_data_in_bin_ = io_config.min_data_in_bin;
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
