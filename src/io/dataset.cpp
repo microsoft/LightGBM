@@ -215,7 +215,7 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
 
 void Dataset::Construct(
   std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-  std::vector<std::vector<double>>& forced_bins,
+  const std::vector<std::vector<double>>& forced_bins,
   int** sample_non_zero_indices,
   const int* num_per_col,
   size_t total_sample_cnt,
@@ -436,6 +436,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   group_feature_cnt_ = dataset->group_feature_cnt_;
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
+  forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {
@@ -490,6 +491,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   }
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
+  forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
 void Dataset::ReSize(data_size_t num_data) {
