@@ -254,7 +254,7 @@ class Booster {
                const Config& config,
                double* out_result, int64_t* out_len) {
     if (ncol != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of feature in data (%d) is not same as in training (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
     if (single_row_predictor_[predict_type].get() == nullptr ||
