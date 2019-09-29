@@ -23,13 +23,16 @@ linters_on_cran <- list(
     , "equals_na" = lintr::equals_na_linter
     , "function_left" = lintr::function_left_parentheses_linter
     , "infix_spaces" = lintr::infix_spaces_linter
+    , "implicit_integers" = lintr::implicit_integer_linter
     , "long_lines" = lintr::line_length_linter(length = 120)
     , "tabs" = lintr::no_tab_linter
     , "open_curly" = lintr::open_curly_linter
     , "paren_brace_linter" = lintr::paren_brace_linter
     , "semiconlon" = lintr::semicolon_terminator_linter
+    , "seq" = lintr::seq_linter
     , "spaces_inside" = lintr::spaces_inside_linter
     , "spaces_left_parens" = lintr::spaces_left_parentheses_linter
+    , "todo_comments" = lintr::todo_comment_linter
     , "true_false" = lintr::T_and_F_symbol_linter
     , "trailing_blank" = lintr::trailing_blank_lines_linter
     , "trailing_white" = lintr::trailing_whitespace_linter
