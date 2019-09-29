@@ -27,10 +27,6 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else  # Linux
-    if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
-        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 100
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 100
-    fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
