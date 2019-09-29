@@ -217,13 +217,25 @@ lgb.train <- function(params = list(),
     early_stopping_rounds <- params[[first_early_stop_param_name]]
   }
 
-  using_early_stopping <- !is.null(early_stopping_rounds)
+  # Did user pass parameters that indicate they want to use early stopping?
+  using_early_stopping_via_args <- !is.null(early_stopping_rounds)
+
+  # Cannot use early stopping with 'dart' boosting
   if (identical(params$boosting, "dart")){
     warning("Early stopping is not available in 'dart' mode.")
-    use_early_stopping <- FALSE
+    using_early_stopping_via_args <- FALSE
+
+    # Remove the cb.early.stop() function if it was passed in to callbacks
+    callbacks <- Filter(
+      f = function(cb_func){
+        !identical(attr(cb_func, "name"), "cb.early.stop")
+      }
+      , x = callbacks
+    )
   }
 
-  if (using_early_stopping){
+  # If user supplied early_stopping_rounds, add the early stopping callback
+  if (using_early_stopping_via_args){
     callbacks <- add.cb(
       callbacks
       , cb.early.stop(
