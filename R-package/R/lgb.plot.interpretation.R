@@ -35,7 +35,6 @@
 #' lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
 #' @importFrom data.table setnames
 #' @importFrom graphics barplot par
-#' @importFrom magrittr inset
 #' @export
 lgb.plot.interpretation <- function(tree_interpretation_dt,
                                     top_n = 10,
@@ -51,7 +50,18 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
   on.exit(graphics::par(op))
 
   # Do some magic plotting
-  graphics::par(mar = op$mar %>% magrittr::inset(., 1:3, c(3, left_margin, 2)))
+  bottom_margin <- 3.0
+  top_margin <- 2.0
+  right_margin <- op$mar[4]
+
+  graphics::par(
+    mar = c(
+      bottom_margin
+      , left_margin
+      , top_margin
+      , right_margin
+    )
+  )
 
   # Check for number of classes
   if (num_class == 1) {
@@ -75,12 +85,18 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
     for (i in seq_len(num_class)) {
 
       # Prepare interpretation, perform T, get the names, and plot straight away
-      tree_interpretation_dt[, c(1, i + 1), with = FALSE] %T>%
-        data.table::setnames(., old = names(.), new = c("Feature", "Contribution")) %>%
-        multiple.tree.plot.interpretation(., # Self
-                                          top_n = top_n,
-                                          title = paste("Class", i - 1),
-                                          cex = cex)
+      plot_dt <- tree_interpretation_dt[, c(1, i + 1), with = FALSE]
+      data.table::setnames(
+        plot_dt
+        , old = names(plot_dt)
+        , new = c("Feature", "Contribution")
+      )
+      multiple.tree.plot.interpretation(
+        plot_dt
+        , top_n = top_n
+        , title = paste("Class", i - 1)
+        , cex = cex
+      )
 
     }
   }
@@ -114,6 +130,6 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
                       )]
 
   # Return invisibly
-  invisible(NULL)
+  return(invisible(NULL))
 
 }

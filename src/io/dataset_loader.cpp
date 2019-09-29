@@ -4,10 +4,15 @@
  */
 #include <LightGBM/dataset_loader.h>
 
+#include <LightGBM/json11.hpp>
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <fstream>
+
+using namespace json11;
 
 namespace LightGBM {
 
@@ -458,6 +463,21 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     }
     dataset->feature_names_.emplace_back(str_buf.str());
   }
+  // get forced_bin_bounds_
+  dataset->forced_bin_bounds_ = std::vector<std::vector<double>>(dataset->num_total_features_, std::vector<double>());
+  for (int i = 0; i < dataset->num_total_features_; ++i) {
+    int num_bounds = *(reinterpret_cast<const int*>(mem_ptr));
+    mem_ptr += sizeof(int);
+    dataset->forced_bin_bounds_[i] = std::vector<double>();
+    const double* tmp_ptr_forced_bounds = reinterpret_cast<const double*>(mem_ptr);
+    
+    for (int j = 0; j < num_bounds; ++j) {
+      double bound = tmp_ptr_forced_bounds[j];
+      dataset->forced_bin_bounds_[i].push_back(bound);
+    }
+    mem_ptr += num_bounds * sizeof(double);
+   
+  }
 
   // read size of meta data
   read_cnt = reader->Read(buffer.data(), sizeof(size_t));
@@ -549,6 +569,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   return dataset.release();
 }
 
+
 Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
                                                int** sample_indices, int num_col, const int* num_per_col,
                                                size_t total_sample_size, data_size_t num_data) {
@@ -565,6 +586,11 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     CHECK(static_cast<size_t>(num_col) == config_.max_bin_by_feature.size());
     CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
   }
+
+  // get forced split
+  std::string forced_bins_path = config_.forcedbins_filename;
+  std::vector<std::vector<double>> forced_bin_bounds = DatasetLoader::GetForcedBins(forced_bins_path, num_col, categorical_features_);
+
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
   if (Network::num_machines() == 1) {
@@ -589,12 +615,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
                                 config_.max_bin, config_.min_data_in_bin, filter_cnt,
-                                bin_type, config_.use_missing, config_.zero_as_missing);
+                                bin_type, config_.use_missing, config_.zero_as_missing,
+                                forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
                                 config_.max_bin_by_feature[i], config_.min_data_in_bin,
                                 filter_cnt, bin_type, config_.use_missing,
-                                config_.zero_as_missing);
+                                config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
@@ -634,12 +661,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
                                 total_sample_size, config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing, 
+                                forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
                                 total_sample_size, config_.max_bin_by_feature[start[rank] + i],
                                 config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing,
-                                config_.zero_as_missing);
+                                config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
@@ -692,7 +720,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->Construct(&bin_mappers, num_col, sample_indices, num_per_col, total_sample_size, config_);
+  dataset->Construct(&bin_mappers, num_col, forced_bin_bounds, sample_indices, num_per_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
@@ -876,6 +904,11 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
   }
 
+  // get forced split
+  std::string forced_bins_path = config_.forcedbins_filename;
+  std::vector<std::vector<double>> forced_bin_bounds = DatasetLoader::GetForcedBins(forced_bins_path, dataset->num_total_features_, 
+                                                                                    categorical_features_);
+
   // check the range of label_idx, weight_idx and group_idx
   CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
   CHECK(weight_idx_ < 0 || weight_idx_ < dataset->num_total_features_);
@@ -913,12 +946,13 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
                                 sample_data.size(), config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing,
+                                forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
                                 sample_data.size(), config_.max_bin_by_feature[i],
                                 config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing,
-                                config_.zero_as_missing);
+                                config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
@@ -959,13 +993,14 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
                                 sample_data.size(), config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing);
+                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing, 
+                                forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
                                 sample_data.size(), config_.max_bin_by_feature[i],
                                 config_.min_data_in_bin, filter_cnt, bin_type,
-                                config_.use_missing, config_.zero_as_missing);
+                                config_.use_missing, config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
@@ -1018,7 +1053,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     }
   }
   sample_values.clear();
-  dataset->Construct(&bin_mappers, dataset->num_total_features_, Common::Vector2Ptr<int>(&sample_indices).data(),
+  dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::VectorSize<int>(sample_indices).data(), sample_data.size(), config_);
 }
 
@@ -1205,6 +1240,44 @@ std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
   } else {
     return std::string();
   }
+}
+
+
+
+std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced_bins_path, int num_total_features,
+                                                              const std::unordered_set<int>& categorical_features) {
+  std::vector<std::vector<double>> forced_bins(num_total_features, std::vector<double>());
+  if (forced_bins_path != "") {
+    std::ifstream forced_bins_stream(forced_bins_path.c_str());
+    if (forced_bins_stream.fail()) {
+      Log::Warning("Could not open %s. Will ignore.", forced_bins_path.c_str());
+    } else {
+      std::stringstream buffer;
+      buffer << forced_bins_stream.rdbuf();
+      std::string err;
+      Json forced_bins_json = Json::parse(buffer.str(), err);
+      CHECK(forced_bins_json.is_array());
+      std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
+      for (size_t i = 0; i < forced_bins_arr.size(); ++i) {
+        int feature_num = forced_bins_arr[i]["feature"].int_value();
+        CHECK(feature_num < num_total_features);
+        if (categorical_features.count(feature_num)) {
+          Log::Warning("Feature %d is categorical. Will ignore forced bins for this  feature.", feature_num);
+        } else {
+          std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
+          for (size_t j = 0; j < bounds_arr.size(); ++j) {
+            forced_bins[feature_num].push_back(bounds_arr[j].number_value());
+          }
+        }
+      }
+      // remove duplicates
+      for (int i = 0; i < num_total_features; ++i) {
+        auto new_end = std::unique(forced_bins[i].begin(), forced_bins[i].end());
+        forced_bins[i].erase(new_end, forced_bins[i].end());
+      }
+    }
+  }
+  return forced_bins;
 }
 
 }  // namespace LightGBM

@@ -15,6 +15,7 @@
 #include <sstream>
 #include <unordered_map>
 
+
 namespace LightGBM {
 
 const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
@@ -215,6 +216,7 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
 void Dataset::Construct(
   std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   int num_total_features,
+  const std::vector<std::vector<double>>& forced_bins,
   int** sample_non_zero_indices,
   const int* num_per_col,
   size_t total_sample_cnt,
@@ -326,6 +328,7 @@ void Dataset::Construct(
     max_bin_by_feature_.resize(num_total_features_);
     max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(), io_config.max_bin_by_feature.end());
   }
+  forced_bin_bounds_ = forced_bins;
   max_bin_ = io_config.max_bin;
   min_data_in_bin_ = io_config.min_data_in_bin;
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
@@ -357,6 +360,9 @@ void Dataset::ResetConfig(const char* parameters) {
   }
   if (param.count("sparse_threshold") && io_config.sparse_threshold != sparse_threshold_) {
     Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
+  }
+  if (param.count("forcedbins_filename")) {
+    Log::Warning("Cannot change forced bins after constructed Dataset handle.");
   }
 
   if (!io_config.monotone_constraints.empty()) {
@@ -432,6 +438,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   group_feature_cnt_ = dataset->group_feature_cnt_;
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
+  forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {
@@ -486,6 +493,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   }
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
+  forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
 void Dataset::ReSize(data_size_t num_data) {
@@ -659,6 +667,10 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header += feature_names_[i].size() + sizeof(int);
     }
+    // size of forced bins
+    for (int i = 0; i < num_total_features_; ++i) {
+      size_of_header += forced_bin_bounds_[i].size() * sizeof(double) + sizeof(int);
+    }
     writer->Write(&size_of_header, sizeof(size_of_header));
     // write header
     writer->Write(&num_data_, sizeof(num_data_));
@@ -706,6 +718,15 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       writer->Write(&str_len, sizeof(int));
       const char* c_str = feature_names_[i].c_str();
       writer->Write(c_str, sizeof(char) * str_len);
+    }
+    // write forced bins
+    for (int i = 0; i < num_total_features_; ++i) {
+      int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
+      writer->Write(&num_bounds, sizeof(int));
+      
+      for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+        writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
+      }
     }
 
     // get size of meta data
@@ -755,6 +776,13 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fprintf(file, "\n");
   for (auto n : feature_names_) {
     fprintf(file, "%s, ", n.c_str());
+  }
+  fprintf(file, "\nforced_bins: ");
+  for (int i = 0; i < num_total_features_; ++i) {
+    fprintf(file, "\nfeature %d: ", i);
+    for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+      fprintf(file, "%lf, ", forced_bin_bounds_[i][j]);
+    }
   }
   std::vector<std::unique_ptr<BinIterator>> iterators;
   iterators.reserve(num_features_);
@@ -1007,6 +1035,7 @@ void Dataset::addFeaturesFrom(Dataset* other) {
   PushVector(&feature_names_, other->feature_names_);
   PushVector(&feature2subfeature_, other->feature2subfeature_);
   PushVector(&group_feature_cnt_, other->group_feature_cnt_);
+  PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
   feature_groups_.reserve(other->feature_groups_.size());
   for (auto& fg : other->feature_groups_) {
     feature_groups_.emplace_back(new FeatureGroup(*fg));
@@ -1029,6 +1058,7 @@ void Dataset::addFeaturesFrom(Dataset* other) {
 
   PushClearIfEmpty(&monotone_types_, num_total_features_, other->monotone_types_, other->num_total_features_, (int8_t)0);
   PushClearIfEmpty(&feature_penalty_, num_total_features_, other->feature_penalty_, other->num_total_features_, 1.0);
+  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_, other->max_bin_by_feature_, other->num_total_features_, -1);
 
   num_features_ += other->num_features_;
   num_total_features_ += other->num_total_features_;

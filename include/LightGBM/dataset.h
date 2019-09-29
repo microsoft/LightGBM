@@ -291,6 +291,7 @@ class Dataset {
   void Construct(
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     int num_total_features,
+    const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
     const int* num_per_col,
     size_t total_sample_cnt,
@@ -631,6 +632,7 @@ class Dataset {
   bool is_finish_load_;
   int max_bin_;
   std::vector<int32_t> max_bin_by_feature_;
+  std::vector<std::vector<double>> forced_bin_bounds_;
   int bin_construct_sample_cnt_;
   int min_data_in_bin_;
   bool use_missing_;
