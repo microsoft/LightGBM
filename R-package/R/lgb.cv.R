@@ -25,23 +25,23 @@ CVBooster <- R6::R6Class(
 #' @param label vector of response values. Should be provided only when data is an R-matrix.
 #' @param weight vector of response values. If not NULL, will set to dataset
 #' @param obj objective function, can be character or custom objective function. Examples include
-#'        \code{regression}, \code{regression_l1}, \code{huber},
-#'        \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
+#'            \code{regression}, \code{regression_l1}, \code{huber},
+#'             \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
 #' @param eval evaluation function, can be (list of) character or custom eval function
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
-#'        by the values of outcome labels.
+#'                   by the values of outcome labels.
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
-#'        (each element must be a vector of test fold's indices). When folds are supplied,
-#'        the \code{nfold} and \code{stratified} parameters are ignored.
+#'              (each element must be a vector of test fold's indices). When folds are supplied,
+#'              the \code{nfold} and \code{stratified} parameters are ignored.
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
-#'        type int represents index,
-#'        type str represents feature names
-#' @param callbacks list of callback functions
-#'        List of callback functions that are applied at each iteration.
-#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
+#'                            type int represents index,
+#'                            type str represents feature names
+#' @param callbacks List of callback functions that are applied at each iteration.
+#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
+#'                   into a predictor model which frees up memory and the original datasets
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
 #'                \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
@@ -231,13 +231,22 @@ lgb.cv <- function(params = list(),
     if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
       callbacks <- add.cb(
         callbacks
-        , cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose)
+        , cb.early.stop(
+          params[[which(names(params) %in% early_stop)[1]]]
+          , verbose = verbose
+        )
       )
     }
   } else {
     if (!is.null(early_stopping_rounds)) {
       if (early_stopping_rounds > 0) {
-        callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+        callbacks <- add.cb(
+          callbacks
+          , cb.early.stop(
+            early_stopping_rounds
+            , verbose = verbose
+          )
+        )
       }
     }
   }

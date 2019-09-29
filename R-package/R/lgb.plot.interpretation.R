@@ -9,8 +9,8 @@
 #' @param cex (base R barplot) passed as \code{cex.names} parameter to \code{barplot}.
 #'
 #' @details
-#' The graph represents each feature as a horizontal bar of length proportional to the defined contribution of a feature.
-#' Features are shown ranked in a decreasing contribution order.
+#' The graph represents each feature as a horizontal bar of length proportional to the defined
+#' contribution of a feature. Features are shown ranked in a decreasing contribution order.
 #'
 #' @return
 #' The \code{lgb.plot.interpretation} function creates a \code{barplot}.

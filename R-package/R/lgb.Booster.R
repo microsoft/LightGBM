@@ -662,13 +662,13 @@ Booster <- R6::R6Class(
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
 #' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
 #' @param rawscore whether the prediction should be returned in the for of original untransformed
-#'        sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE} for
-#'        logistic regression would result in predictions for log-odds instead of probabilities.
+#'                 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
+#'                 for logistic regression would result in predictions for log-odds instead of probabilities.
 #' @param predleaf whether predict leaf index instead.
 #' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
-#'        prediction outputs per case.
+#'                prediction outputs per case.
 #' @param ... Additional named arguments passed to the \code{predict()} method of
 #'            the \code{lgb.Booster} object passed to \code{object}.
 #' @return

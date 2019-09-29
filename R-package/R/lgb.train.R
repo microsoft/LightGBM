@@ -4,16 +4,15 @@
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param obj objective function, can be character or custom objective function. Examples include
-#'        \code{regression}, \code{regression_l1}, \code{huber},
-#'        \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
+#'            \code{regression}, \code{regression_l1}, \code{huber},
+#'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
 #' @param eval evaluation function, can be (a list of) character or custom eval function
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
-#'        type int represents index,
-#'        type str represents feature names
-#' @param callbacks list of callback functions
-#'        List of callback functions that are applied at each iteration.
+#'                            type int represents index,
+#'                            type str represents feature names
+#' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the
 #'                   booster model into a predictor model which frees up memory and the
 #'                   original datasets

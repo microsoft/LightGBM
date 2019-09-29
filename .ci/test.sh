@@ -54,17 +54,29 @@ if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
         pydocstyle \
-        r-argparse \
-        r-lintr
+        r
+    # lintr has to be installed from source to get new linters. Pegging to a specific commit
+    # so this project's CI isn't at the whim of bleeding-edge changes to lintr
+    LINTR_CLONE_DIR=./lintr_temp
+    git clone https://github.com/jimhester/lintr.git ${LINTR_CLONE_DIR}
+    pushd ${LINTR_CLONE_DIR}
+        git reset --hard 9fb12a5ca1854320729b62a88d39a42e111d97ea
+        R CMD install .
+    popd
+    rm -rf ${LINTR_CLONE_DIR}
     pip install --user cpplint
-    echo "linting Python code"
+    echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
-    echo "linting C++ code"
-    cpplint --filter=-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include || exit 0
-    echo "linting R code"
-    Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R \
-        --source-dir ${BUILD_DIRECTORY}
+    echo "Linting R code"
+    Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY}
+    echo "Linting C++ code"
+    cpplint \
+        --filter=-build/include_subdir,-build/header_guard,-whitespace/line_length \
+        --recursive \
+        ./src \
+        ./include \
+    || exit 0
     exit 0
 fi
 

@@ -7,7 +7,7 @@
 #' @param data A data.frame or data.table to prepare.
 #'
 #' @return The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
-#' for input in \code{lgb.Dataset}.
+#'         for input in \code{lgb.Dataset}.
 #'
 #' @examples
 #' library(lightgbm)

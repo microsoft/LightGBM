@@ -837,7 +837,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #'
 #' @param x object of class \code{lgb.Dataset}
 #' @param value a list of two elements: the first one is ignored
-#'        and the second one is column names
+#'              and the second one is column names
 #'
 #' @details
 #' Generic \code{dimnames} methods are used by \code{colnames}.

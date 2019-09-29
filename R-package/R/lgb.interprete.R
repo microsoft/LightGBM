@@ -211,15 +211,18 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
 
     # Full interpretation elements
     tree_interpretation_dt <- Reduce(
-      f = function(x, y) merge(x, y, by = "Feature", all = TRUE),
-                                     x = tree_interpretation)
+      f = function(x, y){
+        merge(x, y, by = "Feature", all = TRUE)
+      }
+      , x = tree_interpretation
+    )
 
     # Loop throughout each tree
     for (j in 2:ncol(tree_interpretation_dt)) {
 
       data.table::set(
         tree_interpretation_dt
-        , i = which(is.na(tree_interpretation_dt[[j]])),
+        , i = which(is.na(tree_interpretation_dt[[j]]))
         , j = j
         , value = 0
       )

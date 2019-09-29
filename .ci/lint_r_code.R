@@ -1,16 +1,10 @@
 
-library(argparse)
 library(lintr)
 
-parser <- argparse::ArgumentParser()
-parser$add_argument(
-    "--source-dir"
-    , type = "character"
-    , help = "Fully-qualified directory to search for R files"
+args <- commandArgs(
+    trailingOnly = TRUE
 )
-args <- parser$parse_args()
-
-SOURCE_DIR <- args[["source_dir"]]
+SOURCE_DIR <- args[[1]]
 
 FILES_TO_LINT <- list.files(
     path = SOURCE_DIR
@@ -22,14 +16,35 @@ FILES_TO_LINT <- list.files(
     , include.dirs = FALSE
 )
 
-LINTERS_TO_USE <- list(
-    "open_curly" = lintr::open_curly_linter
-    , "closed_curly" = lintr::closed_curly_linter
+# Some linters from the lintr package have not made it to CRAN yet
+# We build lintr from source to address that.
+linters_on_cran <- list(
+    "closed_curly" = lintr::closed_curly_linter
+    , "equals_na" = lintr::equals_na_linter
+    , "function_left" = lintr::function_left_parentheses_linter
+    , "infix_spaces" = lintr::infix_spaces_linter
+    , "long_lines" = lintr::line_length_linter(length = 120)
     , "tabs" = lintr::no_tab_linter
-    , "spaces" = lintr::infix_spaces_linter
+    , "open_curly" = lintr::open_curly_linter
+    , "paren_brace_linter" = lintr::paren_brace_linter
+    , "semiconlon" = lintr::semicolon_terminator_linter
+    , "spaces_inside" = lintr::spaces_inside_linter
+    , "spaces_left_parens" = lintr::spaces_left_parentheses_linter
+    , "true_false" = lintr::T_and_F_symbol_linter
     , "trailing_blank" = lintr::trailing_blank_lines_linter
     , "trailing_white" = lintr::trailing_whitespace_linter
-    , "long_lines" = lintr::line_length_linter(length = 120)
+)
+
+github_only_linters <- list(
+    lintr::equals_na_linter
+    , lintr::function_left_parentheses_linter
+    , lintr::paren_brace_linter
+    , lintr::semicolon_terminator_linter
+)
+
+LINTERS_TO_USE <- c(
+    linters_on_cran
+    , github_only_linters
 )
 
 cat(sprintf("Found %i R files to lint\n", length(FILES_TO_LINT)))

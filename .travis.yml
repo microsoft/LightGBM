@@ -19,7 +19,6 @@ env:
     - TASK=bdist
     - TASK=if-else
     - TASK=lint
-    - TASK=rlint
     - TASK=check-docs
     - TASK=mpi METHOD=source
     - TASK=mpi METHOD=pip

@@ -11,8 +11,8 @@
 #' @param rules A set of rules from the data preparator, if already used.
 #'
 #' @return A list with the cleaned dataset (\code{data}) and the rules (\code{rules}).
-#'        The data must be converted to a matrix format (\code{as.matrix}) for input in
-#'        \code{lgb.Dataset}.
+#'         The data must be converted to a matrix format (\code{as.matrix}) for input in
+#'         \code{lgb.Dataset}.
 #'
 #' @examples
 #' library(lightgbm)
