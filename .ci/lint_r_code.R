@@ -18,7 +18,7 @@ FILES_TO_LINT <- list.files(
 
 # Some linters from the lintr package have not made it to CRAN yet
 # We build lintr from source to address that.
-linters_on_cran <- list(
+LINTERS_TO_USE <- list(
     "closed_curly" = lintr::closed_curly_linter
     , "infix_spaces" = lintr::infix_spaces_linter
     , "long_lines" = lintr::line_length_linter(length = 120)
@@ -28,11 +28,6 @@ linters_on_cran <- list(
     , "spaces_left_parens" = lintr::spaces_left_parentheses_linter
     , "trailing_blank" = lintr::trailing_blank_lines_linter
     , "trailing_white" = lintr::trailing_whitespace_linter
-)
-
-LINTERS_TO_USE <- c(
-    linters_on_cran
-    , github_only_linters
 )
 
 cat(sprintf("Found %i R files to lint\n", length(FILES_TO_LINT)))
