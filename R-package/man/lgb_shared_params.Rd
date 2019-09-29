@@ -9,12 +9,10 @@ List of callback functions that are applied at each iteration.}
 
 \item{data}{a \code{lgb.Dataset} object, used for training}
 
-\item{early_stopping_rounds}{int
-Activates early stopping.
-Requires at least one validation data and one metric
-If there's more than one, will check all of them except the training data
-Returns the model with (best_iter + early_stopping_rounds)
-If early stopping occurs, the model will have 'best_iter' field}
+\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
+and one metric. If there's more than one, will check all of them
+except the training data. Returns the model with (best_iter + early_stopping_rounds).
+If early stopping occurs, the model will have 'best_iter' field.}
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 

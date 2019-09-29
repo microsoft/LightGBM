@@ -10,10 +10,13 @@ lgb.prepare(data)
 \item{data}{A data.frame or data.table to prepare.}
 }
 \value{
-The cleaned dataset. It must be converted to a matrix format (\code{as.matrix}) for input in \code{lgb.Dataset}.
+The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
+        for input in \code{lgb.Dataset}.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}. Factors and characters are converted to numeric without integers. Please use \code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
+Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+Factors and characters are converted to numeric without integers. Please use
+\code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
 }
 \examples{
 library(lightgbm)

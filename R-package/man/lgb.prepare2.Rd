@@ -10,10 +10,16 @@ lgb.prepare2(data)
 \item{data}{A data.frame or data.table to prepare.}
 }
 \value{
-The cleaned dataset. It must be converted to a matrix format (\code{as.matrix}) for input in \code{lgb.Dataset}.
+The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
+        for input in \code{lgb.Dataset}.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}. Factors and characters are converted to numeric (specifically: integer). Please use \code{lgb.prepare_rules2} if you want to apply this transformation to other datasets. This is useful if you have a specific need for integer dataset instead of numeric dataset. Note that there are programs which do not support integer-only input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
+Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+Factors and characters are converted to numeric (specifically: integer).
+Please use \code{lgb.prepare_rules2} if you want to apply this transformation to other datasets.
+This is useful if you have a specific need for integer dataset instead of numeric dataset.
+Note that there are programs which do not support integer-only input. Consider this as a half
+memory technique which is dangerous, especially for LightGBM.
 }
 \examples{
 library(lightgbm)

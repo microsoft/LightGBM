@@ -7,11 +7,15 @@
 lgb.unloader(restore = TRUE, wipe = FALSE, envir = .GlobalEnv)
 }
 \arguments{
-\item{restore}{Whether to reload \code{LightGBM} immediately after detaching from R. Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once unloading is performed.}
+\item{restore}{Whether to reload \code{LightGBM} immediately after detaching from R.
+Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once
+unloading is performed.}
 
-\item{wipe}{Whether to wipe all \code{lgb.Dataset} and \code{lgb.Booster} from the global environment. Defaults to \code{FALSE} which means to not remove them.}
+\item{wipe}{Whether to wipe all \code{lgb.Dataset} and \code{lgb.Booster} from the global
+environment. Defaults to \code{FALSE} which means to not remove them.}
 
-\item{envir}{The environment to perform wiping on if \code{wipe == TRUE}. Defaults to \code{.GlobalEnv} which is the global environment.}
+\item{envir}{The environment to perform wiping on if \code{wipe == TRUE}. Defaults to
+\code{.GlobalEnv} which is the global environment.}
 }
 \value{
 NULL invisibly.
@@ -29,13 +33,15 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   10,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 5)
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 10
+  , valids = valids
+  , min_data = 1
+  , learning_rate = 1
+  , early_stopping_rounds = 5
+)
 
 \dontrun{
 lgb.unloader(restore = FALSE, wipe = FALSE, envir = .GlobalEnv)

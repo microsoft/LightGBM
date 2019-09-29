@@ -4,9 +4,16 @@
 \alias{lgb.Dataset}
 \title{Construct \code{lgb.Dataset} object}
 \usage{
-lgb.Dataset(data, params = list(), reference = NULL, colnames = NULL,
-  categorical_feature = NULL, free_raw_data = TRUE, info = list(),
-  ...)
+lgb.Dataset(
+  data,
+  params = list(),
+  reference = NULL,
+  colnames = NULL,
+  categorical_feature = NULL,
+  free_raw_data = TRUE,
+  info = list(),
+  ...
+)
 }
 \arguments{
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}

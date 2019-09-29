@@ -4,13 +4,29 @@
 \alias{lgb.cv}
 \title{Main CV logic for LightGBM}
 \usage{
-lgb.cv(params = list(), data, nrounds = 10, nfold = 3,
-  label = NULL, weight = NULL, obj = NULL, eval = NULL,
-  verbose = 1, record = TRUE, eval_freq = 1L, showsd = TRUE,
-  stratified = TRUE, folds = NULL, init_model = NULL,
-  colnames = NULL, categorical_feature = NULL,
-  early_stopping_rounds = NULL, callbacks = list(),
-  reset_data = FALSE, ...)
+lgb.cv(
+  params = list(),
+  data,
+  nrounds = 10,
+  nfold = 3,
+  label = NULL,
+  weight = NULL,
+  obj = NULL,
+  eval = NULL,
+  verbose = 1,
+  record = TRUE,
+  eval_freq = 1L,
+  showsd = TRUE,
+  stratified = TRUE,
+  folds = NULL,
+  init_model = NULL,
+  colnames = NULL,
+  categorical_feature = NULL,
+  early_stopping_rounds = NULL,
+  callbacks = list(),
+  reset_data = FALSE,
+  ...
+)
 }
 \arguments{
 \item{params}{List of parameters}
@@ -27,7 +43,7 @@ lgb.cv(params = list(), data, nrounds = 10, nfold = 3,
 
 \item{obj}{objective function, can be character or custom objective function. Examples include
 \code{regression}, \code{regression_l1}, \code{huber},
-\code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
+ \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 
 \item{eval}{evaluation function, can be (list of) character or custom eval function}
 
@@ -54,17 +70,15 @@ the \code{nfold} and \code{stratified} parameters are ignored.}
 type int represents index,
 type str represents feature names}
 
-\item{early_stopping_rounds}{int
-Activates early stopping.
-Requires at least one validation data and one metric
-If there's more than one, will check all of them except the training data
-Returns the model with (best_iter + early_stopping_rounds)
-If early stopping occurs, the model will have 'best_iter' field}
+\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
+and one metric. If there's more than one, will check all of them
+except the training data. Returns the model with (best_iter + early_stopping_rounds).
+If early stopping occurs, the model will have 'best_iter' field.}
 
-\item{callbacks}{list of callback functions
-List of callback functions that are applied at each iteration.}
+\item{callbacks}{List of callback functions that are applied at each iteration.}
 
-\item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets}
+\item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model
+into a predictor model which frees up memory and the original datasets}
 
 \item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
 \itemize{
@@ -89,11 +103,13 @@ data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 params <- list(objective = "regression", metric = "l2")
-model <- lgb.cv(params,
-                dtrain,
-                10,
-                nfold = 3,
-                min_data = 1,
-                learning_rate = 1,
-                early_stopping_rounds = 5)
+model <- lgb.cv(
+  params = params
+  , data = dtrain
+  , nrounds = 10
+  , nfold = 3
+  , min_data = 1
+  , learning_rate = 1
+  , early_stopping_rounds = 5
+)
 }
