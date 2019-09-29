@@ -29,8 +29,7 @@
 #' tree_imp1 <- lgb.importance(model, percentage = TRUE)
 #' tree_imp2 <- lgb.importance(model, percentage = FALSE)
 #'
-#' @importFrom magrittr %>% %T>% extract
-#' @importFrom data.table :=
+#' @importFrom data.table := setnames setorderv
 #' @export
 lgb.importance <- function(model, percentage = TRUE) {
 
@@ -43,22 +42,33 @@ lgb.importance <- function(model, percentage = TRUE) {
   tree_dt <- lgb.model.dt.tree(model)
 
   # Extract elements
-  tree_imp <- tree_dt %>%
-    magrittr::extract(.,
-                      i = ! is.na(split_index),
-                      j = .(Gain = sum(split_gain), Cover = sum(internal_count), Frequency = .N),
-                      by = "split_feature") %T>%
-    data.table::setnames(., old = "split_feature", new = "Feature") %>%
-    magrittr::extract(., i = order(Gain, decreasing = TRUE))
+  tree_imp_dt <- tree_dt[
+    !is.na(split_index)
+    , .(Gain = sum(split_gain), Cover = sum(internal_count), Frequency = .N)
+    , by = "split_feature"
+  ]
+
+  data.table::setnames(
+    tree_imp_dt
+    , old = "split_feature"
+    , new = "Feature"
+  )
+
+  # Sort features by Gain
+  data.table::setorderv(
+    x = tree_imp_dt
+    , cols = c("Gain")
+    , order = -1
+  )
 
   # Check if relative values are requested
   if (percentage) {
-    tree_imp[, ":="(Gain = Gain / sum(Gain),
+    tree_imp_dt[, ":="(Gain = Gain / sum(Gain),
                     Cover = Cover / sum(Cover),
                     Frequency = Frequency / sum(Frequency))]
   }
 
   # Return importance table
-  return(tree_imp)
+  return(tree_imp_dt)
 
 }
