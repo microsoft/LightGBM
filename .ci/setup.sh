@@ -7,14 +7,6 @@ if [[ $OS_NAME == "macos" ]]; then
             sudo xcode-select -s /Applications/Xcode_8.3.3.app/Contents/Developer
         fi
     else  # gcc
-        if [[ $TRAVIS == "true" ]]; then
-#            rm '/usr/local/include/c++'  # previous variant to deal with conflict link
-#            brew cask uninstall oclint  #  reserve variant to deal with conflict link
-            brew link --overwrite gcc
-            brew upgrade gcc
-        else
-            brew update
-        fi
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
