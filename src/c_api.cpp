@@ -694,6 +694,8 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   API_BEGIN();
   if (num_col <= 0) {
     Log::Fatal("The number of columns should be greater than zero.");
+  } else if (num_col >= INT32_MAX) {
+    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
   }
   auto param = Config::Str2Map(parameters);
   Config config;
@@ -758,6 +760,8 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   API_BEGIN();
   if (num_col <= 0) {
     Log::Fatal("The number of columns should be greater than zero.");
+  } else if (num_col >= INT32_MAX) {
+    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
   }
   auto get_row_fun = *static_cast<std::function<void(int idx, std::vector<std::pair<int, double>>&)>*>(get_row_funptr);
   auto param = Config::Str2Map(parameters);
@@ -1317,6 +1321,8 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   API_BEGIN();
   if (num_col <= 0) {
     Log::Fatal("The number of columns should be greater than zero.");
+  } else if (num_col >= INT32_MAX) {
+    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
   }
   auto param = Config::Str2Map(parameter);
   Config config;
@@ -1349,6 +1355,8 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   API_BEGIN();
   if (num_col <= 0) {
     Log::Fatal("The number of columns should be greater than zero.");
+  } else if (num_col >= INT32_MAX) {
+    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
   }
   auto param = Config::Str2Map(parameter);
   Config config;
