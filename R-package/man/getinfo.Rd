@@ -3,7 +3,7 @@
 \name{getinfo}
 \alias{getinfo}
 \alias{getinfo.lgb.Dataset}
-\title{Get information of an lgb.Dataset object}
+\title{Get information of an \code{lgb.Dataset} object}
 \usage{
 getinfo(dataset, ...)
 
@@ -20,7 +20,7 @@ getinfo(dataset, ...)
 info data
 }
 \description{
-Get information of an lgb.Dataset object
+Get information of an \code{lgb.Dataset} object
 }
 \details{
 The \code{name} field can be one of the following:
@@ -28,8 +28,8 @@ The \code{name} field can be one of the following:
 \itemize{
     \item \code{label}: label lightgbm learn from ;
     \item \code{weight}: to do a weight rescale ;
-    \item \code{group}: group size
-    \item \code{init_score}: initial score is the base prediction lightgbm will boost from ;
+    \item \code{group}: group size ;
+    \item \code{init_score}: initial score is the base prediction lightgbm will boost from.
 }
 }
 \examples{

@@ -39,12 +39,11 @@
 #' valids <- list(test = dtest)
 #' model <- lgb.train(params,
 #'                    dtrain,
-#'                    100,
+#'                    10,
 #'                    valids,
 #'                    min_data = 1,
 #'                    learning_rate = 1,
-#'                    early_stopping_rounds = 10)
-#'
+#'                    early_stopping_rounds = 5)
 #' @export
 lgb.train <- function(params = list(),
                       data,
@@ -196,7 +195,7 @@ lgb.train <- function(params = list(),
   }
 
   # Check for early stopping passed as parameter when adding early stopping callback
-  early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping")
+  early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change")
   if (any(names(params) %in% early_stop)) {
     if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
       callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose))

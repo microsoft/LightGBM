@@ -168,8 +168,8 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
     else:  # Linux, Darwin (macOS), etc.
         logger.info("Starting to compile with CMake.")
         # Apple Clang with OpenMP
-        if system() == 'Darwin' and not nomp and not (os.environ.get('CC', '').startswith('gcc')
-                                                      and os.environ.get('CXX', '').startswith('g++')):
+        if system() == 'Darwin' and not nomp and not (os.environ.get('CC', '').split('/')[-1].split('\\')[-1].startswith('gcc')
+                                                      and os.environ.get('CXX', '').split('/')[-1].split('\\')[-1].startswith('g++')):
             def get_cmake_opts(openmp_include_dir, openmp_library):
                 if openmp_include_dir and openmp_library:
                     return ['-DOpenMP_C_FLAGS=-Xpreprocessor -fopenmp -I{0}'.format(openmp_include_dir),

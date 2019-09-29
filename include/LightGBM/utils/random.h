@@ -29,7 +29,7 @@ class Random {
   /*!
   * \brief Constructor, with specific seed
   */
-  Random(int seed) {
+  explicit Random(int seed) {
     x = seed;
   }
   /*!

@@ -8,6 +8,7 @@
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/network.h>
+#include <LightGBM/utils/common.h>
 
 #include <string>
 #include <algorithm>
@@ -19,7 +20,6 @@
 
 #ifdef USE_SOCKET
 #include "socket_wrapper.hpp"
-#include <LightGBM/utils/common.h>
 #endif
 
 #ifdef USE_MPI

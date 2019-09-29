@@ -50,10 +50,12 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "pylint" ]]; then
+if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV pycodestyle pydocstyle
+    pip install --user cpplint
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
+    cpplint --filter=-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include || exit 0
     exit 0
 fi
 
@@ -66,7 +68,7 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
+conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)

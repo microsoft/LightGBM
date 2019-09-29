@@ -138,7 +138,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     }
   });
   // copy back
-  std::memcpy((void*)&data, output_buffer_.data(), size);
+  std::memcpy(reinterpret_cast<void*>(&data), output_buffer_.data(), size);
   // set global sumup info
   this->smaller_leaf_splits_->Init(std::get<1>(data), std::get<2>(data));
   // init global data count in leaf
@@ -167,7 +167,12 @@ template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->num_threads_, SplitInfo());
   std::vector<SplitInfo> larger_bests_per_thread(this->num_threads_, SplitInfo());
-
+  std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
+  std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
+  if (this->config_->feature_fraction_bynode < 1.0f) {
+    smaller_node_used_features = this->GetUsedFeatures(false);
+    larger_node_used_features = this->GetUsedFeatures(false);
+  }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
@@ -193,7 +198,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
       this->smaller_leaf_splits_->max_constraint(),
       &smaller_split);
     smaller_split.feature = real_feature_index;
-    if (smaller_split > smaller_bests_per_thread[tid]) {
+    if (smaller_split > smaller_bests_per_thread[tid] && smaller_node_used_features[feature_index]) {
       smaller_bests_per_thread[tid] = smaller_split;
     }
 
@@ -213,7 +218,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
       this->larger_leaf_splits_->max_constraint(),
       &larger_split);
     larger_split.feature = real_feature_index;
-    if (larger_split > larger_bests_per_thread[tid]) {
+    if (larger_split > larger_bests_per_thread[tid] && larger_node_used_features[feature_index]) {
       larger_bests_per_thread[tid] = larger_split;
     }
     OMP_LOOP_EX_END();

@@ -36,14 +36,12 @@
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
 #' params <- list(objective = "binary",
-#'               learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'               min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-#'               model <- lgb.train(params, dtrain, 20)
-#' model <- lgb.train(params, dtrain, 20)
+#'                learning_rate = 0.01, num_leaves = 63, max_depth = -1,
+#'                min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
+#' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_dt <- lgb.model.dt.tree(model)
 #'
-#' @importFrom magrittr %>%
 #' @importFrom data.table := data.table rbindlist
 #' @importFrom jsonlite fromJSON
 #' @export
@@ -65,10 +63,16 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   # Combine into single data.table fourth
   tree_dt <- data.table::rbindlist(tree_list, use.names = TRUE)
 
-  # Lookup sequence
-  tree_dt[, split_feature := Lookup(split_feature,
-                                    seq.int(from = 0, to = parsed_json_model$max_feature_idx),
-                                    parsed_json_model$feature_names)]
+  # Substitute feature index with the actual feature name
+
+  # Since the index comes from C++ (which is 0-indexed), be sure
+  # to add 1 (e.g. index 28 means the 29th feature in feature_names)
+  split_feature_indx <- tree_dt[, split_feature] + 1
+
+  # Get corresponding feature names. Positions in split_feature_indx
+  # which are NA will result in an NA feature name
+  feature_names <- parsed_json_model$feature_names[split_feature_indx]
+  tree_dt[, split_feature := feature_names]
 
   # Return tree
   return(tree_dt)
@@ -158,15 +162,5 @@ single.tree.parse <- function(lgb_tree) {
 
   # Return tree
   return(single_tree_dt)
-
-}
-
-#' @importFrom magrittr %>% extract inset
-Lookup <- function(key, key_lookup, value_lookup, missing = NA) {
-
-  # Match key by looked up key
-  match(key, key_lookup) %>%
-    magrittr::extract(value_lookup, .) %>%
-    magrittr::inset(. , is.na(.), missing)
 
 }

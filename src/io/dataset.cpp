@@ -15,6 +15,7 @@
 #include <sstream>
 #include <unordered_map>
 
+
 namespace LightGBM {
 
 const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
@@ -59,9 +60,9 @@ int GetConfilctCount(const std::vector<bool>& mark, const int* indices, int num_
   }
   return ret;
 }
-void MarkUsed(std::vector<bool>& mark, const int* indices, int num_indices) {
+void MarkUsed(std::vector<bool>* mark, const int* indices, int num_indices) {
   for (int i = 0; i < num_indices; ++i) {
-    mark[indices[i]] = true;
+    mark->at(indices[i]) = true;
   }
 }
 
@@ -115,7 +116,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
         features_in_group[gid].push_back(fidx);
         group_conflict_cnt[gid] += cnt;
         group_non_zero_cnt[gid] += cur_non_zero_cnt - cnt;
-        MarkUsed(conflict_marks[gid], sample_indices[fidx], num_per_col[fidx]);
+        MarkUsed(&conflict_marks[gid], sample_indices[fidx], num_per_col[fidx]);
         if (is_use_gpu) {
           group_num_bin[gid] += bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0);
         }
@@ -127,7 +128,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
       features_in_group.back().push_back(fidx);
       group_conflict_cnt.push_back(0);
       conflict_marks.emplace_back(total_sample_cnt, false);
-      MarkUsed(conflict_marks.back(), sample_indices[fidx], num_per_col[fidx]);
+      MarkUsed(&(conflict_marks.back()), sample_indices[fidx], num_per_col[fidx]);
       group_non_zero_cnt.emplace_back(cur_non_zero_cnt);
       if (is_use_gpu) {
         group_num_bin.push_back(1 + bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0));
@@ -137,7 +138,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
   return features_in_group;
 }
 
-std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
                                                   int** sample_indices,
                                                   const int* num_per_col,
                                                   size_t total_sample_cnt,
@@ -213,17 +214,18 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
 }
 
 void Dataset::Construct(
-  std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+  std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+  const std::vector<std::vector<double>>& forced_bins,
   int** sample_non_zero_indices,
   const int* num_per_col,
   size_t total_sample_cnt,
   const Config& io_config) {
-  num_total_features_ = static_cast<int>(bin_mappers.size());
+  num_total_features_ = static_cast<int>(bin_mappers->size());
   sparse_threshold_ = io_config.sparse_threshold;
   // get num_features
   std::vector<int> used_features;
-  for (int i = 0; i < static_cast<int>(bin_mappers.size()); ++i) {
-    if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trivial()) {
+  for (int i = 0; i < static_cast<int>(bin_mappers->size()); ++i) {
+    if (bin_mappers->at(i) != nullptr && !bin_mappers->at(i)->is_trivial()) {
       used_features.emplace_back(i);
     }
   }
@@ -233,7 +235,7 @@ void Dataset::Construct(
   auto features_in_group = NoGroup(used_features);
 
   if (io_config.enable_bundle && !used_features.empty()) {
-    features_in_group = FastFeatureBundling(bin_mappers,
+    features_in_group = FastFeatureBundling(*bin_mappers,
                                             sample_non_zero_indices, num_per_col, total_sample_cnt,
                                             used_features, io_config.max_conflict_rate,
                                             num_data_, io_config.min_data_in_leaf,
@@ -261,11 +263,11 @@ void Dataset::Construct(
       real_feature_idx_[cur_fidx] = real_fidx;
       feature2group_[cur_fidx] = i;
       feature2subfeature_[cur_fidx] = j;
-      cur_bin_mappers.emplace_back(bin_mappers[real_fidx].release());
+      cur_bin_mappers.emplace_back(bin_mappers->at(real_fidx).release());
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
-      new FeatureGroup(cur_cnt_features, cur_bin_mappers, num_data_, sparse_threshold_,
+      new FeatureGroup(cur_cnt_features, &cur_bin_mappers, num_data_, sparse_threshold_,
                        io_config.is_enable_sparse)));
   }
   feature_groups_.shrink_to_fit();
@@ -324,6 +326,7 @@ void Dataset::Construct(
     max_bin_by_feature_.resize(num_total_features_);
     max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(), io_config.max_bin_by_feature.end());
   }
+  forced_bin_bounds_ = forced_bins;
   max_bin_ = io_config.max_bin;
   min_data_in_bin_ = io_config.min_data_in_bin;
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
@@ -355,6 +358,9 @@ void Dataset::ResetConfig(const char* parameters) {
   }
   if (param.count("sparse_threshold") && io_config.sparse_threshold != sparse_threshold_) {
     Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
+  }
+  if (param.count("forcedbins_filename")) {
+    Log::Warning("Cannot change forced bins after constructed Dataset handle.");
   }
 
   if (!io_config.monotone_constraints.empty()) {
@@ -413,7 +419,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
     }
     feature_groups_.emplace_back(new FeatureGroup(
       dataset->feature_groups_[i]->num_feature_,
-      bin_mappers,
+      &bin_mappers,
       num_data_,
       dataset->feature_groups_[i]->is_sparse_));
   }
@@ -430,6 +436,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   group_feature_cnt_ = dataset->group_feature_cnt_;
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
+  forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {
@@ -446,7 +453,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
     bin_mappers.emplace_back(new BinMapper(*(dataset->FeatureBinMapper(i))));
     feature_groups_.emplace_back(new FeatureGroup(
       1,
-      bin_mappers,
+      &bin_mappers,
       num_data_,
       sparse_threshold_,
       is_enable_sparse));
@@ -484,6 +491,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   }
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
+  forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
 void Dataset::ReSize(data_size_t num_data) {
@@ -657,6 +665,10 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header += feature_names_[i].size() + sizeof(int);
     }
+    // size of forced bins
+    for (int i = 0; i < num_total_features_; ++i) {
+      size_of_header += forced_bin_bounds_[i].size() * sizeof(double) + sizeof(int);
+    }
     writer->Write(&size_of_header, sizeof(size_of_header));
     // write header
     writer->Write(&num_data_, sizeof(num_data_));
@@ -704,6 +716,15 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       writer->Write(&str_len, sizeof(int));
       const char* c_str = feature_names_[i].c_str();
       writer->Write(c_str, sizeof(char) * str_len);
+    }
+    // write forced bins
+    for (int i = 0; i < num_total_features_; ++i) {
+      int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
+      writer->Write(&num_bounds, sizeof(int));
+      
+      for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+        writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
+      }
     }
 
     // get size of meta data
@@ -754,6 +775,13 @@ void Dataset::DumpTextFile(const char* text_filename) {
   for (auto n : feature_names_) {
     fprintf(file, "%s, ", n.c_str());
   }
+  fprintf(file, "\nforced_bins: ");
+  for (int i = 0; i < num_total_features_; ++i) {
+    fprintf(file, "\nfeature %d: ", i);
+    for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+      fprintf(file, "%lf, ", forced_bin_bounds_[i][j]);
+    }
+  }
   std::vector<std::unique_ptr<BinIterator>> iterators;
   iterators.reserve(num_features_);
   for (int j = 0; j < num_features_; ++j) {
@@ -778,7 +806,7 @@ void Dataset::DumpTextFile(const char* text_filename) {
 void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                                   const data_size_t* data_indices, data_size_t num_data,
                                   int leaf_idx,
-                                  std::vector<std::unique_ptr<OrderedBin>>& ordered_bins,
+                                  std::vector<std::unique_ptr<OrderedBin>>* ordered_bins,
                                   const score_t* gradients, const score_t* hessians,
                                   score_t* ordered_gradients, score_t* ordered_hessians,
                                   bool is_constant_hessian,
@@ -830,9 +858,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset((void*)(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
-        if (ordered_bins[group] == nullptr) {
+        if (ordered_bins->at(group) == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             data_indices,
@@ -842,7 +870,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
             data_ptr);
         } else {
           // used ordered bin
-          ordered_bins[group]->ConstructHistogram(leaf_idx,
+          ordered_bins->at(group)->ConstructHistogram(leaf_idx,
                                                   gradients,
                                                   hessians,
                                                   data_ptr);
@@ -859,9 +887,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset((void*)(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
-        if (ordered_bins[group] == nullptr) {
+        if (ordered_bins->at(group) == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             data_indices,
@@ -870,7 +898,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
             data_ptr);
         } else {
           // used ordered bin
-          ordered_bins[group]->ConstructHistogram(leaf_idx,
+          ordered_bins->at(group)->ConstructHistogram(leaf_idx,
                                                   gradients,
                                                   data_ptr);
         }
@@ -892,9 +920,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset((void*)(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
-        if (ordered_bins[group] == nullptr) {
+        if (ordered_bins->at(group) == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             num_data,
@@ -903,7 +931,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
             data_ptr);
         } else {
           // used ordered bin
-          ordered_bins[group]->ConstructHistogram(leaf_idx,
+          ordered_bins->at(group)->ConstructHistogram(leaf_idx,
                                                   gradients,
                                                   hessians,
                                                   data_ptr);
@@ -920,9 +948,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset((void*)(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
-        if (ordered_bins[group] == nullptr) {
+        if (ordered_bins->at(group) == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             num_data,
@@ -930,7 +958,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
             data_ptr);
         } else {
           // used ordered bin
-          ordered_bins[group]->ConstructHistogram(leaf_idx,
+          ordered_bins->at(group)->ConstructHistogram(leaf_idx,
                                                   gradients,
                                                   data_ptr);
         }
@@ -967,32 +995,32 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hess
 }
 
 template<typename T>
-void PushVector(std::vector<T>& dest, const std::vector<T>& src) {
-  dest.reserve(dest.size() + src.size());
+void PushVector(std::vector<T>* dest, const std::vector<T>& src) {
+  dest->reserve(dest->size() + src.size());
   for (auto i : src) {
-    dest.push_back(i);
+    dest->push_back(i);
   }
 }
 
 template<typename T>
-void PushOffset(std::vector<T>& dest, const std::vector<T>& src, const T& offset) {
-  dest.reserve(dest.size() + src.size());
+void PushOffset(std::vector<T>* dest, const std::vector<T>& src, const T& offset) {
+  dest->reserve(dest->size() + src.size());
   for (auto i : src) {
-    dest.push_back(i + offset);
+    dest->push_back(i + offset);
   }
 }
 
 template<typename T>
-void PushClearIfEmpty(std::vector<T>& dest, const size_t dest_len, const std::vector<T>& src, const size_t src_len, const T& deflt) {
-  if (!dest.empty() && !src.empty()) {
+void PushClearIfEmpty(std::vector<T>* dest, const size_t dest_len, const std::vector<T>& src, const size_t src_len, const T& deflt) {
+  if (!dest->empty() && !src.empty()) {
     PushVector(dest, src);
-  } else if (!dest.empty() && src.empty()) {
+  } else if (!dest->empty() && src.empty()) {
     for (size_t i = 0; i < src_len; ++i) {
-      dest.push_back(deflt);
+      dest->push_back(deflt);
     }
-  } else if (dest.empty() && !src.empty()) {
+  } else if (dest->empty() && !src.empty()) {
     for (size_t i = 0; i < dest_len; ++i) {
-      dest.push_back(deflt);
+      dest->push_back(deflt);
     }
     PushVector(dest, src);
   }
@@ -1002,9 +1030,10 @@ void Dataset::addFeaturesFrom(Dataset* other) {
   if (other->num_data_ != num_data_) {
     throw std::runtime_error("Cannot add features from other Dataset with a different number of rows");
   }
-  PushVector(feature_names_, other->feature_names_);
-  PushVector(feature2subfeature_, other->feature2subfeature_);
-  PushVector(group_feature_cnt_, other->group_feature_cnt_);
+  PushVector(&feature_names_, other->feature_names_);
+  PushVector(&feature2subfeature_, other->feature2subfeature_);
+  PushVector(&group_feature_cnt_, other->group_feature_cnt_);
+  PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
   feature_groups_.reserve(other->feature_groups_.size());
   for (auto& fg : other->feature_groups_) {
     feature_groups_.emplace_back(new FeatureGroup(*fg));
@@ -1016,17 +1045,18 @@ void Dataset::addFeaturesFrom(Dataset* other) {
       used_feature_map_.push_back(-1);  // Unused feature.
     }
   }
-  PushOffset(real_feature_idx_, other->real_feature_idx_, num_total_features_);
-  PushOffset(feature2group_, other->feature2group_, num_groups_);
+  PushOffset(&real_feature_idx_, other->real_feature_idx_, num_total_features_);
+  PushOffset(&feature2group_, other->feature2group_, num_groups_);
   auto bin_offset = group_bin_boundaries_.back();
   // Skip the leading 0 when copying group_bin_boundaries.
   for (auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); ++i) {
     group_bin_boundaries_.push_back(*i + bin_offset);
   }
-  PushOffset(group_feature_start_, other->group_feature_start_, num_features_);
+  PushOffset(&group_feature_start_, other->group_feature_start_, num_features_);
 
-  PushClearIfEmpty(monotone_types_, num_total_features_, other->monotone_types_, other->num_total_features_, (int8_t)0);
-  PushClearIfEmpty(feature_penalty_, num_total_features_, other->feature_penalty_, other->num_total_features_, 1.0);
+  PushClearIfEmpty(&monotone_types_, num_total_features_, other->monotone_types_, other->num_total_features_, (int8_t)0);
+  PushClearIfEmpty(&feature_penalty_, num_total_features_, other->feature_penalty_, other->num_total_features_, 1.0);
+  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_, other->max_bin_by_feature_, other->num_total_features_, -1);
 
   num_features_ += other->num_features_;
   num_total_features_ += other->num_total_features_;

@@ -1,4 +1,4 @@
-﻿version: 2.2.4.{build}
+version: 2.3.1.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -30,7 +30,7 @@ install:
   - activate
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q -y conda
-  - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
+  - conda create -q -y -n test-env python=%PYTHON_VERSION% joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
   - activate test-env
   - set PATH=%CONDA_PREFIX%\Library\bin\graphviz;%PATH%  # temp graphviz hotfix
 
@@ -54,5 +54,5 @@ test_script:
         if (!$?) { $host.SetShouldExit(-1) }
       }  # run all examples
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
-  - conda install -q -y -n test-env ipywidgets notebook
+  - conda install -q -y -n test-env ipywidgets notebook pywin32
   - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks

@@ -1,0 +1,11 @@
+version: 2
+formats:
+  - pdf
+python:
+  version: 3
+  install:
+    - requirements: docs/requirements.txt
+sphinx:
+  builder: html
+  configuration: docs/conf.py
+  fail_on_warning: true

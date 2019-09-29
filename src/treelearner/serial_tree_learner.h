@@ -32,12 +32,14 @@
 using namespace json11;
 
 namespace LightGBM {
-
+/*! \brief forward declaration */
+class CostEfficientGradientBoosting;
 /*!
 * \brief Used for learning a tree by single machine
 */
 class SerialTreeLearner: public TreeLearner {
  public:
+  friend CostEfficientGradientBoosting;
   explicit SerialTreeLearner(const Config* config);
 
   ~SerialTreeLearner();
@@ -49,7 +51,7 @@ class SerialTreeLearner: public TreeLearner {
   void ResetConfig(const Config* config) override;
 
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
-              Json& forced_split_json) override;
+              const Json& forced_split_json) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
@@ -78,6 +80,7 @@ class SerialTreeLearner: public TreeLearner {
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
  protected:
+  virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
   * \brief Some initial works before training
   */
@@ -104,7 +107,7 @@ class SerialTreeLearner: public TreeLearner {
   virtual void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
-  virtual int32_t ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+  virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
                               int* right_leaf, int* cur_depth,
                               bool *aborted_last_force_split);
 
@@ -114,8 +117,6 @@ class SerialTreeLearner: public TreeLearner {
   * \return The number of data in the leaf_idx leaf
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
-
-  double CalculateOndemandCosts(int feature_index, int leaf_index);
 
   /*! \brief number of data */
   data_size_t num_data_;
@@ -133,6 +134,8 @@ class SerialTreeLearner: public TreeLearner {
   Random random_;
   /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
   std::vector<int8_t> is_feature_used_;
+  /*! \brief used feature indices in current tree */
+  std::vector<int> used_feature_indices_;
   /*! \brief pointer to histograms array of parent of current leaves */
   FeatureHistogram* parent_leaf_histogram_array_;
   /*! \brief pointer to histograms array of smaller leaf */
@@ -176,9 +179,7 @@ class SerialTreeLearner: public TreeLearner {
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
-
-  std::vector<bool> feature_used;
-  std::vector<uint32_t> feature_used_in_data;
+  std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

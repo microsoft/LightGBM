@@ -80,6 +80,8 @@ JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
 Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
 
+leaves (Go model applier): https://github.com/dmitryikh/leaves
+
 ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
 SHAP (model output explainer): https://github.com/slundberg/shap
@@ -91,6 +93,8 @@ ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
 Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
+
+Ruby gem: https://github.com/ankane/lightgbm
 
 Support
 -------

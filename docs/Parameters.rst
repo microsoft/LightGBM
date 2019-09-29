@@ -135,7 +135,7 @@ Core Parameters
 
    -  in ``dart``, it also affects on normalization weights of dropped trees
 
--  ``num_leaves`` :raw-html:`<a id="num_leaves" title="Permalink to this parameter" href="#num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, ``max_leaves``, ``max_leaf``, constraints: ``num_leaves > 1``
+-  ``num_leaves`` :raw-html:`<a id="num_leaves" title="Permalink to this parameter" href="#num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, ``max_leaves``, ``max_leaf``, constraints: ``1 < num_leaves <= 131072``
 
    -  max number of leaves in one tree
 
@@ -256,17 +256,27 @@ Learning Control Parameters
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
-   -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+   -  LightGBM will randomly select part of features on each iteration (tree) if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
    -  can be used to speed up training
 
    -  can be used to deal with over-fitting
 
+-  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature_bynode``, ``colsample_bynode``, constraints: ``0.0 < feature_fraction_bynode <= 1.0``
+
+   -  LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+
+   -  can be used to deal with over-fitting
+
+   -  **Note**: unlike ``feature_fraction``, this cannot speed up training
+
+   -  **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
+
 -  ``feature_fraction_seed`` :raw-html:`<a id="feature_fraction_seed" title="Permalink to this parameter" href="#feature_fraction_seed">&#x1F517;&#xFE0E;</a>`, default = ``2``, type = int
 
    -  random seed for ``feature_fraction``
 
--  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``
+-  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``, ``n_iter_no_change``
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
 
@@ -403,6 +413,14 @@ Learning Control Parameters
    -  **Note**: the forced split logic will be ignored, if the split makes gain worse
 
    -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+
+-  ``forcedbins_filename`` :raw-html:`<a id="forcedbins_filename" title="Permalink to this parameter" href="#forcedbins_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  path to a ``.json`` file that specifies bin upper bounds for some or all features
+
+   -  ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
+
+   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
 
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
 
@@ -650,6 +668,8 @@ IO Parameters
    -  **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
 
    -  **Note**: all negative values will be treated as **missing values**
+
+   -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
 
 -  ``predict_raw_score`` :raw-html:`<a id="predict_raw_score" title="Permalink to this parameter" href="#predict_raw_score">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
 

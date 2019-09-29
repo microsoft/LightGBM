@@ -31,16 +31,19 @@ params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
 model <- lgb.train(params,
                    dtrain,
-                   100,
+                   10,
                    valids,
                    min_data = 1,
                    learning_rate = 1,
-                   early_stopping_rounds = 10)
+                   early_stopping_rounds = 5)
+
+\dontrun{
 lgb.unloader(restore = FALSE, wipe = FALSE, envir = .GlobalEnv)
 rm(model, dtrain, dtest) # Not needed if wipe = TRUE
 gc() # Not needed if wipe = TRUE
 
 library(lightgbm)
 # Do whatever you want again with LightGBM without object clashing
+}
 
 }

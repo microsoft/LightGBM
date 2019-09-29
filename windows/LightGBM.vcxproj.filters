@@ -207,6 +207,9 @@
     <ClInclude Include="..\include\LightGBM\json11.hpp">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\treelearner\cost_effective_gradient_boosting.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
