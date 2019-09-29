@@ -6,8 +6,8 @@ git:
 os:
   - linux
   - osx
-dist: trusty
-osx_image: xcode10.2
+dist: bionic
+osx_image: xcode11
 
 env:
   global:  # default values
