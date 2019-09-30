@@ -43,3 +43,30 @@ test_that("Feature penalties work properly", {
   # Ensure that feature is not used when feature_penalty = 0
   expect_length(var_gain[[length(var_gain)]], 0)
 })
+
+expect_true(".PARAMETER_ALIASES() returns a named list", {
+  param_aliases <- .PARAMETER_ALIASES()
+  expect_true(is.list(param_aliases))
+  expect_true(is.character(names(param_aliases)))
+})
+
+expect_true("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
+  for (boosting_param in c("boosting", .PARAMETER_ALIASES()[["boosting"]])){
+    expect_warning({
+      result <- lightgbm(
+        data = train$data
+        , label = train$label
+        , num_leaves = 5
+        , learning_rate = 0.05
+        , nrounds = 5
+        , objective = "binary"
+        , metric = "binary_error"
+        , verbose = -1
+        , params = stats::setNames(
+          object = "dart"
+          , nm = boosting_param
+        )
+      )
+    }, regexp = "Early stopping is not available in 'dart' mode")
+  }
+})

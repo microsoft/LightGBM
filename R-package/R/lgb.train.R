@@ -220,8 +220,18 @@ lgb.train <- function(params = list(),
   # Did user pass parameters that indicate they want to use early stopping?
   using_early_stopping_via_args <- !is.null(early_stopping_rounds)
 
+  boosting_param_names <- c("boosting", .PARAMETER_ALIASES()[["boosting"]])
+  using_dart <- any(
+    sapply(
+      X = boosting_param_names
+      , FUN = function(param){
+        identical(params[[param]], 'dart')
+      }
+    )
+  )
+
   # Cannot use early stopping with 'dart' boosting
-  if (identical(params$boosting, "dart")){
+  if (using_dart){
     warning("Early stopping is not available in 'dart' mode.")
     using_early_stopping_via_args <- FALSE
 
