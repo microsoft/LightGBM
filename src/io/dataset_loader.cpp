@@ -4,13 +4,14 @@
  */
 #include <LightGBM/dataset_loader.h>
 
-#include <LightGBM/json11.hpp>
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
 #include <fstream>
+
+#include <LightGBM/json11.hpp>
 
 using namespace json11;
 
@@ -270,7 +271,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   return dataset.release();
 }
 
-Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices) {
+Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename,
+                                        int rank, int num_machines, int* num_global_data,
+                                        std::vector<data_size_t>* used_data_indices) {
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   auto reader = VirtualFileReader::Make(bin_filename);
   dataset->data_filename_ = data_filename;
@@ -470,13 +473,11 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     mem_ptr += sizeof(int);
     dataset->forced_bin_bounds_[i] = std::vector<double>();
     const double* tmp_ptr_forced_bounds = reinterpret_cast<const double*>(mem_ptr);
-    
     for (int j = 0; j < num_bounds; ++j) {
       double bound = tmp_ptr_forced_bounds[j];
       dataset->forced_bin_bounds_[i].push_back(bound);
     }
     mem_ptr += num_bounds * sizeof(double);
-   
   }
 
   // read size of meta data
@@ -661,7 +662,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
                                 total_sample_size, config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing, 
+                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing,
                                 forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
@@ -821,7 +822,9 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vect
   return out;
 }
 
-std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices) {
+std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filename, const Metadata& metadata,
+                                                               int rank, int num_machines, int* num_global_data,
+                                                               std::vector<data_size_t>* used_data_indices) {
   const data_size_t sample_cnt = static_cast<data_size_t>(config_.bin_construct_sample_cnt);
   TextReader<data_size_t> text_reader(filename, config_.header);
   std::vector<std::string> out_data;
@@ -867,7 +870,9 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
   return out_data;
 }
 
-void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data, const Parser* parser, Dataset* dataset) {
+void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
+                                                    const std::vector<std::string>& sample_data,
+                                                    const Parser* parser, Dataset* dataset) {
   std::vector<std::vector<double>> sample_values;
   std::vector<std::vector<int>> sample_indices;
   std::vector<std::pair<int, double>> oneline_features;
@@ -906,7 +911,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
   // get forced split
   std::string forced_bins_path = config_.forcedbins_filename;
-  std::vector<std::vector<double>> forced_bin_bounds = DatasetLoader::GetForcedBins(forced_bins_path, dataset->num_total_features_, 
+  std::vector<std::vector<double>> forced_bin_bounds = DatasetLoader::GetForcedBins(forced_bins_path,
+                                                                                    dataset->num_total_features_,
                                                                                     categorical_features_);
 
   // check the range of label_idx, weight_idx and group_idx
@@ -993,7 +999,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
                                 sample_data.size(), config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing, 
+                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing,
                                 forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
@@ -1149,7 +1155,8 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
 }
 
 /*! \brief Extract local features from file */
-void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
+void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser,
+                                            const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
   std::vector<double> init_score;
   if (predict_fun_ != nullptr) {
     init_score = std::vector<double>(dataset->num_data_ * num_class_);

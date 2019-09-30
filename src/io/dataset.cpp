@@ -721,7 +721,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     for (int i = 0; i < num_total_features_; ++i) {
       int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
       writer->Write(&num_bounds, sizeof(int));
-      
+
       for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
         writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
       }

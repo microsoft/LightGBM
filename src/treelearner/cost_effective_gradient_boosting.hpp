@@ -36,7 +36,7 @@ class CostEfficientGradientBoosting {
     is_feature_used_in_split_.clear();
     is_feature_used_in_split_.resize(train_data->num_features());
 
-    if (!tree_learner_->config_->cegb_penalty_feature_coupled.empty() 
+    if (!tree_learner_->config_->cegb_penalty_feature_coupled.empty()
         && tree_learner_->config_->cegb_penalty_feature_coupled.size() != static_cast<size_t>(train_data->num_total_features())) {
       Log::Fatal("cegb_penalty_feature_coupled should be the same size as feature number.");
     }
