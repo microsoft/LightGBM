@@ -594,7 +594,22 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
 
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
-  if (Network::num_machines() == 1) {
+
+  bool force_findbin_in_single_machine = false;
+  if (Network::num_machines() > 1) {
+    int total_num_feature = Network::GlobalSyncUpByMin(num_col);
+    size_t esimate_sync_size = BinMapper::SizeForSpecificBin(config_.max_bin) * total_num_feature;
+    const size_t max_buf_size = 2 << 31;
+    if (esimate_sync_size >= max_buf_size) {
+      if (config_.pre_partition) {
+        Log::Warning("Too many features for distributed model, it is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
+      } else {
+        force_findbin_in_single_machine = true;
+      }
+    }
+  }
+
+  if (Network::num_machines() == 1 || force_findbin_in_single_machine) {
     // if only one machine, find bin locally
     OMP_INIT_EX();
     #pragma omp parallel for schedule(guided)
@@ -933,8 +948,22 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf* sample_data.size()) / dataset->num_data_);
 
+  bool force_findbin_in_single_machine = false;
+  if (Network::num_machines() > 1) {
+    int total_num_feature = Network::GlobalSyncUpByMin(dataset->num_total_features_);
+    size_t esimate_sync_size = BinMapper::SizeForSpecificBin(config_.max_bin) * total_num_feature;
+    const size_t max_buf_size = 2 << 31;
+    if (esimate_sync_size >= max_buf_size) {
+      if (config_.pre_partition) {
+        Log::Warning("Too many features for distributed model, it is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
+      } else {
+        force_findbin_in_single_machine = true;
+      }
+    }
+  }
+
   // start find bins
-  if (num_machines == 1) {
+  if (num_machines == 1 || force_findbin_in_single_machine) {
     // if only one machine, find bin locally
     OMP_INIT_EX();
     #pragma omp parallel for schedule(guided)
