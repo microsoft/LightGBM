@@ -187,7 +187,7 @@ void Linkers::Construct() {
   listener_->Listen(incoming_cnt);
   std::thread listen_thread(&Linkers::ListenThread, this, incoming_cnt);
   const int connect_fail_retry_cnt = 20;
-  const int connect_fail_retry_first_delay_interval = 200; // 0.2 s
+  const int connect_fail_retry_first_delay_interval = 200;  // 0.2 s
   const float connect_fail_retry_delay_factor = 1.3f;
   // start connect
   for (auto it = need_connect.begin(); it != need_connect.end(); ++it) {
