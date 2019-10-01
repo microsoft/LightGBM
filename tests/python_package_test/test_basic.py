@@ -47,20 +47,17 @@ class TestBasic(unittest.TestCase):
             dump_svmlight_file(X_test, y_test, f)
         pred_from_file = bst.predict(tname)
         os.remove(tname)
-        self.assertEqual(len(pred_from_matr), len(pred_from_file))
         np.testing.assert_allclose(pred_from_matr, pred_from_file)
 
         # check saved model persistence
         bst = lgb.Booster(params, model_file="model.txt")
         pred_from_model_file = bst.predict(X_test)
-        self.assertEqual(len(pred_from_matr), len(pred_from_model_file))
         # we need to check the consistency of model file here, so test for exact equal
         np.testing.assert_array_equal(pred_from_matr, pred_from_model_file)
 
         # check early stopping is working. Make it stop very early, so the scores should be very close to zero
         pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
         pred_early_stopping = bst.predict(X_test, **pred_parameter)
-        self.assertEqual(len(pred_from_matr), len(pred_early_stopping))
         # scores likely to be different, but prediction should still be the same
         np.testing.assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping))
 
@@ -83,7 +80,7 @@ class TestBasic(unittest.TestCase):
                                           '../../examples/lambdarank/rank.train.query'))
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
         self.assertEqual(len(lgb_train.get_group()), 201)
-        subset = lgb_train.subset(list(lgb.compat.range_(10))).construct()
+        subset = lgb_train.subset(list(range(10))).construct()
         subset_group = subset.get_group()
         self.assertEqual(len(subset_group), 2)
         self.assertEqual(subset_group[0], 1)
@@ -114,6 +111,7 @@ class TestBasic(unittest.TestCase):
             d1.add_features_from(d2)
 
     def test_add_features_equal_data_on_alternating_used_unused(self):
+        self.maxDiff = None
         X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
         names = ['col_%d' % i for i in range(5)]
@@ -137,6 +135,7 @@ class TestBasic(unittest.TestCase):
             self.assertEqual(dtxt, d1txt)
 
     def test_add_features_same_booster_behaviour(self):
+        self.maxDiff = None
         X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
         names = ['col_%d' % i for i in range(5)]
@@ -273,9 +272,9 @@ class TestBasic(unittest.TestCase):
             with tempfile.NamedTemporaryFile() as f:
                 p2name = f.name
             booster2.save_model(p2name)
-            self.maxDiff = None
             with open(p2name, 'rt') as f:
                 p2txt = f.read()
+            self.maxDiff = None
             self.assertEqual(p1txt, p2txt)
 
     def test_consistent_state_for_dataset_fields(self):

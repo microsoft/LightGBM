@@ -70,7 +70,8 @@ def load_from_file(filename, reference):
     LIB.LGBM_DatasetCreateFromFile(
         c_str(filename),
         c_str('max_bin=15'),
-        ref, ctypes.byref(handle))
+        ref,
+        ctypes.byref(handle))
     print(LIB.LGBM_GetLastError())
     num_data = ctypes.c_long()
     LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
@@ -89,8 +90,9 @@ def load_from_csr(filename, reference):
     label = []
     with open(filename, 'r') as inp:
         for line in inp.readlines():
-            data.append([float(x) for x in line.split('\t')[1:]])
-            label.append(float(line.split('\t')[0]))
+            values = line.split('\t')
+            data.append([float(x) for x in values[1:]])
+            label.append(float(values[0]))
     mat = np.array(data)
     label = np.array(label, dtype=np.float32)
     csr = sparse.csr_matrix(mat)
@@ -125,8 +127,9 @@ def load_from_csc(filename, reference):
     label = []
     with open(filename, 'r') as inp:
         for line in inp.readlines():
-            data.append([float(x) for x in line.split('\t')[1:]])
-            label.append(float(line.split('\t')[0]))
+            values = line.split('\t')
+            data.append([float(x) for x in values[1:]])
+            label.append(float(values[0]))
     mat = np.array(data)
     label = np.array(label, dtype=np.float32)
     csr = sparse.csc_matrix(mat)
@@ -161,8 +164,9 @@ def load_from_mat(filename, reference):
     label = []
     with open(filename, 'r') as inp:
         for line in inp.readlines():
-            data.append([float(x) for x in line.split('\t')[1:]])
-            label.append(float(line.split('\t')[0]))
+            values = line.split('\t')
+            data.append([float(x) for x in values[1:]])
+            label.append(float(values[0]))
     mat = np.array(data)
     data = np.array(mat.reshape(mat.size), copy=False)
     label = np.array(label, dtype=np.float32)
