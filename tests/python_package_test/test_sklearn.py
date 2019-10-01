@@ -58,8 +58,8 @@ def mse(y_true, y_pred):
     return 'custom MSE', mean_squared_error(y_true, y_pred), False
 
 
-def binary_error(y_test, y_pred):
-    return np.mean((y_pred > 0.5) != y_test)
+def binary_error(y_true, y_pred):
+    return np.mean((y_pred > 0.5) != y_true)
 
 
 def multi_error(y_true, y_pred):
@@ -149,7 +149,7 @@ class TestSklearn(unittest.TestCase):
         params = {'boosting_type': ['dart', 'gbdt'],
                   'n_estimators': [5, 8],
                   'drop_rate': [0.05, 0.1]}
-        grid = GridSearchCV(lgb.LGBMRegressor(n_estimators=50), params, cv=3)
+        grid = GridSearchCV(lgb.LGBMRegressor(n_estimators=10), params, cv=3)
         grid.fit(X, y)
         self.assertIn(grid.best_params_['boosting_type'], ['dart', 'gbdt'])
         self.assertIn(grid.best_params_['n_estimators'], [5, 8])
