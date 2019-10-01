@@ -2,6 +2,7 @@ language: cpp
 
 git:
   submodules: true
+  depth: 1
 
 os:
   - linux
