@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError
+from .basic import Dataset, LightGBMError, CONFIG_ALIASES
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
@@ -489,15 +489,21 @@ class LGBMModel(_LGBMModelBase):
         evals_result = {}
         params = self.get_params()
         # user can set verbose with kwargs, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and self.silent:
+        if not any(verbose_alias in params for verbose_alias in CONFIG_ALIASES["verbosity"]) and self.silent:
             params['verbose'] = -1
         params.pop('silent', None)
         params.pop('importance_type', None)
         params.pop('n_estimators', None)
         params.pop('class_weight', None)
+        for alias in CONFIG_ALIASES['objective']:
+            params.pop(alias, None)
         if self._n_classes is not None and self._n_classes > 2:
+            for alias in CONFIG_ALIASES['num_class']:
+                params.pop(alias, None)
             params['num_class'] = self._n_classes
         if hasattr(self, '_eval_at'):
+            for alias in CONFIG_ALIASES['eval_at']:
+                params.pop(alias, None)
             params['eval_at'] = self._eval_at
         params['objective'] = self._objective
         if self._fobj:
@@ -518,7 +524,7 @@ class LGBMModel(_LGBMModelBase):
                 elif isinstance(self, LGBMRanker):
                     original_metric = "ndcg"
             # overwrite default metric by explicitly set metric
-            for metric_alias in ['metric', 'metrics', 'metric_types']:
+            for metric_alias in CONFIG_ALIASES["metric"]:
                 if metric_alias in params:
                     original_metric = params.pop(metric_alias)
             # concatenate metric from params (or default if not provided in params) and eval_metric
