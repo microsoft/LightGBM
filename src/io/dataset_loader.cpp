@@ -173,6 +173,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
                  "Please use an additional query file or pre-partition the data");
     }
   }
+  bool force_single_model = false;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
@@ -182,6 +183,14 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
+    if (num_machines > 1 && !config_.pre_partition) {
+      size_t ncols = parser->NumFeatures();
+      size_t expect_bin_mapper_size = BinMapper::SizeForSpecificBin(config_.max_bin);
+      if (ncols * expect_bin_mapper_size >= static_cast<size_t>(1 << 31)) {
+        force_single_model = true;
+        Log::Warning("Communication cost is too large for distributed dataset loading, using single mode instead.");
+      }
+    }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
     dataset->metadata_.Init(filename, initscore_file);
@@ -189,10 +198,19 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
-      // sample data
-      auto sample_data = SampleTextDataFromMemory(text_data);
-      // construct feature bin mappers
-      ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      // TODO: this is not effecient now, as it will load the data from file again
+      if (force_single_model) {
+        int tmp1;
+        std::vector<int> tmp2;
+        auto full_data = text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &tmp1, &tmp2);
+        auto sample_data = SampleTextDataFromMemory(full_data);
+        ConstructBinMappersFromTextData(0, 1, sample_data, parser.get(), dataset.get());
+      } else {
+        // sample data
+        auto sample_data = SampleTextDataFromMemory(text_data);
+        // construct feature bin mappers
+        ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      }
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       // extract features
@@ -206,11 +224,18 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
       } else {
         dataset->num_data_ = num_global_data;
       }
-      // construct feature bin mappers
-      ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      // TODO: this is not effecient now, as it will load the data from file again
+      if (force_single_model) {
+        int tmp1;
+        std::vector<int> tmp2;
+        auto full_sample_data = SampleTextDataFromFile(filename, dataset->metadata_, 0, 1, &tmp1, &tmp2);
+        ConstructBinMappersFromTextData(0, 1, full_sample_data, parser.get(), dataset.get());
+      } else {
+        // construct feature bin mappers
+        ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      }
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
-
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
@@ -595,21 +620,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
 
-  bool force_findbin_in_single_machine = false;
-  if (Network::num_machines() > 1) {
-    int total_num_feature = Network::GlobalSyncUpByMin(num_col);
-    size_t esimate_sync_size = static_cast<size_t>(BinMapper::SizeForSpecificBin(config_.max_bin)) * total_num_feature;
-    const size_t max_buf_size = 2 << 31;
-    if (esimate_sync_size >= max_buf_size) {
-      if (config_.pre_partition) {
-        Log::Warning("Too many features for distributed model, it is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
-      } else {
-        force_findbin_in_single_machine = true;
-      }
-    }
-  }
-
-  if (Network::num_machines() == 1 || force_findbin_in_single_machine) {
+  if (Network::num_machines() == 1) {
     // if only one machine, find bin locally
     OMP_INIT_EX();
     #pragma omp parallel for schedule(guided)
@@ -697,6 +708,10 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     max_bin = Network::GlobalSyncUpByMax(max_bin);
     // get size of bin mapper with max_bin size
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
+    size_t max_buf_size = 2 << 31;
+    if (static_cast<size_t>(type_size) * total_num_feature >= max_buf_size) {
+      Log::Fatal("Too many features for distributed model, buffer is not enough. It is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
+    }
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
     comm_size_t buffer_size = type_size * total_num_feature;
     CHECK(buffer_size >= 0);
@@ -948,22 +963,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config_.min_data_in_leaf* sample_data.size()) / dataset->num_data_);
 
-  bool force_findbin_in_single_machine = false;
-  if (Network::num_machines() > 1) {
-    int total_num_feature = Network::GlobalSyncUpByMin(dataset->num_total_features_);
-    size_t esimate_sync_size = static_cast<size_t>(BinMapper::SizeForSpecificBin(config_.max_bin)) * total_num_feature;
-    const size_t max_buf_size = 2 << 31;
-    if (esimate_sync_size >= max_buf_size) {
-      if (config_.pre_partition) {
-        Log::Warning("Too many features for distributed model, it is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
-      } else {
-        force_findbin_in_single_machine = true;
-      }
-    }
-  }
-
   // start find bins
-  if (num_machines == 1 || force_findbin_in_single_machine) {
+  if (num_machines == 1) {
     // if only one machine, find bin locally
     OMP_INIT_EX();
     #pragma omp parallel for schedule(guided)
@@ -1049,6 +1050,10 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
     max_bin = Network::GlobalSyncUpByMax(max_bin);
     // get size of bin mapper with max_bin size
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
+    size_t max_buf_size = 2 << 31;
+    if (static_cast<size_t>(type_size) * num_total_features >= max_buf_size) {
+      Log::Fatal("Too many features for distributed model, buffer is not enough. It is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
+    }
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
     comm_size_t buffer_size = type_size * num_total_features;
     CHECK(buffer_size >= 0);
