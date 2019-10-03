@@ -265,7 +265,7 @@ class Parser {
   virtual void ParseOneLine(const char* str,
                             std::vector<std::pair<int, double>>* out_features, double* out_label) const = 0;
 
-  virtual int TotalColumns() const = 0;
+  virtual int NumFeatures() const = 0;
 
   /*!
   * \brief Create a object of parser, will auto choose the format depend on file
@@ -290,6 +290,7 @@ class Dataset {
 
   void Construct(
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+    int num_total_features,
     const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
     const int* num_per_col,
