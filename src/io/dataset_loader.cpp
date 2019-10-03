@@ -202,7 +202,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
       if (force_single_model) {
         int tmp1;
         std::vector<int> tmp2;
-        auto full_data = text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &tmp1, &tmp2);
+        auto full_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &tmp1, &tmp2);
         auto sample_data = SampleTextDataFromMemory(full_data);
         ConstructBinMappersFromTextData(0, 1, sample_data, parser.get(), dataset.get());
       } else {
