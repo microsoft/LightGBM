@@ -598,7 +598,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
   bool force_findbin_in_single_machine = false;
   if (Network::num_machines() > 1) {
     int total_num_feature = Network::GlobalSyncUpByMin(num_col);
-    size_t esimate_sync_size = BinMapper::SizeForSpecificBin(config_.max_bin) * total_num_feature;
+    size_t esimate_sync_size = static_cast<size_t>(BinMapper::SizeForSpecificBin(config_.max_bin)) * total_num_feature;
     const size_t max_buf_size = 2 << 31;
     if (esimate_sync_size >= max_buf_size) {
       if (config_.pre_partition) {
@@ -951,7 +951,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   bool force_findbin_in_single_machine = false;
   if (Network::num_machines() > 1) {
     int total_num_feature = Network::GlobalSyncUpByMin(dataset->num_total_features_);
-    size_t esimate_sync_size = BinMapper::SizeForSpecificBin(config_.max_bin) * total_num_feature;
+    size_t esimate_sync_size = static_cast<size_t>(BinMapper::SizeForSpecificBin(config_.max_bin)) * total_num_feature;
     const size_t max_buf_size = 2 << 31;
     if (esimate_sync_size >= max_buf_size) {
       if (config_.pre_partition) {
