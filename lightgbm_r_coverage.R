@@ -1,5 +1,18 @@
 library(covr)
 
+.run_shell_command <- function(cmd, ...){
+    exit_code <- system(cmd, ...)
+    if (exit_code != 0){
+        stop(paste0("Command failed with exit code: ", exit_code))
+    }
+}
+res <- .run_shell_command(
+    "export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8; Rscript build_r.R"
+)
+if (res != 0){
+    stop("failed to build LightGBM")
+}
+
 path <- file.path(getwd(), "lighgbm_r")
 type <- c("tests", "vignettes", "examples", "all", "none")
 combine_types <- TRUE
@@ -89,7 +102,6 @@ coverage <- structure(
     , package = pkg
     , relative = relative_path
 )
-# coverage <- covr:::filter_non_package_files(coverage)
 print(coverage)
 
 covr::report(
