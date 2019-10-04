@@ -111,7 +111,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
       if (cnt >= 0 && cnt <= rest_max_cnt) {
         data_size_t rest_non_zero_data = static_cast<data_size_t>(
           static_cast<double>(cur_non_zero_cnt - cnt) * num_data / total_sample_cnt);
-        if (rest_non_zero_data < filter_cnt) { continue; }
+        if (rest_non_zero_data <= filter_cnt) { continue; }
         need_new_group = false;
         features_in_group[gid].push_back(fidx);
         group_conflict_cnt[gid] += cnt;
