@@ -186,7 +186,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
     if (num_machines > 1 && !config_.pre_partition) {
       size_t ncols = parser->NumFeatures();
       size_t expect_bin_mapper_size = BinMapper::SizeForSpecificBin(config_.max_bin);
-      if (ncols * expect_bin_mapper_size >= static_cast<size_t>(1 << 31)) {
+      if (ncols * expect_bin_mapper_size >= static_cast<size_t>(INT32_MAX)) {
         force_single_model = true;
         Log::Warning("Communication cost is too large for distributed dataset loading, using single mode instead.");
       }
@@ -708,7 +708,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     max_bin = Network::GlobalSyncUpByMax(max_bin);
     // get size of bin mapper with max_bin size
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
-    size_t max_buf_size = 2 << 31;
+    size_t max_buf_size = INT32_MAX;
     if (static_cast<size_t>(type_size) * total_num_feature >= max_buf_size) {
       Log::Fatal("Too many features for distributed model, buffer is not enough. It is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
     }
@@ -1050,7 +1050,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
     max_bin = Network::GlobalSyncUpByMax(max_bin);
     // get size of bin mapper with max_bin size
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
-    size_t max_buf_size = 2 << 31;
+    size_t max_buf_size = INT32_MAX;
     if (static_cast<size_t>(type_size) * num_total_features >= max_buf_size) {
       Log::Fatal("Too many features for distributed model, buffer is not enough. It is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
     }
