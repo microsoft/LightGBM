@@ -705,7 +705,7 @@ class HistogramPool {
       feature_metas_.resize(num_feature);
       for (int i = 0; i < num_feature; ++i) {
         feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
-        bin_cnt_over_features += feature_metas_[i].num_bin;
+        bin_cnt_over_features += static_cast<uint64_t>(feature_metas_[i].num_bin);
         feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
         feature_metas_[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
         feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
