@@ -370,7 +370,7 @@ Learning Control Parameters
 
    -  used for the categorical features
 
-   -  L2 regularization in categorcial split
+   -  L2 regularization in categorical split
 
 -  ``cat_smooth`` :raw-html:`<a id="cat_smooth" title="Permalink to this parameter" href="#cat_smooth">&#x1F517;&#xFE0E;</a>`, default = ``10.0``, type = double, constraints: ``cat_smooth >= 0.0``
 

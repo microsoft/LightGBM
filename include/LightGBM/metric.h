@@ -38,7 +38,7 @@ class Metric {
 
   virtual double factor_to_bigger_better() const = 0;
   /*!
-  * \brief Calcaluting and printing metric result
+  * \brief Calculating and printing metric result
   * \param score Current prediction score
   */
   virtual std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const = 0;

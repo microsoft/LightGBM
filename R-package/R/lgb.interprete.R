@@ -4,7 +4,7 @@
 #'
 #' @param model object of class \code{lgb.Booster}.
 #' @param data a matrix object or a dgCMatrix object.
-#' @param idxset a integer vector of indices of rows needed.
+#' @param idxset an integer vector of indices of rows needed.
 #' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration.
 #'
 #' @return
