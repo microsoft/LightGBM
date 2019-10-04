@@ -261,6 +261,19 @@ class Network {
     return global;
   }
 
+  template<class T>
+  static std::vector<T> GlobalArray(T local) {
+    std::vector<T> global(num_machines_, 0);
+    int type_size = sizeof(T);
+    std::vector<comm_size_t> block_start(num_machines_);
+    std::vector<comm_size_t> block_len(num_machines_, type_size);
+    for (int i = 1; i < num_machines_; ++i) {
+      block_start[i] = block_start[i - 1] + block_len[i - 1];
+    }
+    Allgather(reinterpret_cast<char*>(&local), block_start.data(), block_len.data(), reinterpret_cast<char*>(global.data()), type_size*num_machines_);
+    return global;
+  }
+
  private:
   static void AllgatherBruck(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
 

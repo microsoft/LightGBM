@@ -173,7 +173,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
                  "Please use an additional query file or pre-partition the data");
     }
   }
-  bool force_single_model = false;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
@@ -183,14 +182,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
-    if (num_machines > 1 && !config_.pre_partition) {
-      size_t ncols = parser->NumFeatures();
-      size_t expect_bin_mapper_size = BinMapper::SizeForSpecificBin(config_.max_bin);
-      if (ncols * expect_bin_mapper_size >= static_cast<size_t>(INT32_MAX)) {
-        force_single_model = true;
-        Log::Warning("Communication cost is too large for distributed dataset loading, using single mode instead.");
-      }
-    }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
     dataset->metadata_.Init(filename, initscore_file);
@@ -198,19 +189,10 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
-      // TODO: this is not effecient now, as it will load the data from file again
-      if (force_single_model) {
-        int tmp1;
-        std::vector<int> tmp2;
-        auto full_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &tmp1, &tmp2);
-        auto sample_data = SampleTextDataFromMemory(full_data);
-        ConstructBinMappersFromTextData(0, 1, sample_data, parser.get(), dataset.get());
-      } else {
-        // sample data
-        auto sample_data = SampleTextDataFromMemory(text_data);
-        // construct feature bin mappers
-        ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
-      }
+      // sample data
+      auto sample_data = SampleTextDataFromMemory(text_data);
+      // construct feature bin mappers
+      ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       // extract features
@@ -224,16 +206,8 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
       } else {
         dataset->num_data_ = num_global_data;
       }
-      // TODO: this is not effecient now, as it will load the data from file again
-      if (force_single_model) {
-        int tmp1;
-        std::vector<int> tmp2;
-        auto full_sample_data = SampleTextDataFromFile(filename, dataset->metadata_, 0, 1, &tmp1, &tmp2);
-        ConstructBinMappersFromTextData(0, 1, full_sample_data, parser.get(), dataset.get());
-      } else {
-        // construct feature bin mappers
-        ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
-      }
+      // construct feature bin mappers
+      ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       // extract features
@@ -698,48 +672,34 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       }
       OMP_LOOP_EX_END();
     }
-    OMP_THROW_EX();
-    int max_bin = 0;
+    comm_size_t self_buf_size = 0;
     for (int i = 0; i < len[rank]; ++i) {
-      if (bin_mappers[i] != nullptr) {
-        max_bin = std::max(max_bin, bin_mappers[i]->num_bin());
-      }
-    }
-    max_bin = Network::GlobalSyncUpByMax(max_bin);
-    // get size of bin mapper with max_bin size
-    int type_size = BinMapper::SizeForSpecificBin(max_bin);
-    size_t max_buf_size = INT32_MAX;
-    if (static_cast<size_t>(type_size) * total_num_feature >= max_buf_size) {
-      Log::Fatal("Too many features for distributed model, buffer is not enough. It is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
-    }
-    // since sizes of different feature may not be same, we expand all bin mapper to type_size
-    comm_size_t buffer_size = type_size * total_num_feature;
-    CHECK(buffer_size >= 0);
-    auto input_buffer = std::vector<char>(buffer_size);
-    auto output_buffer = std::vector<char>(buffer_size);
-
-    // find local feature bins and copy to buffer
-    #pragma omp parallel for schedule(guided)
-    for (int i = 0; i < len[rank]; ++i) {
-      OMP_LOOP_EX_BEGIN();
       if (ignore_features_.count(start[rank] + i) > 0) {
         continue;
       }
-      bin_mappers[i]->CopyTo(input_buffer.data() + i * type_size);
+      self_buf_size += static_cast<comm_size_t>(bin_mappers[i]->SizesInByte());
+    }
+    std::vector<char> input_buffer(self_buf_size);
+    auto cp_ptr = input_buffer.data();
+    for (int i = 0; i < len[rank]; ++i) {
+      if (ignore_features_.count(start[rank] + i) > 0) {
+        continue;
+      }
+      bin_mappers[i]->CopyTo(cp_ptr);
+      cp_ptr += bin_mappers[i]->SizesInByte();
       // free
       bin_mappers[i].reset(nullptr);
-      OMP_LOOP_EX_END();
     }
-    OMP_THROW_EX();
-    std::vector<comm_size_t> size_start(num_machines);
-    std::vector<comm_size_t> size_len(num_machines);
-    // convert to binary size
-    for (int i = 0; i < num_machines; ++i) {
-      size_start[i] = start[i] * static_cast<comm_size_t>(type_size);
-      size_len[i] = len[i] * static_cast<comm_size_t>(type_size);
+    std::vector<comm_size_t> size_len = Network::GlobalArray(self_buf_size);
+    std::vector<comm_size_t> size_start(num_machines, 0);
+    for (int i = 1; i < num_machines; ++i) {
+      size_start[i] = size_start[i - 1] + size_len[i - 1];
     }
+    comm_size_t total_buffer_size = size_start[num_machines - 1] + size_len[num_machines - 1];
+    std::vector<char> output_buffer(total_buffer_size);
     // gather global feature bin mappers
-    Network::Allgather(input_buffer.data(), size_start.data(), size_len.data(), output_buffer.data(), buffer_size);
+    Network::Allgather(input_buffer.data(), size_start.data(), size_len.data(), output_buffer.data(), total_buffer_size);
+    cp_ptr = output_buffer.data();
     // restore features bins from buffer
     for (int i = 0; i < total_num_feature; ++i) {
       if (ignore_features_.count(i) > 0) {
@@ -747,7 +707,8 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
         continue;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->CopyFrom(output_buffer.data() + i * type_size);
+      bin_mappers[i]->CopyFrom(cp_ptr);
+      cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
@@ -1041,47 +1002,34 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    int max_bin = 0;
+    comm_size_t self_buf_size = 0;
     for (int i = 0; i < len[rank]; ++i) {
-      if (bin_mappers[i] != nullptr) {
-        max_bin = std::max(max_bin, bin_mappers[i]->num_bin());
-      }
-    }
-    max_bin = Network::GlobalSyncUpByMax(max_bin);
-    // get size of bin mapper with max_bin size
-    int type_size = BinMapper::SizeForSpecificBin(max_bin);
-    size_t max_buf_size = INT32_MAX;
-    if (static_cast<size_t>(type_size) * num_total_features >= max_buf_size) {
-      Log::Fatal("Too many features for distributed model, buffer is not enough. It is better to pass categorical feature directly instead of sparse high dimensional feature vectors.");
-    }
-    // since sizes of different feature may not be same, we expand all bin mapper to type_size
-    comm_size_t buffer_size = type_size * num_total_features;
-    CHECK(buffer_size >= 0);
-    auto input_buffer = std::vector<char>(buffer_size);
-    auto output_buffer = std::vector<char>(buffer_size);
-
-    // find local feature bins and copy to buffer
-    #pragma omp parallel for schedule(guided)
-    for (int i = 0; i < len[rank]; ++i) {
-      OMP_LOOP_EX_BEGIN();
       if (ignore_features_.count(start[rank] + i) > 0) {
         continue;
       }
-      bin_mappers[i]->CopyTo(input_buffer.data() + i * type_size);
+      self_buf_size += static_cast<comm_size_t>(bin_mappers[i]->SizesInByte());
+    }
+    std::vector<char> input_buffer(self_buf_size);
+    auto cp_ptr = input_buffer.data();
+    for (int i = 0; i < len[rank]; ++i) {
+      if (ignore_features_.count(start[rank] + i) > 0) {
+        continue;
+      }
+      bin_mappers[i]->CopyTo(cp_ptr);
+      cp_ptr += bin_mappers[i]->SizesInByte();
       // free
       bin_mappers[i].reset(nullptr);
-      OMP_LOOP_EX_END();
     }
-    OMP_THROW_EX();
-    std::vector<comm_size_t> size_start(num_machines);
-    std::vector<comm_size_t> size_len(num_machines);
-    // convert to binary size
-    for (int i = 0; i < num_machines; ++i) {
-      size_start[i] = start[i] * static_cast<comm_size_t>(type_size);
-      size_len[i] = len[i] * static_cast<comm_size_t>(type_size);
+    std::vector<comm_size_t> size_len = Network::GlobalArray(self_buf_size);
+    std::vector<comm_size_t> size_start(num_machines, 0);
+    for (int i = 1; i < num_machines; ++i) {
+      size_start[i] = size_start[i - 1] + size_len[i - 1];
     }
+    comm_size_t total_buffer_size = size_start[num_machines - 1] + size_len[num_machines - 1];
+    std::vector<char> output_buffer(total_buffer_size);
     // gather global feature bin mappers
-    Network::Allgather(input_buffer.data(), size_start.data(), size_len.data(), output_buffer.data(), buffer_size);
+    Network::Allgather(input_buffer.data(), size_start.data(), size_len.data(), output_buffer.data(), total_buffer_size);
+    cp_ptr = output_buffer.data();
     // restore features bins from buffer
     for (int i = 0; i < num_total_features; ++i) {
       if (ignore_features_.count(i) > 0) {
@@ -1089,7 +1037,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
         continue;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->CopyFrom(output_buffer.data() + i * type_size);
+      bin_mappers[i]->CopyFrom(cp_ptr);
+      cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
   sample_values.clear();
