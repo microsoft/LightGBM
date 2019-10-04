@@ -19,7 +19,9 @@
 
 namespace LightGBM {
 
-  BinMapper::BinMapper() {
+  BinMapper::BinMapper(): num_bin_(1), is_trivial_(true), bin_type_(BinType::NumericalBin) {
+    bin_upper_bound_.clear();
+    bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
   }
 
   // deep copy function for BinMapper
