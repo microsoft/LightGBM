@@ -364,7 +364,11 @@ class Dataset {
     return group_bin_boundaries_[group_idx];
   }
   inline uint64_t NumTotalBin() const {
-    return group_bin_boundaries_.back();
+    uint64_t ret = 0;
+    for (int i = 0; i < num_features_; ++i) {
+      ret += FeatureNumBin(i);
+    }
+    return ret;
   }
   inline std::vector<int> ValidFeatureIndices() const {
     std::vector<int> ret;
