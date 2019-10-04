@@ -366,7 +366,7 @@ class Dataset {
   inline uint64_t NumTotalBin() const {
     uint64_t ret = 0;
     for (int i = 0; i < num_features_; ++i) {
-      ret += FeatureNumBin(i);
+      ret += static_cast<uint64_t>(FeatureNumBin(i));
     }
     return ret;
   }
