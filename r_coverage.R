@@ -6,14 +6,8 @@ library(covr)
         stop(paste0("Command failed with exit code: ", exit_code))
     }
 }
-res <- .run_shell_command(
-    "export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8; Rscript build_r.R"
-)
-if (res != 0){
-    stop("failed to build LightGBM")
-}
 
-path <- file.path(getwd(), "lighgbm_r")
+path <- file.path(getwd(), "lightgbm_r")
 type <- c("tests", "vignettes", "examples", "all", "none")
 combine_types <- TRUE
 relative_path <- TRUE
@@ -22,6 +16,12 @@ clean <- TRUE
 line_exclusions <- NULL
 function_exclusions <- NULL
 code <- character()
+
+if (!dir.exists(path)){
+    .run_shell_command(
+        "export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8; Rscript build_r.R"
+    )
+}
 
 pkg <- covr:::as_package(path)
 type <- "tests"
