@@ -147,7 +147,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
                                xlim=None, ylim=None,
                                title='Split value histogram for feature with @index/name@ @feature@',
                                xlabel='Feature split value', ylabel='Count',
-                               figsize=None, grid=True, **kwargs):
+                               figsize=None, dpi=None, grid=True, **kwargs):
     """Plot split value histogram for the specified feature of the model.
 
     Parameters
@@ -186,6 +186,8 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         If None, title is disabled.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
+    dpi : int or None, optional (default=None)
+        Resolution of the figure.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
     **kwargs
@@ -217,7 +219,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     if ax is None:
         if figsize is not None:
             _check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
+        _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     ax.bar(centred, hist, align='center', width=width, **kwargs)
 
