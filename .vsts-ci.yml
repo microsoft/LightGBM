@@ -116,10 +116,10 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.5
+        PYTHON_VERSION: 2.7
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 2.7
+        PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.6
