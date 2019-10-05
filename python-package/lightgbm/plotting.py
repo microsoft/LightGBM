@@ -31,7 +31,7 @@ def plot_importance(booster, ax=None, height=0.2,
                     xlim=None, ylim=None, title='Feature importance',
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
-                    ignore_zero=True, figsize=None, grid=True,
+                    ignore_zero=True, figsize=None,dpi=None, grid=True,
                     precision=3, **kwargs):
     """Plot model's feature importances.
 
@@ -68,6 +68,8 @@ def plot_importance(booster, ax=None, height=0.2,
         Whether to ignore features with zero importance.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
+    dpi : int or None, optional (default=None)
+        Resolution of the figure.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
     precision : int or None, optional (default=3)
@@ -106,7 +108,7 @@ def plot_importance(booster, ax=None, height=0.2,
     if ax is None:
         if figsize is not None:
             _check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
+        _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     ylocs = np.arange(len(values))
     ax.barh(ylocs, values, align='center', height=height, **kwargs)
