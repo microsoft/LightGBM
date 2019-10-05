@@ -287,7 +287,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
     dpi : int or None, optional (default=None)
-        Resolution of the figure.    
+        Resolution of the figure.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
 
@@ -568,7 +568,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
     dpi : int or None, optional (default=None)
-        Resolution of the figure.    
+        Resolution of the figure.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items:
