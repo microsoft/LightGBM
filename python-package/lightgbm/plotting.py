@@ -251,7 +251,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
                 ax=None, xlim=None, ylim=None,
                 title='Metric during training',
                 xlabel='Iterations', ylabel='auto',
-                figsize=None, grid=True):
+                figsize=None, dpi=None, grid=True):
     """Plot one metric during training.
 
     Parameters
@@ -284,6 +284,8 @@ def plot_metric(booster, metric=None, dataset_names=None,
         If None, title is disabled.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
+    dpi : int or None, optional (default=None)
+        Resolution of the figure.    
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
 
@@ -312,7 +314,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     if ax is None:
         if figsize is not None:
             _check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
+        _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     if dataset_names is None:
         dataset_names = iter(eval_results.keys())
@@ -542,7 +544,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     return graph
 
 
-def plot_tree(booster, ax=None, tree_index=0, figsize=None,
+def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
               old_graph_attr=None, old_node_attr=None, old_edge_attr=None,
               show_info=None, precision=3, **kwargs):
     """Plot specified tree.
@@ -563,6 +565,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         The index of a target tree to plot.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
+    dpi : int or None, optional (default=None)
+        Resolution of the figure.    
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items:
@@ -597,7 +601,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     if ax is None:
         if figsize is not None:
             _check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
+        _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     graph = create_tree_digraph(booster=booster, tree_index=tree_index,
                                 show_info=show_info, precision=precision, **kwargs)
