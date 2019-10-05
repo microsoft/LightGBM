@@ -31,7 +31,7 @@ def plot_importance(booster, ax=None, height=0.2,
                     xlim=None, ylim=None, title='Feature importance',
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
-                    ignore_zero=True, figsize=None,dpi=None, grid=True,
+                    ignore_zero=True, figsize=None, dpi=None, grid=True,
                     precision=3, **kwargs):
     """Plot model's feature importances.
 
