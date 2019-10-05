@@ -116,13 +116,13 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 2.7
+        PYTHON_VERSION: 3.7
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.5
+        PYTHON_VERSION: 2.7
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.6
+        PYTHON_VERSION: 3.5
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Enable conda
