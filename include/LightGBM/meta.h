@@ -20,7 +20,7 @@ typedef int32_t data_size_t;
 // Enable following macro to use double for score_t
 // #define SCORE_T_USE_DOUBLE
 
-// Enable following Macao to use double for label_t
+// Enable following macro to use double for label_t
 // #define LABEL_T_USE_DOUBLE
 
 /*! \brief Type of score, and gradients */
