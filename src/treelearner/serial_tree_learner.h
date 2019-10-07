@@ -127,11 +127,6 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
 
-//  static double CalculateOndemandCosts(
-//      int feature_index, int leaf_index, const Dataset *train_data_,
-//      std::unique_ptr<DataPartition> &data_partition_,
-//      const std::vector<uint32_t> &feature_used_in_data, const Config *config_);
-
   /*! \brief number of data */
   data_size_t num_data_;
   /*! \brief number of features */
