@@ -33,7 +33,7 @@ After installing the drivers you need to restart the server.
 
 After about 30 seconds, the server should be up again.
 
-If you are using a AMD GPU, you should download and install the `AMDGPU-Pro`_ driver and also install package ``ocl-icd-libopencl1`` and ``ocl-icd-opencl-dev``.
+If you are using an AMD GPU, you should download and install the `AMDGPU-Pro`_ driver and also install package ``ocl-icd-libopencl1`` and ``ocl-icd-opencl-dev``.
 
 Build LightGBM
 --------------

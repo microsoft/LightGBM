@@ -832,7 +832,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
- * \brief Make prediction for an new dataset. This method re-uses the internal predictor structure
+ * \brief Make prediction for a new dataset. This method re-uses the internal predictor structure
  *        from previous calls and is optimized for single row invocation.
  * \note
  * You should pre-allocate memory for ``out_result``:

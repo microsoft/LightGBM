@@ -23,7 +23,7 @@ class BruckMap {
  public:
   /*! \brief The communication times for one all gather operation */
   int k;
-  /*! \brief in_ranks[i] means the incomming rank on i-th communication */
+  /*! \brief in_ranks[i] means the incoming rank on i-th communication */
   std::vector<int> in_ranks;
   /*! \brief out_ranks[i] means the out rank on i-th communication */
   std::vector<int> out_ranks;
@@ -55,7 +55,7 @@ enum RecursiveHalvingNodeType {
 /*! \brief Network structure for recursive halving algorithm */
 class RecursiveHalvingMap {
  public:
-  /*! \brief Communication times for one recursize halving algorithm  */
+  /*! \brief Communication times for one recursive halving algorithm  */
   int k;
   /*! \brief Node type */
   RecursiveHalvingNodeType type;

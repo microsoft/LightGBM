@@ -60,5 +60,5 @@ List of callback functions that are applied at each iteration.}
 }}
 }
 \description{
-Simple interface for training an LightGBM model.
+Simple interface for training a LightGBM model.
 }
