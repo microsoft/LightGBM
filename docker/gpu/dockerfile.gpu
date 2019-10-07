@@ -69,9 +69,9 @@ ARG CONDA_DIR=/opt/conda
 ENV PATH $CONDA_DIR/bin:$PATH
 
 # Install miniconda
-RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
+RUN echo "export PATH=$CONDA_DIR/bin:"'$PATH' > /etc/profile.d/conda.sh && \
     wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+    /bin/bash ~/miniconda.sh -b -p $CONDA_DIR && \
     rm ~/miniconda.sh
 
 RUN conda config --set always_yes yes --set changeps1 no && \
@@ -112,8 +112,8 @@ RUN apt-get autoremove -y && apt-get clean && \
 # password key: --NotebookApp.password='sha1:98b767162d34:8da1bc3c75a0f29145769edc977375a373407824'
 
 # Add a notebook profile.
-RUN mkdir -p -m 700 /root/.jupyter/ && \
-    echo "c.NotebookApp.ip = '*'" >> /root/.jupyter/jupyter_notebook_config.py
+RUN mkdir -p -m 700 ~/.jupyter/ && \
+    echo "c.NotebookApp.ip = '*'" >> ~/.jupyter/jupyter_notebook_config.py
 
 VOLUME /home
 WORKDIR /home

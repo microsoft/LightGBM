@@ -1,5 +1,8 @@
 FROM ubuntu:16.04
 
+ARG CONDA_DIR=/opt/conda
+ENV PATH $CONDA_DIR/bin:$PATH
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         cmake \
@@ -12,8 +15,8 @@ RUN apt-get update && \
 # python-package
     # miniconda
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    /bin/bash Miniconda3-latest-Linux-x86_64.sh -f -b -p /opt/conda && \
-    export PATH="/opt/conda/bin:$PATH" && \
+    /bin/bash Miniconda3-latest-Linux-x86_64.sh -f -b -p $CONDA_DIR && \
+    export PATH="$CONDA_DIR/bin:$PATH" && \
     conda config --set always_yes yes --set changeps1 no && \
     # lightgbm
     conda install -q -y numpy scipy scikit-learn pandas && \
@@ -24,5 +27,3 @@ RUN apt-get update && \
     apt-get autoremove -y && apt-get clean && \
     conda clean -a -y && \
     rm -rf /usr/local/src/*
-
-ENV PATH /opt/conda/bin:$PATH
