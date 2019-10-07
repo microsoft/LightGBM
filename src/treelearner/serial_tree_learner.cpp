@@ -82,7 +82,6 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     constraints_per_leaf_.resize(config_->num_leaves,
                                  LeafConstraints());
   }
-  splits_per_leaf_.resize(config_->num_leaves*train_data_->num_features());
 
   // get ordered bin
   train_data_->CreateOrderedBins(&ordered_bins_);
