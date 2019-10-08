@@ -716,7 +716,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, num_per_col, total_sample_size, config_);
+  dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, num_per_col, num_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
@@ -892,7 +892,6 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   dataset->num_total_features_ = std::max(static_cast<int>(sample_values.size()), parser->NumFeatures());
   if (num_machines > 1) {
     dataset->num_total_features_ = Network::GlobalSyncUpByMax(dataset->num_total_features_);
-    sample_indices.resize(dataset->num_total_features_);
   }
   if (!feature_names_.empty()) {
     CHECK(dataset->num_total_features_ == static_cast<int>(feature_names_.size()));
@@ -1042,7 +1041,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   }
   sample_values.clear();
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
-                     Common::VectorSize<int>(sample_indices).data(), sample_data.size(), config_);
+                     Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
 }
 
 /*! \brief Extract local features from memory */
