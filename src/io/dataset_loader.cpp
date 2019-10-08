@@ -892,6 +892,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   dataset->num_total_features_ = std::max(static_cast<int>(sample_values.size()), parser->NumFeatures());
   if (num_machines > 1) {
     dataset->num_total_features_ = Network::GlobalSyncUpByMax(dataset->num_total_features_);
+    sample_indices.resize(dataset->num_total_features_);
   }
   if (!feature_names_.empty()) {
     CHECK(dataset->num_total_features_ == static_cast<int>(feature_names_.size()));
