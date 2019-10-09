@@ -112,7 +112,10 @@ std::vector<std::string> ReadKLineFromFile(const char* filename, bool header, in
   for (int i = 0; i < k; ++i) {
     if (!tmp_file.eof()) {
       GetLine(&tmp_file, &cur_line, reader.get(), &buffer, buffer_size);
-      ret.push_back(cur_line);
+      cur_line = Common::Trim(cur_line);
+      if (!cur_line.empty()) {
+        ret.push_back(cur_line);
+      }
     } else {
       break;
     }
@@ -142,32 +145,32 @@ DataType GetDataType(const std::vector<std::string>& lines, int* num_col) {
     } else if (comma_cnt > 0) {
       type = DataType::CSV;
     }
-  }
-  int comma_cnt2 = 0;
-  int tab_cnt2 = 0;
-  int colon_cnt2 = 0;
-  GetStatistic(lines[1].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
-  if (colon_cnt > 0 || colon_cnt2 > 0) {
-    type = DataType::LIBSVM;
-  } else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
-    type = DataType::TSV;
-  } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
-    type = DataType::CSV;
-  }
-  if (type == DataType::TSV || type == DataType::CSV) {
-    // valid the type
-    for (size_t i = 2; i < lines.size(); ++i) {
-      GetStatistic(lines[i].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
-      if (type == DataType::TSV && tab_cnt2 != tab_cnt) {
-        type = DataType::INVALID;
-        break;
-      } else if (type == DataType::CSV && comma_cnt != comma_cnt2) {
-        type = DataType::INVALID;
-        break;
+  } else if (lines.size() > 1) {
+    int comma_cnt2 = 0;
+    int tab_cnt2 = 0;
+    int colon_cnt2 = 0;
+    GetStatistic(lines[1].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
+    if (colon_cnt > 0 || colon_cnt2 > 0) {
+      type = DataType::LIBSVM;
+    } else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
+      type = DataType::TSV;
+    } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
+      type = DataType::CSV;
+    }
+    if (type == DataType::TSV || type == DataType::CSV) {
+      // valid the type
+      for (size_t i = 2; i < lines.size(); ++i) {
+        GetStatistic(lines[i].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
+        if (type == DataType::TSV && tab_cnt2 != tab_cnt) {
+          type = DataType::INVALID;
+          break;
+        } else if (type == DataType::CSV && comma_cnt != comma_cnt2) {
+          type = DataType::INVALID;
+          break;
+        }
       }
     }
   }
-
   if (type == DataType::LIBSVM) {
     int max_col_idx = 0;
     for (size_t i = 0; i < lines.size(); ++i) {
