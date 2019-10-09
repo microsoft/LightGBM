@@ -75,7 +75,7 @@ version <- gsub(
 )
 tarball <- file.path(getwd(), sprintf("lightgbm_%s.tar.gz", version))
 
-cmd <- sprintf("R CMD INSTALL %s --no-multiarch --install-tests --with-keep.source --with-keep.parse.data", tarball)
+cmd <- sprintf("R CMD INSTALL %s --no-multiarch", tarball)
 .run_shell_command(cmd)
 
 # Run R CMD CHECK
