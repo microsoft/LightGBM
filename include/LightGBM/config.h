@@ -551,7 +551,7 @@ struct Config {
   // desc = set this to ``false`` to disable the special handle of missing value
   bool use_missing = true;
 
-  // desc = set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrices)
+  // desc = set this to ``true`` to treat all zero as missing values (including the unshown values in LibSVM / sparse matrices)
   // desc = set this to ``false`` to use ``na`` for representing missing values
   bool zero_as_missing = false;
 

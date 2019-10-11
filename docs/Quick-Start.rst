@@ -18,7 +18,7 @@ Follow the `Installation Guide <./Installation-Guide.rst>`__ to install LightGBM
 Training Data Format
 --------------------
 
-LightGBM supports input data files with `CSV`_, `TSV`_ and `LibSVM`_ formats.
+LightGBM supports input data files with `CSV`_, `TSV`_ and `LibSVM`_ (zero-based) formats.
 
 Files could be both with and without `headers <./Parameters.rst#header>`__.
 
