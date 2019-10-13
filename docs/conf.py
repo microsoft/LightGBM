@@ -229,7 +229,6 @@ def generate_r_docs(app):
         r-devtools=1.13.6=r351h6115d3f_0 \
         r-data.table=1.11.4=r351h96ca727_0 \
         r-jsonlite=1.5=r351h96ca727_0 \
-        r-magrittr=1.5=r351h6115d3f_4 \
         r-matrix=1.2_14=r351h96ca727_0 \
         r-testthat=2.0.0=r351h29659fb_0 \
         cmake=3.14.0=h52cb24c_0

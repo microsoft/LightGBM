@@ -31,7 +31,7 @@ class Tree {
   explicit Tree(int max_leaves);
 
   /*!
-  * \brief Construtor, from a string
+  * \brief Constructor, from a string
   * \param str Model string
   * \param used_len used count of str
   */
@@ -103,7 +103,7 @@ class Tree {
                             double* score) const;
 
   /*!
-  * \brief Adding prediction value of this tree model to scorese
+  * \brief Adding prediction value of this tree model to scores
   * \param data The dataset
   * \param used_data_indices Indices of used data
   * \param num_data Number of total data
@@ -143,7 +143,7 @@ class Tree {
 
   /*!
   * \brief Shrinkage for the tree's output
-  *        shrinkage rate (a.k.a learning rate) is used to tune the traning process
+  *        shrinkage rate (a.k.a learning rate) is used to tune the training process
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
@@ -334,7 +334,7 @@ class Tree {
     double one_fraction;
 
     // note that pweight is included for convenience and is not tied with the other attributes,
-    // the pweight of the i'th path element is the permuation weight of paths with i-1 ones in them
+    // the pweight of the i'th path element is the permutation weight of paths with i-1 ones in them
     double pweight;
 
     PathElement() {}
@@ -354,12 +354,12 @@ class Tree {
   /*! \brief Undo a previous extension of the decision path for TreeSHAP*/
   static void UnwindPath(PathElement *unique_path, int unique_depth, int path_index);
 
-  /*! determine what the total permuation weight would be if we unwound a previous extension in the decision path*/
+  /*! determine what the total permutation weight would be if we unwound a previous extension in the decision path*/
   static double UnwoundPathSum(const PathElement *unique_path, int unique_depth, int path_index);
 
   /*! \brief Number of max leaves*/
   int max_leaves_;
-  /*! \brief Number of current levas*/
+  /*! \brief Number of current leaves*/
   int num_leaves_;
   // following values used for non-leaf node
   /*! \brief A non-leaf node's left child */
@@ -379,7 +379,7 @@ class Tree {
   std::vector<uint32_t> cat_threshold_inner_;
   std::vector<int> cat_boundaries_;
   std::vector<uint32_t> cat_threshold_;
-  /*! \brief Store the information for categorical feature handle and mising value handle. */
+  /*! \brief Store the information for categorical feature handle and missing value handle. */
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
   std::vector<float> split_gain_;

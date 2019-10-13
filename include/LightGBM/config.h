@@ -371,7 +371,7 @@ struct Config {
 
   // check = >=0.0
   // desc = used for the categorical features
-  // desc = L2 regularization in categorcial split
+  // desc = L2 regularization in categorical split
   double cat_l2 = 10.0;
 
   // check = >=0.0

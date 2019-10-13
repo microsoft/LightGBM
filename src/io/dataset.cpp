@@ -215,12 +215,14 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
 
 void Dataset::Construct(
   std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+  int num_total_features,
   const std::vector<std::vector<double>>& forced_bins,
   int** sample_non_zero_indices,
   const int* num_per_col,
   size_t total_sample_cnt,
   const Config& io_config) {
-  num_total_features_ = static_cast<int>(bin_mappers->size());
+  num_total_features_ = num_total_features;
+  CHECK(num_total_features_ == static_cast<int>(bin_mappers->size()));
   sparse_threshold_ = io_config.sparse_threshold;
   // get num_features
   std::vector<int> used_features;
@@ -721,7 +723,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     for (int i = 0; i < num_total_features_; ++i) {
       int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
       writer->Write(&num_bounds, sizeof(int));
-      
+
       for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
         writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
       }

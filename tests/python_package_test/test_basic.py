@@ -6,6 +6,8 @@ import unittest
 
 import lightgbm as lgb
 import numpy as np
+
+from scipy import sparse
 from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
@@ -53,6 +55,7 @@ class TestBasic(unittest.TestCase):
 
         # check saved model persistence
         bst = lgb.Booster(params, model_file="model.txt")
+        os.remove("model.txt")
         pred_from_model_file = bst.predict(X_test)
         self.assertEqual(len(pred_from_matr), len(pred_from_model_file))
         for preds in zip(pred_from_matr, pred_from_model_file):
@@ -66,6 +69,25 @@ class TestBasic(unittest.TestCase):
         for preds in zip(pred_early_stopping, pred_from_matr):
             # scores likely to be different, but prediction should still be the same
             self.assertEqual(preds[0] > 0, preds[1] > 0)
+
+        # test that shape is checked during prediction
+        bad_X_test = X_test[:, 1:]
+        bad_shape_error_msg = "The number of features in data*"
+        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
+                                       bst.predict, bad_X_test)
+        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
+                                       bst.predict, sparse.csr_matrix(bad_X_test))
+        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
+                                       bst.predict, sparse.csc_matrix(bad_X_test))
+        with open(tname, "w+b") as f:
+            dump_svmlight_file(bad_X_test, y_test, f)
+        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
+                                       bst.predict, tname)
+        with open(tname, "w+b") as f:
+            dump_svmlight_file(X_test, y_test, f, zero_based=False)
+        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
+                                       bst.predict, tname)
+        os.remove(tname)
 
     def test_chunked_dataset(self):
         X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)

@@ -595,7 +595,7 @@ inline static int64_t Pow2RoundUp(int64_t x) {
 }
 
 /*!
- * \brief Do inplace softmax transformaton on p_rec
+ * \brief Do inplace softmax transformation on p_rec
  * \param p_rec The input/output vector of the values.
  */
 inline static void Softmax(std::vector<double>* p_rec) {

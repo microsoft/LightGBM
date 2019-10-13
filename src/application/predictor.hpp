@@ -140,7 +140,9 @@ class Predictor {
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
-
+    if (parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
+    }
     TextReader<data_size_t> predict_data_reader(data_filename, header);
     std::unordered_map<int, int> feature_names_map_;
     bool need_adjust = false;

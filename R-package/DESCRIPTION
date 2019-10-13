@@ -1,8 +1,8 @@
 Package: lightgbm
 Type: Package
 Title: Light Gradient Boosting Machine
-Version: 2.2.4
-Date: 2019-02-05
+Version: 2.3.1
+Date: 2019-09-29
 Authors@R: c(
 	person("Guolin", "Ke", email = "guolin.ke@microsoft.com", role = c("aut", "cre")),
 	person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("ctb")),
@@ -39,7 +39,6 @@ Imports:
     data.table (>= 1.9.6),
     graphics,
     jsonlite (>= 1.0),
-    magrittr (>= 1.5),
     Matrix (>= 1.1-0),
     methods
 RoxygenNote: 6.0.1

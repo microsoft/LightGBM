@@ -14,7 +14,7 @@
 namespace LightGBM {
 
 /*!
-* \brief Contains some operation for a array, e.g. ArgMax, TopK.
+* \brief Contains some operation for an array, e.g. ArgMax, TopK.
 */
 template<typename VAL_T>
 class ArrayArgs {

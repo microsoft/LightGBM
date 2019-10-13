@@ -855,7 +855,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' original \code{lgb.Dataset} object
 #'
 #' @param dataset Object of class \code{lgb.Dataset}
-#' @param idxset a integer vector of indices of rows needed
+#' @param idxset an integer vector of indices of rows needed
 #' @param ... other parameters (currently not used)
 #' @return constructed sub dataset
 #'
