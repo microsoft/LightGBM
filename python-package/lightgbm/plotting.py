@@ -31,7 +31,7 @@ def plot_importance(booster, ax=None, height=0.2,
                     xlim=None, ylim=None, title='Feature importance',
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
-                    ignore_zero=True, figsize=None, grid=True,
+                    ignore_zero=True, figsize=None, dpi=None, grid=True,
                     precision=3, **kwargs):
     """Plot model's feature importances.
 
@@ -68,6 +68,8 @@ def plot_importance(booster, ax=None, height=0.2,
         Whether to ignore features with zero importance.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
+    dpi : int or None, optional (default=None)
+        Resolution of the figure.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
     precision : int or None, optional (default=3)
@@ -106,7 +108,7 @@ def plot_importance(booster, ax=None, height=0.2,
     if ax is None:
         if figsize is not None:
             _check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
+        _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     ylocs = np.arange(len(values))
     ax.barh(ylocs, values, align='center', height=height, **kwargs)
@@ -145,7 +147,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
                                xlim=None, ylim=None,
                                title='Split value histogram for feature with @index/name@ @feature@',
                                xlabel='Feature split value', ylabel='Count',
-                               figsize=None, grid=True, **kwargs):
+                               figsize=None, dpi=None, grid=True, **kwargs):
     """Plot split value histogram for the specified feature of the model.
 
     Parameters
@@ -184,6 +186,8 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         If None, title is disabled.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
+    dpi : int or None, optional (default=None)
+        Resolution of the figure.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
     **kwargs
@@ -215,7 +219,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     if ax is None:
         if figsize is not None:
             _check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
+        _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     ax.bar(centred, hist, align='center', width=width, **kwargs)
 
@@ -249,7 +253,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
                 ax=None, xlim=None, ylim=None,
                 title='Metric during training',
                 xlabel='Iterations', ylabel='auto',
-                figsize=None, grid=True):
+                figsize=None, dpi=None, grid=True):
     """Plot one metric during training.
 
     Parameters
@@ -282,6 +286,8 @@ def plot_metric(booster, metric=None, dataset_names=None,
         If None, title is disabled.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
+    dpi : int or None, optional (default=None)
+        Resolution of the figure.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
 
@@ -310,7 +316,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     if ax is None:
         if figsize is not None:
             _check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
+        _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     if dataset_names is None:
         dataset_names = iter(eval_results.keys())
@@ -540,7 +546,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     return graph
 
 
-def plot_tree(booster, ax=None, tree_index=0, figsize=None,
+def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
               old_graph_attr=None, old_node_attr=None, old_edge_attr=None,
               show_info=None, precision=3, **kwargs):
     """Plot specified tree.
@@ -561,6 +567,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         The index of a target tree to plot.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
+    dpi : int or None, optional (default=None)
+        Resolution of the figure.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items:
@@ -595,7 +603,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     if ax is None:
         if figsize is not None:
             _check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
+        _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     graph = create_tree_digraph(booster=booster, tree_index=tree_index,
                                 show_info=show_info, precision=precision, **kwargs)
