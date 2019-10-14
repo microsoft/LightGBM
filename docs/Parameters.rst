@@ -577,7 +577,7 @@ IO Parameters
 
 -  ``zero_as_missing`` :raw-html:`<a id="zero_as_missing" title="Permalink to this parameter" href="#zero_as_missing">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrices)
+   -  set this to ``true`` to treat all zero as missing values (including the unshown values in LibSVM / sparse matrices)
 
    -  set this to ``false`` to use ``na`` for representing missing values
 

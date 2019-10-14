@@ -34,7 +34,7 @@ Data Interface
 
 The LightGBM Python module can load data from:
 
--  libsvm/tsv/csv/txt format file
+-  LibSVM (zero-based) / TSV / CSV / TXT format file
 
 -  NumPy 2D array(s), pandas DataFrame, H2O DataTable's Frame, SciPy sparse matrix
 
@@ -48,7 +48,7 @@ Many of the examples in this page use functionality from ``numpy``. To run the e
 
     import numpy as np
 
-**To load a libsvm text file or a LightGBM binary file into Dataset:**
+**To load a LibSVM (zero-based) text file or a LightGBM binary file into Dataset:**
 
 .. code:: python
 

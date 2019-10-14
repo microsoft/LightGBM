@@ -172,6 +172,11 @@ In ``LightGBM``, `we have decided to require that users specify this set directl
 
 The appropriate splitting strategy depends on the task and domain of the data, information that a modeler has but which ``LightGBM`` as a general-purpose tool does not.
 
+13. Does LightGBM support direct loading data from zero-based or one-based LibSVM format file?
+----------------------------------------------------------------------------------------------
+
+LightGBM supports loading data from zero-based LibSVM format file directly.
+
 ------
 
 R-package
