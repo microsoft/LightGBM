@@ -207,11 +207,11 @@ E501 (line too long) and W503 (line break occurred before a binary operator) can
 
 Documentation strings (docstrings) are written in the NumPy style.
 
-.. |License| image:: https://img.shields.io/badge/license-MIT-blue.svg
+.. |License| image:: https://img.shields.io/github/license/microsoft/lightgbm.svg
    :target: https://github.com/microsoft/LightGBM/blob/master/LICENSE
-.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg
+.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white
    :target: https://pypi.org/project/lightgbm
-.. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg
+.. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white
    :target: https://pypi.org/project/lightgbm
 .. |Downloads| image:: https://pepy.tech/badge/lightgbm
    :target: https://pepy.tech/project/lightgbm
