@@ -294,6 +294,7 @@ class Dataset {
     const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
     const int* num_per_col,
+    int num_sample_col,
     size_t total_sample_cnt,
     const Config& io_config);
 
