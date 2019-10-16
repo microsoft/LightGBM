@@ -386,9 +386,6 @@ class SparseBin: public Bin {
     // transform to delta array
     data_size_t last_idx = 0;
     for (data_size_t i = 0; i < num_used_indices; ++i) {
-      if (i > 0) {
-        CHECK(used_indices[i] > used_indices[i - 1]);
-      }
       VAL_T bin = iterator.InnerRawGet(used_indices[i]);
       if (bin > 0) {
         data_size_t cur_delta = i - last_idx;

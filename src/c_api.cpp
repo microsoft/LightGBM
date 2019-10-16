@@ -921,6 +921,9 @@ int LGBM_DatasetGetSubset(
   const int32_t lower = 0;
   const int32_t upper = full_dataset->num_data() - 1;
   Common::CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
+  if (!Common::CheckSorted(used_row_indices, num_used_row_indices)) {
+    Log::Fatal("used_row_indices should be sorted in Subset");
+  }
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
   ret->CopyFeatureMapperFrom(full_dataset);
   ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
