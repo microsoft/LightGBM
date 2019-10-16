@@ -787,15 +787,6 @@ inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int n
     }
   }
 }
-template <typename T>
-inline static bool CheckSorted(const T* y, int ny) {
-  for (int i = 1; i < ny; ++i) {
-    if (y[i] <= y[i - 1]) {
-      return false;
-    }
-  }
-  return true;
-}
 
 // One-pass scan over array w with nw elements: find min, max and sum of elements;
 // this is useful for checking weight requirements.
