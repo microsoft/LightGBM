@@ -1601,7 +1601,7 @@ class TestEngine(unittest.TestCase):
         iter_min = min([iter_min_l1, iter_min_l2])
         iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
 
-        iter_cv_l1 = 3
+        iter_cv_l1 = 4
         iter_cv_l2 = 12
         self.assertEqual(len(set([iter_cv_l1, iter_cv_l2])), 2)
         iter_cv_min = min([iter_cv_l1, iter_cv_l2])
