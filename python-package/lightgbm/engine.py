@@ -339,8 +339,8 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
 
     ret = _CVBooster()
     for train_idx, test_idx in folds:
-        train_set = full_data.subset(train_idx)
-        valid_set = full_data.subset(test_idx)
+        train_set = full_data.subset(sorted(train_idx))
+        valid_set = full_data.subset(sorted(test_idx))
         # run preprocessing on the data set if needed
         if fpreproc is not None:
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
