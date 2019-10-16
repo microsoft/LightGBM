@@ -42,7 +42,8 @@ else  # Linux
 fi
 
 if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
+    mkdir -p ~/.conda  # temp fix for broken miniconda installer
     sh conda.sh -b -p $CONDA
 fi
 conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda
+conda install --force-reinstall -q -y conda  # temp fix for broken miniconda installer

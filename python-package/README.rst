@@ -193,17 +193,7 @@ Refer to the walk through examples in `Python guide folder <https://github.com/m
 Development Guide
 -----------------
 
-The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with PEP 8, please check the PEP 8 style guide first. Otherwise, the check won't pass. You should be careful about:
-
-- E1 Indentation (check PEP 8 link above)
-- E202 whitespace before and after brackets
-- E225 missing whitespace around operator
-- E226 missing whitespace around arithmetic operator
-- E261 at least two spaces before inline comment
-- E301 expected 1 blank line in front of and at the end of a method
-- E302 expected 2 blank lines in front of and at the end of a function or a class
-
-E501 (line too long) and W503 (line break occurred before a binary operator) can be ignored.
+The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with PEP 8, please check the PEP 8 style guide first. Otherwise, the check won't pass. Only E501 (line too long) and W503 (line break occurred before a binary operator) can be ignored.
 
 Documentation strings (docstrings) are written in the NumPy style.
 
