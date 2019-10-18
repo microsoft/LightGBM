@@ -7,7 +7,7 @@ import collections
 import warnings
 from operator import gt, lt
 
-from .basic import CONFIG_ALIASES
+from .basic import _ConfigAliases
 from .compat import range_
 
 
@@ -131,9 +131,7 @@ def reset_parameter(**kwargs):
     def _callback(env):
         new_parameters = {}
         for key, value in kwargs.items():
-            if key in (CONFIG_ALIASES["num_class"]
-                       | CONFIG_ALIASES["boosting"]
-                       | CONFIG_ALIASES["metric"]):
+            if key in _ConfigAliases.get("num_class", "boosting", "metric"):
                 raise RuntimeError("Cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
@@ -186,7 +184,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
 
     def _init(env):
         enabled[0] = not any(env.params.get(boost_alias, "") == 'dart' for boost_alias
-                             in CONFIG_ALIASES["boosting"])
+                             in _ConfigAliases.get("boosting"))
         if not enabled[0]:
             warnings.warn('Early stopping is not available in dart mode')
             return

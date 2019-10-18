@@ -170,6 +170,57 @@ class LightGBMError(Exception):
     pass
 
 
+class _ConfigAliases(object):
+    aliases = {"boosting": {"boosting",
+                            "boosting_type",
+                            "boost"},
+               "categorical_feature": {"categorical_feature",
+                                       "cat_feature",
+                                       "categorical_column",
+                                       "cat_column"},
+               "early_stopping_round": {"early_stopping_round",
+                                        "early_stopping_rounds",
+                                        "early_stopping",
+                                        "n_iter_no_change"},
+               "eval_at": {"eval_at",
+                           "ndcg_eval_at",
+                           "ndcg_at",
+                           "map_eval_at",
+                           "map_at"},
+               "header": {"header",
+                          "has_header"},
+               "machines": {"machines",
+                            "workers",
+                            "nodes"},
+               "metric": {"metric",
+                          "metrics",
+                          "metric_types"},
+               "num_class": {"num_class",
+                             "num_classes"},
+               "num_iterations": {"num_iterations",
+                                  "num_iteration",
+                                  "n_iter",
+                                  "num_tree",
+                                  "num_trees",
+                                  "num_round",
+                                  "num_rounds",
+                                  "num_boost_round",
+                                  "n_estimators"},
+               "objective": {"objective",
+                             "objective_type",
+                             "app",
+                             "application"},
+               "verbosity": {"verbosity",
+                             "verbose"}}
+
+    @classmethod
+    def get(cls, *args):
+        ret = set()
+        for i in args:
+            ret |= cls.aliases.get(i, set())
+        return ret
+
+
 MAX_INT32 = (1 << 31) - 1
 
 """Macro definition of data type in C API of LightGBM"""
@@ -195,48 +246,6 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "group": C_API_DTYPE_INT32,
                      "feature_penalty": C_API_DTYPE_FLOAT64,
                      "monotone_constraints": C_API_DTYPE_INT8}
-
-CONFIG_ALIASES = {"boosting": {"boosting",
-                               "boosting_type",
-                               "boost"},
-                  "categorical_feature": {"categorical_feature",
-                                          "cat_feature",
-                                          "categorical_column",
-                                          "cat_column"},
-                  "early_stopping_round": {"early_stopping_round",
-                                           "early_stopping_rounds",
-                                           "early_stopping",
-                                           "n_iter_no_change"},
-                  "eval_at": {"eval_at",
-                              "ndcg_eval_at",
-                              "ndcg_at",
-                              "map_eval_at",
-                              "map_at"},
-                  "header": {"header",
-                             "has_header"},
-                  "machines": {"machines",
-                               "workers",
-                               "nodes"},
-                  "metric": {"metric",
-                             "metrics",
-                             "metric_types"},
-                  "num_class": {"num_class",
-                                "num_classes"},
-                  "num_iterations": {"num_iterations",
-                                     "num_iteration",
-                                     "n_iter",
-                                     "num_tree",
-                                     "num_trees",
-                                     "num_round",
-                                     "num_rounds",
-                                     "num_boost_round",
-                                     "n_estimators"},
-                  "objective": {"objective",
-                                "objective_type",
-                                "app",
-                                "application"},
-                  "verbosity": {"verbosity",
-                                "verbose"}}
 
 
 def convert_from_sliced_object(data):
@@ -783,7 +792,7 @@ class Dataset(object):
         data_has_header = False
         if isinstance(data, string_type):
             # check data has header or not
-            data_has_header = any(self.params.get(alias, False) for alias in CONFIG_ALIASES["header"])
+            data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
         init_score = predictor.predict(data,
                                        raw_score=True,
                                        data_has_header=data_has_header,
@@ -834,7 +843,7 @@ class Dataset(object):
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'
                               .format(key))
         # user can set verbose with params, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in CONFIG_ALIASES["verbosity"]) and silent:
+        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         # get categorical features
         if categorical_feature is not None:
@@ -851,7 +860,7 @@ class Dataset(object):
                     raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
                                     .format(type(name).__name__, name))
             if categorical_indices:
-                for cat_alias in CONFIG_ALIASES["categorical_feature"]:
+                for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
                         warnings.warn('{} in param dict is overridden.'.format(cat_alias))
                         params.pop(cat_alias, None)
@@ -1677,7 +1686,7 @@ class Booster(object):
         self.best_score = {}
         params = {} if params is None else copy.deepcopy(params)
         # user can set verbose with params, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in CONFIG_ALIASES["verbosity"]) and silent:
+        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         if train_set is not None:
             # Training task
@@ -1686,7 +1695,7 @@ class Booster(object):
                                 .format(type(train_set).__name__))
             params_str = param_dict_to_str(params)
             # set network if necessary
-            for alias in CONFIG_ALIASES["machines"]:
+            for alias in _ConfigAliases.get("machines"):
                 if alias in params:
                     machines = params[alias]
                     if isinstance(machines, string_type):
@@ -1906,7 +1915,7 @@ class Booster(object):
         self : Booster
             Booster with new parameters.
         """
-        if any(metric_alias in params for metric_alias in CONFIG_ALIASES["metric"]):
+        if any(metric_alias in params for metric_alias in _ConfigAliases.get("metric")):
             self.__need_reload_eval_info = True
         params_str = param_dict_to_str(params)
         if params_str:
