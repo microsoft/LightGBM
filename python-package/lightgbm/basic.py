@@ -1095,7 +1095,7 @@ class Dataset(object):
                       free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
-        ret.used_indices = used_indices
+        ret.used_indices = sorted(used_indices)
         return ret
 
     def save_binary(self, filename):
