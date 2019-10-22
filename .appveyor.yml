@@ -1,4 +1,4 @@
-version: 2.3.1.{build}
+﻿version: 2.3.1.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -10,7 +10,7 @@ environment:
     - COMPILER: MSVC
     - COMPILER: MINGW
 
-clone_depth: 50
+clone_depth: 5
 
 install:
   - git submodule update --init --recursive  # get `compute` folder
@@ -54,5 +54,5 @@ test_script:
         if (!$?) { $host.SetShouldExit(-1) }
       }  # run all examples
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
-  - conda install -q -y -n test-env ipywidgets notebook pywin32
+  - conda install -q -y -n test-env ipywidgets notebook
   - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks

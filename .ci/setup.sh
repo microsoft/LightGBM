@@ -19,10 +19,6 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else  # Linux
-    if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
-        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 100
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 100
-    fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
@@ -46,7 +42,8 @@ else  # Linux
 fi
 
 if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
+    mkdir -p ~/.conda  # temp fix for broken miniconda installer
     sh conda.sh -b -p $CONDA
 fi
 conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda
+conda install --force-reinstall -q -y conda  # temp fix for broken miniconda installer

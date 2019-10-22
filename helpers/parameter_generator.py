@@ -293,7 +293,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
             tmp = set_one_var_from_string(name, param_type, checks)
             str_to_write += tmp
     # tails
-    str_to_write += "}\n\n"
+    str_to_write = str_to_write.strip() + "\n}\n\n"
     str_to_write += "std::string Config::SaveMembersToString() const {\n"
     str_to_write += "  std::stringstream str_buf;\n"
     for x in infos:

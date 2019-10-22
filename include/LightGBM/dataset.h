@@ -27,25 +27,25 @@ namespace LightGBM {
 class DatasetLoader;
 /*!
 * \brief This class is used to store some meta(non-feature) data for training data,
-*        e.g. labels, weights, initial scores, qurey level informations.
+*        e.g. labels, weights, initial scores, query level informations.
 *
 *        Some details:
-*        1. Label, used for traning.
+*        1. Label, used for training.
 *        2. Weights, weighs of records, optional
 *        3. Query Boundaries, necessary for lambdarank.
-*           The documents of i-th query is in [ query_boundarise[i], query_boundarise[i+1] )
-*        4. Query Weights, auto calculate by weights and query_boundarise(if both of them are existed)
-*           the weight for i-th query is sum(query_boundarise[i] , .., query_boundarise[i+1]) / (query_boundarise[i + 1] -  query_boundarise[i+1])
-*        5. Initial score. optional. if exsitng, the model will boost from this score, otherwise will start from 0.
+*           The documents of i-th query is in [ query_boundaries[i], query_boundaries[i+1] )
+*        4. Query Weights, auto calculate by weights and query_boundaries(if both of them are existed)
+*           the weight for i-th query is sum(query_boundaries[i] , .., query_boundaries[i+1]) / (query_boundaries[i + 1] -  query_boundaries[i+1])
+*        5. Initial score. optional. if existing, the model will boost from this score, otherwise will start from 0.
 */
 class Metadata {
  public:
   /*!
-  * \brief Null costructor
+  * \brief Null constructor
   */
   Metadata();
   /*!
-  * \brief Initialization will load qurey level informations, since it is need for sampling data
+  * \brief Initialization will load query level informations, since it is need for sampling data
   * \param data_filename Filename of data
   * \param init_score_filename Filename of initial score
   */
@@ -75,7 +75,7 @@ class Metadata {
 
   /*!
   * \brief Partition label by used indices
-  * \param used_indices Indice of local used
+  * \param used_indices Indices of local used
   */
   void PartitionLabel(const std::vector<data_size_t>& used_indices);
 
@@ -265,10 +265,10 @@ class Parser {
   virtual void ParseOneLine(const char* str,
                             std::vector<std::pair<int, double>>* out_features, double* out_label) const = 0;
 
-  virtual int TotalColumns() const = 0;
+  virtual int NumFeatures() const = 0;
 
   /*!
-  * \brief Create a object of parser, will auto choose the format depend on file
+  * \brief Create an object of parser, will auto choose the format depend on file
   * \param filename One Filename of data
   * \param num_features Pass num_features of this data file if you know, <=0 means don't know
   * \param label_idx index of label column
@@ -278,7 +278,7 @@ class Parser {
 };
 
 /*! \brief The main class of data set,
-*          which are used to traning or validation
+*          which are used to training or validation
 */
 class Dataset {
  public:
@@ -290,9 +290,11 @@ class Dataset {
 
   void Construct(
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+    int num_total_features,
     const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
     const int* num_per_col,
+    int num_sample_col,
     size_t total_sample_cnt,
     const Config& io_config);
 

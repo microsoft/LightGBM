@@ -11,7 +11,7 @@ from operator import attrgetter
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
+from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
                      string_type, integer_types, range_, zip_)
 
@@ -140,14 +140,15 @@ def train(params, train_set, num_boost_round=100,
     # create predictor first
     params = copy.deepcopy(params)
     if fobj is not None:
+        for obj_alias in _ConfigAliases.get("objective"):
+            params.pop(obj_alias, None)
         params['objective'] = 'none'
-    for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
-                  "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
+    for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
-    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change"]:
+    for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
@@ -314,7 +315,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                 flatted_group = np.zeros(num_data, dtype=np.int32)
             folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
     else:
-        if 'objective' in params and params['objective'] == 'lambdarank':
+        if any(params.get(obj_alias, "") == "lambdarank" for obj_alias in _ConfigAliases.get("objective")):
             if not SKLEARN_INSTALLED:
                 raise LightGBMError('Scikit-learn is required for lambdarank cv.')
             # lambdarank task, split according to groups
@@ -339,8 +340,8 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
 
     ret = _CVBooster()
     for train_idx, test_idx in folds:
-        train_set = full_data.subset(train_idx)
-        valid_set = full_data.subset(test_idx)
+        train_set = full_data.subset(sorted(train_idx))
+        valid_set = full_data.subset(sorted(test_idx))
         # run preprocessing on the data set if needed
         if fpreproc is not None:
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
@@ -495,14 +496,15 @@ def cv(params, train_set, num_boost_round=100,
 
     params = copy.deepcopy(params)
     if fobj is not None:
+        for obj_alias in _ConfigAliases.get("objective"):
+            params.pop(obj_alias, None)
         params['objective'] = 'none'
-    for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
-                  "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
+    for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = params.pop(alias)
             break
-    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change"]:
+    for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             early_stopping_rounds = params.pop(alias)
@@ -523,6 +525,8 @@ def cv(params, train_set, num_boost_round=100,
              .set_categorical_feature(categorical_feature)
 
     if metrics is not None:
+        for metric_alias in _ConfigAliases.get("metric"):
+            params.pop(metric_alias, None)
         params['metric'] = metrics
 
     results = collections.defaultdict(list)

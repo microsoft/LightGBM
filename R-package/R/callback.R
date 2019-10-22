@@ -269,7 +269,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
   best_msg <- NULL
   eval_len <- NULL
 
-  # Initalization function
+  # Initialization function
   init <- function(env) {
 
     # Store evaluation length

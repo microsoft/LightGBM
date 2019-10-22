@@ -1,3 +1,9 @@
+---
+name: Bug Report 🐞
+about: Something isn't working as expected? Here is the right place to report.
+labels: bug
+---
+
 <!--
 Please search your question on previous issues, Stack Overflow (https://stackoverflow.com/questions/tagged/lightgbm) or other search engines before you open a new one.
 -->

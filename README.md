@@ -5,9 +5,9 @@ LightGBM, Light Gradient Boosting Machine
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Travis Build Status](https://travis-ci.org/microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/microsoft/LightGBM)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
-[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.org/project/lightgbm)
-[![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg)](https://pypi.org/project/lightgbm)
+[![License](https://img.shields.io/github/license/microsoft/lightgbm.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
+[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
+[![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white)](https://pypi.org/project/lightgbm)
 [![Join Gitter at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com)
 
@@ -79,6 +79,8 @@ Julia-package: https://github.com/Allardvm/LightGBM.jl
 JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
 Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
+
+m2cgen (model appliers for various languages): https://github.com/BayesWitnesses/m2cgen
 
 leaves (Go model applier): https://github.com/dmitryikh/leaves
 

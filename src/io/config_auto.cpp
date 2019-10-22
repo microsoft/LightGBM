@@ -579,7 +579,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "gpu_device_id", &gpu_device_id);
 
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
-
 }
 
 std::string Config::SaveMembersToString() const {

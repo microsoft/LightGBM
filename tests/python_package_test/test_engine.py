@@ -831,9 +831,9 @@ class TestEngine(unittest.TestCase):
         data = np.random.random((50, 2))
         y = [1] * 25 + [0] * 25
         lgb_train = lgb.Dataset(data, y, free_raw_data=False)
-        subset_index_1 = np.random.choice(np.arange(50), 30, replace=False)
+        subset_index_1 = sorted(np.random.choice(np.arange(50), 30, replace=False))
         subset_data_1 = lgb_train.subset(subset_index_1)
-        subset_index_2 = np.random.choice(np.arange(50), 20, replace=False)
+        subset_index_2 = sorted(np.random.choice(np.arange(50), 20, replace=False))
         subset_data_2 = lgb_train.subset(subset_index_2)
         params = {
             'objective': 'binary',
@@ -1599,8 +1599,8 @@ class TestEngine(unittest.TestCase):
         iter_min = min([iter_min_l1, iter_min_l2])
         iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
 
-        iter_cv_l1 = 3
-        iter_cv_l2 = 17
+        iter_cv_l1 = 4
+        iter_cv_l2 = 12
         self.assertEqual(len(set([iter_cv_l1, iter_cv_l2])), 2)
         iter_cv_min = min([iter_cv_l1, iter_cv_l2])
 

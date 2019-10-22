@@ -20,7 +20,7 @@ NULL
 
 #' @title Train a LightGBM model
 #' @name lightgbm
-#' @description Simple interface for training an LightGBM model.
+#' @description Simple interface for training a LightGBM model.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset

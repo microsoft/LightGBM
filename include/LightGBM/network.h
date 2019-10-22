@@ -23,7 +23,7 @@ class BruckMap {
  public:
   /*! \brief The communication times for one all gather operation */
   int k;
-  /*! \brief in_ranks[i] means the incomming rank on i-th communication */
+  /*! \brief in_ranks[i] means the incoming rank on i-th communication */
   std::vector<int> in_ranks;
   /*! \brief out_ranks[i] means the out rank on i-th communication */
   std::vector<int> out_ranks;
@@ -55,7 +55,7 @@ enum RecursiveHalvingNodeType {
 /*! \brief Network structure for recursive halving algorithm */
 class RecursiveHalvingMap {
  public:
-  /*! \brief Communication times for one recursize halving algorithm  */
+  /*! \brief Communication times for one recursive halving algorithm  */
   int k;
   /*! \brief Node type */
   RecursiveHalvingNodeType type;
@@ -258,6 +258,19 @@ class Network {
         used_size += type_size;
       }
     });
+    return global;
+  }
+
+  template<class T>
+  static std::vector<T> GlobalArray(T local) {
+    std::vector<T> global(num_machines_, 0);
+    int type_size = sizeof(T);
+    std::vector<comm_size_t> block_start(num_machines_);
+    std::vector<comm_size_t> block_len(num_machines_, type_size);
+    for (int i = 1; i < num_machines_; ++i) {
+      block_start[i] = block_start[i - 1] + block_len[i - 1];
+    }
+    Allgather(reinterpret_cast<char*>(&local), block_start.data(), block_len.data(), reinterpret_cast<char*>(global.data()), type_size*num_machines_);
     return global;
   }
 
