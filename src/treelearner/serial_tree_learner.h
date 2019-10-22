@@ -190,11 +190,6 @@ class SerialTreeLearner: public TreeLearner {
   bool is_constant_hessian_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 
-  std::vector<std::vector<double> > dummy_min_constraints;
-  std::vector<std::vector<double> > min_constraints;
-  std::vector<std::vector<double> > dummy_max_constraints;
-  std::vector<std::vector<double> > max_constraints;
-
   CurrentConstraints current_constraints;
 };
 
