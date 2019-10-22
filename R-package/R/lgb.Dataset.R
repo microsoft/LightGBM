@@ -87,7 +87,7 @@ Dataset <- R6::R6Class(
       private$categorical_feature <- categorical_feature
       private$predictor <- predictor
       private$free_raw_data <- free_raw_data
-      private$used_indices <- used_indices
+      private$used_indices <- sort(used_indices, decreasing = FALSE)
       private$info <- info
 
     },
@@ -481,7 +481,7 @@ Dataset <- R6::R6Class(
                   private$categorical_feature,
                   private$predictor,
                   private$free_raw_data,
-                  idxset,
+                  sort(idxset, decreasing = FALSE),
                   NULL,
                   ...)
 
