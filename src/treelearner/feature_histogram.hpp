@@ -600,7 +600,6 @@ class FeatureHistogram {
         if (sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) break;
 
         double sum_left_gradient = sum_gradient - sum_right_gradient;
-        // current split gain
 
         // when the monotone precise mode in enabled, as t changes, the constraints applied on
         // each child may change, because the constraints may depend on thresholds
