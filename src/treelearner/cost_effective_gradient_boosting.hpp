@@ -20,8 +20,6 @@ namespace LightGBM {
 
 class CostEfficientGradientBoosting {
  public:
-  std::vector<SplitInfo> splits_per_leaf_;
-
   explicit CostEfficientGradientBoosting(const SerialTreeLearner* tree_learner):tree_learner_(tree_learner) {
   }
   static bool IsEnable(const Config* config) {
@@ -85,6 +83,10 @@ class CostEfficientGradientBoosting {
     }
   }
 
+  SplitInfo const & GetSplitInfo(int i) const {
+    return splits_per_leaf_[i];
+  }
+
  private:
   double CalculateOndemandCosts(int feature_index, int real_fidx, int leaf_index) const {
     if (tree_learner_->config_->cegb_penalty_feature_lazy.empty()) {
@@ -108,6 +110,7 @@ class CostEfficientGradientBoosting {
   }
 
   const SerialTreeLearner* tree_learner_;
+  std::vector<SplitInfo> splits_per_leaf_;
   std::vector<bool> is_feature_used_in_split_;
   std::vector<uint32_t> feature_used_in_data_;
 };

@@ -301,10 +301,11 @@ void LeafConstraints::UpdateBestSplitsFromHistograms(
           split.left_count + split.right_count, feature_index, histogram_array_,
           bests, leaf, depth, tid, real_fidx, learner_state, true);
     } else {
-      if (learner_state.cegb_->splits_per_leaf_[leaf * learner_state.train_data_->num_features() +
-                                  feature_index] > bests[tid]) {
-        bests[tid] = learner_state.cegb_->splits_per_leaf_
-                         [leaf * learner_state.train_data_->num_features() + feature_index];
+      if (learner_state.cegb_->GetSplitInfo(
+              leaf * learner_state.train_data_->num_features() +
+              feature_index) > bests[tid]) {
+        bests[tid] = learner_state.cegb_->GetSplitInfo(
+            leaf * learner_state.train_data_->num_features() + feature_index);
         should_split_be_worse[tid] =
             learner_state.constraints_per_leaf_[leaf]
                 .AreActualConstraintsWorse(feature_index);
@@ -345,10 +346,11 @@ void LeafConstraints::UpdateBestSplitsFromHistograms(
         CHECK(!learner_state.constraints_per_leaf_[leaf]
                    .ToBeUpdated(feature_index));
 #endif
-        if (learner_state.cegb_->splits_per_leaf_[leaf * learner_state.train_data_->num_features() +
-                                    feature_index] > bests[tid]) {
-          bests[tid] = learner_state.cegb_->splits_per_leaf_
-                           [leaf * learner_state.train_data_->num_features() + feature_index];
+        if (learner_state.cegb_->GetSplitInfo(
+                leaf * learner_state.train_data_->num_features() +
+                feature_index) > bests[tid]) {
+          bests[tid] = learner_state.cegb_->GetSplitInfo(
+              leaf * learner_state.train_data_->num_features() + feature_index);
         }
       }
 
