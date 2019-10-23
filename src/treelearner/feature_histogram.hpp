@@ -99,7 +99,6 @@ class FeatureHistogram {
                                   data_size_t num_data, SplitInfo *output,
                                   SplittingConstraints &constraints) {
     is_splittable_ = false;
-    could_be_splittable_ = false;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
@@ -479,23 +478,13 @@ class FeatureHistogram {
   /*!
   * \brief True if this histogram can be splitted
   */
-  bool is_splittable() {
-    // if the monotone precise mode is enabled, then, even if a leaf is not splittable right now,
-    // it may become splittable later, because it can be unconstrained by splits happening somewhere else in the tree
-    if (meta_->config->monotone_precise_mode &&
-        meta_->bin_type == BinType::NumericalBin) {
-      return could_be_splittable_;
-    } else {
-      return is_splittable_;
-    }
-  }
+  bool is_splittable() { return is_splittable_; }
 
   /*!
   * \brief Set splittable to this histogram
   */
   void set_is_splittable(bool val) {
     is_splittable_ = val;
-    could_be_splittable_ = val;
   }
 
   static double ThresholdL1(double s, double l1) {
@@ -613,8 +602,6 @@ class FeatureHistogram {
         double sum_left_gradient = sum_gradient - sum_right_gradient;
         // current split gain
 
-        could_be_splittable_ = true;
-
         // when the monotone precise mode in enabled, as t changes, the constraints applied on
         // each child may change, because the constraints may depend on thresholds
         constraints.UpdateIndices(dir, bias, t);
@@ -691,8 +678,6 @@ class FeatureHistogram {
         // if sum hessian too small
         if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) break;
 
-        could_be_splittable_ = true;
-
         double sum_right_gradient = sum_gradient - sum_left_gradient;
 
         constraints.UpdateIndices(1, bias, t);
@@ -755,7 +740,6 @@ class FeatureHistogram {
   HistogramBinEntry* data_;
   // std::vector<HistogramBinEntry> data_;
   bool is_splittable_ = true;
-  bool could_be_splittable_ = true;
 
   std::function<void(double, double, data_size_t, SplitInfo *,
                      SplittingConstraints &)> find_best_threshold_fun_;
