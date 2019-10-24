@@ -255,7 +255,7 @@ Booster <- R6::R6Class(
         gpair <- fobj(private$inner_predict(1), private$train_set)
 
         # Check for gradient and hessian as list
-        if(is.null(gpair$grad) || is.null(gpair$hess)){
+        if (is.null(gpair$grad) || is.null(gpair$hess)){
           stop("lgb.Booster.update: custom objective should
             return a list with attributes (hess, grad)")
         }
@@ -635,7 +635,7 @@ Booster <- R6::R6Class(
         res <- feval(private$inner_predict(data_idx), data)
 
         # Check for name correctness
-        if(is.null(res$name) || is.null(res$value) ||  is.null(res$higher_better)) {
+        if (is.null(res$name) || is.null(res$value) ||  is.null(res$higher_better)) {
           stop("lgb.Booster.eval: custom eval function should return a
             list with attribute (name, value, higher_better)");
         }

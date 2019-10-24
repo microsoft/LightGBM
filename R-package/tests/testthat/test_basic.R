@@ -26,7 +26,7 @@ test_that("train and predict binary classification", {
 
   pred1 <- predict(bst, train$data, num_iteration = 1)
   expect_equal(length(pred1), 6513)
-  err_pred1 <- sum((pred1 > 0.5) != train$label) / length(train$label)
+  err_pred1 <- sum( (pred1 > 0.5) != train$label) / length(train$label)
   err_log <- record_results[1]
   expect_lt(abs(err_pred1 - err_log), 10e-6)
 })

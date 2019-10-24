@@ -68,9 +68,11 @@ lgb.importance <- function(model, percentage = TRUE) {
 
   # Check if relative values are requested
   if (percentage) {
-    tree_imp_dt[, ":="(Gain = Gain / sum(Gain),
-                    Cover = Cover / sum(Cover),
-                    Frequency = Frequency / sum(Frequency))]
+    tree_imp_dt[, `:=`(
+      Gain = Gain / sum(Gain)
+      , Cover = Cover / sum(Cover)
+      , Frequency = Frequency / sum(Frequency)
+    )]
   }
 
   # Return importance table

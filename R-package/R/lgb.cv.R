@@ -318,7 +318,7 @@ lgb.cv <- function(params = list(),
     env$eval_list <- merged_msg$eval_list
 
     # Check for standard deviation requirement
-    if(showsd) {
+    if (showsd) {
       env$eval_err_list <- merged_msg$eval_err_list
     }
 

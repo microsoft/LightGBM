@@ -48,7 +48,7 @@ new_data <- data.frame(
         , 1 - 1e-15
     )
 )
-new_data$Z <- -(agaricus.test$label * log(new_data$Y) + (1 - agaricus.test$label) * log(1 - new_data$Y))
+new_data$Z <- -1 * (agaricus.test$label * log(new_data$Y) + (1 - agaricus.test$label) * log(1 - new_data$Y))
 new_data$binned <- .bincode(
     x = new_data$X
     , breaks = quantile(
@@ -115,7 +115,7 @@ new_data2 <- data.frame(
       , 1 - 1e-15
      )
 )
-new_data2$Z <- -(agaricus.test$label * log(new_data2$Y) + (1 - agaricus.test$label) * log(1 - new_data2$Y))
+new_data2$Z <- -1 * (agaricus.test$label * log(new_data2$Y) + (1 - agaricus.test$label) * log(1 - new_data2$Y))
 new_data2$binned <- .bincode(
     x = new_data2$X
     , breaks = quantile(
@@ -183,7 +183,7 @@ new_data3 <- data.frame(
         , 1 - 1e-15
     )
 )
-new_data3$Z <- -(agaricus.test$label * log(new_data3$Y) + (1 - agaricus.test$label) * log(1 - new_data3$Y))
+new_data3$Z <- -1 * (agaricus.test$label * log(new_data3$Y) + (1 - agaricus.test$label) * log(1 - new_data3$Y))
 new_data3$binned <- .bincode(
     x = new_data3$X
     , breaks = quantile(

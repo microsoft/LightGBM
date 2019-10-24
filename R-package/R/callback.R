@@ -170,7 +170,7 @@ cb.print.evaluation <- function(period = 1) {
       i <- env$iteration
 
       # Check if iteration matches moduo
-      if ((i - 1) %% period == 0 || is.element(i, c(env$begin_iteration, env$end_iteration ))) {
+      if ( (i - 1) %% period == 0 || is.element(i, c(env$begin_iteration, env$end_iteration))) {
 
         # Merge evaluation string
         msg <- merge.eval.string(env)
