@@ -12,9 +12,9 @@ slice(dataset, ...)
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
 
-\item{...}{other parameters (currently not used)}
+\item{idxset}{an integer vector of indices of rows needed}
 
-\item{idxset}{a integer vector of indices of rows needed}
+\item{...}{other parameters (currently not used)}
 }
 \value{
 constructed sub dataset
