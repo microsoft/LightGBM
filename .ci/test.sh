@@ -62,12 +62,7 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
-    cpplint \
-        --filter=-build/include_subdir,-build/header_guard,-whitespace/line_length \
-        --recursive \
-        ./src \
-        ./include \
-    || exit 0
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include || exit 0
     exit 0
 fi
 
