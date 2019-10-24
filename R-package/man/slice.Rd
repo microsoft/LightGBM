@@ -14,7 +14,7 @@ slice(dataset, ...)
 
 \item{...}{other parameters (currently not used)}
 
-\item{idxset}{an integer vector of indices of rows needed}
+\item{idxset}{a integer vector of indices of rows needed}
 }
 \value{
 constructed sub dataset
