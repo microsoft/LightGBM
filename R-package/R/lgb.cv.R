@@ -136,17 +136,7 @@ lgb.cv <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
-  n_trees <- c(
-    "num_iterations"
-    , "num_iteration"
-    , "n_iter"
-    , "num_tree"
-    , "num_trees"
-    , "num_round"
-    , "num_rounds"
-    , "num_boost_round"
-    , "n_estimators"
-  )
+  n_rounds <- .PARAMETER_ALIASES()[["num_iterations"]]
   if (any(names(params) %in% n_trees)) {
     end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1]]] - 1
   } else {
@@ -227,7 +217,7 @@ lgb.cv <- function(params = list(),
 
   # If early stopping was passed as a parameter in params(), prefer that to keyword argument
   # early_stopping_rounds by overwriting the value in 'early_stopping_rounds'
-  early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change")
+  early_stop <- .PARAMETER_ALIASES()[["early_stopping_round"]]
   early_stop_param_indx <- names(params) %in% early_stop
   if (any(early_stop_param_indx)) {
     first_early_stop_param <- which(early_stop_param_indx)[[1]]
@@ -238,7 +228,7 @@ lgb.cv <- function(params = list(),
   # Did user pass parameters that indicate they want to use early stopping?
   using_early_stopping_via_args <- !is.null(early_stopping_rounds)
 
-  boosting_param_names <- c("boosting", .PARAMETER_ALIASES()[["boosting"]])
+  boosting_param_names <- .PARAMETER_ALIASES()[["boosting"]]
   using_dart <- any(
     sapply(
       X = boosting_param_names

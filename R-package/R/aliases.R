@@ -12,6 +12,12 @@
             , "boost"
             , "boosting_type"
         )
+        , "early_stopping_round" = c(
+            "early_stopping_round"
+            , "early_stopping_rounds"
+            , "early_stopping"
+            , "n_iter_no_change"
+        )
         , "metric" = c(
             "metric"
             , "metrics"
@@ -20,6 +26,17 @@
         , "num_class" = c(
             "num_class"
             , "num_classes"
+        )
+        , "num_iterations" = c(
+            "num_iterations"
+            , "num_iteration"
+            , "n_iter"
+            , "num_tree"
+            , "num_trees"
+            , "num_round"
+            , "num_rounds"
+            , "num_boost_round"
+            , "n_estimators"
         )
     ))
 }
