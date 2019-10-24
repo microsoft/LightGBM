@@ -51,7 +51,7 @@ test_that("use of multiple eval metrics works", {
 
 
 test_that("training continuation works", {
-  testthat::skip("This test is currently broken. See #2468 for details.")
+  testthat::skip("This test is currently broken. See issue #2468 for details.")
   dtrain <- lgb.Dataset(train$data, label = train$label, free_raw_data=FALSE)
   watchlist = list(train=dtrain)
   param <- list(objective = "binary", metric="binary_logloss", num_leaves = 5, learning_rate = 1)
