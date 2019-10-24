@@ -8,8 +8,18 @@
 .PARAMETER_ALIASES <- function(){
     return(list(
         "boosting" = c(
-            "boosting_type"
+            "boosting"
             , "boost"
+            , "boosting_type"
+        )
+        , "metric" = c(
+            "metric"
+            , "metrics"
+            , "metric_types"
+        )
+        , "num_class" = c(
+            "num_class"
+            , "num_classes"
         )
     ))
 }

@@ -38,9 +38,8 @@ cb.reset.parameters <- function(new_params) {
     # Some parameters are not allowed to be changed,
     # since changing them would simply wreck some chaos
     not_allowed <- c(
-      "num_class"
-      , "metric"
-      , "boosting"
+      .PARAMETER_ALIASES()[["num_class"]]
+      , .PARAMETER_ALIASES()[["metric"]]
       , .PARAMETER_ALIASES()[["boosting"]]
     )
     if (any(pnames %in% not_allowed)) {
