@@ -105,7 +105,9 @@ class FeatureHistogram {
 
     // at this point, the following arrays contain the constraints applied on every part of the leaf
     // since we are splitting the leaf in 2, we can compute the cumulative / minimum maximum in both directions
-    constraints->ComputeCumulativeExtremums();
+    if (constraints != nullptr) {
+      constraints->ComputeCumulativeExtremums();
+    }
 
     if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
       if (meta_->missing_type == MissingType::Zero) {
@@ -156,7 +158,9 @@ class FeatureHistogram {
     int best_threshold = -1;
     int best_dir = 1;
 
-    constraints->InitializeIndices(1);
+    if (constraints != nullptr) {
+      constraints->InitializeIndices(1);
+    }
 
     if (use_onehot) {
       for (int t = 0; t < used_bin; ++t) {
@@ -272,11 +276,22 @@ class FeatureHistogram {
     }
 
     if (is_splittable_) {
+      double current_min_constraint_left = -std::numeric_limits<double>::max();
+      double current_max_constraint_left = std::numeric_limits<double>::max();
+      double current_min_constraint_right = -std::numeric_limits<double>::max();
+      double current_max_constraint_right = std::numeric_limits<double>::max();
+      if (constraints != nullptr) {
+        current_min_constraint_left = constraints->CurrentMinConstraintLeft();
+        current_max_constraint_left = constraints->CurrentMaxConstraintLeft();
+        current_min_constraint_right = constraints->CurrentMinConstraintRight();
+        current_max_constraint_right = constraints->CurrentMaxConstraintRight();
+      }
+
       output->left_output = CalculateSplittedLeafOutput(
           best_sum_left_gradient, best_sum_left_hessian,
           meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
-          constraints->CurrentMinConstraintLeft(),
-          constraints->CurrentMaxConstraintLeft());
+          current_min_constraint_left,
+          current_max_constraint_left);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
@@ -284,8 +299,8 @@ class FeatureHistogram {
           sum_gradient - best_sum_left_gradient,
           sum_hessian - best_sum_left_hessian, meta_->config->lambda_l1, l2,
           meta_->config->max_delta_step,
-          constraints->CurrentMinConstraintRight(),
-          constraints->CurrentMaxConstraintRight());
+          current_min_constraint_right,
+          current_max_constraint_right);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
@@ -515,8 +530,18 @@ class FeatureHistogram {
                               double sum_right_gradients, double sum_right_hessians,
                               double l1, double l2, double max_delta_step,
                               const SplittingConstraints *constraints, int8_t monotone_constraint) {
-    double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, constraints->CurrentMinConstraintLeft(), constraints->CurrentMaxConstraintLeft());
-    double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, constraints->CurrentMinConstraintRight(), constraints->CurrentMaxConstraintRight());
+    double current_min_constraint_left = -std::numeric_limits<double>::max();
+    double current_max_constraint_left = std::numeric_limits<double>::max();
+    double current_min_constraint_right = -std::numeric_limits<double>::max();
+    double current_max_constraint_right = std::numeric_limits<double>::max();
+    if (constraints != nullptr) {
+      current_min_constraint_left = constraints->CurrentMinConstraintLeft();
+      current_max_constraint_left = constraints->CurrentMaxConstraintLeft();
+      current_min_constraint_right = constraints->CurrentMinConstraintRight();
+      current_max_constraint_right = constraints->CurrentMaxConstraintRight();
+    }
+    double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, current_min_constraint_left, current_max_constraint_left);
+    double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, current_min_constraint_right, current_max_constraint_right);
     if (((monotone_constraint > 0) && (left_output > right_output)) ||
       ((monotone_constraint < 0) && (left_output < right_output))) {
       return 0;
@@ -566,7 +591,10 @@ class FeatureHistogram {
 
       int t = meta_->num_bin - 1 - bias - use_na_as_missing;
       const int t_end = 1 - bias;
-      constraints->InitializeIndices(dir);
+
+      if (constraints != nullptr) {
+        constraints->InitializeIndices(dir);
+      }
 
       // from right to left, and we don't need data in bin0
       for (; t >= t_end; --t) {
@@ -591,7 +619,9 @@ class FeatureHistogram {
 
         // when the monotone precise mode in enabled, as t changes, the constraints applied on
         // each child may change, because the constraints may depend on thresholds
-        constraints->UpdateIndices(dir, bias, t);
+        if (constraints != nullptr) {
+          constraints->UpdateIndices(dir, bias, t);
+        }
 
         // when the algorithm goes through the thresholds we use the same index for cumulative arrays
         // in both directions but each leaf is constrained according to the corresponding array
@@ -638,7 +668,9 @@ class FeatureHistogram {
         t = -1;
       }
 
-      constraints->InitializeIndices(dir);
+      if (constraints != nullptr) {
+        constraints->InitializeIndices(dir);
+      }
 
       for (; t <= t_end; ++t) {
         // need to skip default bin
@@ -661,7 +693,9 @@ class FeatureHistogram {
 
         double sum_right_gradient = sum_gradient - sum_left_gradient;
 
-        constraints->UpdateIndices(1, bias, t);
+        if (constraints != nullptr) {
+          constraints->UpdateIndices(1, bias, t);
+        }
         double current_gain = GetSplitGains(
             sum_left_gradient, sum_left_hessian, sum_right_gradient,
             sum_right_hessian, meta_->config->lambda_l1,

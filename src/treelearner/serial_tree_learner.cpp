@@ -957,9 +957,15 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
       learner_state.tree->LeafOutput(leaf_index), tid, kEpsilon)
 #endif
       SplitInfo new_split;
-  histogram_array_[feature_index]
-      .FindBestThreshold(sum_gradient, sum_hessian, num_data, &new_split,
-                         &learner_state.current_constraints[tid]);
+
+  SplittingConstraints *constraints;
+  if (learner_state.config_->monotone_constraints.empty()) {
+    constraints = nullptr;
+  } else {
+    constraints = &learner_state.current_constraints[tid];
+  }
+  histogram_array_[feature_index].FindBestThreshold(
+      sum_gradient, sum_hessian, num_data, &new_split, constraints);
 
   if (learner_state.tree->leaf_is_in_monotone_subtree(leaf_index)) {
     learner_state.current_constraints.InitializeConstraints(tid);
