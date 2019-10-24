@@ -4,10 +4,20 @@
 \alias{lightgbm}
 \title{Train a LightGBM model}
 \usage{
-lightgbm(data, label = NULL, weight = NULL, params = list(),
-  nrounds = 10, verbose = 1, eval_freq = 1L,
-  early_stopping_rounds = NULL, save_name = "lightgbm.model",
-  init_model = NULL, callbacks = list(), ...)
+lightgbm(
+  data,
+  label = NULL,
+  weight = NULL,
+  params = list(),
+  nrounds = 10,
+  verbose = 1,
+  eval_freq = 1L,
+  early_stopping_rounds = NULL,
+  save_name = "lightgbm.model",
+  init_model = NULL,
+  callbacks = list(),
+  ...
+)
 }
 \arguments{
 \item{data}{a \code{lgb.Dataset} object, used for training}
@@ -24,12 +34,10 @@ lightgbm(data, label = NULL, weight = NULL, params = list(),
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
-\item{early_stopping_rounds}{int
-Activates early stopping.
-Requires at least one validation data and one metric
-If there's more than one, will check all of them except the training data
-Returns the model with (best_iter + early_stopping_rounds)
-If early stopping occurs, the model will have 'best_iter' field}
+\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
+and one metric. If there's more than one, will check all of them
+except the training data. Returns the model with (best_iter + early_stopping_rounds).
+If early stopping occurs, the model will have 'best_iter' field.}
 
 \item{save_name}{File name to use when writing the trained model to disk. Should end in ".model".}
 

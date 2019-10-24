@@ -4,17 +4,18 @@
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param obj objective function, can be character or custom objective function. Examples include
-#'        \code{regression}, \code{regression_l1}, \code{huber},
-#'        \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
+#'            \code{regression}, \code{regression_l1}, \code{huber},
+#'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
 #' @param eval evaluation function, can be (a list of) character or custom eval function
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
-#'        type int represents index,
-#'        type str represents feature names
-#' @param callbacks list of callback functions
-#'        List of callback functions that are applied at each iteration.
-#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
+#'                            type int represents index,
+#'                            type str represents feature names
+#' @param callbacks List of callback functions that are applied at each iteration.
+#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the
+#'                   booster model into a predictor model which frees up memory and the
+#'                   original datasets
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
 #'                \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
@@ -37,13 +38,15 @@
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' params <- list(objective = "regression", metric = "l2")
 #' valids <- list(test = dtest)
-#' model <- lgb.train(params,
-#'                    dtrain,
-#'                    10,
-#'                    valids,
-#'                    min_data = 1,
-#'                    learning_rate = 1,
-#'                    early_stopping_rounds = 5)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , valids = valids
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #' @export
 lgb.train <- function(params = list(),
                       data,
@@ -105,7 +108,17 @@ lgb.train <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
-  n_rounds <- c("num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees", "num_round", "num_rounds", "num_boost_round", "n_estimators")
+  n_rounds <- c(
+    "num_iterations"
+    , "num_iteration"
+    , "n_iter"
+    , "num_tree"
+    , "num_trees"
+    , "num_round"
+    , "num_rounds"
+    , "num_boost_round"
+    , "n_estimators"
+  )
   if (any(names(params) %in% n_rounds)) {
     end_iteration <- begin_iteration + params[[which(names(params) %in% n_rounds)[1]]] - 1
   } else {
@@ -198,12 +211,24 @@ lgb.train <- function(params = list(),
   early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change")
   if (any(names(params) %in% early_stop)) {
     if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
-      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose))
+      callbacks <- add.cb(
+        callbacks
+        , cb.early.stop(
+          params[[which(names(params) %in% early_stop)[1]]]
+          , verbose = verbose
+        )
+      )
     }
   } else {
     if (!is.null(early_stopping_rounds)) {
       if (early_stopping_rounds > 0) {
-        callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+        callbacks <- add.cb(
+          callbacks
+          , cb.early.stop(
+            early_stopping_rounds
+            , verbose = verbose
+          )
+        )
       }
     }
   }
@@ -267,7 +292,8 @@ lgb.train <- function(params = list(),
 
   }
 
-  # When early stopping is not activated, we compute the best iteration / score ourselves by selecting the first metric and the first dataset
+  # When early stopping is not activated, we compute the best iteration / score ourselves by
+  # selecting the first metric and the first dataset
   if (record && length(valids) > 0 && is.na(env$best_score)) {
     if (env$eval_list[[1]]$higher_better[1] == TRUE) {
       booster$best_iter <- unname(which.max(unlist(booster$record_evals[[2]][[1]][[1]])))
@@ -282,9 +308,11 @@ lgb.train <- function(params = list(),
   if (reset_data) {
 
     # Store temporarily model data elsewhere
-    booster_old <- list(best_iter = booster$best_iter,
-                        best_score = booster$best_score,
-                        record_evals = booster$record_evals)
+    booster_old <- list(
+      best_iter = booster$best_iter
+      , best_score = booster$best_score
+      , record_evals = booster$record_evals
+    )
 
     # Reload model
     booster <- lgb.load(model_str = booster$save_model_to_string())

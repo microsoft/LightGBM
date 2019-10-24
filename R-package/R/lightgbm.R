@@ -4,12 +4,10 @@
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
 #' @param data a \code{lgb.Dataset} object, used for training
-#' @param early_stopping_rounds int
-#'        Activates early stopping.
-#'        Requires at least one validation data and one metric
-#'        If there's more than one, will check all of them except the training data
-#'        Returns the model with (best_iter + early_stopping_rounds)
-#'        If early stopping occurs, the model will have 'best_iter' field
+#' @param early_stopping_rounds int. Activates early stopping. Requires at least one validation data
+#'                              and one metric. If there's more than one, will check all of them
+#'                              except the training data. Returns the model with (best_iter + early_stopping_rounds).
+#'                              If early stopping occurs, the model will have 'best_iter' field.
 #' @param eval_freq evaluation output frequency, only effect when verbose > 0
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param nrounds number of training rounds
@@ -76,9 +74,18 @@ lightgbm <- function(data,
   }
 
   # Train a model using the regular way
-  bst <- lgb.train(params, dtrain, nrounds, valids, verbose = verbose, eval_freq = eval_freq,
-                   early_stopping_rounds = early_stopping_rounds,
-                   init_model = init_model, callbacks = callbacks, ...)
+  bst <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = valids
+    , verbose = verbose
+    , eval_freq = eval_freq
+    , early_stopping_rounds = early_stopping_rounds
+    , init_model = init_model
+    , callbacks = callbacks
+    , ...
+  )
 
   # Store model under a specific name
   bst$save_model(save_name)

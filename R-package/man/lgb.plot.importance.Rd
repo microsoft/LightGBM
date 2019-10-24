@@ -4,8 +4,13 @@
 \alias{lgb.plot.importance}
 \title{Plot feature importance as a bar graph}
 \usage{
-lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain",
-  left_margin = 10, cex = NULL)
+lgb.plot.importance(
+  tree_imp,
+  top_n = 10,
+  measure = "Gain",
+  left_margin = 10,
+  cex = NULL
+)
 }
 \arguments{
 \item{tree_imp}{a \code{data.table} returned by \code{\link{lgb.importance}}.}

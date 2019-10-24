@@ -13,10 +13,12 @@ valids <- list(eval = dtest, train = dtrain)
 print("Start running example to start from an initial prediction")
 
 # Train lightgbm for 1 round
-param <- list(num_leaves = 4,
-              learning_rate = 1,
-              nthread = 2,
-              objective = "binary")
+param <- list(
+    num_leaves = 4
+    , learning_rate = 1
+    , nthread = 2
+    , objective = "binary"
+)
 bst <- lgb.train(param, dtrain, 1, valids = valids)
 
 # Note: we need the margin value instead of transformed prediction in set_init_score
@@ -29,7 +31,9 @@ setinfo(dtrain, "init_score", ptrain)
 setinfo(dtest, "init_score", ptest)
 
 print("This is result of boost from initial prediction")
-bst <- lgb.train(params = param,
-                 data = dtrain,
-                 nrounds = 5,
-                 valids = valids)
+bst <- lgb.train(
+    params = param
+    , data = dtrain
+    , nrounds = 5
+    , valids = valids
+)

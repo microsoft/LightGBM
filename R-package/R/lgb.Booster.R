@@ -46,7 +46,12 @@ Booster <- R6::R6Class(
           }
 
           # Store booster handle
-          handle <- lgb.call("LGBM_BoosterCreate_R", ret = handle, train_set$.__enclos_env__$private$get_handle(), params_str)
+          handle <- lgb.call(
+            "LGBM_BoosterCreate_R"
+            , ret = handle
+            , train_set$.__enclos_env__$private$get_handle()
+            , params_str
+          )
 
           # Create private booster information
           private$train_set <- train_set
@@ -57,10 +62,12 @@ Booster <- R6::R6Class(
           if (!is.null(private$init_predictor)) {
 
             # Merge booster
-            lgb.call("LGBM_BoosterMerge_R",
-                     ret = NULL,
-                     handle,
-                     private$init_predictor$.__enclos_env__$private$handle)
+            lgb.call(
+              "LGBM_BoosterMerge_R"
+              , ret = NULL
+              , handle
+              , private$init_predictor$.__enclos_env__$private$handle
+            )
 
           }
 
@@ -75,9 +82,11 @@ Booster <- R6::R6Class(
           }
 
           # Create booster from model
-          handle <- lgb.call("LGBM_BoosterCreateFromModelfile_R",
-                             ret = handle,
-                             lgb.c_str(modelfile))
+          handle <- lgb.call(
+            "LGBM_BoosterCreateFromModelfile_R"
+            , ret = handle
+            , lgb.c_str(modelfile)
+          )
 
         } else if (!is.null(model_str)) {
 
@@ -87,14 +96,19 @@ Booster <- R6::R6Class(
           }
 
           # Create booster from model
-          handle <- lgb.call("LGBM_BoosterLoadModelFromString_R",
-                             ret = handle,
-                             lgb.c_str(model_str))
+          handle <- lgb.call(
+            "LGBM_BoosterLoadModelFromString_R"
+            , ret = handle
+            , lgb.c_str(model_str)
+          )
 
         } else {
 
           # Booster non existent
-          stop("lgb.Booster: Need at least either training dataset, model file, or model_str to create booster instance")
+          stop(
+            "lgb.Booster: Need at least either training dataset, "
+            , "model file, or model_str to create booster instance"
+          )
 
         }
 
@@ -111,9 +125,11 @@ Booster <- R6::R6Class(
         class(handle) <- "lgb.Booster.handle"
         private$handle <- handle
         private$num_class <- 1L
-        private$num_class <- lgb.call("LGBM_BoosterGetNumClasses_R",
-                                      ret = private$num_class,
-                                      private$handle)
+        private$num_class <- lgb.call(
+          "LGBM_BoosterGetNumClasses_R"
+          , ret = private$num_class
+          , private$handle
+        )
 
       }
 
@@ -138,7 +154,10 @@ Booster <- R6::R6Class(
 
       # Check if predictors are identical
       if (!identical(data$.__enclos_env__$private$predictor, private$init_predictor)) {
-        stop("lgb.Booster.add_valid: Failed to add validation data; you should use the same predictor for these data")
+        stop(
+          "lgb.Booster.add_valid: Failed to add validation data; "
+          , "you should use the same predictor for these data"
+        )
       }
 
       # Check if names are character
@@ -147,10 +166,12 @@ Booster <- R6::R6Class(
       }
 
       # Add validation data to booster
-      lgb.call("LGBM_BoosterAddValidData_R",
-               ret = NULL,
-               private$handle,
-               data$.__enclos_env__$private$get_handle())
+      lgb.call(
+        "LGBM_BoosterAddValidData_R"
+        , ret = NULL
+        , private$handle
+        , data$.__enclos_env__$private$get_handle()
+      )
 
       # Store private information
       private$valid_sets <- c(private$valid_sets, data)
@@ -171,10 +192,12 @@ Booster <- R6::R6Class(
       params_str <- lgb.params2str(params)
 
       # Reset parameters
-      lgb.call("LGBM_BoosterResetParameter_R",
-               ret = NULL,
-               private$handle,
-               params_str)
+      lgb.call(
+        "LGBM_BoosterResetParameter_R"
+        , ret = NULL
+        , private$handle
+        , params_str
+      )
 
       # Return self
       return(invisible(self))
@@ -198,10 +221,12 @@ Booster <- R6::R6Class(
         }
 
         # Reset training data on booster
-        lgb.call("LGBM_BoosterResetTrainingData_R",
-                 ret = NULL,
-                 private$handle,
-                 train_set$.__enclos_env__$private$get_handle())
+        lgb.call(
+          "LGBM_BoosterResetTrainingData_R"
+          , ret = NULL
+          , private$handle
+          , train_set$.__enclos_env__$private$get_handle()
+        )
 
         # Store private train set
         private$train_set = train_set
@@ -230,18 +255,20 @@ Booster <- R6::R6Class(
         gpair <- fobj(private$inner_predict(1), private$train_set)
 
         # Check for gradient and hessian as list
-        if(is.null(gpair$grad) || is.null(gpair$hess)){
+        if (is.null(gpair$grad) || is.null(gpair$hess)){
           stop("lgb.Booster.update: custom objective should
             return a list with attributes (hess, grad)")
         }
 
         # Return custom boosting gradient/hessian
-        ret <- lgb.call("LGBM_BoosterUpdateOneIterCustom_R",
-                        ret = NULL,
-                        private$handle,
-                        gpair$grad,
-                        gpair$hess,
-                        length(gpair$grad))
+        ret <- lgb.call(
+          "LGBM_BoosterUpdateOneIterCustom_R"
+          , ret = NULL
+          , private$handle
+          , gpair$grad
+          , gpair$hess
+          , length(gpair$grad)
+        )
 
       }
 
@@ -258,9 +285,11 @@ Booster <- R6::R6Class(
     rollback_one_iter = function() {
 
       # Return one iteration behind
-      lgb.call("LGBM_BoosterRollbackOneIter_R",
-               ret = NULL,
-               private$handle)
+      lgb.call(
+        "LGBM_BoosterRollbackOneIter_R"
+        , ret = NULL
+        , private$handle
+      )
 
       # Loop through each iteration
       for (i in seq_along(private$is_predicted_cur_iter)) {
@@ -276,9 +305,11 @@ Booster <- R6::R6Class(
     current_iter = function() {
 
       cur_iter <- 0L
-      lgb.call("LGBM_BoosterGetCurrentIteration_R",
-               ret = cur_iter,
-               private$handle)
+      lgb.call(
+        "LGBM_BoosterGetCurrentIteration_R"
+        , ret = cur_iter
+        , private$handle
+      )
 
     },
 
@@ -349,7 +380,10 @@ Booster <- R6::R6Class(
 
       # Loop through each validation set
       for (i in seq_along(private$valid_sets)) {
-        ret <- append(ret, private$inner_eval(private$name_valid_sets[[i]], i + 1, feval))
+        ret <- append(
+          x = ret
+          , values = private$inner_eval(private$name_valid_sets[[i]], i + 1, feval)
+        )
       }
 
       # Return ret
@@ -366,11 +400,13 @@ Booster <- R6::R6Class(
       }
 
       # Save booster model
-      lgb.call("LGBM_BoosterSaveModel_R",
-               ret = NULL,
-               private$handle,
-               as.integer(num_iteration),
-               lgb.c_str(filename))
+      lgb.call(
+        "LGBM_BoosterSaveModel_R"
+        , ret = NULL
+        , private$handle
+        , as.integer(num_iteration)
+        , lgb.c_str(filename)
+      )
 
       # Return self
       return(invisible(self))
@@ -385,9 +421,11 @@ Booster <- R6::R6Class(
       }
 
       # Return model string
-      return(lgb.call.return.str("LGBM_BoosterSaveModelToString_R",
-                                 private$handle,
-                                 as.integer(num_iteration)))
+      return(lgb.call.return.str(
+        "LGBM_BoosterSaveModelToString_R"
+        , private$handle
+        , as.integer(num_iteration)
+      ))
 
     },
 
@@ -400,9 +438,11 @@ Booster <- R6::R6Class(
       }
 
       # Return dumped model
-      lgb.call.return.str("LGBM_BoosterDumpModel_R",
-                          private$handle,
-                          as.integer(num_iteration))
+      lgb.call.return.str(
+        "LGBM_BoosterDumpModel_R"
+        , private$handle
+        , as.integer(num_iteration)
+      )
 
     },
 
@@ -478,10 +518,12 @@ Booster <- R6::R6Class(
 
         # Store predictions
         npred <- 0L
-        npred <- lgb.call("LGBM_BoosterGetNumPredict_R",
-                          ret = npred,
-                          private$handle,
-                          as.integer(idx - 1))
+        npred <- lgb.call(
+          "LGBM_BoosterGetNumPredict_R"
+          , ret = npred
+          , private$handle
+          , as.integer(idx - 1)
+        )
         private$predict_buffer[[data_name]] <- numeric(npred)
 
       }
@@ -490,10 +532,12 @@ Booster <- R6::R6Class(
       if (!private$is_predicted_cur_iter[[idx]]) {
 
         # Use buffer
-        private$predict_buffer[[data_name]] <- lgb.call("LGBM_BoosterGetPredict_R",
-                                                        ret = private$predict_buffer[[data_name]],
-                                                        private$handle,
-                                                        as.integer(idx - 1))
+        private$predict_buffer[[data_name]] <- lgb.call(
+          "LGBM_BoosterGetPredict_R"
+          , ret = private$predict_buffer[[data_name]]
+          , private$handle
+          , as.integer(idx - 1)
+        )
         private$is_predicted_cur_iter[[idx]] <- TRUE
       }
 
@@ -508,8 +552,10 @@ Booster <- R6::R6Class(
       if (is.null(private$eval_names)) {
 
         # Get evaluation names
-        names <- lgb.call.return.str("LGBM_BoosterGetEvalNames_R",
-                                     private$handle)
+        names <- lgb.call.return.str(
+          "LGBM_BoosterGetEvalNames_R"
+          , private$handle
+        )
 
         # Check names' length
         if (nchar(names) > 0) {
@@ -547,10 +593,12 @@ Booster <- R6::R6Class(
 
         # Create evaluation values
         tmp_vals <- numeric(length(private$eval_names))
-        tmp_vals <- lgb.call("LGBM_BoosterGetEval_R",
-                             ret = tmp_vals,
-                             private$handle,
-                             as.integer(data_idx - 1))
+        tmp_vals <- lgb.call(
+          "LGBM_BoosterGetEval_R"
+          , ret = tmp_vals
+          , private$handle
+          , as.integer(data_idx - 1)
+        )
 
         # Loop through all evaluation names
         for (i in seq_along(private$eval_names)) {
@@ -587,7 +635,7 @@ Booster <- R6::R6Class(
         res <- feval(private$inner_predict(data_idx), data)
 
         # Check for name correctness
-        if(is.null(res$name) || is.null(res$value) ||  is.null(res$higher_better)) {
+        if (is.null(res$name) || is.null(res$value) ||  is.null(res$higher_better)) {
           stop("lgb.Booster.eval: custom eval function should return a
             list with attribute (name, value, higher_better)");
         }
@@ -614,13 +662,13 @@ Booster <- R6::R6Class(
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
 #' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
 #' @param rawscore whether the prediction should be returned in the for of original untransformed
-#'        sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE} for
-#'        logistic regression would result in predictions for log-odds instead of probabilities.
+#'                 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
+#'                 for logistic regression would result in predictions for log-odds instead of probabilities.
 #' @param predleaf whether predict leaf index instead.
 #' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
-#'        prediction outputs per case.
+#'                prediction outputs per case.
 #' @param ... Additional named arguments passed to the \code{predict()} method of
 #'            the \code{lgb.Booster} object passed to \code{object}.
 #' @return
@@ -642,13 +690,15 @@ Booster <- R6::R6Class(
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' params <- list(objective = "regression", metric = "l2")
 #' valids <- list(test = dtest)
-#' model <- lgb.train(params,
-#'                    dtrain,
-#'                    10,
-#'                    valids,
-#'                    min_data = 1,
-#'                    learning_rate = 1,
-#'                    early_stopping_rounds = 5)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , valids = valids
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #' preds <- predict(model, test$data)
 #'
 #' @rdname predict.lgb.Booster
@@ -669,13 +719,16 @@ predict.lgb.Booster <- function(object,
   }
 
   # Return booster predictions
-  object$predict(data,
-                 num_iteration,
-                 rawscore,
-                 predleaf,
-                 predcontrib,
-                 header,
-                 reshape, ...)
+  object$predict(
+    data
+    , num_iteration
+    , rawscore
+    , predleaf
+    , predcontrib
+    , header
+    , reshape
+    , ...
+  )
 }
 
 #' Load LightGBM model
@@ -699,13 +752,15 @@ predict.lgb.Booster <- function(object,
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' params <- list(objective = "regression", metric = "l2")
 #' valids <- list(test = dtest)
-#' model <- lgb.train(params,
-#'                    dtrain,
-#'                    10,
-#'                    valids,
-#'                    min_data = 1,
-#'                    learning_rate = 1,
-#'                    early_stopping_rounds = 5)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , valids = valids
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #' lgb.save(model, "model.txt")
 #' load_booster <- lgb.load(filename = "model.txt")
 #' model_string <- model$save_model_to_string(NULL) # saves best iteration
@@ -757,13 +812,15 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' params <- list(objective = "regression", metric = "l2")
 #' valids <- list(test = dtest)
-#' model <- lgb.train(params,
-#'                    dtrain,
-#'                    10,
-#'                    valids,
-#'                    min_data = 1,
-#'                    learning_rate = 1,
-#'                    early_stopping_rounds = 5)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , valids = valids
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #' lgb.save(model, "model.txt")
 #'
 #' @rdname lgb.save
@@ -804,13 +861,15 @@ lgb.save <- function(booster, filename, num_iteration = NULL){
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' params <- list(objective = "regression", metric = "l2")
 #' valids <- list(test = dtest)
-#' model <- lgb.train(params,
-#'                   dtrain,
-#'                    10,
-#'                    valids,
-#'                    min_data = 1,
-#'                    learning_rate = 1,
-#'                    early_stopping_rounds = 5)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , valids = valids
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #' json_model <- lgb.dump(model)
 #'
 #' @rdname lgb.dump
@@ -848,13 +907,15 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' params <- list(objective = "regression", metric = "l2")
 #' valids <- list(test = dtest)
-#' model <- lgb.train(params,
-#'                    dtrain,
-#'                    10,
-#'                    valids,
-#'                    min_data = 1,
-#'                    learning_rate = 1,
-#'                    early_stopping_rounds = 5)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , valids = valids
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #' lgb.get.eval.result(model, "test", "l2")
 #' @rdname lgb.get.eval.result
 #' @export

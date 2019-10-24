@@ -21,9 +21,14 @@
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
-#' params <- list(objective = "binary",
-#'                learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'                min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
+#' params <- list(
+#'   objective = "binary"
+#'   , learning_rate = 0.01
+#'   , num_leaves = 63
+#'   , max_depth = -1
+#'   , min_data_in_leaf = 1
+#'   , min_sum_hessian_in_leaf = 1
+#' )
 #' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_imp1 <- lgb.importance(model, percentage = TRUE)
@@ -63,9 +68,11 @@ lgb.importance <- function(model, percentage = TRUE) {
 
   # Check if relative values are requested
   if (percentage) {
-    tree_imp_dt[, ":="(Gain = Gain / sum(Gain),
-                    Cover = Cover / sum(Cover),
-                    Frequency = Frequency / sum(Frequency))]
+    tree_imp_dt[, `:=`(
+      Gain = Gain / sum(Gain)
+      , Cover = Cover / sum(Cover)
+      , Frequency = Frequency / sum(Frequency)
+    )]
   }
 
   # Return importance table

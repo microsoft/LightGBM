@@ -4,11 +4,24 @@
 \alias{lgb.train}
 \title{Main training logic for LightGBM}
 \usage{
-lgb.train(params = list(), data, nrounds = 10, valids = list(),
-  obj = NULL, eval = NULL, verbose = 1, record = TRUE,
-  eval_freq = 1L, init_model = NULL, colnames = NULL,
-  categorical_feature = NULL, early_stopping_rounds = NULL,
-  callbacks = list(), reset_data = FALSE, ...)
+lgb.train(
+  params = list(),
+  data,
+  nrounds = 10,
+  valids = list(),
+  obj = NULL,
+  eval = NULL,
+  verbose = 1,
+  record = TRUE,
+  eval_freq = 1L,
+  init_model = NULL,
+  colnames = NULL,
+  categorical_feature = NULL,
+  early_stopping_rounds = NULL,
+  callbacks = list(),
+  reset_data = FALSE,
+  ...
+)
 }
 \arguments{
 \item{params}{List of parameters}
@@ -39,17 +52,16 @@ lgb.train(params = list(), data, nrounds = 10, valids = list(),
 type int represents index,
 type str represents feature names}
 
-\item{early_stopping_rounds}{int
-Activates early stopping.
-Requires at least one validation data and one metric
-If there's more than one, will check all of them except the training data
-Returns the model with (best_iter + early_stopping_rounds)
-If early stopping occurs, the model will have 'best_iter' field}
+\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
+and one metric. If there's more than one, will check all of them
+except the training data. Returns the model with (best_iter + early_stopping_rounds).
+If early stopping occurs, the model will have 'best_iter' field.}
 
-\item{callbacks}{list of callback functions
-List of callback functions that are applied at each iteration.}
+\item{callbacks}{List of callback functions that are applied at each iteration.}
 
-\item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets}
+\item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the
+booster model into a predictor model which frees up memory and the
+original datasets}
 
 \item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
 \itemize{
@@ -78,11 +90,13 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   10,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 5)
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 10
+  , valids = valids
+  , min_data = 1
+  , learning_rate = 1
+  , early_stopping_rounds = 5
+)
 }

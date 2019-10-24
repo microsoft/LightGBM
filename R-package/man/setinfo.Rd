@@ -12,11 +12,11 @@ setinfo(dataset, ...)
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
 
-\item{...}{other parameters}
-
 \item{name}{the name of the field to get}
 
 \item{info}{the specific field of information to set}
+
+\item{...}{other parameters}
 }
 \value{
 passed object

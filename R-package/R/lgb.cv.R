@@ -25,23 +25,23 @@ CVBooster <- R6::R6Class(
 #' @param label vector of response values. Should be provided only when data is an R-matrix.
 #' @param weight vector of response values. If not NULL, will set to dataset
 #' @param obj objective function, can be character or custom objective function. Examples include
-#'        \code{regression}, \code{regression_l1}, \code{huber},
-#'        \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
+#'            \code{regression}, \code{regression_l1}, \code{huber},
+#'             \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
 #' @param eval evaluation function, can be (list of) character or custom eval function
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
-#'        by the values of outcome labels.
+#'                   by the values of outcome labels.
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
-#'        (each element must be a vector of test fold's indices). When folds are supplied,
-#'        the \code{nfold} and \code{stratified} parameters are ignored.
+#'              (each element must be a vector of test fold's indices). When folds are supplied,
+#'              the \code{nfold} and \code{stratified} parameters are ignored.
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
-#'        type int represents index,
-#'        type str represents feature names
-#' @param callbacks list of callback functions
-#'        List of callback functions that are applied at each iteration.
-#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
+#'                            type int represents index,
+#'                            type str represents feature names
+#' @param callbacks List of callback functions that are applied at each iteration.
+#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
+#'                   into a predictor model which frees up memory and the original datasets
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
 #'                \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
@@ -61,13 +61,15 @@ CVBooster <- R6::R6Class(
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' params <- list(objective = "regression", metric = "l2")
-#' model <- lgb.cv(params,
-#'                 dtrain,
-#'                 10,
-#'                 nfold = 3,
-#'                 min_data = 1,
-#'                 learning_rate = 1,
-#'                 early_stopping_rounds = 5)
+#' model <- lgb.cv(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 10
+#'   , nfold = 3
+#'   , min_data = 1
+#'   , learning_rate = 1
+#'   , early_stopping_rounds = 5
+#' )
 #' @export
 lgb.cv <- function(params = list(),
                    data,
@@ -134,7 +136,17 @@ lgb.cv <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
-  n_trees <- c("num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees", "num_round", "num_rounds", "num_boost_round", "n_estimators")
+  n_trees <- c(
+    "num_iterations"
+    , "num_iteration"
+    , "n_iter"
+    , "num_tree"
+    , "num_trees"
+    , "num_round"
+    , "num_rounds"
+    , "num_boost_round"
+    , "n_estimators"
+  )
   if (any(names(params) %in% n_trees)) {
     end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1]]] - 1
   } else {
@@ -192,12 +204,14 @@ lgb.cv <- function(params = list(),
     }
 
     # Create folds
-    folds <- generate.cv.folds(nfold,
-                               nrow(data),
-                               stratified,
-                               getinfo(data, "label"),
-                               getinfo(data, "group"),
-                               params)
+    folds <- generate.cv.folds(
+      nfold
+      , nrow(data)
+      , stratified
+      , getinfo(data, "label")
+      , getinfo(data, "group")
+      , params
+    )
 
   }
 
@@ -215,12 +229,24 @@ lgb.cv <- function(params = list(),
   early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping", "n_iter_no_change")
   if (any(names(params) %in% early_stop)) {
     if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
-      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose))
+      callbacks <- add.cb(
+        callbacks
+        , cb.early.stop(
+          params[[which(names(params) %in% early_stop)[1]]]
+          , verbose = verbose
+        )
+      )
     }
   } else {
     if (!is.null(early_stopping_rounds)) {
       if (early_stopping_rounds > 0) {
-        callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+        callbacks <- add.cb(
+          callbacks
+          , cb.early.stop(
+            early_stopping_rounds
+            , verbose = verbose
+          )
+        )
       }
     }
   }
@@ -292,7 +318,7 @@ lgb.cv <- function(params = list(),
     env$eval_list <- merged_msg$eval_list
 
     # Check for standard deviation requirement
-    if(showsd) {
+    if (showsd) {
       env$eval_err_list <- merged_msg$eval_err_list
     }
 
@@ -319,9 +345,11 @@ lgb.cv <- function(params = list(),
   if (reset_data) {
     lapply(cv_booster$boosters, function(fd) {
       # Store temporarily model data elsewhere
-      booster_old <- list(best_iter = fd$booster$best_iter,
-                          best_score = fd$booster$best_score,
-                          record_evals = fd$booster$record_evals)
+      booster_old <- list(
+        best_iter = fd$booster$best_iter
+        , best_score = fd$booster$best_score,
+        , record_evals = fd$booster$record_evals
+      )
       # Reload model
       fd$booster <- lgb.load(model_str = fd$booster$save_model_to_string())
       fd$booster$best_iter <- booster_old$best_iter
@@ -384,8 +412,10 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
     # Loop through each fold
     for (i in seq_len(nfold)) {
       kstep <- length(rnd_idx) %/% (nfold - i + 1)
-      folds[[i]] <- list(fold = which(ungrouped %in% rnd_idx[seq_len(kstep)]),
-                         group = rnd_idx[seq_len(kstep)])
+      folds[[i]] <- list(
+        fold = which(ungrouped %in% rnd_idx[seq_len(kstep)])
+        , group = rnd_idx[seq_len(kstep)]
+      )
       rnd_idx <- rnd_idx[-seq_len(kstep)]
     }
 
@@ -413,11 +443,17 @@ lgb.stratified.folds <- function(y, k = 10) {
   if (is.numeric(y)) {
 
     cuts <- length(y) %/% k
-    if (cuts < 2) { cuts <- 2 }
-    if (cuts > 5) { cuts <- 5 }
-    y <- cut(y,
-             unique(stats::quantile(y, probs = seq.int(0, 1, length.out = cuts))),
-             include.lowest = TRUE)
+    if (cuts < 2) {
+      cuts <- 2
+    }
+    if (cuts > 5) {
+      cuts <- 5
+    }
+    y <- cut(
+      y
+      , unique(stats::quantile(y, probs = seq.int(0, 1, length.out = cuts)))
+      , include.lowest = TRUE
+    )
 
   }
 
@@ -499,8 +535,10 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
 
     # Parse standard deviation
     for (j in seq_len(eval_len)) {
-      ret_eval_err <- c(ret_eval_err,
-                        sqrt(mean(eval_result[[j]] ^ 2) - mean(eval_result[[j]]) ^ 2))
+      ret_eval_err <- c(
+        ret_eval_err
+        , sqrt(mean(eval_result[[j]] ^ 2) - mean(eval_result[[j]]) ^ 2)
+      )
     }
 
     # Convert to list
@@ -509,7 +547,9 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
   }
 
   # Return errors
-  list(eval_list = ret_eval,
-       eval_err_list = ret_eval_err)
+  list(
+    eval_list = ret_eval
+    , eval_err_list = ret_eval_err
+  )
 
 }

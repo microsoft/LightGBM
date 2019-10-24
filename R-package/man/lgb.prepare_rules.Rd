@@ -12,10 +12,14 @@ lgb.prepare_rules(data, rules = NULL)
 \item{rules}{A set of rules from the data preparator, if already used.}
 }
 \value{
-A list with the cleaned dataset (\code{data}) and the rules (\code{rules}). The data must be converted to a matrix format (\code{as.matrix}) for input in \code{lgb.Dataset}.
+A list with the cleaned dataset (\code{data}) and the rules (\code{rules}).
+        The data must be converted to a matrix format (\code{as.matrix}) for input
+        in \code{lgb.Dataset}.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}. Factors and characters are converted to numeric. In addition, keeps rules created so you can convert other datasets using this converter.
+Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+Factors and characters are converted to numeric. In addition, keeps rules created
+so you can convert other datasets using this converter.
 }
 \examples{
 library(lightgbm)
