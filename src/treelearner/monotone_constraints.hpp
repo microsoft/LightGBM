@@ -587,5 +587,26 @@ struct CurrentConstraints {
   }
 };
 
+struct BestConstraints {
+  double best_min_constraint_right;
+  double best_max_constraint_right;
+  double best_min_constraint_left;
+  double best_max_constraint_left;
+
+  void Init() {
+    best_min_constraint_left = NAN;
+    best_max_constraint_left = NAN;
+    best_min_constraint_right = NAN;
+    best_max_constraint_right = NAN;
+  }
+
+  void Update(SplittingConstraints *constraints) {
+    best_min_constraint_right = constraints->CurrentMinConstraintRight();
+    best_max_constraint_right = constraints->CurrentMaxConstraintRight();
+    best_min_constraint_left = constraints->CurrentMinConstraintLeft();
+    best_max_constraint_left = constraints->CurrentMaxConstraintLeft();
+  }
+};
+
 } // namespace LightGBM
 #endif // LightGBM_TREELEARNER_MONOTONE_CONSTRAINTS_H_

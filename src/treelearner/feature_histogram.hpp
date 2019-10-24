@@ -553,10 +553,7 @@ class FeatureHistogram {
 
     // when the monotone precise mode is enabled, then the left and the right children may not
     // have the same min and max constraints because constraints can depend on the thresholds
-    double best_min_constraint_left = NAN;
-    double best_max_constraint_left = NAN;
-    double best_min_constraint_right = NAN;
-    double best_max_constraint_right = NAN;
+    BestConstraints best_constraints = BestConstraints();
 
     double best_gain = kMinScore;
     data_size_t best_left_count = 0;
@@ -618,10 +615,7 @@ class FeatureHistogram {
           best_threshold = static_cast<uint32_t>(t - 1 + bias);
           best_gain = current_gain;
 
-          best_min_constraint_right = constraints->CurrentMinConstraintRight();
-          best_max_constraint_right = constraints->CurrentMaxConstraintRight();
-          best_min_constraint_left = constraints->CurrentMinConstraintLeft();
-          best_max_constraint_left = constraints->CurrentMaxConstraintLeft();
+          best_constraints.Update(constraints);
         }
       }
     } else {
@@ -686,10 +680,7 @@ class FeatureHistogram {
           best_threshold = static_cast<uint32_t>(t + bias);
           best_gain = current_gain;
 
-          best_min_constraint_right = constraints->CurrentMinConstraintRight();
-          best_max_constraint_right = constraints->CurrentMaxConstraintRight();
-          best_min_constraint_left = constraints->CurrentMinConstraintLeft();
-          best_max_constraint_left = constraints->CurrentMaxConstraintLeft();
+          best_constraints.Update(constraints);
         }
       }
     }
@@ -700,8 +691,8 @@ class FeatureHistogram {
       output->left_output = CalculateSplittedLeafOutput(
           best_sum_left_gradient, best_sum_left_hessian,
           meta_->config->lambda_l1, meta_->config->lambda_l2,
-          meta_->config->max_delta_step, best_min_constraint_left,
-          best_max_constraint_left);
+          meta_->config->max_delta_step, best_constraints.best_min_constraint_left,
+          best_constraints.best_max_constraint_left);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
@@ -709,7 +700,7 @@ class FeatureHistogram {
           sum_gradient - best_sum_left_gradient,
           sum_hessian - best_sum_left_hessian, meta_->config->lambda_l1,
           meta_->config->lambda_l2, meta_->config->max_delta_step,
-          best_min_constraint_right, best_max_constraint_right);
+          best_constraints.best_min_constraint_right, best_constraints.best_max_constraint_right);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
