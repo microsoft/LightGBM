@@ -192,7 +192,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
     SplitInfo smaller_split;
     // find best threshold for smaller child
     // FIXME Fill the vectors with the actual constraints and thresholds
-    SplittingConstraints constraints;
+    SplittingConstraints *constraints;
     std::vector<uint32_t> thresholds;
     this->smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
         this->smaller_leaf_splits_->sum_gradients(),

@@ -304,7 +304,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
       this->smaller_leaf_histogram_array_[feature_index].RawData());
 
     // FIXME Fill the vectors with the actual constraints and thresholds
-    SplittingConstraints constraints;
+    SplittingConstraints *constraints;
     this->smaller_leaf_histogram_array_[feature_index]
         .FindBestThreshold(this->smaller_leaf_splits_->sum_gradients(),
                            this->smaller_leaf_splits_->sum_hessians(),
@@ -416,7 +416,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
 
       // find best threshold
       // FIXME Fill the vectors with the actual constraints and thresholds
-      SplittingConstraints constraints;
+      SplittingConstraints *constraints;
       smaller_leaf_histogram_array_global_[feature_index].FindBestThreshold(
           smaller_leaf_splits_global_->sum_gradients(),
           smaller_leaf_splits_global_->sum_hessians(),
@@ -440,7 +440,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
 
       // find best threshold
       // FIXME Fill the vectors with the actual constraints and thresholds
-      SplittingConstraints constraints;
+      SplittingConstraints *constraints;
 
       larger_leaf_histogram_array_global_[feature_index].FindBestThreshold(
           larger_leaf_splits_global_->sum_gradients(),
