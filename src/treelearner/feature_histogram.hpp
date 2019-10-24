@@ -181,11 +181,7 @@ class FeatureHistogram {
         double current_gain = GetSplitGains(
             sum_other_gradient, sum_other_hessian, data_[t].sum_gradients,
             data_[t].sum_hessians + kEpsilon, meta_->config->lambda_l1, l2,
-            meta_->config->max_delta_step,
-            constraints.CurrentMinConstraintRight(),
-            constraints.CurrentMaxConstraintRight(),
-            constraints.CurrentMinConstraintLeft(),
-            constraints.CurrentMaxConstraintLeft(), 0);
+            meta_->config->max_delta_step, constraints, 0);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
 
@@ -259,11 +255,7 @@ class FeatureHistogram {
           double current_gain = GetSplitGains(
               sum_left_gradient, sum_left_hessian, sum_right_gradient,
               sum_right_hessian, meta_->config->lambda_l1, l2,
-              meta_->config->max_delta_step,
-              constraints.CurrentMinConstraintRight(),
-              constraints.CurrentMaxConstraintRight(),
-              constraints.CurrentMinConstraintLeft(),
-              constraints.CurrentMaxConstraintLeft(), 0);
+              meta_->config->max_delta_step, constraints, 0);
 
           if (current_gain <= min_gain_shift) continue;
           is_splittable_ = true;
@@ -522,10 +514,9 @@ class FeatureHistogram {
   static double GetSplitGains(double sum_left_gradients, double sum_left_hessians,
                               double sum_right_gradients, double sum_right_hessians,
                               double l1, double l2, double max_delta_step,
-                              double min_constraint_right, double max_constraint_right,
-                              double min_constraint_left, double max_constraint_left, int8_t monotone_constraint) {
-    double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, min_constraint_left, max_constraint_left);
-    double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, min_constraint_right, max_constraint_right);
+                              const SplittingConstraints& constraints, int8_t monotone_constraint) {
+    double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, constraints.CurrentMinConstraintLeft(), constraints.CurrentMaxConstraintLeft());
+    double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, constraints.CurrentMinConstraintRight(), constraints.CurrentMaxConstraintRight());
     if (((monotone_constraint > 0) && (left_output > right_output)) ||
       ((monotone_constraint < 0) && (left_output < right_output))) {
       return 0;
@@ -612,10 +603,7 @@ class FeatureHistogram {
             sum_left_gradient, sum_left_hessian, sum_right_gradient,
             sum_right_hessian, meta_->config->lambda_l1,
             meta_->config->lambda_l2, meta_->config->max_delta_step,
-            constraints.CurrentMinConstraintRight(),
-            constraints.CurrentMaxConstraintRight(),
-            constraints.CurrentMinConstraintLeft(),
-            constraints.CurrentMaxConstraintLeft(), meta_->monotone_type);
+            constraints, meta_->monotone_type);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
 
@@ -684,10 +672,7 @@ class FeatureHistogram {
             sum_left_gradient, sum_left_hessian, sum_right_gradient,
             sum_right_hessian, meta_->config->lambda_l1,
             meta_->config->lambda_l2, meta_->config->max_delta_step,
-            constraints.CurrentMinConstraintRight(),
-            constraints.CurrentMaxConstraintRight(),
-            constraints.CurrentMinConstraintLeft(),
-            constraints.CurrentMaxConstraintLeft(), meta_->monotone_type);
+            constraints, meta_->monotone_type);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
 
