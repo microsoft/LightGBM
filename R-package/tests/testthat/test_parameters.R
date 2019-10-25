@@ -49,8 +49,10 @@ expect_true(".PARAMETER_ALIASES() returns a named list", {
   expect_true(is.list(param_aliases))
   expect_true(is.character(names(param_aliases)))
   expect_true(is.character(param_aliases[["boosting"]]))
+  expect_true(is.character(param_aliases[["early_stopping_round"]]))
   expect_true(is.character(param_aliases[["metric"]]))
   expect_true(is.character(param_aliases[["num_class"]]))
+  expect_true(is.character(param_aliases[["num_iterations"]]))
 })
 
 expect_true("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
