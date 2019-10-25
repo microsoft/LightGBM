@@ -108,13 +108,12 @@ lgb.train <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
-  n_rounds <- .PARAMETER_ALIASES()[["num_iterations"]]
-  if (any(names(params) %in% n_rounds)) {
-    end_iteration <- begin_iteration + params[[which(names(params) %in% n_rounds)[1]]] - 1
+  n_trees <- .PARAMETER_ALIASES()[["num_iterations"]]
+  if (any(names(params) %in% n_trees)) {
+    end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1]]] - 1
   } else {
     end_iteration <- begin_iteration + nrounds - 1
   }
-
 
   # Check for training dataset type correctness
   if (!lgb.is.Dataset(data)) {
