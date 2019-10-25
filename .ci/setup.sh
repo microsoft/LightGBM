@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
