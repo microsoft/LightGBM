@@ -69,7 +69,8 @@ def load_from_file(filename, reference):
     LIB.LGBM_DatasetCreateFromFile(
         c_str(filename),
         c_str('max_bin=15'),
-        ref, ctypes.byref(handle))
+        ref,
+        ctypes.byref(handle))
     print(LIB.LGBM_GetLastError())
     num_data = ctypes.c_long()
     LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
@@ -88,8 +89,9 @@ def load_from_csr(filename, reference):
     label = []
     with open(filename, 'r') as inp:
         for line in inp.readlines():
-            data.append([float(x) for x in line.split('\t')[1:]])
-            label.append(float(line.split('\t')[0]))
+            values = line.split('\t')
+            data.append([float(x) for x in values[1:]])
+            label.append(float(values[0]))
     mat = np.array(data)
     label = np.array(label, dtype=np.float32)
     csr = sparse.csr_matrix(mat)
@@ -124,8 +126,9 @@ def load_from_csc(filename, reference):
     label = []
     with open(filename, 'r') as inp:
         for line in inp.readlines():
-            data.append([float(x) for x in line.split('\t')[1:]])
-            label.append(float(line.split('\t')[0]))
+            values = line.split('\t')
+            data.append([float(x) for x in values[1:]])
+            label.append(float(values[0]))
     mat = np.array(data)
     label = np.array(label, dtype=np.float32)
     csr = sparse.csc_matrix(mat)
@@ -160,8 +163,9 @@ def load_from_mat(filename, reference):
     label = []
     with open(filename, 'r') as inp:
         for line in inp.readlines():
-            data.append([float(x) for x in line.split('\t')[1:]])
-            label.append(float(line.split('\t')[0]))
+            values = line.split('\t')
+            data.append([float(x) for x in values[1:]])
+            label.append(float(values[0]))
     mat = np.array(data)
     data = np.array(mat.reshape(mat.size), copy=False)
     label = np.array(label, dtype=np.float32)
@@ -222,7 +226,7 @@ def test_booster():
         ctypes.byref(booster))
     LIB.LGBM_BoosterAddValidData(booster, test)
     is_finished = ctypes.c_int(0)
-    for i in range(1, 101):
+    for i in range(1, 51):
         LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(is_finished))
         result = np.array([0.0], dtype=np.float64)
         out_len = ctypes.c_ulong(0)
@@ -260,7 +264,7 @@ def test_booster():
         mat.shape[1],
         1,
         1,
-        50,
+        25,
         c_str(''),
         ctypes.byref(num_preb),
         preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
@@ -270,7 +274,7 @@ def test_booster():
                            '../../examples/binary_classification/binary.test')),
         0,
         0,
-        50,
+        25,
         c_str(''),
         c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)
