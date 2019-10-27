@@ -47,29 +47,9 @@ Documentation for contributors:
 News
 ----
 
-08/15/2017 : Optimal split for categorical features.
+Please refer to changelogs at [GitHub releases](https://github.com/microsoft/LightGBM/releases) page.
 
-07/13/2017 : [Gitter](https://gitter.im/Microsoft/LightGBM) is available.
-
-06/20/2017 : Python-package is on [PyPI](https://pypi.org/project/lightgbm) now.
-
-06/09/2017 : [LightGBM Slack team](https://lightgbm.slack.com) is available.
-
-05/03/2017 : LightGBM v2 stable release.
-
-04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.rst) and [Performance Comparison](./docs/GPU-Performance.rst).
-
-02/20/2017 : Update to LightGBM v2.
-
-02/12/2017 : LightGBM v1 stable release.
-
-01/08/2017 : Release [**R-package**](https://github.com/microsoft/LightGBM/tree/master/R-package) beta version, welcome to have a try and provide feedback.
-
-12/05/2016 : **Categorical Features as input directly** (without one-hot coding). 
-
-12/02/2016 : Release [**Python-package**](https://github.com/microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
-
-More detailed update logs : [Key Events](https://github.com/microsoft/LightGBM/blob/master/docs/Key-Events.md).
+Some old update logs are available at [Key Events](https://github.com/microsoft/LightGBM/blob/master/docs/Key-Events.md) page.
 
 External (Unofficial) Repositories
 ----------------------------------
