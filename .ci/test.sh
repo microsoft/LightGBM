@@ -82,7 +82,6 @@ if [[ $TASK == "r-pkg" ]]; then
     #. set up R environment
     R_LIB_PATH=~/Rlib
     mkdir -p $R_LIB_PATH
-    cd $TRAVIS_BUILD_DIR/R-package
     echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
     echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
 
