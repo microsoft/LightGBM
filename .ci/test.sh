@@ -133,7 +133,10 @@ if [[ $TASK == "r-pkg" ]]; then
         --no-deps \
             pandoc
 
-    Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), repos='http://cran.rstudio.com')"
+    # Manually install Depends, Imports, and Suggests libraries
+    # to avoid a CI-time dependency on devtools (for devtools::install_deps())
+    Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'))"
+    Rscript -e "install.package(c('Ckmeans.1d.dp', 'DiagrammeR', 'ggplot2', 'igraph', 'knitr', 'rmarkdown', 'stringi', 'vcd'))"
 
     cd ${BUILD_DIRECTORY}
     Rscript build_r.R
