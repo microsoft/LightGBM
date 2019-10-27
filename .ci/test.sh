@@ -88,6 +88,7 @@ if [[ $TASK == "r-pkg" ]]; then
 
     export PATH="$R_LIB_PATH/R/bin:$PATH"
     if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        sudo apt-get update
         sudo apt-get install \
             -y \
                 gfortran-5 \
