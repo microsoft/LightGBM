@@ -1,5 +1,4 @@
 # coding: utf-8
-# pylint: disable = invalid-name, W0105, C0111, C0301
 """Scikit-learn wrapper interface for LightGBM."""
 from __future__ import absolute_import
 

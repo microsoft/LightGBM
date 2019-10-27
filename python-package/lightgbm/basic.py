@@ -1,6 +1,4 @@
 # coding: utf-8
-# pylint: disable = invalid-name, C0111, C0301
-# pylint: disable = R0912, R0913, R0914, W0105, W0201, W0212
 """Wrapper for C API of LightGBM."""
 from __future__ import absolute_import
 
