@@ -187,19 +187,21 @@ if [[ $TASK == "r-pkg" ]]; then
 
     export PATH="$R_LIB_PATH/R/bin:$PATH"
     if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-        apt-get install \
-            gfortran-5 \
-            libcurl4-openssl-dev
-        update-alternatives \
+        sudo apt-get install \
+            -y \
+                gfortran-5 \
+                libcurl4-openssl-dev
+        sudo update-alternatives \
             --install /usr/bin/gfortran gfortran \
             /usr/bin/gfortran-5 \
             10
 
-        apt-get install \
-            texlive-latex-recommended \
-            texlive-fonts-recommended \
-            texlive-fonts-extra \
-            qpdf
+        sudo apt-get install \
+            -y \
+                texlive-latex-recommended \
+                texlive-fonts-recommended \
+                texlive-fonts-extra \
+                qpdf
         if ! command -v R &> /dev/null; then
             R_VER=3.6.1
             cd $BUILD_DIR
