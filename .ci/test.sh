@@ -176,3 +176,16 @@ matplotlib.use\(\"Agg\"\)\
     conda install -q -y -n $CONDA_ENV ipywidgets notebook
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 fi
+
+if [[ $TASK == "r-pkg" ]]; then
+
+    conda install \
+        --quiet \
+        --yes \
+        --name $CONDA_ENV \
+        r-base
+    Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6'), repos='http://cran.rstudio.com')"
+    Rscript build_R.R
+    cd lightgbm_r/tests
+    Rscript testthat.R || exit -1
+fi
