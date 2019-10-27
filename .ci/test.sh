@@ -78,6 +78,80 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
+if [[ $TASK == "r-pkg" ]]; then
+    #. set up R environment
+    R_LIB_PATH=~/Rlib
+    mkdir -p $R_LIB_PATH
+    cd $TRAVIS_BUILD_DIR/R-package
+    echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
+    echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
+
+    export PATH="$R_LIB_PATH/R/bin:$PATH"
+    if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        sudo apt-get install \
+            -y \
+                gfortran-5 \
+                libcurl4-openssl-dev
+        sudo update-alternatives \
+            --install /usr/bin/gfortran gfortran \
+            /usr/bin/gfortran-5 \
+            10
+
+        sudo apt-get install \
+            -y \
+                texlive-latex-recommended \
+                texlive-fonts-recommended \
+                texlive-fonts-extra \
+                qpdf
+        if ! command -v R &> /dev/null; then
+            R_VER=3.6.1
+            cd $BUILD_DIR
+            wget https://cran.r-project.org/src/base/R-3/R-$R_VER.tar.gz
+            tar -xzf R-$R_VER.tar.gz
+            R-$R_VER/configure --enable-R-shlib --prefix=$R_LIB_PATH/R
+            make
+            make install
+        fi
+    fi
+
+    if [[ $TRAVIS_OS_NAME == "macos" ]]; then
+        brew install \
+            r \
+            qpdf
+        brew cask install \
+            basictex
+        export PATH="/Library/TeX/texbin:$PATH"
+        sudo tlmgr update --self
+        # sudo tlmgr install \
+        #     inconsolata \
+        #     helvetic
+    fi
+
+    conda install \
+        -y \
+        --no-deps \
+            pandoc
+
+    Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), repos='http://cran.rstudio.com')"
+
+    cd ${BUILD_DIRECTORY}
+    Rscript build_r.R
+
+    PKG_TARBALL=$(ls | grep '^lightgbm_.*\.tar\.gz$')
+    LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
+
+    # fails tests if either ERRORs or WARNINGs are thrown by
+    # R CMD CHECK
+    R CMD check ${PKG_TARBALL} --as-cran || exit -1
+    if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
+        echo "WARNINGS have been found by R CMD check!"
+        exit -1
+    fi
+
+    exit 0
+
+fi
+
 conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
@@ -175,76 +249,4 @@ matplotlib.use\(\"Agg\"\)\
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     conda install -q -y -n $CONDA_ENV ipywidgets notebook
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
-fi
-
-if [[ $TASK == "r-pkg" ]]; then
-    #. set up R environment
-    R_LIB_PATH=~/Rlib
-    mkdir -p $R_LIB_PATH
-    cd $TRAVIS_BUILD_DIR/R-package
-    echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
-    echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
-
-    export PATH="$R_LIB_PATH/R/bin:$PATH"
-    if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-        sudo apt-get install \
-            -y \
-                gfortran-5 \
-                libcurl4-openssl-dev
-        sudo update-alternatives \
-            --install /usr/bin/gfortran gfortran \
-            /usr/bin/gfortran-5 \
-            10
-
-        sudo apt-get install \
-            -y \
-                texlive-latex-recommended \
-                texlive-fonts-recommended \
-                texlive-fonts-extra \
-                qpdf
-        if ! command -v R &> /dev/null; then
-            R_VER=3.6.1
-            cd $BUILD_DIR
-            wget https://cran.r-project.org/src/base/R-3/R-$R_VER.tar.gz
-            tar -xzf R-$R_VER.tar.gz
-            R-$R_VER/configure --enable-R-shlib --prefix=$R_LIB_PATH/R
-            make
-            make install
-        fi
-    fi
-
-    if [[ $TRAVIS_OS_NAME == "macos" ]]; then
-        brew install \
-            r \
-            qpdf
-        brew cask install \
-            basictex
-        export PATH="/Library/TeX/texbin:$PATH"
-        sudo tlmgr update --self
-        # sudo tlmgr install \
-        #     inconsolata \
-        #     helvetic
-    fi
-
-    conda install \
-        -y \
-        --no-deps \
-            pandoc
-
-    Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), repos='http://cran.rstudio.com')"
-
-    cd ${BUILD_DIRECTORY}
-    Rscript build_r.R
-
-    PKG_TARBALL=$(ls | grep '^lightgbm_.*\.tar\.gz$')
-    LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
-
-    # fails tests if either ERRORs or WARNINGs are thrown by
-    # R CMD CHECK
-    R CMD check ${PKG_TARBALL} --as-cran || exit -1
-    if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
-        echo "WARNINGS have been found by R CMD check!"
-        exit -1
-    fi
-
 fi
