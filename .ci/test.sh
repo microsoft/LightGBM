@@ -185,7 +185,8 @@ if [[ $TASK == "r-pkg" ]]; then
         --name $CONDA_ENV \
         r-base
     Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6'), repos='http://cran.rstudio.com')"
-    Rscript build_R.R
+    cd ${BUILD_DIRECTORY}
+    Rscript build_r.R
     cd lightgbm_r/tests
     Rscript testthat.R || exit -1
 fi
