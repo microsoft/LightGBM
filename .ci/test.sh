@@ -107,7 +107,8 @@ if [[ $TASK == "r-pkg" ]]; then
             R_INSTALL_DIR=${HOME}/r_install
             mkdir -p ${R_INSTALL_DIR}
             cd ${R_INSTALL_DIR}
-            R_VER=3.6.1
+            #R_VER=3.6.1
+            R_VER=3.5.0
             wget https://cran.r-project.org/src/base/R-3/R-$R_VER.tar.gz
             tar -xzf R-$R_VER.tar.gz
             R-$R_VER/configure --enable-R-shlib --prefix=$R_LIB_PATH/R
