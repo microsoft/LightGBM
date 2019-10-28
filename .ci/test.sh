@@ -120,10 +120,13 @@ if [[ $TASK == "r-pkg" ]]; then
     # https://cran.r-project.org/bin/linux/ubuntu/#installation
     if [[ $TRAVIS_OS_NAME == "linux" ]]; then
         sudo apt-get update
+        sudo add-apt-repository \
+            "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
+        sudo apt-get update
         sudo apt-get install \
             -y \
                 r-base \
-                r-base-dev
+                r-base-dev || exit -1
     fi
 
     if [[ $TRAVIS_OS_NAME == "macos" ]]; then
