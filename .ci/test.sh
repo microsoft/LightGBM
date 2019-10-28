@@ -80,9 +80,6 @@ fi
 
 if [[ $TASK == "r-pkg" ]]; then
     #. set up R environment
-    cd $BUILD_DIRECTORY
-    ls -alF
-    exit -1
     R_LIB_PATH=~/Rlib
     mkdir -p $R_LIB_PATH
     echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
@@ -107,8 +104,10 @@ if [[ $TASK == "r-pkg" ]]; then
                 texlive-fonts-extra \
                 qpdf
         if ! command -v R &> /dev/null; then
+            R_INSTALL_DIR=${HOME}/r_install
+            mkdir -p ${R_INSTALL_DIR}
+            cd ${R_INSTALL_DIR}
             R_VER=3.6.1
-            cd $BUILD_DIR
             wget https://cran.r-project.org/src/base/R-3/R-$R_VER.tar.gz
             tar -xzf R-$R_VER.tar.gz
             R-$R_VER/configure --enable-R-shlib --prefix=$R_LIB_PATH/R
