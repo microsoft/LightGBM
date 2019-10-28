@@ -86,36 +86,35 @@ if [[ $TASK == "r-pkg" ]]; then
     echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
 
     export PATH="$R_LIB_PATH/R/bin:$PATH"
-    # if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-    #     sudo apt-get update
-    #     sudo apt-get install \
-    #         -y \
-    #             gfortran-5 \
-    #             libcurl4-openssl-dev
-    #     sudo update-alternatives \
-    #         --install /usr/bin/gfortran gfortran \
-    #         /usr/bin/gfortran-5 \
-    #         10
+    if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        sudo apt-get update
+        sudo apt-get install \
+            -y \
+                gfortran-5 \
+                libcurl4-openssl-dev
+        sudo update-alternatives \
+            --install /usr/bin/gfortran gfortran \
+            /usr/bin/gfortran-5 \
+            10
 
-    #     sudo apt-get install \
-    #         -y \
-    #             texlive-latex-recommended \
-    #             texlive-fonts-recommended \
-    #             texlive-fonts-extra \
-    #             qpdf
-    #     if ! command -v R &> /dev/null; then
-    #         R_INSTALL_DIR=${HOME}/r_install
-    #         mkdir -p ${R_INSTALL_DIR}
-    #         cd ${R_INSTALL_DIR}
-    #         R_VER=3.6.1
-    #         wget https://cran.r-project.org/src/base/R-3/R-$R_VER.tar.gz
-    #         tar -xzf R-$R_VER.tar.gz
-    #         R-$R_VER/configure --enable-R-shlib --prefix=$R_LIB_PATH/R
-    #         make
-    #         make install
-    #     fi
-    # fi
-    conda install -y r-base
+        sudo apt-get install \
+            -y \
+                texlive-latex-recommended \
+                texlive-fonts-recommended \
+                texlive-fonts-extra \
+                qpdf
+        if ! command -v R &> /dev/null; then
+            R_INSTALL_DIR=${HOME}/r_install
+            mkdir -p ${R_INSTALL_DIR}
+            cd ${R_INSTALL_DIR}
+            R_VER=3.6.1
+            wget https://cran.r-project.org/src/base/R-3/R-$R_VER.tar.gz
+            tar -xzf R-$R_VER.tar.gz
+            R-$R_VER/configure --enable-R-shlib --prefix=$R_LIB_PATH/R
+            make
+            make install
+        fi
+    fi
 
     if [[ $TRAVIS_OS_NAME == "macos" ]]; then
         brew install \
