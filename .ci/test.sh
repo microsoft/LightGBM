@@ -119,6 +119,7 @@ if [[ $TASK == "r-pkg" ]]; then
     # installing precompiled R for Ubuntu
     # https://cran.r-project.org/bin/linux/ubuntu/#installation
     if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+        sudo apt-get update
         sudo apt-get install \
             -y \
                 r-base \
