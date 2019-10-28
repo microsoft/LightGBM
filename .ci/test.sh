@@ -80,6 +80,9 @@ fi
 
 if [[ $TASK == "r-pkg" ]]; then
     #. set up R environment
+    cd $BUILD_DIRECTORY
+    ls -alF
+    exit -1
     R_LIB_PATH=~/Rlib
     mkdir -p $R_LIB_PATH
     echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
