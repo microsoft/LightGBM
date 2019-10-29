@@ -20,13 +20,13 @@ valids <- list(test = dtest)
 model <- lgb.train(
     params
     , dtrain
-    , 50
+    , 50L
     , valids
-    , min_data = 1
+    , min_data = 1L
     , learning_rate = 0.1
     , bagging_fraction = 0.1
-    , bagging_freq = 1
-    , bagging_seed = 1
+    , bagging_freq = 1L
+    , bagging_seed = 1L
 )
 
 # We create a data.frame with the following structure:
@@ -45,20 +45,20 @@ new_data <- data.frame(
             predict(model, agaricus.test$data)
             , 1e-15
         )
-        , 1 - 1e-15
+        , 1.0 - 1e-15
     )
 )
-new_data$Z <- -1 * (agaricus.test$label * log(new_data$Y) + (1 - agaricus.test$label) * log(1 - new_data$Y))
+new_data$Z <- -1.0 * (agaricus.test$label * log(new_data$Y) + (1L - agaricus.test$label) * log(1L - new_data$Y))
 new_data$binned <- .bincode(
     x = new_data$X
     , breaks = quantile(
         x = new_data$X
-        , probs = (1:9) / 10
+        , probs = (1L:9L) / 10.0
     )
     , right = TRUE
     , include.lowest = TRUE
 )
-new_data$binned[is.na(new_data$binned)] <- 0
+new_data$binned[is.na(new_data$binned)] <- 0L
 new_data$binned <- as.factor(new_data$binned)
 
 # We can check the binned content
@@ -91,10 +91,10 @@ ggplot(
 model2 <- lgb.train(
     params
     , dtrain
-    , 100
+    , 100L
     , valids
-    , min_data = 1
-    , learning_rate = 1
+    , min_data = 1L
+    , learning_rate = 1.0
 )
 
 # We create the data structure, but for model2
@@ -112,10 +112,10 @@ new_data2 <- data.frame(
             )
             , 1e-15
         )
-      , 1 - 1e-15
+      , 1.0 - 1e-15
      )
 )
-new_data2$Z <- -1 * (agaricus.test$label * log(new_data2$Y) + (1 - agaricus.test$label) * log(1 - new_data2$Y))
+new_data2$Z <- -1.0 * (agaricus.test$label * log(new_data2$Y) + (1L - agaricus.test$label) * log(1L - new_data2$Y))
 new_data2$binned <- .bincode(
     x = new_data2$X
     , breaks = quantile(
@@ -133,7 +133,8 @@ table(new_data2$binned)
 
 # We can plot the binned content
 # On the second plot, we clearly notice the lower the bin (the lower the leaf value), the higher the loss
-# On the third plot, it is clearly not smooth! We are severely overfitting the data, but the rules are real thus it is not an issue
+# On the third plot, it is clearly not smooth! We are severely overfitting the data, but the rules are
+# real thus it is not an issue
 # However, if the rules were not true, the loss would explode.
 ggplot(
     data = new_data2
@@ -159,10 +160,10 @@ ggplot(
 model3 <- lgb.train(
     params
     , dtrain
-    , 1000
+    , 1000L
     , valids
-    , min_data = 1
-    , learning_rate = 1
+    , min_data = 1L
+    , learning_rate = 1.0
 )
 
 # We create the data structure, but for model3
@@ -180,20 +181,20 @@ new_data3 <- data.frame(
             )
             , 1e-15
         )
-        , 1 - 1e-15
+        , 1.0 - 1e-15
     )
 )
-new_data3$Z <- -1 * (agaricus.test$label * log(new_data3$Y) + (1 - agaricus.test$label) * log(1 - new_data3$Y))
+new_data3$Z <- -1.0 * (agaricus.test$label * log(new_data3$Y) + (1L - agaricus.test$label) * log(1L - new_data3$Y))
 new_data3$binned <- .bincode(
     x = new_data3$X
     , breaks = quantile(
         x = new_data3$X
-        , probs = (1:9) / 10
+        , probs = (1L:9L) / 10.0
     )
     , right = TRUE
     , include.lowest = TRUE
 )
-new_data3$binned[is.na(new_data3$binned)] <- 0
+new_data3$binned[is.na(new_data3$binned)] <- 0L
 new_data3$binned <- as.factor(new_data3$binned)
 
 # We can check the binned content

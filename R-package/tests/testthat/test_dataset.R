@@ -54,8 +54,10 @@ test_that("lgb.Dataset: colnames", {
   expect_equal(colnames(dtest), colnames(test_data))
   lgb.Dataset.construct(dtest)
   expect_equal(colnames(dtest), colnames(test_data))
-  expect_error( colnames(dtest) <- 'asdf')
-  new_names <- make.names(1:ncol(test_data))
+  expect_error({
+    colnames(dtest) <- 'asdf'
+  })
+  new_names <- make.names(seq_len(ncol(test_data)))
   expect_silent(colnames(dtest) <- new_names)
   expect_equal(colnames(dtest), new_names)
 })

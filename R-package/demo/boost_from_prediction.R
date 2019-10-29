@@ -15,7 +15,7 @@ print("Start running example to start from an initial prediction")
 # Train lightgbm for 1 round
 param <- list(
     num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nthread = 2
     , objective = "binary"
 )

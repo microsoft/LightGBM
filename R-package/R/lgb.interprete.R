@@ -7,14 +7,14 @@
 #' @param idxset an integer vector of indices of rows needed.
 #' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration.
 #'
-#' @return
-#'
-#' For regression, binary classification and lambdarank model, a \code{list} of \code{data.table} with the following columns:
-#' \itemize{
-#'   \item \code{Feature} Feature names in the model.
-#'   \item \code{Contribution} The total contribution of this feature's splits.
-#' }
-#' For multiclass classification, a \code{list} of \code{data.table} with the Feature column and Contribution columns to each class.
+#' @return For regression, binary classification and lambdarank model, a \code{list} of \code{data.table}
+#'         with the following columns:
+#'         \itemize{
+#'             \item \code{Feature} Feature names in the model.
+#'             \item \code{Contribution} The total contribution of this feature's splits.
+#'         }
+#'         For multiclass classification, a \code{list} of \code{data.table} with the Feature column and
+#'         Contribution columns to each class.
 #'
 #' @examples
 #' Sigmoid <- function(x) 1 / (1 + exp(-x))
@@ -71,7 +71,7 @@ lgb.interprete <- function(model,
   # Get list of trees
   tree_index_mat_list <- lapply(
     X = leaf_index_mat_list
-    , FUN = function(x){
+    , FUN = function(x) {
       matrix(seq_len(length(x)) - 1, ncol = num_class, byrow = TRUE)
     }
   )
@@ -189,11 +189,11 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
       , leaf_index = leaf_index_mat[,i]
     )
 
-    if (num_class > 1){
+    if (num_class > 1L) {
       data.table::setnames(
         next_interp_dt
         , old = "Contribution"
-        , new = paste("Class", i - 1)
+        , new = paste("Class", i - 1L)
       )
     }
 
@@ -202,7 +202,7 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
   }
 
   # Check for numbe rof classes larger than 1
-  if (num_class == 1) {
+  if (num_class == 1L) {
 
     # First interpretation element
     tree_interpretation_dt <- tree_interpretation[[1]]
@@ -211,7 +211,7 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
 
     # Full interpretation elements
     tree_interpretation_dt <- Reduce(
-      f = function(x, y){
+      f = function(x, y) {
         merge(x, y, by = "Feature", all = TRUE)
       }
       , x = tree_interpretation
@@ -224,7 +224,7 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
         tree_interpretation_dt
         , i = which(is.na(tree_interpretation_dt[[j]]))
         , j = j
-        , value = 0
+        , value = 0.0
       )
 
     }

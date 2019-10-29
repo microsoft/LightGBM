@@ -21,7 +21,7 @@ bst <- lightgbm(
     data = train$data
     , label = train$label
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , objective = "binary"
 )
@@ -32,7 +32,7 @@ bst <- lightgbm(
     data = as.matrix(train$data)
     , label = train$label
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , objective = "binary"
 )
@@ -46,7 +46,7 @@ dtrain <- lgb.Dataset(
 bst <- lightgbm(
     data = dtrain
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , objective = "binary"
 )
@@ -56,7 +56,7 @@ print("Train lightgbm with verbose 0, no message")
 bst <- lightgbm(
     data = dtrain
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , objective = "binary"
     , verbose = 0
@@ -66,7 +66,7 @@ print("Train lightgbm with verbose 1, print evaluation metric")
 bst <- lightgbm(
     data = dtrain
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , nthread = 2
     , objective = "binary"
@@ -77,7 +77,7 @@ print("Train lightgbm with verbose 2, also print information about tree")
 bst <- lightgbm(
     data = dtrain
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , nthread = 2
     , objective = "binary"
@@ -89,7 +89,7 @@ bst <- lightgbm(
 # bst <- lightgbm(
 #     data = "agaricus.train.svm"
 #     , num_leaves = 4
-#     , learning_rate = 1
+#     , learning_rate = 1.0
 #     , nrounds = 2
 #     , objective = "binary"
 # )
@@ -127,7 +127,7 @@ print("Train lightgbm using lgb.train with valids")
 bst <- lgb.train(
     data = dtrain
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , valids = valids
     , nthread = 2
@@ -139,7 +139,7 @@ print("Train lightgbm using lgb.train with valids, watch logloss and error")
 bst <- lgb.train(
     data = dtrain
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , valids = valids
     , eval = c("binary_error", "binary_logloss")
@@ -155,7 +155,7 @@ dtrain2 <- lgb.Dataset("dtrain.buffer")
 bst <- lgb.train(
     data = dtrain2
     , num_leaves = 4
-    , learning_rate = 1
+    , learning_rate = 1.0
     , nrounds = 2
     , valids = valids
     , nthread = 2

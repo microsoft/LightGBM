@@ -25,12 +25,12 @@ evalerror <- function(preds, dtrain) {
 }
 
 param <- list(
-  num_leaves = 8
-  , learning_rate = 1
+  num_leaves = 8L
+  , learning_rate = 1.0
   , objective = logregobj
   , metric = "auc"
 )
-num_round <- 10
+num_round <- 10L
 
 test_that("custom objective works", {
   bst <- lgb.train(param, dtrain, num_round, watchlist, eval = evalerror)

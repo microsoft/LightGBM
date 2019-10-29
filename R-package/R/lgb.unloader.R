@@ -1,6 +1,8 @@
 #' LightGBM unloading error fix
 #'
-#' Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R. This is useful for instance if an object becomes stuck for no apparent reason and you do not want to restart R to fix the lost object.
+#' Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R.
+#' This is useful for instance if an object becomes stuck for no apparent reason and you do not want
+#' to restart R to fix the lost object.
 #'
 #' @param restore Whether to reload \code{LightGBM} immediately after detaching from R.
 #'                Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once
@@ -28,7 +30,7 @@
 #'   , nrounds = 10
 #'   , valids = valids
 #'   , min_data = 1
-#'   , learning_rate = 1
+#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5
 #' )
 #'
@@ -50,13 +52,13 @@ lgb.unloader <- function(restore = TRUE, wipe = FALSE, envir = .GlobalEnv) {
   # Should we wipe variables? (lgb.Booster, lgb.Dataset)
   if (wipe) {
     boosters <- Filter(
-      f = function(x){
+      f = function(x) {
         inherits(get(x, envir = envir), "lgb.Booster")
       }
       , x = ls(envir = envir)
     )
     datasets <- Filter(
-      f = function(x){
+      f = function(x) {
         inherits(get(x, envir = envir), "lgb.Dataset")
       }
       , x = ls(envir = envir)

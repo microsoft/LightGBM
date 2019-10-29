@@ -81,7 +81,7 @@ lgb.call <- function(fun_name, ret, ...) {
 lgb.call.return.str <- function(fun_name, ...) {
 
   # Create buffer
-  buf_len <- as.integer(1024 * 1024)
+  buf_len <- as.integer(1024L * 1024L)
   act_len <- 0L
   buf <- raw(buf_len)
 
@@ -115,7 +115,7 @@ lgb.params2str <- function(params, ...) {
   names(dot_params) <- gsub("\\.", "_", names(dot_params))
 
   # Check for identical parameters
-  if (length(intersect(names(params), names(dot_params))) > 0) {
+  if (length(intersect(names(params), names(dot_params))) > 0L) {
     stop(
       "Same parameters in "
       , sQuote("params")
@@ -136,7 +136,7 @@ lgb.params2str <- function(params, ...) {
 
     # Join multi value first
     val <- paste0(format(params[[key]], scientific = FALSE), collapse = ",")
-    if (nchar(val) <= 0) next # Skip join
+    if (nchar(val) <= 0L) next # Skip join
 
     # Join key value
     pair <- paste0(c(key, val), collapse = "=")
@@ -145,7 +145,7 @@ lgb.params2str <- function(params, ...) {
   }
 
   # Check ret length
-  if (length(ret) == 0) {
+  if (length(ret) == 0L) {
 
     # Return empty string
     lgb.c_str("")
@@ -163,7 +163,7 @@ lgb.c_str <- function(x) {
 
   # Perform character to raw conversion
   ret <- charToRaw(as.character(x))
-  ret <- c(ret, as.raw(0))
+  ret <- c(ret, as.raw(0L))
   ret
 
 }

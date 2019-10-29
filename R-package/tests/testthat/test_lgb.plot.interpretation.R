@@ -1,9 +1,9 @@
 context("lgb.plot.interpretation")
 
-.sigmoid <- function(x){
+.sigmoid <- function(x) {
     1 / (1 + exp(-x))
 }
-.logit <- function(x){
+.logit <- function(x) {
     log(x / (1 - x))
 }
 

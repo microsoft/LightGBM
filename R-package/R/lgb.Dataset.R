@@ -429,7 +429,7 @@ Dataset <- R6::R6Class(
       # Check for info name and handle
       if (is.null(private$info[[name]])) {
 
-        if (lgb.is.null.handle(private$handle)){
+        if (lgb.is.null.handle(private$handle)) {
           stop("Cannot perform getinfo before constructing Dataset.")
         }
 

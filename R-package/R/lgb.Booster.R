@@ -255,7 +255,7 @@ Booster <- R6::R6Class(
         gpair <- fobj(private$inner_predict(1), private$train_set)
 
         # Check for gradient and hessian as list
-        if (is.null(gpair$grad) || is.null(gpair$hess)){
+        if (is.null(gpair$grad) || is.null(gpair$hess)) {
           stop("lgb.Booster.update: custom objective should
             return a list with attributes (hess, grad)")
         }
@@ -671,14 +671,13 @@ Booster <- R6::R6Class(
 #'                prediction outputs per case.
 #' @param ... Additional named arguments passed to the \code{predict()} method of
 #'            the \code{lgb.Booster} object passed to \code{object}.
-#' @return
-#' For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-#' For multiclass classification, either a \code{num_class * nrows(data)} vector or
-#' a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-#' the \code{reshape} value.
+#' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
+#'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
+#'         a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
+#'         the \code{reshape} value.
 #'
-#' When \code{predleaf = TRUE}, the output is a matrix object with the
-#' number of columns corresponding to the number of trees.
+#'         When \code{predleaf = TRUE}, the output is a matrix object with the
+#'         number of columns corresponding to the number of trees.
 #'
 #' @examples
 #' library(lightgbm)
@@ -693,11 +692,11 @@ Booster <- R6::R6Class(
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
+#'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1
-#'   , learning_rate = 1
-#'   , early_stopping_rounds = 5
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#'   , early_stopping_rounds = 5L
 #' )
 #' preds <- predict(model, test$data)
 #'
@@ -758,7 +757,7 @@ predict.lgb.Booster <- function(object,
 #'   , nrounds = 10
 #'   , valids = valids
 #'   , min_data = 1
-#'   , learning_rate = 1
+#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5
 #' )
 #' lgb.save(model, "model.txt")
@@ -768,7 +767,7 @@ predict.lgb.Booster <- function(object,
 #'
 #' @rdname lgb.load
 #' @export
-lgb.load <- function(filename = NULL, model_str = NULL){
+lgb.load <- function(filename = NULL, model_str = NULL) {
 
   if (is.null(filename) && is.null(model_str)) {
     stop("lgb.load: either filename or model_str must be given")
@@ -818,14 +817,14 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #'   , nrounds = 10
 #'   , valids = valids
 #'   , min_data = 1
-#'   , learning_rate = 1
+#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5
 #' )
 #' lgb.save(model, "model.txt")
 #'
 #' @rdname lgb.save
 #' @export
-lgb.save <- function(booster, filename, num_iteration = NULL){
+lgb.save <- function(booster, filename, num_iteration = NULL) {
 
   # Check if booster is booster
   if (!lgb.is.Booster(booster)) {
@@ -867,14 +866,14 @@ lgb.save <- function(booster, filename, num_iteration = NULL){
 #'   , nrounds = 10
 #'   , valids = valids
 #'   , min_data = 1
-#'   , learning_rate = 1
+#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5
 #' )
 #' json_model <- lgb.dump(model)
 #'
 #' @rdname lgb.dump
 #' @export
-lgb.dump <- function(booster, num_iteration = NULL){
+lgb.dump <- function(booster, num_iteration = NULL) {
 
   # Check if booster is booster
   if (!lgb.is.Booster(booster)) {
@@ -913,7 +912,7 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #'   , nrounds = 10
 #'   , valids = valids
 #'   , min_data = 1
-#'   , learning_rate = 1
+#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5
 #' )
 #' lgb.get.eval.result(model, "test", "l2")

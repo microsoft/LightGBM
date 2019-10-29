@@ -31,7 +31,7 @@ test_that("lgb.importance() should reject bad inputs", {
         )
         , "lightgbm.model"
     )
-    for (input in bad_inputs){
+    for (input in bad_inputs) {
         expect_error({
             lgb.importance(input)
         }, regexp = "'model' has to be an object of class lgb\\.Booster")

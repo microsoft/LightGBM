@@ -3,7 +3,7 @@ use_precompile <- FALSE
 use_gpu <- FALSE
 use_mingw <- FALSE
 
-if (.Machine$sizeof.pointer != 8){
+if (.Machine$sizeof.pointer != 8) {
   stop("Only support 64-bit R, please check your the version of your R and Rtools.")
 }
 
@@ -11,12 +11,12 @@ R_int_UUID <- .Internal(internalsID())
 R_ver <- as.double(R.Version()$major) + as.double(R.Version()$minor) / 10
 
 if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
-    || R_int_UUID == "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327")){
+    || R_int_UUID == "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327")) {
   print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")
 }
 
 # Move in CMakeLists.txt
-if (!file.copy("../inst/bin/CMakeLists.txt", "CMakeLists.txt", overwrite = TRUE)){
+if (!file.copy("../inst/bin/CMakeLists.txt", "CMakeLists.txt", overwrite = TRUE)) {
   stop("Copying CMakeLists failed")
 }
 
@@ -74,7 +74,7 @@ if (!use_precompile) {
       try_vs <- 0
       local_vs_def <- ""
       vs_versions <- c("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
-      for (vs in vs_versions){
+      for (vs in vs_versions) {
         vs_def <- paste0(" -G \"", vs, "\" -A x64")
         tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)
         try_vs <- system(paste0(tmp_cmake_cmd, " .."))

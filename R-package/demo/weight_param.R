@@ -41,7 +41,7 @@ model <- lgb.train(
     , 50
     , valids
     , min_data = 1
-    , learning_rate = 1
+    , learning_rate = 1.0
     , early_stopping_rounds = 10
 )
 weight_loss <- as.numeric(model$record_evals$test$l2$eval)
@@ -65,7 +65,7 @@ model <- lgb.train(
     , 50
     , valids
     , min_data = 1
-    , learning_rate = 1
+    , learning_rate = 1.0
     , early_stopping_rounds = 10
 )
 small_weight_loss <- as.numeric(model$record_evals$test$l2$eval)
@@ -101,7 +101,7 @@ model <- lgb.train(
     , 50
     , valids
     , min_data = 1
-    , learning_rate = 1
+    , learning_rate = 1.0
     , early_stopping_rounds = 10
 )
 large_weight_loss <- as.numeric(model$record_evals$test$l2$eval)

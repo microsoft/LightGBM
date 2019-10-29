@@ -8,7 +8,7 @@ dtest <- lgb.Dataset.create.valid(dtrain, data = agaricus.test$data, label = aga
 nrounds <- 2
 param <- list(
   num_leaves = 4
-  , learning_rate = 1
+  , learning_rate = 1.0
   , objective = "binary"
 )
 

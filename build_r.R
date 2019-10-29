@@ -15,9 +15,9 @@
 
 # system() will not raise an R exception if the process called
 # fails. Wrapping it here to get that behavior
-.run_shell_command <- function(cmd, ...){
+.run_shell_command <- function(cmd, ...) {
     exit_code <- system(cmd, ...)
-    if (exit_code != 0){
+    if (exit_code != 0) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
 }

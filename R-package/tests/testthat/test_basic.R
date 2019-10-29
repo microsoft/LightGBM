@@ -26,7 +26,7 @@ test_that("train and predict binary classification", {
 
   pred1 <- predict(bst, train$data, num_iteration = 1)
   expect_equal(length(pred1), 6513)
-  err_pred1 <- sum( (pred1 > 0.5) != train$label) / length(train$label)
+  err_pred1 <- sum((pred1 > 0.5) != train$label) / length(train$label)
   err_log <- record_results[1]
   expect_lt(abs(err_pred1 - err_log), 10e-6)
 })
@@ -61,9 +61,9 @@ test_that("use of multiple eval metrics works", {
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_leaves = 4
-    , learning_rate = 1
-    , nrounds = 10
+    , num_leaves = 4L
+    , learning_rate = 1.0
+    , nrounds = 10L
     , objective = "binary"
     , metric = list("binary_error","auc","binary_logloss")
   )
@@ -82,8 +82,8 @@ test_that("training continuation works", {
   param <- list(
     objective = "binary"
     , metric = "binary_logloss"
-    , num_leaves = 5
-    , learning_rate = 1
+    , num_leaves = 5L
+    , learning_rate = 1.0
   )
 
   # for the reference, use 10 iterations at once:
@@ -113,7 +113,7 @@ test_that("cv works", {
     , 10
     , nfold = 5
     , min_data = 1
-    , learning_rate = 1
+    , learning_rate = 1.0
     , early_stopping_rounds = 10
   )
   expect_false(is.null(bst$record_evals))

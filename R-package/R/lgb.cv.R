@@ -67,7 +67,7 @@ CVBooster <- R6::R6Class(
 #'   , nrounds = 10
 #'   , nfold = 3
 #'   , min_data = 1
-#'   , learning_rate = 1
+#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5
 #' )
 #' @export
@@ -232,20 +232,20 @@ lgb.cv <- function(params = list(),
   using_dart <- any(
     sapply(
       X = boosting_param_names
-      , FUN = function(param){
+      , FUN = function(param) {
         identical(params[[param]], 'dart')
       }
     )
   )
 
   # Cannot use early stopping with 'dart' boosting
-  if (using_dart){
+  if (using_dart) {
     warning("Early stopping is not available in 'dart' mode.")
     using_early_stopping_via_args <- FALSE
 
     # Remove the cb.early.stop() function if it was passed in to callbacks
     callbacks <- Filter(
-      f = function(cb_func){
+      f = function(cb_func) {
         !identical(attr(cb_func, "name"), "cb.early.stop")
       }
       , x = callbacks
@@ -253,7 +253,7 @@ lgb.cv <- function(params = list(),
   }
 
   # If user supplied early_stopping_rounds, add the early stopping callback
-  if (using_early_stopping_via_args){
+  if (using_early_stopping_via_args) {
     callbacks <- add.cb(
       callbacks
       , cb.early.stop(

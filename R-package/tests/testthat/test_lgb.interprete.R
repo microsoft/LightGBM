@@ -1,9 +1,9 @@
 context("lgb.interpete")
 
-.sigmoid <- function(x){
+.sigmoid <- function(x) {
     1 / (1 + exp(-x))
 }
-.logit <- function(x){
+.logit <- function(x) {
     log(x / (1 - x))
 }
 
@@ -46,7 +46,7 @@ test_that("lgb.intereprete works as expected for binary classification", {
     expect_true(all(
         sapply(
             X = tree_interpretation
-            , FUN = function(treeDT){
+            , FUN = function(treeDT) {
                 checks <- c(
                     data.table::is.data.table(treeDT)
                     , identical(names(treeDT), c("Feature", "Contribution"))
@@ -97,7 +97,7 @@ test_that("lgb.intereprete works as expected for multiclass classification", {
     expect_true(all(
         sapply(
             X = tree_interpretation
-            , FUN = function(treeDT){
+            , FUN = function(treeDT) {
                 checks <- c(
                     data.table::is.data.table(treeDT)
                     , identical(names(treeDT), c("Feature", "Class 0", "Class 1", "Class 2"))

@@ -25,7 +25,7 @@ model <- lgb.train(
     , 100
     , valids
     , min_data = 1
-    , learning_rate = 1
+    , learning_rate = 1.0
     , early_stopping_rounds = 10
 )
 
@@ -40,7 +40,7 @@ model <- lgb.train(
     , 100
     , valids
     , min_data = 1
-    , learning_rate = 1
+    , learning_rate = 1.0
     , early_stopping_rounds = 10
     , objective = "multiclass"
     , metric = "multi_error"

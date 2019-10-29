@@ -23,7 +23,7 @@
 #'   , nrounds = 10
 #'   , valids = valids
 #'   , min_data = 1
-#'   , learning_rate = 1
+#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5
 #' )
 #' saveRDS.lgb.Booster(model, "model.rds")

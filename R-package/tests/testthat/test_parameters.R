@@ -56,7 +56,7 @@ expect_true(".PARAMETER_ALIASES() returns a named list", {
 })
 
 expect_true("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
-  for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]){
+  for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
     expect_warning({
       result <- lightgbm(
         data = train$data
