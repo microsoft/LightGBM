@@ -168,7 +168,11 @@ if [[ $TASK == "r-pkg" ]]; then
 
     # fails tests if either ERRORs or WARNINGs are thrown by
     # R CMD CHECK
-    R CMD check ${PKG_TARBALL} --as-cran || exit -1
+    R CMD check ${PKG_TARBALL} \
+        --as-cran \
+        --no-manual \
+    || exit -1
+
     if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
         echo "WARNINGS have been found by R CMD check!"
         exit -1
