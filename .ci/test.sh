@@ -120,13 +120,21 @@ if [[ $TASK == "r-pkg" ]]; then
     # https://cran.r-project.org/bin/linux/ubuntu/#installation
     if [[ $TRAVIS_OS_NAME == "linux" ]]; then
         sudo apt-get update
+        # sudo apt-key adv \
+        #     --keyserver keyserver.ubuntu.com \
+        #     --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
         sudo add-apt-repository \
             "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
         sudo apt-get update
         sudo apt-get install \
             -y \
                 r-base \
-                r-base-dev || exit -1
+                r-base-dev \
+                texlive-latex-recommended \
+                texlive-fonts-recommended \
+                texlive-fonts-extra \
+                qpdf \
+                || exit -1
     fi
 
     if [[ $TRAVIS_OS_NAME == "macos" ]]; then
