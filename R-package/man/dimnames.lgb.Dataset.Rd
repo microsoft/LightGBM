@@ -31,7 +31,7 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.construct(dtrain)
 dimnames(dtrain)
 colnames(dtrain)
-colnames(dtrain) <- make.names(1:ncol(train$data))
+colnames(dtrain) <- make.names(seq_len(ncol(train$data)))
 print(dtrain, verbose = TRUE)
 
 }

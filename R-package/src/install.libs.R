@@ -79,7 +79,7 @@ if (!use_precompile) {
         tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)
         try_vs <- system(paste0(tmp_cmake_cmd, " .."))
         if (try_vs == 0L) {
-          local_vs_def = vs_def
+          local_vs_def <- vs_def
           break
         } else {
           unlink("./*", recursive = TRUE) # Clean up build directory

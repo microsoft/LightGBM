@@ -40,32 +40,32 @@ probs_builtin <- exp(preds_builtin) / rowSums(exp(preds_builtin))
 # Method 2 of training with custom objective function
 
 # User defined objective function, given prediction, return gradient and second order gradient
-custom_multiclass_obj = function(preds, dtrain) {
-    labels = getinfo(dtrain, "label")
+custom_multiclass_obj <- function(preds, dtrain) {
+    labels <- getinfo(dtrain, "label")
 
     # preds is a matrix with rows corresponding to samples and colums corresponding to choices
-    preds = matrix(preds, nrow = length(labels))
+    preds <- matrix(preds, nrow = length(labels))
 
     # to prevent overflow, normalize preds by row
-    preds = preds - apply(preds, 1L, max)
-    prob = exp(preds) / rowSums(exp(preds))
+    preds <- preds - apply(preds, 1L, max)
+    prob <- exp(preds) / rowSums(exp(preds))
 
     # compute gradient
-    grad = prob
-    grad[cbind(seq_len(length(labels)), labels + 1L)] = grad[cbind(seq_len(length(labels)), labels + 1L)] - 1L
+    grad <- prob
+    grad[cbind(seq_len(length(labels)), labels + 1L)] <- grad[cbind(seq_len(length(labels)), labels + 1L)] - 1L
 
     # compute hessian (approximation)
-    hess = 2.0 * prob * (1.0 - prob)
+    hess <- 2.0 * prob * (1.0 - prob)
 
     return(list(grad = grad, hess = hess))
 }
 
 # define custom metric
-custom_multiclass_metric = function(preds, dtrain) {
-    labels = getinfo(dtrain, "label")
-    preds = matrix(preds, nrow = length(labels))
-    preds = preds - apply(preds, 1L, max)
-    prob = exp(preds) / rowSums(exp(preds))
+custom_multiclass_metric <- function(preds, dtrain) {
+    labels <- getinfo(dtrain, "label")
+    preds <- matrix(preds, nrow = length(labels))
+    preds <- preds - apply(preds, 1L, max)
+    prob <- exp(preds) / rowSums(exp(preds))
 
     return(list(
         name = "error"

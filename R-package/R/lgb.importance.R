@@ -62,7 +62,7 @@ lgb.importance <- function(model, percentage = TRUE) {
   # Sort features by Gain
   data.table::setorderv(
     x = tree_imp_dt
-    , cols = c("Gain")
+    , cols = "Gain"
     , order = -1L
   )
 

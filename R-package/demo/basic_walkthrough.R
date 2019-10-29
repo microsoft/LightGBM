@@ -163,7 +163,7 @@ bst <- lgb.train(
 )
 
 # information can be extracted from lgb.Dataset using getinfo
-label = getinfo(dtest, "label")
+label <- getinfo(dtest, "label")
 pred <- predict(bst, test$data)
 err <- as.numeric(sum(as.integer(pred > 0.5) != label)) / length(label)
 print(paste("test-error=", err))

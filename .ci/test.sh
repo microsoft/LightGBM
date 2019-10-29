@@ -54,7 +54,7 @@ if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
         pydocstyle \
-        r-lintr
+        r-lintr==2.0.0
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1

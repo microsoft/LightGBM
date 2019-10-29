@@ -229,7 +229,7 @@ Booster <- R6::R6Class(
         )
 
         # Store private train set
-        private$train_set = train_set
+        private$train_set <- train_set
 
       }
 
@@ -249,7 +249,7 @@ Booster <- R6::R6Class(
         }
         if (!private$set_objective_to_none) {
           self$reset_parameter(params = list(objective = "none"))
-          private$set_objective_to_none = TRUE
+          private$set_objective_to_none <- TRUE
         }
         # Perform objective calculation
         gpair <- fobj(private$inner_predict(1L), private$train_set)
@@ -371,7 +371,7 @@ Booster <- R6::R6Class(
     eval_valid = function(feval = NULL) {
 
       # Create ret list
-      ret = list()
+      ret <- list()
 
       # Check if validation is empty
       if (length(private$valid_sets) <= 0L) {

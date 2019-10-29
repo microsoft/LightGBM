@@ -78,7 +78,7 @@ test_that("training continuation works", {
     , label = train$label
     , free_raw_data = FALSE
   )
-  watchlist = list(train = dtrain)
+  watchlist <- list(train = dtrain)
   param <- list(
     objective = "binary"
     , metric = "binary_logloss"

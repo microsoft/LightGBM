@@ -70,7 +70,7 @@ lightgbm <- function(data,
   # Set validation as oneself
   valids <- list()
   if (verbose > 0L) {
-    valids$train = dtrain
+    valids$train <- dtrain
   }
 
   # Train a model using the regular way
