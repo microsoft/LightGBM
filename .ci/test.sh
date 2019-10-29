@@ -89,7 +89,7 @@ if [[ $TASK == "r-pkg" ]]; then
 
     # installing precompiled R for Ubuntu
     # https://cran.r-project.org/bin/linux/ubuntu/#installation
-    if [[ $TRAVIS_OS_NAME == "linux" ]]; then
+    if [[ $OS_NAME == "linux" ]]; then
         sudo apt-get update
         # sudo apt-key adv \
         #     --keyserver keyserver.ubuntu.com \
@@ -108,7 +108,7 @@ if [[ $TASK == "r-pkg" ]]; then
                 || exit -1
     fi
 
-    if [[ $TRAVIS_OS_NAME == "macos" ]]; then
+    if [[ $OS_NAME == "macos" ]]; then
         brew install \
             r \
             qpdf
