@@ -6,7 +6,7 @@ git:
 
 os:
   - linux
-  # - osx
+  - osx
 dist: bionic
 osx_image: xcode11
 
