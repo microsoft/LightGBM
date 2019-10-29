@@ -19,7 +19,7 @@ param <- list(
     , nthread = 2L
     , objective = "binary"
 )
-bst <- lgb.train(param, dtrain, 1, valids = valids)
+bst <- lgb.train(param, dtrain, 1L, valids = valids)
 
 # Note: we need the margin value instead of transformed prediction in set_init_score
 ptrain <- predict(bst, agaricus.train$data, rawscore = TRUE)

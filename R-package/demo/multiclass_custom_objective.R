@@ -13,8 +13,8 @@ train <- as.matrix(iris[c(1L:20L, 51L:80L, 101L:140L), ])
 # The 10 last samples of each class are for validation
 test <- as.matrix(iris[c(41L:50L, 91L:100L, 141L:150L), ])
 
-dtrain <- lgb.Dataset(data = train[, 1:4], label = train[, 5])
-dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1:4], label = test[, 5])
+dtrain <- lgb.Dataset(data = train[, 1L:4L], label = train[, 5L])
+dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1L:4L], label = test[, 5L])
 valids <- list(train = dtrain, test = dtest)
 
 # Method 1 of training with built-in multiclass objective

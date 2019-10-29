@@ -20,7 +20,8 @@ LINTERS_TO_USE <- list(
     # "closed_curly" = lintr::closed_curly_linter
     # , "equals_na" = lintr::equals_na_linter
     # , "function_left" = lintr::function_left_parentheses_linter
-    "implicit_integers" = lintr::implicit_integer_linter
+    "commas" = lintr::commas_linter
+    , "implicit_integers" = lintr::implicit_integer_linter
     # , "infix_spaces" = lintr::infix_spaces_linter
     # , "long_lines" = lintr::line_length_linter(length = 120L)
     # , "tabs" = lintr::no_tab_linter

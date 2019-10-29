@@ -30,13 +30,13 @@
 #'     objective = "binary"
 #'     , learning_rate = 0.01
 #'     , num_leaves = 63L
-#'     , max_depth = -1
-#'     , min_data_in_leaf = 1
-#'     , min_sum_hessian_in_leaf = 1
+#'     , max_depth = -1L
+#'     , min_data_in_leaf = 1L
+#'     , min_sum_hessian_in_leaf = 1.0
 #' )
-#' model <- lgb.train(params, dtrain, 10)
+#' model <- lgb.train(params, dtrain, 10L)
 #'
-#' tree_interpretation <- lgb.interprete(model, test$data, 1:5)
+#' tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
 #'
 #' @importFrom data.table as.data.table
 #' @export
@@ -72,7 +72,7 @@ lgb.interprete <- function(model,
   tree_index_mat_list <- lapply(
     X = leaf_index_mat_list
     , FUN = function(x) {
-      matrix(seq_len(length(x)) - 1, ncol = num_class, byrow = TRUE)
+      matrix(seq_len(length(x)) - 1L, ncol = num_class, byrow = TRUE)
     }
   )
 
@@ -185,8 +185,8 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
 
     next_interp_dt <- multiple.tree.interprete(
       tree_dt = tree_dt
-      , tree_index = tree_index_mat[,i]
-      , leaf_index = leaf_index_mat[,i]
+      , tree_index = tree_index_mat[, i]
+      , leaf_index = leaf_index_mat[, i]
     )
 
     if (num_class > 1L) {
@@ -218,7 +218,7 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
     )
 
     # Loop throughout each tree
-    for (j in 2:ncol(tree_interpretation_dt)) {
+    for (j in 2L:ncol(tree_interpretation_dt)) {
 
       data.table::set(
         tree_interpretation_dt

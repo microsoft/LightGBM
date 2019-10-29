@@ -9,7 +9,7 @@ CB_ENV <- R6::R6Class(
     end_iteration = NULL,
     eval_list = list(),
     eval_err_list = list(),
-    best_iter = -1,
+    best_iter = -1L,
     best_score = NA,
     met_early_stop = FALSE
   )
@@ -30,7 +30,7 @@ cb.reset.parameters <- function(new_params) {
   init <- function(env) {
 
     # Store boosting rounds
-    nrounds <<- env$end_iteration - env$begin_iteration + 1
+    nrounds <<- env$end_iteration - env$begin_iteration + 1L
 
     # Check for model environment
     if (is.null(env$model)) { stop("Env should have a ", sQuote("model")) }
@@ -60,7 +60,7 @@ cb.reset.parameters <- function(new_params) {
       if (is.function(p)) {
 
         # Check if requires at least two arguments
-        if (length(formals(p)) != 2) {
+        if (length(formals(p)) != 2L) {
           stop("Parameter ", sQuote(n), " is a function but not of two arguments")
         }
 
@@ -133,7 +133,7 @@ format.eval.string <- function(eval_res, eval_err = NULL) {
 merge.eval.string <- function(env) {
 
   # Check length of evaluation list
-  if (length(env$eval_list) <= 0) {
+  if (length(env$eval_list) <= 0L) {
     return("")
   }
 

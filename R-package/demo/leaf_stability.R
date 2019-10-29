@@ -120,7 +120,7 @@ new_data2$binned <- .bincode(
     x = new_data2$X
     , breaks = quantile(
         x = new_data2$X
-        , probs = (1:9) / 10
+        , probs = (1L:9L) / 10.0
     )
     , right = TRUE
     , include.lowest = TRUE

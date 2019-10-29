@@ -3,7 +3,7 @@ CVBooster <- R6::R6Class(
   classname = "lgb.CVBooster",
   cloneable = FALSE,
   public = list(
-    best_iter = -1,
+    best_iter = -1L,
     best_score = NA,
     record_evals = list(),
     boosters = list(),

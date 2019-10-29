@@ -27,7 +27,7 @@
 #'     , num_leaves = 63L
 #'     , max_depth = -1L
 #'     , min_data_in_leaf = 1L
-#'     , min_sum_hessian_in_leaf = 1
+#'     , min_sum_hessian_in_leaf = 1.0
 #' )
 #'
 #' model <- lgb.train(params, dtrain, 10)
@@ -54,7 +54,7 @@ lgb.plot.importance <- function(tree_imp,
   top_n <- min(top_n, nrow(tree_imp))
 
   # Parse importance
-  tree_imp <- tree_imp[order(abs(get(measure)), decreasing = TRUE),][seq_len(top_n),]
+  tree_imp <- tree_imp[order(abs(get(measure)), decreasing = TRUE), ][seq_len(top_n), ]
 
   # Attempt to setup a correct cex
   if (is.null(cex)) {

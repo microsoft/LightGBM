@@ -851,7 +851,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #' lgb.Dataset.construct(dtrain)
 #' dimnames(dtrain)
 #' colnames(dtrain)
-#' colnames(dtrain) <- make.names(1:ncol(train$data))
+#' colnames(dtrain) <- make.names(seq_len(ncol(train$data)))
 #' print(dtrain, verbose = TRUE)
 #'
 #' @rdname dimnames.lgb.Dataset
@@ -924,7 +924,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
-#' dsub <- lightgbm::slice(dtrain, 1:42)
+#' dsub <- lightgbm::slice(dtrain, 1L:42L)
 #' lgb.Dataset.construct(dsub)
 #' labels <- lightgbm::getinfo(dsub, "label")
 #'

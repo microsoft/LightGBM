@@ -20,7 +20,7 @@ lgb.cv(
   param
   , dtrain
   , nrounds
-  , nfold = 5
+  , nfold = 5L
   , eval = "binary_error"
 )
 

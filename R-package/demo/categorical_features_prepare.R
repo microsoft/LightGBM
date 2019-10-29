@@ -73,7 +73,7 @@ params <- list(
     , min_data = 1L
     , learning_rate = 0.1
     , min_data = 0L
-    , min_hessian = 1
+    , min_hessian = 1.0
     , max_depth = 2L
 )
 model <- lgb.train(

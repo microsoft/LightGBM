@@ -4,7 +4,7 @@ require(Matrix)
 context("testing lgb.Dataset functionality")
 
 data(agaricus.test, package = "lightgbm")
-test_data <- agaricus.test$data[1L:100L,]
+test_data <- agaricus.test$data[1L:100L, ]
 test_label <- agaricus.test$label[1L:100L]
 
 test_that("lgb.Dataset: basic construction, saving, loading", {

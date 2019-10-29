@@ -41,9 +41,9 @@
 #'   , num_leaves = 63L
 #'   , max_depth = -1L
 #'   , min_data_in_leaf = 1L
-#'   , min_sum_hessian_in_leaf = 1
+#'   , min_sum_hessian_in_leaf = 1.0
 #' )
-#' model <- lgb.train(params, dtrain, 10)
+#' model <- lgb.train(params, dtrain, 10L)
 #'
 #' tree_dt <- lgb.model.dt.tree(model)
 #'

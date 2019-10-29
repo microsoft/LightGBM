@@ -48,5 +48,5 @@ bst <- lgb.train(
   , valids
   , objective = logregobj
   , eval = evalerror
-  , early_stopping_round = 3
+  , early_stopping_round = 3L
 )

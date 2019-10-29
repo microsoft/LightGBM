@@ -22,10 +22,10 @@ test_that("train and predict binary classification", {
   expect_lt(min(record_results), 0.02)
 
   pred <- predict(bst, test$data)
-  expect_equal(length(pred), 1611)
+  expect_equal(length(pred), 1611L)
 
   pred1 <- predict(bst, train$data, num_iteration = 1L)
-  expect_equal(length(pred1), 6513)
+  expect_equal(length(pred1), 6513L)
   err_pred1 <- sum((pred1 > 0.5) != train$label) / length(train$label)
   err_log <- record_results[1L]
   expect_lt(abs(err_pred1 - err_log), 10e-6)
@@ -42,7 +42,7 @@ test_that("train and predict softmax", {
     , learning_rate = 0.1
     , nrounds = 20L
     , min_data = 20L
-    , min_hess = 20
+    , min_hess = 20.0
     , objective = "multiclass"
     , metric = "multi_error"
     , num_class = 3L
@@ -65,7 +65,7 @@ test_that("use of multiple eval metrics works", {
     , learning_rate = 1.0
     , nrounds = 10L
     , objective = "binary"
-    , metric = list("binary_error","auc","binary_logloss")
+    , metric = list("binary_error", "auc", "binary_logloss")
   )
   expect_false(is.null(bst$record_evals))
 })

@@ -41,7 +41,7 @@ test_that("Feature penalties work properly", {
   expect_lt(min(diff(unlist(var_freq))), 0.0)
 
   # Ensure that feature is not used when feature_penalty = 0
-  expect_length(var_gain[[length(var_gain)]], 0)
+  expect_length(var_gain[[length(var_gain)]], 0L)
 })
 
 expect_true(".PARAMETER_ALIASES() returns a named list", {

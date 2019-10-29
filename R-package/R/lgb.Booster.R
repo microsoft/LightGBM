@@ -4,7 +4,7 @@ Booster <- R6::R6Class(
   cloneable = FALSE,
   public = list(
 
-    best_iter = -1,
+    best_iter = -1L,
     best_score = NA,
     record_evals = list(),
 
@@ -55,7 +55,7 @@ Booster <- R6::R6Class(
 
           # Create private booster information
           private$train_set <- train_set
-          private$num_dataset <- 1
+          private$num_dataset <- 1L
           private$init_predictor <- train_set$.__enclos_env__$private$predictor
 
           # Check if predictor is existing
@@ -176,7 +176,7 @@ Booster <- R6::R6Class(
       # Store private information
       private$valid_sets <- c(private$valid_sets, data)
       private$name_valid_sets <- c(private$name_valid_sets, name)
-      private$num_dataset <- private$num_dataset + 1
+      private$num_dataset <- private$num_dataset + 1L
       private$is_predicted_cur_iter <- c(private$is_predicted_cur_iter, FALSE)
 
       # Return self

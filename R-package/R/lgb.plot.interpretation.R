@@ -32,7 +32,7 @@
 #'   , num_leaves = 63L
 #'   , max_depth = -1L
 #'   , min_data_in_leaf = 1L
-#'   , min_sum_hessian_in_leaf = 1
+#'   , min_sum_hessian_in_leaf = 1.0
 #' )
 #' model <- lgb.train(params, dtrain, 10L)
 #'
@@ -57,7 +57,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
   # Do some magic plotting
   bottom_margin <- 3.0
   top_margin <- 2.0
-  right_margin <- op$mar[4]
+  right_margin <- op$mar[4L]
 
   graphics::par(
     mar = c(
@@ -119,7 +119,7 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
                                               cex) {
 
   # Parse tree
-  tree_interpretation <- tree_interpretation[order(abs(Contribution), decreasing = TRUE),][seq_len(min(top_n, .N)),]
+  tree_interpretation <- tree_interpretation[order(abs(Contribution), decreasing = TRUE), ][seq_len(min(top_n, .N)), ]
 
   # Attempt to setup a correct cex
   if (is.null(cex)) {

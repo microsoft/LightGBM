@@ -90,7 +90,7 @@ params <- list(
     objective = "regression"
     , metric = "l2"
     , device = "cpu"
-    , min_sum_hessian = 10
+    , min_sum_hessian = 10.0
     , num_leaves = 7L
     , max_depth = 3L
     , nthread = 1L
