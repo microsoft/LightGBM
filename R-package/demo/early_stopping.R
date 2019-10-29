@@ -22,9 +22,9 @@ num_round <- 20L
 # This is loglikelihood loss
 logregobj <- function(preds, dtrain) {
   labels <- getinfo(dtrain, "label")
-  preds <- 1 / (1 + exp(-preds))
+  preds <- 1.0 / (1.0 + exp(-preds))
   grad <- preds - labels
-  hess <- preds * (1 - preds)
+  hess <- preds * (1.0 - preds)
   return(list(grad = grad, hess = hess))
 }
 

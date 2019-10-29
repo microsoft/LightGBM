@@ -17,8 +17,8 @@
 #'
 #' @examples
 #' library(lightgbm)
-#' Sigmoid <- function(x) {1 / (1 + exp(-x))}
-#' Logit <- function(x) {log(x / (1 - x))}
+#' Sigmoid <- function(x) {1.0 / (1.0 + exp(-x))}
+#' Logit <- function(x) {log(x / (1.0 - x))}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -29,26 +29,26 @@
 #' params <- list(
 #'   objective = "binary"
 #'   , learning_rate = 0.01
-#'   , num_leaves = 63
-#'   , max_depth = -1
-#'   , min_data_in_leaf = 1
+#'   , num_leaves = 63L
+#'   , max_depth = -1L
+#'   , min_data_in_leaf = 1L
 #'   , min_sum_hessian_in_leaf = 1
 #' )
-#' model <- lgb.train(params, dtrain, 10)
+#' model <- lgb.train(params, dtrain, 10L)
 #'
-#' tree_interpretation <- lgb.interprete(model, test$data, 1:5)
-#' lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
+#' tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
+#' lgb.plot.interpretation(tree_interpretation[[1L]], top_n = 10L)
 #' @importFrom data.table setnames
 #' @importFrom graphics barplot par
 #' @export
 lgb.plot.interpretation <- function(tree_interpretation_dt,
-                                    top_n = 10,
-                                    cols = 1,
-                                    left_margin = 10,
+                                    top_n = 10L,
+                                    cols = 1L,
+                                    left_margin = 10L,
                                     cex = NULL) {
 
   # Get number of columns
-  num_class <- ncol(tree_interpretation_dt) - 1
+  num_class <- ncol(tree_interpretation_dt) - 1L
 
   # Refresh plot
   op <- graphics::par(no.readonly = TRUE)
@@ -69,7 +69,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
   )
 
   # Check for number of classes
-  if (num_class == 1) {
+  if (num_class == 1L) {
 
     # Only one class, plot straight away
     multiple.tree.plot.interpretation(
@@ -95,7 +95,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
     for (i in seq_len(num_class)) {
 
       # Prepare interpretation, perform T, get the names, and plot straight away
-      plot_dt <- tree_interpretation_dt[, c(1, i + 1), with = FALSE]
+      plot_dt <- tree_interpretation_dt[, c(1L, i + 1L), with = FALSE]
       data.table::setnames(
         plot_dt
         , old = names(plot_dt)
@@ -104,7 +104,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
       multiple.tree.plot.interpretation(
         plot_dt
         , top_n = top_n
-        , title = paste("Class", i - 1)
+        , title = paste("Class", i - 1L)
         , cex = cex
       )
 
@@ -123,20 +123,20 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
 
   # Attempt to setup a correct cex
   if (is.null(cex)) {
-    cex <- 2.5 / log2(1 + top_n)
+    cex <- 2.5 / log2(1.0 + top_n)
   }
 
   # Do plot
-  tree_interpretation[.N:1,
+  tree_interpretation[.N:1L,
                       graphics::barplot(
                           height = Contribution
                           , names.arg = Feature
                           , horiz = TRUE
-                          , col = ifelse(Contribution > 0, "firebrick", "steelblue")
+                          , col = ifelse(Contribution > 0L, "firebrick", "steelblue")
                           , border = NA
                           , main = title
                           , cex.names = cex
-                          , las = 1
+                          , las = 1L
                       )]
 
   # Return invisibly

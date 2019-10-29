@@ -11,8 +11,8 @@ library(lightgbm)
 # - Run 3: sum of weights equal to 6513 (x 1e5) with adjusted regularization (learning)
 
 # Setup small weights
-weights1 <- rep(1 / 100000, 6513)
-weights2 <- rep(1 / 100000, 1611)
+weights1 <- rep(1.0 / 100000.0, 6513L)
+weights2 <- rep(1.0 / 100000.0, 1611L)
 
 # Load data and create datasets
 data(agaricus.train, package = "lightgbm")
@@ -30,19 +30,19 @@ params <- list(
     objective = "regression"
     , metric = "l2"
     , device = "cpu"
-    , min_sum_hessian = 10
-    , num_leaves = 7
-    , max_depth = 3
-    , nthread = 1
+    , min_sum_hessian = 10.0
+    , num_leaves = 7L
+    , max_depth = 3L
+    , nthread = 1L
 )
 model <- lgb.train(
     params
     , dtrain
-    , 50
+    , 50L
     , valids
-    , min_data = 1
+    , min_data = 1L
     , learning_rate = 1.0
-    , early_stopping_rounds = 10
+    , early_stopping_rounds = 10L
 )
 weight_loss <- as.numeric(model$record_evals$test$l2$eval)
 plot(weight_loss) # Shows how poor the learning was: a straight line!
@@ -55,18 +55,18 @@ params <- list(
     , metric = "l2"
     , device = "cpu"
     , min_sum_hessian = 1e-4
-    , num_leaves = 7
-    , max_depth = 3
-    , nthread = 1
+    , num_leaves = 7L
+    , max_depth = 3L
+    , nthread = 1L
 )
 model <- lgb.train(
     params
     , dtrain
-    , 50
+    , 50L
     , valids
-    , min_data = 1
+    , min_data = 1L
     , learning_rate = 1.0
-    , early_stopping_rounds = 10
+    , early_stopping_rounds = 10L
 )
 small_weight_loss <- as.numeric(model$record_evals$test$l2$eval)
 plot(small_weight_loss) # It learns!
@@ -91,18 +91,18 @@ params <- list(
     , metric = "l2"
     , device = "cpu"
     , min_sum_hessian = 10
-    , num_leaves = 7
-    , max_depth = 3
-    , nthread = 1
+    , num_leaves = 7L
+    , max_depth = 3L
+    , nthread = 1L
 )
 model <- lgb.train(
     params
     , dtrain
-    , 50
+    , 50L
     , valids
-    , min_data = 1
+    , min_data = 1L
     , learning_rate = 1.0
-    , early_stopping_rounds = 10
+    , early_stopping_rounds = 10L
 )
 large_weight_loss <- as.numeric(model$record_evals$test$l2$eval)
 plot(large_weight_loss) # It learns!
@@ -110,4 +110,4 @@ plot(large_weight_loss) # It learns!
 
 # Do you want to compare the learning? They both converge.
 plot(small_weight_loss, large_weight_loss)
-curve(1 * x, from = 0, to = 0.02, add = TRUE)
+curve(1.0 * x, from = 0L, to = 0.02, add = TRUE)

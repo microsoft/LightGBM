@@ -14,9 +14,9 @@ print("Start running example to start from an initial prediction")
 
 # Train lightgbm for 1 round
 param <- list(
-    num_leaves = 4
+    num_leaves = 4L
     , learning_rate = 1.0
-    , nthread = 2
+    , nthread = 2L
     , objective = "binary"
 )
 bst <- lgb.train(param, dtrain, 1, valids = valids)
@@ -34,6 +34,6 @@ print("This is result of boost from initial prediction")
 bst <- lgb.train(
     params = param
     , data = dtrain
-    , nrounds = 5
+    , nrounds = 5L
     , valids = valids
 )

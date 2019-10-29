@@ -20,9 +20,9 @@ print("Training lightgbm with sparseMatrix")
 bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
+    , nrounds = 2L
     , objective = "binary"
 )
 
@@ -31,9 +31,9 @@ print("Training lightgbm with Matrix")
 bst <- lightgbm(
     data = as.matrix(train$data)
     , label = train$label
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
+    , nrounds = 2L
     , objective = "binary"
 )
 
@@ -45,9 +45,9 @@ dtrain <- lgb.Dataset(
 )
 bst <- lightgbm(
     data = dtrain
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
+    , nrounds = 2L
     , objective = "binary"
 )
 
@@ -55,42 +55,42 @@ bst <- lightgbm(
 print("Train lightgbm with verbose 0, no message")
 bst <- lightgbm(
     data = dtrain
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
+    , nrounds = 2L
     , objective = "binary"
-    , verbose = 0
+    , verbose = 0L
 )
 
 print("Train lightgbm with verbose 1, print evaluation metric")
 bst <- lightgbm(
     data = dtrain
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
-    , nthread = 2
+    , nrounds = 2L
+    , nthread = 2L
     , objective = "binary"
-    , verbose = 1
+    , verbose = 1L
 )
 
 print("Train lightgbm with verbose 2, also print information about tree")
 bst <- lightgbm(
     data = dtrain
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
-    , nthread = 2
+    , nrounds = 2L
+    , nthread = 2L
     , objective = "binary"
-    , verbose = 2
+    , verbose = 2L
 )
 
 # You can also specify data as file path to a LibSVM/TCV/CSV format input
 # Since we do not have this file with us, the following line is just for illustration
 # bst <- lightgbm(
 #     data = "agaricus.train.svm"
-#     , num_leaves = 4
+#     , num_leaves = 4L
 #     , learning_rate = 1.0
-#     , nrounds = 2
+#     , nrounds = 2L
 #     , objective = "binary"
 # )
 
@@ -126,11 +126,11 @@ valids <- list(train = dtrain, test = dtest)
 print("Train lightgbm using lgb.train with valids")
 bst <- lgb.train(
     data = dtrain
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
+    , nrounds = 2L
     , valids = valids
-    , nthread = 2
+    , nthread = 2L
     , objective = "binary"
 )
 
@@ -138,12 +138,12 @@ bst <- lgb.train(
 print("Train lightgbm using lgb.train with valids, watch logloss and error")
 bst <- lgb.train(
     data = dtrain
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
+    , nrounds = 2L
     , valids = valids
     , eval = c("binary_error", "binary_logloss")
-    , nthread = 2
+    , nthread = 2L
     , objective = "binary"
 )
 
@@ -154,11 +154,11 @@ lgb.Dataset.save(dtrain, "dtrain.buffer")
 dtrain2 <- lgb.Dataset("dtrain.buffer")
 bst <- lgb.train(
     data = dtrain2
-    , num_leaves = 4
+    , num_leaves = 4L
     , learning_rate = 1.0
-    , nrounds = 2
+    , nrounds = 2L
     , valids = valids
-    , nthread = 2
+    , nthread = 2L
     , objective = "binary"
 )
 

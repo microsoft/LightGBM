@@ -41,17 +41,17 @@ lgb.prepare2 <- function(data) {
   if (inherits(data, "data.table")) {
 
     # Get data classes
-    list_classes <- vapply(data, class, character(1))
+    list_classes <- vapply(data, class, character(1L))
 
     # Convert characters to factors only (we can change them to numeric after)
     is_char <- which(list_classes == "character")
-    if (length(is_char) > 0) {
+    if (length(is_char) > 0L) {
       data[, (is_char) := lapply(.SD, function(x) {as.integer(as.factor(x))}), .SDcols = is_char]
     }
 
     # Convert factors to numeric (integer is more efficient actually)
     is_fact <- c(which(list_classes == "factor"), is_char)
-    if (length(is_fact) > 0) {
+    if (length(is_fact) > 0L) {
       data[, (is_fact) := lapply(.SD, function(x) {as.integer(x)}), .SDcols = is_fact]
     }
 
@@ -61,17 +61,17 @@ lgb.prepare2 <- function(data) {
     if (inherits(data, "data.frame")) {
 
       # Get data classes
-      list_classes <- vapply(data, class, character(1))
+      list_classes <- vapply(data, class, character(1L))
 
       # Convert characters to factors to numeric (integer is more efficient actually)
       is_char <- which(list_classes == "character")
-      if (length(is_char) > 0) {
+      if (length(is_char) > 0L) {
         data[is_char] <- lapply(data[is_char], function(x) {as.integer(as.factor(x))})
       }
 
       # Convert factors to numeric (integer is more efficient actually)
       is_fact <- which(list_classes == "factor")
-      if (length(is_fact) > 0) {
+      if (length(is_fact) > 0L) {
         data[is_fact] <- lapply(data[is_fact], function(x) {as.integer(x)})
       }
 

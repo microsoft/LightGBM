@@ -83,16 +83,16 @@ dtest <- lgb.Dataset.create.valid(
 params <- list(
     objective = "binary"
     , metric = "l2"
-    , min_data = 1
+    , min_data = 1L
     , learning_rate = 0.1
-    , min_data = 0
+    , min_data = 0L
     , min_hessian = 1
-    , max_depth = 2
+    , max_depth = 2L
 )
 model <- lgb.train(
     params = params
     , data = dtrain
-    , nrounds = 100
+    , nrounds = 100L
     , valids = list(train = dtrain, valid = dtest)
 )
 

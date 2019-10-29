@@ -41,13 +41,13 @@ lgb.prepare <- function(data) {
 
     # Convert characters to factors only (we can change them to numeric after)
     is_char <- which(list_classes == "character")
-    if (length(is_char) > 0) {
+    if (length(is_char) > 0L) {
       data[, (is_char) := lapply(.SD, function(x) {as.numeric(as.factor(x))}), .SDcols = is_char]
     }
 
     # Convert factors to numeric (integer is more efficient actually)
     is_fact <- c(which(list_classes == "factor"), is_char)
-    if (length(is_fact) > 0) {
+    if (length(is_fact) > 0L) {
       data[, (is_fact) := lapply(.SD, function(x) {as.numeric(x)}), .SDcols = is_fact]
     }
 
@@ -61,13 +61,13 @@ lgb.prepare <- function(data) {
 
       # Convert characters to factors to numeric (integer is more efficient actually)
       is_char <- which(list_classes == "character")
-      if (length(is_char) > 0) {
+      if (length(is_char) > 0L) {
         data[is_char] <- lapply(data[is_char], function(x) {as.numeric(as.factor(x))})
       }
 
       # Convert factors to numeric (integer is more efficient actually)
       is_fact <- which(list_classes == "factor")
-      if (length(is_fact) > 0) {
+      if (length(is_fact) > 0L) {
         data[is_fact] <- lapply(data[is_fact], function(x) {as.numeric(x)})
       }
 

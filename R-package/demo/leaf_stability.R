@@ -125,7 +125,7 @@ new_data2$binned <- .bincode(
     , right = TRUE
     , include.lowest = TRUE
 )
-new_data2$binned[is.na(new_data2$binned)] <- 0
+new_data2$binned[is.na(new_data2$binned)] <- 0L
 new_data2$binned <- as.factor(new_data2$binned)
 
 # We can check the binned content

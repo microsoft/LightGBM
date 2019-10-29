@@ -3,12 +3,12 @@ use_precompile <- FALSE
 use_gpu <- FALSE
 use_mingw <- FALSE
 
-if (.Machine$sizeof.pointer != 8) {
+if (.Machine$sizeof.pointer != 8L) {
   stop("Only support 64-bit R, please check your the version of your R and Rtools.")
 }
 
 R_int_UUID <- .Internal(internalsID())
-R_ver <- as.double(R.Version()$major) + as.double(R.Version()$minor) / 10
+R_ver <- as.double(R.Version()$major) + as.double(R.Version()$minor) / 10.0
 
 if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     || R_int_UUID == "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327")) {
@@ -48,14 +48,14 @@ if (!use_precompile) {
   # Using this kind-of complicated pattern to avoid matching to
   # things like "pgcc"
   using_gcc <- grepl(
-    pattern = '^gcc$|[/\\]+gcc$|^gcc\\-[0-9]+$|[/\\]+gcc\\-[0-9]+$'
-    , x = Sys.getenv('CC', '')
+    pattern = "^gcc$|[/\\]+gcc$|^gcc\\-[0-9]+$|[/\\]+gcc\\-[0-9]+$"
+    , x = Sys.getenv("CC", "")
   )
   using_gpp <- grepl(
-    pattern = '^g\\+\\+$|[/\\]+g\\+\\+$|^g\\+\\+\\-[0-9]+$|[/\\]+g\\+\\+\\-[0-9]+$'
-    , x = Sys.getenv('CXX', '')
+    pattern = "^g\\+\\+$|[/\\]+g\\+\\+$|^g\\+\\+\\-[0-9]+$|[/\\]+g\\+\\+\\-[0-9]+$"
+    , x = Sys.getenv("CXX", "")
   )
-  on_mac <- Sys.info()['sysname'] == 'Darwin'
+  on_mac <- Sys.info()["sysname"] == "Darwin"
   if (on_mac && !(using_gcc & using_gpp)) {
     cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" ')
     cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_C_LIB_NAMES="omp" ')
@@ -71,21 +71,21 @@ if (!use_precompile) {
       build_cmd <- "mingw32-make.exe _lightgbm"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
-      try_vs <- 0
+      try_vs <- 0L
       local_vs_def <- ""
       vs_versions <- c("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
       for (vs in vs_versions) {
         vs_def <- paste0(" -G \"", vs, "\" -A x64")
         tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)
         try_vs <- system(paste0(tmp_cmake_cmd, " .."))
-        if (try_vs == 0) {
+        if (try_vs == 0L) {
           local_vs_def = vs_def
           break
         } else {
           unlink("./*", recursive = TRUE) # Clean up build directory
         }
       }
-      if (try_vs == 1) {
+      if (try_vs == 1L) {
         cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
         build_cmd <- "mingw32-make.exe _lightgbm"

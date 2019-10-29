@@ -24,7 +24,7 @@
 #' params <- list(
 #'   objective = "binary"
 #'   , learning_rate = 0.01
-#'   , num_leaves = 63
+#'   , num_leaves = 63L
 #'   , max_depth = -1
 #'   , min_data_in_leaf = 1
 #'   , min_sum_hessian_in_leaf = 1

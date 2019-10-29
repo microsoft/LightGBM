@@ -24,23 +24,24 @@
 #' params <- list(
 #'     objective = "binary"
 #'     , learning_rate = 0.01
-#'     , num_leaves = 63
-#'     , max_depth = -1
-#'     , min_data_in_leaf = 1
+#'     , num_leaves = 63L
+#'     , max_depth = -1L
+#'     , min_data_in_leaf = 1L
 #'     , min_sum_hessian_in_leaf = 1
 #' )
 #'
 #' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_imp <- lgb.importance(model, percentage = TRUE)
-#' lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")
+#' lgb.plot.importance(tree_imp, top_n = 10L, measure = "Gain")
 #' @importFrom graphics barplot par
 #' @export
 lgb.plot.importance <- function(tree_imp,
-                                top_n = 10,
+                                top_n = 10L,
                                 measure = "Gain",
-                                left_margin = 10,
-                                cex = NULL) {
+                                left_margin = 10L,
+                                cex = NULL
+                                ) {
 
   # Check for measurement (column names) correctness
   measure <- match.arg(
@@ -57,7 +58,7 @@ lgb.plot.importance <- function(tree_imp,
 
   # Attempt to setup a correct cex
   if (is.null(cex)) {
-    cex <- 2.5 / log2(1 + top_n)
+    cex <- 2.5 / log2(1.0 + top_n)
   }
 
   # Refresh plot
@@ -66,15 +67,15 @@ lgb.plot.importance <- function(tree_imp,
 
   graphics::par(
     mar = c(
-      op$mar[1]
+      op$mar[1L]
       , left_margin
-      , op$mar[3]
-      , op$mar[4]
+      , op$mar[3L]
+      , op$mar[4L]
     )
   )
 
   # Do plot
-  tree_imp[.N:1,
+  tree_imp[.N:1L,
            graphics::barplot(
                height = get(measure)
                , names.arg = Feature
@@ -83,7 +84,7 @@ lgb.plot.importance <- function(tree_imp,
                , main = "Feature Importance"
                , xlab = measure
                , cex.names = cex
-               , las = 1
+               , las = 1L
            )]
 
   # Return invisibly

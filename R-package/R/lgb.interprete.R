@@ -17,8 +17,8 @@
 #'         Contribution columns to each class.
 #'
 #' @examples
-#' Sigmoid <- function(x) 1 / (1 + exp(-x))
-#' Logit <- function(x) log(x / (1 - x))
+#' Sigmoid <- function(x) 1.0 / (1.0 + exp(-x))
+#' Logit <- function(x) log(x / (1.0 - x))
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -29,7 +29,7 @@
 #' params <- list(
 #'     objective = "binary"
 #'     , learning_rate = 0.01
-#'     , num_leaves = 63
+#'     , num_leaves = 63L
 #'     , max_depth = -1
 #'     , min_data_in_leaf = 1
 #'     , min_sum_hessian_in_leaf = 1
@@ -106,8 +106,8 @@ single.tree.interprete <- function(tree_dt,
   node_dt <- single_tree_dt[!is.na(split_index), .(split_index, split_feature, node_parent, internal_value)]
 
   # Prepare sequences
-  feature_seq <- character(0)
-  value_seq <- numeric(0)
+  feature_seq <- character(0L)
+  value_seq <- numeric(0L)
 
   # Get to root from leaf
   leaf_to_root <- function(parent_id, current_value) {
@@ -205,7 +205,7 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
   if (num_class == 1L) {
 
     # First interpretation element
-    tree_interpretation_dt <- tree_interpretation[[1]]
+    tree_interpretation_dt <- tree_interpretation[[1L]]
 
   } else {
 

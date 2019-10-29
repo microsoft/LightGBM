@@ -41,20 +41,20 @@
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
+#'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1
+#'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5
+#'   , early_stopping_rounds = 5L
 #' )
 #' @export
 lgb.train <- function(params = list(),
                       data,
-                      nrounds = 10,
+                      nrounds = 10L,
                       valids = list(),
                       obj = NULL,
                       eval = NULL,
-                      verbose = 1,
+                      verbose = 1L,
                       record = TRUE,
                       eval_freq = 1L,
                       init_model = NULL,
@@ -74,7 +74,7 @@ lgb.train <- function(params = list(),
   fobj <- NULL
   feval <- NULL
 
-  if (nrounds <= 0) {
+  if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
 
@@ -103,16 +103,16 @@ lgb.train <- function(params = list(),
   }
 
   # Set the iteration to start from / end to (and check for boosting from a trained model, again)
-  begin_iteration <- 1
+  begin_iteration <- 1L
   if (!is.null(predictor)) {
-    begin_iteration <- predictor$current_iter() + 1
+    begin_iteration <- predictor$current_iter() + 1L
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
   n_trees <- .PARAMETER_ALIASES()[["num_iterations"]]
   if (any(names(params) %in% n_trees)) {
-    end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1]]] - 1
+    end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1L]]] - 1L
   } else {
-    end_iteration <- begin_iteration + nrounds - 1
+    end_iteration <- begin_iteration + nrounds - 1L
   }
 
   # Check for training dataset type correctness
@@ -121,12 +121,12 @@ lgb.train <- function(params = list(),
   }
 
   # Check for validation dataset type correctness
-  if (length(valids) > 0) {
+  if (length(valids) > 0L) {
 
     # One or more validation dataset
 
     # Check for list as input and type correctness by object
-    if (!is.list(valids) || !all(vapply(valids, lgb.is.Dataset, logical(1)))) {
+    if (!is.list(valids) || !all(vapply(valids, lgb.is.Dataset, logical(1L)))) {
       stop("lgb.train: valids must be a list of lgb.Dataset elements")
     }
 
@@ -162,7 +162,7 @@ lgb.train <- function(params = list(),
   reduced_valid_sets <- list()
 
   # Parse validation datasets
-  if (length(valids) > 0) {
+  if (length(valids) > 0L) {
 
     # Loop through all validation datasets using name
     for (key in names(valids)) {
@@ -187,12 +187,12 @@ lgb.train <- function(params = list(),
   }
 
   # Add printing log callback
-  if (verbose > 0 && eval_freq > 0) {
+  if (verbose > 0L && eval_freq > 0L) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
 
   # Add evaluation log callback
-  if (record && length(valids) > 0) {
+  if (record && length(valids) > 0L) {
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
 
@@ -201,7 +201,7 @@ lgb.train <- function(params = list(),
   early_stop <- .PARAMETER_ALIASES()[["early_stopping_round"]]
   early_stop_param_indx <- names(params) %in% early_stop
   if (any(early_stop_param_indx)) {
-    first_early_stop_param <- which(early_stop_param_indx)[[1]]
+    first_early_stop_param <- which(early_stop_param_indx)[[1L]]
     first_early_stop_param_name <- names(params)[[first_early_stop_param]]
     early_stopping_rounds <- params[[first_early_stop_param_name]]
   }
@@ -214,7 +214,7 @@ lgb.train <- function(params = list(),
     sapply(
       X = boosting_param_names
       , FUN = function(param) {
-        identical(params[[param]], 'dart')
+        identical(params[[param]], "dart")
       }
     )
   )
@@ -279,7 +279,7 @@ lgb.train <- function(params = list(),
     eval_list <- list()
 
     # Collection: Has validation dataset?
-    if (length(valids) > 0) {
+    if (length(valids) > 0L) {
 
       # Validation has training dataset?
       if (vaild_contain_train) {
@@ -305,13 +305,13 @@ lgb.train <- function(params = list(),
 
   # When early stopping is not activated, we compute the best iteration / score ourselves by
   # selecting the first metric and the first dataset
-  if (record && length(valids) > 0 && is.na(env$best_score)) {
-    if (env$eval_list[[1]]$higher_better[1] == TRUE) {
-      booster$best_iter <- unname(which.max(unlist(booster$record_evals[[2]][[1]][[1]])))
-      booster$best_score <- booster$record_evals[[2]][[1]][[1]][[booster$best_iter]]
+  if (record && length(valids) > 0L && is.na(env$best_score)) {
+    if (env$eval_list[[1L]]$higher_better[1L] == TRUE) {
+      booster$best_iter <- unname(which.max(unlist(booster$record_evals[[2L]][[1L]][[1L]])))
+      booster$best_score <- booster$record_evals[[2L]][[1L]][[1L]][[booster$best_iter]]
     } else {
-      booster$best_iter <- unname(which.min(unlist(booster$record_evals[[2]][[1]][[1]])))
-      booster$best_score <- booster$record_evals[[2]][[1]][[1]][[booster$best_iter]]
+      booster$best_iter <- unname(which.min(unlist(booster$record_evals[[2L]][[1L]][[1L]])))
+      booster$best_score <- booster$record_evals[[2L]][[1L]][[1L]][[booster$best_iter]]
     }
   }
 

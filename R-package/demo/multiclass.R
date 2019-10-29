@@ -24,9 +24,9 @@ model <- lgb.train(
     , dtrain
     , 100
     , valids
-    , min_data = 1
+    , min_data = 1L
     , learning_rate = 1.0
-    , early_stopping_rounds = 10
+    , early_stopping_rounds = 10L
 )
 
 # We can predict on test data, outputs a 90-length vector
@@ -39,12 +39,12 @@ model <- lgb.train(
     , dtrain
     , 100
     , valids
-    , min_data = 1
+    , min_data = 1L
     , learning_rate = 1.0
-    , early_stopping_rounds = 10
+    , early_stopping_rounds = 10L
     , objective = "multiclass"
     , metric = "multi_error"
-    , num_class = 3
+    , num_class = 3L
 )
 
 # We can predict on test data, identical

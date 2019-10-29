@@ -27,11 +27,11 @@
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
+#'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1
+#'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5
+#'   , early_stopping_rounds = 5L
 #' )
 #'
 #' \dontrun{

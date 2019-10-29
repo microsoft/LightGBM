@@ -10,23 +10,23 @@ test_that("lgb.importance() should reject bad inputs", {
         , -10L:10L
         , list(c("a", "b", "c"))
         , data.frame(
-            x = rnorm(20)
+            x = rnorm(20L)
             , y = sample(
                 x = c(1, 2)
-                , size = 20
+                , size = 20L
                 , replace = TRUE
             )
         )
         , data.table::data.table(
-            x = rnorm(20)
+            x = rnorm(20L)
             , y = sample(
                 x = c(1, 2)
-                , size = 20
+                , size = 20L
                 , replace = TRUE
             )
         )
         , lgb.Dataset(
-            data = matrix(rnorm(100), ncol = 2)
+            data = matrix(rnorm(100L), ncol = 2)
             , label = matrix(sample(c(0, 1), 50, replace = TRUE))
         )
         , "lightgbm.model"
