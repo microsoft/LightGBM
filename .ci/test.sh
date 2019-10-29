@@ -91,9 +91,6 @@ if [[ $TASK == "r-pkg" ]]; then
     # https://cran.r-project.org/bin/linux/ubuntu/#installation
     if [[ $OS_NAME == "linux" ]]; then
         sudo apt-get update
-        # sudo apt-key adv \
-        #     --keyserver keyserver.ubuntu.com \
-        #     --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
         sudo add-apt-repository \
             "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
         sudo apt-get update
@@ -108,17 +105,23 @@ if [[ $TASK == "r-pkg" ]]; then
                 || exit -1
     fi
 
+    # Installing R precompiled for Mac OS 10.11 or higher
     if [[ $OS_NAME == "macos" ]]; then
-        brew install \
-            r \
-            qpdf
-        brew cask install \
-            basictex
-        export PATH="/Library/TeX/texbin:$PATH"
-        sudo tlmgr update --self
+        # brew install \
+        #     r \
+        #     qpdf
+        # brew cask install \
+        #     basictex
+        # export PATH="/Library/TeX/texbin:$PATH"
+        # sudo tlmgr update --self
         # sudo tlmgr install \
         #     inconsolata \
         #     helvetic
+        wget https://cran.r-project.org/bin/macosx/R-${R_VERSION}.pkg -O R.pkg
+        sudo installer \
+            -verbose \
+            -pkg $(pwd)/R.pkg \
+            -target /
     fi
 
     conda install \
