@@ -51,6 +51,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
+    sudo apt-get update
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
         pydocstyle
