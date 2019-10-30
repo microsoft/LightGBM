@@ -55,6 +55,7 @@ if [[ $TASK == "lint" ]]; then
         pycodestyle \
         pydocstyle
     conda install -q -y -n $CONDA_ENV -c conda-forge \
+        r-stringi \
         r-lintr==2.0.0
     pip install --user cpplint
     echo "Linting Python code"
