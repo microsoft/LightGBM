@@ -107,16 +107,6 @@ if [[ $TASK == "r-pkg" ]]; then
 
     # Installing R precompiled for Mac OS 10.11 or higher
     if [[ $OS_NAME == "macos" ]]; then
-        # brew install \
-        #     r \
-        #     qpdf
-        # brew cask install \
-        #     basictex
-        # export PATH="/Library/TeX/texbin:$PATH"
-        # sudo tlmgr update --self
-        # sudo tlmgr install \
-        #     inconsolata \
-        #     helvetic
         wget https://cran.r-project.org/bin/macosx/R-${R_VERSION}.pkg -O R.pkg
         sudo installer \
             -verbose \
