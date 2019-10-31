@@ -543,7 +543,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   #ifdef TIMETAG
   auto start_time = std::chrono::steady_clock::now();
   #endif
-    LearnerState learner_state(config_, data_partition_, train_data_,
+    LearnerState learner_state(config_, data_partition_.get(), train_data_,
                                constraints_per_leaf_, tree, current_constraints,
                                cegb_);
   std::vector<SplitInfo> smaller_best(num_threads_);
@@ -885,7 +885,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   // values don't clash with existing constraints in the subtree,
   // and if they do, the existing splits need to be updated
   if (tree->leaf_is_in_monotone_subtree(*right_leaf) && !config_->monotone_constraints.empty()) {
-    LearnerState learner_state(config_, data_partition_, train_data_,
+    LearnerState learner_state(config_, data_partition_.get(), train_data_,
                                constraints_per_leaf_, tree, current_constraints,
                                cegb_);
     LeafConstraints::GoUpToFindLeavesToUpdate(

@@ -16,7 +16,7 @@ struct LeafConstraints;
 
 struct LearnerState {
   const Config *config_;
-  std::unique_ptr<DataPartition> &data_partition_;
+  const DataPartition *data_partition_;
   const Dataset *train_data_;
   std::vector<LeafConstraints> &constraints_per_leaf_;
   const Tree *tree;
@@ -24,7 +24,7 @@ struct LearnerState {
   std::unique_ptr<CostEfficientGradientBoosting> &cegb_;
 
   LearnerState(const Config *config_,
-               std::unique_ptr<DataPartition> &data_partition_,
+               const DataPartition *data_partition_,
                const Dataset *train_data_,
                std::vector<LeafConstraints> &constraints_per_leaf_,
                const Tree *tree, CurrentConstraints &current_constraints,
