@@ -334,7 +334,13 @@ struct SplittingConstraint {
   unsigned int index_min_constraint;
   unsigned int index_max_constraint;
 
-  SplittingConstraint() {}
+  SplittingConstraint() {
+    index_min_constraint = 0;
+    index_max_constraint = 0;
+
+    cumulative_min_constraint = std::vector<double>(1, -std::numeric_limits<double>::max());
+    cumulative_max_constraint = std::vector<double>(1, std::numeric_limits<double>::max());
+  }
 
   SplittingConstraint(std::vector<double> cumulative_min_constraint,
                       std::vector<double> cumulative_max_constraint) {
@@ -595,24 +601,39 @@ struct CurrentConstraints {
   }
 };
 
-struct BestConstraints {
-  double best_min_constraint_right;
-  double best_max_constraint_right;
-  double best_min_constraint_left;
-  double best_max_constraint_left;
+struct BestConstraint {
+  double best_min_constraint;
+  double best_max_constraint;
 
   void Init() {
-    best_min_constraint_left = NAN;
-    best_max_constraint_left = NAN;
-    best_min_constraint_right = NAN;
-    best_max_constraint_right = NAN;
+    best_min_constraint = NAN;
+    best_max_constraint = NAN;
   }
 
+  void Update(const SplittingConstraint &constraint) {
+    best_min_constraint = constraint.GetCurrentMinConstraint();
+    best_max_constraint = constraint.GetCurrentMaxConstraint();
+  }
+
+  // Named after SplittingConstraint to make a template to group the 2
+  double GetCurrentMinConstraint() const {
+    return best_min_constraint;
+  }
+
+  double GetCurrentMaxConstraint() const {
+    return best_max_constraint;
+  }
+};
+
+struct BestConstraints {
+  BestConstraint right;
+  BestConstraint left;
+
+  void Init() {}
+
   void Update(SplittingConstraints *constraints) {
-    best_min_constraint_right = constraints->right.GetCurrentMinConstraint();
-    best_max_constraint_right = constraints->right.GetCurrentMaxConstraint();
-    best_min_constraint_left = constraints->left.GetCurrentMinConstraint();
-    best_max_constraint_left = constraints->left.GetCurrentMaxConstraint();
+    right.Update(constraints->right);
+    left.Update(constraints->left);
   }
 };
 

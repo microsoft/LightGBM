@@ -276,22 +276,21 @@ class FeatureHistogram {
     }
 
     if (is_splittable_) {
-      double current_min_constraint_left = -std::numeric_limits<double>::max();
-      double current_max_constraint_left = std::numeric_limits<double>::max();
-      double current_min_constraint_right = -std::numeric_limits<double>::max();
-      double current_max_constraint_right = std::numeric_limits<double>::max();
+      SplittingConstraint *left;
+      SplittingConstraint *right;
       if (constraints != nullptr) {
-        current_min_constraint_left = constraints->left.GetCurrentMinConstraint();
-        current_max_constraint_left = constraints->left.GetCurrentMaxConstraint();
-        current_min_constraint_right = constraints->right.GetCurrentMinConstraint();
-        current_max_constraint_right = constraints->right.GetCurrentMaxConstraint();
+        left = &(constraints->left);
+        right = &(constraints-> right);
+      }
+      else {
+        left =  new SplittingConstraint();
+        right =  new SplittingConstraint();
       }
 
       output->left_output = CalculateSplittedLeafOutput(
           best_sum_left_gradient, best_sum_left_hessian,
           meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
-          current_min_constraint_left,
-          current_max_constraint_left);
+          left);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
@@ -299,8 +298,7 @@ class FeatureHistogram {
           sum_gradient - best_sum_left_gradient,
           sum_hessian - best_sum_left_hessian, meta_->config->lambda_l1, l2,
           meta_->config->max_delta_step,
-          current_min_constraint_right,
-          current_max_constraint_right);
+          right);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
@@ -514,13 +512,14 @@ class FeatureHistogram {
   * \param sum_hessians
   * \return leaf output
   */
+  template <class T>
   static double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians, double l1, double l2, double max_delta_step,
-                                            double min_constraint, double max_constraint) {
+                                            const T *constraint) {
     double ret = CalculateSplittedLeafOutput(sum_gradients, sum_hessians, l1, l2, max_delta_step);
-    if (ret < min_constraint) {
-      ret = min_constraint;
-    } else if (ret > max_constraint) {
-      ret = max_constraint;
+    if (ret < constraint->GetCurrentMinConstraint()) {
+      ret = constraint->GetCurrentMinConstraint();
+    } else if (ret > constraint->GetCurrentMaxConstraint()) {
+      ret = constraint->GetCurrentMaxConstraint();
     }
     return ret;
   }
@@ -530,18 +529,18 @@ class FeatureHistogram {
                               double sum_right_gradients, double sum_right_hessians,
                               double l1, double l2, double max_delta_step,
                               const SplittingConstraints *constraints, int8_t monotone_constraint) {
-    double current_min_constraint_left = -std::numeric_limits<double>::max();
-    double current_max_constraint_left = std::numeric_limits<double>::max();
-    double current_min_constraint_right = -std::numeric_limits<double>::max();
-    double current_max_constraint_right = std::numeric_limits<double>::max();
+    const SplittingConstraint *left;
+    const SplittingConstraint *right;
     if (constraints != nullptr) {
-      current_min_constraint_left = constraints->left.GetCurrentMinConstraint();
-      current_max_constraint_left = constraints->left.GetCurrentMaxConstraint();
-      current_min_constraint_right = constraints->right.GetCurrentMinConstraint();
-      current_max_constraint_right = constraints->right.GetCurrentMaxConstraint();
+      left = &(constraints->left);
+      right = &(constraints->right);
     }
-    double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, current_min_constraint_left, current_max_constraint_left);
-    double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, current_min_constraint_right, current_max_constraint_right);
+    else {
+      left =  new SplittingConstraint();
+      right =  new SplittingConstraint();
+    }
+    double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, left);
+    double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, right);
     if (((monotone_constraint > 0) && (left_output > right_output)) ||
       ((monotone_constraint < 0) && (left_output < right_output))) {
       return 0;
@@ -725,8 +724,7 @@ class FeatureHistogram {
       output->left_output = CalculateSplittedLeafOutput(
           best_sum_left_gradient, best_sum_left_hessian,
           meta_->config->lambda_l1, meta_->config->lambda_l2,
-          meta_->config->max_delta_step, best_constraints.best_min_constraint_left,
-          best_constraints.best_max_constraint_left);
+          meta_->config->max_delta_step, &best_constraints.left);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
@@ -734,7 +732,7 @@ class FeatureHistogram {
           sum_gradient - best_sum_left_gradient,
           sum_hessian - best_sum_left_hessian, meta_->config->lambda_l1,
           meta_->config->lambda_l2, meta_->config->max_delta_step,
-          best_constraints.best_min_constraint_right, best_constraints.best_max_constraint_right);
+          &best_constraints.right);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
