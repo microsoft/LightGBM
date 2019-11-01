@@ -140,9 +140,10 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
 
   inline static double LossOnPoint(label_t label, std::vector<double>* score, const Config& config) {
     size_t k = static_cast<size_t>(label);
+    auto& ref_score = *score;
     int num_larger = 0;
     for (size_t i = 0; i < score->size(); ++i) {
-      if (score->at(i) >= score->at(k)) ++num_larger;
+      if (ref_score[i] >= ref_score[k]) ++num_larger;
       if (num_larger > config.multi_error_top_k) return 1.0f;
     }
     return 0.0f;
@@ -164,8 +165,9 @@ class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetr
 
   inline static double LossOnPoint(label_t label, std::vector<double>* score, const Config&) {
     size_t k = static_cast<size_t>(label);
-    if (score->at(k) > kEpsilon) {
-      return static_cast<double>(-std::log(score->at(k)));
+    auto& ref_score = *score;
+    if (ref_score[k] > kEpsilon) {
+      return static_cast<double>(-std::log(ref_score[k]));
     } else {
       return -std::log(kEpsilon);
     }

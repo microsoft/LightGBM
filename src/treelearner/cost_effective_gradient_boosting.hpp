@@ -63,14 +63,15 @@ class CostEfficientGradientBoosting {
     auto config = tree_learner_->config_;
     auto train_data = tree_learner_->train_data_;
     const int inner_feature_index = train_data->InnerFeatureIndex(best_split_info->feature);
+    auto& ref_best_split_per_leaf = *best_split_per_leaf;
     if (!config->cegb_penalty_feature_coupled.empty() && !is_feature_used_in_split_[inner_feature_index]) {
       is_feature_used_in_split_[inner_feature_index] = true;
       for (int i = 0; i < tree->num_leaves(); ++i) {
         if (i == best_leaf) continue;
         auto split = &splits_per_leaf_[static_cast<size_t>(i) * train_data->num_features() + inner_feature_index];
         split->gain += config->cegb_tradeoff * config->cegb_penalty_feature_coupled[best_split_info->feature];
-        if (*split > best_split_per_leaf->at(i))
-          best_split_per_leaf->at(i) = *split;
+        if (*split > ref_best_split_per_leaf[i])
+          ref_best_split_per_leaf[i] = *split;
       }
     }
     if (!config->cegb_penalty_feature_lazy.empty()) {

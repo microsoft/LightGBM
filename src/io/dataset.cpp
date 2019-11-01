@@ -61,8 +61,9 @@ int GetConfilctCount(const std::vector<bool>& mark, const int* indices, int num_
   return ret;
 }
 void MarkUsed(std::vector<bool>* mark, const int* indices, int num_indices) {
+  auto& ref_mark = *mark;
   for (int i = 0; i < num_indices; ++i) {
-    mark->at(indices[i]) = true;
+    ref_mark[indices[i]] = true;
   }
 }
 
@@ -238,8 +239,9 @@ void Dataset::Construct(
   sparse_threshold_ = io_config.sparse_threshold;
   // get num_features
   std::vector<int> used_features;
+  auto& ref_bin_mappers = *bin_mappers;
   for (int i = 0; i < static_cast<int>(bin_mappers->size()); ++i) {
-    if (bin_mappers->at(i) != nullptr && !bin_mappers->at(i)->is_trivial()) {
+    if (ref_bin_mappers[i] != nullptr && !ref_bin_mappers[i]->is_trivial()) {
       used_features.emplace_back(i);
     }
   }
@@ -277,7 +279,7 @@ void Dataset::Construct(
       real_feature_idx_[cur_fidx] = real_fidx;
       feature2group_[cur_fidx] = i;
       feature2subfeature_[cur_fidx] = j;
-      cur_bin_mappers.emplace_back(bin_mappers->at(real_fidx).release());
+      cur_bin_mappers.emplace_back(ref_bin_mappers[real_fidx].release());
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
@@ -848,6 +850,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
   int num_used_group = static_cast<int>(used_group.size());
   auto ptr_ordered_grad = gradients;
   auto ptr_ordered_hess = hessians;
+  auto& ref_ordered_bins = *ordered_bins;
   if (data_indices != nullptr && num_data < num_data_) {
     if (!is_constant_hessian) {
       #pragma omp parallel for schedule(static)
@@ -874,7 +877,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         const int num_bin = feature_groups_[group]->num_total_bin_;
         std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
-        if (ordered_bins->at(group) == nullptr) {
+        if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             data_indices,
@@ -884,10 +887,10 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
             data_ptr);
         } else {
           // used ordered bin
-          ordered_bins->at(group)->ConstructHistogram(leaf_idx,
-                                                  gradients,
-                                                  hessians,
-                                                  data_ptr);
+          ref_ordered_bins[group]->ConstructHistogram(leaf_idx,
+                                                      gradients,
+                                                      hessians,
+                                                      data_ptr);
         }
         OMP_LOOP_EX_END();
       }
@@ -903,7 +906,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         const int num_bin = feature_groups_[group]->num_total_bin_;
         std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
-        if (ordered_bins->at(group) == nullptr) {
+        if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             data_indices,
@@ -912,9 +915,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
             data_ptr);
         } else {
           // used ordered bin
-          ordered_bins->at(group)->ConstructHistogram(leaf_idx,
-                                                  gradients,
-                                                  data_ptr);
+          ref_ordered_bins[group]->ConstructHistogram(leaf_idx,
+                                                      gradients,
+                                                      data_ptr);
         }
         // fixed hessian.
         for (int i = 0; i < num_bin; ++i) {
@@ -936,7 +939,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         const int num_bin = feature_groups_[group]->num_total_bin_;
         std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
-        if (ordered_bins->at(group) == nullptr) {
+        if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             num_data,
@@ -945,10 +948,10 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
             data_ptr);
         } else {
           // used ordered bin
-          ordered_bins->at(group)->ConstructHistogram(leaf_idx,
-                                                  gradients,
-                                                  hessians,
-                                                  data_ptr);
+          ref_ordered_bins[group]->ConstructHistogram(leaf_idx,
+                                                      gradients,
+                                                      hessians,
+                                                      data_ptr);
         }
         OMP_LOOP_EX_END();
       }
@@ -964,7 +967,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         const int num_bin = feature_groups_[group]->num_total_bin_;
         std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
-        if (ordered_bins->at(group) == nullptr) {
+        if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             num_data,
@@ -972,9 +975,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
             data_ptr);
         } else {
           // used ordered bin
-          ordered_bins->at(group)->ConstructHistogram(leaf_idx,
-                                                  gradients,
-                                                  data_ptr);
+          ref_ordered_bins[group]->ConstructHistogram(leaf_idx,
+                                                      gradients,
+                                                      data_ptr);
         }
         // fixed hessian.
         for (int i = 0; i < num_bin; ++i) {

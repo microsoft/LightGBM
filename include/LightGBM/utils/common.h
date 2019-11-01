@@ -632,8 +632,8 @@ inline static void Softmax(const double* input, double* output, int len) {
 template<typename T>
 std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;
-  for (size_t i = 0; i < input.size(); ++i) {
-    ret.push_back(input.at(i).get());
+  for (auto t = input.begin(); t !=input.end(); ++t) {
+    ret.push_back(t->get());
   }
   return ret;
 }
@@ -641,8 +641,10 @@ std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<
 template<typename T1, typename T2>
 inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, size_t start, bool is_reverse = false) {
   std::vector<std::pair<T1, T2>> arr;
+  auto& ref_key = *keys;
+  auto& ref_value = *values;
   for (size_t i = start; i < keys->size(); ++i) {
-    arr.emplace_back(keys->at(i), values->at(i));
+    arr.emplace_back(ref_key[i], ref_value[i]);
   }
   if (!is_reverse) {
     std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
@@ -654,16 +656,17 @@ inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, s
     });
   }
   for (size_t i = start; i < arr.size(); ++i) {
-    keys->at(i) = arr[i].first;
-    values->at(i) = arr[i].second;
+    ref_key[i] = arr[i].first;
+    ref_value[i] = arr[i].second;
   }
 }
 
 template <typename T>
 inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>* data) {
   std::vector<T*> ptr(data->size());
+  auto& ref_data = *data;
   for (size_t i = 0; i < data->size(); ++i) {
-    ptr[i] = data->at(i).data();
+    ptr[i] = ref_data[i].data();
   }
   return ptr;
 }
@@ -841,12 +844,13 @@ inline static std::vector<uint32_t> EmptyBitset(int n) {
 
 template<typename T>
 inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
-    int i1 = val / 32;
-    int i2 = val % 32;
-    if (static_cast<int>(vec->size()) < i1 + 1) {
-      vec->resize(i1 + 1, 0);
-    }
-    vec->at(i1) |= (1 << i2);
+  auto& ref_v = *vec;
+  int i1 = val / 32;
+  int i2 = val % 32;
+  if (static_cast<int>(vec->size()) < i1 + 1) {
+    vec->resize(i1 + 1, 0);
+  }
+  ref_v[i1] |= (1 << i2);
 }
 
 template<typename T>
