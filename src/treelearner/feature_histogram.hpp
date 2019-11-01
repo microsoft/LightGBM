@@ -644,7 +644,9 @@ class FeatureHistogram {
           best_threshold = static_cast<uint32_t>(t - 1 + bias);
           best_gain = current_gain;
 
-          best_constraints.Update(constraints);
+          if (constraints != nullptr) {
+            best_constraints.Update(constraints);
+          }
         }
       }
     } else {
@@ -713,7 +715,9 @@ class FeatureHistogram {
           best_threshold = static_cast<uint32_t>(t + bias);
           best_gain = current_gain;
 
-          best_constraints.Update(constraints);
+          if (constraints != nullptr) {
+            best_constraints.Update(constraints);
+          }
         }
       }
     }

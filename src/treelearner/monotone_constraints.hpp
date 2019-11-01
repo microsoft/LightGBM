@@ -605,9 +605,9 @@ struct BestConstraint {
   double best_min_constraint;
   double best_max_constraint;
 
-  void Init() {
-    best_min_constraint = NAN;
-    best_max_constraint = NAN;
+  BestConstraint() {
+    best_min_constraint = -std::numeric_limits<double>::max();
+    best_max_constraint = std::numeric_limits<double>::max();
   }
 
   void Update(const SplittingConstraint &constraint) {
@@ -628,8 +628,6 @@ struct BestConstraint {
 struct BestConstraints {
   BestConstraint right;
   BestConstraint left;
-
-  void Init() {}
 
   void Update(SplittingConstraints *constraints) {
     right.Update(constraints->right);
