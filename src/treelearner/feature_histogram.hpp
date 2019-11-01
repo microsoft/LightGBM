@@ -281,10 +281,10 @@ class FeatureHistogram {
       double current_min_constraint_right = -std::numeric_limits<double>::max();
       double current_max_constraint_right = std::numeric_limits<double>::max();
       if (constraints != nullptr) {
-        current_min_constraint_left = constraints->CurrentMinConstraintLeft();
-        current_max_constraint_left = constraints->CurrentMaxConstraintLeft();
-        current_min_constraint_right = constraints->CurrentMinConstraintRight();
-        current_max_constraint_right = constraints->CurrentMaxConstraintRight();
+        current_min_constraint_left = constraints->left.GetCurrentMinConstraint();
+        current_max_constraint_left = constraints->left.GetCurrentMaxConstraint();
+        current_min_constraint_right = constraints->right.GetCurrentMinConstraint();
+        current_max_constraint_right = constraints->right.GetCurrentMaxConstraint();
       }
 
       output->left_output = CalculateSplittedLeafOutput(
@@ -535,10 +535,10 @@ class FeatureHistogram {
     double current_min_constraint_right = -std::numeric_limits<double>::max();
     double current_max_constraint_right = std::numeric_limits<double>::max();
     if (constraints != nullptr) {
-      current_min_constraint_left = constraints->CurrentMinConstraintLeft();
-      current_max_constraint_left = constraints->CurrentMaxConstraintLeft();
-      current_min_constraint_right = constraints->CurrentMinConstraintRight();
-      current_max_constraint_right = constraints->CurrentMaxConstraintRight();
+      current_min_constraint_left = constraints->left.GetCurrentMinConstraint();
+      current_max_constraint_left = constraints->left.GetCurrentMaxConstraint();
+      current_min_constraint_right = constraints->right.GetCurrentMinConstraint();
+      current_max_constraint_right = constraints->right.GetCurrentMaxConstraint();
     }
     double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, current_min_constraint_left, current_max_constraint_left);
     double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, current_min_constraint_right, current_max_constraint_right);

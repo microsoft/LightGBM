@@ -327,7 +327,61 @@ struct LeafConstraints {
   }
 };
 
+struct SplittingConstraint {
+  std::vector<double> cumulative_min_constraint;
+  std::vector<double> cumulative_max_constraint;
+
+  unsigned int index_min_constraint;
+  unsigned int index_max_constraint;
+
+  SplittingConstraint() {}
+
+  SplittingConstraint(std::vector<double> cumulative_min_constraint,
+                      std::vector<double> cumulative_max_constraint) {
+    this->cumulative_min_constraint = cumulative_min_constraint;
+    this->cumulative_max_constraint = cumulative_max_constraint;
+  }
+
+  double GetCurrentMinConstraint() const {
+    return cumulative_min_constraint[index_min_constraint];
+  }
+
+  double GetCurrentMaxConstraint() const {
+    return cumulative_max_constraint[index_max_constraint];
+  }
+
+  void Reserve(int space_to_reserve) {
+    cumulative_max_constraint.reserve(space_to_reserve);
+    cumulative_min_constraint.reserve(space_to_reserve);
+  }
+
+  void InitializeConstraints() {
+    cumulative_max_constraint.resize(1);
+    cumulative_min_constraint.resize(1);
+    cumulative_min_constraint[0] = -std::numeric_limits<double>::max();
+    cumulative_max_constraint[0] = std::numeric_limits<double>::max();
+  }
+
+  void InitializeIndices(int dir, int min_size, int max_size) {
+    if (dir == -1) {
+      index_min_constraint = min_size;
+      index_max_constraint = max_size;
+    } else {
+      index_min_constraint = 0;
+      index_max_constraint = 0;
+    }
+  }
+
+  void Set(const LeafConstraints &leaf_constraints) {
+    cumulative_min_constraint[0] = leaf_constraints.min_constraints[0][0];
+    cumulative_max_constraint[0] = leaf_constraints.max_constraints[0][0];
+  }
+};
+
 struct SplittingConstraints {
+  SplittingConstraint right;
+  SplittingConstraint left;
+
   std::vector<double> cumulative_min_constraint_right_to_left;
   std::vector<double> cumulative_max_constraint_right_to_left;
   std::vector<double> cumulative_min_constraint_left_to_right;
@@ -351,14 +405,8 @@ struct SplittingConstraints {
       std::vector<double> &cumulative_max_constraint_left_to_right,
       std::vector<uint32_t> &thresholds_min_constraints,
       std::vector<uint32_t> &thresholds_max_constraints) {
-    this->cumulative_min_constraint_right_to_left =
-        cumulative_min_constraint_right_to_left;
-    this->cumulative_min_constraint_left_to_right =
-        cumulative_min_constraint_left_to_right;
-    this->cumulative_max_constraint_right_to_left =
-        cumulative_max_constraint_right_to_left;
-    this->cumulative_max_constraint_left_to_right =
-        cumulative_max_constraint_left_to_right;
+    right = SplittingConstraint(cumulative_min_constraint_right_to_left, cumulative_max_constraint_right_to_left);
+    left = SplittingConstraint(cumulative_min_constraint_left_to_right, cumulative_max_constraint_left_to_right);
 
     this->thresholds_min_constraints = thresholds_min_constraints;
     this->thresholds_max_constraints = thresholds_max_constraints;
@@ -390,25 +438,18 @@ struct SplittingConstraints {
     const double &(*min)(const double &, const double &) = std::min<double>;
     const double &(*max)(const double &, const double &) = std::max<double>;
 
-    CumulativeExtremum(max, true, cumulative_min_constraint_left_to_right);
-    CumulativeExtremum(max, false, cumulative_min_constraint_right_to_left);
-    CumulativeExtremum(min, true, cumulative_max_constraint_left_to_right);
-    CumulativeExtremum(min, false, cumulative_max_constraint_right_to_left);
+    CumulativeExtremum(max, true, left.cumulative_min_constraint);
+    CumulativeExtremum(max, false, right.cumulative_min_constraint);
+    CumulativeExtremum(min, true, left.cumulative_max_constraint);
+    CumulativeExtremum(min, false, right.cumulative_max_constraint);
   }
 
   void InitializeIndices(int dir) {
+    right.InitializeIndices(dir, thresholds_min_constraints.size() - 1, thresholds_max_constraints.size() - 1);
+    left.InitializeIndices(dir, thresholds_min_constraints.size() - 1, thresholds_max_constraints.size() - 1);
     if (dir == -1) {
-      index_min_constraint_left_to_right = thresholds_min_constraints.size() - 1;
-      index_min_constraint_right_to_left = thresholds_min_constraints.size() - 1;
-      index_max_constraint_left_to_right = thresholds_max_constraints.size() - 1;
-      index_max_constraint_right_to_left = thresholds_max_constraints.size() - 1;
       update_is_necessary = !(thresholds_max_constraints.size() == 1 &&
                               thresholds_min_constraints.size() == 1);
-    } else {
-      index_min_constraint_left_to_right = 0;
-      index_min_constraint_right_to_left = 0;
-      index_max_constraint_left_to_right = 0;
-      index_max_constraint_right_to_left = 0;
     }
   }
 
@@ -419,77 +460,55 @@ struct SplittingConstraints {
             static_cast<int>(
                 thresholds_min_constraints[index_min_constraint_left_to_right]) >
             t + bias - 1) {
-          index_min_constraint_left_to_right -= 1;
+          left.index_min_constraint -= 1;
         }
         while (
             static_cast<int>(
                 thresholds_min_constraints[index_min_constraint_right_to_left]) >
             t + bias) {
-          index_min_constraint_right_to_left -= 1;
+          right.index_min_constraint -= 1;
         }
         while (
             static_cast<int>(
                 thresholds_max_constraints[index_max_constraint_left_to_right]) >
             t + bias - 1) {
-          index_max_constraint_left_to_right -= 1;
+          left.index_max_constraint -= 1;
         }
         while (
             static_cast<int>(
                 thresholds_max_constraints[index_max_constraint_right_to_left]) >
             t + bias) {
-          index_max_constraint_right_to_left -= 1;
+          right.index_max_constraint -= 1;
         }
       }
 #ifdef DEBUG
-      CHECK(index_min_constraint_left_to_right <
+      CHECK(left.index_min_constraint <
             thresholds_min_constraint.size());
-      CHECK(index_min_constraint_right_to_left <
+      CHECK(right.index_min_constraint <
             thresholds_min_constraint.size());
-      CHECK(index_max_constraint_left_to_right <
+      CHECK(left.index_max_constraint <
             thresholds_max_constraint.size());
-      CHECK(index_max_constraint_right_to_left <
+      CHECK(right.index_max_constraint <
             thresholds_max_constraint.size());
 #endif
     } else {
 // current split gain
 #ifdef DEBUG
-      CHECK(index_min_constraint_left_to_right <
+      CHECK(left.index_min_constraint <
             thresholds_min_constraint.size());
-      CHECK(index_min_constraint_right_to_left <
+      CHECK(right.index_min_constraint <
             thresholds_min_constraint.size());
-      CHECK(index_max_constraint_left_to_right <
+      CHECK(left.index_max_constraint <
             thresholds_max_constraint.size());
-      CHECK(index_max_constraint_right_to_left <
+      CHECK(right.index_max_constraint <
             thresholds_max_constraint.size());
 #endif
     }
   }
 
-  double CurrentMinConstraintRight() const {
-    return cumulative_min_constraint_right_to_left
-        [index_min_constraint_right_to_left];
-  }
-
-  double CurrentMaxConstraintRight() const {
-    return cumulative_max_constraint_right_to_left
-        [index_max_constraint_right_to_left];
-  }
-
-  double CurrentMinConstraintLeft() const {
-    return cumulative_min_constraint_left_to_right
-        [index_min_constraint_left_to_right];
-  }
-
-  double CurrentMaxConstraintLeft() const {
-    return cumulative_max_constraint_left_to_right
-        [index_max_constraint_left_to_right];
-  }
-
   void Reserve(int space_to_reserve) {
-    cumulative_max_constraint_right_to_left.reserve(space_to_reserve);
-    cumulative_max_constraint_left_to_right.reserve(space_to_reserve);
-    cumulative_min_constraint_right_to_left.reserve(space_to_reserve);
-    cumulative_min_constraint_left_to_right.reserve(space_to_reserve);
+    right.Reserve(space_to_reserve);
+    left.Reserve(space_to_reserve);
     thresholds_max_constraints.reserve(space_to_reserve);
     thresholds_min_constraints.reserve(space_to_reserve);
   }
@@ -498,40 +517,29 @@ struct SplittingConstraints {
     thresholds_min_constraints.resize(1);
     thresholds_max_constraints.resize(1);
 
-    cumulative_min_constraint_right_to_left.resize(1);
-    cumulative_min_constraint_left_to_right.resize(1);
-    cumulative_max_constraint_right_to_left.resize(1);
-    cumulative_max_constraint_left_to_right.resize(1);
-
-    cumulative_min_constraint_right_to_left[0] = -std::numeric_limits<double>::max();
-    cumulative_min_constraint_left_to_right[0] = -std::numeric_limits<double>::max();
-    cumulative_max_constraint_right_to_left[0] = std::numeric_limits<double>::max();
-    cumulative_max_constraint_left_to_right[0] = std::numeric_limits<double>::max();
-
     thresholds_min_constraints[0] = 0;
     thresholds_max_constraints[0] = 0;
+
+    right.InitializeConstraints();
+    left.InitializeConstraints();
   }
 
   void Set(const LeafConstraints &leaf_constraints) {
-    cumulative_min_constraint_right_to_left[0] = leaf_constraints.min_constraints[0][0];
-    cumulative_max_constraint_right_to_left[0] = leaf_constraints.max_constraints[0][0];
-
-    cumulative_min_constraint_left_to_right[0] = leaf_constraints.min_constraints[0][0];
-    cumulative_max_constraint_left_to_right[0] = leaf_constraints.max_constraints[0][0];
-
+    right.Set(leaf_constraints);
+    left.Set(leaf_constraints);
     thresholds_min_constraints[0] = leaf_constraints.min_thresholds[0][0];
     thresholds_max_constraints[0] = leaf_constraints.max_thresholds[0][0];
   }
 
   void CheckCoherenceWithLeafOutput(double leaf_output,
                                     double EPS) {
-    CHECK(cumulative_min_constraint_left_to_right == cumulative_min_constraint_right_to_left);
-    CHECK(cumulative_max_constraint_left_to_right == cumulative_max_constraint_right_to_left);
-    for (const auto &x : cumulative_max_constraint_left_to_right) {
+    CHECK(left.cumulative_min_constraint == right.cumulative_min_constraint);
+    CHECK(left.cumulative_max_constraint == right.cumulative_max_constraint);
+    for (const auto &x : left.cumulative_max_constraint) {
       CHECK(leaf_output <= EPS + x);
       CHECK(x > -std::numeric_limits<double>::max());
     }
-    for (const auto &x : cumulative_min_constraint_right_to_left) {
+    for (const auto &x : right.cumulative_min_constraint) {
       CHECK(leaf_output + EPS >= x);
       CHECK(x < std::numeric_limits<double>::max());
     }
@@ -601,10 +609,10 @@ struct BestConstraints {
   }
 
   void Update(SplittingConstraints *constraints) {
-    best_min_constraint_right = constraints->CurrentMinConstraintRight();
-    best_max_constraint_right = constraints->CurrentMaxConstraintRight();
-    best_min_constraint_left = constraints->CurrentMinConstraintLeft();
-    best_max_constraint_left = constraints->CurrentMaxConstraintLeft();
+    best_min_constraint_right = constraints->right.GetCurrentMinConstraint();
+    best_max_constraint_right = constraints->right.GetCurrentMaxConstraint();
+    best_min_constraint_left = constraints->left.GetCurrentMinConstraint();
+    best_max_constraint_left = constraints->left.GetCurrentMaxConstraint();
   }
 };
 
