@@ -24,3 +24,42 @@ This is useful if you have a specific need for integer dataset instead of numeri
 Note that there are programs which do not support integer-only input.
 Consider this as a half memory technique which is dangerous, especially for LightGBM.
 }
+\examples{
+library(lightgbm)
+data(iris)
+
+str(iris)
+
+new_iris <- lgb.prepare_rules2(data = iris) # Autoconverter
+str(new_iris$data)
+
+data(iris) # Erase iris dataset
+iris$Species[1] <- "NEW FACTOR" # Introduce junk factor (NA)
+
+# Use conversion using known rules
+# Unknown factors become 0, excellent for sparse datasets
+newer_iris <- lgb.prepare_rules2(data = iris, rules = new_iris$rules)
+
+# Unknown factor is now zero, perfect for sparse datasets
+newer_iris$data[1, ] # Species became 0 as it is an unknown factor
+
+newer_iris$data[1, 5] <- 1 # Put back real initial value
+
+# Is the newly created dataset equal? YES!
+all.equal(new_iris$data, newer_iris$data)
+
+# Can we test our own rules?
+data(iris) # Erase iris dataset
+
+# We remapped values differently
+personal_rules <- list(
+  Species = c(
+    "setosa" = 3L
+    , "versicolor" = 2L
+    , "virginica" = 1L
+  )
+)
+newest_iris <- lgb.prepare_rules2(data = iris, rules = personal_rules)
+str(newest_iris$data) # SUCCESS!
+
+}
