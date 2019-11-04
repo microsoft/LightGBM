@@ -75,9 +75,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
     feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
     feature_metas_[i].penalty = train_data->FeaturePenalte(i);
     if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
-      feature_metas_[i].bias = 1;
+      feature_metas_[i].offset = 1;
     } else {
-      feature_metas_[i].bias = 0;
+      feature_metas_[i].offset = 0;
     }
     feature_metas_[i].config = this->config_;
     feature_metas_[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();

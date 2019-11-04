@@ -23,7 +23,7 @@ class FeatureMetainfo {
  public:
   int num_bin;
   MissingType missing_type;
-  int8_t bias = 0;
+  int8_t offset = 0;
   uint32_t default_bin;
   int8_t monotone_type;
   double penalty;
@@ -73,7 +73,7 @@ class FeatureHistogram {
   * \param other The histogram that want to subtract
   */
   void Subtract(const FeatureHistogram& other) {
-    for (int i = 0; i < meta_->num_bin - meta_->bias; ++i) {
+    for (int i = 0; i < meta_->num_bin - meta_->offset; ++i) {
       data_[i].cnt -= other.data_[i].cnt;
       data_[i].sum_gradients -= other.data_[i].sum_gradients;
       data_[i].sum_hessians -= other.data_[i].sum_hessians;
@@ -298,7 +298,7 @@ class FeatureHistogram {
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
 
     // do stuff here
-    const int8_t bias = meta_->bias;
+    const int8_t offset = meta_->offset;
 
     double sum_right_gradient = 0.0f;
     double sum_right_hessian = kEpsilon;
@@ -313,15 +313,15 @@ class FeatureHistogram {
       use_na_as_missing = true;
     }
 
-    int t = meta_->num_bin - 1 - bias - use_na_as_missing;
-    const int t_end = 1 - bias;
+    int t = meta_->num_bin - 1 - offset - use_na_as_missing;
+    const int t_end = 1 - offset;
 
     // from right to left, and we don't need data in bin0
     for (; t >= t_end; --t) {
-      if (static_cast<uint32_t>(t + bias) < threshold) { break; }
+      if (static_cast<uint32_t>(t + offset) < threshold) { break; }
 
       // need to skip default bin
-      if (skip_default_bin && (t + bias) == static_cast<int>(meta_->default_bin)) { continue; }
+      if (skip_default_bin && (t + offset) == static_cast<int>(meta_->default_bin)) { continue; }
 
       sum_right_gradient += data_[t].sum_gradients;
       sum_right_hessian += data_[t].sum_hessians;
@@ -423,14 +423,14 @@ class FeatureHistogram {
   * \brief Binary size of this histogram
   */
   int SizeOfHistgram() const {
-    return (meta_->num_bin - meta_->bias) * sizeof(HistogramBinEntry);
+    return (meta_->num_bin - meta_->offset) * sizeof(HistogramBinEntry);
   }
 
   /*!
   * \brief Restore histogram from memory
   */
   void FromMemory(char* memory_data) {
-    std::memcpy(data_, memory_data, (meta_->num_bin - meta_->bias) * sizeof(HistogramBinEntry));
+    std::memcpy(data_, memory_data, (meta_->num_bin - meta_->offset) * sizeof(HistogramBinEntry));
   }
 
   /*!
@@ -507,7 +507,7 @@ class FeatureHistogram {
 
   void FindBestThresholdSequence(double sum_gradient, double sum_hessian, data_size_t num_data, double min_constraint, double max_constraint,
                                  double min_gain_shift, SplitInfo* output, int dir, bool skip_default_bin, bool use_na_as_missing) {
-    const int8_t bias = meta_->bias;
+    const int8_t offset = meta_->offset;
 
     double best_sum_left_gradient = NAN;
     double best_sum_left_hessian = NAN;
@@ -520,13 +520,13 @@ class FeatureHistogram {
       double sum_right_hessian = kEpsilon;
       data_size_t right_count = 0;
 
-      int t = meta_->num_bin - 1 - bias - use_na_as_missing;
-      const int t_end = 1 - bias;
+      int t = meta_->num_bin - 1 - offset - use_na_as_missing;
+      const int t_end = 1 - offset;
 
       // from right to left, and we don't need data in bin0
       for (; t >= t_end; --t) {
         // need to skip default bin
-        if (skip_default_bin && (t + bias) == static_cast<int>(meta_->default_bin)) { continue; }
+        if (skip_default_bin && (t + offset) == static_cast<int>(meta_->default_bin)) { continue; }
 
         sum_right_gradient += data_[t].sum_gradients;
         sum_right_hessian += data_[t].sum_hessians;
@@ -558,7 +558,7 @@ class FeatureHistogram {
           best_sum_left_gradient = sum_left_gradient;
           best_sum_left_hessian = sum_left_hessian;
           // left is <= threshold, right is > threshold.  so this is t-1
-          best_threshold = static_cast<uint32_t>(t - 1 + bias);
+          best_threshold = static_cast<uint32_t>(t - 1 + offset);
           best_gain = current_gain;
         }
       }
@@ -568,13 +568,13 @@ class FeatureHistogram {
       data_size_t left_count = 0;
 
       int t = 0;
-      const int t_end = meta_->num_bin - 2 - bias;
+      const int t_end = meta_->num_bin - 2 - offset;
 
-      if (use_na_as_missing && bias == 1) {
+      if (use_na_as_missing && offset == 1) {
         sum_left_gradient = sum_gradient;
         sum_left_hessian = sum_hessian - kEpsilon;
         left_count = num_data;
-        for (int i = 0; i < meta_->num_bin - bias; ++i) {
+        for (int i = 0; i < meta_->num_bin - offset; ++i) {
           sum_left_gradient -= data_[i].sum_gradients;
           sum_left_hessian -= data_[i].sum_hessians;
           left_count -= data_[i].cnt;
@@ -584,7 +584,7 @@ class FeatureHistogram {
 
       for (; t <= t_end; ++t) {
         // need to skip default bin
-        if (skip_default_bin && (t + bias) == static_cast<int>(meta_->default_bin)) { continue; }
+        if (skip_default_bin && (t + offset) == static_cast<int>(meta_->default_bin)) { continue; }
         if (t >= 0) {
           sum_left_gradient += data_[t].sum_gradients;
           sum_left_hessian += data_[t].sum_hessians;
@@ -616,7 +616,7 @@ class FeatureHistogram {
           best_left_count = left_count;
           best_sum_left_gradient = sum_left_gradient;
           best_sum_left_hessian = sum_left_hessian;
-          best_threshold = static_cast<uint32_t>(t + bias);
+          best_threshold = static_cast<uint32_t>(t + offset);
           best_gain = current_gain;
         }
       }
@@ -711,9 +711,9 @@ class HistogramPool {
         feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
         feature_metas_[i].penalty = train_data->FeaturePenalte(i);
         if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
-          feature_metas_[i].bias = 1;
+          feature_metas_[i].offset = 1;
         } else {
-          feature_metas_[i].bias = 0;
+          feature_metas_[i].offset = 0;
         }
         feature_metas_[i].config = config;
         feature_metas_[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();

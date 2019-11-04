@@ -22,9 +22,9 @@ class Dense4bitsBinIterator : public BinIterator {
     max_bin_(static_cast<uint8_t>(max_bin)),
     default_bin_(static_cast<uint8_t>(default_bin)) {
     if (default_bin_ == 0) {
-      bias_ = 1;
+      offset_ = 1;
     } else {
-      bias_ = 0;
+      offset_ = 0;
     }
   }
   inline uint32_t RawGet(data_size_t idx) override;
@@ -36,7 +36,7 @@ class Dense4bitsBinIterator : public BinIterator {
   uint8_t min_bin_;
   uint8_t max_bin_;
   uint8_t default_bin_;
-  uint8_t bias_;
+  uint8_t offset_;
 };
 
 class Dense4bitsBin : public Bin {
@@ -383,7 +383,7 @@ class Dense4bitsBin : public Bin {
 uint32_t Dense4bitsBinIterator::Get(data_size_t idx) {
   const auto bin = (bin_data_->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
   if (bin >= min_bin_ && bin <= max_bin_) {
-    return bin - min_bin_ + bias_;
+    return bin - min_bin_ + offset_;
   } else {
     return default_bin_;
   }

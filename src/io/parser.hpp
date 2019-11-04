@@ -24,15 +24,15 @@ class CSVParser: public Parser {
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
-    int bias = 0;
+    int offset = 0;
     *out_label = 0.0f;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
-        bias = -1;
+        offset = -1;
       } else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        out_features->emplace_back(idx + bias, val);
+        out_features->emplace_back(idx + offset, val);
       }
       ++idx;
       if (*str == ',') {
@@ -61,14 +61,14 @@ class TSVParser: public Parser {
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
-    int bias = 0;
+    int offset = 0;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
-        bias = -1;
+        offset = -1;
       } else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        out_features->emplace_back(idx + bias, val);
+        out_features->emplace_back(idx + offset, val);
       }
       ++idx;
       if (*str == '\t') {

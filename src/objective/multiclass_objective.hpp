@@ -221,8 +221,8 @@ class MulticlassOVA: public ObjectiveFunction {
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     for (int i = 0; i < num_class_; ++i) {
-      int64_t bias = static_cast<int64_t>(num_data_) * i;
-      binary_loss_[i]->GetGradients(score + bias, gradients + bias, hessians + bias);
+      int64_t offset = static_cast<int64_t>(num_data_) * i;
+      binary_loss_[i]->GetGradients(score + offset, gradients + offset, hessians + offset);
     }
   }
 
