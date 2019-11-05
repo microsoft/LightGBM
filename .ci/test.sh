@@ -51,13 +51,12 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
-    sudo apt-get update
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
         pydocstyle
     conda install -q -y -n $CONDA_ENV -c conda-forge \
-        r-lintr==2.0.0
-    Rscript -e "install.packages('stringi', repos = 'https://cran.rstudio.com')"
+        r-lintr>=2.0.0
+    Rscript -e "install.packages('stringi', repos = 'http://cran.rstudio.com')"
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
