@@ -14,7 +14,7 @@
 ^src/CMakeLists.txt$
 
 # unnecessary files from submodules
-^src/build/.git$
+^src/build/Makefile$
 ^src/compute/.appveyor.yml$
 ^src/compute/.coveralls.yml$
 ^src/compute/.travis.yml$
