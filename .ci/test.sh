@@ -58,8 +58,6 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
-    echo "Linting C++ code"
-    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include || exit 0
 
     # set up R environment
     echo "Linting R code"
@@ -81,6 +79,9 @@ if [[ $TASK == "lint" ]]; then
             || exit -1
     Rscript -e "install.packages('lintr', repos = 'http://cran.rstudio.com')"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
+
+    echo "Linting C++ code"
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include || exit 0
 
     exit 0
 fi
