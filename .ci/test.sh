@@ -54,17 +54,34 @@ if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
         pydocstyle
-    conda install -q -y -n $CONDA_ENV -c conda-forge \
-        r-lintr>=2.0.0
-    Rscript -e "install.packages('stringi', repos = 'http://cran.rstudio.com')"
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
-    echo "Linting R code"
-    Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
     cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include || exit 0
+
+    # set up R environment
+    echo "Linting R code"
+    R_LIB_PATH=~/Rlib
+    mkdir -p $R_LIB_PATH
+    echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
+    echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
+    export PATH="$R_LIB_PATH/R/bin:$PATH"
+    # installing precompiled R for Ubuntu
+    # https://cran.r-project.org/bin/linux/ubuntu/#installation
+    sudo apt-get update
+    sudo add-apt-repository \
+        "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
+    sudo apt-get update
+    sudo apt-get install \
+        -y \
+            r-base \
+            r-base-dev \
+            || exit -1
+    Rscript -e "install.packages('lintr', repos = 'http://cran.rstudio.com')"
+    Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
+
     exit 0
 fi
 
