@@ -103,27 +103,27 @@ if (!use_precompile) {
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
   # Makefile. We don't need it here anyway since targets are built serially, so trying
   # to remove it with this hack
-  # generated_makefile <- file.path(
-  #   R_PACKAGE_SOURCE
-  #   , "src"
-  #   , "build"
-  #   , "Makefile"
-  # )
-  # if (file.exists(generated_makefile)) {
-  #   makefile_txt <- readLines(
-  #     con = generated_makefile
-  #   )
-  #   makefile_txt <- gsub(
-  #     pattern = ".*NOTPARALLEL.*"
-  #     , replacement = ""
-  #     , x = makefile_txt
-  #   )
-  #   writeLines(
-  #     text = makefile_txt
-  #     , con = generated_makefile
-  #     , sep = "\n"
-  #   )
-  # }
+  generated_makefile <- file.path(
+    R_PACKAGE_SOURCE
+    , "src"
+    , "build"
+    , "Makefile"
+  )
+  if (file.exists(generated_makefile)) {
+    makefile_txt <- readLines(
+      con = generated_makefile
+    )
+    makefile_txt <- gsub(
+      pattern = ".*NOTPARALLEL.*"
+      , replacement = ""
+      , x = makefile_txt
+    )
+    writeLines(
+      text = makefile_txt
+      , con = generated_makefile
+      , sep = "\n"
+    )
+  }
 
   system(build_cmd)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")

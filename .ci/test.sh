@@ -122,7 +122,6 @@ if [[ $TASK == "r-pkg" ]]; then
     # Manually install Depends, Imports, and Suggests libraries
     # to avoid a CI-time dependency on devtools (for devtools::install_deps())
     Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'))" || exit -1
-    Rscript -e "install.packages(c('Ckmeans.1d.dp', 'DiagrammeR', 'ggplot2', 'igraph', 'knitr', 'rmarkdown', 'stringi', 'vcd'))" || exit -1
 
     cd ${BUILD_DIRECTORY}
     Rscript build_r.R
@@ -132,6 +131,7 @@ if [[ $TASK == "r-pkg" ]]; then
 
     # fails tests if either ERRORs or WARNINGs are thrown by
     # R CMD CHECK
+    export _R_CHECK_FORCE_SUGGESTS_=0
     R CMD check ${PKG_TARBALL} \
         --as-cran \
         --no-manual \
