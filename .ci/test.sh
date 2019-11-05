@@ -57,7 +57,7 @@ if [[ $TASK == "lint" ]]; then
         pydocstyle
     conda install -q -y -n $CONDA_ENV -c conda-forge \
         r-lintr==2.0.0
-    Rscript -e "install.packages('stringi', repos = 'http://cran.rstudio.com')"
+    Rscript -e "install.packages('stringi', repos = 'https://cran.rstudio.com')"
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
