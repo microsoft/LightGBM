@@ -30,7 +30,7 @@
 #'     , min_sum_hessian_in_leaf = 1
 #' )
 #'
-#' model <- lgb.train(params, dtrain, 20)
+#' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_imp <- lgb.importance(model, percentage = TRUE)
 #' lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")
@@ -43,7 +43,11 @@ lgb.plot.importance <- function(tree_imp,
                                 cex = NULL) {
 
   # Check for measurement (column names) correctness
-  measure <- match.arg(measure, choices = c("Gain", "Cover", "Frequency"), several.ok = FALSE)
+  measure <- match.arg(
+    measure
+    , choices = c("Gain", "Cover", "Frequency")
+    , several.ok = FALSE
+  )
 
   # Get top N importance (defaults to 10)
   top_n <- min(top_n, nrow(tree_imp))
@@ -60,20 +64,26 @@ lgb.plot.importance <- function(tree_imp,
   op <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(op))
 
-  # Do some magic plotting
-  graphics::par(mar = op$mar %>% magrittr::inset(., 2, left_margin))
+  graphics::par(
+    mar = c(
+      op$mar[1]
+      , left_margin
+      , op$mar[3]
+      , op$mar[4]
+    )
+  )
 
   # Do plot
   tree_imp[.N:1,
            graphics::barplot(
-               height = get(measure),
-               names.arg = Feature,
-               horiz = TRUE,
-               border = NA,
-               main = "Feature Importance",
-               xlab = measure,
-               cex.names = cex,
-               las = 1
+               height = get(measure)
+               , names.arg = Feature
+               , horiz = TRUE
+               , border = NA
+               , main = "Feature Importance"
+               , xlab = measure
+               , cex.names = cex
+               , las = 1
            )]
 
   # Return invisibly

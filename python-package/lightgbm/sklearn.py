@@ -1,11 +1,10 @@
 # coding: utf-8
-# pylint: disable = invalid-name, W0105, C0111, C0301
 """Scikit-learn wrapper interface for LightGBM."""
 from __future__ import absolute_import
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError
+from .basic import Dataset, LightGBMError, _ConfigAliases
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
@@ -40,11 +39,11 @@ class _ObjectiveFunctionWrapper(object):
                 hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The value of the second order derivative (Hessian) for each sample point.
 
-        Note
-        ----
-        For multi-class task, the y_pred is group by class_id first, then group by row_id.
-        If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
-        and you should group grad and hess in this way as well.
+        .. note::
+
+            For multi-class task, the y_pred is group by class_id first, then group by row_id.
+            If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
+            and you should group grad and hess in this way as well.
         """
         self.func = func
 
@@ -121,16 +120,16 @@ class _EvalFunctionWrapper(object):
                 group : array-like
                     Group/query data, used for ranking task.
                 eval_name : string
-                    The name of evaluation function.
+                    The name of evaluation function (without whitespaces).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        Note
-        ----
-        For multi-class task, the y_pred is group by class_id first, then group by row_id.
-        If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
+        .. note::
+
+            For multi-class task, the y_pred is group by class_id first, then group by row_id.
+            If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
         self.func = func
 
@@ -147,7 +146,7 @@ class _EvalFunctionWrapper(object):
         Returns
         -------
         eval_name : string
-            The name of evaluation function.
+            The name of evaluation function (without whitespaces).
         eval_result : float
             The eval result.
         is_higher_better : bool
@@ -244,9 +243,9 @@ class LGBMModel(_LGBMModelBase):
             Other parameters for the model.
             Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
 
-            Note
-            ----
-            \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
+            .. warning::
+
+                \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
         Attributes
         ----------
@@ -421,8 +420,8 @@ class LGBMModel(_LGBMModelBase):
             If int, the eval metric on the eval set is printed at every ``verbose`` boosting stage.
             The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
 
-            Example
-            -------
+            .. rubric:: Example
+
             With ``verbose`` = 4 and at least one item in ``eval_set``,
             an evaluation metric is printed every 4 (instead of 1) boosting stages.
 
@@ -437,6 +436,7 @@ class LGBMModel(_LGBMModelBase):
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
+            The output cannot be monotonically constrained with respect to a categorical feature.
         callbacks : list of callback functions or None, optional (default=None)
             List of callback functions that are applied at each iteration.
             See Callbacks in Python API for more information.
@@ -463,7 +463,7 @@ class LGBMModel(_LGBMModelBase):
             group : array-like
                 Group/query data, used for ranking task.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -488,15 +488,21 @@ class LGBMModel(_LGBMModelBase):
         evals_result = {}
         params = self.get_params()
         # user can set verbose with kwargs, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and self.silent:
+        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and self.silent:
             params['verbose'] = -1
         params.pop('silent', None)
         params.pop('importance_type', None)
         params.pop('n_estimators', None)
         params.pop('class_weight', None)
+        for alias in _ConfigAliases.get('objective'):
+            params.pop(alias, None)
         if self._n_classes is not None and self._n_classes > 2:
+            for alias in _ConfigAliases.get('num_class'):
+                params.pop(alias, None)
             params['num_class'] = self._n_classes
         if hasattr(self, '_eval_at'):
+            for alias in _ConfigAliases.get('eval_at'):
+                params.pop(alias, None)
             params['eval_at'] = self._eval_at
         params['objective'] = self._objective
         if self._fobj:
@@ -517,13 +523,14 @@ class LGBMModel(_LGBMModelBase):
                 elif isinstance(self, LGBMRanker):
                     original_metric = "ndcg"
             # overwrite default metric by explicitly set metric
-            for metric_alias in ['metric', 'metrics', 'metric_types']:
+            for metric_alias in _ConfigAliases.get("metric"):
                 if metric_alias in params:
                     original_metric = params.pop(metric_alias)
             # concatenate metric from params (or default if not provided in params) and eval_metric
             original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
-            params['metric'] = set(original_metric + eval_metric)
+            params['metric'] = [e for e in eval_metric if e not in original_metric] + original_metric
+            params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
@@ -626,13 +633,13 @@ class LGBMModel(_LGBMModelBase):
         pred_contrib : bool, optional (default=False)
             Whether to predict feature contributions.
 
-            Note
-            ----
-            If you want to get more explanations for your model's predictions using SHAP values,
-            like SHAP interaction values,
-            you can install the shap package (https://github.com/slundberg/shap).
-            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
-            column, where the last column is the expected value.
+            .. note::
+
+                If you want to get more explanations for your model's predictions using SHAP values,
+                like SHAP interaction values,
+                you can install the shap package (https://github.com/slundberg/shap).
+                Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+                column, where the last column is the expected value.
 
         **kwargs
             Other parameters for the prediction.
@@ -705,12 +712,12 @@ class LGBMModel(_LGBMModelBase):
     def feature_importances_(self):
         """Get feature importances.
 
-        Note
-        ----
-        Feature importance in sklearn interface used to normalize to 1,
-        it's deprecated after 2.0.4 and is the same as Booster.feature_importance() now.
-        ``importance_type`` attribute is passed to the function
-        to configure the type of importance values to be extracted.
+        .. note::
+
+            Feature importance in sklearn interface used to normalize to 1,
+            it's deprecated after 2.0.4 and is the same as Booster.feature_importance() now.
+            ``importance_type`` attribute is passed to the function
+            to configure the type of importance values to be extracted.
         """
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
@@ -836,13 +843,13 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         pred_contrib : bool, optional (default=False)
             Whether to predict feature contributions.
 
-            Note
-            ----
-            If you want to get more explanations for your model's predictions using SHAP values,
-            like SHAP interaction values,
-            you can install the shap package (https://github.com/slundberg/shap).
-            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
-            column, where the last column is the expected value.
+            .. note::
+
+                If you want to get more explanations for your model's predictions using SHAP values,
+                like SHAP interaction values,
+                you can install the shap package (https://github.com/slundberg/shap).
+                Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+                column, where the last column is the expected value.
 
         **kwargs
             Other parameters for the prediction.

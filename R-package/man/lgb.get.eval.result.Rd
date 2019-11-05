@@ -4,8 +4,13 @@
 \alias{lgb.get.eval.result}
 \title{Get record evaluation result from booster}
 \usage{
-lgb.get.eval.result(booster, data_name, eval_name, iters = NULL,
-  is_err = FALSE)
+lgb.get.eval.result(
+  booster,
+  data_name,
+  eval_name,
+  iters = NULL,
+  is_err = FALSE
+)
 }
 \arguments{
 \item{booster}{Object of class \code{lgb.Booster}}
@@ -34,13 +39,14 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 10
+  , valids = valids
+  , min_data = 1
+  , learning_rate = 1
+  , early_stopping_rounds = 5
+)
 lgb.get.eval.result(model, "test", "l2")
-
 }

@@ -46,6 +46,55 @@ catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
 catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
 
+const int PREDICTOR_TYPES = 4;
+
+// Single row predictor to abstract away caching logic
+class SingleRowPredictor {
+ public:
+  PredictFunction predict_function;
+  int64_t num_pred_in_one_row;
+
+  SingleRowPredictor(int predict_type, Boosting* boosting, const Config& config, int iter) {
+    bool is_predict_leaf = false;
+    bool is_raw_score = false;
+    bool predict_contrib = false;
+    if (predict_type == C_API_PREDICT_LEAF_INDEX) {
+      is_predict_leaf = true;
+    } else if (predict_type == C_API_PREDICT_RAW_SCORE) {
+      is_raw_score = true;
+    } else if (predict_type == C_API_PREDICT_CONTRIB) {
+      predict_contrib = true;
+    } else {
+      is_raw_score = false;
+    }
+    early_stop_ = config.pred_early_stop;
+    early_stop_freq_ = config.pred_early_stop_freq;
+    early_stop_margin_ = config.pred_early_stop_margin;
+    iter_ = iter;
+    predictor_.reset(new Predictor(boosting, iter_, is_raw_score, is_predict_leaf, predict_contrib,
+                                   early_stop_, early_stop_freq_, early_stop_margin_));
+    num_pred_in_one_row = boosting->NumPredictOneRow(iter_, is_predict_leaf, predict_contrib);
+    predict_function = predictor_->GetPredictFunction();
+    num_total_model_ = boosting->NumberOfTotalModel();
+  }
+  ~SingleRowPredictor() {}
+  bool IsPredictorEqual(const Config& config, int iter, Boosting* boosting) {
+    return early_stop_ != config.pred_early_stop ||
+      early_stop_freq_ != config.pred_early_stop_freq ||
+      early_stop_margin_ != config.pred_early_stop_margin ||
+      iter_ != iter ||
+      num_total_model_ != boosting->NumberOfTotalModel();
+  }
+
+ private:
+  std::unique_ptr<Predictor> predictor_;
+  bool early_stop_;
+  int early_stop_freq_;
+  double early_stop_margin_;
+  int iter_;
+  int num_total_model_;
+};
+
 class Booster {
  public:
   explicit Booster(const char* filename) {
@@ -200,45 +249,34 @@ class Booster {
     boosting_->RollbackOneIter();
   }
 
-  void PredictSingleRow(int num_iteration, int predict_type,
+  void PredictSingleRow(int num_iteration, int predict_type, int ncol,
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    if (single_row_predictor_.get() == nullptr) {
-      bool is_predict_leaf = false;
-      bool is_raw_score = false;
-      bool predict_contrib = false;
-      if (predict_type == C_API_PREDICT_LEAF_INDEX) {
-        is_predict_leaf = true;
-      } else if (predict_type == C_API_PREDICT_RAW_SCORE) {
-        is_raw_score = true;
-      } else if (predict_type == C_API_PREDICT_CONTRIB) {
-        predict_contrib = true;
-      } else {
-        is_raw_score = false;
-      }
-
-      // TODO(eisber): config could be optimized away... (maybe using lambda callback?)
-      single_row_predictor_.reset(new Predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                                                config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
-      single_row_num_pred_in_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, predict_contrib);
-      single_row_predict_function_ = single_row_predictor_->GetPredictFunction();
+    if (ncol != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
     }
-
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (single_row_predictor_[predict_type].get() == nullptr ||
+        !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, boosting_.get())) {
+      single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, boosting_.get(),
+                                                                       config, num_iteration));
+    }
     auto one_row = get_row_fun(0);
     auto pred_wrt_ptr = out_result;
-    single_row_predict_function_(one_row, pred_wrt_ptr);
+    single_row_predictor_[predict_type]->predict_function(one_row, pred_wrt_ptr);
 
-    *out_len = single_row_num_pred_in_one_row_;
+    *out_len = single_row_predictor_[predict_type]->num_pred_in_one_row;
   }
 
 
-  void Predict(int num_iteration, int predict_type, int nrow,
+  void Predict(int num_iteration, int predict_type, int nrow, int ncol,
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
+    if (ncol != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
@@ -364,9 +402,7 @@ class Booster {
  private:
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
-  std::unique_ptr<Predictor> single_row_predictor_;
-  PredictFunction single_row_predict_function_;
-  int64_t single_row_num_pred_in_one_row_;
+  std::unique_ptr<SingleRowPredictor> single_row_predictor_[PREDICTOR_TYPES];
 
   /*! \brief All configs */
   Config config_;
@@ -614,9 +650,9 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
-                                            Common::Vector2Ptr<int>(sample_idx).data(),
-                                            static_cast<int>(sample_values.size()),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
+                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+                                            ncol,
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, total_nrow));
   } else {
@@ -656,6 +692,11 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
   API_BEGIN();
+  if (num_col <= 0) {
+    Log::Fatal("The number of columns should be greater than zero.");
+  } else if (num_col >= INT32_MAX) {
+    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
+  }
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
@@ -685,9 +726,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
-                                            Common::Vector2Ptr<int>(sample_idx).data(),
-                                            static_cast<int>(sample_values.size()),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
+                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+                                            static_cast<int>(num_col),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
@@ -711,15 +752,18 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
 }
 
 int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
-                              int num_rows,
-                              int64_t num_col,
-                              const char* parameters,
-                              const DatasetHandle reference,
-                              DatasetHandle* out) {
+                                  int num_rows,
+                                  int64_t num_col,
+                                  const char* parameters,
+                                  const DatasetHandle reference,
+                                  DatasetHandle* out) {
   API_BEGIN();
-
+  if (num_col <= 0) {
+    Log::Fatal("The number of columns should be greater than zero.");
+  } else if (num_col >= INT32_MAX) {
+    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
+  }
   auto get_row_fun = *static_cast<std::function<void(int idx, std::vector<std::pair<int, double>>&)>*>(get_row_funptr);
-
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
@@ -750,9 +794,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
-                                            Common::Vector2Ptr<int>(sample_idx).data(),
-                                            static_cast<int>(sample_values.size()),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
+                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+                                            static_cast<int>(num_col),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
@@ -767,10 +811,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   for (int i = 0; i < num_rows; ++i) {
     OMP_LOOP_EX_BEGIN();
     {
-            const int tid = omp_get_thread_num();
-            get_row_fun(i, threadBuffer);
-
-            ret->PushOneRow(tid, i, threadBuffer);
+      const int tid = omp_get_thread_num();
+      get_row_fun(i, threadBuffer);
+      ret->PushOneRow(tid, i, threadBuffer);
     }
     OMP_LOOP_EX_END();
   }
@@ -824,8 +867,8 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     }
     OMP_THROW_EX();
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
-                                            Common::Vector2Ptr<int>(sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
+                                            Common::Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
@@ -878,6 +921,9 @@ int LGBM_DatasetGetSubset(
   const int32_t lower = 0;
   const int32_t upper = full_dataset->num_data() - 1;
   Common::CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
+  if (!std::is_sorted(used_row_indices, used_row_indices + num_used_row_indices)) {
+    Log::Fatal("used_row_indices should be sorted in Subset");
+  }
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
   ret->CopyFeatureMapperFrom(full_dataset);
   ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
@@ -1269,13 +1315,18 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                               int data_type,
                               int64_t nindptr,
                               int64_t nelem,
-                              int64_t,
+                              int64_t num_col,
                               int predict_type,
                               int num_iteration,
                               const char* parameter,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
+  if (num_col <= 0) {
+    Log::Fatal("The number of columns should be greater than zero.");
+  } else if (num_col >= INT32_MAX) {
+    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
+  }
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
@@ -1285,26 +1336,31 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int nrow = static_cast<int>(nindptr - 1);
-  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
+  ref_booster->Predict(num_iteration, predict_type, nrow, static_cast<int>(num_col), get_row_fun,
                        config, out_result, out_len);
   API_END();
 }
 
 int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
-                              const void* indptr,
-                              int indptr_type,
-                              const int32_t* indices,
-                              const void* data,
-                              int data_type,
-                              int64_t nindptr,
-                              int64_t nelem,
-                              int64_t,
-                              int predict_type,
-                              int num_iteration,
-                              const char* parameter,
-                              int64_t* out_len,
-                              double* out_result) {
+                                       const void* indptr,
+                                       int indptr_type,
+                                       const int32_t* indices,
+                                       const void* data,
+                                       int data_type,
+                                       int64_t nindptr,
+                                       int64_t nelem,
+                                       int64_t num_col,
+                                       int predict_type,
+                                       int num_iteration,
+                                       const char* parameter,
+                                       int64_t* out_len,
+                                       double* out_result) {
   API_BEGIN();
+  if (num_col <= 0) {
+    Log::Fatal("The number of columns should be greater than zero.");
+  } else if (num_col >= INT32_MAX) {
+    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
+  }
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
@@ -1313,8 +1369,7 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  ref_booster->PredictSingleRow(num_iteration, predict_type, get_row_fun,
-                       config, out_result, out_len);
+  ref_booster->PredictSingleRow(num_iteration, predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
   API_END();
 }
 
@@ -1366,7 +1421,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     }
     return one_row;
   };
-  ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), get_row_fun, config,
+  ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
                        out_result, out_len);
   API_END();
 }
@@ -1391,21 +1446,21 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
-  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
+  ref_booster->Predict(num_iteration, predict_type, nrow, ncol, get_row_fun,
                        config, out_result, out_len);
   API_END();
 }
 
 int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
-                              const void* data,
-                              int data_type,
-                              int32_t ncol,
-                              int is_row_major,
-                              int predict_type,
-                              int num_iteration,
-                              const char* parameter,
-                              int64_t* out_len,
-                              double* out_result) {
+                                       const void* data,
+                                       int data_type,
+                                       int32_t ncol,
+                                       int is_row_major,
+                                       int predict_type,
+                                       int num_iteration,
+                                       const char* parameter,
+                                       int64_t* out_len,
+                                       double* out_result) {
   API_BEGIN();
   auto param = Config::Str2Map(parameter);
   Config config;
@@ -1415,8 +1470,7 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, is_row_major);
-  ref_booster->PredictSingleRow(num_iteration, predict_type, get_row_fun,
-                       config, out_result, out_len);
+  ref_booster->PredictSingleRow(num_iteration, predict_type, ncol, get_row_fun, config, out_result, out_len);
   API_END();
 }
 
@@ -1440,8 +1494,7 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseRows(data, ncol, data_type);
-  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
-                       config, out_result, out_len);
+  ref_booster->Predict(num_iteration, predict_type, nrow, ncol, get_row_fun, config, out_result, out_len);
   API_END();
 }
 

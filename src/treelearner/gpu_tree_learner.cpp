@@ -184,8 +184,8 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
   // copy the results asynchronously. Size depends on if double precision is used
   size_t output_size = num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
   boost::compute::event histogram_wait_event;
-  host_histogram_outputs_ = (void*)queue_.enqueue_map_buffer_async(device_histogram_outputs_, boost::compute::command_queue::map_read,
-                                                                   0, output_size, histogram_wait_event, kernel_wait_obj_);
+  host_histogram_outputs_ = reinterpret_cast<void*>(queue_.enqueue_map_buffer_async(device_histogram_outputs_, boost::compute::command_queue::map_read,
+                                                                   0, output_size, histogram_wait_event, kernel_wait_obj_));
   // we will wait for this object in WaitAndGetHistograms
   histograms_wait_obj_ = boost::compute::wait_list(histogram_wait_event);
 }
@@ -736,7 +736,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
 }
 
 Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            bool is_constant_hessian, Json& forced_split_json) {
+                            bool is_constant_hessian, const Json& forced_split_json) {
   // check if we need to recompile the GPU kernel (is_constant_hessian changed)
   // this should rarely occur
   if (is_constant_hessian != is_constant_hessian_) {
@@ -977,7 +977,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   train_data_->ConstructHistograms(is_sparse_feature_used,
     nullptr, smaller_leaf_splits_->num_data_in_leaf(),
     smaller_leaf_splits_->LeafIndex(),
-    ordered_bins_, gradients_, hessians_,
+    &ordered_bins_, gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
     ptr_smaller_leaf_hist_data);
   // wait for GPU to finish, only if GPU is actually used
@@ -1030,7 +1030,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     train_data_->ConstructHistograms(is_sparse_feature_used,
       nullptr, larger_leaf_splits_->num_data_in_leaf(),
       larger_leaf_splits_->LeafIndex(),
-      ordered_bins_, gradients_, hessians_,
+      &ordered_bins_, gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
       ptr_larger_leaf_hist_data);
     // wait for GPU to finish, only if GPU is actually used

@@ -94,7 +94,7 @@ class CrossEntropy: public ObjectiveFunction {
   }
 
   const char* GetName() const override {
-    return "xentropy";
+    return "cross_entropy";
   }
 
   // convert score to a probability
@@ -213,7 +213,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
   }
 
   const char* GetName() const override {
-    return "xentlambda";
+    return "cross_entropy_lambda";
   }
 
   //

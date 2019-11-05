@@ -31,7 +31,7 @@ class Tree {
   explicit Tree(int max_leaves);
 
   /*!
-  * \brief Construtor, from a string
+  * \brief Constructor, from a string
   * \param str Model string
   * \param used_len used count of str
   */
@@ -50,6 +50,8 @@ class Tree {
   * \param right_value Model Right child output
   * \param left_cnt Count of left child
   * \param right_cnt Count of right child
+  * \param left_weight Weight of left child
+  * \param right_weight Weight of right child
   * \param gain Split gain
   * \param missing_type missing type
   * \param default_left default direction for missing value
@@ -57,7 +59,8 @@ class Tree {
   */
   int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
             double threshold_double, double left_value, double right_value,
-            int left_cnt, int right_cnt, float gain, MissingType missing_type, bool default_left);
+            int left_cnt, int right_cnt, double left_weight, double right_weight,
+            float gain, MissingType missing_type, bool default_left);
 
   /*!
   * \brief Performing a split on tree leaves, with categorical feature
@@ -72,12 +75,14 @@ class Tree {
   * \param right_value Model Right child output
   * \param left_cnt Count of left child
   * \param right_cnt Count of right child
+  * \param left_weight Weight of left child
+  * \param right_weight Weight of right child
   * \param gain Split gain
   * \return The index of new leaf.
   */
   int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                        const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                       int left_cnt, int right_cnt, float gain, MissingType missing_type);
+                       int left_cnt, int right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -98,7 +103,7 @@ class Tree {
                             double* score) const;
 
   /*!
-  * \brief Adding prediction value of this tree model to scorese
+  * \brief Adding prediction value of this tree model to scores
   * \param data The dataset
   * \param used_data_indices Indices of used data
   * \param num_data Number of total data
@@ -146,7 +151,7 @@ class Tree {
 
   /*!
   * \brief Shrinkage for the tree's output
-  *        shrinkage rate (a.k.a learning rate) is used to tune the traning process
+  *        shrinkage rate (a.k.a learning rate) is used to tune the training process
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
@@ -305,8 +310,8 @@ class Tree {
     }
   }
 
-  inline void Split(int leaf, int feature, int real_feature,
-                    double left_value, double right_value, int left_cnt, int right_cnt, float gain);
+  inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value, int left_cnt, int right_cnt,
+                    double left_weight, double right_weight, float gain);
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -337,7 +342,7 @@ class Tree {
     double one_fraction;
 
     // note that pweight is included for convenience and is not tied with the other attributes,
-    // the pweight of the i'th path element is the permuation weight of paths with i-1 ones in them
+    // the pweight of the i'th path element is the permutation weight of paths with i-1 ones in them
     double pweight;
 
     PathElement() {}
@@ -357,12 +362,12 @@ class Tree {
   /*! \brief Undo a previous extension of the decision path for TreeSHAP*/
   static void UnwindPath(PathElement *unique_path, int unique_depth, int path_index);
 
-  /*! determine what the total permuation weight would be if we unwound a previous extension in the decision path*/
+  /*! determine what the total permutation weight would be if we unwound a previous extension in the decision path*/
   static double UnwoundPathSum(const PathElement *unique_path, int unique_depth, int path_index);
 
   /*! \brief Number of max leaves*/
   int max_leaves_;
-  /*! \brief Number of current levas*/
+  /*! \brief Number of current leaves*/
   int num_leaves_;
   // following values used for non-leaf node
   /*! \brief A non-leaf node's left child */
@@ -382,7 +387,7 @@ class Tree {
   std::vector<uint32_t> cat_threshold_inner_;
   std::vector<int> cat_boundaries_;
   std::vector<uint32_t> cat_threshold_;
-  /*! \brief Store the information for categorical feature handle and mising value handle. */
+  /*! \brief Store the information for categorical feature handle and missing value handle. */
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
   std::vector<float> split_gain_;
@@ -391,10 +396,14 @@ class Tree {
   std::vector<int> leaf_parent_;
   /*! \brief Output of leaves */
   std::vector<double> leaf_value_;
+  /*! \brief weight of leaves */
+  std::vector<double> leaf_weight_;
   /*! \brief DataCount of leaves */
   std::vector<int> leaf_count_;
   /*! \brief Output of non-leaf nodes */
   std::vector<double> internal_value_;
+  /*! \brief weight of non-leaf nodes */
+  std::vector<double> internal_weight_;
   /*! \brief DataCount of non-leaf nodes */
   std::vector<int> internal_count_;
   /*! \brief Depth for leaves */
@@ -404,7 +413,8 @@ class Tree {
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
-                        double left_value, double right_value, int left_cnt, int right_cnt, float gain) {
+                        double left_value, double right_value, int left_cnt, int right_cnt,
+                        double left_weight, double right_weight, float gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info
   int parent = leaf_parent_[leaf];
@@ -420,7 +430,7 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   split_feature_inner_[new_node_idx] = feature;
   split_feature_[new_node_idx] = real_feature;
 
-  split_gain_[new_node_idx] = Common::AvoidInf(gain);
+  split_gain_[new_node_idx] = gain;
   // add two new leaves
   left_child_[new_node_idx] = ~leaf;
   right_child_[new_node_idx] = ~num_leaves_;
@@ -428,11 +438,14 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   leaf_parent_[leaf] = new_node_idx;
   leaf_parent_[num_leaves_] = new_node_idx;
   // save current leaf value to internal node before change
+  internal_weight_[new_node_idx] = leaf_weight_[leaf];
   internal_value_[new_node_idx] = leaf_value_[leaf];
   internal_count_[new_node_idx] = left_cnt + right_cnt;
   leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;
+  leaf_weight_[leaf] = left_weight;
   leaf_count_[leaf] = left_cnt;
   leaf_value_[num_leaves_] = std::isnan(right_value) ? 0.0f : right_value;
+  leaf_weight_[num_leaves_] = right_weight;
   leaf_count_[num_leaves_] = right_cnt;
   // update leaf depth
   leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;

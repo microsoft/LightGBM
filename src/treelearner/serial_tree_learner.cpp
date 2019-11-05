@@ -14,6 +14,8 @@
 #include <unordered_map>
 #include <utility>
 
+#include "cost_effective_gradient_boosting.hpp"
+
 namespace LightGBM {
 
 #ifdef TIMETAG
@@ -69,8 +71,6 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   histogram_pool_.DynamicChangeSize(train_data_, config_, max_cache_size, config_->num_leaves);
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
-  splits_per_leaf_.resize(config_->num_leaves*train_data_->num_features());
-
   // get ordered bin
   train_data_->CreateOrderedBins(&ordered_bins_);
 
@@ -104,15 +104,9 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     }
   }
   Log::Info("Number of data: %d, number of used features: %d", num_data_, num_features_);
-  feature_used.clear();
-  feature_used.resize(train_data->num_features());
-
-  if (!config_->cegb_penalty_feature_coupled.empty()) {
-    CHECK(config_->cegb_penalty_feature_coupled.size() == static_cast<size_t>(train_data_->num_total_features()));
-  }
-  if (!config_->cegb_penalty_feature_lazy.empty()) {
-    CHECK(config_->cegb_penalty_feature_lazy.size() == static_cast<size_t>(train_data_->num_total_features()));
-    feature_used_in_data = Common::EmptyBitset(train_data->num_features() * num_data_);
+  if (CostEfficientGradientBoosting::IsEnable(config_)) {
+    cegb_.reset(new CostEfficientGradientBoosting(this));
+    cegb_->Init();
   }
 }
 
@@ -138,6 +132,9 @@ void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
   if (has_ordered_bin_) {
     is_data_in_leaf_.resize(num_data_);
     std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), static_cast<char>(0));
+  }
+  if (cegb_ != nullptr) {
+    cegb_->Init();
   }
 }
 
@@ -166,11 +163,14 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   } else {
     config_ = config;
   }
-
   histogram_pool_.ResetConfig(config_);
+  if (CostEfficientGradientBoosting::IsEnable(config_)) {
+    cegb_.reset(new CostEfficientGradientBoosting(this));
+    cegb_->Init();
+  }
 }
 
-Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, Json& forced_split_json) {
+Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, const Json& forced_split_json) {
   gradients_ = gradients;
   hessians_ = hessians;
   is_constant_hessian_ = is_constant_hessian;
@@ -268,17 +268,31 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vect
   return FitByExistingTree(old_tree, gradients, hessians);
 }
 
-void SerialTreeLearner::BeforeTrain() {
-  // reset histogram pool
-  histogram_pool_.ResetMap();
-
-  if (config_->feature_fraction < 1) {
-    int used_feature_cnt = static_cast<int>(valid_feature_indices_.size()*config_->feature_fraction);
-    // at least use one feature
-    used_feature_cnt = std::max(used_feature_cnt, 1);
-    // initialize used features
-    std::memset(is_feature_used_.data(), 0, sizeof(int8_t) * num_features_);
-    // Get used feature at current tree
+std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
+  std::vector<int8_t> ret(num_features_, 1);
+  if (config_->feature_fraction >= 1.0f && is_tree_level) {
+    return ret;
+  }
+  if (config_->feature_fraction_bynode >= 1.0f && !is_tree_level) {
+    return ret;
+  }
+  std::memset(ret.data(), 0, sizeof(int8_t) * num_features_);
+  const int min_used_features = std::min(2, static_cast<int>(valid_feature_indices_.size()));
+  if (is_tree_level) {
+    int used_feature_cnt = static_cast<int>(std::round(valid_feature_indices_.size() * config_->feature_fraction));
+    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
+    used_feature_indices_ = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
+    int omp_loop_size = static_cast<int>(used_feature_indices_.size());
+    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
+    for (int i = 0; i < omp_loop_size; ++i) {
+      int used_feature = valid_feature_indices_[used_feature_indices_[i]];
+      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
+      CHECK(inner_feature_index >= 0);
+      ret[inner_feature_index] = 1;
+    }
+  } else if (used_feature_indices_.size() <= 0) {
+    int used_feature_cnt = static_cast<int>(std::round(valid_feature_indices_.size() * config_->feature_fraction_bynode));
+    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
     auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
     int omp_loop_size = static_cast<int>(sampled_indices.size());
     #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
@@ -286,8 +300,30 @@ void SerialTreeLearner::BeforeTrain() {
       int used_feature = valid_feature_indices_[sampled_indices[i]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
       CHECK(inner_feature_index >= 0);
-      is_feature_used_[inner_feature_index] = 1;
+      ret[inner_feature_index] = 1;
     }
+  } else {
+    int used_feature_cnt = static_cast<int>(std::round(used_feature_indices_.size() * config_->feature_fraction_bynode));
+    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
+    auto sampled_indices = random_.Sample(static_cast<int>(used_feature_indices_.size()), used_feature_cnt);
+    int omp_loop_size = static_cast<int>(sampled_indices.size());
+    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
+    for (int i = 0; i < omp_loop_size; ++i) {
+      int used_feature = valid_feature_indices_[used_feature_indices_[sampled_indices[i]]];
+      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
+      CHECK(inner_feature_index >= 0);
+      ret[inner_feature_index] = 1;
+    }
+  }
+  return ret;
+}
+
+void SerialTreeLearner::BeforeTrain() {
+  // reset histogram pool
+  histogram_pool_.ResetMap();
+
+  if (config_->feature_fraction < 1.0f) {
+    is_feature_used_ = GetUsedFeatures(true);
   } else {
     #pragma omp parallel for schedule(static, 512) if (num_features_ >= 1024)
     for (int i = 0; i < num_features_; ++i) {
@@ -466,7 +502,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
   train_data_->ConstructHistograms(is_feature_used,
                                    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
                                    smaller_leaf_splits_->LeafIndex(),
-                                   ordered_bins_, gradients_, hessians_,
+                                   &ordered_bins_, gradients_, hessians_,
                                    ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
                                    ptr_smaller_leaf_hist_data);
 
@@ -476,7 +512,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
     train_data_->ConstructHistograms(is_feature_used,
                                      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
                                      larger_leaf_splits_->LeafIndex(),
-                                     ordered_bins_, gradients_, hessians_,
+                                     &ordered_bins_, gradients_, hessians_,
                                      ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
                                      ptr_larger_leaf_hist_data);
   }
@@ -485,34 +521,18 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
   #endif
 }
 
-double SerialTreeLearner::CalculateOndemandCosts(int feature_index, int leaf_index) {
-  if (config_->cegb_penalty_feature_lazy.empty())
-    return 0.0f;
-
-  double penalty = config_->cegb_penalty_feature_lazy[feature_index];
-
-  const int inner_fidx = train_data_->InnerFeatureIndex(feature_index);
-
-  double total = 0.0f;
-  data_size_t cnt_leaf_data = 0;
-  auto tmp_idx = data_partition_->GetIndexOnLeaf(leaf_index, &cnt_leaf_data);
-
-  for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
-    int real_idx = tmp_idx[i_input];
-    if (Common::FindInBitset(feature_used_in_data.data(), train_data_->num_data()*train_data_->num_features(), train_data_->num_data() * inner_fidx + real_idx))
-      continue;
-    total += penalty;
-  }
-
-  return total;
-}
-
 void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   #ifdef TIMETAG
   auto start_time = std::chrono::steady_clock::now();
   #endif
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
+  std::vector<int8_t> smaller_node_used_features(num_features_, 1);
+  std::vector<int8_t> larger_node_used_features(num_features_, 1);
+  if (config_->feature_fraction_bynode < 1.0f) {
+    smaller_node_used_features = GetUsedFeatures(false);
+    larger_node_used_features = GetUsedFeatures(false);
+  }
   OMP_INIT_EX();
   // find splits
   #pragma omp parallel for schedule(static)
@@ -534,15 +554,10 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       smaller_leaf_splits_->max_constraint(),
       &smaller_split);
     smaller_split.feature = real_fidx;
-    smaller_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_split * smaller_leaf_splits_->num_data_in_leaf();
-    if (!config_->cegb_penalty_feature_coupled.empty() && !feature_used[feature_index]) {
-      smaller_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_feature_coupled[real_fidx];
+    if (cegb_ != nullptr) {
+      smaller_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, smaller_leaf_splits_->LeafIndex(), smaller_leaf_splits_->num_data_in_leaf(), smaller_split);
     }
-    if (!config_->cegb_penalty_feature_lazy.empty()) {
-      smaller_split.gain -= config_->cegb_tradeoff * CalculateOndemandCosts(real_fidx, smaller_leaf_splits_->LeafIndex());
-    }
-    splits_per_leaf_[smaller_leaf_splits_->LeafIndex()*train_data_->num_features() + feature_index] = smaller_split;
-    if (smaller_split > smaller_best[tid]) {
+    if (smaller_split > smaller_best[tid] && smaller_node_used_features[feature_index]) {
       smaller_best[tid] = smaller_split;
     }
     // only has root leaf
@@ -565,15 +580,10 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       larger_leaf_splits_->max_constraint(),
       &larger_split);
     larger_split.feature = real_fidx;
-    larger_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_split * larger_leaf_splits_->num_data_in_leaf();
-    if (!config_->cegb_penalty_feature_coupled.empty() && !feature_used[feature_index]) {
-      larger_split.gain -= config_->cegb_tradeoff * config_->cegb_penalty_feature_coupled[real_fidx];
+    if (cegb_ != nullptr) {
+      larger_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, larger_leaf_splits_->LeafIndex(), larger_leaf_splits_->num_data_in_leaf(), larger_split);
     }
-    if (!config_->cegb_penalty_feature_lazy.empty()) {
-      larger_split.gain -= config_->cegb_tradeoff*CalculateOndemandCosts(real_fidx, larger_leaf_splits_->LeafIndex());
-    }
-    splits_per_leaf_[larger_leaf_splits_->LeafIndex()*train_data_->num_features() + feature_index] = larger_split;
-    if (larger_split > larger_best[tid]) {
+    if (larger_split > larger_best[tid] && larger_node_used_features[feature_index]) {
       larger_best[tid] = larger_split;
     }
     OMP_LOOP_EX_END();
@@ -594,7 +604,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
   #endif
 }
 
-int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
                                        int* right_leaf, int *cur_depth,
                                        bool *aborted_last_force_split) {
   int32_t result_count = 0;
@@ -684,6 +694,8 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
                                 static_cast<double>(current_split_info.right_output),
                                 static_cast<data_size_t>(current_split_info.left_count),
                                 static_cast<data_size_t>(current_split_info.right_count),
+                                static_cast<double>(current_split_info.left_sum_hessian),
+                                static_cast<double>(current_split_info.right_sum_hessian),
                                 static_cast<float>(current_split_info.gain),
                                 train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                                 current_split_info.default_left);
@@ -711,6 +723,8 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
                                            static_cast<double>(current_split_info.right_output),
                                            static_cast<data_size_t>(current_split_info.left_count),
                                            static_cast<data_size_t>(current_split_info.right_count),
+                                           static_cast<double>(current_split_info.left_sum_hessian),
+                                           static_cast<double>(current_split_info.right_sum_hessian),
                                            static_cast<float>(current_split_info.gain),
                                            train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
       data_partition_->Split(current_leaf, train_data_, inner_feature_index,
@@ -757,26 +771,9 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
 void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) {
   const SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
-  if (!config_->cegb_penalty_feature_coupled.empty() && !feature_used[inner_feature_index]) {
-    feature_used[inner_feature_index] = true;
-    for (int i = 0; i < tree->num_leaves(); ++i) {
-      if (i == best_leaf) continue;
-      auto split = &splits_per_leaf_[i*train_data_->num_features() + inner_feature_index];
-      split->gain += config_->cegb_tradeoff*config_->cegb_penalty_feature_coupled[best_split_info.feature];
-      if (*split > best_split_per_leaf_[i])
-        best_split_per_leaf_[i] = *split;
-    }
+  if (cegb_ != nullptr) {
+    cegb_->UpdateLeafBestSplits(tree, best_leaf, &best_split_info, &best_split_per_leaf_);
   }
-
-  if (!config_->cegb_penalty_feature_lazy.empty()) {
-    data_size_t cnt_leaf_data = 0;
-    auto tmp_idx = data_partition_->GetIndexOnLeaf(best_leaf, &cnt_leaf_data);
-    for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
-      int real_idx = tmp_idx[i_input];
-      Common::InsertBitset(feature_used_in_data, train_data_->num_data() * inner_feature_index + real_idx);
-    }
-  }
-
   // left = parent
   *left_leaf = best_leaf;
   bool is_numerical_split = train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin;
@@ -792,6 +789,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                               static_cast<double>(best_split_info.right_output),
                               static_cast<data_size_t>(best_split_info.left_count),
                               static_cast<data_size_t>(best_split_info.right_count),
+                              static_cast<double>(best_split_info.left_sum_hessian),
+                              static_cast<double>(best_split_info.right_sum_hessian),
                               static_cast<float>(best_split_info.gain),
                               train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                               best_split_info.default_left);
@@ -815,6 +814,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                                          static_cast<double>(best_split_info.right_output),
                                          static_cast<data_size_t>(best_split_info.left_count),
                                          static_cast<data_size_t>(best_split_info.right_count),
+                                         static_cast<double>(best_split_info.left_sum_hessian),
+                                         static_cast<double>(best_split_info.right_sum_hessian),
                                          static_cast<float>(best_split_info.gain),
                                          train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
@@ -882,8 +883,8 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       for (int i = 0; i < tree->num_leaves(); ++i) {
         outputs[i] = static_cast<double>(tree->LeafOutput(i));
       }
-      Network::GlobalSum(outputs);
-      Network::GlobalSum(n_nozeroworker_perleaf);
+      outputs = Network::GlobalSum(&outputs);
+      n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
       for (int i = 0; i < tree->num_leaves(); ++i) {
         tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
       }

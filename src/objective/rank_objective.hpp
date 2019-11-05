@@ -24,6 +24,7 @@ class LambdarankNDCG: public ObjectiveFunction {
  public:
   explicit LambdarankNDCG(const Config& config) {
     sigmoid_ = static_cast<double>(config.sigmoid);
+    norm_ = config.lambdamart_norm;
     label_gain_ = config.label_gain;
     // initialize DCG calculator
     DCGCalculator::DefaultLabelGain(&label_gain_);
@@ -110,7 +111,8 @@ class LambdarankNDCG: public ObjectiveFunction {
     if (worst_idx > 0 && score[sorted_idx[worst_idx]] == kMinScore) {
       worst_idx -= 1;
     }
-    const double wrost_score = score[sorted_idx[worst_idx]];
+    const double worst_score = score[sorted_idx[worst_idx]];
+    double sum_lambdas = 0.0;
     // start accmulate lambdas by pairs
     for (data_size_t i = 0; i < cnt; ++i) {
       const data_size_t high = sorted_idx[i];
@@ -142,23 +144,32 @@ class LambdarankNDCG: public ObjectiveFunction {
         // get delta NDCG
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
         // regular the delta_pair_NDCG by score distance
-        if (high_label != low_label && best_score != wrost_score) {
+        if (norm_ && high_label != low_label && best_score != worst_score) {
           delta_pair_NDCG /= (0.01f + fabs(delta_score));
         }
         // calculate lambda for this pair
         double p_lambda = GetSigmoid(delta_score);
-        double p_hessian = p_lambda * (2.0f - p_lambda);
+        double p_hessian = p_lambda * (1.0f - p_lambda);
         // update
-        p_lambda *= -delta_pair_NDCG;
-        p_hessian *= 2 * delta_pair_NDCG;
+        p_lambda *= -sigmoid_ * delta_pair_NDCG;
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
         high_sum_lambda += p_lambda;
         high_sum_hessian += p_hessian;
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
+        // lambda is negative, so use minus to accumulate
+        sum_lambdas -= 2 * p_lambda;
       }
       // update
       lambdas[high] += static_cast<score_t>(high_sum_lambda);
       hessians[high] += static_cast<score_t>(high_sum_hessian);
+    }
+    if (norm_ && sum_lambdas > 0) {
+      double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
+      for (data_size_t i = 0; i < cnt; ++i) {
+        lambdas[i] = static_cast<score_t>(lambdas[i] * norm_factor);
+        hessians[i] = static_cast<score_t>(hessians[i] * norm_factor);
+      }
     }
     // if need weights
     if (weights_ != nullptr) {
@@ -193,7 +204,7 @@ class LambdarankNDCG: public ObjectiveFunction {
     // cache
     for (size_t i = 0; i < _sigmoid_bins; ++i) {
       const double score = i / sigmoid_table_idx_factor_ + min_sigmoid_input_;
-      sigmoid_table_[i] = 2.0f / (1.0f + std::exp(2.0f * score * sigmoid_));
+      sigmoid_table_[i] = 1.0f / (1.0f + std::exp(score * sigmoid_));
     }
   }
 
@@ -216,6 +227,8 @@ class LambdarankNDCG: public ObjectiveFunction {
   std::vector<double> inverse_max_dcgs_;
   /*! \brief Simgoid param */
   double sigmoid_;
+  /*! \brief Normalize the lambdas or not */
+  bool norm_;
   /*! \brief Optimized NDCG@ */
   int optimize_pos_at_;
   /*! \brief Number of queries */

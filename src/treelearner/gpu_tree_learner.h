@@ -48,7 +48,7 @@ class GPUTreeLearner: public SerialTreeLearner {
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetTrainingData(const Dataset* train_data) override;
   Tree* Train(const score_t* gradients, const score_t *hessians,
-              bool is_constant_hessian, Json& forced_split_json) override;
+              bool is_constant_hessian, const Json& forced_split_json) override;
 
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     SerialTreeLearner::SetBaggingData(used_indices, num_data);
@@ -110,7 +110,7 @@ class GPUTreeLearner: public SerialTreeLearner {
 
   /*!
    * \brief Returns OpenCL kernel build log when compiled with option opts
-   * \param opts OpenCL build options 
+   * \param opts OpenCL build options
    * \return OpenCL build log
   */
   std::string GetBuildLog(const std::string &opts);
@@ -120,7 +120,7 @@ class GPUTreeLearner: public SerialTreeLearner {
   */
   void SetupKernelArguments();
 
-  /*! 
+  /*!
    * \brief Compute GPU feature histogram for the current leaf.
    *        Indices, gradients and hessians have been copied to the device.
    * \param leaf_num_data Number of data on current leaf
@@ -136,7 +136,7 @@ class GPUTreeLearner: public SerialTreeLearner {
   void WaitAndGetHistograms(HistogramBinEntry* histograms);
 
   /*!
-   * \brief Construct GPU histogram asynchronously. 
+   * \brief Construct GPU histogram asynchronously.
    *        Interface is similar to Dataset::ConstructHistograms().
    * \param is_feature_used A predicate vector for enabling each feature
    * \param data_indices Array of data example IDs to be included in histogram, will be copied to GPU.
@@ -144,9 +144,9 @@ class GPUTreeLearner: public SerialTreeLearner {
    * \param num_data Number of data examples to be included in histogram
    * \param gradients Array of gradients for all examples.
    * \param hessians Array of hessians for all examples.
-   * \param ordered_gradients Ordered gradients will be generated and copied to GPU when gradients is not nullptr, 
+   * \param ordered_gradients Ordered gradients will be generated and copied to GPU when gradients is not nullptr,
    *                     Set gradients to nullptr to skip copy to GPU.
-   * \param ordered_hessians Ordered hessians will be generated and copied to GPU when hessians is not nullptr, 
+   * \param ordered_hessians Ordered hessians will be generated and copied to GPU when hessians is not nullptr,
    *                     Set hessians to nullptr to skip copy to GPU.
    * \return true if GPU kernel is launched, false if GPU is not used
   */
@@ -189,13 +189,13 @@ class GPUTreeLearner: public SerialTreeLearner {
   /*! \brief Currently used kernel name */
   std::string kernel_name_;
 
-  /*! \brief a array of histogram kernels with different number
+  /*! \brief an array of histogram kernels with different number
      of workgroups per feature */
   std::vector<boost::compute::kernel> histogram_kernels_;
-  /*! \brief a array of histogram kernels with different number
+  /*! \brief an array of histogram kernels with different number
      of workgroups per feature, with all features enabled to avoid branches */
   std::vector<boost::compute::kernel> histogram_allfeats_kernels_;
-  /*! \brief a array of histogram kernels with different number
+  /*! \brief an array of histogram kernels with different number
      of workgroups per feature, and processing the whole dataset */
   std::vector<boost::compute::kernel> histogram_fulldata_kernels_;
   /*! \brief total number of feature-groups */
@@ -210,7 +210,7 @@ class GPUTreeLearner: public SerialTreeLearner {
   /*! \brief total number of dense feature-group tuples on GPU.
    * Each feature tuple is 4-byte (4 features if each feature takes a byte) */
   int num_dense_feature4_;
-  /*! \brief Max number of bins of training data, used to determine 
+  /*! \brief Max number of bins of training data, used to determine
    * which GPU kernel to use */
   int max_num_bin_;
   /*! \brief Used GPU kernel bin size (64, 256) */

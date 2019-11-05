@@ -700,11 +700,12 @@ class HistogramPool {
 
   void DynamicChangeSize(const Dataset* train_data, const Config* config, int cache_size, int total_size) {
     if (feature_metas_.empty()) {
+      uint64_t bin_cnt_over_features = 0;
       int num_feature = train_data->num_features();
       feature_metas_.resize(num_feature);
-      #pragma omp parallel for schedule(static, 512) if (num_feature >= 1024)
       for (int i = 0; i < num_feature; ++i) {
         feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
+        bin_cnt_over_features += static_cast<uint64_t>(feature_metas_[i].num_bin);
         feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
         feature_metas_[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
         feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
@@ -717,9 +718,9 @@ class HistogramPool {
         feature_metas_[i].config = config;
         feature_metas_[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();
       }
+      Log::Info("Total Bins %d", bin_cnt_over_features);
     }
     uint64_t num_total_bin = train_data->NumTotalBin();
-    Log::Info("Total Bins %d", num_total_bin);
     int old_cache_size = static_cast<int>(pool_.size());
     Reset(cache_size, total_size);
 
@@ -748,6 +749,7 @@ class HistogramPool {
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    train_data_ = train_data;
   }
 
   void ResetConfig(const Config* config) {
@@ -755,6 +757,8 @@ class HistogramPool {
     #pragma omp parallel for schedule(static, 512) if (size >= 1024)
     for (int i = 0; i < size; ++i) {
       feature_metas_[i].config = config;
+      feature_metas_[i].monotone_type = train_data_->FeatureMonotone(i);
+      feature_metas_[i].penalty = train_data_->FeaturePenalte(i);
     }
   }
   /*!
@@ -823,6 +827,7 @@ class HistogramPool {
   std::vector<int> inverse_mapper_;
   std::vector<int> last_used_time_;
   int cur_time_ = 0;
+  const Dataset* train_data_;
 };
 
 }  // namespace LightGBM

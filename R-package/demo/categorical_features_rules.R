@@ -68,24 +68,33 @@ my_data_test <- as.matrix(bank_test[, 1:16, with = FALSE])
 
 # Creating the LightGBM dataset with categorical features
 # The categorical features can be passed to lgb.train to not copy and paste a lot
-dtrain <- lgb.Dataset(data = my_data_train,
-                      label = bank_train$y,
-                      categorical_feature = c(2, 3, 4, 5, 7, 8, 9, 11, 16))
-dtest <- lgb.Dataset.create.valid(dtrain,
-                                  data = my_data_test,
-                                  label = bank_test$y)
+dtrain <- lgb.Dataset(
+    data = my_data_train
+    , label = bank_train$y
+    , categorical_feature = c(2, 3, 4, 5, 7, 8, 9, 11, 16)
+)
+dtest <- lgb.Dataset.create.valid(
+    dtrain
+    , data = my_data_test
+    , label = bank_test$y
+)
 
 # We can now train a model
-model <- lgb.train(list(objective = "binary",
-                        metric = "l2",
-                        min_data = 1,
-                        learning_rate = 0.1,
-                        min_data = 0,
-                        min_hessian = 1,
-                        max_depth = 2),
-                   dtrain,
-                   100,
-                   valids = list(train = dtrain, valid = dtest))
+params <- list(
+    objective = "binary"
+    , metric = "l2"
+    , min_data = 1
+    , learning_rate = 0.1
+    , min_data = 0
+    , min_hessian = 1
+    , max_depth = 2
+)
+model <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = 100
+    , valids = list(train = dtrain, valid = dtest)
+)
 
 # Try to find split_feature: 11
 # If you find it, it means it used a categorical feature in the first tree

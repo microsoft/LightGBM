@@ -20,17 +20,19 @@ valids <- list(train = dtrain, test = dtest)
 # Method 1 of training with built-in multiclass objective
 # Note: need to turn off boost from average to match custom objective
 # (https://github.com/microsoft/LightGBM/issues/1846)
-model_builtin <- lgb.train(list(),
-                           dtrain,
-                           boost_from_average = FALSE,
-                           100,
-                           valids,
-                           min_data = 1,
-                           learning_rate = 1,
-                           early_stopping_rounds = 10,
-                           objective = "multiclass",
-                           metric = "multi_logloss",
-                           num_class = 3)
+model_builtin <- lgb.train(
+    list()
+    , dtrain
+    , boost_from_average = FALSE
+    , 100
+    , valids
+    , min_data = 1
+    , learning_rate = 1
+    , early_stopping_rounds = 10
+    , objective = "multiclass"
+    , metric = "multi_logloss"
+    , num_class = 3
+)
 
 preds_builtin <- predict(model_builtin, test[, 1:4], rawscore = TRUE, reshape = TRUE)
 probs_builtin <- exp(preds_builtin) / rowSums(exp(preds_builtin))
@@ -65,21 +67,25 @@ custom_multiclass_metric = function(preds, dtrain) {
     preds = preds - apply(preds, 1, max)
     prob = exp(preds) / rowSums(exp(preds))
 
-    return(list(name = "error",
-                value = -mean(log(prob[cbind(1:length(labels), labels + 1)])),
-                higher_better = FALSE))
+    return(list(
+        name = "error"
+        , value = -mean(log(prob[cbind(1:length(labels), labels + 1)]))
+        , higher_better = FALSE
+    ))
 }
 
-model_custom <- lgb.train(list(),
-                          dtrain,
-                          100,
-                          valids,
-                          min_data = 1,
-                          learning_rate = 1,
-                          early_stopping_rounds = 10,
-                          objective = custom_multiclass_obj,
-                          eval = custom_multiclass_metric,
-                          num_class = 3)
+model_custom <- lgb.train(
+    list()
+    , dtrain
+    , 100
+    , valids
+    , min_data = 1
+    , learning_rate = 1
+    , early_stopping_rounds = 10
+    , objective = custom_multiclass_obj
+    , eval = custom_multiclass_metric
+    , num_class = 3
+)
 
 preds_custom <- predict(model_custom, test[, 1:4], rawscore = TRUE, reshape = TRUE)
 probs_custom <- exp(preds_custom) / rowSums(exp(preds_custom))
@@ -87,4 +93,3 @@ probs_custom <- exp(preds_custom) / rowSums(exp(preds_custom))
 # compare predictions
 stopifnot(identical(probs_builtin, probs_custom))
 stopifnot(identical(preds_builtin, preds_custom))
-

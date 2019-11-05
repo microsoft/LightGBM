@@ -25,9 +25,20 @@ lgb.call <- function(fun_name, ret, ...) {
 
   # Check for a ret call
   if (!is.null(ret)) {
-    call_state <- .Call(fun_name, ..., ret, call_state, PACKAGE = "lib_lightgbm") # Call with ret
+    call_state <- .Call(
+      fun_name
+      , ...
+      , ret
+      , call_state
+      , PACKAGE = "lib_lightgbm"
+    )
   } else {
-    call_state <- .Call(fun_name, ..., call_state, PACKAGE = "lib_lightgbm") # Call without ret
+    call_state <- .Call(
+      fun_name
+      , ...
+      , call_state
+      , PACKAGE = "lib_lightgbm"
+    )
   }
   call_state <- as.integer(call_state)
   # Check for call state value post call
@@ -37,17 +48,25 @@ lgb.call <- function(fun_name, ret, ...) {
     buf_len <- 200L
     act_len <- 0L
     err_msg <- raw(buf_len)
-    err_msg <- .Call("LGBM_GetLastError_R", buf_len, act_len, err_msg, PACKAGE = "lib_lightgbm")
+    err_msg <- .Call(
+      "LGBM_GetLastError_R"
+      , buf_len
+      , act_len
+      , err_msg
+      , PACKAGE = "lib_lightgbm"
+    )
 
     # Check error buffer
     if (act_len > buf_len) {
       buf_len <- act_len
       err_msg <- raw(buf_len)
-      err_msg <- .Call("LGBM_GetLastError_R",
-                        buf_len,
-                        act_len,
-                        err_msg,
-                        PACKAGE = "lib_lightgbm")
+      err_msg <- .Call(
+        "LGBM_GetLastError_R"
+        , buf_len
+        , act_len
+        , err_msg
+        , PACKAGE = "lib_lightgbm"
+      )
     }
 
     # Return error
@@ -97,7 +116,13 @@ lgb.params2str <- function(params, ...) {
 
   # Check for identical parameters
   if (length(intersect(names(params), names(dot_params))) > 0) {
-    stop("Same parameters in ", sQuote("params"), " and in the call are not allowed. Please check your ", sQuote("params"), " list")
+    stop(
+      "Same parameters in "
+      , sQuote("params")
+      , " and in the call are not allowed. Please check your "
+      , sQuote("params")
+      , " list"
+    )
   }
 
   # Merge parameters
@@ -160,15 +185,43 @@ lgb.check.params <- function(params) {
 lgb.check.obj <- function(params, obj) {
 
   # List known objectives in a vector
-  OBJECTIVES <- c("regression", "regression_l1", "regression_l2", "mean_squared_error", "mse", "l2_root", "root_mean_squared_error", "rmse",
-                  "mean_absolute_error", "mae", "quantile",
-                  "huber", "fair", "poisson", "binary", "lambdarank",
-                  "multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr",
-                  "xentropy", "cross_entropy", "xentlambda", "cross_entropy_lambda", "mean_absolute_percentage_error", "mape",
-                  "gamma", "tweedie")
+  OBJECTIVES <- c(
+    "regression"
+    , "regression_l1"
+    , "regression_l2"
+    , "mean_squared_error"
+    , "mse"
+    , "l2_root"
+    , "root_mean_squared_error"
+    , "rmse"
+    , "mean_absolute_error"
+    , "mae"
+    , "quantile"
+    , "huber"
+    , "fair"
+    , "poisson"
+    , "binary"
+    , "lambdarank"
+    , "multiclass"
+    , "softmax"
+    , "multiclassova"
+    , "multiclass_ova"
+    , "ova"
+    , "ovr"
+    , "xentropy"
+    , "cross_entropy"
+    , "xentlambda"
+    , "cross_entropy_lambda"
+    , "mean_absolute_percentage_error"
+    , "mape"
+    , "gamma"
+    , "tweedie"
+  )
 
   # Check whether the objective is empty or not, and take it from params if needed
-  if (!is.null(obj)) { params$objective <- obj }
+  if (!is.null(obj)) {
+    params$objective <- obj
+  }
 
   # Check whether the objective is a character
   if (is.character(params$objective)) {

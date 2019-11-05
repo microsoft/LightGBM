@@ -14,7 +14,7 @@
 namespace LightGBM {
 
 /*!
-* \brief Contains some operation for a array, e.g. ArgMax, TopK.
+* \brief Contains some operation for an array, e.g. ArgMax, TopK.
 */
 template<typename VAL_T>
 class ArrayArgs {
@@ -116,7 +116,7 @@ class ArrayArgs {
     std::vector<VAL_T>& ref = *arr;
     VAL_T v = ref[end - 1];
     for (;;) {
-      while (ref[++i] > v);
+      while (ref[++i] > v) {}
       while (v > ref[--j]) { if (j == start) { break; } }
       if (i >= j) { break; }
       std::swap(ref[i], ref[j]);

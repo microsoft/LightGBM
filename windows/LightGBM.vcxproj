@@ -240,6 +240,7 @@
     <ClInclude Include="..\src\objective\regression_objective.hpp" />
     <ClInclude Include="..\src\objective\multiclass_objective.hpp" />
     <ClInclude Include="..\src\objective\xentropy_objective.hpp" />
+    <ClInclude Include="..\src\treelearner\cost_effective_gradient_boosting.hpp" />
     <ClInclude Include="..\src\treelearner\data_partition.hpp" />
     <ClInclude Include="..\src\treelearner\feature_histogram.hpp" />
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp" />

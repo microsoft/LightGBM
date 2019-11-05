@@ -1,5 +1,4 @@
 # coding: utf-8
-# pylint: disable = invalid-name, W0105
 """Library with training routines of LightGBM."""
 from __future__ import absolute_import
 
@@ -11,7 +10,7 @@ from operator import attrgetter
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
+from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
                      string_type, integer_types, range_, zip_)
 
@@ -66,7 +65,7 @@ def train(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -89,6 +88,7 @@ def train(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
+        The output cannot be monotonically constrained with respect to a categorical feature.
     early_stopping_rounds : int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
         Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
@@ -101,8 +101,8 @@ def train(params, train_set, num_boost_round=100,
     evals_result: dict or None, optional (default=None)
         This dictionary used to store all evaluation results of all the items in ``valid_sets``.
 
-        Example
-        -------
+        .. rubric:: Example
+
         With a ``valid_sets`` = [valid_set, train_set],
         ``valid_names`` = ['eval', 'train']
         and a ``params`` = {'metric': 'logloss'}
@@ -115,8 +115,8 @@ def train(params, train_set, num_boost_round=100,
         If int, the eval metric on the valid set is printed at every ``verbose_eval`` boosting stage.
         The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
 
-        Example
-        -------
+        .. rubric:: Example
+
         With ``verbose_eval`` = 4 and at least one item in ``valid_sets``,
         an evaluation metric is printed every 4 (instead of 1) boosting stages.
 
@@ -140,14 +140,15 @@ def train(params, train_set, num_boost_round=100,
     # create predictor first
     params = copy.deepcopy(params)
     if fobj is not None:
+        for obj_alias in _ConfigAliases.get("objective"):
+            params.pop(obj_alias, None)
         params['objective'] = 'none'
-    for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
-                  "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
+    for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
-    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
+    for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
@@ -266,7 +267,7 @@ def train(params, train_set, num_boost_round=100,
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
-    booster.best_score = collections.defaultdict(dict)
+    booster.best_score = collections.defaultdict(collections.OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
@@ -308,17 +309,17 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
         if hasattr(folds, 'split'):
             group_info = full_data.get_group()
             if group_info is not None:
-                group_info = group_info.astype(int)
+                group_info = np.array(group_info, dtype=np.int32, copy=False)
                 flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
             else:
-                flatted_group = np.zeros(num_data, dtype=int)
+                flatted_group = np.zeros(num_data, dtype=np.int32)
             folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
     else:
-        if 'objective' in params and params['objective'] == 'lambdarank':
+        if any(params.get(obj_alias, "") == "lambdarank" for obj_alias in _ConfigAliases.get("objective")):
             if not SKLEARN_INSTALLED:
                 raise LightGBMError('Scikit-learn is required for lambdarank cv.')
             # lambdarank task, split according to groups
-            group_info = full_data.get_group().astype(int)
+            group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
             flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
@@ -339,8 +340,8 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
 
     ret = _CVBooster()
     for train_idx, test_idx in folds:
-        train_set = full_data.subset(train_idx)
-        valid_set = full_data.subset(test_idx)
+        train_set = full_data.subset(sorted(train_idx))
+        valid_set = full_data.subset(sorted(test_idx))
         # run preprocessing on the data set if needed
         if fpreproc is not None:
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
@@ -356,7 +357,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
 
 def _agg_cv_result(raw_results, eval_train_metric=False):
     """Aggregate cross-validation results."""
-    cvmap = collections.defaultdict(list)
+    cvmap = collections.OrderedDict()
     metric_type = {}
     for one_result in raw_results:
         for one_line in one_result:
@@ -365,6 +366,7 @@ def _agg_cv_result(raw_results, eval_train_metric=False):
             else:
                 key = one_line[1]
             metric_type[key] = one_line[3]
+            cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
@@ -429,7 +431,7 @@ def cv(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function.
+                The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
             is_higher_better : bool
@@ -452,6 +454,7 @@ def cv(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
+        The output cannot be monotonically constrained with respect to a categorical feature.
     early_stopping_rounds : int or None, optional (default=None)
         Activates early stopping.
         CV score needs to improve at least every ``early_stopping_rounds`` round(s)
@@ -493,14 +496,15 @@ def cv(params, train_set, num_boost_round=100,
 
     params = copy.deepcopy(params)
     if fobj is not None:
+        for obj_alias in _ConfigAliases.get("objective"):
+            params.pop(obj_alias, None)
         params['objective'] = 'none'
-    for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
-                  "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
+    for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = params.pop(alias)
             break
-    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
+    for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             early_stopping_rounds = params.pop(alias)
@@ -521,6 +525,8 @@ def cv(params, train_set, num_boost_round=100,
              .set_categorical_feature(categorical_feature)
 
     if metrics is not None:
+        for metric_alias in _ConfigAliases.get("metric"):
+            params.pop(metric_alias, None)
         params['metric'] = metrics
 
     results = collections.defaultdict(list)
