@@ -1764,8 +1764,8 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int bias) {
-        int64_t i = static_cast<int64_t>(start + bias);
+      return [=] (int offset) {
+        int64_t i = static_cast<int64_t>(start + offset);
         if (i >= end) {
           return std::make_pair(-1, 0.0);
         }
@@ -1777,8 +1777,8 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int bias) {
-        int64_t i = static_cast<int64_t>(start + bias);
+      return [=] (int offset) {
+        int64_t i = static_cast<int64_t>(start + offset);
         if (i >= end) {
           return std::make_pair(-1, 0.0);
         }
@@ -1793,8 +1793,8 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int bias) {
-        int64_t i = static_cast<int64_t>(start + bias);
+      return [=] (int offset) {
+        int64_t i = static_cast<int64_t>(start + offset);
         if (i >= end) {
           return std::make_pair(-1, 0.0);
         }
@@ -1806,8 +1806,8 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int bias) {
-        int64_t i = static_cast<int64_t>(start + bias);
+      return [=] (int offset) {
+        int64_t i = static_cast<int64_t>(start + offset);
         if (i >= end) {
           return std::make_pair(-1, 0.0);
         }
