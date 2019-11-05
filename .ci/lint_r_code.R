@@ -16,8 +16,6 @@ FILES_TO_LINT <- list.files(
     , include.dirs = FALSE
 )
 
-# Some linters from the lintr package have not made it to CRAN yet
-# We build lintr from source to address that.
 LINTERS_TO_USE <- list(
     "closed_curly" = lintr::closed_curly_linter
     , "infix_spaces" = lintr::infix_spaces_linter
