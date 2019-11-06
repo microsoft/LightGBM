@@ -78,8 +78,10 @@ if [[ $TASK == "lint" ]]; then
     #         r-base-dev \
     #         || exit -1
     conda install -q -y -n $CONDA_ENV \
-        r-base
-    Rscript -e "install.packages('lintr', repos = 'http://cran.rstudio.com')"
+        -c conda-forge \
+            r-lintr>=2.0
+    conda install -q -y -n $CONDA_ENV \
+        r-stringi
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
 
     echo "Linting C++ code"
