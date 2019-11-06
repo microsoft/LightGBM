@@ -79,12 +79,11 @@ if [[ $TASK == "if-else" ]]; then
 fi
 
 if [[ $TASK == "r-pkg" ]]; then
-    #. set up R environment
+    # set up R environment
     R_LIB_PATH=~/Rlib
     mkdir -p $R_LIB_PATH
     echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
     echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
-
     export PATH="$R_LIB_PATH/R/bin:$PATH"
 
     # installing precompiled R for Ubuntu
@@ -119,7 +118,7 @@ if [[ $TASK == "r-pkg" ]]; then
         --no-deps \
             pandoc
 
-    # Manually install Depends, Imports, and Suggests libraries
+    # Manually install Depends and Imports libraries + 'testthat'
     # to avoid a CI-time dependency on devtools (for devtools::install_deps())
     Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'))" || exit -1
 
@@ -129,9 +128,11 @@ if [[ $TASK == "r-pkg" ]]; then
     PKG_TARBALL=$(ls | grep '^lightgbm_.*\.tar\.gz$')
     LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 
+    # suppress R CMD check warning from Suggests dependencies not being available
+    export _R_CHECK_FORCE_SUGGESTS_=0
+
     # fails tests if either ERRORs or WARNINGs are thrown by
     # R CMD CHECK
-    export _R_CHECK_FORCE_SUGGESTS_=0
     R CMD check ${PKG_TARBALL} \
         --as-cran \
         --no-manual \
