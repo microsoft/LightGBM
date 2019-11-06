@@ -60,7 +60,7 @@ if [[ $TASK == "lint" ]]; then
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
 
     # set up R environment
-    # echo "Linting R code"
+    echo "Linting R code"
     # R_LIB_PATH=~/Rlib
     # mkdir -p $R_LIB_PATH
     # echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
@@ -77,10 +77,10 @@ if [[ $TASK == "lint" ]]; then
     #         r-base \
     #         r-base-dev \
     #         || exit -1
-    conda install -q -y -n $CONDA_ENV \
+    conda install -y -n $CONDA_ENV \
         -c conda-forge \
             r-lintr>=2.0
-    conda install -q -y -n $CONDA_ENV \
+    conda install -y -n $CONDA_ENV \
         r-stringi
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
 
