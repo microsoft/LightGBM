@@ -78,7 +78,7 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "r-pkg" ]]; then
+if [[ $TASK == "r-package" ]]; then
     # set up R environment
     R_LIB_PATH=~/Rlib
     mkdir -p $R_LIB_PATH
