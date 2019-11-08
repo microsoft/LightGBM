@@ -88,15 +88,18 @@ if [[ $TASK == "r-pkg" ]]; then
 
     # installing precompiled R for Ubuntu
     # https://cran.r-project.org/bin/linux/ubuntu/#installation
+    # adding steps from https://stackoverflow.com/a/56378217/3986677 to get latest version
     if [[ $OS_NAME == "linux" ]]; then
         sudo apt-get update
         sudo add-apt-repository \
             "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
+        sudo apt-key adv \
+            --keyserver keyserver.ubuntu.com \
+            --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
         sudo apt-get update
         sudo apt-get install \
             -y \
-                r-base \
-                r-base-dev \
+                r-base-dev=${R_LINUX_VERSION} \
                 texlive-latex-recommended \
                 texlive-fonts-recommended \
                 texlive-fonts-extra \
@@ -106,7 +109,7 @@ if [[ $TASK == "r-pkg" ]]; then
 
     # Installing R precompiled for Mac OS 10.11 or higher
     if [[ $OS_NAME == "macos" ]]; then
-        wget https://cran.r-project.org/bin/macosx/R-${R_VERSION}.pkg -O R.pkg
+        wget https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
         sudo installer \
             -verbose \
             -pkg $(pwd)/R.pkg \
