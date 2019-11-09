@@ -927,6 +927,24 @@ inline bool CheckASCII(const std::string& s) {
   return true;
 }
 
+inline bool CheckAllowedJSON(const std::string& s) {
+  unsigned char char_code;
+  for (auto c : s) {
+    char_code = static_cast<unsigned char>(c);
+    if (char_code == 34      // "
+        || char_code == 44   // ,
+        || char_code == 58   // :
+        || char_code == 91   // [
+        || char_code == 93   // ]
+        || char_code == 123  // {
+        || char_code == 125  // }
+        ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM
