@@ -147,7 +147,7 @@ Build from GitHub
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
 
-     # For Mojave (10.14)
+     # For Mojave or newer (>=10.14)
      cmake \
        -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
        -DOpenMP_C_LIB_NAMES="omp" \
@@ -449,7 +449,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
 
-     # For Mojave (10.14)
+     # For Mojave or newer (>=10.14)
      cmake \
        -DUSE_MPI=ON \
        -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
@@ -712,7 +712,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
 
-     # For Mojave (10.14)
+     # For Mojave or newer (>=10.14)
      cmake \
        -DUSE_SWIG=ON \
        -DAPPLE_OUTPUT_DYLIB=ON \
