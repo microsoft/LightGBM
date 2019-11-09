@@ -13,9 +13,6 @@ RUN apt-get update && \
         git \
         wget && \
 
-# update ca certificates
-    update-ca-certificates && \
-
 # python-package
     # miniconda
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
