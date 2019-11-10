@@ -7,7 +7,7 @@
 # offer a reasonable automatic best-guess
 
 # catch-all rule (this only gets matched if no rules below match)
-*    @guolinke @StrikeRUS @jameslamb @Laurae2
+*    @guolinke @StrikerRUS @jameslamb @Laurae2
 
 # main C++ code
 include/    @guolinke @chivee
