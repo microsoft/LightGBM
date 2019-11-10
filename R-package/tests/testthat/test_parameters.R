@@ -1,5 +1,8 @@
-data(agaricus.train, package='lightgbm')
-data(agaricus.test, package='lightgbm')
+
+context("feature penalties")
+
+data(agaricus.train, package = 'lightgbm')
+data(agaricus.test, package = 'lightgbm')
 train <- agaricus.train
 test <- agaricus.test
 
@@ -12,15 +15,15 @@ test_that("Feature penalties work properly", {
     feature_penalties <- rep(1, ncol(train$data))
     feature_penalties[var_index] <- x
     lightgbm(
-      data = train$data,
-      label = train$label,
-      num_leaves = 5,
-      learning_rate = 0.05,
-      nrounds = 20,
-      objective = "binary",
-      feature_penalty = paste0(feature_penalties, collapse = ","),
-      metric="binary_error",
-      verbose = -1
+      data = train$data
+      , label = train$label
+      , num_leaves = 5
+      , learning_rate = 0.05
+      , nrounds = 20
+      , objective = "binary"
+      , feature_penalty = paste0(feature_penalties, collapse = ",")
+      , metric = "binary_error"
+      , verbose = -1
     )
   })
 
@@ -39,4 +42,36 @@ test_that("Feature penalties work properly", {
 
   # Ensure that feature is not used when feature_penalty = 0
   expect_length(var_gain[[length(var_gain)]], 0)
+})
+
+expect_true(".PARAMETER_ALIASES() returns a named list", {
+  param_aliases <- .PARAMETER_ALIASES()
+  expect_true(is.list(param_aliases))
+  expect_true(is.character(names(param_aliases)))
+  expect_true(is.character(param_aliases[["boosting"]]))
+  expect_true(is.character(param_aliases[["early_stopping_round"]]))
+  expect_true(is.character(param_aliases[["metric"]]))
+  expect_true(is.character(param_aliases[["num_class"]]))
+  expect_true(is.character(param_aliases[["num_iterations"]]))
+})
+
+expect_true("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
+  for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]){
+    expect_warning({
+      result <- lightgbm(
+        data = train$data
+        , label = train$label
+        , num_leaves = 5
+        , learning_rate = 0.05
+        , nrounds = 5
+        , objective = "binary"
+        , metric = "binary_error"
+        , verbose = -1
+        , params = stats::setNames(
+          object = "dart"
+          , nm = boosting_param
+        )
+      )
+    }, regexp = "Early stopping is not available in 'dart' mode")
+  }
 })

@@ -281,7 +281,7 @@ References
 
 .. _LightGBM\: A Highly Efficient Gradient Boosting Decision Tree: https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree.pdf
 
-.. _On Grouping for Maximum Homogeneity: https://www.researchgate.net/publication/242580910_On_Grouping_for_Maximum_Homogeneity
+.. _On Grouping for Maximum Homogeneity: http://www.csiss.org/SPACE/workshops/2004/SAC/files/fisher.pdf
 
 .. _Optimization of collective communication operations in MPICH: https://www.mcs.anl.gov/~thakur/papers/ijhpca-coll.pdf
 

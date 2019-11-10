@@ -1,7 +1,7 @@
 context('Test models with custom objective')
 
-data(agaricus.train, package='lightgbm')
-data(agaricus.test, package='lightgbm')
+data(agaricus.train, package = 'lightgbm')
+data(agaricus.test, package = 'lightgbm')
 dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label)
 dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label)
 watchlist <- list(eval = dtest, train = dtrain)
@@ -17,11 +17,19 @@ logregobj <- function(preds, dtrain) {
 evalerror <- function(preds, dtrain) {
   labels <- getinfo(dtrain, "label")
   err <- as.numeric(sum(labels != (preds > 0))) / length(labels)
-  return(list(name = "error", value = err, higher_better=FALSE))
+  return(list(
+    name = "error"
+    , value = err
+    , higher_better = FALSE
+  ))
 }
 
-param <- list(num_leaves=8, learning_rate=1,
-              objective=logregobj, metric="auc")
+param <- list(
+  num_leaves = 8
+  , learning_rate = 1
+  , objective = logregobj
+  , metric = "auc"
+)
 num_round <- 10
 
 test_that("custom objective works", {

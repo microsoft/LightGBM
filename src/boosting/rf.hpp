@@ -81,7 +81,7 @@ class RF : public GBDT {
 
   void Boosting() override {
     if (objective_function_ == nullptr) {
-      Log::Fatal("No object function provided");
+      Log::Fatal("RF mode do not support custom objective function, please use built-in objectives.");
     }
     init_scores_.resize(num_tree_per_iteration_, 0.0);
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -91,9 +91,9 @@ class RF : public GBDT {
     std::vector<double> tmp_scores(total_size, 0.0f);
     #pragma omp parallel for schedule(static)
     for (int j = 0; j < num_tree_per_iteration_; ++j) {
-      size_t bias = static_cast<size_t>(j)* num_data_;
+      size_t offset = static_cast<size_t>(j)* num_data_;
       for (data_size_t i = 0; i < num_data_; ++i) {
-        tmp_scores[bias + i] = init_scores_[j];
+        tmp_scores[offset + i] = init_scores_[j];
       }
     }
     objective_function_->
@@ -110,10 +110,10 @@ class RF : public GBDT {
     hessians = hessians_.data();
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       std::unique_ptr<Tree> new_tree(new Tree(2));
-      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
+      size_t offset = static_cast<size_t>(cur_tree_id)* num_data_;
       if (class_need_train_[cur_tree_id]) {
-        auto grad = gradients + bias;
-        auto hess = hessians + bias;
+        auto grad = gradients + offset;
+        auto hess = hessians + offset;
 
         // need to copy gradients for bagging subset.
         if (is_use_subset_ && bag_data_cnt_ < num_data_) {

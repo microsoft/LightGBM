@@ -1,6 +1,6 @@
 # coding: utf-8
-# pylint: skip-file
 import itertools
+import joblib
 import math
 import os
 import unittest
@@ -12,11 +12,53 @@ from sklearn.base import clone
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.exceptions import SkipTestWarning
-from sklearn.externals import joblib
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
+
+
+decreasing_generator = itertools.count(0, -1)
+
+
+def custom_asymmetric_obj(y_true, y_pred):
+    residual = (y_true - y_pred).astype("float")
+    grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
+    hess = np.where(residual < 0, 2 * 10.0, 2.0)
+    return grad, hess
+
+
+def objective_ls(y_true, y_pred):
+    grad = (y_pred - y_true)
+    hess = np.ones(len(y_true))
+    return grad, hess
+
+
+def logregobj(y_true, y_pred):
+    y_pred = 1.0 / (1.0 + np.exp(-y_pred))
+    grad = y_pred - y_true
+    hess = y_pred * (1.0 - y_pred)
+    return grad, hess
+
+
+def custom_dummy_obj(y_true, y_pred):
+    return np.ones(y_true.shape), np.ones(y_true.shape)
+
+
+def constant_metric(y_true, y_pred):
+    return 'error', 0, False
+
+
+def decreasing_metric(y_true, y_pred):
+    return ('decreasing_metric', next(decreasing_generator), False)
+
+
+def mse(y_true, y_pred):
+    return 'custom MSE', mean_squared_error(y_true, y_pred), False
+
+
+def binary_error(y_true, y_pred):
+    return np.mean((y_pred > 0.5) != y_true)
 
 
 def multi_error(y_true, y_pred):
@@ -27,17 +69,6 @@ def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
 
-def custom_asymmetric_obj(y_true, y_pred):
-    residual = (y_true - y_pred).astype("float")
-    grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
-    hess = np.where(residual < 0, 2 * 10.0, 2.0)
-    return grad, hess
-
-
-def mse(y_true, y_pred):
-    return 'custom MSE', mean_squared_error(y_true, y_pred), False
-
-
 class TestSklearn(unittest.TestCase):
 
     def test_binary(self):
@@ -46,7 +77,7 @@ class TestSklearn(unittest.TestCase):
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = log_loss(y_test, gbm.predict_proba(X_test))
-        self.assertLess(ret, 0.15)
+        self.assertLess(ret, 0.11)
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_regression(self):
@@ -55,7 +86,7 @@ class TestSklearn(unittest.TestCase):
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 16)
+        self.assertLess(ret, 7)
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_multiclass(self):
@@ -64,8 +95,9 @@ class TestSklearn(unittest.TestCase):
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = multi_error(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.2)
+        self.assertLess(ret, 0.05)
         ret = multi_logloss(y_test, gbm.predict_proba(X_test))
+        self.assertLess(ret, 0.15)
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_lambdarank(self):
@@ -77,76 +109,64 @@ class TestSklearn(unittest.TestCase):
                                           '../../examples/lambdarank/rank.train.query'))
         q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '../../examples/lambdarank/rank.test.query'))
-        gbm = lgb.LGBMRanker()
+        gbm = lgb.LGBMRanker(n_estimators=50)
         gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
-                eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=5, verbose=False,
-                callbacks=[lgb.reset_parameter(learning_rate=lambda x: 0.95 ** x * 0.1)])
-        self.assertLessEqual(gbm.best_iteration_, 12)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.65)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.65)
+                eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
+                callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
+        self.assertLessEqual(gbm.best_iteration_, 24)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6333)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6048)
 
     def test_regression_with_custom_objective(self):
-        def objective_ls(y_true, y_pred):
-            grad = (y_pred - y_true)
-            hess = np.ones(len(y_true))
-            return grad, hess
-
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 100)
+        self.assertLess(ret, 7.0)
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_binary_classification_with_custom_objective(self):
-        def logregobj(y_true, y_pred):
-            y_pred = 1.0 / (1.0 + np.exp(-y_pred))
-            grad = y_pred - y_true
-            hess = y_pred * (1.0 - y_pred)
-            return grad, hess
-
-        def binary_error(y_test, y_pred):
-            return np.mean([int(p > 0.5) != y for y, p in zip(y_test, y_pred)])
-
         X, y = load_digits(2, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = binary_error(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.1)
+        self.assertLess(ret, 0.05)
 
     def test_dart(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm = lgb.LGBMRegressor(boosting_type='dart')
+        gbm = lgb.LGBMRegressor(boosting_type='dart', n_estimators=50)
         gbm.fit(X_train, y_train)
-        self.assertLessEqual(gbm.score(X_train, y_train), 1.)
+        score = gbm.score(X_test, y_test)
+        self.assertGreaterEqual(score, 0.8)
+        self.assertLessEqual(score, 1.)
 
     def test_grid_search(self):
         X, y = load_boston(True)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {'boosting_type': ['dart', 'gbdt'],
                   'n_estimators': [5, 8],
                   'drop_rate': [0.05, 0.1]}
-        gbm = GridSearchCV(lgb.LGBMRegressor(), params, cv=3)
-        gbm.fit(X_train, y_train)
-        self.assertIn(gbm.best_params_['n_estimators'], [5, 8])
+        grid = GridSearchCV(lgb.LGBMRegressor(n_estimators=10), params, cv=3)
+        grid.fit(X, y)
+        self.assertIn(grid.best_params_['boosting_type'], ['dart', 'gbdt'])
+        self.assertIn(grid.best_params_['n_estimators'], [5, 8])
+        self.assertIn(grid.best_params_['drop_rate'], [0.05, 0.1])
+        self.assertLess(grid.best_score_, 0.3)
 
     def test_clone_and_property(self):
         X, y = load_boston(True)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        gbm = lgb.LGBMRegressor(n_estimators=100, silent=True)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+        gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
+        gbm.fit(X, y, verbose=False)
 
         gbm_clone = clone(gbm)
         self.assertIsInstance(gbm.booster_, lgb.Booster)
         self.assertIsInstance(gbm.feature_importances_, np.ndarray)
 
         X, y = load_digits(2, True)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        clf = lgb.LGBMClassifier()
-        clf.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+        clf = lgb.LGBMClassifier(n_estimators=10, silent=True)
+        clf.fit(X, y, verbose=False)
         self.assertListEqual(sorted(clf.classes_), [0, 1])
         self.assertEqual(clf.n_classes_, 2)
         self.assertIsInstance(clf.booster_, lgb.Booster)
@@ -178,15 +198,15 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_allclose(pred_origin, pred_pickle)
 
     def test_feature_importances_single_leaf(self):
-        clf = lgb.LGBMClassifier(n_estimators=100)
         data = load_iris()
+        clf = lgb.LGBMClassifier(n_estimators=10)
         clf.fit(data.data, data.target)
         importances = clf.feature_importances_
         self.assertEqual(len(importances), 4)
 
     def test_feature_importances_type(self):
-        clf = lgb.LGBMClassifier(n_estimators=100)
         data = load_iris()
+        clf = lgb.LGBMClassifier(n_estimators=10)
         clf.fit(data.data, data.target)
         clf.set_params(importance_type='split')
         importances_split = clf.feature_importances_
@@ -238,21 +258,21 @@ class TestSklearn(unittest.TestCase):
         X[cat_cols_actual] = X[cat_cols_actual].astype('category')
         X_test[cat_cols_actual] = X_test[cat_cols_actual].astype('category')
         cat_values = [X[col].cat.categories.tolist() for col in cat_cols_to_store]
-        gbm0 = lgb.sklearn.LGBMClassifier().fit(X, y)
+        gbm0 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y)
         pred0 = gbm0.predict(X_test, raw_score=True)
         pred_prob = gbm0.predict_proba(X_test)[:, 1]
-        gbm1 = lgb.sklearn.LGBMClassifier().fit(X, pd.Series(y), categorical_feature=[0])
+        gbm1 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, pd.Series(y), categorical_feature=[0])
         pred1 = gbm1.predict(X_test, raw_score=True)
-        gbm2 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A'])
+        gbm2 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=['A'])
         pred2 = gbm2.predict(X_test, raw_score=True)
-        gbm3 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A', 'B', 'C', 'D'])
+        gbm3 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = gbm3.predict(X_test, raw_score=True)
         gbm3.booster_.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = gbm4.predict(X_test)
-        gbm5 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['E'])
+        gbm5 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=['A', 'B', 'C', 'D', 'E'])
         pred5 = gbm5.predict(X_test, raw_score=True)
-        gbm6 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=[])
+        gbm6 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=[])
         pred6 = gbm6.predict(X_test, raw_score=True)
         self.assertRaises(AssertionError,
                           np.testing.assert_allclose,
@@ -277,7 +297,29 @@ class TestSklearn(unittest.TestCase):
         self.assertListEqual(gbm5.booster_.pandas_categorical, cat_values)
         self.assertListEqual(gbm6.booster_.pandas_categorical, cat_values)
 
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_pandas_sparse(self):
+        import pandas as pd
+        X = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                          "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                          "C": pd.SparseArray(np.random.permutation([True, False] * 150))})
+        y = pd.Series(pd.SparseArray(np.random.permutation([0, 1] * 150)))
+        X_test = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 2] * 30)),
+                               "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                               "C": pd.SparseArray(np.random.permutation([True, False] * 30))})
+        if pd.__version__ >= '0.24.0':
+            for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
+                self.assertTrue(pd.api.types.is_sparse(dtype))
+        gbm = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y)
+        pred_sparse = gbm.predict(X_test, raw_score=True)
+        if hasattr(X_test, 'sparse'):
+            pred_dense = gbm.predict(X_test.sparse.to_dense(), raw_score=True)
+        else:
+            pred_dense = gbm.predict(X_test.to_dense(), raw_score=True)
+        np.testing.assert_allclose(pred_sparse, pred_dense)
+
     def test_predict(self):
+        # With default params
         iris = load_iris()
         X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target,
                                                             test_size=0.2, random_state=42)
@@ -336,14 +378,8 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('l2', gbm.evals_result_['valid_1'])
 
     def test_metrics(self):
-        def custom_obj(y_true, y_pred):
-            return np.zeros(y_true.shape), np.zeros(y_true.shape)
-
-        def custom_metric(y_true, y_pred):
-            return 'error', 0, False
-
         X, y = load_boston(True)
-        params = {'n_estimators': 5, 'verbose': -1}
+        params = {'n_estimators': 2, 'verbose': -1}
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # no custom objective, no custom metric
@@ -421,43 +457,43 @@ class TestSklearn(unittest.TestCase):
 
         # custom objective, no custom metric
         # default regression metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj, **params).fit(**params_fit)
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, **params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('l2', gbm.evals_result_['training'])
 
         # non-default regression metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='mape', **params).fit(**params_fit)
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric='mape', **params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('mape', gbm.evals_result_['training'])
 
         # multiple regression metrics for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric=['l1', 'gamma'],
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric=['l1', 'gamma'],
                                 **params).fit(**params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('l1', gbm.evals_result_['training'])
         self.assertIn('gamma', gbm.evals_result_['training'])
 
         # no metric
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='None',
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric='None',
                                 **params).fit(**params_fit)
         self.assertIs(gbm.evals_result_, None)
 
         # default regression metric with non-default metric in eval_metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj,
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj,
                                 **params).fit(eval_metric='mape', **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('l2', gbm.evals_result_['training'])
         self.assertIn('mape', gbm.evals_result_['training'])
 
         # non-default regression metric with metric in eval_metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='mape',
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric='mape',
                                 **params).fit(eval_metric='gamma', **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('mape', gbm.evals_result_['training'])
         self.assertIn('gamma', gbm.evals_result_['training'])
 
         # multiple regression metrics with metric in eval_metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric=['l1', 'gamma'],
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric=['l1', 'gamma'],
                                 **params).fit(eval_metric='l2', **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 3)
         self.assertIn('l1', gbm.evals_result_['training'])
@@ -465,7 +501,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('l2', gbm.evals_result_['training'])
 
         # multiple regression metrics with multiple metrics in eval_metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric=['l1', 'gamma'],
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric=['l1', 'gamma'],
                                 **params).fit(eval_metric=['l2', 'mape'], **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 4)
         self.assertIn('l1', gbm.evals_result_['training'])
@@ -475,21 +511,21 @@ class TestSklearn(unittest.TestCase):
 
         # no custom objective, custom metric
         # default metric with custom metric
-        gbm = lgb.LGBMRegressor(**params).fit(eval_metric=custom_metric, **params_fit)
+        gbm = lgb.LGBMRegressor(**params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('l2', gbm.evals_result_['training'])
         self.assertIn('error', gbm.evals_result_['training'])
 
         # non-default metric with custom metric
         gbm = lgb.LGBMRegressor(metric='mape',
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('mape', gbm.evals_result_['training'])
         self.assertIn('error', gbm.evals_result_['training'])
 
         # multiple metrics with custom metric
         gbm = lgb.LGBMRegressor(metric=['l1', 'gamma'],
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 3)
         self.assertIn('l1', gbm.evals_result_['training'])
         self.assertIn('gamma', gbm.evals_result_['training'])
@@ -497,27 +533,27 @@ class TestSklearn(unittest.TestCase):
 
         # custom metric (disable default metric)
         gbm = lgb.LGBMRegressor(metric='None',
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('error', gbm.evals_result_['training'])
 
         # default metric for non-default objective with custom metric
         gbm = lgb.LGBMRegressor(objective='regression_l1',
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('l1', gbm.evals_result_['training'])
         self.assertIn('error', gbm.evals_result_['training'])
 
         # non-default metric for non-default objective with custom metric
         gbm = lgb.LGBMRegressor(objective='regression_l1', metric='mape',
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('mape', gbm.evals_result_['training'])
         self.assertIn('error', gbm.evals_result_['training'])
 
         # multiple metrics for non-default objective with custom metric
         gbm = lgb.LGBMRegressor(objective='regression_l1', metric=['l1', 'gamma'],
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 3)
         self.assertIn('l1', gbm.evals_result_['training'])
         self.assertIn('gamma', gbm.evals_result_['training'])
@@ -525,27 +561,27 @@ class TestSklearn(unittest.TestCase):
 
         # custom metric (disable default metric for non-default objective)
         gbm = lgb.LGBMRegressor(objective='regression_l1', metric='None',
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('error', gbm.evals_result_['training'])
 
         # custom objective, custom metric
         # custom metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj,
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj,
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('error', gbm.evals_result_['training'])
 
         # non-default regression metric with custom metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='mape',
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric='mape',
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('mape', gbm.evals_result_['training'])
         self.assertIn('error', gbm.evals_result_['training'])
 
         # multiple regression metrics with custom metric for custom objective
-        gbm = lgb.LGBMRegressor(objective=custom_obj, metric=['l2', 'mape'],
-                                **params).fit(eval_metric=custom_metric, **params_fit)
+        gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric=['l2', 'mape'],
+                                **params).fit(eval_metric=constant_metric, **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 3)
         self.assertIn('l2', gbm.evals_result_['training'])
         self.assertIn('mape', gbm.evals_result_['training'])
@@ -588,13 +624,13 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('binary_error', gbm.evals_result_['training'])
 
         # invalid multiclass metric is replaced with binary alternative for custom objective
-        gbm = lgb.LGBMClassifier(objective=custom_obj,
+        gbm = lgb.LGBMClassifier(objective=custom_dummy_obj,
                                  **params).fit(eval_metric='multi_logloss', **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('binary_logloss', gbm.evals_result_['training'])
 
     def test_inf_handle(self):
-        nrows = 1000
+        nrows = 100
         ncols = 10
         X = np.random.randn(nrows, ncols)
         y = np.random.randn(nrows) + np.full(nrows, 1e30)
@@ -606,7 +642,7 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.inf)
 
     def test_nan_handle(self):
-        nrows = 1000
+        nrows = 100
         ncols = 10
         X = np.random.randn(nrows, ncols)
         y = np.random.randn(nrows) + np.full(nrows, 1e30)
@@ -616,6 +652,106 @@ class TestSklearn(unittest.TestCase):
                       'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
         np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
+
+    def test_first_metric_only(self):
+
+        def fit_and_check(eval_set_names, metric_names, assumed_iteration, first_metric_only):
+            params['first_metric_only'] = first_metric_only
+            gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
+            self.assertEqual(len(gbm.evals_result_), len(eval_set_names))
+            for eval_set_name in eval_set_names:
+                self.assertIn(eval_set_name, gbm.evals_result_)
+                self.assertEqual(len(gbm.evals_result_[eval_set_name]), len(metric_names))
+                for metric_name in metric_names:
+                    self.assertIn(metric_name, gbm.evals_result_[eval_set_name])
+
+                    actual = len(gbm.evals_result_[eval_set_name][metric_name])
+                    expected = assumed_iteration + (params_fit['early_stopping_rounds']
+                                                    if eval_set_name != 'training'
+                                                    and assumed_iteration != gbm.n_estimators else 0)
+                    self.assertEqual(expected, actual)
+                    self.assertEqual(assumed_iteration if eval_set_name != 'training' else gbm.n_estimators,
+                                     gbm.best_iteration_)
+
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=72)
+        params = {'n_estimators': 30,
+                  'learning_rate': 0.8,
+                  'num_leaves': 15,
+                  'verbose': -1,
+                  'seed': 123}
+        params_fit = {'X': X_train,
+                      'y': y_train,
+                      'early_stopping_rounds': 5,
+                      'verbose': False}
+
+        iter_valid1_l1 = 3
+        iter_valid1_l2 = 18
+        iter_valid2_l1 = 11
+        iter_valid2_l2 = 7
+        self.assertEqual(len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])), 4)
+        iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
+        iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
+        iter_min = min([iter_min_l1, iter_min_l2])
+        iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
+
+        # training data as eval_set
+        params_fit['eval_set'] = (X_train, y_train)
+        fit_and_check(['training'], ['l2'], 30, False)
+        fit_and_check(['training'], ['l2'], 30, True)
+
+        # feval
+        params['metric'] = 'None'
+        params_fit['eval_metric'] = lambda preds, train_data: [decreasing_metric(preds, train_data),
+                                                               constant_metric(preds, train_data)]
+        params_fit['eval_set'] = (X_test1, y_test1)
+        fit_and_check(['valid_0'], ['decreasing_metric', 'error'], 1, False)
+        fit_and_check(['valid_0'], ['decreasing_metric', 'error'], 30, True)
+        params_fit['eval_metric'] = lambda preds, train_data: [constant_metric(preds, train_data),
+                                                               decreasing_metric(preds, train_data)]
+        fit_and_check(['valid_0'], ['decreasing_metric', 'error'], 1, True)
+
+        # single eval_set
+        params.pop('metric')
+        params_fit.pop('eval_metric')
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, False)
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, True)
+
+        params_fit['eval_metric'] = "l2"
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, False)
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, True)
+
+        params_fit['eval_metric'] = "l1"
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_min_valid1, False)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid1_l1, True)
+
+        params_fit['eval_metric'] = ["l1", "l2"]
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_min_valid1, False)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid1_l1, True)
+
+        params_fit['eval_metric'] = ["l2", "l1"]
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_min_valid1, False)
+        fit_and_check(['valid_0'], ['l1', 'l2'], iter_valid1_l2, True)
+
+        params_fit['eval_metric'] = ["l2", "regression", "mse"]  # test aliases
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, False)
+        fit_and_check(['valid_0'], ['l2'], iter_valid1_l2, True)
+
+        # two eval_set
+        params_fit['eval_set'] = [(X_test1, y_test1), (X_test2, y_test2)]
+        params_fit['eval_metric'] = ["l1", "l2"]
+        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, True)
+        params_fit['eval_metric'] = ["l2", "l1"]
+        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l2, True)
+
+        params_fit['eval_set'] = [(X_test2, y_test2), (X_test1, y_test1)]
+        params_fit['eval_metric'] = ["l1", "l2"]
+        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min, False)
+        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l1, True)
+        params_fit['eval_metric'] = ["l2", "l1"]
+        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min, False)
+        fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l2, True)
 
     def test_class_weight(self):
         X, y = load_digits(10, True)

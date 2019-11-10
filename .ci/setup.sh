@@ -7,14 +7,6 @@ if [[ $OS_NAME == "macos" ]]; then
             sudo xcode-select -s /Applications/Xcode_8.3.3.app/Contents/Developer
         fi
     else  # gcc
-        if [[ $TRAVIS == "true" ]]; then
-#            rm '/usr/local/include/c++'  # previous variant to deal with conflict link
-#            brew cask uninstall oclint  #  reserve variant to deal with conflict link
-            brew link --overwrite gcc
-            brew upgrade gcc
-        else
-            brew update
-        fi
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
@@ -27,10 +19,6 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else  # Linux
-    if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
-        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-7 100
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-7 100
-    fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin

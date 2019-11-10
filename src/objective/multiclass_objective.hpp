@@ -5,6 +5,7 @@
 #ifndef LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 
+#include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
 #include <string>
@@ -65,6 +66,12 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
     if (weights_ == nullptr) {
       sum_weight = num_data_;
+    }
+    if (Network::num_machines() > 1) {
+      sum_weight = Network::GlobalSyncUpBySum(sum_weight);
+      for (int i = 0; i < num_class_; ++i) {
+        class_init_probs_[i] = Network::GlobalSyncUpBySum(class_init_probs_[i]);
+      }
     }
     for (int i = 0; i < num_class_; ++i) {
       class_init_probs_[i] /= sum_weight;
@@ -214,8 +221,8 @@ class MulticlassOVA: public ObjectiveFunction {
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     for (int i = 0; i < num_class_; ++i) {
-      int64_t bias = static_cast<int64_t>(num_data_) * i;
-      binary_loss_[i]->GetGradients(score + bias, gradients + bias, hessians + bias);
+      int64_t offset = static_cast<int64_t>(num_data_) * i;
+      binary_loss_[i]->GetGradients(score + offset, gradients + offset, hessians + offset);
     }
   }
 

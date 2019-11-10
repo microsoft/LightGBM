@@ -24,9 +24,9 @@ class DenseBinIterator: public BinIterator {
     max_bin_(static_cast<VAL_T>(max_bin)),
     default_bin_(static_cast<VAL_T>(default_bin)) {
     if (default_bin_ == 0) {
-      bias_ = 1;
+      offset_ = 1;
     } else {
-      bias_ = 0;
+      offset_ = 0;
     }
   }
   inline uint32_t RawGet(data_size_t idx) override;
@@ -38,7 +38,7 @@ class DenseBinIterator: public BinIterator {
   VAL_T min_bin_;
   VAL_T max_bin_;
   VAL_T default_bin_;
-  uint8_t bias_;
+  uint8_t offset_;
 };
 /*!
 * \brief Used to store bins for dense feature
@@ -48,7 +48,7 @@ template <typename VAL_T>
 class DenseBin: public Bin {
  public:
   friend DenseBinIterator<VAL_T>;
-  DenseBin(data_size_t num_data)
+  explicit DenseBin(data_size_t num_data)
     : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {
   }
 
@@ -192,7 +192,7 @@ class DenseBin: public Bin {
     }
   }
 
-  virtual data_size_t Split(
+  data_size_t Split(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, MissingType missing_type, bool default_left,
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
@@ -253,7 +253,7 @@ class DenseBin: public Bin {
     return lte_count;
   }
 
-  virtual data_size_t SplitCategorical(
+  data_size_t SplitCategorical(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
     const uint32_t* threshold, int num_threahold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
@@ -334,7 +334,7 @@ template <typename VAL_T>
 uint32_t DenseBinIterator<VAL_T>::Get(data_size_t idx) {
   auto ret = bin_data_->data_[idx];
   if (ret >= min_bin_ && ret <= max_bin_) {
-    return ret - min_bin_ + bias_;
+    return ret - min_bin_ + offset_;
   } else {
     return default_bin_;
   }

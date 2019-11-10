@@ -11,7 +11,7 @@ lgb.interprete(model, data, idxset, num_iteration = NULL)
 
 \item{data}{a matrix object or a dgCMatrix object.}
 
-\item{idxset}{a integer vector of indices of rows needed.}
+\item{idxset}{an integer vector of indices of rows needed.}
 
 \item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration.}
 }
@@ -44,7 +44,7 @@ params <- list(
     , min_data_in_leaf = 1
     , min_sum_hessian_in_leaf = 1
 )
-model <- lgb.train(params, dtrain, 20)
+model <- lgb.train(params, dtrain, 10)
 
 tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 

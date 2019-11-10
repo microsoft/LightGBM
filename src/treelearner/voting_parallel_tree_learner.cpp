@@ -75,9 +75,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
     feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
     feature_metas_[i].penalty = train_data->FeaturePenalte(i);
     if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
-      feature_metas_[i].bias = 1;
+      feature_metas_[i].offset = 1;
     } else {
-      feature_metas_[i].bias = 0;
+      feature_metas_[i].offset = 0;
     }
     feature_metas_[i].config = this->config_;
     feature_metas_[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();
@@ -135,7 +135,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     }
   });
 
-  std::memcpy((void*)&data, output_buffer_.data(), size);
+  std::memcpy(reinterpret_cast<void*>(&data), output_buffer_.data(), size);
 
   // set global sumup info
   smaller_leaf_splits_global_->Init(std::get<1>(data), std::get<2>(data));
@@ -377,6 +377,12 @@ template <typename TREELEARNER_T>
 void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->num_threads_);
   std::vector<SplitInfo> larger_best_per_thread(this->num_threads_);
+  std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
+  std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
+  if (this->config_->feature_fraction_bynode < 1.0f) {
+    smaller_node_used_features = this->GetUsedFeatures(false);
+    larger_node_used_features = this->GetUsedFeatures(false);
+  }
   // find best split from local aggregated histograms
 
   OMP_INIT_EX();
@@ -405,7 +411,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
         smaller_leaf_splits_global_->max_constraint(),
         &smaller_split);
       smaller_split.feature = real_feature_index;
-      if (smaller_split > smaller_bests_per_thread[tid]) {
+      if (smaller_split > smaller_bests_per_thread[tid] && smaller_node_used_features[feature_index]) {
         smaller_bests_per_thread[tid] = smaller_split;
       }
     }
@@ -429,7 +435,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
         larger_leaf_splits_global_->max_constraint(),
         &larger_split);
       larger_split.feature = real_feature_index;
-      if (larger_split > larger_best_per_thread[tid]) {
+      if (larger_split > larger_best_per_thread[tid] && larger_node_used_features[feature_index]) {
         larger_best_per_thread[tid] = larger_split;
       }
     }

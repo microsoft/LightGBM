@@ -11,7 +11,7 @@ lgb.Dataset.create.valid(dataset, data, info = list(), ...)
 
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
 
-\item{info}{a list of information of the lgb.Dataset object}
+\item{info}{a list of information of the \code{lgb.Dataset} object}
 
 \item{...}{other information to pass to \code{info}.}
 }

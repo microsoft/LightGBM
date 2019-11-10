@@ -18,7 +18,6 @@ passed dataset
 Save \code{lgb.Dataset} to a binary file
 }
 \examples{
-
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train

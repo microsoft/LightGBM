@@ -8,7 +8,7 @@ if (.Machine$sizeof.pointer != 8){
 }
 
 R_int_UUID <- .Internal(internalsID())
-R_ver <- as.double(R.Version()$major) + as.double(R.Version()$minor)/10
+R_ver <- as.double(R.Version()$major) + as.double(R.Version()$minor) / 10
 
 if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     || R_int_UUID == "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327")){
@@ -45,7 +45,18 @@ if (!use_precompile) {
   }
 
   # Could NOT find OpenMP_C on Mojave workaround
-  if (Sys.info()['sysname'] == 'Darwin' && !(grepl('^gcc', Sys.getenv('CC', '')) & grepl('^g\\+\\+', Sys.getenv('CXX', '')))) {
+  # Using this kind-of complicated pattern to avoid matching to
+  # things like "pgcc"
+  using_gcc <- grepl(
+    pattern = '^gcc$|[/\\]+gcc$|^gcc\\-[0-9]+$|[/\\]+gcc\\-[0-9]+$'
+    , x = Sys.getenv('CC', '')
+  )
+  using_gpp <- grepl(
+    pattern = '^g\\+\\+$|[/\\]+g\\+\\+$|^g\\+\\+\\-[0-9]+$|[/\\]+g\\+\\+\\-[0-9]+$'
+    , x = Sys.getenv('CXX', '')
+  )
+  on_mac <- Sys.info()['sysname'] == 'Darwin'
+  if (on_mac && !(using_gcc & using_gpp)) {
     cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" ')
     cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_C_LIB_NAMES="omp" ')
     cmake_cmd <- paste(cmake_cmd, ' -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" ')
@@ -63,7 +74,7 @@ if (!use_precompile) {
       try_vs <- 0
       local_vs_def <- ""
       vs_versions <- c("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
-      for(vs in vs_versions){
+      for (vs in vs_versions){
         vs_def <- paste0(" -G \"", vs, "\" -A x64")
         tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)
         try_vs <- system(paste0(tmp_cmake_cmd, " .."))
@@ -95,14 +106,29 @@ if (!use_precompile) {
 
   # Has precompiled package
   lib_folder <- file.path(R_PACKAGE_SOURCE, "../", fsep = "/")
-  if (file.exists(file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/"))) {
-    src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
-  } else if (file.exists(file.path(lib_folder, paste0("Release/lib_lightgbm", SHLIB_EXT), fsep = "/"))) {
-    src <- file.path(lib_folder, paste0("Release/lib_lightgbm", SHLIB_EXT), fsep = "/")
+  shared_object_file <- file.path(
+    lib_folder
+    , paste0("lib_lightgbm", SHLIB_EXT)
+    , fsep = "/"
+  )
+  release_file <- file.path(
+    lib_folder
+    , paste0("Release/lib_lightgbm", SHLIB_EXT)
+    , fsep = "/"
+  )
+  windows_shared_object_file <- file.path(
+    lib_folder
+    , paste0("/windows/x64/DLL/lib_lightgbm", SHLIB_EXT)
+    , fsep = "/"
+  )
+  if (file.exists(shared_object_file)) {
+    src <- shared_object_file
+  } else if (file.exists(release_file)) {
+    src <- release_file
   } else {
-    src <- file.path(lib_folder, paste0("/windows/x64/DLL/lib_lightgbm", SHLIB_EXT), fsep = "/") # Expected result: installation will fail if it is not here or any other
+    # Expected result: installation will fail if it is not here or any other
+    src <- windows_shared_object_file
   }
-
 }
 
 # Check installation correctness

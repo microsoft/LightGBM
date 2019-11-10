@@ -19,7 +19,9 @@
 
 namespace LightGBM {
 
-  BinMapper::BinMapper() {
+  BinMapper::BinMapper(): num_bin_(1), is_trivial_(true), bin_type_(BinType::NumericalBin) {
+    bin_upper_bound_.clear();
+    bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
   }
 
   // deep copy function for BinMapper
@@ -72,7 +74,8 @@ namespace LightGBM {
   }
 
   std::vector<double> GreedyFindBin(const double* distinct_values, const int* counts,
-    int num_distinct_values, int max_bin, size_t total_cnt, int min_data_in_bin) {
+                                    int num_distinct_values, int max_bin,
+                                    size_t total_cnt, int min_data_in_bin) {
     std::vector<double> bin_upper_bound;
     CHECK(max_bin > 0);
     if (num_distinct_values <= max_bin) {
@@ -149,8 +152,107 @@ namespace LightGBM {
     return bin_upper_bound;
   }
 
-  std::vector<double> FindBinWithZeroAsOneBin(const double* distinct_values, const int* counts,
-    int num_distinct_values, int max_bin, size_t total_sample_cnt, int min_data_in_bin) {
+  std::vector<double> FindBinWithPredefinedBin(const double* distinct_values, const int* counts,
+                                               int num_distinct_values, int max_bin,
+                                               size_t total_sample_cnt, int min_data_in_bin,
+                                               const std::vector<double>& forced_upper_bounds) {
+    std::vector<double> bin_upper_bound;
+
+    // get list of distinct values
+    int left_cnt_data = 0;
+    int cnt_zero = 0;
+    int right_cnt_data = 0;
+    for (int i = 0; i < num_distinct_values; ++i) {
+      if (distinct_values[i] <= -kZeroThreshold) {
+        left_cnt_data += counts[i];
+      } else if (distinct_values[i] > kZeroThreshold) {
+        right_cnt_data += counts[i];
+      } else {
+        cnt_zero += counts[i];
+      }
+    }
+
+    // get number of positive and negative distinct values
+    int left_cnt = -1;
+    for (int i = 0; i < num_distinct_values; ++i) {
+      if (distinct_values[i] > -kZeroThreshold) {
+        left_cnt = i;
+        break;
+      }
+    }
+    if (left_cnt < 0) {
+      left_cnt = num_distinct_values;
+    }
+    int right_start = -1;
+    for (int i = left_cnt; i < num_distinct_values; ++i) {
+      if (distinct_values[i] > kZeroThreshold) {
+        right_start = i;
+        break;
+      }
+    }
+
+    // include zero bounds and infinity bound
+    if (max_bin == 2) {
+      if (left_cnt == 0) {
+        bin_upper_bound.push_back(kZeroThreshold);
+      } else {
+        bin_upper_bound.push_back(-kZeroThreshold);
+      }
+    } else if (max_bin >= 3) {
+      if (left_cnt > 0) {
+        bin_upper_bound.push_back(-kZeroThreshold);
+      }
+      if (right_start >= 0) {
+        bin_upper_bound.push_back(kZeroThreshold);
+      }
+    }
+    bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
+
+    // add forced bounds, excluding zeros since we have already added zero bounds
+    int max_to_insert = max_bin - static_cast<int>(bin_upper_bound.size());
+    int num_inserted = 0;
+    for (size_t i = 0; i < forced_upper_bounds.size(); ++i) {
+      if (num_inserted >= max_to_insert) {
+        break;
+      }
+      if (std::fabs(forced_upper_bounds[i]) > kZeroThreshold) {
+        bin_upper_bound.push_back(forced_upper_bounds[i]);
+        ++num_inserted;
+      }
+    }
+    std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
+
+    // find remaining bounds
+    int free_bins = max_bin - static_cast<int>(bin_upper_bound.size());
+    std::vector<double> bounds_to_add;
+    int value_ind = 0;
+    for (size_t i = 0; i < bin_upper_bound.size(); ++i) {
+      int cnt_in_bin = 0;
+      int distinct_cnt_in_bin = 0;
+      int bin_start = value_ind;
+      while ((value_ind < num_distinct_values) && (distinct_values[value_ind] < bin_upper_bound[i])) {
+        cnt_in_bin += counts[value_ind];
+        ++distinct_cnt_in_bin;
+        ++value_ind;
+      }
+      int bins_remaining = max_bin - static_cast<int>(bin_upper_bound.size()) - static_cast<int>(bounds_to_add.size());
+      int num_sub_bins = static_cast<int>(std::lround((static_cast<double>(cnt_in_bin) * free_bins / total_sample_cnt)));
+      num_sub_bins = std::min(num_sub_bins, bins_remaining) + 1;
+      if (i == bin_upper_bound.size() - 1) {
+        num_sub_bins = bins_remaining + 1;
+      }
+      std::vector<double> new_upper_bounds = GreedyFindBin(distinct_values + bin_start, counts + bin_start, distinct_cnt_in_bin,
+        num_sub_bins, cnt_in_bin, min_data_in_bin);
+      bounds_to_add.insert(bounds_to_add.end(), new_upper_bounds.begin(), new_upper_bounds.end() - 1);  // last bound is infinity
+    }
+    bin_upper_bound.insert(bin_upper_bound.end(), bounds_to_add.begin(), bounds_to_add.end());
+    std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
+    CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
+    return bin_upper_bound;
+  }
+
+  std::vector<double> FindBinWithZeroAsOneBin(const double* distinct_values, const int* counts, int num_distinct_values,
+                                              int max_bin, size_t total_sample_cnt, int min_data_in_bin) {
     std::vector<double> bin_upper_bound;
     int left_cnt_data = 0;
     int cnt_zero = 0;
@@ -177,11 +279,13 @@ namespace LightGBM {
       left_cnt = num_distinct_values;
     }
 
-    if (left_cnt > 0) {
+    if ((left_cnt > 0) && (max_bin > 1)) {
       int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - cnt_zero) * (max_bin - 1));
       left_max_bin = std::max(1, left_max_bin);
       bin_upper_bound = GreedyFindBin(distinct_values, counts, left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
-      bin_upper_bound.back() = -kZeroThreshold;
+      if (bin_upper_bound.size() > 0) {
+        bin_upper_bound.back() = -kZeroThreshold;
+      }
     }
 
     int right_start = -1;
@@ -192,9 +296,8 @@ namespace LightGBM {
       }
     }
 
-    if (right_start >= 0) {
-      int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound.size());
-      CHECK(right_max_bin > 0);
+    int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound.size());
+    if (right_start >= 0 && right_max_bin > 0) {
       auto right_bounds = GreedyFindBin(distinct_values + right_start, counts + right_start,
         num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
       bin_upper_bound.push_back(kZeroThreshold);
@@ -202,11 +305,25 @@ namespace LightGBM {
     } else {
       bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
     }
+    CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
     return bin_upper_bound;
   }
 
+  std::vector<double> FindBinWithZeroAsOneBin(const double* distinct_values, const int* counts, int num_distinct_values,
+                                              int max_bin, size_t total_sample_cnt, int min_data_in_bin,
+                                              const std::vector<double>& forced_upper_bounds) {
+    if (forced_upper_bounds.empty()) {
+      return FindBinWithZeroAsOneBin(distinct_values, counts, num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
+    } else {
+      return FindBinWithPredefinedBin(distinct_values, counts, num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin,
+                                      forced_upper_bounds);
+    }
+  }
+
   void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
-    int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type, bool use_missing, bool zero_as_missing) {
+                          int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type,
+                          bool use_missing, bool zero_as_missing,
+                          const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
     int tmp_num_sample_values = 0;
     for (int i = 0; i < num_sample_values; ++i) {
@@ -274,14 +391,17 @@ namespace LightGBM {
     int num_distinct_values = static_cast<int>(distinct_values.size());
     if (bin_type_ == BinType::NumericalBin) {
       if (missing_type_ == MissingType::Zero) {
-        bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
+        bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt,
+                                                   min_data_in_bin, forced_upper_bounds);
         if (bin_upper_bound_.size() == 2) {
           missing_type_ = MissingType::None;
         }
       } else if (missing_type_ == MissingType::None) {
-        bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
+        bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt,
+                                                   min_data_in_bin, forced_upper_bounds);
       } else {
-        bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin - 1, total_sample_cnt - na_cnt, min_data_in_bin);
+        bin_upper_bound_ = FindBinWithZeroAsOneBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin - 1, total_sample_cnt - na_cnt,
+                                                   min_data_in_bin, forced_upper_bounds);
         bin_upper_bound_.push_back(NaN);
       }
       num_bin_ = static_cast<int>(bin_upper_bound_.size());
@@ -326,7 +446,7 @@ namespace LightGBM {
                        "Consider renumbering to consecutive integers started from zero");
         }
         // sort by counts
-        Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
+        Common::SortForPair<int, int>(&counts_int, &distinct_values_int, 0, true);
         // avoid first bin is zero
         if (distinct_values_int[0] == 0) {
           if (counts_int.size() == 1) {

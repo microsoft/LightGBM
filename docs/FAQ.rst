@@ -11,13 +11,11 @@ LightGBM FAQ
 Critical Issues
 ===============
 
-A **critical issue** could be a *crash*, *prediction error*, *nonsense output*, or something else requiring
-immediate attention.
+A **critical issue** could be a *crash*, *prediction error*, *nonsense output*, or something else requiring immediate attention.
 
 Please post such an issue in the `Microsoft/LightGBM repository <https://github.com/microsoft/LightGBM/issues>`__.
 
-You may also ping a member of the core team according to the relevant area of expertise by mentioning them with the
-arabase (@) symbol:
+You may also ping a member of the core team according to the relevant area of expertise by mentioning them with the arabase (@) symbol:
 
 -  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke** (C++ code / R-package / Python-package)
 -  `@chivee <https://github.com/chivee>`__ **Qiwei Ye** (C++ code / Python-package)
@@ -58,14 +56,10 @@ General LightGBM Questions
 
 Take a look at `Parameters <./Parameters.rst>`__ and the `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
 
----
-
 2. On datasets with millions of features, training does not start (or starts after a very long time).
 -----------------------------------------------------------------------------------------------------
 
 Use a smaller value for ``bin_construct_sample_cnt`` and a larger value for ``min_data``.
-
----
 
 3. When running LightGBM on a large dataset, my computer runs out of RAM.
 -------------------------------------------------------------------------
@@ -73,14 +67,10 @@ Use a smaller value for ``bin_construct_sample_cnt`` and a larger value for ``mi
 **Multiple Solutions**: set the ``histogram_pool_size`` parameter to the MB you want to use for LightGBM (histogram\_pool\_size + dataset size = approximately RAM used),
 lower ``num_leaves`` or lower ``max_bin`` (see `Microsoft/LightGBM#562 <https://github.com/microsoft/LightGBM/issues/562>`__).
 
----
-
 4. I am using Windows. Should I use Visual Studio or MinGW for compiling LightGBM?
 ----------------------------------------------------------------------------------
 
 Visual Studio `performs best for LightGBM <https://github.com/microsoft/LightGBM/issues/542>`__.
-
----
 
 5. When using LightGBM GPU, I cannot reproduce results over several runs.
 -------------------------------------------------------------------------
@@ -89,15 +79,11 @@ This is normal and expected behaviour, but you may try to use ``gpu_use_dp = tru
 (see `Microsoft/LightGBM#560 <https://github.com/microsoft/LightGBM/pull/560#issuecomment-304561654>`__).
 You may also use the CPU version.
 
----
-
 6. Bagging is not reproducible when changing the number of threads.
 -------------------------------------------------------------------
 
 LightGBM bagging is multithreaded, so its output depends on the number of threads used.
 There is `no workaround currently <https://github.com/microsoft/LightGBM/issues/632>`__.
-
----
 
 7. I tried to use Random Forest mode, and LightGBM crashes!
 -----------------------------------------------------------
@@ -106,15 +92,11 @@ This is expected behaviour for arbitrary parameters. To enable Random Forest,
 you must use ``bagging_fraction`` and ``feature_fraction`` different from 1, along with a ``bagging_freq``.
 `This thread <https://github.com/microsoft/LightGBM/issues/691>`__ includes an example.
 
----
-
 8. CPU usage is low (like 10%) in Windows when using LightGBM on very large datasets with many-core systems.
 ------------------------------------------------------------------------------------------------------------
 
 Please use `Visual Studio <https://visualstudio.microsoft.com/downloads/>`__
 as it may be `10x faster than MinGW <https://github.com/microsoft/LightGBM/issues/749>`__ especially for very large trees.
-
----
 
 9. When I'm trying to specify a categorical column with the ``categorical_feature`` parameter, I get the following sequence of warnings, but there are no negative values in the column.
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -128,8 +110,6 @@ The column you're trying to pass via ``categorical_feature`` likely contains ver
 Categorical features in LightGBM are limited by int32 range,
 so you cannot pass values that are greater than ``Int32.MaxValue`` (2147483647) as categorical features (see `Microsoft/LightGBM#1359 <https://github.com/microsoft/LightGBM/issues/1359>`__).
 You should convert them to integers ranging from zero to the number of categories first.
-
----
 
 10. LightGBM crashes randomly with the error like: ``Initializing libiomp5.dylib, but found libomp.dylib already initialized.``
 -------------------------------------------------------------------------------------------------------------------------------
@@ -167,8 +147,6 @@ Another workaround would be removing MKL optimizations from Conda's packages com
 
 If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
----
-
 11. LightGBM hangs when multithreading (OpenMP) and using forking in Linux at the same time.
 --------------------------------------------------------------------------------------------
 
@@ -182,7 +160,7 @@ An alternative, if multithreading is really necessary inside the forked sessions
 Intel toolchain. Intel compilers are unaffected by this bug.
 
 For C/C++ users, any OpenMP feature cannot be used before the fork happens. If an OpenMP feature is used before the
-fork happens (ex: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead
+fork happens (example: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead
 and copy memory as required by creating new processes instead of forking (or, use Intel compilers).
 
 12. Why is early stopping not enabled by default in LightGBM?
@@ -193,6 +171,11 @@ Early stopping involves choosing a validation set, a special type of holdout whi
 In ``LightGBM``, `we have decided to require that users specify this set directly <./Parameters.rst#valid>`_. Many options exist for splitting training data into training, test, and validation sets.
 
 The appropriate splitting strategy depends on the task and domain of the data, information that a modeler has but which ``LightGBM`` as a general-purpose tool does not.
+
+13. Does LightGBM support direct loading data from zero-based or one-based LibSVM format file?
+----------------------------------------------------------------------------------------------
+
+LightGBM supports loading data from zero-based LibSVM format file directly.
 
 ------
 
@@ -209,8 +192,6 @@ R-package
 Run ``lgb.unloader(wipe = TRUE)`` in the R console, and recreate the LightGBM datasets (this will wipe all LightGBM-related variables).
 Due to the pointers, choosing to not wipe variables will not fix the error.
 This is a known issue: `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
-
----
 
 2. I used ``setinfo``, tried to print my ``lgb.Dataset``, and now the R console froze!
 --------------------------------------------------------------------------------------
@@ -239,8 +220,6 @@ Python-package
 This error should be solved in latest version.
 If you still meet this error, try to remove ``lightgbm.egg-info`` folder in your Python-package and reinstall,
 or check `this thread on stackoverflow <http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
-
----
 
 2. Error messages: ``Cannot ... before construct dataset``.
 -----------------------------------------------------------
@@ -277,8 +256,6 @@ So, if you want to:
 
 -  set predictor (or reference/categorical feature) after constructing a dataset,
    you should set ``free_raw_data=False`` or init a Dataset object with the same raw data.
-
----
 
 3. I encounter segmentation faults (segfaults) randomly after installing LightGBM from PyPI using ``pip install lightgbm``.
 ---------------------------------------------------------------------------------------------------------------------------

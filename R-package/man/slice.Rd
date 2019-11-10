@@ -10,18 +10,18 @@ slice(dataset, ...)
 \method{slice}{lgb.Dataset}(dataset, idxset, ...)
 }
 \arguments{
-\item{dataset}{Object of class "lgb.Dataset"}
+\item{dataset}{Object of class \code{lgb.Dataset}}
+
+\item{idxset}{an integer vector of indices of rows needed}
 
 \item{...}{other parameters (currently not used)}
-
-\item{idxset}{a integer vector of indices of rows needed}
 }
 \value{
 constructed sub dataset
 }
 \description{
 Get a new \code{lgb.Dataset} containing the specified rows of
-original lgb.Dataset object
+original \code{lgb.Dataset} object
 }
 \examples{
 library(lightgbm)

@@ -4,8 +4,13 @@
 \alias{lgb.plot.importance}
 \title{Plot feature importance as a bar graph}
 \usage{
-lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain",
-  left_margin = 10, cex = NULL)
+lgb.plot.importance(
+  tree_imp,
+  top_n = 10,
+  measure = "Gain",
+  left_margin = 10,
+  cex = NULL
+)
 }
 \arguments{
 \item{tree_imp}{a \code{data.table} returned by \code{\link{lgb.importance}}.}
@@ -43,7 +48,7 @@ params <- list(
     , min_sum_hessian_in_leaf = 1
 )
 
-model <- lgb.train(params, dtrain, 20)
+model <- lgb.train(params, dtrain, 10)
 
 tree_imp <- lgb.importance(model, percentage = TRUE)
 lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")

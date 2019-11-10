@@ -3,26 +3,26 @@
 \name{setinfo}
 \alias{setinfo}
 \alias{setinfo.lgb.Dataset}
-\title{Set information of an lgb.Dataset object}
+\title{Set information of an \code{lgb.Dataset} object}
 \usage{
 setinfo(dataset, ...)
 
 \method{setinfo}{lgb.Dataset}(dataset, name, info, ...)
 }
 \arguments{
-\item{dataset}{Object of class "lgb.Dataset"}
-
-\item{...}{other parameters}
+\item{dataset}{Object of class \code{lgb.Dataset}}
 
 \item{name}{the name of the field to get}
 
 \item{info}{the specific field of information to set}
+
+\item{...}{other parameters}
 }
 \value{
 passed object
 }
 \description{
-Set information of an lgb.Dataset object
+Set information of an \code{lgb.Dataset} object
 }
 \details{
 The \code{name} field can be one of the following:

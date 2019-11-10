@@ -5,9 +5,9 @@ LightGBM, Light Gradient Boosting Machine
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Travis Build Status](https://travis-ci.org/microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/microsoft/LightGBM)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
-[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.org/project/lightgbm)
-[![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg)](https://pypi.org/project/lightgbm)
+[![License](https://img.shields.io/github/license/microsoft/lightgbm.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
+[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
+[![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white)](https://pypi.org/project/lightgbm)
 [![Join Gitter at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com)
 
@@ -47,29 +47,9 @@ Documentation for contributors:
 News
 ----
 
-08/15/2017 : Optimal split for categorical features.
+Please refer to changelogs at [GitHub releases](https://github.com/microsoft/LightGBM/releases) page.
 
-07/13/2017 : [Gitter](https://gitter.im/Microsoft/LightGBM) is available.
-
-06/20/2017 : Python-package is on [PyPI](https://pypi.org/project/lightgbm) now.
-
-06/09/2017 : [LightGBM Slack team](https://lightgbm.slack.com) is available.
-
-05/03/2017 : LightGBM v2 stable release.
-
-04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.rst) and [Performance Comparison](./docs/GPU-Performance.rst).
-
-02/20/2017 : Update to LightGBM v2.
-
-02/12/2017 : LightGBM v1 stable release.
-
-01/08/2017 : Release [**R-package**](https://github.com/microsoft/LightGBM/tree/master/R-package) beta version, welcome to have a try and provide feedback.
-
-12/05/2016 : **Categorical Features as input directly** (without one-hot coding). 
-
-12/02/2016 : Release [**Python-package**](https://github.com/microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
-
-More detailed update logs : [Key Events](https://github.com/microsoft/LightGBM/blob/master/docs/Key-Events.md).
+Some old update logs are available at [Key Events](https://github.com/microsoft/LightGBM/blob/master/docs/Key-Events.md) page.
 
 External (Unofficial) Repositories
 ----------------------------------
@@ -80,17 +60,23 @@ JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
 Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
 
+m2cgen (model appliers for various languages): https://github.com/BayesWitnesses/m2cgen
+
+leaves (Go model applier): https://github.com/dmitryikh/leaves
+
 ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
 SHAP (model output explainer): https://github.com/slundberg/shap
 
-MMLSpark (Spark-package): https://github.com/Azure/mmlspark
+MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
 
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
 Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
+
+Ruby gem: https://github.com/ankane/lightgbm
 
 Support
 -------

@@ -24,15 +24,15 @@ class CSVParser: public Parser {
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
-    int bias = 0;
+    int offset = 0;
     *out_label = 0.0f;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
-        bias = -1;
+        offset = -1;
       } else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        out_features->emplace_back(idx + bias, val);
+        out_features->emplace_back(idx + offset, val);
       }
       ++idx;
       if (*str == ',') {
@@ -43,8 +43,8 @@ class CSVParser: public Parser {
     }
   }
 
-  inline int TotalColumns() const override {
-    return total_columns_;
+  inline int NumFeatures() const override {
+    return total_columns_ - (label_idx_ >= 0);
   }
 
  private:
@@ -61,14 +61,14 @@ class TSVParser: public Parser {
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
-    int bias = 0;
+    int offset = 0;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
-        bias = -1;
+        offset = -1;
       } else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        out_features->emplace_back(idx + bias, val);
+        out_features->emplace_back(idx + offset, val);
       }
       ++idx;
       if (*str == '\t') {
@@ -79,8 +79,8 @@ class TSVParser: public Parser {
     }
   }
 
-  inline int TotalColumns() const override {
-    return total_columns_;
+  inline int NumFeatures() const override {
+    return total_columns_ - (label_idx_ >= 0);
   }
 
  private:
@@ -90,8 +90,8 @@ class TSVParser: public Parser {
 
 class LibSVMParser: public Parser {
  public:
-  explicit LibSVMParser(int label_idx)
-    :label_idx_(label_idx) {
+  explicit LibSVMParser(int label_idx, int total_columns)
+    :label_idx_(label_idx), total_columns_(total_columns) {
     if (label_idx > 0) {
       Log::Fatal("Label should be the first column in a LibSVM file");
     }
@@ -119,12 +119,13 @@ class LibSVMParser: public Parser {
     }
   }
 
-  inline int TotalColumns() const override {
-    return -1;
+  inline int NumFeatures() const override {
+    return total_columns_;
   }
 
  private:
   int label_idx_ = 0;
+  int total_columns_ = -1;
 };
 
 }  // namespace LightGBM

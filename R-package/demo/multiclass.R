@@ -19,29 +19,33 @@ valids <- list(test = dtest)
 
 # Method 1 of training
 params <- list(objective = "multiclass", metric = "multi_error", num_class = 3)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
+model <- lgb.train(
+    params
+    , dtrain
+    , 100
+    , valids
+    , min_data = 1
+    , learning_rate = 1
+    , early_stopping_rounds = 10
+)
 
 # We can predict on test data, outputs a 90-length vector
 # Order: obs1 class1, obs1 class2, obs1 class3, obs2 class1, obs2 class2, obs2 class3...
 my_preds <- predict(model, test[, 1:4])
 
 # Method 2 of training, identical
-model <- lgb.train(list(),
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10,
-                   objective = "multiclass",
-                   metric = "multi_error",
-                   num_class = 3)
+model <- lgb.train(
+    list()
+    , dtrain
+    , 100
+    , valids
+    , min_data = 1
+    , learning_rate = 1
+    , early_stopping_rounds = 10
+    , objective = "multiclass"
+    , metric = "multi_error"
+    , num_class = 3
+)
 
 # We can predict on test data, identical
 my_preds <- predict(model, test[, 1:4])

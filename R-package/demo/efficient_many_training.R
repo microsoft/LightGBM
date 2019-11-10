@@ -26,9 +26,11 @@ gbm <- list()
 
 for (i in 1:1000) {
   print(i)
-  gbm[[i]] <- lgb.train(params = list(objective = "regression"),
-                        data = data,
-                        1,
-                        reset_data = TRUE)
+  gbm[[i]] <- lgb.train(
+      params = list(objective = "regression")
+      , data = data
+      , 1
+      , reset_data = TRUE
+  )
   gc(verbose = FALSE)
 }

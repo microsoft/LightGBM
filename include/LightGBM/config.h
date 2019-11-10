@@ -75,7 +75,7 @@ struct Config {
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
-  static void KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv);
+  static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
   #pragma region Parameters
@@ -132,7 +132,7 @@ struct Config {
   // [doc-only]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, gbrt, rf, random_forest, dart, goss
+  // options = gbdt, rf, dart, goss
   // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
@@ -166,6 +166,7 @@ struct Config {
   // default = 31
   // alias = num_leaf, max_leaves, max_leaf
   // check = >1
+  // check = <=131072
   // desc = max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
 
@@ -271,15 +272,24 @@ struct Config {
   // alias = sub_feature, colsample_bytree
   // check = >0.0
   // check = <=1.0
-  // desc = LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+  // desc = LightGBM will randomly select part of features on each iteration (tree) if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
   // desc = can be used to speed up training
   // desc = can be used to deal with over-fitting
   double feature_fraction = 1.0;
 
+  // alias = sub_feature_bynode, colsample_bynode
+  // check = >0.0
+  // check = <=1.0
+  // desc = LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+  // desc = can be used to deal with over-fitting
+  // desc = **Note**: unlike ``feature_fraction``, this cannot speed up training
+  // desc = **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
+  double feature_fraction_bynode = 1.0;
+
   // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
 
-  // alias = early_stopping_rounds, early_stopping
+  // alias = early_stopping_rounds, early_stopping, n_iter_no_change
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
   // desc = ``<= 0`` means disable
   int early_stopping_round = 0;
@@ -361,7 +371,7 @@ struct Config {
 
   // check = >=0.0
   // desc = used for the categorical features
-  // desc = L2 regularization in categorcial split
+  // desc = L2 regularization in categorical split
   double cat_l2 = 10.0;
 
   // check = >=0.0
@@ -401,6 +411,11 @@ struct Config {
   // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
   // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
+
+  // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
+  // desc = ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
+  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
+  std::string forcedbins_filename = "";
 
   // check = >=0.0
   // check = <=1.0
@@ -536,7 +551,7 @@ struct Config {
   // desc = set this to ``false`` to disable the special handle of missing value
   bool use_missing = true;
 
-  // desc = set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrices)
+  // desc = set this to ``true`` to treat all zero as missing values (including the unshown values in LibSVM / sparse matrices)
   // desc = set this to ``false`` to use ``na`` for representing missing values
   bool zero_as_missing = false;
 
@@ -603,6 +618,7 @@ struct Config {
   // desc = **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
   // desc = **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
   // desc = **Note**: all negative values will be treated as **missing values**
+  // desc = **Note**: the output cannot be monotonically constrained with respect to a categorical feature
   std::string categorical_feature = "";
 
   // alias = is_predict_raw_score, predict_rawscore, raw_score
@@ -663,14 +679,14 @@ struct Config {
   int num_class = 1;
 
   // alias = unbalance, unbalanced_sets
-  // desc = used only in ``binary`` application
+  // desc = used only in ``binary`` and ``multiclassova`` applications
   // desc = set this to ``true`` if training data are unbalanced
   // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
   bool is_unbalance = false;
 
   // check = >0.0
-  // desc = used only in ``binary`` application
+  // desc = used only in ``binary`` and ``multiclassova`` applications
   // desc = weight of labels with positive class
   // desc = **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
   // desc = **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
@@ -681,7 +697,7 @@ struct Config {
   // desc = parameter for the sigmoid function
   double sigmoid = 1.0;
 
-  // desc = used only in ``regression``, ``binary`` and ``cross-entropy`` applications
+  // desc = used only in ``regression``, ``binary``, ``multiclassova`` and ``cross-entropy`` applications
   // desc = adjusts initial score to the mean of labels for faster convergence
   bool boost_from_average = true;
 
@@ -717,6 +733,11 @@ struct Config {
   // desc = used only in ``lambdarank`` application
   // desc = optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
   int max_position = 20;
+
+  // desc = used only in ``lambdarank`` application
+  // desc = set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data
+  // desc = set this to ``false`` to enforce the original lambdamart algorithm
+  bool lambdamart_norm = true;
 
   // type = multi-double
   // default = 0,1,3,7,15,31,63,...,2^30-1

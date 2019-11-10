@@ -309,15 +309,14 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetDumpText(DatasetHandle handle,
 /*!
  * \brief Set vector to a content in info.
  * \note
- * - \a monotone_constraints only works for ``C_API_DTYPE_INT8``;
  * - \a group only works for ``C_API_DTYPE_INT32``;
  * - \a label and \a weight only work for ``C_API_DTYPE_FLOAT32``;
- * - \a init_score and \a feature_penalty only work for ``C_API_DTYPE_FLOAT64``.
+ * - \a init_score only works for ``C_API_DTYPE_FLOAT64``.
  * \param handle Handle of dataset
- * \param field_name Field name, can be \a label, \a weight, \a init_score, \a group, \a feature_penalty, \a monotone_constraints
+ * \param field_name Field name, can be \a label, \a weight, \a init_score, \a group
  * \param field_data Pointer to data vector
  * \param num_element Number of elements in ``field_data``
- * \param type Type of ``field_data`` pointer, can be ``C_API_DTYPE_INT8``, ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param type Type of ``field_data`` pointer, can be ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
@@ -684,7 +683,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
- * \param num_col Number of columns; when it's set to 0, then guess from data
+ * \param num_col Number of columns
  * \param predict_type What should be predicted
  *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
@@ -727,7 +726,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
- * \param num_col Number of columns; when it's set to 0, then guess from data
+ * \param num_col Number of columns
  * \param predict_type What should be predicted
  *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
@@ -833,7 +832,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
- * \brief Make prediction for an new dataset. This method re-uses the internal predictor structure
+ * \brief Make prediction for a new dataset. This method re-uses the internal predictor structure
  *        from previous calls and is optimized for single row invocation.
  * \note
  * You should pre-allocate memory for ``out_result``:

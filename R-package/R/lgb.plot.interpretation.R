@@ -9,8 +9,8 @@
 #' @param cex (base R barplot) passed as \code{cex.names} parameter to \code{barplot}.
 #'
 #' @details
-#' The graph represents each feature as a horizontal bar of length proportional to the defined contribution of a feature.
-#' Features are shown ranked in a decreasing contribution order.
+#' The graph represents each feature as a horizontal bar of length proportional to the defined
+#' contribution of a feature. Features are shown ranked in a decreasing contribution order.
 #'
 #' @return
 #' The \code{lgb.plot.interpretation} function creates a \code{barplot}.
@@ -26,17 +26,20 @@
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #'
-#' params <- list(objective = "binary",
-#'               learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'               min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-#'               model <- lgb.train(params, dtrain, 20)
-#' model <- lgb.train(params, dtrain, 20)
+#' params <- list(
+#'   objective = "binary"
+#'   , learning_rate = 0.01
+#'   , num_leaves = 63
+#'   , max_depth = -1
+#'   , min_data_in_leaf = 1
+#'   , min_sum_hessian_in_leaf = 1
+#' )
+#' model <- lgb.train(params, dtrain, 10)
 #'
 #' tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 #' lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
 #' @importFrom data.table setnames
 #' @importFrom graphics barplot par
-#' @importFrom magrittr inset
 #' @export
 lgb.plot.interpretation <- function(tree_interpretation_dt,
                                     top_n = 10,
@@ -52,22 +55,38 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
   on.exit(graphics::par(op))
 
   # Do some magic plotting
-  graphics::par(mar = op$mar %>% magrittr::inset(., 1:3, c(3, left_margin, 2)))
+  bottom_margin <- 3.0
+  top_margin <- 2.0
+  right_margin <- op$mar[4]
+
+  graphics::par(
+    mar = c(
+      bottom_margin
+      , left_margin
+      , top_margin
+      , right_margin
+    )
+  )
 
   # Check for number of classes
   if (num_class == 1) {
 
     # Only one class, plot straight away
-    multiple.tree.plot.interpretation(tree_interpretation_dt,
-                                      top_n = top_n,
-                                      title = NULL,
-                                      cex = cex)
+    multiple.tree.plot.interpretation(
+      tree_interpretation_dt
+      , top_n = top_n
+      , title = NULL
+      , cex = cex
+    )
 
   } else {
 
     # More than one class, shape data first
-    layout_mat <- matrix(seq.int(to = cols * ceiling(num_class / cols)),
-                         ncol = cols, nrow = ceiling(num_class / cols))
+    layout_mat <- matrix(
+      seq.int(to = cols * ceiling(num_class / cols))
+      , ncol = cols
+      , nrow = ceiling(num_class / cols)
+    )
 
     # Shape output
     graphics::par(mfcol = c(nrow(layout_mat), ncol(layout_mat)))
@@ -76,12 +95,18 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
     for (i in seq_len(num_class)) {
 
       # Prepare interpretation, perform T, get the names, and plot straight away
-      tree_interpretation_dt[, c(1, i + 1), with = FALSE] %T>%
-        data.table::setnames(., old = names(.), new = c("Feature", "Contribution")) %>%
-        multiple.tree.plot.interpretation(., # Self
-                                          top_n = top_n,
-                                          title = paste("Class", i - 1),
-                                          cex = cex)
+      plot_dt <- tree_interpretation_dt[, c(1, i + 1), with = FALSE]
+      data.table::setnames(
+        plot_dt
+        , old = names(plot_dt)
+        , new = c("Feature", "Contribution")
+      )
+      multiple.tree.plot.interpretation(
+        plot_dt
+        , top_n = top_n
+        , title = paste("Class", i - 1)
+        , cex = cex
+      )
 
     }
   }
@@ -104,17 +129,17 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
   # Do plot
   tree_interpretation[.N:1,
                       graphics::barplot(
-                          height = Contribution,
-                          names.arg = Feature,
-                          horiz = TRUE,
-                          col = ifelse(Contribution > 0, "firebrick", "steelblue"),
-                          border = NA,
-                          main = title,
-                          cex.names = cex,
-                          las = 1
+                          height = Contribution
+                          , names.arg = Feature
+                          , horiz = TRUE
+                          , col = ifelse(Contribution > 0, "firebrick", "steelblue")
+                          , border = NA
+                          , main = title
+                          , cex.names = cex
+                          , las = 1
                       )]
 
   # Return invisibly
-  invisible(NULL)
+  return(invisible(NULL))
 
 }

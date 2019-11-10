@@ -551,6 +551,21 @@ inline static std::string Join(const std::vector<T>& strs, const char* delimiter
   return str_buf.str();
 }
 
+template<>
+inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter) {
+  if (strs.empty()) {
+    return std::string("");
+  }
+  std::stringstream str_buf;
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  str_buf << static_cast<int16_t>(strs[0]);
+  for (size_t i = 1; i < strs.size(); ++i) {
+    str_buf << delimiter;
+    str_buf << static_cast<int16_t>(strs[i]);
+  }
+  return str_buf.str();
+}
+
 template<typename T>
 inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
   if (end - start <= 0) {
@@ -580,7 +595,7 @@ inline static int64_t Pow2RoundUp(int64_t x) {
 }
 
 /*!
- * \brief Do inplace softmax transformaton on p_rec
+ * \brief Do inplace softmax transformation on p_rec
  * \param p_rec The input/output vector of the values.
  */
 inline static void Softmax(std::vector<double>* p_rec) {
@@ -617,17 +632,19 @@ inline static void Softmax(const double* input, double* output, int len) {
 template<typename T>
 std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;
-  for (size_t i = 0; i < input.size(); ++i) {
-    ret.push_back(input.at(i).get());
+  for (auto t = input.begin(); t !=input.end(); ++t) {
+    ret.push_back(t->get());
   }
   return ret;
 }
 
 template<typename T1, typename T2>
-inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
+inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, size_t start, bool is_reverse = false) {
   std::vector<std::pair<T1, T2>> arr;
-  for (size_t i = start; i < keys.size(); ++i) {
-    arr.emplace_back(keys[i], values[i]);
+  auto& ref_key = *keys;
+  auto& ref_value = *values;
+  for (size_t i = start; i < keys->size(); ++i) {
+    arr.emplace_back(ref_key[i], ref_value[i]);
   }
   if (!is_reverse) {
     std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
@@ -639,16 +656,17 @@ inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, s
     });
   }
   for (size_t i = start; i < arr.size(); ++i) {
-    keys[i] = arr[i].first;
-    values[i] = arr[i].second;
+    ref_key[i] = arr[i].first;
+    ref_value[i] = arr[i].second;
   }
 }
 
 template <typename T>
-inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>& data) {
-  std::vector<T*> ptr(data.size());
-  for (size_t i = 0; i < data.size(); ++i) {
-    ptr[i] = data[i].data();
+inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>* data) {
+  std::vector<T*> ptr(data->size());
+  auto& ref_data = *data;
+  for (size_t i = 0; i < data->size(); ++i) {
+    ptr[i] = ref_data[i].data();
   }
   return ptr;
 }
@@ -663,7 +681,9 @@ inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& dat
 }
 
 inline static double AvoidInf(double x) {
-  if (x >= 1e300) {
+  if (std::isnan(x)) {
+    return 0.0;
+  } else if (x >= 1e300) {
     return 1e300;
   } else if (x <= -1e300) {
     return -1e300;
@@ -673,7 +693,9 @@ inline static double AvoidInf(double x) {
 }
 
 inline static float AvoidInf(float x) {
-  if (x >= 1e38) {
+  if (std::isnan(x)) {
+    return 0.0f;
+  } else if (x >= 1e38) {
     return 1e38f;
   } else if (x <= -1e38) {
     return -1e38f;
@@ -821,13 +843,14 @@ inline static std::vector<uint32_t> EmptyBitset(int n) {
 }
 
 template<typename T>
-inline static void InsertBitset(std::vector<uint32_t>& vec, const T val) {
-    int i1 = val / 32;
-    int i2 = val % 32;
-    if (static_cast<int>(vec.size()) < i1 + 1) {
-      vec.resize(i1 + 1, 0);
-    }
-    vec[i1] |= (1 << i2);
+inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
+  auto& ref_v = *vec;
+  int i1 = val / 32;
+  int i2 = val % 32;
+  if (static_cast<int>(vec->size()) < i1 + 1) {
+    vec->resize(i1 + 1, 0);
+  }
+  ref_v[i1] |= (1 << i2);
 }
 
 template<typename T>

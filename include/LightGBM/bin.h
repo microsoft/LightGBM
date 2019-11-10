@@ -122,7 +122,7 @@ class BinMapper {
   */
   size_t SizesInByte() const;
   /*!
-  * \brief Mapping feature value into bin 
+  * \brief Mapping feature value into bin
   * \param value
   * \return bin for this feature value
   */
@@ -137,7 +137,7 @@ class BinMapper {
   }
   /*!
   * \brief Construct feature value to bin mapper according feature values
-  * \param values (Sampled) values of this feature, Note: not include zero. 
+  * \param values (Sampled) values of this feature, Note: not include zero.
   * \param num_values number of values.
   * \param total_sample_cnt number of total sample count, equal with values.size() + num_zeros
   * \param max_bin The maximal number of bin
@@ -146,9 +146,10 @@ class BinMapper {
   * \param bin_type Type of this bin
   * \param use_missing True to enable missing value handle
   * \param zero_as_missing True to use zero as missing value
+  * \param forced_upper_bounds Vector of split points that must be used (if this has size less than max_bin, remaining splits are found by the algorithm)
   */
   void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type,
-               bool use_missing, bool zero_as_missing);
+               bool use_missing, bool zero_as_missing, const std::vector<double>& forced_upper_bounds);
 
   /*!
   * \brief Use specific number of bin to calculate the size of this class
@@ -158,13 +159,13 @@ class BinMapper {
   static int SizeForSpecificBin(int bin);
 
   /*!
-  * \brief Seirilizing this object to buffer
+  * \brief Serializing this object to buffer
   * \param buffer The destination
   */
   void CopyTo(char* buffer) const;
 
   /*!
-  * \brief Deserilizing this object from buffer
+  * \brief Deserializing this object from buffer
   * \param buffer The source
   */
   void CopyFrom(const char* buffer);
@@ -204,7 +205,7 @@ class BinMapper {
   std::unordered_map<int, unsigned int> categorical_2_bin_;
   /*! \brief Mapper from bin to categorical */
   std::vector<int> bin_2_categorical_;
-  /*! \brief minimal feature vaule */
+  /*! \brief minimal feature value */
   double min_val_;
   /*! \brief maximum feature value */
   double max_val_;
@@ -216,7 +217,7 @@ class BinMapper {
 * \brief Interface for ordered bin data. efficient for construct histogram, especially for sparse bin
 *        There are 2 advantages by using ordered bin.
 *        1. group the data by leafs to improve the cache hit.
-*        2. only store the non-zero bin, which can speed up the histogram consturction for sparse features.
+*        2. only store the non-zero bin, which can speed up the histogram construction for sparse features.
 *        However it brings additional cost: it need re-order the bins after every split, which will cost much for dense feature.
 *        So we only using ordered bin for sparse situations.
 */
@@ -238,8 +239,8 @@ class OrderedBin {
   *        Note: Unlike Bin, OrderedBin doesn't use ordered gradients and ordered hessians.
   *        Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
   * \param leaf Using which leaf's data to construct
-  * \param gradients Gradients, Note:non-oredered by leaf
-  * \param hessians Hessians, Note:non-oredered by leaf
+  * \param gradients Gradients, Note:non-ordered by leaf
+  * \param hessians Hessians, Note:non-ordered by leaf
   * \param out Output Result
   */
   virtual void ConstructHistogram(int leaf, const score_t* gradients,
@@ -250,7 +251,7 @@ class OrderedBin {
   *        Note: Unlike Bin, OrderedBin doesn't use ordered gradients and ordered hessians.
   *        Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
   * \param leaf Using which leaf's data to construct
-  * \param gradients Gradients, Note:non-oredered by leaf
+  * \param gradients Gradients, Note:non-ordered by leaf
   * \param out Output Result
   */
   virtual void ConstructHistogram(int leaf, const score_t* gradients, HistogramBinEntry* out) const = 0;
@@ -378,7 +379,7 @@ class Bin {
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin defualt bin if bin not in [min_bin, max_bin]
+  * \param default_bin default bin if bin not in [min_bin, max_bin]
   * \param missing_type missing type
   * \param default_left missing bin will go to left child
   * \param threshold The split threshold.
@@ -397,7 +398,7 @@ class Bin {
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin defualt bin if bin not in [min_bin, max_bin]
+  * \param default_bin default bin if bin not in [min_bin, max_bin]
   * \param threshold The split threshold.
   * \param num_threshold Number of threshold
   * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.

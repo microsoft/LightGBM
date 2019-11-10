@@ -1,4 +1,3 @@
-
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 Dataset <- R6::R6Class(
@@ -88,7 +87,7 @@ Dataset <- R6::R6Class(
       private$categorical_feature <- categorical_feature
       private$predictor <- predictor
       private$free_raw_data <- free_raw_data
-      private$used_indices <- used_indices
+      private$used_indices <- sort(used_indices, decreasing = FALSE)
       private$info <- info
 
     },
@@ -98,16 +97,18 @@ Dataset <- R6::R6Class(
                             ...) {
 
       # Create new dataset
-      ret <- Dataset$new(data,
-                         private$params,
-                         self,
-                         private$colnames,
-                         private$categorical_feature,
-                         private$predictor,
-                         private$free_raw_data,
-                         NULL,
-                         info,
-                         ...)
+      ret <- Dataset$new(
+        data = data
+        , params = private$params
+        , reference = self
+        , colnames = private$colnames
+        , categorical_feature = private$categorical_feature
+        , predictor = private$predictor
+        , free_raw_data = private$free_raw_data
+        , used_indices = NULL
+        , info = info
+        , ...
+      )
 
       # Return ret
       return(invisible(ret))
@@ -143,14 +144,23 @@ Dataset <- R6::R6Class(
 
             # Provided indices, but some indices are not existing?
             if (sum(is.na(cate_indices)) > 0) {
-              stop("lgb.self.get.handle: supplied an unknown feature in categorical_feature: ", sQuote(private$categorical_feature[is.na(cate_indices)]))
+              stop(
+                "lgb.self.get.handle: supplied an unknown feature in categorical_feature: "
+                , sQuote(private$categorical_feature[is.na(cate_indices)])
+              )
             }
 
           } else {
 
             # Check if more categorical features were output over the feature space
             if (max(private$categorical_feature) > length(private$colnames)) {
-              stop("lgb.self.get.handle: supplied a too large value in categorical_feature: ", max(private$categorical_feature), " but only ", length(private$colnames), " features")
+              stop(
+                "lgb.self.get.handle: supplied a too large value in categorical_feature: "
+                , max(private$categorical_feature)
+                , " but only "
+                , length(private$colnames)
+                , " features"
+              )
             }
 
             # Store indices as [0, n-1] indexed instead of [1, n] indexed
@@ -166,7 +176,9 @@ Dataset <- R6::R6Class(
       # Check has header or not
       has_header <- FALSE
       if (!is.null(private$params$has_header) || !is.null(private$params$header)) {
-        if (tolower(as.character(private$params$has_header)) == "true" || tolower(as.character(private$params$header)) == "true") {
+        params_has_header <- tolower(as.character(private$params$has_header)) == "true"
+        params_header <- tolower(as.character(private$params$header)) == "true"
+        if (params_has_header || params_header) {
           has_header <- TRUE
         }
       }
@@ -187,43 +199,52 @@ Dataset <- R6::R6Class(
         # Are we using a data file?
         if (is.character(private$raw_data)) {
 
-          handle <- lgb.call("LGBM_DatasetCreateFromFile_R",
-                             ret = handle,
-                             lgb.c_str(private$raw_data),
-                             params_str,
-                             ref_handle)
+          handle <- lgb.call(
+            "LGBM_DatasetCreateFromFile_R"
+            , ret = handle
+            , lgb.c_str(private$raw_data)
+            , params_str
+            , ref_handle
+          )
 
         } else if (is.matrix(private$raw_data)) {
 
           # Are we using a matrix?
-          handle <- lgb.call("LGBM_DatasetCreateFromMat_R",
-                             ret = handle,
-                             private$raw_data,
-                             nrow(private$raw_data),
-                             ncol(private$raw_data),
-                             params_str,
-                             ref_handle)
+          handle <- lgb.call(
+            "LGBM_DatasetCreateFromMat_R"
+            , ret = handle
+            , private$raw_data
+            , nrow(private$raw_data)
+            , ncol(private$raw_data)
+            , params_str
+            , ref_handle
+          )
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
           if (length(private$raw_data@p) > 2147483647) {
             stop("Cannot support large CSC matrix")
           }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
-          handle <- lgb.call("LGBM_DatasetCreateFromCSC_R",
-                             ret = handle,
-                             private$raw_data@p,
-                             private$raw_data@i,
-                             private$raw_data@x,
-                             length(private$raw_data@p),
-                             length(private$raw_data@x),
-                             nrow(private$raw_data),
-                             params_str,
-                             ref_handle)
+          handle <- lgb.call(
+            "LGBM_DatasetCreateFromCSC_R"
+            , ret = handle
+            , private$raw_data@p
+            , private$raw_data@i
+            , private$raw_data@x
+            , length(private$raw_data@p)
+            , length(private$raw_data@x)
+            , nrow(private$raw_data)
+            , params_str
+            , ref_handle
+          )
 
         } else {
 
           # Unknown data type
-          stop("lgb.Dataset.construct: does not support constructing from ", sQuote(class(private$raw_data)))
+          stop(
+            "lgb.Dataset.construct: does not support constructing from "
+            , sQuote(class(private$raw_data))
+          )
 
         }
 
@@ -235,12 +256,14 @@ Dataset <- R6::R6Class(
         }
 
         # Construct subset
-        handle <- lgb.call("LGBM_DatasetGetSubset_R",
-                           ret = handle,
-                           ref_handle,
-                           c(private$used_indices), # Adding c() fixes issue in R v3.5
-                           length(private$used_indices),
-                           params_str)
+        handle <- lgb.call(
+          "LGBM_DatasetGetSubset_R"
+          , ret = handle
+          , ref_handle
+          , c(private$used_indices) # Adding c() fixes issue in R v3.5
+          , length(private$used_indices)
+          , params_str
+        )
 
       }
       if (lgb.is.null.handle(handle)) {
@@ -259,7 +282,11 @@ Dataset <- R6::R6Class(
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
 
         # Setup initial scores
-        init_score <- private$predictor$predict(private$raw_data, rawscore = TRUE, reshape = TRUE)
+        init_score <- private$predictor$predict(
+          private$raw_data
+          , rawscore = TRUE
+          , reshape = TRUE
+        )
 
         # Not needed to transpose, for is col_marjor
         init_score <- as.vector(init_score)
@@ -317,7 +344,10 @@ Dataset <- R6::R6Class(
       } else {
 
         # Trying to work with unknown dimensions is not possible
-        stop("dim: cannot get dimensions before dataset has been constructed, please call lgb.Dataset.construct explicitly")
+        stop(
+          "dim: cannot get dimensions before dataset has been constructed, "
+          , "please call lgb.Dataset.construct explicitly"
+        )
 
       }
 
@@ -342,7 +372,10 @@ Dataset <- R6::R6Class(
       } else {
 
         # Trying to work with unknown dimensions is not possible
-        stop("dim: cannot get dimensions before dataset has been constructed, please call lgb.Dataset.construct explicitly")
+        stop(
+          "dim: cannot get dimensions before dataset has been constructed, please call "
+          , "lgb.Dataset.construct explicitly"
+        )
 
       }
 
@@ -368,10 +401,12 @@ Dataset <- R6::R6Class(
 
         # Merge names with tab separation
         merged_name <- paste0(as.list(private$colnames), collapse = "\t")
-        lgb.call("LGBM_DatasetSetFeatureNames_R",
-                 ret = NULL,
-                 private$handle,
-                 lgb.c_str(merged_name))
+        lgb.call(
+          "LGBM_DatasetSetFeatureNames_R"
+          , ret = NULL
+          , private$handle
+          , lgb.c_str(merged_name)
+        )
 
       }
 
@@ -400,10 +435,12 @@ Dataset <- R6::R6Class(
 
         # Get field size of info
         info_len <- 0L
-        info_len <- lgb.call("LGBM_DatasetGetFieldSize_R",
-                             ret = info_len,
-                             private$handle,
-                             lgb.c_str(name))
+        info_len <- lgb.call(
+          "LGBM_DatasetGetFieldSize_R"
+          , ret = info_len
+          , private$handle
+          , lgb.c_str(name)
+        )
 
         # Check if info is not empty
         if (info_len > 0) {
@@ -416,10 +453,12 @@ Dataset <- R6::R6Class(
             numeric(info_len) # Numeric
           }
 
-          ret <- lgb.call("LGBM_DatasetGetField_R",
-                          ret = ret,
-                          private$handle,
-                          lgb.c_str(name))
+          ret <- lgb.call(
+            "LGBM_DatasetGetField_R"
+            , ret = ret
+            , private$handle
+            , lgb.c_str(name)
+          )
 
           private$info[[name]] <- ret
 
@@ -455,12 +494,14 @@ Dataset <- R6::R6Class(
 
         if (length(info) > 0) {
 
-          lgb.call("LGBM_DatasetSetField_R",
-                   ret = NULL,
-                   private$handle,
-                   lgb.c_str(name),
-                   info,
-                   length(info))
+          lgb.call(
+            "LGBM_DatasetSetField_R"
+            , ret = NULL
+            , private$handle
+            , lgb.c_str(name)
+            , info
+            , length(info)
+          )
 
         }
 
@@ -475,16 +516,18 @@ Dataset <- R6::R6Class(
     slice = function(idxset, ...) {
 
       # Perform slicing
-      Dataset$new(NULL,
-                  private$params,
-                  self,
-                  private$colnames,
-                  private$categorical_feature,
-                  private$predictor,
-                  private$free_raw_data,
-                  idxset,
-                  NULL,
-                  ...)
+      Dataset$new(
+        data = NULL
+        , params = private$params
+        , reference = self
+        , colnames = private$colnames
+        , categorical_feature = private$categorical_feature
+        , predictor = private$predictor
+        , free_raw_data = private$free_raw_data
+        , used_indices = sort(idxset, decreasing = FALSE)
+        , info = NULL
+        , ...
+      )
 
     },
 
@@ -493,7 +536,12 @@ Dataset <- R6::R6Class(
 
       # Parameter updating
       if (!lgb.is.null.handle(private$handle)) {
-        lgb.call("LGBM_DatasetUpdateParam_R", ret = NULL, private$handle, lgb.params2str(params))
+        lgb.call(
+          "LGBM_DatasetUpdateParam_R"
+          , ret = NULL
+          , private$handle
+          , lgb.params2str(params)
+        )
         return(invisible(self))
       }
       private$params <- modifyList(private$params, params)
@@ -569,10 +617,12 @@ Dataset <- R6::R6Class(
 
       # Store binary data
       self$construct()
-      lgb.call("LGBM_DatasetSaveBinary_R",
-               ret = NULL,
-               private$handle,
-               lgb.c_str(fname))
+      lgb.call(
+        "LGBM_DatasetSaveBinary_R"
+        , ret = NULL
+        , private$handle
+        , lgb.c_str(fname)
+      )
       return(invisible(self))
     }
 
@@ -636,9 +686,9 @@ Dataset <- R6::R6Class(
   )
 )
 
-#' Construct lgb.Dataset object
+#' Construct \code{lgb.Dataset} object
 #'
-#' Construct lgb.Dataset object from dense matrix, sparse matrix
+#' Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
 #' or local file (that was created previously by saving an \code{lgb.Dataset}).
 #'
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
@@ -647,7 +697,7 @@ Dataset <- R6::R6Class(
 #' @param colnames names of columns
 #' @param categorical_feature categorical features
 #' @param free_raw_data TRUE for need to free raw data after construct
-#' @param info a list of information of the lgb.Dataset object
+#' @param info a list of information of the \code{lgb.Dataset} object
 #' @param ... other information to pass to \code{info} or parameters pass to \code{params}
 #'
 #' @return constructed dataset
@@ -672,16 +722,18 @@ lgb.Dataset <- function(data,
                         ...) {
 
   # Create new dataset
-  invisible(Dataset$new(data,
-              params,
-              reference,
-              colnames,
-              categorical_feature,
-              NULL,
-              free_raw_data,
-              NULL,
-              info,
-              ...))
+  invisible(Dataset$new(
+    data = data
+    , params = params
+    , reference = reference
+    , colnames = colnames
+    , categorical_feature = categorical_feature
+    , predictor = NULL
+    , free_raw_data = free_raw_data
+    , used_indices = NULL
+    , info = info
+    , ...
+  ))
 
 }
 
@@ -691,7 +743,7 @@ lgb.Dataset <- function(data,
 #'
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
-#' @param info a list of information of the lgb.Dataset object
+#' @param info a list of information of the \code{lgb.Dataset} object
 #' @param ... other information to pass to \code{info}.
 #'
 #' @return constructed dataset
@@ -742,7 +794,7 @@ lgb.Dataset.construct <- function(dataset) {
 
 }
 
-#' Dimensions of an lgb.Dataset
+#' Dimensions of an \code{lgb.Dataset}
 #'
 #' Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 #' @param x Object of class \code{lgb.Dataset}
@@ -785,7 +837,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #'
 #' @param x object of class \code{lgb.Dataset}
 #' @param value a list of two elements: the first one is ignored
-#'        and the second one is column names
+#'              and the second one is column names
 #'
 #' @details
 #' Generic \code{dimnames} methods are used by \code{colnames}.
@@ -841,7 +893,13 @@ dimnames.lgb.Dataset <- function(x) {
 
   # Check for unmatching column size
   if (ncol(x) != length(value[[2]])) {
-    stop("can't assign ", sQuote(length(value[[2]])), " colnames to an lgb.Dataset with ", sQuote(ncol(x)), " columns")
+    stop(
+      "can't assign "
+      , sQuote(length(value[[2]]))
+      , " colnames to an lgb.Dataset with "
+      , sQuote(ncol(x))
+      , " columns"
+    )
   }
 
   # Set column names properly, and return
@@ -853,10 +911,10 @@ dimnames.lgb.Dataset <- function(x) {
 #' Slice a dataset
 #'
 #' Get a new \code{lgb.Dataset} containing the specified rows of
-#' original lgb.Dataset object
+#' original \code{lgb.Dataset} object
 #'
-#' @param dataset Object of class "lgb.Dataset"
-#' @param idxset a integer vector of indices of rows needed
+#' @param dataset Object of class \code{lgb.Dataset}
+#' @param idxset an integer vector of indices of rows needed
 #' @param ... other parameters (currently not used)
 #' @return constructed sub dataset
 #'
@@ -889,7 +947,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
 }
 
-#' Get information of an lgb.Dataset object
+#' Get information of an \code{lgb.Dataset} object
 #'
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the information field to get (see details)
@@ -902,8 +960,8 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' \itemize{
 #'     \item \code{label}: label lightgbm learn from ;
 #'     \item \code{weight}: to do a weight rescale ;
-#'     \item \code{group}: group size
-#'     \item \code{init_score}: initial score is the base prediction lightgbm will boost from ;
+#'     \item \code{group}: group size ;
+#'     \item \code{init_score}: initial score is the base prediction lightgbm will boost from.
 #' }
 #'
 #' @examples
@@ -938,9 +996,9 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
 }
 
-#' Set information of an lgb.Dataset object
+#' Set information of an \code{lgb.Dataset} object
 #'
-#' @param dataset Object of class "lgb.Dataset"
+#' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the field to get
 #' @param info the specific field of information to set
 #' @param ... other parameters
@@ -1057,7 +1115,6 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @return passed dataset
 #'
 #' @examples
-#'
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train

@@ -2,7 +2,7 @@
 % Please edit documentation in R/readRDS.lgb.Booster.R
 \name{readRDS.lgb.Booster}
 \alias{readRDS.lgb.Booster}
-\title{readRDS for lgb.Booster models}
+\title{readRDS for \code{lgb.Booster} models}
 \usage{
 readRDS.lgb.Booster(file = "", refhook = NULL)
 }
@@ -12,7 +12,7 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 \item{refhook}{a hook function for handling reference objects.}
 }
 \value{
-lgb.Booster.
+\code{lgb.Booster}.
 }
 \description{
 Attempts to load a model using RDS.
@@ -27,13 +27,15 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 10
+  , valids = valids
+  , min_data = 1
+  , learning_rate = 1
+  , early_stopping_rounds = 5
+)
 saveRDS.lgb.Booster(model, "model.rds")
 new_model <- readRDS.lgb.Booster("model.rds")
 
