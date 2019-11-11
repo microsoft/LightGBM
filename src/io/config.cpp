@@ -21,7 +21,7 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const 
       value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
     }
     if (!Common::CheckASCII(key) || !Common::CheckASCII(value)) {
-      Log::Fatal("Do not support non-ascii characters in config.");
+      Log::Fatal("Do not support non-ASCII characters in config.");
     }
     if (key.size() > 0) {
       auto value_search = params->find(key);
