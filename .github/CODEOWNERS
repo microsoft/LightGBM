@@ -6,6 +6,9 @@
 # setting reviewers on PRs manually, but this file should
 # offer a reasonable automatic best-guess
 
+# catch-all rule (this only gets matched if no rules below match)
+*    @guolinke @StrikerRUS @jameslamb @Laurae2
+
 # main C++ code
 include/    @guolinke @chivee
 src/    @guolinke @chivee
@@ -27,11 +30,18 @@ helpers/    @StrikerRUS @guolinke
 # CI administrative stuff
 .ci/    @StrikerRUS @Laurae2 @jameslamb
 docs/    @StrikerRUS @Laurae2 @jameslamb
+examples/     @StrikerRUS @jameslamb @guolinke
 *.yml    @StrikerRUS @Laurae2 @jameslamb
 .vsts-ci.yml    @Laurae2
 
-# GPU code
+# docker setup
+docker/    @StrikerRUS @jameslamb
+docker/dockerfile-cli    @guolinke @chivee
 docker/gpu/    @huanzhang12
+docker/dockerfile-python    @StrikerRUS @chivee @wxchan @henry0312
+docker/dockerfile-r    @Laurae2 @jameslamb
+
+# GPU code
 docs/GPU-*.rst    @huanzhang12
 src/treelearner/gpu_tree_learner.cpp    @huanzhang12 @guolinke @chivee
 src/treelearner/tree_learner.cpp    @huanzhang12 @guolinke @chivee
