@@ -17,7 +17,6 @@ if [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
-    sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
         -y \
@@ -32,6 +31,7 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
+    sudo installer \
         -pkg $(pwd)/R.pkg \
         -target /
 fi
