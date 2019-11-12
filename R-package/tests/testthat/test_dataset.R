@@ -43,7 +43,7 @@ test_that("lgb.Dataset: slice, dim", {
   dtest <- lgb.Dataset(test_data, label = test_label)
   lgb.Dataset.construct(dtest)
   expect_equal(dim(dtest), dim(test_data))
-  dsub1 <- slice(dtest, 1L:42L)
+  dsub1 <- slice(dtest, seq_len(42L))
   lgb.Dataset.construct(dsub1)
   expect_equal(nrow(dsub1), 42L)
   expect_equal(ncol(dsub1), ncol(test_data))

@@ -53,7 +53,7 @@ new_data$binned <- .bincode(
     x = new_data$X
     , breaks = quantile(
         x = new_data$X
-        , probs = (1L:9L) / 10.0
+        , probs = seq_len(9L) / 10.0
     )
     , right = TRUE
     , include.lowest = TRUE
@@ -120,7 +120,7 @@ new_data2$binned <- .bincode(
     x = new_data2$X
     , breaks = quantile(
         x = new_data2$X
-        , probs = (1L:9L) / 10.0
+        , probs = seq_len(9L) / 10.0
     )
     , right = TRUE
     , include.lowest = TRUE
@@ -189,7 +189,7 @@ new_data3$binned <- .bincode(
     x = new_data3$X
     , breaks = quantile(
         x = new_data3$X
-        , probs = (1L:9L) / 10.0
+        , probs = seq_len(9L) / 10.0
     )
     , right = TRUE
     , include.lowest = TRUE

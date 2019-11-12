@@ -53,18 +53,15 @@ fi
 if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
-        pydocstyle
+        pydocstyle \
+        r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
+    conda install -q -y -n $CONDA_ENV \
+        -c conda-forge \
+            r-lintr>=2.0
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
-    # stringi needs to be installed separate from r-lintr
-    # to avoid issues like 'unable to load shared object stringi.so'
-    conda install -y -n $CONDA_ENV \
-        r-stringi
-    conda install -y -n $CONDA_ENV \
-        -c conda-forge \
-            r-lintr>=2.0
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
