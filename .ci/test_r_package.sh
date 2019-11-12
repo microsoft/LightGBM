@@ -17,8 +17,8 @@ if [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
-    sudo apt-get update
     sudo apt-get install \
+        --no-install-recommends \
         -y \
             r-base-dev=${R_LINUX_VERSION} \
             texlive-latex-recommended \
@@ -30,15 +30,14 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
-    wget https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
-    sudo installer \
-        -verbose \
+    wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
         -pkg $(pwd)/R.pkg \
         -target /
 fi
 
 conda install \
     -y \
+    -q \
     --no-deps \
         pandoc
 
