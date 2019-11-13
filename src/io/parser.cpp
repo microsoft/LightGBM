@@ -4,6 +4,7 @@
  */
 #include "parser.hpp"
 
+#include <algorithm>
 #include <string>
 #include <fstream>
 #include <functional>
