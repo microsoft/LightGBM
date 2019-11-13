@@ -53,6 +53,26 @@
     return dst;
   }
 
+  char * LGBM_BoosterDumpModelSWIG(BoosterHandle handle,
+                                   int start_iteration,
+                                   int num_iteration,
+                                   int64_t buffer_len,
+                                   int64_t* out_len) {
+    char* dst = new char[buffer_len];
+    int result = LGBM_BoosterDumpModel(handle, start_iteration, num_iteration, buffer_len, out_len, dst);
+    // Reallocate to use larger length
+    if (*out_len > buffer_len) {
+      delete [] dst;
+      int64_t realloc_len = *out_len;
+      dst = new char[realloc_len];
+      result = LGBM_BoosterDumpModel(handle, start_iteration, num_iteration, realloc_len, out_len, dst);
+    }
+    if (result != 0) {
+      return nullptr;
+    }
+    return dst;
+  }
+
   char ** LGBM_BoosterGetEvalNamesSWIG(BoosterHandle handle,
                                        int eval_counts) {
     char** dst = new char*[eval_counts];
