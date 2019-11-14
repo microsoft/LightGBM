@@ -891,6 +891,8 @@ Metric Parameters
 
       -  ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
 
+      -  ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
+
    -  support multiple metrics, separated by ``,``
 
 -  ``metric_freq`` :raw-html:`<a id="metric_freq" title="Permalink to this parameter" href="#metric_freq">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``output_freq``, constraints: ``metric_freq > 0``
@@ -920,6 +922,16 @@ Metric Parameters
       -  more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
 
    -  when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
+
+-  ``auc_mu_weights_file`` :raw-html:`<a id="auc_mu_weights_file" title="Permalink to this parameter" href="#auc_mu_weights_file">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  file containing matrix of weights for calculating auc-mu multi-class metric
+
+   -  matrix must be square, with number of rows and columns equal to number of classes
+
+   -  if not specified, will use equal weights for all classes
+
+   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/multiclass_classification/loss.weights>`__ as an example
 
 Network Parameters
 ------------------

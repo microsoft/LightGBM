@@ -4,9 +4,11 @@
  */
 #include <LightGBM/config.h>
 
+#include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/random.h>
+#include <LightGBM/utils/text_reader.h>
 
 #include <limits>
 
@@ -113,6 +115,8 @@ std::string ParseMetricAlias(const std::string& type) {
     return "kullback_leibler";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
+  } else if (type == std::string("auc_mu")) {
+    return "auc_mu";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }
@@ -206,6 +210,63 @@ void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& para
   }
 }
 
+void Config::GetAucMuWeights(const std::unordered_map<std::string, std::string>& params) {
+  std::string filename;
+  if (Config::GetString(params, "auc_mu_weights_file", &filename)) {
+    // read weights from file
+    TextReader<size_t> reader(filename.c_str(), false);
+    Parser* parser = Parser::CreateParser(filename.c_str(), false, num_class, -1);
+    std::function<void(size_t, const std::vector<std::string>&)> process_fun =
+      [this, &parser](size_t start_idx, const std::vector<std::string>& lines) {
+      std::vector<std::pair<int, double>> oneline_weights_nonzero;
+      std::vector<double> oneline_weights;
+      for (size_t i = start_idx; i < lines.size(); ++i) {
+        oneline_weights_nonzero.clear();
+        oneline_weights.clear();
+        double tmp_label = 0.0f;
+        parser->ParseOneLine(lines[i].c_str(), &oneline_weights_nonzero, &tmp_label);
+        size_t oneline_ind = 0;
+        for (int j = 0; j < num_class; ++j) {
+          if ((oneline_ind >= oneline_weights_nonzero.size()) || (oneline_weights_nonzero[oneline_ind].first > j)) {
+            oneline_weights.emplace_back(0);
+          } else {
+            oneline_weights.emplace_back(oneline_weights_nonzero[oneline_ind].second);
+            oneline_ind++;
+          }
+        }
+        if (static_cast<int>(oneline_weights.size()) != num_class) {
+          Log::Fatal("Auc-mu weights matrix must have %d columns but found row with %d entries.",
+                     num_class, oneline_weights.size());
+        }
+        std::vector<double> curr_line_weights;
+        for (size_t j = 0; j < num_class; ++j) {
+          curr_line_weights.push_back(oneline_weights[j]);
+          if (oneline_weights[j] < 0) {
+            Log::Fatal("Auc-mu weights matrix must contain only non-negative values. Found negative value at position [%d, %d]",
+                       i, j);
+          }
+          if ((i == j) && (oneline_weights[j] > kEpsilon)) {
+            Log::Warning("Diagonal of auc-mu weights matrix must be zero. Overriding entry at position [%d, %d] with zero.",
+                         i, j);
+            curr_line_weights.push_back(0);
+          }
+        }
+      auc_mu_weights.push_back(curr_line_weights);
+      }
+    };
+  reader.ReadAllAndProcessParallel(process_fun);
+  if (auc_mu_weights.size() != num_class) {
+    Log::Fatal("Auc-mu matrix must have %d rows but found %d", num_class, auc_mu_weights.size());
+  }
+  } else {
+    // equal weights for all classes
+    auc_mu_weights = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 1));
+    for (size_t i = 0; i < num_class; ++i) {
+      auc_mu_weights[i][i] = 0;
+    }
+  }
+};
+
 void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
@@ -225,6 +286,8 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetTreeLearnerType(params, &tree_learner);
 
   GetMembersFromString(params);
+
+  GetAucMuWeights(params);
 
   // sort eval_at
   std::sort(eval_at.begin(), eval_at.end());
@@ -283,6 +346,7 @@ void Config::CheckParamConflict() {
     bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
                                    || metric_type == std::string("multi_logloss")
                                    || metric_type == std::string("multi_error")
+                                   || metric_type == std::string("auc_mu")
                                    || (metric_type == std::string("custom") && num_class_check > 1));
     if ((objective_type_multiclass && !metric_type_multiclass)
         || (!objective_type_multiclass && metric_type_multiclass)) {

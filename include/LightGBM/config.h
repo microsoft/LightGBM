@@ -778,6 +778,7 @@ struct Config {
   // descl2 = ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
   // descl2 = ``cross_entropy_lambda``, "intensity-weighted" cross-entropy, aliases: ``xentlambda``
   // descl2 = ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
+  // descl2 = ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 
@@ -805,6 +806,12 @@ struct Config {
   // descl2 = more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
   // desc = when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
   int multi_error_top_k = 1;
+
+  // desc = file containing matrix of weights for calculating auc-mu multi-class metric
+  // desc = matrix must be square, with number of rows and columns equal to number of classes
+  // desc = if not specified, will use equal weights for all classes
+  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/multiclass_classification/loss.weights>`__ as an example
+  std::string auc_mu_weights_file = "";
 
   #pragma endregion
 
@@ -861,11 +868,13 @@ struct Config {
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static std::unordered_map<std::string, std::string> alias_table;
   static std::unordered_set<std::string> parameter_set;
+  std::vector<std::vector<double>> auc_mu_weights;
 
  private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
+  void GetAucMuWeights(const std::unordered_map<std::string, std::string>& params);
 };
 
 inline bool Config::GetString(

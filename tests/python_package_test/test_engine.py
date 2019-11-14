@@ -428,6 +428,61 @@ class TestEngine(unittest.TestCase):
                   valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
         self.assertAlmostEqual(results['training']['multi_error@2'][-1], 0)
 
+    def test_auc_mu(self):
+        # should give same result as binary auc for 2 classes
+        X, y = load_digits(10, True)
+        y_new = np.zeros((len(y)))
+        y_new[y != 0] = 1
+        lgb_X = lgb.Dataset(X, label=y_new)
+        params = {'objective': 'multiclass',
+                  'metric': 'auc_mu',
+                  'verbose': -1,
+                  'num_classes': 2,
+                  'seed': 0}
+        results_auc_mu = {}
+        lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
+        lgb_X = lgb.Dataset(X, label=(y == 0).astype(int))
+        params = {'objective': 'binary',
+                  'metric': 'auc',
+                  'verbose': -1,
+                  'seed': 0}
+        results_auc = {}
+        lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc)
+        self.assertAlmostEqual(results_auc_mu['training']['auc-mu'][-1], results_auc['training']['auc'][-1])
+        # should give 1 when accuracy = 1
+        X, y = load_digits(10, True)
+        X = X[:10, :]
+        y = y[:10]
+        lgb_X = lgb.Dataset(X, label=y)
+        params = {'objective': 'multiclass',
+                  'metric': 'auc_mu',
+                  'num_classes': 10,
+                  'min_data_in_leaf': 1,
+                  'verbose': -1}
+        results = {}
+        lgb.train(params, lgb_X, num_boost_round=100, valid_sets=[lgb_X], evals_result=results)
+        self.assertAlmostEqual(results['training']['auc-mu'][-1], 1)
+        # test loading weights
+        Xy = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     '../../examples/multiclass_classification/multiclass.train'))
+        y = Xy[:, 0]
+        X = Xy[:, 1:]
+        lgb_X = lgb.Dataset(X, label=y)
+        weights_file = os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                    '../../examples/multiclass_classification/loss.weights'))
+        params = {'objective': 'multiclass',
+                  'metric': 'auc_mu',
+                  'auc_mu_weights_file': weights_file,
+                  'num_classes': 5,
+                  'verbose': -1,
+                  'seed': 0}
+        results_weight = {}
+        lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_weight)
+        params['auc_mu_weights_file'] = ""
+        results_no_weight = {}
+        lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_no_weight)
+        self.assertNotEqual(results_weight['training']['auc-mu'][-1], results_no_weight['training']['auc-mu'][-1])
+
     def test_early_stopping(self):
         X, y = load_breast_cancer(True)
         params = {
