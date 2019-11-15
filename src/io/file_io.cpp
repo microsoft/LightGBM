@@ -54,7 +54,8 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
   const std::string mode_;
 };
 
-const std::string kHdfsProto = "hdfs://";
+const char* kHdfsProto = "hdfs://";
+const size_t kHdfsProtoLength = strlen(kHdfsProto);
 
 #ifdef USE_HDFS
 struct HDFSFile : VirtualFileReader, VirtualFileWriter {
@@ -117,12 +118,12 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
   }
 
   static hdfsFS GetHDFSFileSystem(const std::string& uri) {
-    size_t end = uri.find("/", kHdfsProto.length());
+    size_t end = uri.find("/", kHdfsProtoLength);
     if (uri.find(kHdfsProto) != 0 || end == std::string::npos) {
       Log::Warning("Bad HDFS uri, no namenode found [%s]", uri.c_str());
       return NULL;
     }
-    std::string hostport = uri.substr(kHdfsProto.length(), end - kHdfsProto.length());
+    std::string hostport = uri.substr(kHdfsProtoLength, end - kHdfsProtoLength);
     if (fs_cache_.count(hostport) == 0) {
       fs_cache_[hostport] = MakeHDFSFileSystem(hostport);
     }
