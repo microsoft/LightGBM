@@ -411,7 +411,8 @@ struct __TToStringHelperFast<T, true, false> {
                   #ifdef _MSC_VER
                   buf_len
                   #endif
-                  ) const {
+                  )
+  const {
     #ifdef _MSC_VER
     sprintf_s(buffer, buf_len, "%g", value);
     #else
