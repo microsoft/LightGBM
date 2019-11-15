@@ -65,7 +65,21 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
-    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include || exit 0
+    cpplint \
+        --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length \
+        --recursive \
+        ./src \
+        ./include 2>&1 | tee cpplint.txt | cat \
+        || echo "cpplint issues found"
+    ERRORS_FOUND=$(
+        cat cpplint.txt \
+        | grep 'Total errors found' \
+        | tr -d 'Total errors found: '
+    )
+    if [[ ${ERRORS_FOUND} -gt ${MAX_CPPLINT_ERRORS} ]]; then
+        echo "cpplint found ${ERRORS_FOUND} issues. Only ${MAX_CPPLINT_ERRORS} are allowed.";
+        exit -1
+    fi
     exit 0
 fi
 
