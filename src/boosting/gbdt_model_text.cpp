@@ -2,6 +2,7 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+#include <LightGBM/config.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/common.h>
@@ -455,9 +456,10 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
 
   if (key_vals.count("objective")) {
     auto str = key_vals["objective"];
-    loaded_objective_.reset(ObjectiveFunction::CreateObjectiveFunction(str));
+    loaded_objective_.reset(ObjectiveFunction::CreateObjectiveFunction(ParseObjectiveAlias(str)));
     objective_function_ = loaded_objective_.get();
   }
+
   if (!key_vals.count("tree_sizes")) {
     while (p < end) {
       auto line_len = Common::GetLine(p);
