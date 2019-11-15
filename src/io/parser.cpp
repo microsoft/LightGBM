@@ -4,8 +4,8 @@
  */
 #include "parser.hpp"
 
-#include <algorithm>
 #include <string>
+#include <algorithm>
 #include <fstream>
 #include <functional>
 #include <iostream>
