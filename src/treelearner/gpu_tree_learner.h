@@ -173,17 +173,17 @@ class GPUTreeLearner: public SerialTreeLearner {
   /*! \brief GPU command queue object */
   boost::compute::command_queue queue_;
   /*! \brief GPU kernel for 256 bins */
-  const char *kernel256_src_ =
+  const char *kernel256_src_ = {
   #include "ocl/histogram256.cl"
-  ;
+  };
   /*! \brief GPU kernel for 64 bins */
-  const char *kernel64_src_ =
+  const char *kernel64_src_ = {
   #include "ocl/histogram64.cl"
-  ;
+  };
   /*! \brief GPU kernel for 16 bins */
-  const char *kernel16_src_ =
+  const char *kernel16_src_ = {
   #include "ocl/histogram16.cl"
-  ;
+  };
   /*! \brief Currently used kernel source */
   std::string kernel_source_;
   /*! \brief Currently used kernel name */
@@ -288,4 +288,3 @@ class GPUTreeLearner: public SerialTreeLearner {
 #endif   // USE_GPU
 
 #endif   // LightGBM_TREELEARNER_GPU_TREE_LEARNER_H_
-
