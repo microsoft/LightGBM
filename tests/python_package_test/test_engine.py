@@ -448,7 +448,7 @@ class TestEngine(unittest.TestCase):
                   'seed': 0}
         results_auc = {}
         lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc)
-        self.assertAlmostEqual(results_auc_mu['training']['auc-mu'][-1], results_auc['training']['auc'][-1])
+        self.assertAlmostEqual(results_auc_mu['training']['auc_mu'][-1], results_auc['training']['auc'][-1])
         # test the case where all predictions are equal
         lgb_X = lgb.Dataset(X[:10], label=y_new[:10])
         params = {'objective': 'multiclass',
@@ -459,7 +459,7 @@ class TestEngine(unittest.TestCase):
                   'seed': 0}
         results_auc_mu = {}
         lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
-        self.assertAlmostEqual(results_auc_mu['training']['auc-mu'][-1], 0.5)
+        self.assertAlmostEqual(results_auc_mu['training']['auc_mu'][-1], 0.5)
         # should give 1 when accuracy = 1
         X, y = load_digits(10, True)
         X = X[:10, :]
@@ -472,7 +472,7 @@ class TestEngine(unittest.TestCase):
                   'verbose': -1}
         results = {}
         lgb.train(params, lgb_X, num_boost_round=100, valid_sets=[lgb_X], evals_result=results)
-        self.assertAlmostEqual(results['training']['auc-mu'][-1], 1)
+        self.assertAlmostEqual(results['training']['auc_mu'][-1], 1)
         # test loading weights
         Xy = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                      '../../examples/multiclass_classification/multiclass.train'))
@@ -492,7 +492,7 @@ class TestEngine(unittest.TestCase):
         params['auc_mu_weights_file'] = ""
         results_no_weight = {}
         lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_no_weight)
-        self.assertNotEqual(results_weight['training']['auc-mu'][-1], results_no_weight['training']['auc-mu'][-1])
+        self.assertNotEqual(results_weight['training']['auc_mu'][-1], results_no_weight['training']['auc_mu'][-1])
 
     def test_early_stopping(self):
         X, y = load_breast_cancer(True)

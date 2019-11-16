@@ -193,7 +193,7 @@ public:
   double factor_to_bigger_better() const override { return 1.0f; }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back("auc-mu");
+    name_.emplace_back("auc_mu");
 
     num_data_ = num_data;
     label_ = metadata.label();
