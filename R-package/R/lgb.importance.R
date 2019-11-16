@@ -24,12 +24,12 @@
 #' params <- list(
 #'   objective = "binary"
 #'   , learning_rate = 0.01
-#'   , num_leaves = 63
-#'   , max_depth = -1
-#'   , min_data_in_leaf = 1
-#'   , min_sum_hessian_in_leaf = 1
+#'   , num_leaves = 63L
+#'   , max_depth = -1L
+#'   , min_data_in_leaf = 1L
+#'   , min_sum_hessian_in_leaf = 1.0
 #' )
-#' model <- lgb.train(params, dtrain, 10)
+#' model <- lgb.train(params, dtrain, 10L)
 #'
 #' tree_imp1 <- lgb.importance(model, percentage = TRUE)
 #' tree_imp2 <- lgb.importance(model, percentage = FALSE)
@@ -62,8 +62,8 @@ lgb.importance <- function(model, percentage = TRUE) {
   # Sort features by Gain
   data.table::setorderv(
     x = tree_imp_dt
-    , cols = c("Gain")
-    , order = -1
+    , cols = "Gain"
+    , order = -1L
   )
 
   # Check if relative values are requested

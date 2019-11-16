@@ -48,8 +48,8 @@ lightgbm <- function(data,
                      label = NULL,
                      weight = NULL,
                      params = list(),
-                     nrounds = 10,
-                     verbose = 1,
+                     nrounds = 10L,
+                     verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,
                      save_name = "lightgbm.model",
@@ -59,7 +59,7 @@ lightgbm <- function(data,
 
   # Set data to a temporary variable
   dtrain <- data
-  if (nrounds <= 0) {
+  if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
@@ -69,8 +69,8 @@ lightgbm <- function(data,
 
   # Set validation as oneself
   valids <- list()
-  if (verbose > 0) {
-    valids$train = dtrain
+  if (verbose > 0L) {
+    valids$train <- dtrain
   }
 
   # Train a model using the regular way

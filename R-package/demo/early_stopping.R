@@ -12,19 +12,19 @@ dtest <- lgb.Dataset.create.valid(dtrain, data = agaricus.test$data, label = aga
 # Note: what we are getting is margin value in prediction
 # You must know what you are doing
 param <- list(
-  num_leaves = 4
-  , learning_rate = 1
+  num_leaves = 4L
+  , learning_rate = 1.0
 )
 valids <- list(eval = dtest)
-num_round <- 20
+num_round <- 20L
 
 # User define objective function, given prediction, return gradient and second order gradient
 # This is loglikelihood loss
 logregobj <- function(preds, dtrain) {
   labels <- getinfo(dtrain, "label")
-  preds <- 1 / (1 + exp(-preds))
+  preds <- 1.0 / (1.0 + exp(-preds))
   grad <- preds - labels
-  hess <- preds * (1 - preds)
+  hess <- preds * (1.0 - preds)
   return(list(grad = grad, hess = hess))
 }
 
@@ -48,5 +48,5 @@ bst <- lgb.train(
   , valids
   , objective = logregobj
   , eval = evalerror
-  , early_stopping_round = 3
+  , early_stopping_round = 3L
 )

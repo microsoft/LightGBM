@@ -84,14 +84,14 @@ Predictor <- R6::R6Class(
 
       # Check if number of iterations is existing - if not, then set it to -1 (use all)
       if (is.null(num_iteration)) {
-        num_iteration <- -1
+        num_iteration <- -1L
       }
 
       # Set temporary variable
       num_row <- 0L
 
       # Check if data is a file name and not a matrix
-      if (identical(class(data), "character") && length(data) == 1) {
+      if (identical(class(data), "character") && length(data) == 1L) {
 
         # Data is a filename, create a temporary file with a "lightgbm_" pattern in it
         tmp_filename <- tempfile(pattern = "lightgbm_")
@@ -156,7 +156,7 @@ Predictor <- R6::R6Class(
           )
 
         } else if (methods::is(data, "dgCMatrix")) {
-          if (length(data@p) > 2147483647) {
+          if (length(data@p) > 2147483647L) {
             stop("Cannot support large CSC matrix")
           }
           # Check if data is a dgCMatrix (sparse matrix, column compressed format)
@@ -187,11 +187,11 @@ Predictor <- R6::R6Class(
       }
 
       # Check if number of rows is strange (not a multiple of the dataset rows)
-      if (length(preds) %% num_row != 0) {
+      if (length(preds) %% num_row != 0L) {
         stop(
           "predict: prediction length "
           , sQuote(length(preds))
-          ," is not a multiple of nrows(data): "
+          , " is not a multiple of nrows(data): "
           , sQuote(num_row)
         )
       }
@@ -207,7 +207,7 @@ Predictor <- R6::R6Class(
         # Predict leaves only, reshaping is mandatory
         preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
 
-      } else if (reshape && npred_per_case > 1) {
+      } else if (reshape && npred_per_case > 1L) {
 
         # Predict with data reshaping
         preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)

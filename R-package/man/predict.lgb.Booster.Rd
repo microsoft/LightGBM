@@ -41,12 +41,12 @@ the \code{lgb.Booster} object passed to \code{object}.}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-For multiclass classification, either a \code{num_class * nrows(data)} vector or
-a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-the \code{reshape} value.
+        For multiclass classification, either a \code{num_class * nrows(data)} vector or
+        a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
+        the \code{reshape} value.
 
-When \code{predleaf = TRUE}, the output is a matrix object with the
-number of columns corresponding to the number of trees.
+        When \code{predleaf = TRUE}, the output is a matrix object with the
+        number of columns corresponding to the number of trees.
 }
 \description{
 Predicted values based on class \code{lgb.Booster}
@@ -64,11 +64,11 @@ valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
-  , nrounds = 10
+  , nrounds = 10L
   , valids = valids
-  , min_data = 1
-  , learning_rate = 1
-  , early_stopping_rounds = 5
+  , min_data = 1L
+  , learning_rate = 1.0
+  , early_stopping_rounds = 5L
 )
 preds <- predict(model, test$data)
 

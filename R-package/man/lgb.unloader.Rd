@@ -21,7 +21,9 @@ environment. Defaults to \code{FALSE} which means to not remove them.}
 NULL invisibly.
 }
 \description{
-Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R. This is useful for instance if an object becomes stuck for no apparent reason and you do not want to restart R to fix the lost object.
+Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R.
+This is useful for instance if an object becomes stuck for no apparent reason and you do not want
+to restart R to fix the lost object.
 }
 \examples{
 library(lightgbm)
@@ -36,11 +38,11 @@ valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
-  , nrounds = 10
+  , nrounds = 10L
   , valids = valids
-  , min_data = 1
-  , learning_rate = 1
-  , early_stopping_rounds = 5
+  , min_data = 1L
+  , learning_rate = 1.0
+  , early_stopping_rounds = 5L
 )
 
 \dontrun{
