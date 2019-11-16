@@ -449,6 +449,17 @@ class TestEngine(unittest.TestCase):
         results_auc = {}
         lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc)
         self.assertAlmostEqual(results_auc_mu['training']['auc-mu'][-1], results_auc['training']['auc'][-1])
+        # test the case where all predictions are equal
+        lgb_X = lgb.Dataset(X[:10], label=y_new[:10])
+        params = {'objective': 'multiclass',
+                  'metric': 'auc_mu',
+                  'verbose': -1,
+                  'num_classes': 2,
+                  'min_data_in_leaf': 20,
+                  'seed': 0}
+        results_auc_mu = {}
+        lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
+        self.assertAlmostEqual(results_auc_mu['training']['auc-mu'][-1], 0.5)
         # should give 1 when accuracy = 1
         X, y = load_digits(10, True)
         X = X[:10, :]

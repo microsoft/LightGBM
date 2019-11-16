@@ -244,7 +244,17 @@ public:
           dist.push_back(std::pair<data_size_t, double>(a, t1 * v_a));
         }
         Common::ParallelSort(dist.begin(), dist.end(),
-          [](std::pair<data_size_t, double> a, std::pair<data_size_t, double> b) { return a.second < b.second; });
+          [this](std::pair<data_size_t, double> a, std::pair<data_size_t, double> b) {
+          // if scores are equal, put j class first
+          if (std::fabs(a.second - b.second) < kEpsilon) {
+            return label_[a.first] > label_[b.first];
+          }
+          else if (a.second < b.second) {
+            return true;
+          } else if (a.second > b.second) {
+            return false;
+          }
+        });
         // calculate auc
         double num_j = 0;
         double last_j_dist = 0;
