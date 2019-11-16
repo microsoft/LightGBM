@@ -427,8 +427,7 @@ struct JsonParser final {
           comment_found = consume_comment();
           if (failed) return;
           consume_whitespace();
-        }
-        while (comment_found);
+        } while (comment_found);
       }
     }
 

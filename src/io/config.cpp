@@ -21,7 +21,7 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const 
       value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
     }
     if (!Common::CheckASCII(key) || !Common::CheckASCII(value)) {
-      Log::Fatal("Do not support non-ascii characters in config.");
+      Log::Fatal("Do not support non-ASCII characters in config.");
     }
     if (key.size() > 0) {
       auto value_search = params->find(key);
@@ -64,59 +64,6 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
   }
-}
-
-std::string ParseObjectiveAlias(const std::string& type) {
-  if (type == std::string("regression") || type == std::string("regression_l2")
-    || type == std::string("mean_squared_error") || type == std::string("mse") || type == std::string("l2")
-    || type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
-    return "regression";
-  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error")
-    || type == std::string("l1") || type == std::string("mae")) {
-    return "regression_l1";
-  } else if (type == std::string("multiclass") || type == std::string("softmax")) {
-    return "multiclass";
-  } else if (type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
-    return "multiclassova";
-  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
-    return "cross_entropy";
-  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
-    return "cross_entropy_lambda";
-  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
-    return "mape";
-  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
-    return "custom";
-  }
-  return type;
-}
-
-std::string ParseMetricAlias(const std::string& type) {
-  if (type == std::string("regression") || type == std::string("regression_l2") || type == std::string("l2") || type == std::string("mean_squared_error") || type == std::string("mse")) {
-    return "l2";
-  } else if (type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
-    return "rmse";
-  } else if (type == std::string("regression_l1") || type == std::string("l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
-    return "l1";
-  } else if (type == std::string("binary_logloss") || type == std::string("binary")) {
-    return "binary_logloss";
-  } else if (type == std::string("ndcg") || type == std::string("lambdarank")) {
-    return "ndcg";
-  } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
-    return "map";
-  } else if (type == std::string("multi_logloss") || type == std::string("multiclass") || type == std::string("softmax") || type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
-    return "multi_logloss";
-  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
-    return "cross_entropy";
-  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
-    return "cross_entropy_lambda";
-  } else if (type == std::string("kldiv") || type == std::string("kullback_leibler")) {
-    return "kullback_leibler";
-  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
-    return "mape";
-  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
-    return "custom";
-  }
-  return type;
 }
 
 void ParseMetrics(const std::string& value, std::vector<std::string>* out_metric) {

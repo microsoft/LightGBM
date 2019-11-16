@@ -561,7 +561,11 @@ class Dataset {
     for (auto& feature_name : feature_names_) {
       // check ascii
       if (!Common::CheckASCII(feature_name)) {
-        Log::Fatal("Do not support non-ascii characters in feature name.");
+        Log::Fatal("Do not support non-ASCII characters in feature name.");
+      }
+      // check json
+      if (!Common::CheckAllowedJSON(feature_name)) {
+        Log::Fatal("Do not support special JSON characters in feature name.");
       }
       if (feature_name.find(' ') != std::string::npos) {
         spaceInFeatureName = true;

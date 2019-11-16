@@ -411,7 +411,8 @@ struct __TToStringHelperFast<T, true, false> {
                   #ifdef _MSC_VER
                   buf_len
                   #endif
-                  ) const {
+                  )
+  const {
     #ifdef _MSC_VER
     sprintf_s(buffer, buf_len, "%g", value);
     #else
@@ -921,6 +922,24 @@ static T SafeLog(T x) {
 inline bool CheckASCII(const std::string& s) {
   for (auto c : s) {
     if (static_cast<unsigned char>(c) > 127) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool CheckAllowedJSON(const std::string& s) {
+  unsigned char char_code;
+  for (auto c : s) {
+    char_code = static_cast<unsigned char>(c);
+    if (char_code == 34      // "
+        || char_code == 44   // ,
+        || char_code == 58   // :
+        || char_code == 91   // [
+        || char_code == 93   // ]
+        || char_code == 123  // {
+        || char_code == 125  // }
+        ) {
       return false;
     }
   }
