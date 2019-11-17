@@ -16,7 +16,7 @@ lgb.cv(
   verbose = 1L,
   record = TRUE,
   eval_freq = 1L,
-  shows = TRUE,
+  showsd = TRUE,
   stratified = TRUE,
   folds = NULL,
   init_model = NULL,
