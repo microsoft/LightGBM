@@ -38,6 +38,11 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target /
+
+    # Fix "duplicate libomp versions" issue on Mac
+    if [[ $AZURE == "true" ]]; then
+        conda install -y nomkl
+    fi
 fi
 
 conda install \
