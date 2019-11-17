@@ -271,7 +271,7 @@ lgb.cv <- function(params = list()
   bst_folds <- lapply(
     X = seq_along(folds)
     , FUN = function(k) {
-      if (is.list(folds[[k]])){
+      if (is.list(folds[[k]])) {
         test_indices <- folds[[k]]$fold
         group <- folds[[k]]$group
       } else {
@@ -302,7 +302,7 @@ lgb.cv <- function(params = list()
       setinfo(dtrain, "weight", indexDT$weight)
       setinfo(dtrain, "init_score", indexDT$init_score)
 
-      if (!is.null(group)){
+      if (!is.null(group)) {
         setinfo(dtest, "group", group)
         setinfo(dtrain, "group", group)
       }
