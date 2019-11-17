@@ -24,7 +24,7 @@ env:
     - TASK=mpi METHOD=pip
     - TASK=gpu METHOD=source PYTHON_VERSION=3.5
     - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
-    - TASK=r-package R_MAC_VERSION=3.6.1 R_LINUX_VERSION=3.6.1-3
+    - TASK=r-package R_MAC_VERSION=3.6.1 R_TRAVIS_LINUX_VERSION=3.6.1-3bionic
 
 matrix:
   exclude:

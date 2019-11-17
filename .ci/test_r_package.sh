@@ -10,17 +10,13 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 # installing precompiled R for Ubuntu
 # https://cran.r-project.org/bin/linux/ubuntu/#installation
 # adding steps from https://stackoverflow.com/a/56378217/3986677 to get latest version
-if [[ $OS_NAME == "linux" ]]; then
+#
+# This only needs to get run on Travis because R environment for Linux
+# used by Azure pipelines is set up in https://github.com/guolinke/lightgbm-ci-docker
+if [[ $TRAVIS == "true" ]] &&  [[ $OS_NAME == "linux" ]]; then
     sudo apt-get update
-    # Need to figure out which version of ubuntu you are on
-    # to set the right channels
-    sudo apt-get install \
-        --no-install-recommends \
-        -y \
-            lsb-release
-    UBUNTU_CODENAME=$(lsb_release --codename --short)
     sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu ${UBUNTU_CODENAME}-cran35/"
+        "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
@@ -28,7 +24,7 @@ if [[ $OS_NAME == "linux" ]]; then
     sudo apt-get install \
         --no-install-recommends \
         -y \
-            r-base-dev=${R_LINUX_VERSION}${UBUNTU_CODENAME} \
+            r-base-dev=${R_TRAVIS_LINUX_VERSION} \
             texlive-latex-recommended \
             texlive-fonts-recommended \
             texlive-fonts-extra \
