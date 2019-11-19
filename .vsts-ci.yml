@@ -79,14 +79,14 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.6
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.5
-      bdist:
-        TASK: bdist
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.6
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 3.5
+      # bdist:
+      #   TASK: bdist
       r_package:
         TASK: r-package
         R_MAC_VERSION: 3.6.1
@@ -123,12 +123,12 @@ jobs:
       regular:
         TASK: regular
         PYTHON_VERSION: 3.7
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 2.7
-      bdist:
-        TASK: bdist
-        PYTHON_VERSION: 3.5
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 2.7
+      # bdist:
+      #   TASK: bdist
+      #   PYTHON_VERSION: 3.5
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Enable conda
