@@ -36,6 +36,9 @@ class Application {
   /*! \brief To call this function to run application*/
   inline void Run();
 
+  /*! \brief Returns whether we are running in parallel mode*/
+  inline bool IsParallel();
+
  private:
   /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);
@@ -74,6 +77,9 @@ class Application {
   std::unique_ptr<ObjectiveFunction> objective_fun_;
 };
 
+inline bool Application::IsParallel() {
+  return (config_.is_parallel);
+}
 
 inline void Application::Run() {
   if (config_.task == TaskType::kPredict || config_.task == TaskType::KRefitTree) {
