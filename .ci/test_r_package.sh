@@ -40,6 +40,7 @@ if [[ $OS_NAME == "macos" ]]; then
         -target /
 
     # Fix "duplicate libomp versions" issue on Mac
+    echo "fixing libomp stuff (compiler ${COMPILER})"
     if [[ $AZURE == "true" ]]; then
         for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do
             sudo ln -sf \
