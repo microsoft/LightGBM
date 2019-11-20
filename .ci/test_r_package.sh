@@ -43,7 +43,7 @@ if [[ $OS_NAME == "macos" ]]; then
     echo "fixing libomp stuff (compiler ${COMPILER})"
     if [[ $AZURE == "true" ]]; then
         for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do
-            sudo find /usr -name ${LIBOMP_ALIAS}
+            sudo find / -name ${LIBOMP_ALIAS}
         done
         sudo rm /usr/local/lib/libomp.dylib
             #sudo ln -sf \
