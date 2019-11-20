@@ -282,7 +282,7 @@ lgb.cv <- function(params = list()
 
       # set up test set
       indexDT <- data.table::data.table(
-        indices = train_indices
+        indices = test_indices
         , weight = getinfo(data, "weight")[test_indices]
         , init_score = getinfo(data, "init_score")[test_indices]
       )
