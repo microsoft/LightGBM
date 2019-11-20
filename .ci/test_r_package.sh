@@ -14,7 +14,6 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 # This only needs to get run on Travis because R environment for Linux
 # used by Azure pipelines is set up in https://github.com/guolinke/lightgbm-ci-docker
 if [[ $TRAVIS == "true" ]] &&  [[ $OS_NAME == "linux" ]]; then
-    sudo apt-get update
     sudo add-apt-repository \
         "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
     sudo apt-key adv \
@@ -40,25 +39,12 @@ if [[ $OS_NAME == "macos" ]]; then
         -target /
 
     # Fix "duplicate libomp versions" issue on Mac
+    # by replacing the R libomp.dylib with a symlink to the one installed with brew
     echo "fixing libomp stuff (compiler ${COMPILER})"
     if [[ $AZURE == "true" ]]; then
-        # for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do
-        #     sudo find / -name ${LIBOMP_ALIAS}
-        # done
-        # replace the R libomp with a symlink to the one installed with brew
         sudo ln -sf \
             "$(brew --cellar libomp)"/*/lib/libomp.dylib \
             /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libomp.dylib
-        
-        # sudo rm /usr/local/Cellar/libomp/9.0.0/lib/libomp.dylib
-            #sudo ln -sf \
-            #    /usr/local/lib/libomp.dylib \
-            #    /usr/local/Cellar/libomp/9.0.0/lib/libomp.dylib
-        #     sudo ln -sf \
-        #         "$(brew --cellar libomp)"/*/lib/libomp.dylib \
-        #         $CONDA_PREFIX/lib/$LIBOMP_ALIAS \
-        #     || exit -1;
-        #done
     fi
 fi
 
