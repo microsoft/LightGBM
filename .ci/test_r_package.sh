@@ -42,11 +42,13 @@ if [[ $OS_NAME == "macos" ]]; then
     # Fix "duplicate libomp versions" issue on Mac
     echo "fixing libomp stuff (compiler ${COMPILER})"
     if [[ $AZURE == "true" ]]; then
-        #for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do
+        for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do
             sudo find /usr -name ${LIBOMP_ALIAS}
-            sudo ln -sf \
-                /usr/local/lib/libomp.dylib \
-                /usr/local/Cellar/libomp/9.0.0/lib/libomp.dylib
+        done
+        sudo rm /usr/local/lib/libomp.dylib
+            #sudo ln -sf \
+            #    /usr/local/lib/libomp.dylib \
+            #    /usr/local/Cellar/libomp/9.0.0/lib/libomp.dylib
         #     sudo ln -sf \
         #         "$(brew --cellar libomp)"/*/lib/libomp.dylib \
         #         $CONDA_PREFIX/lib/$LIBOMP_ALIAS \
