@@ -42,10 +42,15 @@ if [[ $OS_NAME == "macos" ]]; then
     # Fix "duplicate libomp versions" issue on Mac
     echo "fixing libomp stuff (compiler ${COMPILER})"
     if [[ $AZURE == "true" ]]; then
-        for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do
-            sudo find / -name ${LIBOMP_ALIAS}
-        done
-        sudo rm /usr/local/lib/libomp.dylib
+        # for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do
+        #     sudo find / -name ${LIBOMP_ALIAS}
+        # done
+        # replace the R libomp with a symlink to the one installed with brew
+        sudo ln -sf \
+            "$(brew --cellar libomp)"/*/lib/libomp.dylib \
+            /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libomp.dylib
+        
+        # sudo rm /usr/local/Cellar/libomp/9.0.0/lib/libomp.dylib
             #sudo ln -sf \
             #    /usr/local/lib/libomp.dylib \
             #    /usr/local/Cellar/libomp/9.0.0/lib/libomp.dylib
