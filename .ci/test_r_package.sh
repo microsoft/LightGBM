@@ -41,7 +41,12 @@ if [[ $OS_NAME == "macos" ]]; then
 
     # Fix "duplicate libomp versions" issue on Mac
     if [[ $AZURE == "true" ]]; then
-        conda install -y nomkl
+        for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do
+            sudo ln -sf \
+                "$(brew --cellar libomp)"/*/lib/libomp.dylib \
+                $CONDA_PREFIX/lib/$LIBOMP_ALIAS \
+            || exit -1;
+        done
     fi
 fi
 
