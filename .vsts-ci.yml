@@ -44,7 +44,6 @@ jobs:
         PYTHON_VERSION: 3.6
       r_package:
         TASK: r-package
-        R_LINUX_VERSION: 3.6.1-3
   steps:
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
