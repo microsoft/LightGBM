@@ -411,3 +411,6 @@ lightgbm.Rcheck/
 # GraphViz artifacts
 *.gv
 *.gv.*
+
+# cpplint
+**/cpplint.txt
