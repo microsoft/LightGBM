@@ -856,6 +856,8 @@ struct Config {
 
   #pragma endregion
 
+  size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
+
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
