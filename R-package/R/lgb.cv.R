@@ -3,7 +3,7 @@ CVBooster <- R6::R6Class(
   classname = "lgb.CVBooster",
   cloneable = FALSE,
   public = list(
-    best_iter = -1,
+    best_iter = -1L,
     best_score = NA,
     record_evals = list(),
     boosters = list(),
@@ -64,34 +64,35 @@ CVBooster <- R6::R6Class(
 #' model <- lgb.cv(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
-#'   , nfold = 3
-#'   , min_data = 1
-#'   , learning_rate = 1
-#'   , early_stopping_rounds = 5
+#'   , nrounds = 10L
+#'   , nfold = 3L
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#'   , early_stopping_rounds = 5L
 #' )
 #' @export
-lgb.cv <- function(params = list(),
-                   data,
-                   nrounds = 10,
-                   nfold = 3,
-                   label = NULL,
-                   weight = NULL,
-                   obj = NULL,
-                   eval = NULL,
-                   verbose = 1,
-                   record = TRUE,
-                   eval_freq = 1L,
-                   showsd = TRUE,
-                   stratified = TRUE,
-                   folds = NULL,
-                   init_model = NULL,
-                   colnames = NULL,
-                   categorical_feature = NULL,
-                   early_stopping_rounds = NULL,
-                   callbacks = list(),
-                   reset_data = FALSE,
-                   ...) {
+lgb.cv <- function(params = list()
+                   , data
+                   , nrounds = 10L
+                   , nfold = 3L
+                   , label = NULL
+                   , weight = NULL
+                   , obj = NULL
+                   , eval = NULL
+                   , verbose = 1L
+                   , record = TRUE
+                   , eval_freq = 1L
+                   , showsd = TRUE
+                   , stratified = TRUE
+                   , folds = NULL
+                   , init_model = NULL
+                   , colnames = NULL
+                   , categorical_feature = NULL
+                   , early_stopping_rounds = NULL
+                   , callbacks = list()
+                   , reset_data = FALSE
+                   , ...
+                   ) {
 
   # Setup temporary variables
   addiction_params <- list(...)
@@ -102,7 +103,7 @@ lgb.cv <- function(params = list(),
   fobj <- NULL
   feval <- NULL
 
-  if (nrounds <= 0) {
+  if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
 
@@ -131,16 +132,16 @@ lgb.cv <- function(params = list(),
   }
 
   # Set the iteration to start from / end to (and check for boosting from a trained model, again)
-  begin_iteration <- 1
+  begin_iteration <- 1L
   if (!is.null(predictor)) {
-    begin_iteration <- predictor$current_iter() + 1
+    begin_iteration <- predictor$current_iter() + 1L
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
   n_trees <- .PARAMETER_ALIASES()[["num_iterations"]]
   if (any(names(params) %in% n_trees)) {
-    end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1]]] - 1
+    end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1L]]] - 1L
   } else {
-    end_iteration <- begin_iteration + nrounds - 1
+    end_iteration <- begin_iteration + nrounds - 1L
   }
 
   # Check for training dataset type correctness
@@ -179,7 +180,7 @@ lgb.cv <- function(params = list(),
   if (!is.null(folds)) {
 
     # Check for list of folds or for single value
-    if (!is.list(folds) || length(folds) < 2) {
+    if (!is.list(folds) || length(folds) < 2L) {
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     }
 
@@ -189,7 +190,7 @@ lgb.cv <- function(params = list(),
   } else {
 
     # Check fold value
-    if (nfold <= 1) {
+    if (nfold <= 1L) {
       stop(sQuote("nfold"), " must be > 1")
     }
 
@@ -206,7 +207,7 @@ lgb.cv <- function(params = list(),
   }
 
   # Add printing log callback
-  if (verbose > 0 && eval_freq > 0) {
+  if (verbose > 0L && eval_freq > 0L) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
 
@@ -220,7 +221,7 @@ lgb.cv <- function(params = list(),
   early_stop <- .PARAMETER_ALIASES()[["early_stopping_round"]]
   early_stop_param_indx <- names(params) %in% early_stop
   if (any(early_stop_param_indx)) {
-    first_early_stop_param <- which(early_stop_param_indx)[[1]]
+    first_early_stop_param <- which(early_stop_param_indx)[[1L]]
     first_early_stop_param_name <- names(params)[[first_early_stop_param]]
     early_stopping_rounds <- params[[first_early_stop_param_name]]
   }
@@ -232,20 +233,20 @@ lgb.cv <- function(params = list(),
   using_dart <- any(
     sapply(
       X = boosting_param_names
-      , FUN = function(param){
-        identical(params[[param]], 'dart')
+      , FUN = function(param) {
+        identical(params[[param]], "dart")
       }
     )
   )
 
   # Cannot use early stopping with 'dart' boosting
-  if (using_dart){
+  if (using_dart) {
     warning("Early stopping is not available in 'dart' mode.")
     using_early_stopping_via_args <- FALSE
 
     # Remove the cb.early.stop() function if it was passed in to callbacks
     callbacks <- Filter(
-      f = function(cb_func){
+      f = function(cb_func) {
         !identical(attr(cb_func, "name"), "cb.early.stop")
       }
       , x = callbacks
@@ -253,7 +254,7 @@ lgb.cv <- function(params = list(),
   }
 
   # If user supplied early_stopping_rounds, add the early stopping callback
-  if (using_early_stopping_via_args){
+  if (using_early_stopping_via_args) {
     callbacks <- add.cb(
       callbacks
       , cb.early.stop(
@@ -267,7 +268,7 @@ lgb.cv <- function(params = list(),
   cb <- categorize.callbacks(callbacks)
 
   # Construct booster using a list apply, check if requires group or not
-  if (!is.list(folds[[1]])) {
+  if (!is.list(folds[[1L]])) {
     bst_folds <- lapply(seq_along(folds), function(k) {
       dtest <- slice(data, folds[[k]])
       dtrain <- slice(data, seq_len(nrow(data))[-folds[[k]]])
@@ -345,12 +346,12 @@ lgb.cv <- function(params = list(),
   }
 
   if (record && is.na(env$best_score)) {
-    if (env$eval_list[[1]]$higher_better[1] == TRUE) {
-      cv_booster$best_iter <- unname(which.max(unlist(cv_booster$record_evals[[2]][[1]][[1]])))
-      cv_booster$best_score <- cv_booster$record_evals[[2]][[1]][[1]][[cv_booster$best_iter]]
+    if (env$eval_list[[1L]]$higher_better[1L] == TRUE) {
+      cv_booster$best_iter <- unname(which.max(unlist(cv_booster$record_evals[[2L]][[1L]][[1L]])))
+      cv_booster$best_score <- cv_booster$record_evals[[2L]][[1L]][[1L]][[cv_booster$best_iter]]
     } else {
-      cv_booster$best_iter <- unname(which.min(unlist(cv_booster$record_evals[[2]][[1]][[1]])))
-      cv_booster$best_score <- cv_booster$record_evals[[2]][[1]][[1]][[cv_booster$best_iter]]
+      cv_booster$best_iter <- unname(which.min(unlist(cv_booster$record_evals[[2L]][[1L]][[1L]])))
+      cv_booster$best_score <- cv_booster$record_evals[[2L]][[1L]][[1L]][[cv_booster$best_iter]]
     }
   }
 
@@ -398,7 +399,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 
       # Loop through each fold
       for (i in seq_len(nfold)) {
-        kstep <- length(rnd_idx) %/% (nfold - i + 1)
+        kstep <- length(rnd_idx) %/% (nfold - i + 1L)
         folds[[i]] <- rnd_idx[seq_len(kstep)]
         rnd_idx <- rnd_idx[-seq_len(kstep)]
       }
@@ -423,7 +424,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 
     # Loop through each fold
     for (i in seq_len(nfold)) {
-      kstep <- length(rnd_idx) %/% (nfold - i + 1)
+      kstep <- length(rnd_idx) %/% (nfold - i + 1L)
       folds[[i]] <- list(
         fold = which(ungrouped %in% rnd_idx[seq_len(kstep)])
         , group = rnd_idx[seq_len(kstep)]
@@ -442,7 +443,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 # It was borrowed from caret::lgb.stratified.folds and simplified
 # by always returning an unnamed list of fold indices.
 #' @importFrom stats quantile
-lgb.stratified.folds <- function(y, k = 10) {
+lgb.stratified.folds <- function(y, k = 10L) {
 
   ## Group the numeric data based on their magnitudes
   ## and sample within those groups.
@@ -455,15 +456,15 @@ lgb.stratified.folds <- function(y, k = 10) {
   if (is.numeric(y)) {
 
     cuts <- length(y) %/% k
-    if (cuts < 2) {
-      cuts <- 2
+    if (cuts < 2L) {
+      cuts <- 2L
     }
-    if (cuts > 5) {
-      cuts <- 5
+    if (cuts > 5L) {
+      cuts <- 5L
     }
     y <- cut(
       y
-      , unique(stats::quantile(y, probs = seq.int(0, 1, length.out = cuts)))
+      , unique(stats::quantile(y, probs = seq.int(0.0, 1.0, length.out = cuts)))
       , include.lowest = TRUE
     )
 
@@ -489,7 +490,7 @@ lgb.stratified.folds <- function(y, k = 10) {
       seqVector <- rep(seq_len(k), numInClass[i] %/% k)
 
       ## Add enough random integers to get  length(seqVector) == numInClass[i]
-      if (numInClass[i] %% k > 0) {
+      if (numInClass[i] %% k > 0L) {
         seqVector <- c(seqVector, sample.int(k, numInClass[i] %% k))
       }
 
@@ -513,15 +514,15 @@ lgb.stratified.folds <- function(y, k = 10) {
 lgb.merge.cv.result <- function(msg, showsd = TRUE) {
 
   # Get CV message length
-  if (length(msg) == 0) {
+  if (length(msg) == 0L) {
     stop("lgb.cv: size of cv result error")
   }
 
   # Get evaluation message length
-  eval_len <- length(msg[[1]])
+  eval_len <- length(msg[[1L]])
 
   # Is evaluation message empty?
-  if (eval_len == 0) {
+  if (eval_len == 0L) {
     stop("lgb.cv: should provide at least one metric for CV")
   }
 
@@ -532,7 +533,7 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
   })
 
   # Get evaluation
-  ret_eval <- msg[[1]]
+  ret_eval <- msg[[1L]]
 
   # Go through evaluation length items
   for (j in seq_len(eval_len)) {
@@ -549,7 +550,7 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
     for (j in seq_len(eval_len)) {
       ret_eval_err <- c(
         ret_eval_err
-        , sqrt(mean(eval_result[[j]] ^ 2) - mean(eval_result[[j]]) ^ 2)
+        , sqrt(mean(eval_result[[j]] ^ 2L) - mean(eval_result[[j]]) ^ 2L)
       )
     }
 

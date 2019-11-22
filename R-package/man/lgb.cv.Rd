@@ -7,13 +7,13 @@
 lgb.cv(
   params = list(),
   data,
-  nrounds = 10,
-  nfold = 3,
+  nrounds = 10L,
+  nfold = 3L,
   label = NULL,
   weight = NULL,
   obj = NULL,
   eval = NULL,
-  verbose = 1,
+  verbose = 1L,
   record = TRUE,
   eval_freq = 1L,
   showsd = TRUE,
@@ -53,8 +53,6 @@ lgb.cv(
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
-\item{showsd}{\code{boolean}, whether to show standard deviation of cross validation}
-
 \item{stratified}{a \code{boolean} indicating whether sampling of folds should be stratified
 by the values of outcome labels.}
 
@@ -90,6 +88,8 @@ into a predictor model which frees up memory and the original datasets}
                        the number of real CPU cores, not the number of threads (most
                        CPU using hyper-threading to generate 2 threads per CPU core).}
 }}
+
+\item{showsd}{\code{boolean}, whether to show standard deviation of cross validation}
 }
 \value{
 a trained model \code{lgb.CVBooster}.
@@ -106,10 +106,10 @@ params <- list(objective = "regression", metric = "l2")
 model <- lgb.cv(
   params = params
   , data = dtrain
-  , nrounds = 10
-  , nfold = 3
-  , min_data = 1
-  , learning_rate = 1
-  , early_stopping_rounds = 5
+  , nrounds = 10L
+  , nfold = 3L
+  , min_data = 1L
+  , learning_rate = 1.0
+  , early_stopping_rounds = 5L
 )
 }

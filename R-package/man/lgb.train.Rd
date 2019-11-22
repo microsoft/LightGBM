@@ -7,11 +7,11 @@
 lgb.train(
   params = list(),
   data,
-  nrounds = 10,
+  nrounds = 10L,
   valids = list(),
   obj = NULL,
   eval = NULL,
-  verbose = 1,
+  verbose = 1L,
   record = TRUE,
   eval_freq = 1L,
   init_model = NULL,
@@ -93,10 +93,10 @@ valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
-  , nrounds = 10
+  , nrounds = 10L
   , valids = valids
-  , min_data = 1
-  , learning_rate = 1
-  , early_stopping_rounds = 5
+  , min_data = 1L
+  , learning_rate = 1.0
+  , early_stopping_rounds = 5L
 )
 }

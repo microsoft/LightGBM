@@ -1,10 +1,10 @@
 context("lgb.interpete")
 
-.sigmoid <- function(x){
-    1 / (1 + exp(-x))
+.sigmoid <- function(x) {
+    1.0 / (1.0 + exp(-x))
 }
-.logit <- function(x){
-    log(x / (1 - x))
+.logit <- function(x) {
+    log(x / (1.0 - x))
 }
 
 test_that("lgb.intereprete works as expected for binary classification", {
@@ -24,21 +24,21 @@ test_that("lgb.intereprete works as expected for binary classification", {
     params <- list(
         objective = "binary"
         , learning_rate = 0.01
-        , num_leaves = 63
-        , max_depth = -1
-        , min_data_in_leaf = 1
-        , min_sum_hessian_in_leaf = 1
+        , num_leaves = 63L
+        , max_depth = -1L
+        , min_data_in_leaf = 1L
+        , min_sum_hessian_in_leaf = 1.0
     )
     model <- lgb.train(
         params = params
         , data = dtrain
-        , nrounds = 10
+        , nrounds = 10L
     )
-    num_trees <- 5
+    num_trees <- 5L
     tree_interpretation <- lgb.interprete(
         model = model
         , data = test$data
-        , idxset = 1:num_trees
+        , idxset = seq_len(num_trees)
     )
     expect_true(methods::is(tree_interpretation, "list"))
     expect_true(length(tree_interpretation) == num_trees)
@@ -46,7 +46,7 @@ test_that("lgb.intereprete works as expected for binary classification", {
     expect_true(all(
         sapply(
             X = tree_interpretation
-            , FUN = function(treeDT){
+            , FUN = function(treeDT) {
                 checks <- c(
                     data.table::is.data.table(treeDT)
                     , identical(names(treeDT), c("Feature", "Contribution"))
@@ -65,31 +65,31 @@ test_that("lgb.intereprete works as expected for multiclass classification", {
     # We must convert factors to numeric
     # They must be starting from number 0 to use multiclass
     # For instance: 0, 1, 2, 3, 4, 5...
-    iris$Species <- as.numeric(as.factor(iris$Species)) - 1
+    iris$Species <- as.numeric(as.factor(iris$Species)) - 1L
 
     # Create imbalanced training data (20, 30, 40 examples for classes 0, 1, 2)
-    train <- as.matrix(iris[c(1:20, 51:80, 101:140), ])
+    train <- as.matrix(iris[c(1L:20L, 51L:80L, 101L:140L), ])
     # The 10 last samples of each class are for validation
-    test <- as.matrix(iris[c(41:50, 91:100, 141:150), ])
-    dtrain <- lgb.Dataset(data = train[, 1:4], label = train[, 5])
-    dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1:4], label = test[, 5])
+    test <- as.matrix(iris[c(41L:50L, 91L:100L, 141L:150L), ])
+    dtrain <- lgb.Dataset(data = train[, 1L:4L], label = train[, 5L])
+    dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1L:4L], label = test[, 5L])
     params <- list(
         objective = "multiclass"
         , metric = "multi_logloss"
-        , num_class = 3
+        , num_class = 3L
         , learning_rate = 0.00001
     )
     model <- lgb.train(
         params = params
         , data = dtrain
-        , nrounds = 10
-        , min_data = 1
+        , nrounds = 10L
+        , min_data = 1L
     )
-    num_trees <- 5
+    num_trees <- 5L
     tree_interpretation <- lgb.interprete(
         model = model
-        , data = test[, 1:4]
-        , idxset = 1:num_trees
+        , data = test[, 1L:4L]
+        , idxset = seq_len(num_trees)
     )
     expect_true(methods::is(tree_interpretation, "list"))
     expect_true(length(tree_interpretation) == num_trees)
@@ -97,7 +97,7 @@ test_that("lgb.intereprete works as expected for multiclass classification", {
     expect_true(all(
         sapply(
             X = tree_interpretation
-            , FUN = function(treeDT){
+            , FUN = function(treeDT) {
                 checks <- c(
                     data.table::is.data.table(treeDT)
                     , identical(names(treeDT), c("Feature", "Class 0", "Class 1", "Class 2"))

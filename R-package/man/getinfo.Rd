@@ -12,9 +12,9 @@ getinfo(dataset, ...)
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
 
-\item{name}{the name of the information field to get (see details)}
-
 \item{...}{other parameters}
+
+\item{name}{the name of the information field to get (see details)}
 }
 \value{
 info data

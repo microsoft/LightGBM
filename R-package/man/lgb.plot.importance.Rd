@@ -6,9 +6,9 @@
 \usage{
 lgb.plot.importance(
   tree_imp,
-  top_n = 10,
+  top_n = 10L,
   measure = "Gain",
-  left_margin = 10,
+  left_margin = 10L,
   cex = NULL
 )
 }
@@ -42,14 +42,14 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 params <- list(
     objective = "binary"
     , learning_rate = 0.01
-    , num_leaves = 63
-    , max_depth = -1
-    , min_data_in_leaf = 1
-    , min_sum_hessian_in_leaf = 1
+    , num_leaves = 63L
+    , max_depth = -1L
+    , min_data_in_leaf = 1L
+    , min_sum_hessian_in_leaf = 1.0
 )
 
 model <- lgb.train(params, dtrain, 10)
 
 tree_imp <- lgb.importance(model, percentage = TRUE)
-lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")
+lgb.plot.importance(tree_imp, top_n = 10L, measure = "Gain")
 }

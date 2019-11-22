@@ -24,16 +24,16 @@
 #' str(new_iris$data)
 #'
 #' data(iris) # Erase iris dataset
-#' iris$Species[1] <- "NEW FACTOR" # Introduce junk factor (NA)
+#' iris$Species[1L] <- "NEW FACTOR" # Introduce junk factor (NA)
 #'
 #' # Use conversion using known rules
 #' # Unknown factors become 0, excellent for sparse datasets
 #' newer_iris <- lgb.prepare_rules2(data = iris, rules = new_iris$rules)
 #'
 #' # Unknown factor is now zero, perfect for sparse datasets
-#' newer_iris$data[1, ] # Species became 0 as it is an unknown factor
+#' newer_iris$data[1L, ] # Species became 0 as it is an unknown factor
 #'
-#' newer_iris$data[1, 5] <- 1 # Put back real initial value
+#' newer_iris$data[1L, 5L] <- 1.0 # Put back real initial value
 #'
 #' # Is the newly created dataset equal? YES!
 #' all.equal(new_iris$data, newer_iris$data)
@@ -73,14 +73,14 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
     } else {
 
       # Get data classes
-      list_classes <- vapply(data, class, character(1))
+      list_classes <- vapply(data, class, character(1L))
 
       # Map characters/factors
       is_fix <- which(list_classes %in% c("character", "factor"))
       rules <- list()
 
       # Need to create rules?
-      if (length(is_fix) > 0) {
+      if (length(is_fix) > 0L) {
 
         # Go through all characters/factors
         for (i in is_fix) {
@@ -130,14 +130,14 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
       if (inherits(data, "data.frame")) {
 
         # Get data classes
-        list_classes <- vapply(data, class, character(1))
+        list_classes <- vapply(data, class, character(1L))
 
         # Map characters/factors
         is_fix <- which(list_classes %in% c("character", "factor"))
         rules <- list()
 
         # Need to create rules?
-        if (length(is_fix) > 0) {
+        if (length(is_fix) > 0L) {
 
           # Go through all characters/factors
           for (i in is_fix) {

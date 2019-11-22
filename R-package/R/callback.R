@@ -9,7 +9,7 @@ CB_ENV <- R6::R6Class(
     end_iteration = NULL,
     eval_list = list(),
     eval_err_list = list(),
-    best_iter = -1,
+    best_iter = -1L,
     best_score = NA,
     met_early_stop = FALSE
   )
@@ -30,7 +30,7 @@ cb.reset.parameters <- function(new_params) {
   init <- function(env) {
 
     # Store boosting rounds
-    nrounds <<- env$end_iteration - env$begin_iteration + 1
+    nrounds <<- env$end_iteration - env$begin_iteration + 1L
 
     # Check for model environment
     if (is.null(env$model)) { stop("Env should have a ", sQuote("model")) }
@@ -60,7 +60,7 @@ cb.reset.parameters <- function(new_params) {
       if (is.function(p)) {
 
         # Check if requires at least two arguments
-        if (length(formals(p)) != 2) {
+        if (length(formals(p)) != 2L) {
           stop("Parameter ", sQuote(n), " is a function but not of two arguments")
         }
 
@@ -117,7 +117,7 @@ cb.reset.parameters <- function(new_params) {
 format.eval.string <- function(eval_res, eval_err = NULL) {
 
   # Check for empty evaluation string
-  if (is.null(eval_res) || length(eval_res) == 0) {
+  if (is.null(eval_res) || length(eval_res) == 0L) {
     stop("no evaluation results")
   }
 
@@ -133,7 +133,7 @@ format.eval.string <- function(eval_res, eval_err = NULL) {
 merge.eval.string <- function(env) {
 
   # Check length of evaluation list
-  if (length(env$eval_list) <= 0) {
+  if (length(env$eval_list) <= 0L) {
     return("")
   }
 
@@ -141,7 +141,7 @@ merge.eval.string <- function(env) {
   msg <- list(sprintf("[%d]:", env$iteration))
 
   # Set if evaluation error
-  is_eval_err <- length(env$eval_err_list) > 0
+  is_eval_err <- length(env$eval_err_list) > 0L
 
   # Loop through evaluation list
   for (j in seq_along(env$eval_list)) {
@@ -162,25 +162,25 @@ merge.eval.string <- function(env) {
 
 }
 
-cb.print.evaluation <- function(period = 1) {
+cb.print.evaluation <- function(period = 1L) {
 
   # Create callback
   callback <- function(env) {
 
     # Check if period is at least 1 or more
-    if (period > 0) {
+    if (period > 0L) {
 
       # Store iteration
       i <- env$iteration
 
       # Check if iteration matches moduo
-      if ( (i - 1) %% period == 0 || is.element(i, c(env$begin_iteration, env$end_iteration))) {
+      if ((i - 1L) %% period == 0L || is.element(i, c(env$begin_iteration, env$end_iteration))) {
 
         # Merge evaluation string
         msg <- merge.eval.string(env)
 
         # Check if message is existing
-        if (nchar(msg) > 0) {
+        if (nchar(msg) > 0L) {
           cat(merge.eval.string(env), "\n")
         }
 
@@ -205,15 +205,15 @@ cb.record.evaluation <- function() {
   callback <- function(env) {
 
     # Return empty if empty evaluation list
-    if (length(env$eval_list) <= 0) {
+    if (length(env$eval_list) <= 0L) {
       return()
     }
 
     # Set if evaluation error
-    is_eval_err <- length(env$eval_err_list) > 0
+    is_eval_err <- length(env$eval_err_list) > 0L
 
     # Check length of recorded evaluation
-    if (length(env$model$record_evals) == 0) {
+    if (length(env$model$record_evals) == 0L) {
 
       # Loop through each evaluation list element
       for (j in seq_along(env$eval_list)) {
@@ -290,7 +290,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
     eval_len <<- length(env$eval_list)
 
     # Early stopping cannot work without metrics
-    if (eval_len == 0) {
+    if (eval_len == 0L) {
       stop("For early stopping, valids must have at least one element")
     }
 
@@ -301,7 +301,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
 
     # Maximization or minimization task
     factor_to_bigger_better <<- rep.int(1.0, eval_len)
-    best_iter <<- rep.int(-1, eval_len)
+    best_iter <<- rep.int(-1L, eval_len)
     best_score <<- rep.int(-Inf, eval_len)
     best_msg <<- list()
 

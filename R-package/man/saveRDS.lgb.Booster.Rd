@@ -54,11 +54,11 @@ valids <- list(test = dtest)
 model <- lgb.train(
     params = params
     , data = dtrain
-    , nrounds = 10
+    , nrounds = 10L
     , valids = valids
-    , min_data = 1
-    , learning_rate = 1
-    , early_stopping_rounds = 5
+    , min_data = 1L
+    , learning_rate = 1.0
+    , early_stopping_rounds = 5L
 )
 saveRDS.lgb.Booster(model, "model.rds")
 }
