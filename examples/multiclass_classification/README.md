@@ -3,15 +3,16 @@ Multiclass Classification Example
 
 Here is an example for LightGBM to run multiclass classification task.
 
-***You should copy executable file to this folder first.***
+***You must follow the [installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html)
+for the following commands to work. The `lightgbm` binary must be built and available at the root of this project.***
 
 Training
 --------
 
 Run the following command in this folder:
 
-```
-"./lightgbm" config=train.conf
+```bash
+"../../lightgbm" config=train.conf
 ```
 
 Prediction
@@ -21,6 +22,6 @@ You should finish training first.
 
 Run the following command in this folder:
 
-```
-"./lightgbm" config=predict.conf
+```bash
+"../../lightgbm" config=predict.conf
 ```
