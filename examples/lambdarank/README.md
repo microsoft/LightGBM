@@ -31,4 +31,3 @@ Data Format
 
 To learn more about the query format used in this example, check out the 
 [query data format](https://lightgbm.readthedocs.io/en/latest/Parameters.html#query-data).
-
