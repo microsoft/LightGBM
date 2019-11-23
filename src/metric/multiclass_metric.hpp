@@ -235,7 +235,7 @@ public:
           sorted_data_idx_.begin() + j_start, sorted_data_idx_.begin() + j_start + class_sizes[j]);
         // sort according to distance from separating hyperplane
         std::vector<std::pair<data_size_t, double>> dist;
-        for (data_size_t k = 0; k < class_i_j_indices.size(); ++k) {
+        for (data_size_t k = 0; static_cast<size_t>(k) < class_i_j_indices.size(); ++k) {
           data_size_t a = class_i_j_indices[k];
           double v_a = 0;
           for (int m = 0; m < num_class_; ++m) {
@@ -251,7 +251,7 @@ public:
           }
           else if (a.second < b.second) {
             return true;
-          } else if (a.second > b.second) {
+          } else {
             return false;
           }
         });
