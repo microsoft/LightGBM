@@ -63,6 +63,11 @@ class TestBasic(unittest.TestCase):
         # scores likely to be different, but prediction should still be the same
         np.testing.assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping))
 
+        # check predict params are logged into model file
+        bst.save_model("model.txt")
+        with open("model.txt") as f:
+            self.assertNotEqual(f.read().find("pred_early_stop_margin: 1.5"), -1)
+
         # test that shape is checked during prediction
         bad_X_test = X_test[:, 1:]
         bad_shape_error_msg = "The number of features in data*"

@@ -146,13 +146,13 @@ def train(params, train_set, num_boost_round=100,
         if alias in params:
             num_boost_round = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
-            break
+    params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
-            break
-    first_metric_only = params.pop('first_metric_only', False)
+    params["early_stopping_round"] = early_stopping_rounds
+    first_metric_only = params.get('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
@@ -502,13 +502,13 @@ def cv(params, train_set, num_boost_round=100,
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = params.pop(alias)
-            break
+    params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             early_stopping_rounds = params.pop(alias)
-            break
-    first_metric_only = params.pop('first_metric_only', False)
+    params["early_stopping_round"] = early_stopping_rounds
+    first_metric_only = params.get('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
