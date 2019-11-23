@@ -448,7 +448,7 @@ class TestEngine(unittest.TestCase):
                   'seed': 0}
         results_auc = {}
         lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc)
-        self.assertAlmostEqual(results_auc_mu['training']['auc_mu'][-1], results_auc['training']['auc'][-1])
+        np.testing.assert_allclose(results_auc_mu['training']['auc_mu'], results_auc['training']['auc'])
         # test the case where all predictions are equal
         lgb_X = lgb.Dataset(X[:10], label=y_new[:10])
         params = {'objective': 'multiclass',
