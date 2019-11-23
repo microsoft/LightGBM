@@ -180,18 +180,18 @@ void Config::GetAucMuWeights(const std::unordered_map<std::string, std::string>&
           }
         }
         if (static_cast<int>(oneline_weights.size()) != num_class) {
-          Log::Fatal("Auc-mu weights matrix must have %d columns but found row with %d entries.",
+          Log::Fatal("AUC-mu weights matrix must have %d columns but found row with %d entries.",
                      num_class, oneline_weights.size());
         }
         std::vector<double> curr_line_weights;
         for (size_t j = 0; j < static_cast<size_t>(num_class); ++j) {
           curr_line_weights.push_back(oneline_weights[j]);
           if (oneline_weights[j] < 0) {
-            Log::Fatal("Auc-mu weights matrix must contain only non-negative values. Found negative value at position [%d, %d]",
+            Log::Fatal("AUC-mu weights matrix must contain only non-negative values. Found negative value at position [%d, %d]",
                        i, j);
           }
           if ((i == j) && (oneline_weights[j] > kEpsilon)) {
-            Log::Warning("Diagonal of auc-mu weights matrix must be zero. Overriding entry at position [%d, %d] with zero.",
+            Log::Warning("Diagonal of AUC-mu weights matrix must be zero. Overriding entry at position [%d, %d] with zero.",
                          i, j);
             curr_line_weights.push_back(0);
           }
@@ -201,7 +201,7 @@ void Config::GetAucMuWeights(const std::unordered_map<std::string, std::string>&
     };
   reader.ReadAllAndProcessParallel(process_fun);
   if (auc_mu_weights.size() != static_cast<size_t>(num_class)) {
-    Log::Fatal("Auc-mu matrix must have %d rows but found %d", num_class, auc_mu_weights.size());
+    Log::Fatal("AUC-mu matrix must have %d rows but found %d", num_class, auc_mu_weights.size());
   }
   } else {
     // equal weights for all classes

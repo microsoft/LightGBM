@@ -925,7 +925,7 @@ Metric Parameters
 
 -  ``auc_mu_weights_file`` :raw-html:`<a id="auc_mu_weights_file" title="Permalink to this parameter" href="#auc_mu_weights_file">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
-   -  file containing matrix of weights for calculating auc-mu multi-class metric
+   -  file containing matrix of weights for calculating AUC-mu multi-class metric
 
    -  matrix must be square, with number of rows and columns equal to number of classes
 

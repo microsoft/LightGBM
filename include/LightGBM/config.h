@@ -807,7 +807,7 @@ struct Config {
   // desc = when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
   int multi_error_top_k = 1;
 
-  // desc = file containing matrix of weights for calculating auc-mu multi-class metric
+  // desc = file containing matrix of weights for calculating AUC-mu multi-class metric
   // desc = matrix must be square, with number of rows and columns equal to number of classes
   // desc = if not specified, will use equal weights for all classes
   // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/multiclass_classification/loss.weights>`__ as an example
