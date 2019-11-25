@@ -622,6 +622,8 @@ class TestEngine(unittest.TestCase):
         ret_origin = train_and_predict(init_model=gbm)
         other_ret = []
         gbm.save_model('lgb.model')
+        with open('lgb.model') as f:  # check all params are logged into model file correctly
+            self.assertNotEqual(f.read().find("num_iterations: 10"), -1)
         other_ret.append(train_and_predict(init_model='lgb.model'))
         gbm_load = lgb.Booster(model_file='lgb.model')
         other_ret.append(train_and_predict(init_model=gbm_load))

@@ -2407,13 +2407,6 @@ class Booster(object):
         result : numpy array
             Prediction result.
         """
-        params_to_update = copy.deepcopy(self.params)
-        params_to_update.update(dict(kwargs,
-                                     predict_raw_score=raw_score,
-                                     predict_leaf_index=pred_leaf,
-                                     predict_contrib=pred_contrib,
-                                     num_iteration_predict=num_iteration))
-        self.reset_parameter(params_to_update)
         predictor = self._to_predictor(copy.deepcopy(kwargs))
         if num_iteration is None:
             num_iteration = self.best_iteration
@@ -2450,7 +2443,7 @@ class Booster(object):
         nrow, ncol = leaf_preds.shape
         train_set = Dataset(data, label, silent=True)
         new_params = copy.deepcopy(self.params)
-        new_params.update(kwargs, refit_decay_rate=decay_rate)
+        new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models
         _safe_call(_LIB.LGBM_BoosterMerge(
