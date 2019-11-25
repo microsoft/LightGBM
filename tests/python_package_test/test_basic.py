@@ -328,3 +328,47 @@ class TestBasic(unittest.TestCase):
         lgb_data.set_weight(sequence)
         lgb_data.set_init_score(sequence)
         check_asserts(lgb_data)
+
+    def test_trees_to_dataframe(self):
+
+        def _imptcs_to_numpy(X, impcts_dict):
+            cols = ['Column_' + str(i) for i in range(X.shape[1])]
+            imptcs = []
+            for col in cols:
+                try:
+                    imptcs.append(impcts_dict[col])
+                except KeyError:
+                    imptcs.append(0.)
+            return np.array(imptcs)
+
+        X, y = load_breast_cancer(True)
+        data = lgb.Dataset(X, label=y)
+        params = {
+            "objective": "binary",
+            "metric": "auc",
+            "min_data": 10,
+            "num_leaves": 15,
+            "verbose": -1,
+            "num_threads": 1,
+            "max_bin": 255
+        }
+
+        bst = lgb.train(params, data, 10)
+        tree_df = bst.trees_to_dataframe()
+
+        split_dict = (tree_df[tree_df.leaf_weight.isnull()]
+                      .groupby('split_feature')
+                      .size()
+                      .to_dict())
+
+        gains_dict = (tree_df
+                      .groupby('split_feature')['split_gain']
+                      .sum()
+                      .to_dict())
+
+        tree_split = _imptcs_to_numpy(X, split_dict)
+        tree_gains = _imptcs_to_numpy(X, gains_dict)
+        mod_split = bst.feature_importance('split')
+        mod_gains = bst.feature_importance('gain')
+        np.testing.assert_equal(tree_split, mod_split)
+        np.testing.assert_almost_equal(tree_gains, mod_gains)
