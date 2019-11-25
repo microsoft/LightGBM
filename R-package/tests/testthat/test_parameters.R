@@ -44,7 +44,7 @@ test_that("Feature penalties work properly", {
   expect_length(var_gain[[length(var_gain)]], 0L)
 })
 
-expect_true(".PARAMETER_ALIASES() returns a named list", {
+test_that(".PARAMETER_ALIASES() returns a named list", {
   param_aliases <- .PARAMETER_ALIASES()
   expect_true(is.list(param_aliases))
   expect_true(is.character(names(param_aliases)))
@@ -55,7 +55,7 @@ expect_true(".PARAMETER_ALIASES() returns a named list", {
   expect_true(is.character(param_aliases[["num_iterations"]]))
 })
 
-expect_true("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
+test_that("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
   for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
     expect_warning({
       result <- lightgbm(

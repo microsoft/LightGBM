@@ -46,7 +46,7 @@
 #'   Species = c(
 #'     "setosa" = 3L
 #'     , "versicolor" = 2L
-#'     , virginica" = 1L
+#'     , "virginica" = 1L
 #'   )
 #' )
 #' newest_iris <- lgb.prepare_rules2(data = iris, rules = personal_rules)
