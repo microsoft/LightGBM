@@ -658,7 +658,7 @@ struct Config {
   double pred_early_stop_margin = 10.0;
 
   // desc = used only in ``convert_model`` task
-  // desc = only ``cpp`` is supported yet
+  // desc = only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
   // desc = if ``convert_model_language`` is set and ``task=train``, the model will be also converted
   // desc = **Note**: can be used only in CLI version
   std::string convert_model_language = "";

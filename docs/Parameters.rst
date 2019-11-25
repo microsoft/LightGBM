@@ -727,7 +727,7 @@ IO Parameters
 
    -  used only in ``convert_model`` task
 
-   -  only ``cpp`` is supported yet
+   -  only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
 
    -  if ``convert_model_language`` is set and ``task=train``, the model will be also converted
 
