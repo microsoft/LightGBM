@@ -51,37 +51,22 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   larger_buffer_read_start_pos_.resize(this->num_features_);
   global_data_count_in_leaf_.resize(this->config_->num_leaves);
 
-  smaller_leaf_splits_global_.reset(new LeafSplits(this->train_data_->num_data()));
-  larger_leaf_splits_global_.reset(new LeafSplits(this->train_data_->num_data()));
+  smaller_leaf_splits_global_.reset(new LeafSplits(train_data->num_data()));
+  larger_leaf_splits_global_.reset(new LeafSplits(train_data->num_data()));
 
   local_config_ = *this->config_;
   local_config_.min_data_in_leaf /= num_machines_;
   local_config_.min_sum_hessian_in_leaf /= num_machines_;
 
-  this->histogram_pool_.ResetConfig(&local_config_);
+  this->histogram_pool_.ResetConfig(train_data, &local_config_);
 
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
   larger_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
-  auto num_total_bin = this->train_data_->NumTotalBin();
+  auto num_total_bin = train_data->NumTotalBin();
   smaller_leaf_histogram_data_.resize(num_total_bin);
   larger_leaf_histogram_data_.resize(num_total_bin);
-  feature_metas_.resize(train_data->num_features());
-#pragma omp parallel for schedule(static)
-  for (int i = 0; i < train_data->num_features(); ++i) {
-    feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
-    feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
-    feature_metas_[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
-    feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
-    feature_metas_[i].penalty = train_data->FeaturePenalte(i);
-    if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
-      feature_metas_[i].offset = 1;
-    } else {
-      feature_metas_[i].offset = 0;
-    }
-    feature_metas_[i].config = this->config_;
-    feature_metas_[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();
-  }
+  HistogramPool::SetFeatureInfo(train_data, this->config_, &feature_metas_);
   uint64_t offset = 0;
   for (int j = 0; j < train_data->num_features(); ++j) {
     offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
@@ -103,12 +88,10 @@ void VotingParallelTreeLearner<TREELEARNER_T>::ResetConfig(const Config* config)
   local_config_.min_data_in_leaf /= num_machines_;
   local_config_.min_sum_hessian_in_leaf /= num_machines_;
 
-  this->histogram_pool_.ResetConfig(&local_config_);
+  this->histogram_pool_.ResetConfig(this->train_data_, &local_config_);
   global_data_count_in_leaf_.resize(this->config_->num_leaves);
 
-  for (size_t i = 0; i < feature_metas_.size(); ++i) {
-    feature_metas_[i].config = this->config_;
-  }
+  HistogramPool::SetFeatureInfoConfig(this->train_data_, config, &feature_metas_);
 }
 
 template <typename TREELEARNER_T>

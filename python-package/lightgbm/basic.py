@@ -1165,20 +1165,18 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
-        if self.handle is not None and params is not None:
-            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(params))))
-        if not self.params:
-            self.params = copy.deepcopy(params)
-        else:
-            self.params_back_up = copy.deepcopy(self.params)
-            self.params.update(params)
+        if self.handle is None:
+            if not self.params:
+                self.params = copy.deepcopy(params)
+            else:
+                self.params_back_up = copy.deepcopy(self.params)
+                self.params.update(params)
         return self
 
     def _reverse_update_params(self):
-        self.params = copy.deepcopy(self.params_back_up)
-        self.params_back_up = None
-        if self.handle is not None and self.params is not None:
-            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(self.params))))
+        if self.handle is None:
+            self.params = copy.deepcopy(self.params_back_up)
+            self.params_back_up = None
         return self
 
     def set_field(self, field_name, data):

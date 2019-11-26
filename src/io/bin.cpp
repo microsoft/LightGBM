@@ -50,6 +50,7 @@ namespace LightGBM {
   }
 
   bool NeedFilter(const std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {
+    // Todo: don't use the min_data to pre flitering.
     if (bin_type == BinType::NumericalBin) {
       int sum_left = 0;
       for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
