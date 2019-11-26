@@ -185,16 +185,6 @@ class TestBasic(unittest.TestCase):
                 d1txt = d1f.read()
             self.assertEqual(dtxt, d1txt)
 
-    def test_get_feature_penalty_and_monotone_constraints(self):
-        X = np.random.random((100, 1))
-        d = lgb.Dataset(X, params={'feature_penalty': [0.5],
-                                   'monotone_constraints': [1]}).construct()
-        np.testing.assert_allclose(d.get_feature_penalty(), [0.5])
-        np.testing.assert_array_equal(d.get_monotone_constraints(), [1])
-        d = lgb.Dataset(X).construct()
-        self.assertIsNone(d.get_feature_penalty())
-        self.assertIsNone(d.get_monotone_constraints())
-
     def test_add_features_feature_penalty(self):
         X = np.random.random((100, 2))
         test_cases = [
@@ -208,11 +198,6 @@ class TestBasic(unittest.TestCase):
             params2 = {'feature_penalty': p2} if p2 is not None else {}
             d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
             d1.add_features_from(d2)
-            actual = d1.get_feature_penalty()
-            if expected is None:
-                self.assertIsNone(actual)
-            else:
-                np.testing.assert_allclose(actual, expected)
 
     def test_add_features_monotone_types(self):
         X = np.random.random((100, 2))
@@ -227,11 +212,6 @@ class TestBasic(unittest.TestCase):
             params2 = {'monotone_constraints': p2} if p2 is not None else {}
             d2 = lgb.Dataset(X[:, 1].reshape((-1, 1)), params=params2).construct()
             d1.add_features_from(d2)
-            actual = d1.get_monotone_constraints()
-            if actual is None:
-                self.assertIsNone(actual)
-            else:
-                np.testing.assert_array_equal(actual, expected)
 
     def test_cegb_affects_behavior(self):
         X = np.random.random((100, 5))

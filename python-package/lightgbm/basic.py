@@ -1471,30 +1471,6 @@ class Dataset(object):
             self.weight = self.get_field('weight')
         return self.weight
 
-    def get_feature_penalty(self):
-        """Get the feature penalty of the Dataset.
-
-        Returns
-        -------
-        feature_penalty : numpy array or None
-            Feature penalty for each feature in the Dataset.
-        """
-        if self.feature_penalty is None:
-            self.feature_penalty = self.get_field('feature_penalty')
-        return self.feature_penalty
-
-    def get_monotone_constraints(self):
-        """Get the monotone constraints of the Dataset.
-
-        Returns
-        -------
-        monotone_constraints : numpy array or None
-            Monotone constraints: -1, 0 or 1, for each feature in the Dataset.
-        """
-        if self.monotone_constraints is None:
-            self.monotone_constraints = self.get_field('monotone_constraints')
-        return self.monotone_constraints
-
     def get_init_score(self):
         """Get the initial score of the Dataset.
 
