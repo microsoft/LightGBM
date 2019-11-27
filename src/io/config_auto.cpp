@@ -225,6 +225,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "max_bin",
   "max_bin_by_feature",
   "min_data_in_bin",
+  "feature_pre_filter",
   "bin_construct_sample_cnt",
   "histogram_pool_size",
   "data_random_seed",
@@ -439,6 +440,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "min_data_in_bin", &min_data_in_bin);
   CHECK(min_data_in_bin >0);
 
+  GetBool(params, "feature_pre_filter", &feature_pre_filter);
+
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   CHECK(bin_construct_sample_cnt >0);
 
@@ -633,6 +636,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
+  str_buf << "[feature_pre_filter: " << feature_pre_filter << "]\n";
   str_buf << "[bin_construct_sample_cnt: " << bin_construct_sample_cnt << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
   str_buf << "[data_random_seed: " << data_random_seed << "]\n";

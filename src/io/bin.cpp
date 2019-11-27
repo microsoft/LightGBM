@@ -50,7 +50,6 @@ namespace LightGBM {
   }
 
   bool NeedFilter(const std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {
-    // Todo: don't use the min_data to pre flitering.
     if (bin_type == BinType::NumericalBin) {
       int sum_left = 0;
       for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
@@ -322,7 +321,7 @@ namespace LightGBM {
   }
 
   void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
-                          int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type,
+                          int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
                           bool use_missing, bool zero_as_missing,
                           const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
@@ -502,7 +501,7 @@ namespace LightGBM {
       is_trivial_ = false;
     }
     // check useless bin
-    if (!is_trivial_ && NeedFilter(cnt_in_bin, static_cast<int>(total_sample_cnt), min_split_data, bin_type_)) {
+    if (!is_trivial_ && pre_filter && NeedFilter(cnt_in_bin, static_cast<int>(total_sample_cnt), min_split_data, bin_type_)) {
       is_trivial_ = true;
     }
 
