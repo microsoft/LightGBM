@@ -241,9 +241,7 @@ C_API_PREDICT_CONTRIB = 3
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
-                     "group": C_API_DTYPE_INT32,
-                     "feature_penalty": C_API_DTYPE_FLOAT64,
-                     "monotone_constraints": C_API_DTYPE_INT8}
+                     "group": C_API_DTYPE_INT32}
 
 
 def convert_from_sliced_object(data):
@@ -768,8 +766,6 @@ class Dataset(object):
         self._predictor = None
         self.pandas_categorical = None
         self.params_back_up = None
-        self.feature_penalty = None
-        self.monotone_constraints = None
 
     def __del__(self):
         try:
@@ -865,6 +861,7 @@ class Dataset(object):
                 params['categorical_column'] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
+        self.params = params
         # process for reference dataset
         ref_dataset = None
         if isinstance(reference, Dataset):
@@ -1171,6 +1168,8 @@ class Dataset(object):
             else:
                 self.params_back_up = copy.deepcopy(self.params)
                 self.params.update(params)
+        else:
+            _safe_call(_LIB.LGBM_DatasetUpdateParamWarning(c_str(param_dict_to_str(self.params)), c_str(param_dict_to_str(params))))
         return self
 
     def _reverse_update_params(self):

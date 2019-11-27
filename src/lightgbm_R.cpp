@@ -265,6 +265,14 @@ LGBM_SE LGBM_DatasetGetFieldSize_R(LGBM_SE handle,
   R_API_END();
 }
 
+LGBM_SE LGBM_DatasetUpdateParamWarning_R(LGBM_SE old_params,
+  LGBM_SE new_params,
+  LGBM_SE call_state) {
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_DatasetUpdateParamWarning(R_CHAR_PTR(old_params), R_CHAR_PTR(new_params)));
+  R_API_END();
+}
+
 LGBM_SE LGBM_DatasetGetNumData_R(LGBM_SE handle, LGBM_SE out,
   LGBM_SE call_state) {
   int nrow;

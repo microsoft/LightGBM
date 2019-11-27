@@ -535,6 +535,13 @@ Dataset <- R6::R6Class(
     update_params = function(params) {
       if (lgb.is.null.handle(private$handle)) {
         private$params <- modifyList(private$params, params)
+      } else{
+        lgb.call(
+          "LGBM_DatasetUpdateParamWarning_R"
+          , ret = NULL
+          , lgb.params2str(private$params)
+          , lgb.params2str(params)
+        )
       }
       return(invisible(self))
 

@@ -175,6 +175,15 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
+ * \brief Raise warnings if try to update dataset parameters
+ * \param old_parameters Parameters
+ * \param new_parameters Parameters
+ */
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParamWarning_R(LGBM_SE old_params,
+  LGBM_SE new_params,
+  LGBM_SE call_state);
+
+/*!
 * \brief get number of data.
 * \param handle the handle to the dataset
 * \param out The address to hold number of data
