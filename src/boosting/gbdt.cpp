@@ -719,6 +719,10 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
 void GBDT::ResetConfig(const Config* config) {
   auto new_config = std::unique_ptr<Config>(new Config(*config));
+  if (config->min_data_in_leaf < config_->min_data_in_leaf && config_->feature_pre_filter) {
+    Log::Warning("Reduce `min_data_in_leaf` with `feature_pre_filter=true` may cause the unexpected behaviours, for features are pre-filtered by the larger `min_data_in_leaf`.\
+                  You may need to set `feature_pre_filter=false` to dynamically change the `min_data_in_leaf`.");
+  }
   if (!config->monotone_constraints.empty()) {
     CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->monotone_constraints.size());
   }
