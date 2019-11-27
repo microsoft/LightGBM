@@ -241,6 +241,7 @@ class Booster {
       boosting_->ResetTrainingData(train_data_,
                                    objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
     }
+
     boosting_->ResetConfig(&config_);
   }
 
@@ -1104,6 +1105,7 @@ int LGBM_DatasetUpdateParamWarning(const char* old_parameters, const char* new_p
   }
   API_END();
 }
+
 int LGBM_DatasetGetNumData(DatasetHandle handle,
                            int* out) {
   API_BEGIN();

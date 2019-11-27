@@ -1168,7 +1168,7 @@ class Dataset(object):
             else:
                 self.params_back_up = copy.deepcopy(self.params)
                 self.params.update(params)
-        else:
+        elif params is not None:
             _safe_call(_LIB.LGBM_DatasetUpdateParamWarning(c_str(param_dict_to_str(self.params)), c_str(param_dict_to_str(params))))
         return self
 
