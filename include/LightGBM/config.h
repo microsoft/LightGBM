@@ -3,7 +3,9 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  *
  * \note
- * desc and descl2 fields must be written in reStructuredText format
+ * - desc and descl2 fields must be written in reStructuredText format;
+ * - [doc-only] tag indicates that only documentation for this param should be generated and all other actions are performed manually;
+ * - [no-save] tag indicates that this param should not be saved into a model text representation.
  */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
@@ -621,17 +623,20 @@ struct Config {
   // desc = **Note**: the output cannot be monotonically constrained with respect to a categorical feature
   std::string categorical_feature = "";
 
+  // [no-save]
   // alias = is_predict_raw_score, predict_rawscore, raw_score
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to predict only the raw scores
   // desc = set this to ``false`` to predict transformed scores
   bool predict_raw_score = false;
 
+  // [no-save]
   // alias = is_predict_leaf_index, leaf_index
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to predict with leaf index of all trees
   bool predict_leaf_index = false;
 
+  // [no-save]
   // alias = is_predict_contrib, contrib
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
@@ -640,29 +645,35 @@ struct Config {
   // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
   bool predict_contrib = false;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = used to specify how many trained iterations will be used in prediction
   // desc = ``<= 0`` means no limit
   int num_iteration_predict = -1;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
   bool pred_early_stop = false;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = the frequency of checking early-stopping prediction
   int pred_early_stop_freq = 10;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
+  // [no-save]
   // desc = used only in ``convert_model`` task
   // desc = only ``cpp`` is supported yet
   // desc = if ``convert_model_language`` is set and ``task=train``, the model will be also converted
   // desc = **Note**: can be used only in CLI version
   std::string convert_model_language = "";
 
+  // [no-save]
   // alias = convert_model_file
   // desc = used only in ``convert_model`` task
   // desc = output filename of converted model

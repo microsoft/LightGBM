@@ -657,15 +657,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[group_column: " << group_column << "]\n";
   str_buf << "[ignore_column: " << ignore_column << "]\n";
   str_buf << "[categorical_feature: " << categorical_feature << "]\n";
-  str_buf << "[predict_raw_score: " << predict_raw_score << "]\n";
-  str_buf << "[predict_leaf_index: " << predict_leaf_index << "]\n";
-  str_buf << "[predict_contrib: " << predict_contrib << "]\n";
-  str_buf << "[num_iteration_predict: " << num_iteration_predict << "]\n";
-  str_buf << "[pred_early_stop: " << pred_early_stop << "]\n";
-  str_buf << "[pred_early_stop_freq: " << pred_early_stop_freq << "]\n";
-  str_buf << "[pred_early_stop_margin: " << pred_early_stop_margin << "]\n";
-  str_buf << "[convert_model_language: " << convert_model_language << "]\n";
-  str_buf << "[convert_model: " << convert_model << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[is_unbalance: " << is_unbalance << "]\n";
   str_buf << "[scale_pos_weight: " << scale_pos_weight << "]\n";
