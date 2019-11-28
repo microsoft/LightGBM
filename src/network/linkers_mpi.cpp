@@ -42,9 +42,6 @@ void Linkers::MpiFinalizeIfIsParallel() {
     Log::Debug("Finalizing MPI session.");
     MPI_SAFE_CALL(MPI_Finalize());
   }
-  else {
-    Log::Debug("MPI was not initialized.");
-  }
 }
 
 void Linkers::MpiAbortIfIsParallel() {
@@ -52,9 +49,6 @@ void Linkers::MpiAbortIfIsParallel() {
     if (IsMpiInitialized()) {
       std::cerr << "Aborting MPI communication." << std::endl << std::flush;
       MPI_SAFE_CALL(MPI_Abort(MPI_COMM_WORLD, -1));;
-    }
-    else {
-      Log::Debug("MPI was not initialized.");
     }
   }
   catch (...) {
