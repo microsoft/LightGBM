@@ -173,6 +173,45 @@ class Booster {
     }
   }
 
+  static void CheckDatasetResetConfig(const Config& old_config, const std::unordered_map<std::string, std::string>& new_param) {
+    Config new_config;
+    new_config.Set(new_param);
+    if (new_param.count("max_bin") && new_config.max_bin != old_config.max_bin) {
+      Log::Warning("Cannot change max_bin after constructed Dataset handle.");
+    }
+    if (new_param.count("max_bin_by_feature") && new_config.max_bin_by_feature != old_config.max_bin_by_feature) {
+      Log::Warning("Cannot change max_bin_by_feature after constructed Dataset handle.");
+    }
+    if (new_param.count("bin_construct_sample_cnt") && new_config.bin_construct_sample_cnt != old_config.bin_construct_sample_cnt) {
+      Log::Warning("Cannot change bin_construct_sample_cnt after constructed Dataset handle.");
+    }
+    if (new_param.count("min_data_in_bin") && new_config.min_data_in_bin != old_config.min_data_in_bin) {
+      Log::Warning("Cannot change min_data_in_bin after constructed Dataset handle.");
+    }
+    if (new_param.count("use_missing") && new_config.use_missing != old_config.use_missing) {
+      Log::Warning("Cannot change use_missing after constructed Dataset handle.");
+    }
+    if (new_param.count("zero_as_missing") && new_config.zero_as_missing != old_config.zero_as_missing) {
+      Log::Warning("Cannot change zero_as_missing after constructed Dataset handle.");
+    }
+    if (new_param.count("sparse_threshold") && new_config.sparse_threshold != old_config.sparse_threshold) {
+      Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
+    }
+    if (new_param.count("categorical_feature") && new_config.categorical_feature != old_config.categorical_feature) {
+      Log::Warning("Cannot change categorical_feature after constructed Dataset handle.");
+    }
+    if (new_param.count("feature_pre_filter") && new_config.feature_pre_filter != old_config.feature_pre_filter) {
+      Log::Warning("Cannot change feature_pre_filter after constructed Dataset handle.");
+    }
+    if (new_param.count("forcedbins_filename")) {
+      Log::Warning("Cannot change forced bins after constructed Dataset handle.");
+    }
+    if (new_param.count("min_data_in_leaf") && new_config.min_data_in_leaf < old_config.min_data_in_leaf && old_config.feature_pre_filter) {
+      Log::Warning("Reduce `min_data_in_leaf` with `feature_pre_filter=true` may cause the unexpected behaviours, for features are pre-filtered by the larger `min_data_in_leaf`.\
+                  You may need to set `feature_pre_filter=false` to dynamically change the `min_data_in_leaf`.");
+    }
+  }
+
   void ResetConfig(const char* parameters) {
     std::lock_guard<std::mutex> lock(mutex_);
     auto param = Config::Str2Map(parameters);
@@ -188,40 +227,7 @@ class Booster {
     auto old_config = config_;
     config_.Set(param);
 
-    if (param.count("max_bin") && config_.max_bin != old_config.max_bin) {
-      Log::Warning("Cannot change max_bin after constructed Dataset handle.");
-    }
-    if (param.count("max_bin_by_feature") && config_.max_bin_by_feature != old_config.max_bin_by_feature) {
-      Log::Warning("Cannot change max_bin_by_feature after constructed Dataset handle.");
-    }
-    if (param.count("bin_construct_sample_cnt") && config_.bin_construct_sample_cnt != old_config.bin_construct_sample_cnt) {
-      Log::Warning("Cannot change bin_construct_sample_cnt after constructed Dataset handle.");
-    }
-    if (param.count("min_data_in_bin") && config_.min_data_in_bin != old_config.min_data_in_bin) {
-      Log::Warning("Cannot change min_data_in_bin after constructed Dataset handle.");
-    }
-    if (param.count("use_missing") && config_.use_missing != old_config.use_missing) {
-      Log::Warning("Cannot change use_missing after constructed Dataset handle.");
-    }
-    if (param.count("zero_as_missing") && config_.zero_as_missing != old_config.zero_as_missing) {
-      Log::Warning("Cannot change zero_as_missing after constructed Dataset handle.");
-    }
-    if (param.count("sparse_threshold") && config_.sparse_threshold != old_config.sparse_threshold) {
-      Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
-    }
-    if (param.count("categorical_feature") && config_.categorical_feature != old_config.categorical_feature) {
-      Log::Warning("Cannot change categorical_feature after constructed Dataset handle.");
-    }
-    if (param.count("feature_pre_filter") && config_.feature_pre_filter != old_config.feature_pre_filter) {
-      Log::Warning("Cannot change feature_pre_filter after constructed Dataset handle.");
-    }
-    if (param.count("forcedbins_filename")) {
-      Log::Warning("Cannot change forced bins after constructed Dataset handle.");
-    }
-    if (param.count("min_data_in_leaf") && config_.min_data_in_leaf < old_config.min_data_in_leaf && old_config.feature_pre_filter) {
-      Log::Warning("Reduce `min_data_in_leaf` with `feature_pre_filter=true` may cause the unexpected behaviours, for features are pre-filtered by the larger `min_data_in_leaf`.\
-                  You may need to set `feature_pre_filter=false` to dynamically change the `min_data_in_leaf`.");
-    }
+    CheckDatasetResetConfig(old_config, param);
 
     if (config_.num_threads > 0) {
       omp_set_num_threads(config_.num_threads);
@@ -1067,42 +1073,7 @@ int LGBM_DatasetUpdateParamWarning(const char* old_parameters, const char* new_p
   Config old_config;
   old_config.Set(old_param);
   auto new_param = Config::Str2Map(new_parameters);
-  Config new_config;
-  new_config.Set(new_param);
-  if (new_param.count("max_bin") && new_config.max_bin != old_config.max_bin) {
-    Log::Warning("Cannot change max_bin after constructed Dataset handle.");
-  }
-  if (new_param.count("max_bin_by_feature") && new_config.max_bin_by_feature != old_config.max_bin_by_feature) {
-    Log::Warning("Cannot change max_bin_by_feature after constructed Dataset handle.");
-  }
-  if (new_param.count("bin_construct_sample_cnt") && new_config.bin_construct_sample_cnt != old_config.bin_construct_sample_cnt) {
-    Log::Warning("Cannot change bin_construct_sample_cnt after constructed Dataset handle.");
-  }
-  if (new_param.count("min_data_in_bin") && new_config.min_data_in_bin != old_config.min_data_in_bin) {
-    Log::Warning("Cannot change min_data_in_bin after constructed Dataset handle.");
-  }
-  if (new_param.count("use_missing") && new_config.use_missing != old_config.use_missing) {
-    Log::Warning("Cannot change use_missing after constructed Dataset handle.");
-  }
-  if (new_param.count("zero_as_missing") && new_config.zero_as_missing != old_config.zero_as_missing) {
-    Log::Warning("Cannot change zero_as_missing after constructed Dataset handle.");
-  }
-  if (new_param.count("sparse_threshold") && new_config.sparse_threshold != old_config.sparse_threshold) {
-    Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
-  }
-  if (new_param.count("categorical_feature") && new_config.categorical_feature != old_config.categorical_feature) {
-    Log::Warning("Cannot change categorical_feature after constructed Dataset handle.");
-  }
-  if (new_param.count("feature_pre_filter") && new_config.feature_pre_filter != old_config.feature_pre_filter) {
-    Log::Warning("Cannot change feature_pre_filter after constructed Dataset handle.");
-  }
-  if (new_param.count("forcedbins_filename")) {
-    Log::Warning("Cannot change forced bins after constructed Dataset handle.");
-  }
-  if (new_param.count("min_data_in_leaf") && new_config.min_data_in_leaf < old_config.min_data_in_leaf && old_config.feature_pre_filter) {
-    Log::Warning("Reduce `min_data_in_leaf` with `feature_pre_filter=true` may cause the unexpected behaviours, for features are pre-filtered by the larger `min_data_in_leaf`.\
-                  You may need to set `feature_pre_filter=false` to dynamically change the `min_data_in_leaf`.");
-  }
+  Booster::CheckDatasetResetConfig(old_config, new_param);
   API_END();
 }
 
