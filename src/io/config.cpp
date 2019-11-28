@@ -176,7 +176,7 @@ void Config::GetAucMuWeights(const std::unordered_map<std::string, std::string>&
             oneline_weights.emplace_back(0);
           } else {
             oneline_weights.emplace_back(oneline_weights_nonzero[oneline_ind].second);
-            oneline_ind++;
+            ++oneline_ind;
           }
         }
         if (static_cast<int>(oneline_weights.size()) != num_class) {

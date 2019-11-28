@@ -215,7 +215,7 @@ public:
     auto class_sizes = std::vector<data_size_t>(num_class_, 0);
     for (data_size_t i = 0; i < num_data_; ++i) {
       data_size_t curr_label = static_cast<data_size_t>(label_[i]);
-      class_sizes[curr_label]++;
+      ++class_sizes[curr_label];
     }
 
     auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
@@ -269,9 +269,9 @@ public:
               S[i][j] += num_j;
             }
           } else {
-            num_j++;
+            ++num_j;
             if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
-              num_current_j++;
+              ++num_current_j;
             } else {
               last_j_dist = dist[k].second;
               num_current_j = 1;
