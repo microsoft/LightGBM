@@ -138,7 +138,15 @@ class Linkers {
 
   #endif  // USE_SOCKET
 
+  #ifdef USE_MPI
 
+  static bool IsMpiInitialized();
+
+  static void MpiFinalizeIfIsParallel();
+
+  static void MpiAbortIfIsParallel();
+
+  #endif
  private:
   /*! \brief Rank of local machine */
   int rank_;
