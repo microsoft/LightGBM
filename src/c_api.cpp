@@ -224,10 +224,10 @@ class Booster {
     if (param.count("metric")) {
       Log::Fatal("Cannot change metric during training");
     }
-    auto old_config = config_;
-    config_.Set(param);
 
-    CheckDatasetResetConfig(old_config, param);
+    CheckDatasetResetConfig(config_, param);
+
+    config_.Set(param);
 
     if (config_.num_threads > 0) {
       omp_set_num_threads(config_.num_threads);
