@@ -158,8 +158,13 @@ void DCGCalculator::CheckLabel(const label_t* label, data_size_t num_data) {
       Log::Fatal("label should be int type (met %f) for ranking task,\n"
                  "for the gain of label, please set the label_gain parameter", label[i]);
     }
-    if (static_cast<size_t>(label[i]) >= label_gain_.size() || label[i] < 0) {
-      Log::Fatal("label (%d) excel the max range %d", label[i], label_gain_.size());
+
+    if (label[i] < 0) {
+      Log::Fatal("Label should be non-negative (met %f) for ranking task", label[i]);
+    }
+
+    if (static_cast<size_t>(label[i]) >= label_gain_.size()) {
+      Log::Fatal("Label %zu is not less than the number of label mappings (%zu)", static_cast<size_t>(label[i]), label_gain_.size());
     }
   }
 }
