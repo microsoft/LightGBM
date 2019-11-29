@@ -57,7 +57,7 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
 const char* kHdfsProto = "hdfs://";
 
 #ifdef USE_HDFS
-const size_t kHdfsProtoLength = strlen(kHdfsProto);
+const size_t kHdfsProtoLength = static_cast<size_t>(strlen(kHdfsProto));
 
 struct HDFSFile : VirtualFileReader, VirtualFileWriter {
   HDFSFile(const std::string& filename, int flags) : filename_(filename), flags_(flags) {}
