@@ -441,7 +441,6 @@ class TestEngine(unittest.TestCase):
                   'seed': 0}
         results_auc_mu = {}
         lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
-        lgb_X = lgb.Dataset(X, label=(y == 0).astype(int))
         params = {'objective': 'binary',
                   'metric': 'auc',
                   'verbose': -1,
@@ -461,7 +460,6 @@ class TestEngine(unittest.TestCase):
         lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
         self.assertAlmostEqual(results_auc_mu['training']['auc_mu'][-1], 0.5)
         # should give 1 when accuracy = 1
-        X, y = load_digits(10, True)
         X = X[:10, :]
         y = y[:10]
         lgb_X = lgb.Dataset(X, label=y)
@@ -479,8 +477,8 @@ class TestEngine(unittest.TestCase):
         y = Xy[:, 0]
         X = Xy[:, 1:]
         lgb_X = lgb.Dataset(X, label=y)
-        weights_file = os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    '../../examples/multiclass_classification/loss.weights'))
+        weights_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                    '../../examples/multiclass_classification/loss.weights')
         params = {'objective': 'multiclass',
                   'metric': 'auc_mu',
                   'auc_mu_weights_file': weights_file,
