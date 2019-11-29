@@ -298,7 +298,7 @@ private:
   data_size_t num_data_;
   /*! \brief Pointer to label*/
   const label_t* label_;
-  /*! \brief Name of test set*/
+  /*! \brief Name of this metric*/
   std::vector<std::string> name_;
   /*! \brief Number of classes*/
   int num_class_;

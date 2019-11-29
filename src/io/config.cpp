@@ -199,10 +199,10 @@ void Config::GetAucMuWeights(const std::unordered_map<std::string, std::string>&
       auc_mu_weights.push_back(curr_line_weights);
       }
     };
-  reader.ReadAllAndProcessParallel(process_fun);
-  if (auc_mu_weights.size() != static_cast<size_t>(num_class)) {
-    Log::Fatal("AUC-mu matrix must have %d rows but found %d", num_class, auc_mu_weights.size());
-  }
+    reader.ReadAllAndProcessParallel(process_fun);
+    if (auc_mu_weights.size() != static_cast<size_t>(num_class)) {
+      Log::Fatal("AUC-mu matrix must have %d rows but found %d", num_class, auc_mu_weights.size());
+    }
   } else {
     // equal weights for all classes
     auc_mu_weights = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 1));
