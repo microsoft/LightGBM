@@ -469,9 +469,9 @@ struct Config {
   // desc = use this to avoid one-data-one-bin (potential over-fitting)
   int min_data_in_bin = 3;
 
-  // desc = set this to ``true`` will pre-filter the un-splittable fetures by ``min_data_per_leaf``
-  // desc = as the dataset will be initlized only one-time and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_per_leaf``, otherwise the features will be filtered by the first ``min_data_per_leaf`` if you don't reconstruct the Dataset
-  // desc = however, set this to ``false`` may slow down the training
+  // desc = set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+  // desc = as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
+  // desc = **Note**: setting this to ``false`` may slow down the training
   bool feature_pre_filter = true;
 
   // alias = subsample_for_bin
