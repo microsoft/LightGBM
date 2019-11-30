@@ -207,8 +207,9 @@ class Booster {
       Log::Warning("Cannot change forced bins after constructed Dataset handle.");
     }
     if (new_param.count("min_data_in_leaf") && new_config.min_data_in_leaf < old_config.min_data_in_leaf && old_config.feature_pre_filter) {
-      Log::Warning("Reduce `min_data_in_leaf` with `feature_pre_filter=true` may cause the unexpected behaviours, for features are pre-filtered by the larger `min_data_in_leaf`.\
-                  You may need to set `feature_pre_filter=false` to dynamically change the `min_data_in_leaf`.");
+      Log::Warning("Reducing `min_data_in_leaf` with `feature_pre_filter=true` may cause unexpected behaviour "
+                   "for features that were pre-filtered by the larger `min_data_in_leaf`.\n"
+                   "You need to set `feature_pre_filter=false` to dynamically change the `min_data_in_leaf`.");
     }
   }
 
@@ -1065,7 +1066,6 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   if (*out_ptr == nullptr) { *out_len = 0; }
   API_END();
 }
-
 
 int LGBM_DatasetUpdateParamWarning(const char* old_parameters, const char* new_parameters) {
   API_BEGIN();
