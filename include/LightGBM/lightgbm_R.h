@@ -175,9 +175,10 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
- * \brief Raise warnings if try to update dataset parameters
- * \param old_parameters Parameters
- * \param new_parameters Parameters
+ * \brief Raise warnings for attempts to update dataset parameters
+ * \param old_params Current dataset parameters
+ * \param new_params New dataset parameters
+ * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParamWarning_R(LGBM_SE old_params,
   LGBM_SE new_params,
