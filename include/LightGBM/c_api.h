@@ -26,7 +26,6 @@ typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
 #define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
 #define C_API_DTYPE_INT32   (2)  /*!< \brief int32. */
 #define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
-#define C_API_DTYPE_INT8    (4)  /*!< \brief int8. */
 
 #define C_API_PREDICT_NORMAL     (0)  /*!< \brief Normal prediction, with transform (if needed). */
 #define C_API_PREDICT_RAW_SCORE  (1)  /*!< \brief Predict raw score. */
@@ -331,7 +330,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
  * \param field_name Field name
  * \param[out] out_len Used to set result length
  * \param[out] out_ptr Pointer to the result
- * \param[out] out_type Type of result pointer, can be ``C_API_DTYPE_INT8``, ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param[out] out_type Type of result pointer, can be ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
