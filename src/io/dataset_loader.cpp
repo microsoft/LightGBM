@@ -210,6 +210,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
+      Log::Debug("Making second pass...");
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
@@ -714,7 +715,7 @@ void DatasetLoader::CheckDataset(const Dataset* dataset) {
 std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filename, const Metadata& metadata,
                                                              int rank, int num_machines, int* num_global_data,
                                                              std::vector<data_size_t>* used_data_indices) {
-  TextReader<data_size_t> text_reader(filename, config_.header);
+  TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   used_data_indices->clear();
   if (num_machines == 1 || config_.pre_partition) {
     // read all lines
@@ -777,7 +778,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
                                                                int rank, int num_machines, int* num_global_data,
                                                                std::vector<data_size_t>* used_data_indices) {
   const data_size_t sample_cnt = static_cast<data_size_t>(config_.bin_construct_sample_cnt);
-  TextReader<data_size_t> text_reader(filename, config_.header);
+  TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   std::vector<std::string> out_data;
   if (num_machines == 1 || config_.pre_partition) {
     *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile(&random_, sample_cnt, &out_data));
@@ -1143,7 +1144,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
     }
     OMP_THROW_EX();
   };
-  TextReader<data_size_t> text_reader(filename, config_.header);
+  TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   if (!used_data_indices.empty()) {
     // only need part of data
     text_reader.ReadPartAndProcessParallel(used_data_indices, process_fun);
