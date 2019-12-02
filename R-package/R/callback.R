@@ -35,21 +35,6 @@ cb.reset.parameters <- function(new_params) {
     # Check for model environment
     if (is.null(env$model)) { stop("Env should have a ", sQuote("model")) }
 
-    # Some parameters are not allowed to be changed,
-    # since changing them would simply wreck some chaos
-    not_allowed <- c(
-      .PARAMETER_ALIASES()[["num_class"]]
-      , .PARAMETER_ALIASES()[["metric"]]
-      , .PARAMETER_ALIASES()[["boosting"]]
-    )
-    if (any(pnames %in% not_allowed)) {
-      stop(
-        "Parameters "
-        , paste0(pnames[pnames %in% not_allowed], collapse = ", ")
-        , " cannot be changed during boosting"
-      )
-    }
-
     # Check parameter names
     for (n in pnames) {
 
