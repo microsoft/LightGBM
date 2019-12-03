@@ -535,13 +535,26 @@ Dataset <- R6::R6Class(
     update_params = function(params) {
       if (lgb.is.null.handle(private$handle)) {
         private$params <- modifyList(private$params, params)
-      } else{
-        lgb.call(
+      } else {
+        call_state <- .Call(
           "LGBM_DatasetUpdateParamWarning_R"
-          , ret = NULL
           , lgb.params2str(private$params)
           , lgb.params2str(params)
+          , call_state
+          , PACKAGE = "lib_lightgbm"
         )
+        call_state <- as.integer(call_state)
+        if (call_state != 0L) {
+
+          # raise error if raw data is freed
+          if (is.null(private$raw_data)) {
+            lgb.last_error()
+          }
+
+          # Overwrite paramms
+          private$params <- modifyList(private$params, params)
+          self$finalize()
+        }
       }
       return(invisible(self))
 

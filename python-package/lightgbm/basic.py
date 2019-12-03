@@ -1153,14 +1153,23 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
-        if self.handle is None:
+        def update():
             if not self.params:
                 self.params = copy.deepcopy(params)
             else:
                 self.params_back_up = copy.deepcopy(self.params)
                 self.params.update(params)
+        if self.handle is None:
+            update()
         elif params is not None:
-            _safe_call(_LIB.LGBM_DatasetUpdateParamWarning(c_str(param_dict_to_str(self.params)), c_str(param_dict_to_str(params))))
+            ret = _LIB.LGBM_DatasetUpdateParamWarning(c_str(param_dict_to_str(self.params)), c_str(param_dict_to_str(params)))
+            if ret != 0:
+                # could be updated if data is not freed
+                if self.data is not None:
+                    update()
+                    self._free_handle()
+                else:
+                    raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
         return self
 
     def _reverse_update_params(self):
