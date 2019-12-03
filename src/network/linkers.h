@@ -138,7 +138,24 @@ class Linkers {
 
   #endif  // USE_SOCKET
 
+  #ifdef USE_MPI
 
+  /*!
+  * \brief Check if MPI has been initialized
+  */
+  static bool IsMpiInitialized();
+
+  /*!
+  * \brief Finalize the MPI session if it was initialized
+  */
+  static void MpiFinalizeIfIsParallel();
+
+  /*!
+  * \brief Abort the MPI session if it was initialized (called in case there was a error that needs abrupt ending)
+  */
+  static void MpiAbortIfIsParallel();
+
+  #endif
  private:
   /*! \brief Rank of local machine */
   int rank_;
