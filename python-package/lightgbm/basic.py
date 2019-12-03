@@ -1653,6 +1653,9 @@ class Booster(object):
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
+            train_set.construct()
+            # copy the parameters from train_set
+            params.update(train_set.params)
             params_str = param_dict_to_str(params)
             # set network if necessary
             for alias in _ConfigAliases.get("machines"):
@@ -1673,7 +1676,7 @@ class Booster(object):
             # construct booster object
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreate(
-                train_set.construct().handle,
+                train_set.handle,
                 c_str(params_str),
                 ctypes.byref(self.handle)))
             # save reference to data

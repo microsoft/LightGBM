@@ -177,39 +177,51 @@ class Booster {
     Config new_config;
     new_config.Set(new_param);
     if (new_param.count("max_bin") && new_config.max_bin != old_config.max_bin) {
-      Log::Warning("Cannot change max_bin after constructed Dataset handle.");
+      Log::Fatal("Cannot change max_bin after constructed Dataset handle.");
     }
     if (new_param.count("max_bin_by_feature") && new_config.max_bin_by_feature != old_config.max_bin_by_feature) {
-      Log::Warning("Cannot change max_bin_by_feature after constructed Dataset handle.");
+      Log::Fatal("Cannot change max_bin_by_feature after constructed Dataset handle.");
     }
     if (new_param.count("bin_construct_sample_cnt") && new_config.bin_construct_sample_cnt != old_config.bin_construct_sample_cnt) {
-      Log::Warning("Cannot change bin_construct_sample_cnt after constructed Dataset handle.");
+      Log::Fatal("Cannot change bin_construct_sample_cnt after constructed Dataset handle.");
     }
     if (new_param.count("min_data_in_bin") && new_config.min_data_in_bin != old_config.min_data_in_bin) {
-      Log::Warning("Cannot change min_data_in_bin after constructed Dataset handle.");
+      Log::Fatal("Cannot change min_data_in_bin after constructed Dataset handle.");
     }
     if (new_param.count("use_missing") && new_config.use_missing != old_config.use_missing) {
-      Log::Warning("Cannot change use_missing after constructed Dataset handle.");
+      Log::Fatal("Cannot change use_missing after constructed Dataset handle.");
     }
     if (new_param.count("zero_as_missing") && new_config.zero_as_missing != old_config.zero_as_missing) {
-      Log::Warning("Cannot change zero_as_missing after constructed Dataset handle.");
+      Log::Fatal("Cannot change zero_as_missing after constructed Dataset handle.");
     }
     if (new_param.count("sparse_threshold") && new_config.sparse_threshold != old_config.sparse_threshold) {
-      Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
+      Log::Fatal("Cannot change sparse_threshold after constructed Dataset handle.");
     }
     if (new_param.count("categorical_feature") && new_config.categorical_feature != old_config.categorical_feature) {
-      Log::Warning("Cannot change categorical_feature after constructed Dataset handle.");
+      Log::Fatal("Cannot change categorical_feature after constructed Dataset handle.");
     }
     if (new_param.count("feature_pre_filter") && new_config.feature_pre_filter != old_config.feature_pre_filter) {
-      Log::Warning("Cannot change feature_pre_filter after constructed Dataset handle.");
+      Log::Fatal("Cannot change feature_pre_filter after constructed Dataset handle.");
+    }
+    if (new_param.count("pre_partition") && new_config.pre_partition != old_config.pre_partition) {
+      Log::Fatal("Cannot change pre_partition after constructed Dataset handle.");
+    }
+    if (new_param.count("enable_bundle") && new_config.enable_bundle != old_config.enable_bundle) {
+      Log::Fatal("Cannot change enable_bundle after constructed Dataset handle.");
+    }
+    if (new_param.count("max_conflict_rate") && new_config.max_conflict_rate != old_config.max_conflict_rate) {
+      Log::Fatal("Cannot change max_conflict_rate after constructed Dataset handle.");
+    }
+    if (new_param.count("is_enable_sparse") && new_config.is_enable_sparse != old_config.is_enable_sparse) {
+      Log::Fatal("Cannot change is_enable_sparse after constructed Dataset handle.");
     }
     if (new_param.count("forcedbins_filename")) {
-      Log::Warning("Cannot change forced bins after constructed Dataset handle.");
+      Log::Fatal("Cannot change forced bins after constructed Dataset handle.");
     }
     if (new_param.count("min_data_in_leaf") && new_config.min_data_in_leaf < old_config.min_data_in_leaf && old_config.feature_pre_filter) {
-      Log::Warning("Reducing `min_data_in_leaf` with `feature_pre_filter=true` may cause unexpected behaviour "
-                   "for features that were pre-filtered by the larger `min_data_in_leaf`.\n"
-                   "You need to set `feature_pre_filter=false` to dynamically change the `min_data_in_leaf`.");
+      Log::Fatal("Reducing `min_data_in_leaf` with `feature_pre_filter=true` may cause unexpected behaviour "
+        "for features that were pre-filtered by the larger `min_data_in_leaf`.\n"
+        "You need to set `feature_pre_filter=false` to dynamically change the `min_data_in_leaf`.");
     }
   }
 
