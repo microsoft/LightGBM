@@ -41,9 +41,12 @@ if [[ $OS_NAME == "macos" ]]; then
     # Fix "duplicate libomp versions" issue on Mac
     # by replacing the R libomp.dylib with a symlink to the one installed with brew
     if [[ $COMPILER == "clang" ]]; then
+        R_MAJOR_MINOR=$(
+            Rscript -e 'cat(paste0(R.version[["major"]], ".", strsplit(R.version[["minor"]], "")[[1]][1]))'
+        )
         sudo ln -sf \
             "$(brew --cellar libomp)"/*/lib/libomp.dylib \
-            /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libomp.dylib
+            /Library/Frameworks/R.framework/Versions/${R_MAJOR_MINOR}/Resources/lib/libomp.dylib
     fi
 fi
 
@@ -58,7 +61,7 @@ conda install \
 Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
-Rscript build_r.R
+Rscript build_r.R || exit -1
 
 PKG_TARBALL=$(ls | grep '^lightgbm_.*\.tar\.gz$')
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
@@ -70,7 +73,6 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 # R CMD CHECK
 R CMD check ${PKG_TARBALL} \
     --as-cran \
-    --no-manual \
 || exit -1
 
 if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
