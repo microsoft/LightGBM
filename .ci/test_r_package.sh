@@ -40,7 +40,7 @@ if [[ $OS_NAME == "macos" ]]; then
 
     # Fix "duplicate libomp versions" issue on Mac
     # by replacing the R libomp.dylib with a symlink to the one installed with brew
-    if [[ $AZURE == "true" && $COMPILER == "clang" ]]; then
+    if [[ $COMPILER == "clang" ]]; then
         sudo ln -sf \
             "$(brew --cellar libomp)"/*/lib/libomp.dylib \
             /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libomp.dylib
