@@ -807,11 +807,13 @@ struct Config {
   // desc = when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
   int multi_error_top_k = 1;
 
-  // desc = file containing matrix of weights for calculating AUC-mu multi-class metric
-  // desc = matrix must be square, with number of rows and columns equal to number of classes
+  // type = multi-double
+  // default = None
+  // desc = list representing flattened matrix (in row-major order) giving loss weights for classification errors
+  // desc = list should have ``n * n`` elements, where ``n`` is the number of classes
+  // desc = the matrix co-ordinate ``[i, j]`` should correspond to the ``i * n + j``-th element of the list
   // desc = if not specified, will use equal weights for all classes
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/multiclass_classification/loss.weights>`__ as an example
-  std::string auc_mu_weights_file = "";
+  std::vector<double> auc_mu_weights;
 
   #pragma endregion
 
@@ -868,13 +870,13 @@ struct Config {
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static std::unordered_map<std::string, std::string> alias_table;
   static std::unordered_set<std::string> parameter_set;
-  std::vector<std::vector<double>> auc_mu_weights;
+  std::vector<std::vector<double>> auc_mu_weights_matrix;
 
  private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
-  void GetAucMuWeights(const std::unordered_map<std::string, std::string>& params);
+  void GetAucMuWeights();
 };
 
 inline bool Config::GetString(

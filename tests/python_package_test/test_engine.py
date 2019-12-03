@@ -477,17 +477,15 @@ class TestEngine(unittest.TestCase):
         y = Xy[:, 0]
         X = Xy[:, 1:]
         lgb_X = lgb.Dataset(X, label=y)
-        weights_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    '../../examples/multiclass_classification/loss.weights')
         params = {'objective': 'multiclass',
                   'metric': 'auc_mu',
-                  'auc_mu_weights_file': weights_file,
+                  'auc_mu_weights': [0, 2, 2, 2, 2, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
                   'num_classes': 5,
                   'verbose': -1,
                   'seed': 0}
         results_weight = {}
         lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_weight)
-        params['auc_mu_weights_file'] = ""
+        params['auc_mu_weights'] = []
         results_no_weight = {}
         lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_no_weight)
         self.assertNotEqual(results_weight['training']['auc_mu'][-1], results_no_weight['training']['auc_mu'][-1])

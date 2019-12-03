@@ -183,7 +183,7 @@ class AucMuMetric : public Metric {
 public:
   explicit AucMuMetric(const Config& config) : config_(config) {
     num_class_ = config.num_class;
-    class_weights_ = config.auc_mu_weights;
+    class_weights_ = config.auc_mu_weights_matrix;
   }
 
   virtual ~AucMuMetric() {}

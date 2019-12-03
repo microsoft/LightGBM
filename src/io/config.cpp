@@ -155,57 +155,33 @@ void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& para
   }
 }
 
-void Config::GetAucMuWeights(const std::unordered_map<std::string, std::string>& params) {
+void Config::GetAucMuWeights() {
   std::string filename;
-  if (Config::GetString(params, "auc_mu_weights_file", &filename)) {
-    // read weights from file
-    TextReader<size_t> reader(filename.c_str(), false);
-    reader.ReadAllLines();
-    std::vector<std::string>& lines = reader.Lines();
-    Parser* parser = Parser::CreateParser(filename.c_str(), false, num_class, -1);
-    std::vector<std::pair<int, double>> oneline_weights_nonzero;
-    std::vector<double> oneline_weights;
-    for (size_t i = 0; i < lines.size(); ++i) {
-      oneline_weights_nonzero.clear();
-      oneline_weights.clear();
-      double tmp_label = 0.0f;
-      parser->ParseOneLine(lines[i].c_str(), &oneline_weights_nonzero, &tmp_label);
-      size_t oneline_ind = 0;
-      for (int j = 0; j < num_class; ++j) {
-        if ((oneline_ind >= oneline_weights_nonzero.size()) || (oneline_weights_nonzero[oneline_ind].first > j)) {
-          oneline_weights.emplace_back(0);
-        } else {
-          oneline_weights.emplace_back(oneline_weights_nonzero[oneline_ind].second);
-          ++oneline_ind;
-        }
-      }
-      if (static_cast<int>(oneline_weights.size()) != num_class) {
-        Log::Fatal("AUC-mu weights matrix must have %d columns but found row with %d entries.",
-                    num_class, oneline_weights.size());
-      }
-      std::vector<double> curr_line_weights;
-      for (size_t j = 0; j < static_cast<size_t>(num_class); ++j) {
-        curr_line_weights.push_back(oneline_weights[j]);
-        if (oneline_weights[j] < 0) {
-          Log::Fatal("AUC-mu weights matrix must contain only non-negative values. Found negative value at position [%d, %d]",
-                      i, j);
-        }
-        if ((i == j) && (oneline_weights[j] > kEpsilon)) {
-          Log::Warning("Diagonal of AUC-mu weights matrix must be zero. Overriding entry at position [%d, %d] with zero.",
-                        i, j);
-          curr_line_weights.push_back(0);
-        }
-      }
-    auc_mu_weights.push_back(curr_line_weights);
-    }
-    if (auc_mu_weights.size() != static_cast<size_t>(num_class)) {
-      Log::Fatal("AUC-mu matrix must have %d rows but found %d", num_class, auc_mu_weights.size());
+  if (auc_mu_weights.empty()) {
+    // equal weights for all classes
+    auc_mu_weights_matrix = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 1));
+    for (size_t i = 0; i < static_cast<size_t>(num_class); ++i) {
+      auc_mu_weights_matrix[i][i] = 0;
     }
   } else {
-    // equal weights for all classes
-    auc_mu_weights = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 1));
+    auc_mu_weights_matrix = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 0));
+    if (auc_mu_weights.size() != static_cast<size_t>(num_class * num_class)) {
+      Log::Fatal("auc_mu_weights must have %d elements, but found %d", num_class * num_class, auc_mu_weights.size());
+    }
     for (size_t i = 0; i < static_cast<size_t>(num_class); ++i) {
-      auc_mu_weights[i][i] = 0;
+      for (size_t j = 0; j < static_cast<size_t>(num_class); ++j) {
+        if (i == j) {
+          auc_mu_weights_matrix[i][j] = 0;
+          if (std::fabs(auc_mu_weights[i * num_class + j]) > kZeroThreshold) {
+            Log::Info("AUC-mu matrix must have zeros on diagonal. Overwriting value in position %d of auc_mu_weights with 0.", i * num_class + j);
+          }
+        } else {
+          if (std::fabs(auc_mu_weights[i * num_class + j]) < kZeroThreshold) {
+            Log::Fatal("AUC-mu matrix must have non-zero values for non-diagonal entries. Found zero value in position %d of auc_mu_weights.", i * num_class + j);
+          }
+          auc_mu_weights_matrix[i][j] = auc_mu_weights[i * num_class + j];
+        }
+      }
     }
   }
 };
@@ -230,7 +206,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 
   GetMembersFromString(params);
 
-  GetAucMuWeights(params);
+  GetAucMuWeights();
 
   // sort eval_at
   std::sort(eval_at.begin(), eval_at.end());

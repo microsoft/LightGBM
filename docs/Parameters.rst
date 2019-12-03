@@ -923,15 +923,15 @@ Metric Parameters
 
    -  when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
 
--  ``auc_mu_weights_file`` :raw-html:`<a id="auc_mu_weights_file" title="Permalink to this parameter" href="#auc_mu_weights_file">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+-  ``auc_mu_weights`` :raw-html:`<a id="auc_mu_weights" title="Permalink to this parameter" href="#auc_mu_weights">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double
 
-   -  file containing matrix of weights for calculating AUC-mu multi-class metric
+   -  list representing flattened matrix (in row-major order) giving loss weights for classification errors
 
-   -  matrix must be square, with number of rows and columns equal to number of classes
+   -  list should have ``n * n`` elements, where ``n`` is the number of classes
+
+   -  the matrix co-ordinate ``[i, j]`` should correspond to the ``i * n + j``-th element of the list
 
    -  if not specified, will use equal weights for all classes
-
-   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/multiclass_classification/loss.weights>`__ as an example
 
 Network Parameters
 ------------------
