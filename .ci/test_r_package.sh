@@ -33,6 +33,9 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
+
+    brew cask install basictex
+
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \
         -pkg $(pwd)/R.pkg \
@@ -42,7 +45,7 @@ if [[ $OS_NAME == "macos" ]]; then
     # by replacing the R libomp.dylib with a symlink to the one installed with brew
     if [[ $COMPILER == "clang" ]]; then
         R_MAJOR_MINOR=$(
-            Rscript -e 'cat(paste0(R.version[["major"]], ".", strsplit(R.version[["minor"]], "")[[1]][1]))'
+            Rscript -e 'cat(paste0(R.version[["major"]], ".", strsplit(R.version[["minor"]], "\\\.")[[1]][1]))'
         )
         sudo ln -sf \
             "$(brew --cellar libomp)"/*/lib/libomp.dylib \

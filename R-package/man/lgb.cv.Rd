@@ -53,6 +53,8 @@ lgb.cv(
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
+\item{showsd}{\code{boolean}, whether to show standard deviation of cross validation}
+
 \item{stratified}{a \code{boolean} indicating whether sampling of folds should be stratified
 by the values of outcome labels.}
 
@@ -88,8 +90,6 @@ into a predictor model which frees up memory and the original datasets}
                        the number of real CPU cores, not the number of threads (most
                        CPU using hyper-threading to generate 2 threads per CPU core).}
 }}
-
-\item{showsd}{\code{boolean}, whether to show standard deviation of cross validation}
 }
 \value{
 a trained model \code{lgb.CVBooster}.
