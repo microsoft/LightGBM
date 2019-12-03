@@ -2,6 +2,8 @@
 """Scikit-learn wrapper interface for LightGBM."""
 from __future__ import absolute_import
 
+import warnings
+
 import numpy as np
 
 from .basic import Dataset, LightGBMError, _ConfigAliases
@@ -812,7 +814,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """Docstring is inherited from the LGBMModel."""
         result = self.predict_proba(X, raw_score, num_iteration,
                                     pred_leaf, pred_contrib, **kwargs)
-        if raw_score or pred_leaf or pred_contrib:
+        if callable(self._objective) or raw_score or pred_leaf or pred_contrib:
             return result
         else:
             class_index = np.argmax(result, axis=1)
@@ -861,7 +863,12 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
                                                      pred_leaf, pred_contrib, **kwargs)
-        if self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
+        if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
+            warnings.warn("Cannot compute class probabilities or labels "
+                          "due to the usage of customized objective function.\n"
+                          "Returning raw scores instead.")
+            return result
+        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
         else:
             return np.vstack((1. - result, result)).transpose()

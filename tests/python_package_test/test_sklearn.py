@@ -131,7 +131,11 @@ class TestSklearn(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
-        ret = binary_error(y_test, gbm.predict(X_test))
+        # prediction result is actually not transformed (is raw) due to custom objective
+        y_pred_raw = gbm.predict_proba(X_test)
+        self.assertFalse(np.all(y_pred_raw >= 0))
+        y_pred = 1.0 / (1.0 + np.exp(-y_pred_raw))
+        ret = binary_error(y_test, y_pred)
         self.assertLess(ret, 0.05)
 
     def test_dart(self):
