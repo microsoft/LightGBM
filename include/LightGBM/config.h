@@ -773,12 +773,12 @@ struct Config {
   // descl2 = ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
   // descl2 = ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
   // descl2 = ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
+  // descl2 = ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
   // descl2 = ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
   // descl2 = ``multi_error``, error rate for multi-class classification
   // descl2 = ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
   // descl2 = ``cross_entropy_lambda``, "intensity-weighted" cross-entropy, aliases: ``xentlambda``
   // descl2 = ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
-  // descl2 = ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 
@@ -809,6 +809,7 @@ struct Config {
 
   // type = multi-double
   // default = None
+  // desc = used only with ``auc_mu`` metric
   // desc = list representing flattened matrix (in row-major order) giving loss weights for classification errors
   // desc = list should have ``n * n`` elements, where ``n`` is the number of classes
   // desc = the matrix co-ordinate ``[i, j]`` should correspond to the ``i * n + j``-th element of the list

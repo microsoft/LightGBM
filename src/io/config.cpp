@@ -4,11 +4,9 @@
  */
 #include <LightGBM/config.h>
 
-#include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/random.h>
-#include <LightGBM/utils/text_reader.h>
 
 #include <limits>
 
@@ -156,7 +154,6 @@ void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& para
 }
 
 void Config::GetAucMuWeights() {
-  std::string filename;
   if (auc_mu_weights.empty()) {
     // equal weights for all classes
     auc_mu_weights_matrix = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 1));

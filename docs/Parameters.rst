@@ -881,6 +881,8 @@ Metric Parameters
 
       -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
+      -  ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
+
       -  ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
 
       -  ``multi_error``, error rate for multi-class classification
@@ -890,8 +892,6 @@ Metric Parameters
       -  ``cross_entropy_lambda``, "intensity-weighted" cross-entropy, aliases: ``xentlambda``
 
       -  ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
-
-      -  ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
 
    -  support multiple metrics, separated by ``,``
 
@@ -924,6 +924,8 @@ Metric Parameters
    -  when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
 
 -  ``auc_mu_weights`` :raw-html:`<a id="auc_mu_weights" title="Permalink to this parameter" href="#auc_mu_weights">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double
+
+   -  used only with ``auc_mu`` metric
 
    -  list representing flattened matrix (in row-major order) giving loss weights for classification errors
 
