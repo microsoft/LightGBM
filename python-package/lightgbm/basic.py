@@ -763,7 +763,7 @@ class Dataset(object):
             self._free_handle()
         except AttributeError:
             pass
-    
+
     def _filter_params(self, params):
         keys = ['max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',\
                 'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column', \
@@ -771,6 +771,14 @@ class Dataset(object):
                 'is_enable_sparse', 'is_sparse', 'enable_sparse', 'sparse', 'forcedbins_filename', 'min_data_in_leaf', 'min_data_per_leaf', \
                 'min_data', 'min_child_samples', 'num_threads', 'num_thread', 'nthread', 'nthreads', 'n_jobs', 'verbosity', 'verbose']
         return {k:v for k, v in params.items() if k in keys}
+
+    def get_params(self):
+        # no min_data, nthreads and verbose in this function
+        keys = ['max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',\
+                'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column', \
+                'feature_pre_filter', 'pre_partition', 'is_pre_partition', 'enable_bundle', 'is_enable_bundle', 'bundle', 'max_conflict_rate ',\
+                'is_enable_sparse', 'is_sparse', 'enable_sparse', 'sparse', 'forcedbins_filename']
+        return {k:v for k, v in self.params.items() if k in keys}
 
     def _free_handle(self):
         if self.handle is not None:
@@ -1673,7 +1681,7 @@ class Booster(object):
                                 .format(type(train_set).__name__))
             train_set.construct()
             # copy the parameters from train_set
-            params.update(train_set.params)
+            params.update(train_set.get_params())
             params_str = param_dict_to_str(params)
             # set network if necessary
             for alias in _ConfigAliases.get("machines"):
