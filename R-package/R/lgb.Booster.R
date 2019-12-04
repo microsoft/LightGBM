@@ -43,7 +43,7 @@ Booster <- R6::R6Class(
             stop("lgb.Booster: Can only use lgb.Dataset as training data")
           }
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
-          params <- modifyList(params, train_set$.__enclos_env__$private$params)
+          params <- modifyList(params, train_set$get_params())
           params_str <- lgb.params2str(params)
           # Store booster handle
           handle <- lgb.call(

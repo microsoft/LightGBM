@@ -560,6 +560,20 @@ Dataset <- R6::R6Class(
 
     },
 
+    get_params = function() {
+      keys <- c("has_header", "header", "max_bin", "max_bin_by_feature", "bin_construct_sample_cnt", "subsample_for_bin", "min_data_in_bin", "use_missing",
+        "zero_as_missing", "sparse_threshold", "categorical_feature", "cat_feature", "categorical_column", "cat_column", 
+        "feature_pre_filter", "pre_partition", "is_pre_partition", "enable_bundle", "is_enable_bundle", "bundle", "max_conflict_rate ",
+        "is_enable_sparse", "is_sparse", "enable_sparse", "sparse", "forcedbins_filename")
+      ret <- list()
+      for (key in names(private$params)) {
+        if (key %in% keys) {
+          ret[[key]] <- private$params[[key]]
+        }
+      }
+      return(ret)
+    },
+
     # Set categorical feature parameter
     set_categorical_feature = function(categorical_feature) {
 
