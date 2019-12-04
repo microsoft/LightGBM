@@ -775,8 +775,8 @@ class Dataset(object):
         return {k:v for k, v in params.items() if k in keys}
 
     def get_params(self):
-        if params is None:
-            return params
+        if self.params is None:
+            return self.params
         # no min_data, nthreads and verbose in this function
         keys = ['has_header', 'header', 'max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',\
                 'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column', \
