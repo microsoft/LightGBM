@@ -34,7 +34,11 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
 
+    brew install qpdf
     brew cask install basictex
+    export PATH="/Library/TeX/texbin:$PATH"
+    sudo tlmgr update --self
+    sudo tlmgr install inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \
@@ -44,9 +48,8 @@ if [[ $OS_NAME == "macos" ]]; then
     # Fix "duplicate libomp versions" issue on Mac
     # by replacing the R libomp.dylib with a symlink to the one installed with brew
     if [[ $COMPILER == "clang" ]]; then
-        R_MAJOR_MINOR=$(
-            Rscript -e 'cat(paste0(R.version[["major"]], ".", strsplit(R.version[["minor"]], "\\\.")[[1]][1]))'
-        )
+        ver_arr=( ${R_MAC_VERSION//./ } )
+        R_MAJOR_MINOR="${ver_arr[0]}.${ver_arr[1]}"
         sudo ln -sf \
             "$(brew --cellar libomp)"/*/lib/libomp.dylib \
             /Library/Frameworks/R.framework/Versions/${R_MAJOR_MINOR}/Resources/lib/libomp.dylib
@@ -71,6 +74,9 @@ LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 
 # suppress R CMD check warning from Suggests dependencies not being available
 export _R_CHECK_FORCE_SUGGESTS_=0
+
+# get some logs on the latex stuff
+R CMD Rd2pdf --no-clean ${BUILD_DIRECTORY}/R-package/man/
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
