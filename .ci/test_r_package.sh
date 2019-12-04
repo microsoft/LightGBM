@@ -24,6 +24,7 @@ if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
         --no-install-recommends \
         -y \
             r-base-dev=${R_TRAVIS_LINUX_VERSION} \
+            texinfo \
             texlive-latex-recommended \
             texlive-fonts-recommended \
             texlive-fonts-extra \
@@ -74,9 +75,6 @@ LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 
 # suppress R CMD check warning from Suggests dependencies not being available
 export _R_CHECK_FORCE_SUGGESTS_=0
-
-# get some logs on the latex stuff
-R CMD Rd2pdf --no-clean ${BUILD_DIRECTORY}/R-package/man/
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK

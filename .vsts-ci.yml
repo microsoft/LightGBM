@@ -78,14 +78,14 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.6
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.5
-      bdist:
-        TASK: bdist
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.6
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 3.5
+      # bdist:
+      #   TASK: bdist
       r_package:
         TASK: r-package
   steps:
