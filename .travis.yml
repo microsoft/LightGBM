@@ -32,7 +32,7 @@ matrix:
     - os: osx
       env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - os: osx
-      env: TASK=lint MAX_CPPLINT_ERRORS=86
+      env: TASK=lint MAX_CPPLINT_ERRORS=91
     - os: osx
       env: TASK=check-docs
 
