@@ -790,3 +790,16 @@ class TestSklearn(unittest.TestCase):
             for metric in gbm.evals_result_[eval_set]:
                 np.testing.assert_allclose(gbm.evals_result_[eval_set][metric],
                                            gbm_str.evals_result_[eval_set][metric])
+
+    def test_continue_training_with_model(self):
+        X, y = load_digits(3, True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        init_gbm = lgb.LGBMClassifier(n_estimators=5).fit(X_train, y_train, eval_set=(X_test, y_test),
+                                                          verbose=False)
+        gbm = lgb.LGBMClassifier(n_estimators=5).fit(X_train, y_train, eval_set=(X_test, y_test),
+                                                     verbose=False, init_model=init_gbm)
+        self.assertEqual(len(init_gbm.evals_result_['valid_0']['multi_logloss']),
+                         len(gbm.evals_result_['valid_0']['multi_logloss']))
+        self.assertEqual(len(init_gbm.evals_result_['valid_0']['multi_logloss']), 5)
+        self.assertLess(gbm.evals_result_['valid_0']['multi_logloss'][-1],
+                        init_gbm.evals_result_['valid_0']['multi_logloss'][-1])
