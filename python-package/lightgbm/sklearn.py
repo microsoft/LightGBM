@@ -589,7 +589,7 @@ class LGBMModel(_LGBMModelBase):
                                                    valid_weight, valid_init_score, valid_group, params)
                 valid_sets.append(valid_set)
 
-        if init_model is not None and isinstance(init_model, LGBMModel):
+        if isinstance(init_model, LGBMModel):
             init_model = init_model.booster_
 
         self._Booster = train(params, train_set,
