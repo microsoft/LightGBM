@@ -763,6 +763,7 @@ class Dataset(object):
             self._free_handle()
         except AttributeError:
             pass
+
     def get_params(self):
         if self.params is None:
             return self.params
