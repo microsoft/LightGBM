@@ -148,16 +148,27 @@ class TestSklearn(unittest.TestCase):
         self.assertLessEqual(score, 1.)
 
     def test_grid_search(self):
-        X, y = load_boston(True)
-        params = {'boosting_type': ['dart', 'gbdt'],
-                  'n_estimators': [5, 8],
-                  'drop_rate': [0.05, 0.1]}
-        grid = GridSearchCV(lgb.LGBMRegressor(n_estimators=10), params, cv=3)
-        grid.fit(X, y)
-        self.assertIn(grid.best_params_['boosting_type'], ['dart', 'gbdt'])
-        self.assertIn(grid.best_params_['n_estimators'], [5, 8])
-        self.assertIn(grid.best_params_['drop_rate'], [0.05, 0.1])
-        self.assertLess(grid.best_score_, 0.3)
+        X, y = load_iris(True)
+        y = np.array(list(map(str, y)))  # utilize label encoder at it's max power
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {'subsample': 0.8,
+                  'subsample_freq': 1}
+        grid_params = {'boosting_type': ['rf', 'gbdt'],
+                       'n_estimators': [4, 6],
+                       'reg_alpha': [0.01, 0.005]}
+        fit_params = {'verbose': False,
+                      'eval_set': [(X_test, y_test)],
+                      'eval_metric': constant_metric,
+                      'early_stopping_rounds': 2}
+        grid = GridSearchCV(lgb.LGBMClassifier(**params), grid_params, cv=2)
+        grid.fit(X, y, **fit_params)
+        self.assertIn(grid.best_params_['boosting_type'], ['rf', 'gbdt'])
+        self.assertIn(grid.best_params_['n_estimators'], [4, 6])
+        self.assertIn(grid.best_params_['reg_alpha'], [0.01, 0.005])
+        self.assertLess(grid.best_score_, 0.9)
+        self.assertEqual(grid.best_estimator_.best_iteration_, 1)
+        self.assertLess(grid.best_estimator_.best_score_['valid_0']['multi_logloss'], 0.25)
+        self.assertEqual(grid.best_estimator_.best_score_['valid_0']['error'], 0)
 
     def test_clone_and_property(self):
         X, y = load_boston(True)
