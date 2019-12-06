@@ -767,22 +767,22 @@ class Dataset(object):
     def _filter_params(self, params):
         if params is None:
             return params
-        keys = ['has_header', 'header', 'max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',\
-                'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column', \
-                'feature_pre_filter', 'pre_partition', 'is_pre_partition', 'enable_bundle', 'is_enable_bundle', 'bundle', 'max_conflict_rate',\
-                'is_enable_sparse', 'is_sparse', 'enable_sparse', 'sparse', 'forcedbins_filename', 'min_data_in_leaf', 'min_data_per_leaf', \
+        keys = ['has_header', 'header', 'max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',
+                'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column',
+                'feature_pre_filter', 'pre_partition', 'is_pre_partition', 'enable_bundle', 'is_enable_bundle', 'bundle', 'max_conflict_rate',
+                'is_enable_sparse', 'is_sparse', 'enable_sparse', 'sparse', 'forcedbins_filename', 'min_data_in_leaf', 'min_data_per_leaf',
                 'min_data', 'min_child_samples', 'num_threads', 'num_thread', 'nthread', 'nthreads', 'n_jobs', 'verbosity', 'verbose']
-        return {k:v for k, v in params.items() if k in keys}
+        return {k: v for k, v in params.items() if k in keys}
 
     def get_params(self):
         if self.params is None:
             return self.params
         # no min_data, nthreads and verbose in this function
-        keys = ['has_header', 'header', 'max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',\
-                'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column', \
-                'feature_pre_filter', 'pre_partition', 'is_pre_partition', 'enable_bundle', 'is_enable_bundle', 'bundle', 'max_conflict_rate ',\
+        keys = ['has_header', 'header', 'max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',
+                'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column',
+                'feature_pre_filter', 'pre_partition', 'is_pre_partition', 'enable_bundle', 'is_enable_bundle', 'bundle', 'max_conflict_rate ',
                 'is_enable_sparse', 'is_sparse', 'enable_sparse', 'sparse', 'forcedbins_filename']
-        return {k:v for k, v in self.params.items() if k in keys}
+        return {k: v for k, v in self.params.items() if k in keys}
 
     def _free_handle(self):
         if self.handle is not None:
@@ -1174,12 +1174,14 @@ class Dataset(object):
 
     def _update_params(self, params):
         params = self._filter_params(params)
+
         def update():
             if not self.params:
                 self.params = params
             else:
                 self.params_back_up = copy.deepcopy(self.params)
                 self.params.update(params)
+
         if self.handle is None:
             update()
         elif params is not None:
