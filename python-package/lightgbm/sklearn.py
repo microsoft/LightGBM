@@ -350,7 +350,6 @@ class LGBMModel(_LGBMModelBase):
         params.update(self._other_params)
         return params
 
-    # minor change to support `**kwargs`
     def set_params(self, **params):
         """Set the parameters of this estimator.
 
