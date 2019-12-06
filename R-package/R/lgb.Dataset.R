@@ -533,7 +533,7 @@ Dataset <- R6::R6Class(
 
     # Update parameters
     update_params = function(params) {
-      if (length(params) == 0) {
+      if (length(params) == 0L) {
         return(invisible(self))
       }
       if (lgb.is.null.handle(private$handle)) {
