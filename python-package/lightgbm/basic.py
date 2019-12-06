@@ -1858,35 +1858,34 @@ class Booster(object):
 
         Returns
         -------
-        Dataframe or list
-            Returns a pandas Dataframe if pandas is installed. Otherwise returns a list.
+        DataFrame or list
+            Returns a pandas Dataframe if pandas is installed, and a list otherwise.
         """
         if not PANDAS_INSTALLED:
-            print('Pandas is not installed and so the result will be returned as a list')
+            warnings.warn('Pandas is not installed and so the result will be returned as a list')
 
         if self.num_trees() == 0:
-            print('There are no trees in this Booster and thus nothing to return')
-            return
+            raise LightGBMError('There are no trees in this Booster and thus nothing to parse')
 
-        def _is_split_node(t):
-            return 'split_index' in t.keys()
+        def _is_split_node(tree):
+            return 'split_index' in tree.keys()
 
-        def create_node_record(t, node_depth=1, tree_index=None,
+        def create_node_record(tree, node_depth=1, tree_index=None,
                                feature_names=None, parent_node=None):
 
-            def _get_node_index(t, tree_index):
+            def _get_node_index(tree, tree_index):
                 tree_num = str(tree_index) + '-' if tree_index is not None else ''
-                node_type = 'S' if _is_split_node(t) else 'L'
-                node_num = str(
-                    t['split_index' if _is_split_node(t) else 'leaf_index'])
+                is_split = _is_split_node(tree)
+                node_type = 'S' if is_split else 'L'
+                node_num = str(tree['split_index' if is_split else 'leaf_index'])
                 return tree_num + node_type + node_num
 
-            def _get_split_feature(t, feature_names):
-                if _is_split_node(t):
+            def _get_split_feature(tree, feature_names):
+                if _is_split_node(tree):
                     if feature_names is not None:
-                        feature_name = feature_names[t['split_feature']]
+                        feature_name = feature_names[tree['split_feature']]
                     else:
-                        feature_name = t['split_feature']
+                        feature_name = tree['split_feature']
                 else:
                     feature_name = None
                 return feature_name
@@ -1894,39 +1893,44 @@ class Booster(object):
             # Create the node record, and populate universal data members
             node = {'tree_index': tree_index,
                     'node_depth': node_depth,
-                    'node_index': _get_node_index(t, tree_index),
+                    'node_index': _get_node_index(tree, tree_index),
                     'left_child': None,
                     'right_child': None,
                     'parent_index': parent_node,
-                    'split_feature': _get_split_feature(t, feature_names),
+                    'split_feature': _get_split_feature(tree, feature_names),
                     'split_gain': None,
                     'threshold': None,
                     'decision_type': None,
                     'missing_direction': None,
                     'missing_type': None,
-                    'leaf_weight': None,
-                    'internal_count': None}
+                    'internal_value': None,
+                    'leaf_value': None,
+                    'weight': None,
+                    'count': None}
 
             # Update values to reflect node type (leaf or split)
-            if _is_split_node(t):
-                node['left_child'] = _get_node_index(t['left_child'], tree_index)
-                node['right_child'] = _get_node_index(t['right_child'], tree_index)
-                node['split_gain'] = t['split_gain']
-                node['threshold'] = t['threshold']
-                node['decision_type'] = t['decision_type']
-                node['missing_direction'] = 'left' if t['default_left'] else 'right'
-                node['missing_type'] = t['missing_type']
-                node['internal_count'] = t['internal_count']
+            if _is_split_node(tree):
+                node['left_child'] = _get_node_index(tree['left_child'], tree_index)
+                node['right_child'] = _get_node_index(tree['right_child'], tree_index)
+                node['split_gain'] = tree['split_gain']
+                node['threshold'] = tree['threshold']
+                node['decision_type'] = tree['decision_type']
+                node['missing_direction'] = 'left' if tree['default_left'] else 'right'
+                node['missing_type'] = tree['missing_type']
+                node['internal_value'] = tree['internal_value']
+                node['weight'] = tree['internal_weight']
+                node['count'] = tree['internal_count']
             else:
-                node['leaf_weight'] = t['leaf_value']
-                node['internal_count'] = t['leaf_count']
+                node['leaf_value'] = tree['leaf_value']
+                node['weight'] = tree['leaf_weight']
+                node['count'] = tree['leaf_count']
 
             return node
 
-        def tree_dict_to_node_list(t, node_depth=1, tree_index=None,
+        def tree_dict_to_node_list(tree, node_depth=1, tree_index=None,
                                    feature_names=None, parent_node=None):
 
-            node = create_node_record(t,
+            node = create_node_record(tree,
                                       node_depth=node_depth,
                                       tree_index=tree_index,
                                       feature_names=feature_names,
@@ -1934,33 +1938,33 @@ class Booster(object):
 
             res = [node]
 
-            if _is_split_node(t):
+            if _is_split_node(tree):
                 # traverse the next level of the tree
                 children = ['left_child', 'right_child']
                 for child in children:
                     subtree_list = tree_dict_to_node_list(
-                        t[child],
+                        tree[child],
                         node_depth=node_depth + 1,
                         tree_index=tree_index,
                         feature_names=feature_names,
                         parent_node=node['node_index'])
-                    # In tree format, "subtree_list"is a list of node records (dicts), and we
-                    # add node to the list.
+                    # In tree format, "subtree_list" is a list of node records (dicts),
+                    # and we add node to the list.
                     res.extend(subtree_list)
             return res
 
-        m_dict = self.dump_model()
-        feature_names = m_dict['feature_names']
-        m_list = []
-        for t in m_dict['tree_info']:
-            m_list.extend(tree_dict_to_node_list(t['tree_structure'],
-                                                 tree_index=t['tree_index'],
-                                                 feature_names=feature_names))
+        model_dict = self.dump_model()
+        feature_names = model_dict['feature_names']
+        model_list = []
+        for tree in model_dict['tree_info']:
+            model_list.extend(tree_dict_to_node_list(tree['tree_structure'],
+                                                     tree_index=tree['tree_index'],
+                                                     feature_names=feature_names))
 
         if PANDAS_INSTALLED:
-            return DataFrame(m_list, columns=m_list[0].keys())
+            return DataFrame(model_list, columns=model_list[0].keys())
         else:
-            return m_list
+            return model_list
 
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.
