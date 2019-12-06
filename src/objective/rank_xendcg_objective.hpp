@@ -16,7 +16,7 @@
 
 namespace LightGBM {
 /*!
-* \brief Implementation of the learning-to-rank objective function, XE_NDCG.
+* \brief Implementation of the learning-to-rank objective function, XE_NDCG [arxiv.org/abs/1911.09798].
 */
 class RankXENDCG: public ObjectiveFunction {
  public:
