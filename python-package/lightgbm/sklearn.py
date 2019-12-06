@@ -777,30 +777,33 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         self._n_classes = len(self._classes)
         if self._n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
-            ova_aliases = ("multiclassova", "multiclass_ova", "ova", "ovr")
+            ova_aliases = {"multiclassova", "multiclass_ova", "ova", "ovr"}
             if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
-            if eval_metric in ('logloss', 'binary_logloss'):
+            if eval_metric in {'logloss', 'binary_logloss'}:
                 eval_metric = "multi_logloss"
-            elif eval_metric in ('error', 'binary_error'):
+            elif eval_metric in {'error', 'binary_error'}:
                 eval_metric = "multi_error"
         else:
-            if eval_metric in ('logloss', 'multi_logloss'):
+            if eval_metric in {'logloss', 'multi_logloss'}:
                 eval_metric = 'binary_logloss'
-            elif eval_metric in ('error', 'multi_error'):
+            elif eval_metric in {'error', 'multi_error'}:
                 eval_metric = 'binary_error'
 
+        # do not modify args, as it causes errors in model selection tools
+        valid_sets = None
         if eval_set is not None:
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
+            valid_sets = [None] * len(eval_set)
             for i, (valid_x, valid_y) in enumerate(eval_set):
                 if valid_x is X and valid_y is y:
-                    eval_set[i] = (valid_x, _y)
+                    valid_sets[i] = (valid_x, _y)
                 else:
-                    eval_set[i] = (valid_x, self._le.transform(valid_y))
+                    valid_sets[i] = (valid_x, self._le.transform(valid_y))
 
         super(LGBMClassifier, self).fit(X, _y, sample_weight=sample_weight,
-                                        init_score=init_score, eval_set=eval_set,
+                                        init_score=init_score, eval_set=valid_sets,
                                         eval_names=eval_names,
                                         eval_sample_weight=eval_sample_weight,
                                         eval_class_weight=eval_class_weight,
@@ -900,7 +903,7 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=[1], early_stopping_rounds=None, verbose=True,
+            eval_at=[1, 2, 3, 4, 5], early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -939,6 +942,6 @@ class LGBMRanker(LGBMModel):
     _base_doc = fit.__doc__
     _before_early_stop, _early_stop, _after_early_stop = _base_doc.partition('early_stopping_rounds :')
     fit.__doc__ = (_before_early_stop
-                   + 'eval_at : list of int, optional (default=[1])\n'
+                   + 'eval_at : list of int, optional (default=[1, 2, 3, 4, 5])\n'
                    + ' ' * 12 + 'The evaluation positions of the specified metric.\n'
                    + ' ' * 8 + _early_stop + _after_early_stop)
