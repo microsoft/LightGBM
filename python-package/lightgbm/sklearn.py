@@ -555,8 +555,8 @@ class LGBMModel(_LGBMModelBase):
         self._n_features = _X.shape[1]
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
-            ret = Dataset(X, label=y, weight=sample_weight, group=group, params=params)
-            return ret.set_init_score(init_score)
+            return Dataset(X, label=y, weight=sample_weight, group=group,
+                           init_score=init_score, params=params)
 
         train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params)
 
@@ -616,7 +616,7 @@ class LGBMModel(_LGBMModelBase):
         self._best_score = self._Booster.best_score
 
         # free dataset
-        self.booster_.free_dataset()
+        self._Booster.free_dataset()
         del train_set, valid_sets
         return self
 
@@ -669,7 +669,7 @@ class LGBMModel(_LGBMModelBase):
                              "match the input. Model n_features_ is %s and "
                              "input n_features is %s "
                              % (self._n_features, n_features))
-        return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration,
+        return self._Booster.predict(X, raw_score=raw_score, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
     @property
@@ -720,14 +720,12 @@ class LGBMModel(_LGBMModelBase):
 
         .. note::
 
-            Feature importance in sklearn interface used to normalize to 1,
-            it's deprecated after 2.0.4 and is the same as Booster.feature_importance() now.
             ``importance_type`` attribute is passed to the function
             to configure the type of importance values to be extracted.
         """
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
-        return self.booster_.feature_importance(importance_type=self.importance_type)
+        return self._Booster.feature_importance(importance_type=self.importance_type)
 
 
 class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
