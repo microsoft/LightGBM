@@ -80,7 +80,7 @@ Dataset <- R6::R6Class(
 
       # Setup private attributes
       private$raw_data <- data
-      private$params <- self$filter_params(params)
+      private$params <- params
       private$reference <- reference
       private$colnames <- colnames
 
@@ -533,7 +533,6 @@ Dataset <- R6::R6Class(
 
     # Update parameters
     update_params = function(params) {
-      params = self$filter_params(params)
       if (length(params) == 0) {
         return(invisible(self))
       }
@@ -542,7 +541,7 @@ Dataset <- R6::R6Class(
       } else {
         call_state <- 0L
         call_state <- .Call(
-          "LGBM_DatasetUpdateParamWarning_R"
+          "LGBM_DatasetUpdateParamChecking_R"
           , lgb.params2str(private$params)
           , lgb.params2str(params)
           , call_state
@@ -565,55 +564,9 @@ Dataset <- R6::R6Class(
 
     },
 
-    filter_params = function(params) {
-      keys <- c("bin_construct_sample_cnt",
-                "bundle",
-                "categorical_column",
-                "categorical_feature",
-                "cat_column",
-                "cat_feature",
-                "enable_bundle",
-                "enable_sparse",
-                "feature_pre_filter",
-                "forcedbins_filename",
-                "has_header",
-                "header",
-                "is_enable_bundle",
-                "is_enable_sparse",
-                "is_pre_partition",
-                "is_sparse",
-                "max_bin",
-                "max_bin_by_feature",
-                "max_conflict_rate ",
-                "min_child_samples",
-                "min_data",
-                "min_data_in_bin",
-                "min_data_in_leaf",
-                "min_data_per_leaf",
-                "nthread",
-                "nthreads",
-                "num_thread",
-                "num_threads",
-                "n_jobs",
-                "pre_partition",
-                "sparse",
-                "sparse_threshold",
-                "subsample_for_bin",
-                "use_missing",
-                "verbose",
-                "verbosity",
-                "zero_as_missing")
-      ret <- list()
-      for (param_key in names(params)) {
-        if (param_key %in% keys) {
-          ret[[param_key]] <- params[[param_key]]
-        }
-      }
-      return(ret)
-    },
-
     get_params = function() {
       keys <- c("bin_construct_sample_cnt",
+                "blacklist",
                 "bundle",
                 "categorical_column",
                 "categorical_feature",
@@ -623,20 +576,34 @@ Dataset <- R6::R6Class(
                 "enable_sparse",
                 "feature_pre_filter",
                 "forcedbins_filename",
+                "group",
+                "group_column",
+                "group_id",
                 "has_header",
                 "header",
+                "ignore_column",
+                "ignore_feature",
                 "is_enable_bundle",
                 "is_enable_sparse",
                 "is_pre_partition",
                 "is_sparse",
+                "label",
+                "label_column",
                 "max_bin",
                 "max_bin_by_feature",
                 "max_conflict_rate ",
                 "pre_partition",
+                "query",
+                "query_column",
+                "query_id",
                 "sparse",
                 "sparse_threshold",
                 "subsample_for_bin",
+                "two_round",
+                "two_round_loading",
                 "use_missing",
+                "weight",
+                "weight_column",
                 "zero_as_missing")
       ret <- list()
       for (param_key in names(private$params)) {

@@ -750,7 +750,7 @@ class Dataset(object):
         self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
-        self.params = self._filter_params(params)
+        self.params = copy.deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self.need_slice = True
@@ -763,25 +763,50 @@ class Dataset(object):
             self._free_handle()
         except AttributeError:
             pass
-
-    def _filter_params(self, params):
-        if params is None:
-            return params
-        keys = ['has_header', 'header', 'max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',
-                'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column',
-                'feature_pre_filter', 'pre_partition', 'is_pre_partition', 'enable_bundle', 'is_enable_bundle', 'bundle', 'max_conflict_rate',
-                'is_enable_sparse', 'is_sparse', 'enable_sparse', 'sparse', 'forcedbins_filename', 'min_data_in_leaf', 'min_data_per_leaf',
-                'min_data', 'min_child_samples', 'num_threads', 'num_thread', 'nthread', 'nthreads', 'n_jobs', 'verbosity', 'verbose']
-        return {k: v for k, v in params.items() if k in keys}
-
     def get_params(self):
         if self.params is None:
             return self.params
         # no min_data, nthreads and verbose in this function
-        keys = ['has_header', 'header', 'max_bin', 'max_bin_by_feature', 'bin_construct_sample_cnt', 'subsample_for_bin', 'min_data_in_bin', 'use_missing',
-                'zero_as_missing', 'sparse_threshold', 'categorical_feature', 'cat_feature', 'categorical_column', 'cat_column',
-                'feature_pre_filter', 'pre_partition', 'is_pre_partition', 'enable_bundle', 'is_enable_bundle', 'bundle', 'max_conflict_rate ',
-                'is_enable_sparse', 'is_sparse', 'enable_sparse', 'sparse', 'forcedbins_filename']
+        keys = ['bin_construct_sample_cnt',
+                'blacklist',
+                'bundle',
+                'categorical_column',
+                'categorical_feature',
+                'cat_column',
+                'cat_feature',
+                'enable_bundle',
+                'enable_sparse',
+                'feature_pre_filter',
+                'forcedbins_filename',
+                'group',
+                'group_column',
+                'group_id',
+                'has_header',
+                'header',
+                'ignore_column',
+                'ignore_feature',
+                'is_enable_bundle',
+                'is_enable_sparse',
+                'is_pre_partition',
+                'is_sparse',
+                'label',
+                'label_column',
+                'max_bin',
+                'max_bin_by_feature',
+                'max_conflict_rate ',
+                'pre_partition',
+                'query',
+                'query_column',
+                'query_id',
+                'sparse',
+                'sparse_threshold',
+                'subsample_for_bin',
+                'two_round',
+                'two_round_loading',
+                'use_missing',
+                'weight',
+                'weight_column',
+                'zero_as_missing']
         return {k: v for k, v in self.params.items() if k in keys}
 
     def _free_handle(self):
@@ -1173,7 +1198,7 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
-        params = self._filter_params(params)
+        params = copy.deepcopy(params)
 
         def update():
             if not self.params:
@@ -1185,7 +1210,7 @@ class Dataset(object):
         if self.handle is None:
             update()
         elif params is not None:
-            ret = _LIB.LGBM_DatasetUpdateParamWarning(c_str(param_dict_to_str(self.params)), c_str(param_dict_to_str(params)))
+            ret = _LIB.LGBM_DatasetUpdateParamChecking(c_str(param_dict_to_str(self.params)), c_str(param_dict_to_str(params)))
             if ret != 0:
                 # could be updated if data is not freed
                 if self.data is not None:

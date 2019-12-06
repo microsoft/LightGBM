@@ -345,7 +345,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
  * \param new_parameters New dataset parameters
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetUpdateParamWarning(const char* old_parameters,
+LIGHTGBM_C_EXPORT int LGBM_DatasetUpdateParamChecking(const char* old_parameters,
                                                      const char* new_parameters);
 
 /*!

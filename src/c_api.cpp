@@ -215,6 +215,24 @@ class Booster {
     if (new_param.count("is_enable_sparse") && new_config.is_enable_sparse != old_config.is_enable_sparse) {
       Log::Fatal("Cannot change is_enable_sparse after constructed Dataset handle.");
     }
+    if (new_param.count("header") && new_config.header != old_config.header) {
+      Log::Fatal("Cannot change header after constructed Dataset handle.");
+    }
+    if (new_param.count("two_round") && new_config.two_round != old_config.two_round) {
+      Log::Fatal("Cannot change two_round after constructed Dataset handle.");
+    }
+    if (new_param.count("label_column") && new_config.label_column != old_config.label_column) {
+      Log::Fatal("Cannot change label_column after constructed Dataset handle.");
+    }
+    if (new_param.count("weight_column") && new_config.weight_column != old_config.weight_column) {
+      Log::Fatal("Cannot change weight_column after constructed Dataset handle.");
+    }
+    if (new_param.count("group_column") && new_config.group_column != old_config.group_column) {
+      Log::Fatal("Cannot change group_column after constructed Dataset handle.");
+    }
+    if (new_param.count("ignore_column") && new_config.group_column != old_config.ignore_column) {
+      Log::Fatal("Cannot change ignore_column after constructed Dataset handle.");
+    }
     if (new_param.count("forcedbins_filename")) {
       Log::Fatal("Cannot change forced bins after constructed Dataset handle.");
     }
@@ -1079,7 +1097,7 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   API_END();
 }
 
-int LGBM_DatasetUpdateParamWarning(const char* old_parameters, const char* new_parameters) {
+int LGBM_DatasetUpdateParamChecking(const char* old_parameters, const char* new_parameters) {
   API_BEGIN();
   auto old_param = Config::Str2Map(old_parameters);
   Config old_config;
