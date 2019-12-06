@@ -765,12 +765,12 @@ class Dataset(object):
             pass
 
     def get_params(self):
-        """Get the used parameters in Dataset
+        """Get the used parameters in Dataset.
 
         Returns
         -------
         params : map
-            The used parameters in this Dataset object
+            The used parameters in this Dataset object.
         """
         if self.params is None:
             return self.params
