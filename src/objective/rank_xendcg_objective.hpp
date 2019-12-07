@@ -20,8 +20,12 @@ namespace LightGBM {
 */
 class RankXENDCG: public ObjectiveFunction {
  public:
-  explicit RankXENDCG(const Config&) :
-      generator_((std::random_device())()), distribution_(0.0, 1.0) {}
+  explicit RankXENDCG(const Config& config) :
+      generator_((std::random_device())()), distribution_(0.0, 1.0) {
+    if (config.seed != 0) {
+      generator_.seed(config.seed);
+    }
+  }
 
   explicit RankXENDCG(const std::vector<std::string>&) :
       generator_((std::random_device())()), distribution_(0.0, 1.0) {}
