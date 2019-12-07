@@ -70,7 +70,7 @@ Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testth
 cd ${BUILD_DIRECTORY}
 Rscript build_r.R || exit -1
 
-PKG_TARBALL=$(ls | grep '^lightgbm_.*\.tar\.gz$')
+PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 
 # suppress R CMD check warning from Suggests dependencies not being available
