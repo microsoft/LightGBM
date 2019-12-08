@@ -161,7 +161,9 @@ class LightGBMError(Exception):
 
 
 class _ConfigAliases(object):
-    aliases = {"boosting": {"boosting",
+    aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
+                                            "subsample_for_bin"},
+               "boosting": {"boosting",
                             "boosting_type",
                             "boost"},
                "categorical_feature": {"categorical_feature",
@@ -172,13 +174,31 @@ class _ConfigAliases(object):
                                         "early_stopping_rounds",
                                         "early_stopping",
                                         "n_iter_no_change"},
+               "enable_bundle": {"enable_bundle",
+                                 "is_enable_bundle",
+                                 "bundle"},
                "eval_at": {"eval_at",
                            "ndcg_eval_at",
                            "ndcg_at",
                            "map_eval_at",
                            "map_at"},
+               "group_column": {"group_column",
+                                "group",
+                                "group_id",
+                                "query_column",
+                                "query",
+                                "query_id"},
                "header": {"header",
                           "has_header"},
+               "ignore_column": {"ignore_column",
+                                 "ignore_feature",
+                                 "blacklist"},
+               "is_enable_sparse": {"is_enable_sparse",
+                                    "is_sparse",
+                                    "enable_sparse",
+                                    "sparse"},
+               "label_column": {"label_column",
+                                "label"},
                "machines": {"machines",
                             "workers",
                             "nodes"},
@@ -200,14 +220,21 @@ class _ConfigAliases(object):
                              "objective_type",
                              "app",
                              "application"},
+               "pre_partition": {"pre_partition",
+                                 "is_pre_partition"},
+               "two_round": {"two_round",
+                             "two_round_loading",
+                             "use_two_round_loading"},
                "verbosity": {"verbosity",
-                             "verbose"}}
+                             "verbose"},
+               "weight_column": {"weight_column",
+                                 "weight"}}
 
     @classmethod
     def get(cls, *args):
         ret = set()
         for i in args:
-            ret |= cls.aliases.get(i, set())
+            ret |= cls.aliases.get(i, {i})
         return ret
 
 
@@ -765,57 +792,36 @@ class Dataset(object):
             pass
 
     def get_params(self):
-        """Get the used parameters in Dataset.
+        """Get the used parameters in the Dataset.
 
         Returns
         -------
-        params : map
+        params : dict or None
             The used parameters in this Dataset object.
         """
-        if self.params is None:
-            return self.params
-        # no min_data, nthreads and verbose in this function
-        keys = ['bin_construct_sample_cnt',
-                'blacklist',
-                'bundle',
-                'categorical_column',
-                'categorical_feature',
-                'cat_column',
-                'cat_feature',
-                'enable_bundle',
-                'enable_sparse',
-                'feature_pre_filter',
-                'forcedbins_filename',
-                'group',
-                'group_column',
-                'group_id',
-                'has_header',
-                'header',
-                'ignore_column',
-                'ignore_feature',
-                'is_enable_bundle',
-                'is_enable_sparse',
-                'is_pre_partition',
-                'is_sparse',
-                'label',
-                'label_column',
-                'max_bin',
-                'max_bin_by_feature',
-                'max_conflict_rate ',
-                'pre_partition',
-                'query',
-                'query_column',
-                'query_id',
-                'sparse',
-                'sparse_threshold',
-                'subsample_for_bin',
-                'two_round',
-                'two_round_loading',
-                'use_missing',
-                'weight',
-                'weight_column',
-                'zero_as_missing']
-        return {k: v for k, v in self.params.items() if k in keys}
+        if self.params is not None:
+            # no min_data, nthreads and verbose in this function
+            dataset_params = _ConfigAliases.get("bin_construct_sample_cnt",
+                                                "categorical_feature",
+                                                "enable_bundle",
+                                                "feature_pre_filter",
+                                                "forcedbins_filename",
+                                                "group_column",
+                                                "header",
+                                                "ignore_column",
+                                                "is_enable_sparse",
+                                                "label_column",
+                                                "max_bin",
+                                                "max_bin_by_feature",
+                                                "max_conflict_rate",
+                                                "min_data_in_bin",
+                                                "pre_partition",
+                                                "sparse_threshold",
+                                                "two_round",
+                                                "use_missing",
+                                                "weight_column",
+                                                "zero_as_missing")
+            return {k: v for k, v in self.params.items() if k in dataset_params}
 
     def _free_handle(self):
         if self.handle is not None:
@@ -1218,7 +1224,9 @@ class Dataset(object):
         if self.handle is None:
             update()
         elif params is not None:
-            ret = _LIB.LGBM_DatasetUpdateParamChecking(c_str(param_dict_to_str(self.params)), c_str(param_dict_to_str(params)))
+            ret = _LIB.LGBM_DatasetUpdateParamChecking(
+                c_str(param_dict_to_str(self.params)),
+                c_str(param_dict_to_str(params)))
             if ret != 0:
                 # could be updated if data is not freed
                 if self.data is not None:
