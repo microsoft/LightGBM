@@ -1763,6 +1763,12 @@ class TestEngine(unittest.TestCase):
                           "enable_bundle": True,
                           "max_conflict_rate": 0.0,
                           "is_enable_sparse": True,
+                          "header": True,
+                          "two_round": True,
+                          "label_column": 0,
+                          "weight_column": 0,
+                          "group_column": 0,
+                          "ignore_column": 0,
                           "min_data_in_leaf": 10,
                           "verbose": -1}
         unchangeable_params = {"max_bin": 150,
@@ -1778,6 +1784,12 @@ class TestEngine(unittest.TestCase):
                                "enable_bundle": False,
                                "max_conflict_rate": 0.1,
                                "is_enable_sparse": False,
+                               "header": False,
+                               "two_round": False,
+                               "label_column": 1,
+                               "weight_column": 1,
+                               "group_column": 1,
+                               "ignore_column": 1,
                                "forcedbins_filename": "/some/path/forcedbins.json",
                                "min_data_in_leaf": 2}
         X = np.random.random((100, 2))
