@@ -591,7 +591,7 @@ Dataset <- R6::R6Class(
                 "label_column",
                 "max_bin",
                 "max_bin_by_feature",
-                "max_conflict_rate ",
+                "max_conflict_rate",
                 "pre_partition",
                 "query",
                 "query_column",
