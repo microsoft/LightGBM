@@ -230,7 +230,7 @@ class Booster {
     if (new_param.count("group_column") && new_config.group_column != old_config.group_column) {
       Log::Fatal("Cannot change group_column after constructed Dataset handle.");
     }
-    if (new_param.count("ignore_column") && new_config.group_column != old_config.ignore_column) {
+    if (new_param.count("ignore_column") && new_config.ignore_column != old_config.ignore_column) {
       Log::Fatal("Cannot change ignore_column after constructed Dataset handle.");
     }
     if (new_param.count("forcedbins_filename")) {
