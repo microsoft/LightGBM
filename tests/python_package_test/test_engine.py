@@ -1822,7 +1822,6 @@ class TestEngine(unittest.TestCase):
         for key, value in unchangeable_params.items():
             new_params = default_params.copy()
             new_params[key] = value
-            print(key)
             err_msg = ("Reducing `min_data_in_leaf` with `feature_pre_filter=true` may cause *"
                        if key == "min_data_in_leaf"
                        else "Cannot change {} *".format(key if key != "forcedbins_filename"
