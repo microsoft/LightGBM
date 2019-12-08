@@ -340,13 +340,13 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
                                            int* out_type);
 
 /*!
- * \brief Raise warnings for attempts to update dataset parameters.
+ * \brief Raise errors for attempts to update dataset parameters.
  * \param old_parameters Current dataset parameters
  * \param new_parameters New dataset parameters
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetUpdateParamChecking(const char* old_parameters,
-                                                     const char* new_parameters);
+                                                      const char* new_parameters);
 
 /*!
  * \brief Get number of data points.
