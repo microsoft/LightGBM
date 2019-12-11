@@ -659,7 +659,7 @@ IO Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
 
-   -  **Note**: only supports categorical with ``int`` type
+   -  **Note**: only supports categorical with ``int`` type (not applicable for data represented as pandas DataFrame in Python-package)
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
