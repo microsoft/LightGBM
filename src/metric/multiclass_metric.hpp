@@ -178,5 +178,137 @@ class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetr
   }
 };
 
+/*! \brief Auc-mu for multiclass task*/
+class AucMuMetric : public Metric {
+public:
+  explicit AucMuMetric(const Config& config) : config_(config) {
+    num_class_ = config.num_class;
+    class_weights_ = config.auc_mu_weights_matrix;
+  }
+
+  virtual ~AucMuMetric() {}
+
+  const std::vector<std::string>& GetName() const override { return name_; }
+
+  double factor_to_bigger_better() const override { return 1.0f; }
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    name_.emplace_back("auc_mu");
+
+    num_data_ = num_data;
+    label_ = metadata.label();
+
+    // sort the data indices by true class
+    sorted_data_idx_ = std::vector<data_size_t>(num_data_, 0);
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      sorted_data_idx_[i] = i;
+    }
+    Common::ParallelSort(sorted_data_idx_.begin(), sorted_data_idx_.end(),
+      [this](data_size_t a, data_size_t b) { return label_[a] < label_[b]; });
+  }
+
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
+    // the notation follows that used in the paper introducing the auc-mu metric:
+    // http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
+
+    // get size of each class
+    auto class_sizes = std::vector<data_size_t>(num_class_, 0);
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      data_size_t curr_label = static_cast<data_size_t>(label_[i]);
+      ++class_sizes[curr_label];
+    }
+
+    auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
+    int i_start = 0;
+    for (int i = 0; i < num_class_; ++i) {
+      int j_start = i_start + class_sizes[i];
+      for (int j = i + 1; j < num_class_; ++j) {
+        std::vector<double> curr_v;
+        for (int k = 0; k < num_class_; ++k) {
+          curr_v.emplace_back(class_weights_[i][k] - class_weights_[j][k]);
+        }
+        double t1 = curr_v[i] - curr_v[j];
+        // extract the data indices belonging to class i or j
+        std::vector<data_size_t> class_i_j_indices;
+        class_i_j_indices.assign(sorted_data_idx_.begin() + i_start, sorted_data_idx_.begin() + i_start + class_sizes[i]);
+        class_i_j_indices.insert(class_i_j_indices.end(),
+          sorted_data_idx_.begin() + j_start, sorted_data_idx_.begin() + j_start + class_sizes[j]);
+        // sort according to distance from separating hyperplane
+        std::vector<std::pair<data_size_t, double>> dist;
+        for (data_size_t k = 0; static_cast<size_t>(k) < class_i_j_indices.size(); ++k) {
+          data_size_t a = class_i_j_indices[k];
+          double v_a = 0;
+          for (int m = 0; m < num_class_; ++m) {
+            v_a += curr_v[m] * score[num_data_ * m + a];
+          }
+          dist.push_back(std::pair<data_size_t, double>(a, t1 * v_a));
+        }
+        Common::ParallelSort(dist.begin(), dist.end(),
+          [this](std::pair<data_size_t, double> a, std::pair<data_size_t, double> b) {
+          // if scores are equal, put j class first
+          if (std::fabs(a.second - b.second) < kEpsilon) {
+            return label_[a.first] > label_[b.first];
+          }
+          else if (a.second < b.second) {
+            return true;
+          } else {
+            return false;
+          }
+        });
+        // calculate auc
+        double num_j = 0;
+        double last_j_dist = 0;
+        double num_current_j = 0;
+        for (size_t k = 0; k < dist.size(); ++k) {
+          data_size_t a = dist[k].first;
+          double curr_dist = dist[k].second;
+          if (label_[a] == i) {
+            if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
+              S[i][j] += num_j - 0.5 * num_current_j;  // members of class j with same distance as a contribute 0.5
+            } else {
+              S[i][j] += num_j;
+            }
+          } else {
+            ++num_j;
+            if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
+              ++num_current_j;
+            } else {
+              last_j_dist = dist[k].second;
+              num_current_j = 1;
+            }
+          }
+        }
+        j_start += class_sizes[j];
+      }
+      i_start += class_sizes[i];
+    }
+
+    double ans = 0;
+    for (int i = 0; i < num_class_; ++i) {
+      for (int j = i + 1; j < num_class_; ++j) {
+        ans += S[i][j] / (class_sizes[i] * class_sizes[j]);
+      }
+    }
+    ans = 2 * ans / (num_class_ * (num_class_ - 1));
+    return std::vector<double>(1, ans);
+  }
+
+private:
+  /*! \brief Number of data*/
+  data_size_t num_data_;
+  /*! \brief Pointer to label*/
+  const label_t* label_;
+  /*! \brief Name of this metric*/
+  std::vector<std::string> name_;
+  /*! \brief Number of classes*/
+  int num_class_;
+  /*! \brief class_weights*/
+  std::vector<std::vector<double>> class_weights_;
+  /*! \brief config parameters*/
+  Config config_;
+  /*! \brief index to data, sorted by true class*/
+  std::vector<data_size_t> sorted_data_idx_;
+};
+
 }  // namespace LightGBM
 #endif   // LightGBM_METRIC_MULTICLASS_METRIC_HPP_

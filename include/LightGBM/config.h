@@ -773,6 +773,7 @@ struct Config {
   // descl2 = ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
   // descl2 = ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
   // descl2 = ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
+  // descl2 = ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
   // descl2 = ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
   // descl2 = ``multi_error``, error rate for multi-class classification
   // descl2 = ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
@@ -805,6 +806,15 @@ struct Config {
   // descl2 = more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
   // desc = when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
   int multi_error_top_k = 1;
+
+  // type = multi-double
+  // default = None
+  // desc = used only with ``auc_mu`` metric
+  // desc = list representing flattened matrix (in row-major order) giving loss weights for classification errors
+  // desc = list should have ``n * n`` elements, where ``n`` is the number of classes
+  // desc = the matrix co-ordinate ``[i, j]`` should correspond to the ``i * n + j``-th element of the list
+  // desc = if not specified, will use equal weights for all classes
+  std::vector<double> auc_mu_weights;
 
   #pragma endregion
 
@@ -863,11 +873,13 @@ struct Config {
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static std::unordered_map<std::string, std::string> alias_table;
   static std::unordered_set<std::string> parameter_set;
+  std::vector<std::vector<double>> auc_mu_weights_matrix;
 
  private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
+  void GetAucMuWeights();
 };
 
 inline bool Config::GetString(
@@ -1013,6 +1025,8 @@ inline std::string ParseMetricAlias(const std::string& type) {
     return "kullback_leibler";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
+  } else if (type == std::string("auc_mu")) {
+    return "auc_mu";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }

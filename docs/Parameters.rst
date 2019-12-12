@@ -881,6 +881,8 @@ Metric Parameters
 
       -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
+      -  ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
+
       -  ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
 
       -  ``multi_error``, error rate for multi-class classification
@@ -920,6 +922,18 @@ Metric Parameters
       -  more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
 
    -  when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
+
+-  ``auc_mu_weights`` :raw-html:`<a id="auc_mu_weights" title="Permalink to this parameter" href="#auc_mu_weights">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double
+
+   -  used only with ``auc_mu`` metric
+
+   -  list representing flattened matrix (in row-major order) giving loss weights for classification errors
+
+   -  list should have ``n * n`` elements, where ``n`` is the number of classes
+
+   -  the matrix co-ordinate ``[i, j]`` should correspond to the ``i * n + j``-th element of the list
+
+   -  if not specified, will use equal weights for all classes
 
 Network Parameters
 ------------------

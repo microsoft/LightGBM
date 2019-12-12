@@ -153,6 +153,36 @@ void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& para
   }
 }
 
+void Config::GetAucMuWeights() {
+  if (auc_mu_weights.empty()) {
+    // equal weights for all classes
+    auc_mu_weights_matrix = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 1));
+    for (size_t i = 0; i < static_cast<size_t>(num_class); ++i) {
+      auc_mu_weights_matrix[i][i] = 0;
+    }
+  } else {
+    auc_mu_weights_matrix = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 0));
+    if (auc_mu_weights.size() != static_cast<size_t>(num_class * num_class)) {
+      Log::Fatal("auc_mu_weights must have %d elements, but found %d", num_class * num_class, auc_mu_weights.size());
+    }
+    for (size_t i = 0; i < static_cast<size_t>(num_class); ++i) {
+      for (size_t j = 0; j < static_cast<size_t>(num_class); ++j) {
+        if (i == j) {
+          auc_mu_weights_matrix[i][j] = 0;
+          if (std::fabs(auc_mu_weights[i * num_class + j]) > kZeroThreshold) {
+            Log::Info("AUC-mu matrix must have zeros on diagonal. Overwriting value in position %d of auc_mu_weights with 0.", i * num_class + j);
+          }
+        } else {
+          if (std::fabs(auc_mu_weights[i * num_class + j]) < kZeroThreshold) {
+            Log::Fatal("AUC-mu matrix must have non-zero values for non-diagonal entries. Found zero value in position %d of auc_mu_weights.", i * num_class + j);
+          }
+          auc_mu_weights_matrix[i][j] = auc_mu_weights[i * num_class + j];
+        }
+      }
+    }
+  }
+};
+
 void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
@@ -172,6 +202,8 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetTreeLearnerType(params, &tree_learner);
 
   GetMembersFromString(params);
+
+  GetAucMuWeights();
 
   // sort eval_at
   std::sort(eval_at.begin(), eval_at.end());
@@ -230,6 +262,7 @@ void Config::CheckParamConflict() {
     bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
                                    || metric_type == std::string("multi_logloss")
                                    || metric_type == std::string("multi_error")
+                                   || metric_type == std::string("auc_mu")
                                    || (metric_type == std::string("custom") && num_class_check > 1));
     if ((objective_type_multiclass && !metric_type_multiclass)
         || (!objective_type_multiclass && metric_type_multiclass)) {
