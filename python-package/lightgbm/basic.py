@@ -7,6 +7,7 @@ import ctypes
 import os
 import warnings
 from tempfile import NamedTemporaryFile
+from collections import OrderedDict
 
 import numpy as np
 import scipy.sparse
@@ -1858,11 +1859,11 @@ class Booster(object):
 
         Returns
         -------
-        DataFrame or list
-            Returns a pandas Dataframe if pandas is installed, and a list otherwise.
+        result: DataFrame
+            Returns a pandas DataFrame of the parsed model
         """
         if not PANDAS_INSTALLED:
-            warnings.warn('Pandas is not installed and so the result will be returned as a list')
+            raise LightGBMError('This method cannot be run without Pandas installed')
 
         if self.num_trees() == 0:
             raise LightGBMError('There are no trees in this Booster and thus nothing to parse')
@@ -1891,22 +1892,22 @@ class Booster(object):
                 return feature_name
 
             # Create the node record, and populate universal data members
-            node = {'tree_index': tree_index,
-                    'node_depth': node_depth,
-                    'node_index': _get_node_index(tree, tree_index),
-                    'left_child': None,
-                    'right_child': None,
-                    'parent_index': parent_node,
-                    'split_feature': _get_split_feature(tree, feature_names),
-                    'split_gain': None,
-                    'threshold': None,
-                    'decision_type': None,
-                    'missing_direction': None,
-                    'missing_type': None,
-                    'internal_value': None,
-                    'leaf_value': None,
-                    'weight': None,
-                    'count': None}
+            node = OrderedDict()
+            node['tree_index'] = tree_index
+            node['node_depth'] = node_depth
+            node['node_index'] = _get_node_index(tree, tree_index)
+            node['left_child'] = None
+            node['right_child'] = None
+            node['parent_index'] = parent_node
+            node['split_feature'] = _get_split_feature(tree, feature_names)
+            node['split_gain'] = None
+            node['threshold'] = None
+            node['decision_type'] = None
+            node['missing_direction'] = None
+            node['missing_type'] = None
+            node['value'] = None
+            node['weight'] = None
+            node['count'] = None
 
             # Update values to reflect node type (leaf or split)
             if _is_split_node(tree):
@@ -1917,11 +1918,11 @@ class Booster(object):
                 node['decision_type'] = tree['decision_type']
                 node['missing_direction'] = 'left' if tree['default_left'] else 'right'
                 node['missing_type'] = tree['missing_type']
-                node['internal_value'] = tree['internal_value']
+                node['value'] = tree['internal_value']
                 node['weight'] = tree['internal_weight']
                 node['count'] = tree['internal_count']
             else:
-                node['leaf_value'] = tree['leaf_value']
+                node['value'] = tree['leaf_value']
                 node['weight'] = tree['leaf_weight']
                 node['count'] = tree['leaf_count']
 
@@ -1961,10 +1962,7 @@ class Booster(object):
                                                      tree_index=tree['tree_index'],
                                                      feature_names=feature_names))
 
-        if PANDAS_INSTALLED:
-            return DataFrame(model_list, columns=model_list[0].keys())
-        else:
-            return model_list
+        return DataFrame(model_list, columns=model_list[0].keys())
 
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.

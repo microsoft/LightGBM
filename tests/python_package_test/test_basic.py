@@ -340,13 +340,11 @@ class TestBasic(unittest.TestCase):
                 except KeyError:
                     imptcs.append(0.)
             return np.array(imptcs)
-
         X, y = load_breast_cancer(True)
         data = lgb.Dataset(X, label=y)
         bst = lgb.train({"objective": "binary"}, data, 10)
         tree_df = bst.trees_to_dataframe()
-
-        split_dict = (tree_df[tree_df.leaf_value.isnull()]
+        split_dict = (tree_df[~tree_df.split_gain.isnull()]
                       .groupby('split_feature')
                       .size()
                       .to_dict())
