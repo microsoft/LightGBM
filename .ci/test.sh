@@ -78,6 +78,11 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
+if [[ $TASK == "r-package" ]]; then
+    bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
+    exit 0
+fi
+
 conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
