@@ -12,3 +12,14 @@
 
 # Code copied in at build time
 ^src/CMakeLists.txt$
+
+# unnecessary files from submodules
+^src/compute/.appveyor.yml$
+^src/compute/.coveralls.yml$
+^src/compute/.travis.yml$
+^src/compute/test/$
+^src/compute/index.html$
+^src/compute/.git$
+^src/compute/.gitignore$
+^src/compute/CONTRIBUTING.md$
+^src/compute/README.md$

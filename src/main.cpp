@@ -3,9 +3,10 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/application.h>
-#include "network/linkers.h"
 
 #include <iostream>
+
+#include "network/linkers.h"
 
 int main(int argc, char** argv) {
   bool success = false;
@@ -38,4 +39,4 @@ int main(int argc, char** argv) {
 
     exit(-1);
   }
- }
+}

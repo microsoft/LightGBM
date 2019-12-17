@@ -113,7 +113,7 @@ struct Config {
   // descl2 = ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
   // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
   // descl2 = ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Occurrence_and_applications>`__
-  // descl2 = ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Applications>`__
+  // descl2 = ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Occurrence_and_applications>`__
   // desc = ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
   // desc = multi-class classification application
   // descl2 = ``multiclass``, `softmax <https://en.wikipedia.org/wiki/Softmax_function>`__ objective function, aliases: ``softmax``
@@ -618,7 +618,7 @@ struct Config {
   // desc = used to specify categorical features
   // desc = use number for index, e.g. ``categorical_feature=0,1,2`` means column\_0, column\_1 and column\_2 are categorical features
   // desc = add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
-  // desc = **Note**: only supports categorical with ``int`` type
+  // desc = **Note**: only supports categorical with ``int`` type (not applicable for data represented as pandas DataFrame in Python-package)
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
   // desc = **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
   // desc = **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
@@ -778,6 +778,7 @@ struct Config {
   // descl2 = ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
   // descl2 = ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
   // descl2 = ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
+  // descl2 = ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
   // descl2 = ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
   // descl2 = ``multi_error``, error rate for multi-class classification
   // descl2 = ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
@@ -810,6 +811,15 @@ struct Config {
   // descl2 = more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
   // desc = when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
   int multi_error_top_k = 1;
+
+  // type = multi-double
+  // default = None
+  // desc = used only with ``auc_mu`` metric
+  // desc = list representing flattened matrix (in row-major order) giving loss weights for classification errors
+  // desc = list should have ``n * n`` elements, where ``n`` is the number of classes
+  // desc = the matrix co-ordinate ``[i, j]`` should correspond to the ``i * n + j``-th element of the list
+  // desc = if not specified, will use equal weights for all classes
+  std::vector<double> auc_mu_weights;
 
   #pragma endregion
 
@@ -868,11 +878,13 @@ struct Config {
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static std::unordered_map<std::string, std::string> alias_table;
   static std::unordered_set<std::string> parameter_set;
+  std::vector<std::vector<double>> auc_mu_weights_matrix;
 
  private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
+  void GetAucMuWeights();
 };
 
 inline bool Config::GetString(
@@ -1018,6 +1030,8 @@ inline std::string ParseMetricAlias(const std::string& type) {
     return "kullback_leibler";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
+  } else if (type == std::string("auc_mu")) {
+    return "auc_mu";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }
