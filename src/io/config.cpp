@@ -181,7 +181,7 @@ void Config::GetAucMuWeights() {
       }
     }
   }
-};
+}
 
 void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   // generate seeds by seed.

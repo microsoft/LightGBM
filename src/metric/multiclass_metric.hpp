@@ -10,6 +10,7 @@
 
 #include <string>
 #include <cmath>
+#include <utility>
 #include <vector>
 
 namespace LightGBM {
@@ -180,7 +181,7 @@ class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetr
 
 /*! \brief Auc-mu for multiclass task*/
 class AucMuMetric : public Metric {
-public:
+ public:
   explicit AucMuMetric(const Config& config) : config_(config) {
     num_class_ = config.num_class;
     class_weights_ = config.auc_mu_weights_matrix;
@@ -248,8 +249,7 @@ public:
           // if scores are equal, put j class first
           if (std::fabs(a.second - b.second) < kEpsilon) {
             return label_[a.first] > label_[b.first];
-          }
-          else if (a.second < b.second) {
+          } else if (a.second < b.second) {
             return true;
           } else {
             return false;
@@ -293,7 +293,7 @@ public:
     return std::vector<double>(1, ans);
   }
 
-private:
+ private:
   /*! \brief Number of data*/
   data_size_t num_data_;
   /*! \brief Pointer to label*/

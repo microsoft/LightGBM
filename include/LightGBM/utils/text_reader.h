@@ -17,6 +17,8 @@
 
 namespace LightGBM {
 
+const size_t kGbs = size_t(1024) * 1024 * 1024;
+
 /*!
 * \brief Read text data from file
 */
@@ -123,10 +125,8 @@ class TextReader {
 
       size_t prev_bytes_read = bytes_read;
       bytes_read += read_cnt;
-      if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_)
-      {
-        const size_t gbs = size_t(1024) * 1024 * 1024;
-        Log::Debug("Read %.1f GBs from %s.", 1.0 * bytes_read / gbs, filename_);
+      if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_) {
+        Log::Debug("Read %.1f GBs from %s.", 1.0 * bytes_read / kGbs, filename_);
       }
 
       return cnt;
@@ -284,10 +284,8 @@ class TextReader {
 
       size_t prev_bytes_read = bytes_read;
       bytes_read += read_cnt;
-      if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_)
-      {
-        const size_t gbs = size_t(1024) * 1024 * 1024;
-        Log::Debug("Read %.1f GBs from %s.", 1.0 * bytes_read / gbs, filename_);
+      if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_) {
+        Log::Debug("Read %.1f GBs from %s.", 1.0 * bytes_read / kGbs, filename_);
       }
 
       return cnt;
