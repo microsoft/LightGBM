@@ -283,8 +283,8 @@ class FeatureHistogram {
         right = &(constraints-> right);
       }
       else {
-        left =  new SplittingConstraint();
-        right =  new SplittingConstraint();
+        left =  nullptr;
+        right =  nullptr;
       }
 
       output->left_output = CalculateSplittedLeafOutput(
@@ -516,10 +516,12 @@ class FeatureHistogram {
   static double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians, double l1, double l2, double max_delta_step,
                                             const T *constraint) {
     double ret = CalculateSplittedLeafOutput(sum_gradients, sum_hessians, l1, l2, max_delta_step);
-    if (ret < constraint->GetCurrentMinConstraint()) {
-      ret = constraint->GetCurrentMinConstraint();
-    } else if (ret > constraint->GetCurrentMaxConstraint()) {
-      ret = constraint->GetCurrentMaxConstraint();
+    if (constraint != nullptr) {
+      if (ret < constraint->GetCurrentMinConstraint()) {
+        ret = constraint->GetCurrentMinConstraint();
+      } else if (ret > constraint->GetCurrentMaxConstraint()) {
+        ret = constraint->GetCurrentMaxConstraint();
+      }
     }
     return ret;
   }
@@ -536,8 +538,8 @@ class FeatureHistogram {
       right = &(constraints->right);
     }
     else {
-      left =  new SplittingConstraint();
-      right =  new SplittingConstraint();
+      left = nullptr;
+      right = nullptr;
     }
     double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, left);
     double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, right);
