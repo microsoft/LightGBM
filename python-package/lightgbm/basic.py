@@ -1860,10 +1860,10 @@ class Booster(object):
         Returns
         -------
         result: DataFrame
-            Returns a pandas DataFrame of the parsed model
+            Returns a pandas DataFrame of the parsed model.
         """
         if not PANDAS_INSTALLED:
-            raise LightGBMError('This method cannot be run without Pandas installed')
+            raise LightGBMError('This method cannot be run without pandas installed')
 
         if self.num_trees() == 0:
             raise LightGBMError('There are no trees in this Booster and thus nothing to parse')
