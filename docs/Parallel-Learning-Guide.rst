@@ -5,6 +5,16 @@ This is a guide for parallel learning of LightGBM.
 
 Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first.
 
+**List of external libraries in which LightGBM can be used in a distributed fashion**
+
+-  `Dask-LightGBM`_ allows to create ML workflow on Dask distributed data structures.
+
+-  `MMLSpark`_ integrates LightGBM into Apache Spark ecosystem.
+   `The following example`_ demonstrates how easy it's possible to utilize the great power of Spark.
+
+-  `Kubeflow Fairing`_ suggests using LightGBM in a Kubernetes cluster.
+   `These examples`_ help to get started with LightGBM in a hybrid cloud environment.
+
 Choose Appropriate Parallel Algorithm
 -------------------------------------
 
@@ -121,6 +131,17 @@ Example
 ^^^^^^^
 
 -  `A simple parallel example`_
+
+.. _Dask-LightGBM: https://github.com/dask/dask-lightgbm
+
+.. _MMLSpark: https://aka.ms/spark
+
+.. _The following example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
+
+.. _Kubeflow Fairing: https://www.kubeflow.org/docs/fairing/fairing-overview
+
+.. _These examples: https://github.com/kubeflow/fairing/tree/master/examples/lightgbm
+
 
 .. _here: https://www.youtube.com/watch?v=iqzXhp5TxUY
 

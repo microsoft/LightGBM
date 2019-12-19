@@ -9,7 +9,7 @@ It is worth to compile 32-bit version only in very rare special cases of environ
 
 For the build of Python-package and R-package, please refer to `Python-package`_ and `R-package`_ folders respectively.
 
-Also you can download artifacts of the latest successful build in master branch: |download artifacts|.
+Also you can download artifacts of the latest successful build in master branch (nightly builds): |download artifacts|.
 
 .. contents:: **Contents**
     :depth: 1

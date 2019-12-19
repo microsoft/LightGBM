@@ -276,6 +276,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "is_provide_training_metric",
   "eval_at",
   "multi_error_top_k",
+  "auc_mu_weights",
   "num_machines",
   "local_listen_port",
   "time_out",
@@ -561,6 +562,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "multi_error_top_k", &multi_error_top_k);
   CHECK(multi_error_top_k >0);
 
+  if (GetString(params, "auc_mu_weights", &tmp_str)) {
+    auc_mu_weights = Common::StringToArray<double>(tmp_str, ',');
+  }
+
   GetInt(params, "num_machines", &num_machines);
   CHECK(num_machines >0);
 
@@ -683,6 +688,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
+  str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
   str_buf << "[num_machines: " << num_machines << "]\n";
   str_buf << "[local_listen_port: " << local_listen_port << "]\n";
   str_buf << "[time_out: " << time_out << "]\n";
