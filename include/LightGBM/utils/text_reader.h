@@ -17,6 +17,8 @@
 
 namespace LightGBM {
 
+const size_t kGbs = size_t(1024) * 1024 * 1024;
+
 /*!
 * \brief Read text data from file
 */
@@ -28,8 +30,8 @@ class TextReader {
   * \param filename Filename of data
   * \param is_skip_first_line True if need to skip header
   */
-  TextReader(const char* filename, bool is_skip_first_line):
-    filename_(filename), is_skip_first_line_(is_skip_first_line) {
+  TextReader(const char* filename, bool is_skip_first_line, size_t progress_interval_bytes = SIZE_MAX):
+    filename_(filename), is_skip_first_line_(is_skip_first_line), read_progress_interval_bytes_(progress_interval_bytes) {
     if (is_skip_first_line_) {
       auto reader = VirtualFileReader::Make(filename);
       if (!reader->Init()) {
@@ -86,6 +88,7 @@ class TextReader {
   INDEX_T ReadAllAndProcess(const std::function<void(INDEX_T, const char*, size_t)>& process_fun) {
     last_line_ = "";
     INDEX_T total_cnt = 0;
+    size_t bytes_read = 0;
     PipelineReader::Read(filename_, skip_bytes_,
       [&]
     (const char* buffer_process, size_t read_cnt) {
@@ -119,6 +122,13 @@ class TextReader {
       if (last_i != read_cnt) {
         last_line_.append(buffer_process + last_i, read_cnt - last_i);
       }
+
+      size_t prev_bytes_read = bytes_read;
+      bytes_read += read_cnt;
+      if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_) {
+        Log::Debug("Read %.1f GBs from %s.", 1.0 * bytes_read / kGbs, filename_);
+      }
+
       return cnt;
     });
     // if last line of file doesn't contain end of line
@@ -227,6 +237,7 @@ class TextReader {
   INDEX_T ReadAllAndProcessParallelWithFilter(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun, const std::function<bool(INDEX_T, INDEX_T)>& filter_fun) {
     last_line_ = "";
     INDEX_T total_cnt = 0;
+    size_t bytes_read = 0;
     INDEX_T used_cnt = 0;
     PipelineReader::Read(filename_, skip_bytes_,
       [&]
@@ -270,6 +281,13 @@ class TextReader {
       if (last_i != read_cnt) {
         last_line_.append(buffer_process + last_i, read_cnt - last_i);
       }
+
+      size_t prev_bytes_read = bytes_read;
+      bytes_read += read_cnt;
+      if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_) {
+        Log::Debug("Read %.1f GBs from %s.", 1.0 * bytes_read / kGbs, filename_);
+      }
+
       return cnt;
     });
     // if last line of file doesn't contain end of line
@@ -313,6 +331,7 @@ class TextReader {
   std::string first_line_ = "";
   /*! \brief is skip first line */
   bool is_skip_first_line_ = false;
+  size_t read_progress_interval_bytes_;
   /*! \brief is skip first line */
   int skip_bytes_ = 0;
 };

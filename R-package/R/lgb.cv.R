@@ -360,7 +360,7 @@ lgb.cv <- function(params = list()
       # Store temporarily model data elsewhere
       booster_old <- list(
         best_iter = fd$booster$best_iter
-        , best_score = fd$booster$best_score,
+        , best_score = fd$booster$best_score
         , record_evals = fd$booster$record_evals
       )
       # Reload model

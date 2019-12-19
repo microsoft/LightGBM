@@ -28,12 +28,12 @@ logregobj <- function(preds, dtrain) {
   return(list(grad = grad, hess = hess))
 }
 
-# User defined evaluation function, return a pair metric_name, result, higher_better
+# User-defined evaluation function returns a pair (metric_name, result, higher_better)
 # NOTE: when you do customized loss function, the default prediction value is margin
-# This may make buildin evalution metric not function properly
+# This may make built-in evalution metric calculate wrong results
 # For example, we are doing logistic loss, the prediction is score before logistic transformation
-# The buildin evaluation error assumes input is after logistic transformation
-# Take this in mind when you use the customization, and maybe you need write customized evaluation function
+# The built-in evaluation error assumes input is after logistic transformation
+# Keep this in mind when you use the customization, and maybe you need write customized evaluation function
 evalerror <- function(preds, dtrain) {
   labels <- getinfo(dtrain, "label")
   err <- as.numeric(sum(labels != (preds > 0.5))) / length(labels)

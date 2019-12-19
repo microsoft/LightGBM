@@ -131,7 +131,11 @@ class TestSklearn(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
-        ret = binary_error(y_test, gbm.predict(X_test))
+        # prediction result is actually not transformed (is raw) due to custom objective
+        y_pred_raw = gbm.predict_proba(X_test)
+        self.assertFalse(np.all(y_pred_raw >= 0))
+        y_pred = 1.0 / (1.0 + np.exp(-y_pred_raw))
+        ret = binary_error(y_test, y_pred)
         self.assertLess(ret, 0.05)
 
     def test_dart(self):
@@ -144,16 +148,27 @@ class TestSklearn(unittest.TestCase):
         self.assertLessEqual(score, 1.)
 
     def test_grid_search(self):
-        X, y = load_boston(True)
-        params = {'boosting_type': ['dart', 'gbdt'],
-                  'n_estimators': [5, 8],
-                  'drop_rate': [0.05, 0.1]}
-        grid = GridSearchCV(lgb.LGBMRegressor(n_estimators=10), params, cv=3)
-        grid.fit(X, y)
-        self.assertIn(grid.best_params_['boosting_type'], ['dart', 'gbdt'])
-        self.assertIn(grid.best_params_['n_estimators'], [5, 8])
-        self.assertIn(grid.best_params_['drop_rate'], [0.05, 0.1])
-        self.assertLess(grid.best_score_, 0.3)
+        X, y = load_iris(True)
+        y = np.array(list(map(str, y)))  # utilize label encoder at it's max power
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {'subsample': 0.8,
+                  'subsample_freq': 1}
+        grid_params = {'boosting_type': ['rf', 'gbdt'],
+                       'n_estimators': [4, 6],
+                       'reg_alpha': [0.01, 0.005]}
+        fit_params = {'verbose': False,
+                      'eval_set': [(X_test, y_test)],
+                      'eval_metric': constant_metric,
+                      'early_stopping_rounds': 2}
+        grid = GridSearchCV(lgb.LGBMClassifier(**params), grid_params, cv=2)
+        grid.fit(X, y, **fit_params)
+        self.assertIn(grid.best_params_['boosting_type'], ['rf', 'gbdt'])
+        self.assertIn(grid.best_params_['n_estimators'], [4, 6])
+        self.assertIn(grid.best_params_['reg_alpha'], [0.01, 0.005])
+        self.assertLess(grid.best_score_, 0.9)
+        self.assertEqual(grid.best_estimator_.best_iteration_, 1)
+        self.assertLess(grid.best_estimator_.best_score_['valid_0']['multi_logloss'], 0.25)
+        self.assertEqual(grid.best_estimator_.best_score_['valid_0']['error'], 0)
 
     def test_clone_and_property(self):
         X, y = load_boston(True)
@@ -786,3 +801,16 @@ class TestSklearn(unittest.TestCase):
             for metric in gbm.evals_result_[eval_set]:
                 np.testing.assert_allclose(gbm.evals_result_[eval_set][metric],
                                            gbm_str.evals_result_[eval_set][metric])
+
+    def test_continue_training_with_model(self):
+        X, y = load_digits(3, True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        init_gbm = lgb.LGBMClassifier(n_estimators=5).fit(X_train, y_train, eval_set=(X_test, y_test),
+                                                          verbose=False)
+        gbm = lgb.LGBMClassifier(n_estimators=5).fit(X_train, y_train, eval_set=(X_test, y_test),
+                                                     verbose=False, init_model=init_gbm)
+        self.assertEqual(len(init_gbm.evals_result_['valid_0']['multi_logloss']),
+                         len(gbm.evals_result_['valid_0']['multi_logloss']))
+        self.assertEqual(len(init_gbm.evals_result_['valid_0']['multi_logloss']), 5)
+        self.assertLess(gbm.evals_result_['valid_0']['multi_logloss'][-1],
+                        init_gbm.evals_result_['valid_0']['multi_logloss'][-1])

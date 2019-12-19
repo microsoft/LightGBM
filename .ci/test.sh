@@ -78,7 +78,12 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
+if [[ $TASK == "r-package" ]]; then
+    bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
+    exit 0
+fi
+
+conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)

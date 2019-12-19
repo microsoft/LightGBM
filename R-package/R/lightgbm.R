@@ -181,6 +181,7 @@ globalVariables(c(
     "."
     , ".N"
     , ".SD"
+    , "abs_contribution"
     , "Contribution"
     , "Cover"
     , "Feature"

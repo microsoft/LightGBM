@@ -96,6 +96,7 @@ void Application::LoadData() {
     config_.data_random_seed = Network::GlobalSyncUpByMin(config_.data_random_seed);
   }
 
+  Log::Debug("Loading train file...");
   DatasetLoader dataset_loader(config_, predict_fun,
                                config_.num_class, config_.data.c_str());
   // load Training data
@@ -124,12 +125,12 @@ void Application::LoadData() {
   }
   train_metric_.shrink_to_fit();
 
-
   if (!config_.metric.empty()) {
     // only when have metrics then need to construct validation data
 
     // Add validation data, if it exists
     for (size_t i = 0; i < config_.valid.size(); ++i) {
+      Log::Debug("Loading validation file #%zu...", (i + 1));
       // add
       auto new_dataset = std::unique_ptr<Dataset>(
         dataset_loader.LoadFromFileAlignWithOtherDataset(
@@ -194,6 +195,7 @@ void Application::InitTrain() {
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
     boosting_->AddValidDataset(valid_datas_[i].get(),
                                Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
+    Log::Debug("Number of data points in validation set #%zu: %zu", i + 1, valid_datas_[i]->num_data());
   }
   Log::Info("Finished initializing training");
 }
