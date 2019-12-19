@@ -135,31 +135,35 @@ class Predictor {
     if (!writer->Init()) {
       Log::Fatal("Prediction results file %s cannot be found", result_filename);
     }
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, boosting_->LabelIdx()));
+    auto label_idx = header ? -1 : boosting_->LabelIdx();
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx));
 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
-    if (parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
+    if (!header && parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
     }
     TextReader<data_size_t> predict_data_reader(data_filename, header);
-    std::unordered_map<int, int> feature_names_map_;
+    std::vector<int> feature_remapper(parser->NumFeatures(), -1);
     bool need_adjust = false;
     if (header) {
       std::string first_line = predict_data_reader.first_line();
       std::vector<std::string> header_words = Common::Split(first_line.c_str(), "\t,");
-      header_words.erase(header_words.begin() + boosting_->LabelIdx());
+      std::unordered_map<std::string, int> header_mapper;
       for (int i = 0; i < static_cast<int>(header_words.size()); ++i) {
-        for (int j = 0; j < static_cast<int>(boosting_->FeatureNames().size()); ++j) {
-          if (header_words[i] == boosting_->FeatureNames()[j]) {
-            feature_names_map_[i] = j;
-            break;
-          }
+        header_mapper[header_words[i]] = i;
+      }
+      const auto& fnames = boosting_->FeatureNames();
+      for (int i = 0; i < static_cast<int>(fnames.size()); ++i) {
+        if (header_mapper.count(fnames[i]) <= 0) {
+          Log::Warning("Feature (%s) is missed in data file. If it is weight/query/group/ignore_column, you can ignore this warning.", fnames[i].c_str());
+        } else {
+          feature_remapper[header_mapper.at(fnames[i])] = i;
         }
       }
-      for (auto s : feature_names_map_) {
-        if (s.first != s.second) {
+      for (int i = 0; i < static_cast<int>(feature_remapper.size()); ++i) {
+        if (feature_remapper[i] >= 0 && i != feature_remapper[i]) {
           need_adjust = true;
           break;
         }
@@ -174,8 +178,8 @@ class Predictor {
       if (need_adjust) {
         int i = 0, j = static_cast<int>(feature->size());
         while (i < j) {
-          if (feature_names_map_.find((*feature)[i].first) != feature_names_map_.end()) {
-            (*feature)[i].first = feature_names_map_[(*feature)[i].first];
+          if (feature_remapper[(*feature)[i].first] >= 0) {
+            (*feature)[i].first = feature_remapper[(*feature)[i].first];
             ++i;
           } else {
             // move the non-used features to the end of the feature vector
