@@ -103,7 +103,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
       }
     }
   }
-  Log::Info("Number of data: %d, number of used features: %d", num_data_, num_features_);
+  Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
