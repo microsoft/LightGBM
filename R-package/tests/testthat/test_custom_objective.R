@@ -14,9 +14,14 @@ logregobj <- function(preds, dtrain) {
   return(list(grad = grad, hess = hess))
 }
 
+# User-defined evaluation function returns a pair (metric_name, result, higher_better)
+# NOTE: when you do customized loss function, the default prediction value is margin
+# This may make built-in evalution metric calculate wrong results
+# Keep this in mind when you use the customization, and maybe you need write customized evaluation function
 evalerror <- function(preds, dtrain) {
   labels <- getinfo(dtrain, "label")
-  err <- as.numeric(sum(labels != (preds > 0.0))) / length(labels)
+  preds <- 1.0 / (1.0 + exp(-preds))
+  err <- as.numeric(sum(labels != (preds > 0.5))) / length(labels)
   return(list(
     name = "error"
     , value = err
