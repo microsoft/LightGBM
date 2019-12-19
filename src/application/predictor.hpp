@@ -152,6 +152,9 @@ class Predictor {
       std::vector<std::string> header_words = Common::Split(first_line.c_str(), "\t,");
       std::unordered_map<std::string, int> header_mapper;
       for (int i = 0; i < static_cast<int>(header_words.size()); ++i) {
+        if (header_mapper.count(header_words[i]) > 0) {
+          Log::Fatal("Feature (%s) appears more than one time.", header_words[i].c_str());
+        }
         header_mapper[header_words[i]] = i;
       }
       const auto& fnames = boosting_->FeatureNames();
