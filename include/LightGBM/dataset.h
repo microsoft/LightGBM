@@ -556,6 +556,7 @@ class Dataset {
       Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
     feature_names_ = std::vector<std::string>(feature_names);
+    std::unordered_set<std::string> feature_name_set;
     // replace ' ' in feature_names with '_'
     bool spaceInFeatureName = false;
     for (auto& feature_name : feature_names_) {
@@ -571,6 +572,10 @@ class Dataset {
         spaceInFeatureName = true;
         std::replace(feature_name.begin(), feature_name.end(), ' ', '_');
       }
+      if (feature_name_set.count(feature_name) > 0) {
+        Log::Fatal("Feature (%s) appears more than one time.", feature_name.c_str());
+      }
+      feature_name_set.insert(feature_name);
     }
     if (spaceInFeatureName) {
       Log::Warning("Find whitespaces in feature_names, replace with underlines");
