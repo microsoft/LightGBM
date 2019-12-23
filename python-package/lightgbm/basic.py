@@ -1913,8 +1913,6 @@ class Booster(object):
         self : Booster
             Booster with new parameters.
         """
-        if any(metric_alias in params for metric_alias in _ConfigAliases.get("metric")):
-            self.__need_reload_eval_info = True
         params_str = param_dict_to_str(params)
         if params_str:
             _safe_call(_LIB.LGBM_BoosterResetParameter(
