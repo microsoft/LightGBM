@@ -126,14 +126,14 @@ class TestSklearn(unittest.TestCase):
                                           '../../examples/xendcg/rank.train.query'))
         q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          '../../examples/xendcg/rank.test.query'))
-        gbm = lgb.LGBMRanker(n_estimators=50, objective='rank_xendcg', random_state=1025, n_jobs=1)
+        gbm = lgb.LGBMRanker(n_estimators=50, objective='rank_xendcg', random_state=31, n_jobs=1)
         gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
                 eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
                 eval_metric='ndcg',
                 callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
         self.assertLessEqual(gbm.best_iteration_, 24)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6407)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6362)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6361)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6458)
 
     def test_regression_with_custom_objective(self):
         X, y = load_boston(True)

@@ -128,6 +128,7 @@ struct Config {
   // descl2 = `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
   // descl2 = all values in ``label`` must be smaller than number of elements in ``label_gain``
   // desc = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function.
+  // descl2 = aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``.
   std::string objective = "regression";
 
   // [doc-only]
@@ -985,6 +986,9 @@ inline std::string ParseObjectiveAlias(const std::string& type) {
     return "cross_entropy_lambda";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
+  } else if (type == std::string("xendcg") || type == std::string("xe_ndcg")
+             || type == std::string("xe_ndcg_mart") || type == std::string("xendcg_mart")) {
+    return "rank_xendcg";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }
@@ -1000,7 +1004,8 @@ inline std::string ParseMetricAlias(const std::string& type) {
     return "l1";
   } else if (type == std::string("binary_logloss") || type == std::string("binary")) {
     return "binary_logloss";
-  } else if (type == std::string("ndcg") || type == std::string("lambdarank") || type == std::string("rank_xendcg")) {
+  } else if (type == std::string("ndcg") || type == std::string("lambdarank") || type == std::string("rank_xendcg")
+             || type == std::string("xendcg") || type == std::string("xe_ndcg") || type == std::string("xe_ndcg_mart") || type == std::string("xendcg_mart")) {
     return "ndcg";
   } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
     return "map";

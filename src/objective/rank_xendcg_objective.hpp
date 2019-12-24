@@ -2,6 +2,8 @@
 #define LIGHTGBM_OBJECTIVE_RANK_XENDCG_OBJECTIVE_HPP_
 
 #include <LightGBM/objective_function.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/random.h>
 
 #include <limits>
 #include <string>
@@ -20,15 +22,17 @@ namespace LightGBM {
 */
 class RankXENDCG: public ObjectiveFunction {
  public:
-  explicit RankXENDCG(const Config& config) :
-      generator_((std::random_device())()), distribution_(0.0, 1.0) {
+  explicit RankXENDCG(const Config& config) {
     if (config.seed != 0) {
-      generator_.seed(config.seed);
+      rand_ = new Random(config.seed);
+    } else {
+      rand_ = new Random();
     }
   }
 
-  explicit RankXENDCG(const std::vector<std::string>&) :
-      generator_((std::random_device())()), distribution_(0.0, 1.0) {}
+  explicit RankXENDCG(const std::vector<std::string>&) {
+    rand_ = new Random();
+  }
 
   ~RankXENDCG() {
   }
@@ -65,27 +69,13 @@ class RankXENDCG: public ObjectiveFunction {
     hessians += start;
 
     // Turn scores into a probability distribution using Softmax.
-    std::vector<double> rho;
-    for (data_size_t i = 0; i < cnt; ++i) {
-      rho.emplace_back(score[i]);
-    }
-
-    double max_score = *std::max_element(
-        std::begin(rho), std::end(rho));
-    double sum_exp = 0.0f;
-    for (data_size_t i = 0; i < cnt; ++i) {
-      sum_exp += std::exp(rho[i] - max_score);
-    }
-    double eps = std::exp(-max_score) * 1e-20;
-    double log_sum_exp = max_score + log(sum_exp + eps);
-    for (data_size_t i = 0; i < cnt; ++i) {
-      rho[i] = std::exp(rho[i]- log_sum_exp);
-    }
+    std::vector<double> rho(cnt);
+    Common::Softmax(score, &rho[0], cnt);
 
     // Prepare a vector of gammas, a parameter of the loss.
     std::vector<double> gammas(cnt);
     for (data_size_t i = 0; i < cnt; ++i) {
-      gammas[i] = distribution_(generator_);
+      gammas[i] = rand_->NextFloat();
     }
 
     // Skip query if sum of labels is 0.
@@ -129,7 +119,7 @@ class RankXENDCG: public ObjectiveFunction {
   }
 
   double phi(const label_t l, double g) const {
-    return std::pow(2, l) - g;
+    return Common::Pow(2, l) - g;
   }
 
   const char* GetName() const override {
@@ -151,11 +141,8 @@ class RankXENDCG: public ObjectiveFunction {
   const label_t* label_;
   /*! \brief Query boundries */
   const data_size_t* query_boundaries_;
-
-  // A pseudo-random number generator.
-  mutable std::mt19937 generator_;
-  // The Uniform distribution to sample from.
-  mutable std::uniform_real_distribution<double> distribution_;
+  /*! \brief Pseudo-random number generator */
+  Random* rand_;
 };
 
 }  // namespace LightGBM
