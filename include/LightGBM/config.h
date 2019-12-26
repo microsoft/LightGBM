@@ -986,7 +986,7 @@ inline std::string ParseObjectiveAlias(const std::string& type) {
     return "cross_entropy_lambda";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
-  } else if (type == std::string("xendcg") || type == std::string("xe_ndcg")
+  } else if (type == std::string("rank_xendcg") || type == std::string("xendcg") || type == std::string("xe_ndcg")
              || type == std::string("xe_ndcg_mart") || type == std::string("xendcg_mart")) {
     return "rank_xendcg";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {

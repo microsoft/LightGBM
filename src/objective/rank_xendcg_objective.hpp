@@ -5,16 +5,8 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/random.h>
 
-#include <limits>
 #include <string>
-#include <algorithm>
-#include <cmath>
-#include <cstdio>
-#include <cstring>
-#include <math.h>
-#include <random>
 #include <vector>
-#include <random>
 
 namespace LightGBM {
 /*!
