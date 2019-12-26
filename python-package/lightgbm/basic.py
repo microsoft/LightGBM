@@ -1149,6 +1149,11 @@ class Dataset(object):
     def save_binary(self, filename):
         """Save Dataset to a binary file.
 
+        .. note::
+
+            Please note that `init_score` is not saved in binary file.
+            If you need it, please set it again after loading Dataset.
+
         Parameters
         ----------
         filename : string

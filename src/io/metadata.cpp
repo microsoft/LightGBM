@@ -515,7 +515,8 @@ void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
     writer->Write(query_boundaries_.data(), sizeof(data_size_t) * (num_queries_ + 1));
   }
   if (num_init_score_ > 0) {
-    Log::Warning("Please aware that init_score is not saved in binary file. If need, please set it again after loading Dataset.");
+    Log::Warning("Please note that `init_score` is not saved in binary file.\n"
+      "If you need it, please set it again after loading Dataset.");
   }
 }
 

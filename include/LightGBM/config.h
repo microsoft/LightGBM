@@ -563,6 +563,7 @@ struct Config {
 
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+  // desc = **Note**: ``init_score`` is not saved in binary file
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
 
