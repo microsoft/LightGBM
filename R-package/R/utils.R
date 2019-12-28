@@ -175,13 +175,6 @@ lgb.check.r6.class <- function(object, name) {
 
 }
 
-lgb.check.params <- function(params) {
-
-  # To-do
-  params # Currently return params because this is not finalized
-
-}
-
 lgb.check.obj <- function(params, obj) {
 
   # List known objectives in a vector

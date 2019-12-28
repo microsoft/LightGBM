@@ -89,9 +89,6 @@ lgb.train <- function(params = list(),
     feval <- eval
   }
 
-  # Check for parameters
-  lgb.check.params(params)
-
   # Init predictor to empty
   predictor <- NULL
 
