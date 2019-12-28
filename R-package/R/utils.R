@@ -253,18 +253,10 @@ lgb.check.eval <- function(params, eval) {
     params$metric <- list()
   }
 
-  # Check if evaluation metric is null, if not then append it
-  if (!is.null(eval)) {
-
-    # Append metric if character or list
-    if (is.character(eval) || is.list(eval)) {
-
-      # Append metrics
-      params$metric <- append(params$metric, eval)
-
-    }
-
+  # If 'eval' is a list or character vector, store it in 'metric'
+  if (is.character(eval) || is.list(eval)) {
+    params$metric <- append(params$metric, eval)
   }
-  # Return parameters
+
   return(params)
 }
