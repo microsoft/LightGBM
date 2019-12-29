@@ -157,7 +157,7 @@ lgb.train <- function(params = list(),
 
   # Construct datasets, if needed
   data$construct()
-  vaild_contain_train <- FALSE
+  valid_contain_train <- FALSE
   train_data_name <- "train"
   reduced_valid_sets <- list()
 
@@ -172,7 +172,7 @@ lgb.train <- function(params = list(),
 
       # Check for duplicate train/validation dataset
       if (identical(data, valid_data)) {
-        vaild_contain_train <- TRUE
+        valid_contain_train <- TRUE
         train_data_name <- key
         next
       }
@@ -249,7 +249,9 @@ lgb.train <- function(params = list(),
 
   # Construct booster with datasets
   booster <- Booster$new(params = params, train_set = data)
-  if (vaild_contain_train) { booster$set_train_data_name(train_data_name) }
+  if (valid_contain_train) {
+    booster$set_train_data_name(train_data_name)
+  }
   for (key in names(reduced_valid_sets)) {
     booster$add_valid(reduced_valid_sets[[key]], key)
   }
@@ -282,7 +284,7 @@ lgb.train <- function(params = list(),
     if (length(valids) > 0L) {
 
       # Validation has training dataset?
-      if (vaild_contain_train) {
+      if (valid_contain_train) {
         eval_list <- append(eval_list, booster$eval_train(feval = feval))
       }
 
