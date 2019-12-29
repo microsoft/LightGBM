@@ -60,7 +60,6 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   }
   str_buf << "]," << '\n';
 
-
   std::vector<double> feature_importances = FeatureImportance(num_iteration, 0);
   // store the importance first
   std::vector<std::pair<size_t, std::string>> pairs;
@@ -70,12 +69,6 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
       pairs.emplace_back(feature_importances_int, feature_names_[i]);
     }
   }
-  // sort the importance
-  std::stable_sort(pairs.begin(), pairs.end(),
-                   [](const std::pair<size_t, std::string>& lhs,
-                      const std::pair<size_t, std::string>& rhs) {
-    return lhs.first > rhs.first;
-  });
   str_buf << '\n' << "\"feature_importances\":" << "{";
   if (!pairs.empty()) {
     str_buf << "\"" << pairs[0].second << "\":" << std::to_string(pairs[0].first);
