@@ -346,7 +346,7 @@ class TestBasic(unittest.TestCase):
         num_trees = 10
         bst = lgb.train({"objective": "binary"}, data, num_trees)
         tree_df = bst.trees_to_dataframe()
-        split_dict = (tree_df[~tree_df.split_gain.isnull()]
+        split_dict = (tree_df[~tree_df['split_gain'].isnull()]
                       .groupby('split_feature')
                       .size()
                       .to_dict())
@@ -360,10 +360,10 @@ class TestBasic(unittest.TestCase):
         tree_gains = _imptcs_to_numpy(X, gains_dict)
         mod_split = bst.feature_importance('split')
         mod_gains = bst.feature_importance('gain')
-        num_trees_from_df = tree_df.tree_index.nunique()
-        obs_counts_from_df = tree_df.loc[tree_df.node_depth == 1, 'count'].values
+        num_trees_from_df = tree_df['tree_index'].nunique()
+        obs_counts_from_df = tree_df.loc[tree_df['node_depth'] == 1, 'count'].values
 
         np.testing.assert_equal(tree_split, mod_split)
         np.testing.assert_allclose(tree_gains, mod_gains)
-        np.testing.assert_equal(num_trees_from_df, num_trees)
+        self.assertEqual(num_trees_from_df, num_trees)
         np.testing.assert_equal(obs_counts_from_df, len(y))
