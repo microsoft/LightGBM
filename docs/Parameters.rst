@@ -593,6 +593,8 @@ IO Parameters
 
    -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
 
+   -  **Note**: ``init_score`` is not saved in binary file
+
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
 -  ``header`` :raw-html:`<a id="header" title="Permalink to this parameter" href="#header">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``has_header``
