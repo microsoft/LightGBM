@@ -58,7 +58,7 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
     str_buf << models_[i]->ToJSON();
     str_buf << "}";
   }
-  str_buf << "]" << '\n';
+  str_buf << "]," << '\n';
 
 
   std::vector<double> feature_importances = FeatureImportance(num_iteration, 0);
@@ -76,11 +76,15 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
                       const std::pair<size_t, std::string>& rhs) {
     return lhs.first > rhs.first;
   });
-  str_buf << '\n' << "\"feature_importances\":[";
-  for (size_t i = 0; i < pairs.size(); ++i) {
-    str_buf << "\"" << pairs[i].second << "\":" << std::to_string(pairs[i].first) << ",";
+  str_buf << '\n' << "\"feature_importances\":" << "{";
+  if (!pairs.empty()) {
+    str_buf << "\"" << pairs[0].second << "\":" << std::to_string(pairs[0].first);
+    for (size_t i = 1; i < pairs.size(); ++i) {
+      str_buf << ",";
+      str_buf << "\"" << pairs[i].second << "\":" << std::to_string(pairs[i].first);
+    }
   }
-  str_buf << "]" << '\n';
+  str_buf << "}" << '\n';
 
   str_buf << "}" << '\n';
 
