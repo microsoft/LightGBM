@@ -193,12 +193,12 @@ lgb.cv <- function(params = list()
 
     # Create folds
     folds <- generate.cv.folds(
-      nfold
-      , nrow(data)
-      , stratified
-      , getinfo(data, "label")
-      , getinfo(data, "group")
-      , params
+      nfold = nfold
+      , nrows = nrow(data)
+      , stratified = stratified
+      , label = getinfo(data, "label")
+      , group = getinfo(data, "group")
+      , params = params
     )
 
   }
@@ -271,12 +271,19 @@ lgb.cv <- function(params = list()
   bst_folds <- lapply(
     X = seq_along(folds)
     , FUN = function(k) {
-      if (is.list(folds[[k]])) {
+
+      # For learning-to-rank, each fold is a named list with two elements:
+      #   * `fold` = an integer vector of row indices
+      #   * `group` = an integer vector describing which groups are in the fold
+      # For classification or regression tasks, it will just be an integer
+      # vector of row indices
+      folds_have_group <- "group" %in% names(folds[[k]])
+      if (folds_have_group) {
         test_indices <- folds[[k]]$fold
-        group <- folds[[k]]$group
+        test_groups <- folds[[k]]$group
+        train_groups <- getinfo(data, "group")[-test_groups]
       } else {
         test_indices <- folds[[k]]
-        group <- NULL
       }
       train_indices <- seq_len(nrow(data))[-test_indices]
 
@@ -302,9 +309,9 @@ lgb.cv <- function(params = list()
       setinfo(dtrain, "weight", indexDT$weight)
       setinfo(dtrain, "init_score", indexDT$init_score)
 
-      if (!is.null(group)) {
-        setinfo(dtest, "group", group)
-        setinfo(dtrain, "group", group)
+      if (folds_have_group) {
+          setinfo(dtest, "group", test_groups)
+          setinfo(dtrain, "group", train_groups)
       }
 
       booster <- Booster$new(params, dtrain)
