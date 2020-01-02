@@ -128,6 +128,7 @@ struct Config {
   // descl2 = `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
   // descl2 = all values in ``label`` must be smaller than number of elements in ``label_gain``
   // desc = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+  // descl2 = to obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1
   std::string objective = "regression";
 
   // [doc-only]
