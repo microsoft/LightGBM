@@ -1,7 +1,7 @@
 XE_NDCG Ranking Example
-==================
+=======================
 
-Here is an example for LightGBM to train a ranking model with the XE_NDCG loss [arxiv.org/abs/1911.09798].
+Here is an example for LightGBM to train a ranking model with the [XE_NDCG loss](https://arxiv.org/abs/1911.09798).
 
 ***You must follow the [installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html)
 for the following commands to work. The `lightgbm` binary must be built and available at the root of this project.***

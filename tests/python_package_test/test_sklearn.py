@@ -118,14 +118,11 @@ class TestSklearn(unittest.TestCase):
         self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6048)
 
     def test_xendcg(self):
-        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                           '../../examples/xendcg/rank.train'))
-        X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                         '../../examples/xendcg/rank.test'))
-        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                          '../../examples/xendcg/rank.train.query'))
-        q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                         '../../examples/xendcg/rank.test.query'))
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        X_train, y_train = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.train'))
+        X_test, y_test = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.test'))
+        q_train = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.train.query'))
+        q_test = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.test.query'))
         gbm = lgb.LGBMRanker(n_estimators=50, objective='rank_xendcg', random_state=31, n_jobs=1)
         gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
                 eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,

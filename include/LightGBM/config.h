@@ -127,8 +127,7 @@ struct Config {
   // descl2 = label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   // descl2 = `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
   // descl2 = all values in ``label`` must be smaller than number of elements in ``label_gain``
-  // desc = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function.
-  // descl2 = aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``.
+  // desc = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   std::string objective = "regression";
 
   // [doc-only]
