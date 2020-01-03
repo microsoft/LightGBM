@@ -24,6 +24,6 @@ train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.save(dtrain, "lgb.Dataset.data")
 dtrain <- lgb.Dataset("lgb.Dataset.data")
-lgb.Dataset.set.categorical(dtrain, 1:2)
+lgb.Dataset.set.categorical(dtrain, 1L:2L)
 
 }

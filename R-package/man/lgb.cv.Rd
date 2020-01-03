@@ -7,13 +7,13 @@
 lgb.cv(
   params = list(),
   data,
-  nrounds = 10,
-  nfold = 3,
+  nrounds = 10L,
+  nfold = 3L,
   label = NULL,
   weight = NULL,
   obj = NULL,
   eval = NULL,
-  verbose = 1,
+  verbose = 1L,
   record = TRUE,
   eval_freq = 1L,
   showsd = TRUE,
@@ -106,10 +106,10 @@ params <- list(objective = "regression", metric = "l2")
 model <- lgb.cv(
   params = params
   , data = dtrain
-  , nrounds = 10
-  , nfold = 3
-  , min_data = 1
-  , learning_rate = 1
-  , early_stopping_rounds = 5
+  , nrounds = 10L
+  , nfold = 3L
+  , min_data = 1L
+  , learning_rate = 1.0
+  , early_stopping_rounds = 5L
 )
 }

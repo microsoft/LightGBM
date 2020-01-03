@@ -69,9 +69,9 @@ Core Parameters
 
       -  ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
 
-      -  ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Applications>`__
+      -  ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Occurrence_and_applications>`__
 
-      -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Applications>`__
+      -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Occurrence_and_applications>`__
 
    -  ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
 
@@ -593,6 +593,8 @@ IO Parameters
 
    -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
 
+   -  **Note**: ``init_score`` is not saved in binary file
+
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
 -  ``header`` :raw-html:`<a id="header" title="Permalink to this parameter" href="#header">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``has_header``
@@ -659,7 +661,7 @@ IO Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
 
-   -  **Note**: only supports categorical with ``int`` type
+   -  **Note**: only supports categorical with ``int`` type (not applicable for data represented as pandas DataFrame in Python-package)
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
@@ -727,7 +729,7 @@ IO Parameters
 
    -  used only in ``convert_model`` task
 
-   -  only ``cpp`` is supported yet
+   -  only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
 
    -  if ``convert_model_language`` is set and ``task=train``, the model will be also converted
 
@@ -881,6 +883,8 @@ Metric Parameters
 
       -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
+      -  ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
+
       -  ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
 
       -  ``multi_error``, error rate for multi-class classification
@@ -920,6 +924,18 @@ Metric Parameters
       -  more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
 
    -  when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
+
+-  ``auc_mu_weights`` :raw-html:`<a id="auc_mu_weights" title="Permalink to this parameter" href="#auc_mu_weights">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double
+
+   -  used only with ``auc_mu`` metric
+
+   -  list representing flattened matrix (in row-major order) giving loss weights for classification errors
+
+   -  list should have ``n * n`` elements, where ``n`` is the number of classes
+
+   -  the matrix co-ordinate ``[i, j]`` should correspond to the ``i * n + j``-th element of the list
+
+   -  if not specified, will use equal weights for all classes
 
 Network Parameters
 ------------------

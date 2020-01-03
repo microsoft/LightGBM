@@ -803,7 +803,7 @@ class Dataset(object):
                 assert num_data == len(used_indices)
                 for i in range_(len(used_indices)):
                     for j in range_(predictor.num_class):
-                        sub_init_score[i * redictor.num_class + j] = init_score[used_indices[i] * redictor.num_class + j]
+                        sub_init_score[i * predictor.num_class + j] = init_score[used_indices[i] * predictor.num_class + j]
                 init_score = sub_init_score
         if predictor.num_class > 1:
             # need to regroup init_score
@@ -1148,6 +1148,11 @@ class Dataset(object):
 
     def save_binary(self, filename):
         """Save Dataset to a binary file.
+
+        .. note::
+
+            Please note that `init_score` is not saved in binary file.
+            If you need it, please set it again after loading Dataset.
 
         Parameters
         ----------

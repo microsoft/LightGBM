@@ -4,7 +4,7 @@ Booster <- R6::R6Class(
   cloneable = FALSE,
   public = list(
 
-    best_iter = -1,
+    best_iter = -1L,
     best_score = NA,
     record_evals = list(),
 
@@ -55,7 +55,7 @@ Booster <- R6::R6Class(
 
           # Create private booster information
           private$train_set <- train_set
-          private$num_dataset <- 1
+          private$num_dataset <- 1L
           private$init_predictor <- train_set$.__enclos_env__$private$predictor
 
           # Check if predictor is existing
@@ -176,7 +176,7 @@ Booster <- R6::R6Class(
       # Store private information
       private$valid_sets <- c(private$valid_sets, data)
       private$name_valid_sets <- c(private$name_valid_sets, name)
-      private$num_dataset <- private$num_dataset + 1
+      private$num_dataset <- private$num_dataset + 1L
       private$is_predicted_cur_iter <- c(private$is_predicted_cur_iter, FALSE)
 
       # Return self
@@ -229,7 +229,7 @@ Booster <- R6::R6Class(
         )
 
         # Store private train set
-        private$train_set = train_set
+        private$train_set <- train_set
 
       }
 
@@ -249,13 +249,13 @@ Booster <- R6::R6Class(
         }
         if (!private$set_objective_to_none) {
           self$reset_parameter(params = list(objective = "none"))
-          private$set_objective_to_none = TRUE
+          private$set_objective_to_none <- TRUE
         }
         # Perform objective calculation
-        gpair <- fobj(private$inner_predict(1), private$train_set)
+        gpair <- fobj(private$inner_predict(1L), private$train_set)
 
         # Check for gradient and hessian as list
-        if (is.null(gpair$grad) || is.null(gpair$hess)){
+        if (is.null(gpair$grad) || is.null(gpair$hess)) {
           stop("lgb.Booster.update: custom objective should
             return a list with attributes (hess, grad)")
         }
@@ -322,13 +322,13 @@ Booster <- R6::R6Class(
       }
 
       # Check for identical data
-      data_idx <- 0
+      data_idx <- 0L
       if (identical(data, private$train_set)) {
-        data_idx <- 1
+        data_idx <- 1L
       } else {
 
         # Check for validation data
-        if (length(private$valid_sets) > 0) {
+        if (length(private$valid_sets) > 0L) {
 
           # Loop through each validation set
           for (i in seq_along(private$valid_sets)) {
@@ -337,7 +337,7 @@ Booster <- R6::R6Class(
             if (identical(data, private$valid_sets[[i]])) {
 
               # Found identical data, skip
-              data_idx <- i + 1
+              data_idx <- i + 1L
               break
 
             }
@@ -349,7 +349,7 @@ Booster <- R6::R6Class(
       }
 
       # Check if evaluation was not done
-      if (data_idx == 0) {
+      if (data_idx == 0L) {
 
         # Add validation data by name
         self$add_valid(data, name)
@@ -364,17 +364,17 @@ Booster <- R6::R6Class(
 
     # Evaluation training data
     eval_train = function(feval = NULL) {
-      private$inner_eval(private$name_train_set, 1, feval)
+      private$inner_eval(private$name_train_set, 1L, feval)
     },
 
     # Evaluation validation data
     eval_valid = function(feval = NULL) {
 
       # Create ret list
-      ret = list()
+      ret <- list()
 
       # Check if validation is empty
-      if (length(private$valid_sets) <= 0) {
+      if (length(private$valid_sets) <= 0L) {
         return(ret)
       }
 
@@ -382,7 +382,7 @@ Booster <- R6::R6Class(
       for (i in seq_along(private$valid_sets)) {
         ret <- append(
           x = ret
-          , values = private$inner_eval(private$name_valid_sets[[i]], i + 1, feval)
+          , values = private$inner_eval(private$name_valid_sets[[i]], i + 1L, feval)
         )
       }
 
@@ -491,8 +491,8 @@ Booster <- R6::R6Class(
     name_valid_sets = list(),
     predict_buffer = list(),
     is_predicted_cur_iter = list(),
-    num_class = 1,
-    num_dataset = 0,
+    num_class = 1L,
+    num_dataset = 0L,
     init_predictor = NULL,
     eval_names = NULL,
     higher_better_inner_eval = NULL,
@@ -504,8 +504,8 @@ Booster <- R6::R6Class(
       data_name <- private$name_train_set
 
       # Check for id bigger than 1
-      if (idx > 1) {
-        data_name <- private$name_valid_sets[[idx - 1]]
+      if (idx > 1L) {
+        data_name <- private$name_valid_sets[[idx - 1L]]
       }
 
       # Check for unknown dataset (over the maximum provided range)
@@ -522,7 +522,7 @@ Booster <- R6::R6Class(
           "LGBM_BoosterGetNumPredict_R"
           , ret = npred
           , private$handle
-          , as.integer(idx - 1)
+          , as.integer(idx - 1L)
         )
         private$predict_buffer[[data_name]] <- numeric(npred)
 
@@ -536,7 +536,7 @@ Booster <- R6::R6Class(
           "LGBM_BoosterGetPredict_R"
           , ret = private$predict_buffer[[data_name]]
           , private$handle
-          , as.integer(idx - 1)
+          , as.integer(idx - 1L)
         )
         private$is_predicted_cur_iter[[idx]] <- TRUE
       }
@@ -558,12 +558,12 @@ Booster <- R6::R6Class(
         )
 
         # Check names' length
-        if (nchar(names) > 0) {
+        if (nchar(names) > 0L) {
 
           # Parse and store privately names
-          names <- strsplit(names, "\t")[[1]]
+          names <- strsplit(names, "\t")[[1L]]
           private$eval_names <- names
-          private$higher_better_inner_eval <- grepl("^ndcg|^map|^auc$", names)
+          private$higher_better_inner_eval <- grepl("^ndcg|^map|^auc", names)
 
         }
 
@@ -589,7 +589,7 @@ Booster <- R6::R6Class(
       ret <- list()
 
       # Check evaluation names existence
-      if (length(private$eval_names) > 0) {
+      if (length(private$eval_names) > 0L) {
 
         # Create evaluation values
         tmp_vals <- numeric(length(private$eval_names))
@@ -597,7 +597,7 @@ Booster <- R6::R6Class(
           "LGBM_BoosterGetEval_R"
           , ret = tmp_vals
           , private$handle
-          , as.integer(data_idx - 1)
+          , as.integer(data_idx - 1L)
         )
 
         # Loop through all evaluation names
@@ -627,8 +627,8 @@ Booster <- R6::R6Class(
         data <- private$train_set
 
         # Check if data to assess is existing differently
-        if (data_idx > 1) {
-          data <- private$valid_sets[[data_idx - 1]]
+        if (data_idx > 1L) {
+          data <- private$valid_sets[[data_idx - 1L]]
         }
 
         # Perform function evaluation
@@ -671,14 +671,13 @@ Booster <- R6::R6Class(
 #'                prediction outputs per case.
 #' @param ... Additional named arguments passed to the \code{predict()} method of
 #'            the \code{lgb.Booster} object passed to \code{object}.
-#' @return
-#' For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-#' For multiclass classification, either a \code{num_class * nrows(data)} vector or
-#' a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-#' the \code{reshape} value.
+#' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
+#'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
+#'         a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
+#'         the \code{reshape} value.
 #'
-#' When \code{predleaf = TRUE}, the output is a matrix object with the
-#' number of columns corresponding to the number of trees.
+#'         When \code{predleaf = TRUE}, the output is a matrix object with the
+#'         number of columns corresponding to the number of trees.
 #'
 #' @examples
 #' library(lightgbm)
@@ -693,11 +692,11 @@ Booster <- R6::R6Class(
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
+#'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1
-#'   , learning_rate = 1
-#'   , early_stopping_rounds = 5
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#'   , early_stopping_rounds = 5L
 #' )
 #' preds <- predict(model, test$data)
 #'
@@ -755,11 +754,11 @@ predict.lgb.Booster <- function(object,
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
+#'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1
-#'   , learning_rate = 1
-#'   , early_stopping_rounds = 5
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#'   , early_stopping_rounds = 5L
 #' )
 #' lgb.save(model, "model.txt")
 #' load_booster <- lgb.load(filename = "model.txt")
@@ -768,7 +767,7 @@ predict.lgb.Booster <- function(object,
 #'
 #' @rdname lgb.load
 #' @export
-lgb.load <- function(filename = NULL, model_str = NULL){
+lgb.load <- function(filename = NULL, model_str = NULL) {
 
   if (is.null(filename) && is.null(model_str)) {
     stop("lgb.load: either filename or model_str must be given")
@@ -815,17 +814,17 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
+#'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1
-#'   , learning_rate = 1
-#'   , early_stopping_rounds = 5
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#'   , early_stopping_rounds = 5L
 #' )
 #' lgb.save(model, "model.txt")
 #'
 #' @rdname lgb.save
 #' @export
-lgb.save <- function(booster, filename, num_iteration = NULL){
+lgb.save <- function(booster, filename, num_iteration = NULL) {
 
   # Check if booster is booster
   if (!lgb.is.Booster(booster)) {
@@ -864,17 +863,17 @@ lgb.save <- function(booster, filename, num_iteration = NULL){
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
+#'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1
-#'   , learning_rate = 1
-#'   , early_stopping_rounds = 5
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#'   , early_stopping_rounds = 5L
 #' )
 #' json_model <- lgb.dump(model)
 #'
 #' @rdname lgb.dump
 #' @export
-lgb.dump <- function(booster, num_iteration = NULL){
+lgb.dump <- function(booster, num_iteration = NULL) {
 
   # Check if booster is booster
   if (!lgb.is.Booster(booster)) {
@@ -910,11 +909,11 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10
+#'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1
-#'   , learning_rate = 1
-#'   , early_stopping_rounds = 5
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#'   , early_stopping_rounds = 5L
 #' )
 #' lgb.get.eval.result(model, "test", "l2")
 #' @rdname lgb.get.eval.result
@@ -956,7 +955,7 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
 
   # Parse iteration and booster delta
   iters <- as.integer(iters)
-  delta <- booster$record_evals$start_iter - 1
+  delta <- booster$record_evals$start_iter - 1.0
   iters <- iters - delta
 
   # Return requested result

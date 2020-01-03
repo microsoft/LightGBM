@@ -6,15 +6,15 @@ data(iris)
 # We must convert factors to numeric
 # They must be starting from number 0 to use multiclass
 # For instance: 0, 1, 2, 3, 4, 5...
-iris$Species <- as.numeric(as.factor(iris$Species)) - 1
+iris$Species <- as.numeric(as.factor(iris$Species)) - 1L
 
 # Create imbalanced training data (20, 30, 40 examples for classes 0, 1, 2)
-train <- as.matrix(iris[c(1:20, 51:80, 101:140), ])
+train <- as.matrix(iris[c(1L:20L, 51L:80L, 101L:140L), ])
 # The 10 last samples of each class are for validation
-test <- as.matrix(iris[c(41:50, 91:100, 141:150), ])
+test <- as.matrix(iris[c(41L:50L, 91L:100L, 141L:150L), ])
 
-dtrain <- lgb.Dataset(data = train[, 1:4], label = train[, 5])
-dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1:4], label = test[, 5])
+dtrain <- lgb.Dataset(data = train[, 1L:4L], label = train[, 5L])
+dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1L:4L], label = test[, 5L])
 valids <- list(train = dtrain, test = dtest)
 
 # Method 1 of training with built-in multiclass objective
@@ -24,52 +24,52 @@ model_builtin <- lgb.train(
     list()
     , dtrain
     , boost_from_average = FALSE
-    , 100
+    , 100L
     , valids
-    , min_data = 1
-    , learning_rate = 1
-    , early_stopping_rounds = 10
+    , min_data = 1L
+    , learning_rate = 1.0
+    , early_stopping_rounds = 10L
     , objective = "multiclass"
     , metric = "multi_logloss"
-    , num_class = 3
+    , num_class = 3L
 )
 
-preds_builtin <- predict(model_builtin, test[, 1:4], rawscore = TRUE, reshape = TRUE)
+preds_builtin <- predict(model_builtin, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)
 probs_builtin <- exp(preds_builtin) / rowSums(exp(preds_builtin))
 
 # Method 2 of training with custom objective function
 
 # User defined objective function, given prediction, return gradient and second order gradient
-custom_multiclass_obj = function(preds, dtrain) {
-    labels = getinfo(dtrain, "label")
+custom_multiclass_obj <- function(preds, dtrain) {
+    labels <- getinfo(dtrain, "label")
 
     # preds is a matrix with rows corresponding to samples and colums corresponding to choices
-    preds = matrix(preds, nrow = length(labels))
+    preds <- matrix(preds, nrow = length(labels))
 
     # to prevent overflow, normalize preds by row
-    preds = preds - apply(preds, 1, max)
-    prob = exp(preds) / rowSums(exp(preds))
+    preds <- preds - apply(preds, 1L, max)
+    prob <- exp(preds) / rowSums(exp(preds))
 
     # compute gradient
-    grad = prob
-    grad[cbind(1:length(labels), labels + 1)] = grad[cbind(1:length(labels), labels + 1)] - 1
+    grad <- prob
+    grad[cbind(seq_len(length(labels)), labels + 1L)] <- grad[cbind(seq_len(length(labels)), labels + 1L)] - 1L
 
     # compute hessian (approximation)
-    hess = 2 * prob * (1 - prob)
+    hess <- 2.0 * prob * (1.0 - prob)
 
     return(list(grad = grad, hess = hess))
 }
 
 # define custom metric
-custom_multiclass_metric = function(preds, dtrain) {
-    labels = getinfo(dtrain, "label")
-    preds = matrix(preds, nrow = length(labels))
-    preds = preds - apply(preds, 1, max)
-    prob = exp(preds) / rowSums(exp(preds))
+custom_multiclass_metric <- function(preds, dtrain) {
+    labels <- getinfo(dtrain, "label")
+    preds <- matrix(preds, nrow = length(labels))
+    preds <- preds - apply(preds, 1L, max)
+    prob <- exp(preds) / rowSums(exp(preds))
 
     return(list(
         name = "error"
-        , value = -mean(log(prob[cbind(1:length(labels), labels + 1)]))
+        , value = -mean(log(prob[cbind(seq_len(length(labels)), labels + 1L)]))
         , higher_better = FALSE
     ))
 }
@@ -77,17 +77,17 @@ custom_multiclass_metric = function(preds, dtrain) {
 model_custom <- lgb.train(
     list()
     , dtrain
-    , 100
+    , 100L
     , valids
-    , min_data = 1
-    , learning_rate = 1
-    , early_stopping_rounds = 10
+    , min_data = 1L
+    , learning_rate = 1.0
+    , early_stopping_rounds = 10L
     , objective = custom_multiclass_obj
     , eval = custom_multiclass_metric
-    , num_class = 3
+    , num_class = 3L
 )
 
-preds_custom <- predict(model_custom, test[, 1:4], rawscore = TRUE, reshape = TRUE)
+preds_custom <- predict(model_custom, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)
 probs_custom <- exp(preds_custom) / rowSums(exp(preds_custom))
 
 # compare predictions

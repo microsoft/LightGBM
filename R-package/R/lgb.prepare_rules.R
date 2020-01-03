@@ -21,16 +21,16 @@
 #' str(new_iris$data)
 #'
 #' data(iris) # Erase iris dataset
-#' iris$Species[1] <- "NEW FACTOR" # Introduce junk factor (NA)
+#' iris$Species[1L] <- "NEW FACTOR" # Introduce junk factor (NA)
 #'
 #' # Use conversion using known rules
 #' # Unknown factors become 0, excellent for sparse datasets
 #' newer_iris <- lgb.prepare_rules(data = iris, rules = new_iris$rules)
 #'
 #' # Unknown factor is now zero, perfect for sparse datasets
-#' newer_iris$data[1, ] # Species became 0 as it is an unknown factor
+#' newer_iris$data[1L, ] # Species became 0 as it is an unknown factor
 #'
-#' newer_iris$data[1, 5] <- 1 # Put back real initial value
+#' newer_iris$data[1L, 5L] <- 1.0 # Put back real initial value
 #'
 #' # Is the newly created dataset equal? YES!
 #' all.equal(new_iris$data, newer_iris$data)
@@ -39,9 +39,9 @@
 #' data(iris) # Erase iris dataset
 #'
 #' # We remapped values differently
-#' personal_rules <- list(Species = c("setosa" = 3,
-#'                                    "versicolor" = 2,
-#'                                    "virginica" = 1))
+#' personal_rules <- list(Species = c("setosa" = 3L,
+#'                                    "versicolor" = 2L,
+#'                                    "virginica" = 1L))
 #' newest_iris <- lgb.prepare_rules(data = iris, rules = personal_rules)
 #' str(newest_iris$data) # SUCCESS!
 #'
@@ -59,21 +59,21 @@ lgb.prepare_rules <- function(data, rules = NULL) {
       for (i in names(rules)) {
 
         data.table::set(data, j = i, value = unname(rules[[i]][data[[i]]]))
-        data[[i]][is.na(data[[i]])] <- 0 # Overwrite NAs by 0s
+        data[[i]][is.na(data[[i]])] <- 0L # Overwrite NAs by 0s
 
       }
 
     } else {
 
       # Get data classes
-      list_classes <- vapply(data, class, character(1))
+      list_classes <- vapply(data, class, character(1L))
 
       # Map characters/factors
       is_fix <- which(list_classes %in% c("character", "factor"))
       rules <- list()
 
       # Need to create rules?
-      if (length(is_fix) > 0) {
+      if (length(is_fix) > 0L) {
 
         # Go through all characters/factors
         for (i in is_fix) {
@@ -114,7 +114,7 @@ lgb.prepare_rules <- function(data, rules = NULL) {
       for (i in names(rules)) {
 
         data[[i]] <- unname(rules[[i]][data[[i]]])
-        data[[i]][is.na(data[[i]])] <- 0 # Overwrite NAs by 0s
+        data[[i]][is.na(data[[i]])] <- 0L # Overwrite NAs by 0s
 
       }
 
@@ -124,14 +124,14 @@ lgb.prepare_rules <- function(data, rules = NULL) {
       if (inherits(data, "data.frame")) {
 
         # Get data classes
-        list_classes <- vapply(data, class, character(1))
+        list_classes <- vapply(data, class, character(1L))
 
         # Map characters/factors
         is_fix <- which(list_classes %in% c("character", "factor"))
         rules <- list()
 
         # Need to create rules?
-        if (length(is_fix) > 0) {
+        if (length(is_fix) > 0L) {
 
           # Go through all characters/factors
           for (i in is_fix) {

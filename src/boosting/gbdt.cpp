@@ -310,9 +310,9 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
         leaf_pred[i] = tree_leaf_prediction[i][model_index];
         CHECK(leaf_pred[i] < models_[model_index]->num_leaves());
       }
-      size_t bias = static_cast<size_t>(tree_id) * num_data_;
-      auto grad = gradients_.data() + bias;
-      auto hess = hessians_.data() + bias;
+      size_t offset = static_cast<size_t>(tree_id) * num_data_;
+      auto grad = gradients_.data() + offset;
+      auto hess = hessians_.data() + offset;
       auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), leaf_pred, grad, hess);
       train_score_updater_->AddScore(tree_learner_.get(), new_tree, tree_id);
       models_[model_index].reset(new_tree);
@@ -381,26 +381,26 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-    const size_t bias = static_cast<size_t>(cur_tree_id) * num_data_;
+    const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
     std::unique_ptr<Tree> new_tree(new Tree(2));
     if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
-      auto grad = gradients + bias;
-      auto hess = hessians + bias;
+      auto grad = gradients + offset;
+      auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
       if (is_use_subset_ && bag_data_cnt_ < num_data_) {
         for (int i = 0; i < bag_data_cnt_; ++i) {
-          gradients_[bias + i] = grad[bag_data_indices_[i]];
-          hessians_[bias + i] = hess[bag_data_indices_[i]];
+          gradients_[offset + i] = grad[bag_data_indices_[i]];
+          hessians_[offset + i] = hess[bag_data_indices_[i]];
         }
-        grad = gradients_.data() + bias;
-        hess = hessians_.data() + bias;
+        grad = gradients_.data() + offset;
+        hess = hessians_.data() + offset;
       }
       new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
     }
 
     if (new_tree->num_leaves() > 1) {
       should_continue = true;
-      auto score_ptr = train_score_updater_->score() + bias;
+      auto score_ptr = train_score_updater_->score() + offset;
       auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
       tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
                                      num_data_, bag_data_indices_.data(), bag_data_cnt_);

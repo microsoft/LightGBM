@@ -147,8 +147,13 @@ def loglikelihood(preds, train_data):
 # self-defined eval metric
 # f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
 # binary error
+# NOTE: when you do customized loss function, the default prediction value is margin
+# This may make built-in evalution metric calculate wrong results
+# For example, we are doing log likelihood loss, the prediction is score before logistic transformation
+# Keep this in mind when you use the customization
 def binary_error(preds, train_data):
     labels = train_data.get_label()
+    preds = 1. / (1. + np.exp(-preds))
     return 'error', np.mean(labels != (preds > 0.5)), False
 
 
@@ -166,8 +171,13 @@ print('Finished 40 - 50 rounds with self-defined objective function and eval met
 # another self-defined eval metric
 # f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
 # accuracy
+# NOTE: when you do customized loss function, the default prediction value is margin
+# This may make built-in evalution metric calculate wrong results
+# For example, we are doing log likelihood loss, the prediction is score before logistic transformation
+# Keep this in mind when you use the customization
 def accuracy(preds, train_data):
     labels = train_data.get_label()
+    preds = 1. / (1. + np.exp(-preds))
     return 'accuracy', np.mean(labels == (preds > 0.5)), True
 
 

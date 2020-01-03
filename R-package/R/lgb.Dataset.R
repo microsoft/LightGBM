@@ -140,10 +140,10 @@ Dataset <- R6::R6Class(
         # Check for character name
         if (is.character(private$categorical_feature)) {
 
-            cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1)
+            cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1L)
 
             # Provided indices, but some indices are not existing?
-            if (sum(is.na(cate_indices)) > 0) {
+            if (sum(is.na(cate_indices)) > 0L) {
               stop(
                 "lgb.self.get.handle: supplied an unknown feature in categorical_feature: "
                 , sQuote(private$categorical_feature[is.na(cate_indices)])
@@ -164,7 +164,7 @@ Dataset <- R6::R6Class(
             }
 
             # Store indices as [0, n-1] indexed instead of [1, n] indexed
-            cate_indices <- as.list(private$categorical_feature - 1)
+            cate_indices <- as.list(private$categorical_feature - 1L)
 
           }
 
@@ -221,7 +221,7 @@ Dataset <- R6::R6Class(
           )
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
-          if (length(private$raw_data@p) > 2147483647) {
+          if (length(private$raw_data@p) > 2147483647L) {
             stop("Cannot support large CSC matrix")
           }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
@@ -300,13 +300,13 @@ Dataset <- R6::R6Class(
       }
 
       # Get private information
-      if (length(private$info) > 0) {
+      if (length(private$info) > 0L) {
 
         # Set infos
         for (i in seq_along(private$info)) {
 
           p <- private$info[i]
-          self$setinfo(names(p), p[[1]])
+          self$setinfo(names(p), p[[1L]])
 
         }
 
@@ -361,7 +361,7 @@ Dataset <- R6::R6Class(
 
         # Get feature names and write them
         cnames <- lgb.call.return.str("LGBM_DatasetGetFeatureNames_R", private$handle)
-        private$colnames <- as.character(base::strsplit(cnames, "\t")[[1]])
+        private$colnames <- as.character(base::strsplit(cnames, "\t")[[1L]])
         private$colnames
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
@@ -391,7 +391,7 @@ Dataset <- R6::R6Class(
 
       # Check empty column names
       colnames <- as.character(colnames)
-      if (length(colnames) == 0) {
+      if (length(colnames) == 0L) {
         return(invisible(self))
       }
 
@@ -422,14 +422,14 @@ Dataset <- R6::R6Class(
       INFONAMES <- c("label", "weight", "init_score", "group")
 
       # Check if attribute key is in the known attribute list
-      if (!is.character(name) || length(name) != 1 || !name %in% INFONAMES) {
+      if (!is.character(name) || length(name) != 1L || !name %in% INFONAMES) {
         stop("getinfo: name must one of the following: ", paste0(sQuote(INFONAMES), collapse = ", "))
       }
 
       # Check for info name and handle
       if (is.null(private$info[[name]])) {
 
-        if (lgb.is.null.handle(private$handle)){
+        if (lgb.is.null.handle(private$handle)) {
           stop("Cannot perform getinfo before constructing Dataset.")
         }
 
@@ -443,7 +443,7 @@ Dataset <- R6::R6Class(
         )
 
         # Check if info is not empty
-        if (info_len > 0) {
+        if (info_len > 0L) {
 
           # Get back fields
           ret <- NULL
@@ -476,7 +476,7 @@ Dataset <- R6::R6Class(
       INFONAMES <- c("label", "weight", "init_score", "group")
 
       # Check if attribute key is in the known attribute list
-      if (!is.character(name) || length(name) != 1 || !name %in% INFONAMES) {
+      if (!is.character(name) || length(name) != 1L || !name %in% INFONAMES) {
         stop("setinfo: name must one of the following: ", paste0(sQuote(INFONAMES), collapse = ", "))
       }
 
@@ -492,7 +492,7 @@ Dataset <- R6::R6Class(
 
       if (!lgb.is.null.handle(private$handle) && !is.null(info)) {
 
-        if (length(info) > 0) {
+        if (length(info) > 0L) {
 
           lgb.call(
             "LGBM_DatasetSetField_R"
@@ -851,7 +851,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #' lgb.Dataset.construct(dtrain)
 #' dimnames(dtrain)
 #' colnames(dtrain)
-#' colnames(dtrain) <- make.names(1:ncol(train$data))
+#' colnames(dtrain) <- make.names(seq_len(ncol(train$data)))
 #' print(dtrain, verbose = TRUE)
 #'
 #' @rdname dimnames.lgb.Dataset
@@ -883,7 +883,7 @@ dimnames.lgb.Dataset <- function(x) {
   }
 
   # Check for second value missing
-  if (is.null(value[[2]])) {
+  if (is.null(value[[2L]])) {
 
     # No column names
     x$set_colnames(NULL)
@@ -892,10 +892,10 @@ dimnames.lgb.Dataset <- function(x) {
   }
 
   # Check for unmatching column size
-  if (ncol(x) != length(value[[2]])) {
+  if (ncol(x) != length(value[[2L]])) {
     stop(
       "can't assign "
-      , sQuote(length(value[[2]]))
+      , sQuote(length(value[[2L]]))
       , " colnames to an lgb.Dataset with "
       , sQuote(ncol(x))
       , " columns"
@@ -903,7 +903,7 @@ dimnames.lgb.Dataset <- function(x) {
   }
 
   # Set column names properly, and return
-  x$set_colnames(value[[2]])
+  x$set_colnames(value[[2L]])
   x
 
 }
@@ -924,7 +924,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
-#' dsub <- lightgbm::slice(dtrain, 1:42)
+#' dsub <- lightgbm::slice(dtrain, seq_len(42L))
 #' lgb.Dataset.construct(dsub)
 #' labels <- lightgbm::getinfo(dsub, "label")
 #'
@@ -1059,7 +1059,7 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' lgb.Dataset.save(dtrain, "lgb.Dataset.data")
 #' dtrain <- lgb.Dataset("lgb.Dataset.data")
-#' lgb.Dataset.set.categorical(dtrain, 1:2)
+#' lgb.Dataset.set.categorical(dtrain, 1L:2L)
 #'
 #' @rdname lgb.Dataset.set.categorical
 #' @export
@@ -1108,6 +1108,9 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 }
 
 #' Save \code{lgb.Dataset} to a binary file
+#'
+#' Please note that \code{init_score} is not saved in binary file.
+#' If you need it, please set it again after loading Dataset.
 #'
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param fname object filename of output file

@@ -38,12 +38,12 @@
 #' params <- list(
 #'   objective = "binary"
 #'   , learning_rate = 0.01
-#'   , num_leaves = 63
-#'   , max_depth = -1
-#'   , min_data_in_leaf = 1
-#'   , min_sum_hessian_in_leaf = 1
+#'   , num_leaves = 63L
+#'   , max_depth = -1L
+#'   , min_data_in_leaf = 1L
+#'   , min_sum_hessian_in_leaf = 1.0
 #' )
-#' model <- lgb.train(params, dtrain, 10)
+#' model <- lgb.train(params, dtrain, 10L)
 #'
 #' tree_dt <- lgb.model.dt.tree(model)
 #'
@@ -74,7 +74,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
 
   # Since the index comes from C++ (which is 0-indexed), be sure
   # to add 1 (e.g. index 28 means the 29th feature in feature_names)
-  split_feature_indx <- tree_dt[, split_feature] + 1
+  split_feature_indx <- tree_dt[, split_feature] + 1L
 
   # Get corresponding feature names. Positions in split_feature_indx
   # which are NA will result in an NA feature name
@@ -97,21 +97,21 @@ single.tree.parse <- function(lgb_tree) {
       # Setup initial default data.table with default types
       env <- new.env(parent = emptyenv())
       env$single_tree_dt <- data.table::data.table(
-        tree_index = integer(0)
-        , depth = integer(0)
-        , split_index = integer(0)
-        , split_feature = integer(0)
-        , node_parent = integer(0)
-        , leaf_index = integer(0)
-        , leaf_parent = integer(0)
-        , split_gain = numeric(0)
-        , threshold = numeric(0)
-        , decision_type = character(0)
-        , default_left = character(0)
-        , internal_value = integer(0)
-        , internal_count = integer(0)
-        , leaf_value = integer(0)
-        , leaf_count = integer(0)
+        tree_index = integer(0L)
+        , depth = integer(0L)
+        , split_index = integer(0L)
+        , split_feature = integer(0L)
+        , node_parent = integer(0L)
+        , leaf_index = integer(0L)
+        , leaf_parent = integer(0L)
+        , split_gain = numeric(0L)
+        , threshold = numeric(0L)
+        , decision_type = character(0L)
+        , default_left = character(0L)
+        , internal_value = integer(0L)
+        , internal_count = integer(0L)
+        , leaf_value = integer(0L)
+        , leaf_count = integer(0L)
       )
       # start tree traversal
       pre_order_traversal(env, tree_node_leaf, current_depth, parent_index)

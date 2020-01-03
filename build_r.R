@@ -15,9 +15,9 @@
 
 # system() will not raise an R exception if the process called
 # fails. Wrapping it here to get that behavior
-.run_shell_command <- function(cmd, ...){
+.run_shell_command <- function(cmd, ...) {
     exit_code <- system(cmd, ...)
-    if (exit_code != 0){
+    if (exit_code != 0L) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
 }
@@ -27,33 +27,43 @@ unlink(x = "lightgbm_r", recursive = TRUE)
 dir.create("lightgbm_r")
 
 # copy in the relevant files
-result <- file.copy(from = "R-package/./",
-                    to = "lightgbm_r/",
-                    recursive = TRUE,
-                    overwrite = TRUE)
+result <- file.copy(
+  from = "R-package/./"
+  , to = "lightgbm_r/"
+  , recursive = TRUE
+  , overwrite = TRUE
+)
 .handle_result(result)
 
-result <- file.copy(from = "include/",
-                    to = file.path("lightgbm_r", "src/"),
-                    recursive = TRUE,
-                    overwrite = TRUE)
+result <- file.copy(
+  from = "include/"
+  , to = file.path("lightgbm_r", "src/")
+  , recursive = TRUE
+  , overwrite = TRUE
+)
 .handle_result(result)
 
-result <- file.copy(from = "src/",
-                    to = file.path("lightgbm_r", "src/"),
-                    recursive = TRUE,
-                    overwrite = TRUE)
+result <- file.copy(
+  from = "src/"
+  , to = file.path("lightgbm_r", "src/")
+  , recursive = TRUE
+  , overwrite = TRUE
+)
 .handle_result(result)
 
-result <- file.copy(from = "compute/",
-                    to = file.path("lightgbm_r", "src/"),
-                    recursive = TRUE,
-                    overwrite = TRUE)
+result <- file.copy(
+  from = "compute/"
+  , to = file.path("lightgbm_r", "src/")
+  , recursive = TRUE
+  , overwrite = TRUE
+)
 .handle_result(result)
 
-result <- file.copy(from = "CMakeLists.txt",
-                    to = file.path("lightgbm_r", "inst", "bin/"),
-                    overwrite = TRUE)
+result <- file.copy(
+  from = "CMakeLists.txt"
+  , to = file.path("lightgbm_r", "inst", "bin/")
+  , overwrite = TRUE
+)
 .handle_result(result)
 
 # Build the package (do not touch this line!)
@@ -68,15 +78,12 @@ version <- gsub(
   "Version: ",
   "",
   grep(
-    "Version: ",
-    readLines(con = file.path("lightgbm_r", "DESCRIPTION")),
-    value = TRUE
+    "Version: "
+    , readLines(con = file.path("lightgbm_r", "DESCRIPTION"))
+    , value = TRUE
   )
 )
 tarball <- file.path(getwd(), sprintf("lightgbm_%s.tar.gz", version))
 
-cmd <- sprintf("R CMD INSTALL %s --no-multiarch", tarball)
+cmd <- sprintf("R CMD INSTALL %s --no-multiarch --with-keep.source", tarball)
 .run_shell_command(cmd)
-
-# Run R CMD CHECK
-# R CMD CHECK lightgbm_2.1.2.tar.gz --as-cran | tee check.log | cat

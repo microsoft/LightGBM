@@ -53,36 +53,36 @@ bank <- lgb.prepare(data = bank)
 str(bank)
 
 # Remove 1 to label because it must be between 0 and 1
-bank$y <- bank$y - 1
+bank$y <- bank$y - 1L
 
 # Data input to LightGBM must be a matrix, without the label
-my_data <- as.matrix(bank[, 1:16, with = FALSE])
+my_data <- as.matrix(bank[, 1L:16L, with = FALSE])
 
 # Creating the LightGBM dataset with categorical features
 # The categorical features must be indexed like in R (1-indexed, not 0-indexed)
 lgb_data <- lgb.Dataset(
     data = my_data
     , label = bank$y
-    , categorical_feature = c(2, 3, 4, 5, 7, 8, 9, 11, 16)
+    , categorical_feature = c(2L, 3L, 4L, 5L, 7L, 8L, 9L, 11L, 16L)
 )
 
 # We can now train a model
 params <- list(
     objective = "binary"
     , metric = "l2"
-    , min_data = 1
+    , min_data = 1L
     , learning_rate = 0.1
-    , min_data = 0
-    , min_hessian = 1
-    , max_depth = 2
+    , min_data = 0L
+    , min_hessian = 1.0
+    , max_depth = 2L
 )
 model <- lgb.train(
     params = params
     , data = lgb_data
-    , nrounds = 100
+    , nrounds = 100L
     , valids = list(train = lgb_data)
 )
 
 # Try to find split_feature: 2
 # If you find it, it means it used a categorical feature in the first tree
-lgb.dump(model, num_iteration = 1)
+lgb.dump(model, num_iteration = 1L)

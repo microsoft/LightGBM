@@ -5,6 +5,7 @@
 #include "parser.hpp"
 
 #include <string>
+#include <algorithm>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -200,18 +201,19 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
     Log::Fatal("Unknown format of training data.");
   }
   std::unique_ptr<Parser> ret;
+  int output_label_index = -1;
   if (type == DataType::LIBSVM) {
-    label_idx = GetLabelIdxForLibsvm(lines[0], num_features, label_idx);
-    ret.reset(new LibSVMParser(label_idx, num_col));
+    output_label_index = GetLabelIdxForLibsvm(lines[0], num_features, label_idx);
+    ret.reset(new LibSVMParser(output_label_index, num_col));
   } else if (type == DataType::TSV) {
-    label_idx = GetLabelIdxForTSV(lines[0], num_features, label_idx);
-    ret.reset(new TSVParser(label_idx, num_col));
+    output_label_index = GetLabelIdxForTSV(lines[0], num_features, label_idx);
+    ret.reset(new TSVParser(output_label_index, num_col));
   } else if (type == DataType::CSV) {
-    label_idx = GetLabelIdxForCSV(lines[0], num_features, label_idx);
-    ret.reset(new CSVParser(label_idx, num_col));
+    output_label_index = GetLabelIdxForCSV(lines[0], num_features, label_idx);
+    ret.reset(new CSVParser(output_label_index, num_col));
   }
 
-  if (label_idx < 0) {
+  if (output_label_index < 0 && label_idx >= 0) {
     Log::Info("Data file %s doesn't contain a label column.", filename);
   }
   return ret.release();

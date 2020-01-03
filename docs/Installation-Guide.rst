@@ -9,7 +9,7 @@ It is worth to compile 32-bit version only in very rare special cases of environ
 
 For the build of Python-package and R-package, please refer to `Python-package`_ and `R-package`_ folders respectively.
 
-Also you can download artifacts of the latest successful build in master branch: |download artifacts|.
+Also you can download artifacts of the latest successful build in master branch (nightly builds): |download artifacts|.
 
 .. contents:: **Contents**
     :depth: 1
@@ -147,7 +147,7 @@ Build from GitHub
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
 
-     # For Mojave (10.14)
+     # For Mojave or newer (>=10.14)
      cmake \
        -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
        -DOpenMP_C_LIB_NAMES="omp" \
@@ -449,7 +449,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
 
-     # For Mojave (10.14)
+     # For Mojave or newer (>=10.14)
      cmake \
        -DUSE_MPI=ON \
        -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
@@ -712,7 +712,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
 
-     # For Mojave (10.14)
+     # For Mojave or newer (>=10.14)
      cmake \
        -DUSE_SWIG=ON \
        -DAPPLE_OUTPUT_DYLIB=ON \

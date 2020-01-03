@@ -6,9 +6,9 @@
 \usage{
 lgb.plot.interpretation(
   tree_interpretation_dt,
-  top_n = 10,
-  cols = 1,
-  left_margin = 10,
+  top_n = 10L,
+  cols = 1L,
+  left_margin = 10L,
   cex = NULL
 )
 }
@@ -35,8 +35,8 @@ contribution of a feature. Features are shown ranked in a decreasing contributio
 }
 \examples{
 library(lightgbm)
-Sigmoid <- function(x) {1 / (1 + exp(-x))}
-Logit <- function(x) {log(x / (1 - x))}
+Sigmoid <- function(x) {1.0 / (1.0 + exp(-x))}
+Logit <- function(x) {log(x / (1.0 - x))}
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -47,13 +47,13 @@ test <- agaricus.test
 params <- list(
   objective = "binary"
   , learning_rate = 0.01
-  , num_leaves = 63
-  , max_depth = -1
-  , min_data_in_leaf = 1
-  , min_sum_hessian_in_leaf = 1
+  , num_leaves = 63L
+  , max_depth = -1L
+  , min_data_in_leaf = 1L
+  , min_sum_hessian_in_leaf = 1.0
 )
-model <- lgb.train(params, dtrain, 10)
+model <- lgb.train(params, dtrain, 10L)
 
-tree_interpretation <- lgb.interprete(model, test$data, 1:5)
-lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
+tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
+lgb.plot.interpretation(tree_interpretation[[1L]], top_n = 10L)
 }

@@ -24,9 +24,9 @@ class DenseBinIterator: public BinIterator {
     max_bin_(static_cast<VAL_T>(max_bin)),
     default_bin_(static_cast<VAL_T>(default_bin)) {
     if (default_bin_ == 0) {
-      bias_ = 1;
+      offset_ = 1;
     } else {
-      bias_ = 0;
+      offset_ = 0;
     }
   }
   inline uint32_t RawGet(data_size_t idx) override;
@@ -38,7 +38,7 @@ class DenseBinIterator: public BinIterator {
   VAL_T min_bin_;
   VAL_T max_bin_;
   VAL_T default_bin_;
-  uint8_t bias_;
+  uint8_t offset_;
 };
 /*!
 * \brief Used to store bins for dense feature
@@ -334,7 +334,7 @@ template <typename VAL_T>
 uint32_t DenseBinIterator<VAL_T>::Get(data_size_t idx) {
   auto ret = bin_data_->data_[idx];
   if (ret >= min_bin_ && ret <= max_bin_) {
-    return ret - min_bin_ + bias_;
+    return ret - min_bin_ + offset_;
   } else {
     return default_bin_;
   }

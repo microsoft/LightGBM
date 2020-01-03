@@ -556,17 +556,26 @@ class Dataset {
       Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
     feature_names_ = std::vector<std::string>(feature_names);
+    std::unordered_set<std::string> feature_name_set;
     // replace ' ' in feature_names with '_'
     bool spaceInFeatureName = false;
     for (auto& feature_name : feature_names_) {
       // check ascii
       if (!Common::CheckASCII(feature_name)) {
-        Log::Fatal("Do not support non-ascii characters in feature name.");
+        Log::Fatal("Do not support non-ASCII characters in feature name.");
+      }
+      // check json
+      if (!Common::CheckAllowedJSON(feature_name)) {
+        Log::Fatal("Do not support special JSON characters in feature name.");
       }
       if (feature_name.find(' ') != std::string::npos) {
         spaceInFeatureName = true;
         std::replace(feature_name.begin(), feature_name.end(), ' ', '_');
       }
+      if (feature_name_set.count(feature_name) > 0) {
+        Log::Fatal("Feature (%s) appears more than one time.", feature_name.c_str());
+      }
+      feature_name_set.insert(feature_name);
     }
     if (spaceInFeatureName) {
       Log::Warning("Find whitespaces in feature_names, replace with underlines");
