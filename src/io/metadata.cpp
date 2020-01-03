@@ -290,9 +290,9 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   if ((len % num_data_) != 0) {
     Log::Fatal("Initial score size doesn't match data size");
   }
-  if (!init_score_.empty()) { init_score_.clear(); }
+  if (init_score_.empty()) { init_score_ = std::vector<double>(len); }
   num_init_score_ = len;
-  init_score_ = std::vector<double>(len);
+
   #pragma omp parallel for schedule(static)
   for (int64_t i = 0; i < num_init_score_; ++i) {
     init_score_[i] = Common::AvoidInf(init_score[i]);
@@ -308,8 +308,8 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("Length of label is not same with #data");
   }
-  if (!label_.empty()) { label_.clear(); }
-  label_ = std::vector<label_t>(num_data_);
+  if (label_.empty()) { label_ = std::vector<label_t>(num_data_); }
+ 
   #pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = Common::AvoidInf(label[i]);
@@ -327,9 +327,9 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("Length of weights is not same with #data");
   }
-  if (!weights_.empty()) { weights_.clear(); }
+  if (weights_.empty()) { weights_ = std::vector<label_t>(num_data_); }
   num_weights_ = num_data_;
-  weights_ = std::vector<label_t>(num_weights_);
+ 
   #pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_weights_; ++i) {
     weights_[i] = Common::AvoidInf(weights[i]);
@@ -354,9 +354,8 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   if (num_data_ != sum) {
     Log::Fatal("Sum of query counts is not same with #data");
   }
-  if (!query_boundaries_.empty()) { query_boundaries_.clear(); }
   num_queries_ = len;
-  query_boundaries_ = std::vector<data_size_t>(num_queries_ + 1);
+  query_boundaries_.resize(num_queries_ + 1);
   query_boundaries_[0] = 0;
   for (data_size_t i = 0; i < num_queries_; ++i) {
     query_boundaries_[i + 1] = query_boundaries_[i] + query[i];
