@@ -1,6 +1,6 @@
 context("Learning to rank")
 
-test_that("learning-to-rank with lgb.train() LambdaRank works as expected", {
+test_that("learning-to-rank with lgb.train() works as expected", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(
@@ -42,7 +42,7 @@ test_that("learning-to-rank with lgb.train() LambdaRank works as expected", {
     expect_equal(fitted_model[['max_feature_idx']], ncol(train$data) - 1)
 })
 
-test_that("learning-to-rank with lgb.cv() LambdaRank works as expected", {
+test_that("learning-to-rank with lgb.cv() works as expected", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(

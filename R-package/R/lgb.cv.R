@@ -280,8 +280,9 @@ lgb.cv <- function(params = list()
       folds_have_group <- "group" %in% names(folds[[k]])
       if (folds_have_group) {
         test_indices <- folds[[k]]$fold
-        test_groups <- folds[[k]]$group
-        train_groups <- getinfo(data, "group")[-test_groups]
+        test_group_indices <- folds[[k]]$group
+        test_groups <- getinfo(data, "group")[test_group_indices]
+        train_groups <- getinfo(data, "group")[-test_group_indices]
       } else {
         test_indices <- folds[[k]]
       }
@@ -310,8 +311,8 @@ lgb.cv <- function(params = list()
       setinfo(dtrain, "init_score", indexDT$init_score)
 
       if (folds_have_group) {
-          setinfo(dtest, "group", test_groups)
-          setinfo(dtrain, "group", train_groups)
+        setinfo(dtest, "group", test_groups)
+        setinfo(dtrain, "group", train_groups)
       }
 
       booster <- Booster$new(params, dtrain)
