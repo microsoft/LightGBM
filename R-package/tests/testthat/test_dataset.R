@@ -109,7 +109,7 @@ test_that("lgb.Dataset should throw an error if 'reference' is provided but of t
     dtest <- lgb.Dataset(
       data = test_data
       , label = test_label
-      , reference = data.frame(x = 1:10, y = 1:10)
+      , reference = data.frame(x = seq_len(10L), y = seq_len(10L))
     )
   }, regexp = "reference must be a")
 })
@@ -122,7 +122,7 @@ test_that("lgb.Dataset should throw an error if 'predictor' is provided but of t
     dtest <- lgb.Dataset(
       data = test_data
       , label = test_label
-      , predictor = data.frame(x = 1:10, y = 1:10)
+      , predictor = data.frame(x = seq_len(10L), y = seq_len(10L))
     )
   }, regexp = "predictor must be a")
 })

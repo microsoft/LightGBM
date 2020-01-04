@@ -5,7 +5,7 @@ test_that("lgb.check.r6.class() should return FALSE for NULL input", {
 })
 
 test_that("lgb.check.r6.class() should return FALSE for non-R6 inputs", {
-    x <- 5
+    x <- 5L
     class(x) <- "lgb.Dataset"
     expect_false(lgb.check.r6.class(x, "lgb.Dataset"))
 })

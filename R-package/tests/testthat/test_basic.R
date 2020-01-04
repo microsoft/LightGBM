@@ -73,7 +73,7 @@ test_that("use of multiple eval metrics works", {
 test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
-  for (nround_value in c(-10, 0)){
+  for (nround_value in c(-10L, 0L)) {
     expect_error({
       bst <- lightgbm(
         data = dtrain
@@ -137,7 +137,7 @@ test_that("cv works", {
 test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
-  for (nround_value in c(-10, 0)){
+  for (nround_value in c(-10L, 0L)) {
     expect_error({
       bst <- lgb.cv(
         params
@@ -154,12 +154,12 @@ test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset 
   bad_values <- list(
     4L
     , "hello"
-    , list(a = TRUE, b = 1L:10L)
-    , data.frame(x = 1L:5L, y = 1L:5L)
-    , data.table::data.table(x = 1L:5L,  y = 1L:5L)
-    , matrix(data = 1L:10L, 2L, 5L)
+    , list(a = TRUE, b = seq_len(10L))
+    , data.frame(x = seq_len(5L), y = seq_len(5L))
+    , data.table::data.table(x = seq_len(5L),  y = seq_len(5L))
+    , matrix(data = seq_len(10L), 2L, 5L)
   )
-  for (val in bad_values){
+  for (val in bad_values) {
     expect_error({
       bst <- lgb.cv(
         params = list(objective = "regression", metric = "l2,l1")
@@ -177,7 +177,7 @@ context("lgb.train()")
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
-  for (nround_value in c(-10, 0)){
+  for (nround_value in c(-10L, 0L)) {
     expect_error({
       bst <- lgb.train(
         params
@@ -188,16 +188,16 @@ test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
   }
 })
 
-test_that("lgb.train() throws an informative error is 'data' is not an lgb.Dataset", {
+test_that("lgb.train() throws an informative error if 'data' is not an lgb.Dataset", {
   bad_values <- list(
     4L
     , "hello"
-    , list(a = TRUE, b = 1L:10L)
-    , data.frame(x = 1L:5L, y = 1L:5L)
-    , data.table::data.table(x = 1L:5L,  y = 1L:5L)
-    , matrix(data = 1L:10L, 2L, 5L)
+    , list(a = TRUE, b = seq_len(10L))
+    , data.frame(x = seq_len(5L), y = seq_len(5L))
+    , data.table::data.table(x = seq_len(5L),  y = seq_len(5L))
+    , matrix(data = seq_len(10L), 2L, 5L)
   )
-  for (val in bad_values){
+  for (val in bad_values) {
     expect_error({
       bst <- lgb.train(
         params = list(objective = "regression", metric = "l2,l1")
@@ -210,8 +210,8 @@ test_that("lgb.train() throws an informative error is 'data' is not an lgb.Datas
 
 test_that("lgb.train() throws an informative error if 'valids' is not a list of lgb.Dataset objects", {
   valids <- list(
-    "valid1" = data.frame(x = rnorm(5), y = rnorm(5))
-    , "valid2" = data.frame(x = rnorm(5), y = rnorm(5))
+    "valid1" = data.frame(x = rnorm(5L), y = rnorm(5L))
+    , "valid2" = data.frame(x = rnorm(5L), y = rnorm(5L))
   )
   expect_error({
     bst <- lgb.train(
@@ -223,7 +223,7 @@ test_that("lgb.train() throws an informative error if 'valids' is not a list of 
   }, regexp = "valids must be a list of lgb.Dataset elements")
 })
 
-test_that("lgb.train() throws an informative error if 'valids' is a list of lgb.Dataset objects but some do not have names", {
+test_that("lgb.train() errors if 'valids' is a list of lgb.Dataset objects but some do not have names", {
   valids <- list(
     "valid1" = lgb.Dataset(matrix(rnorm(10L), 5L, 2L))
     , lgb.Dataset(matrix(rnorm(10L), 2L, 5L))
@@ -238,7 +238,7 @@ test_that("lgb.train() throws an informative error if 'valids' is a list of lgb.
   }, regexp = "each element of valids must have a name")
 })
 
-test_that("lgb.train() throws an informative error if 'valids' is a list of lgb.Dataset objects but none have names", {
+test_that("lgb.train() throws an informative error if 'valids' contains lgb.Dataset objects but none have names", {
   valids <- list(
     lgb.Dataset(matrix(rnorm(10L), 5L, 2L))
     , lgb.Dataset(matrix(rnorm(10L), 2L, 5L))
