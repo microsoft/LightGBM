@@ -321,6 +321,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+**/coverage.html
 
 # Translations
 *.mo
