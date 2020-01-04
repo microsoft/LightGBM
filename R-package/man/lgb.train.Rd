@@ -26,7 +26,9 @@ lgb.train(
 \arguments{
 \item{params}{List of parameters}
 
-\item{data}{a \code{lgb.Dataset} object, used for training}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
+may allow you to pass other types of data like \code{matrix} and then separately supply
+\code{label} as a keyword argument.}
 
 \item{nrounds}{number of training rounds}
 

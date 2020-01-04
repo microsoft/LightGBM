@@ -1,8 +1,11 @@
 #' @name lgb_shared_params
 #' @title Shared parameter docs
 #' @description Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
-#' @param callbacks List of callback functions that are applied at each iteration.
-#' @param data a \code{lgb.Dataset} object, used for training
+#' @param callbacks list of callback functions
+#'        List of callback functions that are applied at each iteration.
+#' @param data a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
+#'             may allow you to pass other types of data like \code{matrix} and then separately supply
+#'             \code{label} as a keyword argument.
 #' @param early_stopping_rounds int. Activates early stopping. Requires at least one validation data
 #'                              and one metric. If there's more than one, will check all of them
 #'                              except the training data. Returns the model with (best_iter + early_stopping_rounds).
@@ -57,11 +60,14 @@ lightgbm <- function(data,
                      callbacks = list(),
                      ...) {
 
-  # Set data to a temporary variable
-  dtrain <- data
+  # validate inputs early to avoid unnecessary computation
   if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
+
+  # Set data to a temporary variable
+  dtrain <- data
+
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(dtrain)) {
     dtrain <- lgb.Dataset(data, label = label, weight = weight)

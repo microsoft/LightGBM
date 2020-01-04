@@ -99,3 +99,30 @@ test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
   ds$setinfo("group", group_as_numeric)
   expect_identical(ds$getinfo("group"), as.integer(group_as_numeric))
 })
+
+test_that("lgb.Dataset should throw an error if 'reference' is provided but of the wrong format", {
+  data(agaricus.test, package = "lightgbm")
+  test_data <- agaricus.test$data[1L:100L, ]
+  test_label <- agaricus.test$label[1L:100L]
+  # Try to trick lgb.Dataset() into accepting bad input
+  expect_error({
+    dtest <- lgb.Dataset(
+      data = test_data
+      , label = test_label
+      , reference = data.frame(x = 1:10, y = 1:10)
+    )
+  }, regexp = "reference must be a")
+})
+
+test_that("lgb.Dataset should throw an error if 'predictor' is provided but of the wrong format", {
+  data(agaricus.test, package = "lightgbm")
+  test_data <- agaricus.test$data[1L:100L, ]
+  test_label <- agaricus.test$label[1L:100L]
+  expect_error({
+    dtest <- lgb.Dataset(
+      data = test_data
+      , label = test_label
+      , predictor = data.frame(x = 1:10, y = 1:10)
+    )
+  }, regexp = "predictor must be a")
+})

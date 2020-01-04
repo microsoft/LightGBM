@@ -65,6 +65,23 @@ lgb.train <- function(params = list(),
                       reset_data = FALSE,
                       ...) {
 
+  # validate inputs early to avoid unnecessary computation
+  if (nrounds <= 0L) {
+    stop("nrounds should be greater than zero")
+  }
+  if (!lgb.is.Dataset(data)) {
+    stop("lgb.train: data must be an lgb.Dataset instance")
+  }
+  if (length(valids) > 0L) {
+    if (!is.list(valids) || !all(vapply(valids, lgb.is.Dataset, logical(1L)))) {
+      stop("lgb.train: valids must be a list of lgb.Dataset elements")
+    }
+    evnames <- names(valids)
+    if (is.null(evnames) || !all(nzchar(evnames))) {
+      stop("lgb.train: each element of valids must have a name")
+    }
+  }
+
   # Setup temporary variables
   additional_params <- list(...)
   params <- append(params, additional_params)
@@ -73,10 +90,6 @@ lgb.train <- function(params = list(),
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
   feval <- NULL
-
-  if (nrounds <= 0L) {
-    stop("nrounds should be greater than zero")
-  }
 
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -110,30 +123,6 @@ lgb.train <- function(params = list(),
     end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1L]]] - 1L
   } else {
     end_iteration <- begin_iteration + nrounds - 1L
-  }
-
-  # Check for training dataset type correctness
-  if (!lgb.is.Dataset(data)) {
-    stop("lgb.train: data only accepts lgb.Dataset object")
-  }
-
-  # Check for validation dataset type correctness
-  if (length(valids) > 0L) {
-
-    # One or more validation dataset
-
-    # Check for list as input and type correctness by object
-    if (!is.list(valids) || !all(vapply(valids, lgb.is.Dataset, logical(1L)))) {
-      stop("lgb.train: valids must be a list of lgb.Dataset elements")
-    }
-
-    # Attempt to get names
-    evnames <- names(valids)
-
-    # Check for names existance
-    if (is.null(evnames) || !all(nzchar(evnames))) {
-      stop("lgb.train: each element of the valids must have a name tag")
-    }
   }
 
   # Update parameters with parsed parameters

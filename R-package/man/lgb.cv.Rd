@@ -31,13 +31,15 @@ lgb.cv(
 \arguments{
 \item{params}{List of parameters}
 
-\item{data}{a \code{lgb.Dataset} object, used for training}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
+may allow you to pass other types of data like \code{matrix} and then separately supply
+\code{label} as a keyword argument.}
 
 \item{nrounds}{number of training rounds}
 
 \item{nfold}{the original dataset is randomly partitioned into \code{nfold} equal size subsamples.}
 
-\item{label}{vector of response values. Should be provided only when data is an R-matrix.}
+\item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 
 \item{weight}{vector of response values. If not NULL, will set to dataset}
 
