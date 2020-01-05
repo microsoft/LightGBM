@@ -44,19 +44,20 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   for (size_t i = 0; i < feature_infos_.size(); ++i) {
     std::stringstream json_str_buf;
     auto strs = Common::Split(feature_infos_[i].c_str(), ":");
-    if (strs.size() == 1) {
+    if (strs.size() == 1) {  // unused ("none")
       json_str_buf << "{}";
     } else if (strs.size() == 2) {
       strs[0].erase(0, 1);  // remove '['
       strs[1].erase(strs[1].size() - 1);  // remove ']'
-      json_str_buf << "{\"min_val\":" << strs[0] << ",";
-      json_str_buf << "\"max_val\":" << strs[1] << "}";
+      json_str_buf << "{\"min_value\":" << strs[0] << ",";
+      json_str_buf << "\"max_value\":" << strs[1] << ",";
+      json_str_buf << "\"values\":[]}";
     } else if (strs.size() > 2) {  // categorical
       auto vals = Common::StringToArray<int>(feature_infos_[i], ':');
       auto max_idx = ArrayArgs<int>::ArgMax(vals);
       auto min_idx = ArrayArgs<int>::ArgMin(vals);
-      json_str_buf << "{\"min_val\":" << vals[min_idx] << ",";
-      json_str_buf << "\"max_val\":" << vals[max_idx] << ",";
+      json_str_buf << "{\"min_value\":" << vals[min_idx] << ",";
+      json_str_buf << "\"max_value\":" << vals[max_idx] << ",";
       json_str_buf << "\"values\":[" << Common::Join(vals, ",") << "]}";
     }
     feature_infos_json_objs.push_back(json_str_buf.str());
