@@ -124,5 +124,5 @@ test_that("Dataset$new() should throw an error if 'predictor' is provided but of
       , label = test_label
       , predictor = data.frame(x = seq_len(10L), y = seq_len(10L))
     )
-  }, regexp = "If provided, predictor must be a ‘lgb.Predictor’", fixed = TRUE)
+  }, regexp = "predictor must be a", fixed = TRUE)
 })
