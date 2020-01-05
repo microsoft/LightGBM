@@ -114,15 +114,15 @@ test_that("lgb.Dataset should throw an error if 'reference' is provided but of t
   }, regexp = "reference must be a")
 })
 
-test_that("lgb.Dataset should throw an error if 'predictor' is provided but of the wrong format", {
+test_that("Dataset$new() should throw an error if 'predictor' is provided but of the wrong format", {
   data(agaricus.test, package = "lightgbm")
   test_data <- agaricus.test$data[1L:100L, ]
   test_label <- agaricus.test$label[1L:100L]
   expect_error({
-    dtest <- lgb.Dataset(
+    dtest <- Dataset$new(
       data = test_data
       , label = test_label
       , predictor = data.frame(x = seq_len(10L), y = seq_len(10L))
     )
-  }, regexp = "predictor must be a")
+  }, regexp = "If provided, predictor must be a ‘lgb.Predictor’", fixed = TRUE)
 })
