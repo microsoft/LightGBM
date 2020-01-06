@@ -289,6 +289,11 @@ struct Config {
   // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
 
+  // desc = use extremely randomized trees
+  // desc = if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
+  // desc = can be used to deal with over-fitting
+  bool extra_trees = false;
+
   // alias = early_stopping_rounds, early_stopping, n_iter_no_change
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
   // desc = ``<= 0`` means disable
