@@ -31,7 +31,7 @@ You can perform installation either with **Apple Clang** or **gcc**. In case you
 export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
 ```
 
-### Install <a name="install-source"></a>
+### Install
 
 Build and install R-package with the following commands:
 
@@ -133,7 +133,7 @@ The R package's unit tests are run automatically on every commit, via integratio
 
 When adding tests, you may want to use test coverage to identify untested areas and to check if the tests you've added are covering all branches of the intended code.
 
-The example below shows how to generate code coverage for the R package on a Mac or Linux setup. To adjust for your environment, swap out the 'Install' step with [the relevant code from the instructions above](#install-source).
+The example below shows how to generate code coverage for the R package on a Mac or Linux setup. To adjust for your environment, swap out the 'Install' step with [the relevant code from the instructions above](#install).
 
 ```shell
 # Install
