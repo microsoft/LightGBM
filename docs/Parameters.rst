@@ -725,6 +725,12 @@ IO Parameters
 
    -  the threshold of margin in early-stopping prediction
 
+-  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only in ``prediction`` task
+
+   -  if ``true``, will disable the shape checking in prediction. This is dangerous, please aware what you are doing
+
 -  ``convert_model_language`` :raw-html:`<a id="convert_model_language" title="Permalink to this parameter" href="#convert_model_language">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
    -  used only in ``convert_model`` task
