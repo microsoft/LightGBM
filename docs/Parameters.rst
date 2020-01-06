@@ -729,7 +729,11 @@ IO Parameters
 
    -  used only in ``prediction`` task
 
-   -  if ``true``, will disable the shape checking in prediction. This is dangerous, please aware what you are doing
+   -  Control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data.
+
+   -  If ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training.
+
+   -  If ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model. Be very careful setting this parameter to ``true``.
 
 -  ``convert_model_language`` :raw-html:`<a id="convert_model_language" title="Permalink to this parameter" href="#convert_model_language">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
