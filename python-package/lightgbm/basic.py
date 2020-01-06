@@ -770,6 +770,7 @@ class Dataset(object):
         self.params_back_up = None
         self.feature_penalty = None
         self.monotone_constraints = None
+        self.version = 0
 
     def __del__(self):
         try:
@@ -1232,6 +1233,7 @@ class Dataset(object):
             ptr_data,
             ctypes.c_int(len(data)),
             ctypes.c_int(type_data)))
+        self.version += 1
         return self
 
     def get_field(self, field_name):
@@ -1739,6 +1741,7 @@ class Booster(object):
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
+            self.train_set_version = train_set.version
         elif model_file is not None:
             # Prediction task
             out_num_iterations = ctypes.c_int(0)
@@ -1960,7 +1963,12 @@ class Booster(object):
             Whether the update was successfully finished.
         """
         # need reset training data
-        if train_set is not None and train_set is not self.train_set:
+        if train_set is None and self.train_set_version != self.train_set.version:
+            train_set = self.train_set
+            is_the_same_train_set = False
+        else:
+            is_the_same_train_set = train_set is self.train_set and self.train_set_version == train_set.version
+        if train_set is not None and not is_the_same_train_set:
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
@@ -1972,6 +1980,7 @@ class Booster(object):
                 self.handle,
                 self.train_set.construct().handle))
             self.__inner_predict_buffer[0] = None
+            self.train_set_version = self.train_set.version
         is_finished = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:

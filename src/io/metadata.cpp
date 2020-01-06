@@ -290,7 +290,7 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   if ((len % num_data_) != 0) {
     Log::Fatal("Initial score size doesn't match data size");
   }
-  if (init_score_.empty()) { init_score_ = std::vector<double>(len); }
+  if (init_score_.empty()) { init_score_.resize(len); }
   num_init_score_ = len;
 
   #pragma omp parallel for schedule(static)
@@ -308,7 +308,7 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("Length of label is not same with #data");
   }
-  if (label_.empty()) { label_ = std::vector<label_t>(num_data_); }
+  if (label_.empty()) { label_.resize(num_data_); }
  
   #pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
@@ -327,7 +327,7 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("Length of weights is not same with #data");
   }
-  if (weights_.empty()) { weights_ = std::vector<label_t>(num_data_); }
+  if (weights_.empty()) { weights_.resize(num_data_); }
   num_weights_ = num_data_;
  
   #pragma omp parallel for schedule(static)

@@ -55,6 +55,7 @@ Booster <- R6::R6Class(
 
           # Create private booster information
           private$train_set <- train_set
+          private$train_set_version <- train_set$.__enclos_env__$private$version
           private$num_dataset <- 1L
           private$init_predictor <- train_set$.__enclos_env__$private$predictor
 
@@ -207,6 +208,12 @@ Booster <- R6::R6Class(
     # Perform boosting update iteration
     update = function(train_set = NULL, fobj = NULL) {
 
+      if (is.null(train_set)) {
+        if (private$train_set$.__enclos_env__$private$version != private$train_set_version) {
+          train_set <- private$train_set
+        }
+      }
+
       # Check if training set is not null
       if (!is.null(train_set)) {
 
@@ -230,6 +237,7 @@ Booster <- R6::R6Class(
 
         # Store private train set
         private$train_set <- train_set
+        private$train_set_version <- train_set$.__enclos_env__$private$version
 
       }
 
