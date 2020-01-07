@@ -505,6 +505,7 @@ Booster <- R6::R6Class(
     eval_names = NULL,
     higher_better_inner_eval = NULL,
     set_objective_to_none = FALSE,
+    train_set_version = 0L,
     # Predict data
     inner_predict = function(idx) {
 
