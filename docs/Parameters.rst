@@ -725,6 +725,18 @@ IO Parameters
 
    -  the threshold of margin in early-stopping prediction
 
+-  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only in ``prediction`` task
+
+   -  control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
+
+   -  if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
+
+   -  if ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model
+
+   -  **Note**: be very careful setting this parameter to ``true``
+
 -  ``convert_model_language`` :raw-html:`<a id="convert_model_language" title="Permalink to this parameter" href="#convert_model_language">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
    -  used only in ``convert_model`` task
