@@ -142,8 +142,8 @@ class Predictor {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
     if (!header && !disable_shape_check && parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d). " \
-                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please aware what you are doing.", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
     }
     TextReader<data_size_t> predict_data_reader(data_filename, header);
     std::vector<int> feature_remapper(parser->NumFeatures(), -1);

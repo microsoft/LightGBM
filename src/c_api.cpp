@@ -254,8 +254,8 @@ class Booster {
                const Config& config,
                double* out_result, int64_t* out_len) {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d). "\
-                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
     if (single_row_predictor_[predict_type].get() == nullptr ||
@@ -276,8 +276,8 @@ class Booster {
                const Config& config,
                double* out_result, int64_t* out_len) {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d)." \
-                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please aware what you are doing." , ncol, boosting_->MaxFeatureIdx() + 1);
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
