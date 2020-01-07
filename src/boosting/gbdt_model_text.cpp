@@ -40,13 +40,12 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   str_buf << "\"monotone_constraints\":["
           << Common::Join(monotone_constraints_, ",") << "]," << '\n';
 
-  std::vector<std::string> feature_infos_json_objs;
+  str_buf << "\"feature_infos\":" << "{";
+  bool first_obj = true;
   for (size_t i = 0; i < feature_infos_.size(); ++i) {
     std::stringstream json_str_buf;
     auto strs = Common::Split(feature_infos_[i].c_str(), ":");
-    if (strs.size() == 1) {  // unused ("none")
-      json_str_buf << "{}";
-    } else if (strs.size() == 2) {
+    if (strs.size() == 2) {
       strs[0].erase(0, 1);  // remove '['
       strs[1].erase(strs[1].size() - 1);  // remove ']'
       json_str_buf << "{\"min_value\":" << strs[0] << ",";
@@ -59,18 +58,15 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
       json_str_buf << "{\"min_value\":" << vals[min_idx] << ",";
       json_str_buf << "\"max_value\":" << vals[max_idx] << ",";
       json_str_buf << "\"values\":[" << Common::Join(vals, ",") << "]}";
+    } else {
+      continue;
     }
-    feature_infos_json_objs.push_back(json_str_buf.str());
-  }
-  str_buf << "\"feature_infos\":" << "{";
-  if (!feature_infos_json_objs.empty()) {
-    str_buf << "\"" << feature_names_[0] << "\":";
-    str_buf << feature_infos_json_objs[0];
-    for (size_t i = 1; i < feature_infos_json_objs.size(); ++i) {
+    if (!first_obj) {
       str_buf << ",";
-      str_buf << "\"" << feature_names_[i] << "\":";
-      str_buf << feature_infos_json_objs[i];
     }
+    str_buf << "\"" << feature_names_[i] << "\":";
+    str_buf << json_str_buf.str();
+    first_obj = false;
   }
   str_buf << "}," << '\n';
 
@@ -105,12 +101,11 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
     }
   }
   str_buf << '\n' << "\"feature_importances\":" << "{";
-  if (!pairs.empty()) {
-    str_buf << "\"" << pairs[0].second << "\":" << std::to_string(pairs[0].first);
-    for (size_t i = 1; i < pairs.size(); ++i) {
+  for (size_t i = 0; i < pairs.size(); ++i) {
+    if (i > 0) {
       str_buf << ",";
-      str_buf << "\"" << pairs[i].second << "\":" << std::to_string(pairs[i].first);
     }
+    str_buf << "\"" << pairs[i].second << "\":" << std::to_string(pairs[i].first);
   }
   str_buf << "}" << '\n';
 
