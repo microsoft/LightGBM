@@ -102,7 +102,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   label_idx_ = train_data_->label_idx();
   // get feature names
   feature_names_ = train_data_->feature_names();
-  feature_infos_ = train_data_->feature_infos();
+  feature_infos_ = train_data_->feature_infos_string();
   monotone_constraints_ = config->monotone_constraints;
 
   // if need bagging, create buffer
@@ -704,7 +704,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     max_feature_idx_ = train_data_->num_total_features() - 1;
     label_idx_ = train_data_->label_idx();
     feature_names_ = train_data_->feature_names();
-    feature_infos_ = train_data_->feature_infos();
+    feature_infos_ = train_data_->feature_infos_string();
 
     tree_learner_->ResetTrainingData(train_data);
     ResetBaggingConfig(config_.get(), true);

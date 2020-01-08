@@ -582,15 +582,41 @@ class Dataset {
     }
   }
 
-  inline std::vector<std::string> feature_infos() const {
-    std::vector<std::string> bufs;
+  inline std::vector<std::unique_ptr<BinMapper>> bin_mappers() const {
+    std::vector<std::unique_ptr<BinMapper>> mappers;
     for (int i = 0; i < num_total_features_; ++i) {
       int fidx = used_feature_map_[i];
       if (fidx == -1) {
+        mappers.emplace_back(std::unique_ptr<BinMapper>(nullptr));
+      } else {
+        mappers.emplace_back(std::unique_ptr<BinMapper>(FeatureBinMapper(fidx)));
+      }
+    }
+    return mappers;
+  }
+
+
+  inline std::vector<std::string> feature_infos_string() const {
+    std::vector<std::string> bufs;
+    auto mappers = bin_mappers();
+    for (size_t i = 0; i < mappers.size(); ++i) {
+      if (mappers[i] == nullptr) {
         bufs.push_back("none");
       } else {
-        const auto bin_mapper = FeatureBinMapper(fidx);
-        bufs.push_back(bin_mapper->bin_info());
+        bufs.push_back(mappers[i]->bin_info_string());
+      }
+    }
+    return bufs;
+  }
+
+  inline std::vector<std::string> feature_infos_json() const {
+    std::vector<std::string> bufs;
+    auto mappers = bin_mappers();
+    for (size_t i = 0; i < mappers.size(); ++i) {
+      if (mappers[i] == nullptr) {
+        bufs.push_back("{}");
+      } else {
+        bufs.push_back(mappers[i]->bin_info_json());
       }
     }
     return bufs;

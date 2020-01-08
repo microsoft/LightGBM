@@ -5,7 +5,6 @@
 #include <LightGBM/config.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
-#include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
 
 #include <string>
@@ -41,32 +40,17 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
           << Common::Join(monotone_constraints_, ",") << "]," << '\n';
 
   str_buf << "\"feature_infos\":" << "{";
+  auto feature_infos_json_objs = train_data_->feature_infos_json();
   bool first_obj = true;
-  for (size_t i = 0; i < feature_infos_.size(); ++i) {
-    std::stringstream json_str_buf;
-    auto strs = Common::Split(feature_infos_[i].c_str(), ":");
-    if (strs.size() == 2) {
-      strs[0].erase(0, 1);  // remove '['
-      strs[1].erase(strs[1].size() - 1);  // remove ']'
-      json_str_buf << "{\"min_value\":" << strs[0] << ",";
-      json_str_buf << "\"max_value\":" << strs[1] << ",";
-      json_str_buf << "\"values\":[]}";
-    } else if (strs.size() > 2) {  // categorical
-      auto vals = Common::StringToArray<int>(feature_infos_[i], ':');
-      auto max_idx = ArrayArgs<int>::ArgMax(vals);
-      auto min_idx = ArrayArgs<int>::ArgMin(vals);
-      json_str_buf << "{\"min_value\":" << vals[min_idx] << ",";
-      json_str_buf << "\"max_value\":" << vals[max_idx] << ",";
-      json_str_buf << "\"values\":[" << Common::Join(vals, ",") << "]}";
-    } else {
-      continue;
+  for (size_t i = 0; i < feature_infos_json_objs.size(); ++i) {
+    if (feature_infos_json_objs[i] != "{}") {
+      if (!first_obj) {
+        str_buf << ",";
+      }
+      str_buf << "\"" << feature_names_[i] << "\":";
+      str_buf << feature_infos_json_objs[i];
+      first_obj = false;
     }
-    if (!first_obj) {
-      str_buf << ",";
-    }
-    str_buf << "\"" << feature_names_[i] << "\":";
-    str_buf << json_str_buf.str();
-    first_obj = false;
   }
   str_buf << "}," << '\n';
 

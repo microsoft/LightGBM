@@ -178,7 +178,7 @@ class BinMapper {
   /*!
   * \brief Get bin info
   */
-  inline std::string bin_info() const {
+  inline std::string bin_info_string() const {
     if (bin_type_ == BinType::CategoricalBin) {
       return Common::Join(bin_2_categorical_, ":");
     } else {
@@ -187,6 +187,24 @@ class BinMapper {
       str_buf << '[' << min_val_ << ':' << max_val_ << ']';
       return str_buf.str();
     }
+  }
+
+  /*!
+  * \brief Get bin info in JSON format
+  */
+  inline std::string bin_info_json() const {
+    std::stringstream str_buf;
+    if (bin_type_ == BinType::CategoricalBin) {
+      str_buf << "{\"min_value\":" << min_val_ << ",";
+      str_buf << "\"max_value\":" << max_val_ << ",";
+      str_buf << "\"values\":[" << Common::Join(bin_2_categorical_, ",") << "]}";
+    } else {
+      str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+      str_buf << "{\"min_value\":" << min_val_ << ",";
+      str_buf << "\"max_value\":" << max_val_ << ",";
+      str_buf << "\"values\":[]}";
+    }
+    return str_buf.str();
   }
 
  private:
