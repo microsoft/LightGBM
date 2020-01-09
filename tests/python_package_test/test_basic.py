@@ -335,10 +335,7 @@ class TestBasic(unittest.TestCase):
             cols = ['Column_' + str(i) for i in range(X.shape[1])]
             imptcs = []
             for col in cols:
-                try:
-                    imptcs.append(impcts_dict[col])
-                except KeyError:
-                    imptcs.append(0.)
+                imptcs.append(impcts_dict.get(col, 0.))
             return np.array(imptcs)
 
         X, y = load_breast_cancer(True)

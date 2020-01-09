@@ -1859,7 +1859,7 @@ class Booster(object):
 
         Returns
         -------
-        result: DataFrame
+        result: pandas DataFrame
             Returns a pandas DataFrame of the parsed model.
         """
         if not PANDAS_INSTALLED:
@@ -1878,7 +1878,8 @@ class Booster(object):
                 tree_num = str(tree_index) + '-' if tree_index is not None else ''
                 is_split = _is_split_node(tree)
                 node_type = 'S' if is_split else 'L'
-                node_num = str(tree['split_index' if is_split else 'leaf_index'])
+                # if a single node tree it won't have `leaf_index` so return 0
+                node_num = str(tree.get('split_index' if is_split else 'leaf_index', 0))
                 return tree_num + node_type + node_num
 
             def _get_split_feature(tree, feature_names):
@@ -1890,6 +1891,10 @@ class Booster(object):
                 else:
                     feature_name = None
                 return feature_name
+
+            def _is_single_node_tree(tree):
+                tree_keys = [str(key) for key in tree.keys()]
+                return tree_keys == ['leaf_value']
 
             # Create the node record, and populate universal data members
             node = OrderedDict()
@@ -1923,8 +1928,9 @@ class Booster(object):
                 node['count'] = tree['internal_count']
             else:
                 node['value'] = tree['leaf_value']
-                node['weight'] = tree['leaf_weight']
-                node['count'] = tree['leaf_count']
+                if not _is_single_node_tree(tree):
+                    node['weight'] = tree['leaf_weight']
+                    node['count'] = tree['leaf_count']
 
             return node
 
