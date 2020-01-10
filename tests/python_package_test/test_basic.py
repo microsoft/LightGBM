@@ -333,9 +333,7 @@ class TestBasic(unittest.TestCase):
 
         def _imptcs_to_numpy(X, impcts_dict):
             cols = ['Column_' + str(i) for i in range(X.shape[1])]
-            imptcs = []
-            for col in cols:
-                imptcs.append(impcts_dict.get(col, 0.))
+            imptcs = [impcts_dict.get(col, 0.) for col in cols]
             return np.array(imptcs)
 
         X, y = load_breast_cancer(True)

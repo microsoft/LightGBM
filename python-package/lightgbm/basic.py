@@ -1859,7 +1859,7 @@ class Booster(object):
 
         Returns
         -------
-        result: pandas DataFrame
+        result : pandas DataFrame
             Returns a pandas DataFrame of the parsed model.
         """
         if not PANDAS_INSTALLED:
@@ -1893,8 +1893,7 @@ class Booster(object):
                 return feature_name
 
             def _is_single_node_tree(tree):
-                tree_keys = [str(key) for key in tree.keys()]
-                return tree_keys == ['leaf_value']
+                return tree.keys() == {'leaf_value'}
 
             # Create the node record, and populate universal data members
             node = OrderedDict()
