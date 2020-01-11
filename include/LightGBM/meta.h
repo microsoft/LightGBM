@@ -13,10 +13,13 @@
 #include <vector>
 
 #if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_AMD64))) || defined(__INTEL_COMPILER)
-#include <xmmintrin.h>
-#define PREFETCH_T0(addr) _mm_prefetch(reinterpret_cast<const char*>(addr), _MM_HINT_T0)
+  #include <xmmintrin.h>
+  #define PREFETCH_T0(addr) _mm_prefetch(reinterpret_cast<const char*>(addr), _MM_HINT_T0)
 #elif defined(__GNUC__)
-#define PREFETCH_T0(addr) __builtin_prefetch(reinterpret_cast<const char*>(addr), 0, 3)
+  #define PREFETCH_T0(addr) __builtin_prefetch(reinterpret_cast<const char*>(addr), 0, 3)
+#else
+  #define PREFETCH_T0(addr) do {} while (0)
+#endif
 #endif
 
 namespace LightGBM {
