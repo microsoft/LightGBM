@@ -20,7 +20,6 @@
 #else
   #define PREFETCH_T0(addr) do {} while (0)
 #endif
-#endif
 
 namespace LightGBM {
 
