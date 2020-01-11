@@ -77,10 +77,10 @@ class DenseBin: public Bin {
       if (i + prefetch_size < end) {
         PREFETCH_T0(data_.data() + data_indices[i + prefetch_size]);
       }
-      const VAL_T bin0 = data_[data_indices[i]];
-      out[bin0].sum_gradients += ordered_gradients[i];
-      out[bin0].sum_hessians += ordered_hessians[i];
-      ++out[bin0].cnt;
+      const VAL_T bin = data_[data_indices[i]];
+      out[bin].sum_gradients += ordered_gradients[i];
+      out[bin].sum_hessians += ordered_hessians[i];
+      ++out[bin].cnt;
     }
   }
 
