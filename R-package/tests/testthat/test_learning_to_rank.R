@@ -1,24 +1,28 @@
 context("Learning to rank")
 
+# numerical tolerance to use when checking metric values
+TOLERANCE <- 1e-06
+
 test_that("learning-to-rank with lgb.train() works as expected", {
+    set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     # just keep a few features,to generate an model with imperfect fit
     train <- agaricus.train
-    train_data <- train$data[, 1:20]
+    train_data <- train$data[1L:6000L, 1L:20L]
     dtrain <- lgb.Dataset(
         train_data
-        , label = train$label
-        , group = c(rep(4L, 1500L), 513L)
+        , label = train$label[1L:6000L]
+        , group = rep(150L, 40L)
     )
     ndcg_at <- "1,2,3"
-    eval_names <-  paste0("ndcg@", strsplit(ndcg_at, ",")[[1]])
+    eval_names <-  paste0("ndcg@", strsplit(ndcg_at, ",")[[1L]])
     params <- list(
         objective = "lambdarank"
         , metric = "ndcg"
         , ndcg_at = ndcg_at
         , metric_freq = 1L
         , max_position = 3L
-        , label_gain = "0,1,3,7"
+        , learning_rate = 0.001
     )
     model <- lgb.train(
         params = params
@@ -36,33 +40,37 @@ test_that("learning-to-rank with lgb.train() works as expected", {
     # check that evaluation results make sense (0.0 < nDCG < 1.0)
     eval_results <- model$eval_train()
     expect_equal(length(eval_results), length(eval_names))
-    for (result in eval_results){
+    for (result in eval_results) {
         expect_true(result[["value"]] > 0.0 && result[["value"]] < 1.0)
         expect_true(result[["higher_better"]])
         expect_identical(result[["data_name"]], "training")
     }
-    expect_identical(sapply(eval_results, function(x){x$name}), eval_names)
+    expect_identical(sapply(eval_results, function(x) {x$name}), eval_names)
+    expect_equal(eval_results[[1L]][["value"]], 0.825)
+    expect_true(abs(eval_results[[2L]][["value"]] - 0.795986) < TOLERANCE)
+    expect_true(abs(eval_results[[3L]][["value"]] - 0.7734639) < TOLERANCE)
 })
 
 test_that("learning-to-rank with lgb.cv() works as expected", {
+    set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     # just keep a few features,to generate an model with imperfect fit
     train <- agaricus.train
-    train_data <- train$data[, 1:20]
+    train_data <- train$data[1L:6000L, 1L:20L]
     dtrain <- lgb.Dataset(
         train_data
-        , label = train$label
-        , group = c(rep(4L, 1500L), 513L)
+        , label = train$label[1L:6000L]
+        , group = rep(150L, 40L)
     )
     ndcg_at <- "1,2,3"
-    eval_names <-  paste0("ndcg@", strsplit(ndcg_at, ",")[[1]])
+    eval_names <-  paste0("ndcg@", strsplit(ndcg_at, ",")[[1L]])
     params <- list(
         objective = "lambdarank"
         , metric = "ndcg"
         , ndcg_at = ndcg_at
         , metric_freq = 1L
         , max_position = 3L
-        , label_gain = "0,1,3,7"
+        , label_gain = "0,1,3"
     )
     nfold <- 4L
     nrounds <- 10L
@@ -87,12 +95,13 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
     best_score <- cv_bst$best_score
     expect_true(best_iter > 0L && best_iter <= nrounds)
     expect_true(best_score > 0.0 && best_score < 1.0)
+    expect_true(abs(best_score - 0.775) < TOLERANCE)
 
     # best_score should be set for the first metric
     first_metric <- eval_names[[1L]]
     expect_equal(best_score, eval_results[[first_metric]][["eval"]][[best_iter]])
 
-    for (eval_name in eval_names){
+    for (eval_name in eval_names) {
         results_for_this_metric <- eval_results[[eval_name]]
 
         # each set of metrics should have eval and eval_err
@@ -106,6 +115,22 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         all_evals <- unlist(results_for_this_metric[["eval"]])
         expect_true(all(all_evals > 0.0 && all_evals < 1.0))
     }
+
+    # first and last value of each metric should be as expected
+    ndcg1_values <- c(0.725, 0.75, 0.75, 0.775, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75)
+    expect_true(all(abs(unlist(eval_results[["ndcg@1"]][["eval"]]) - ndcg1_values) < TOLERANCE))
+
+    ndcg2_values <- c(
+        0.6863147, 0.720986, 0.7306574, 0.745986, 0.7306574,
+        0.720986, 0.7403287, 0.7403287, 0.7403287, 0.7306574
+    )
+    expect_true(all(abs(unlist(eval_results[["ndcg@2"]][["eval"]]) - ndcg2_values) < TOLERANCE))
+
+    ndcg3_values <- c(
+        0.6777939, 0.6984639, 0.711732, 0.7234639, 0.711732,
+        0.7101959, 0.719134, 0.719134, 0.725, 0.711732
+    )
+    expect_true(all(abs(unlist(eval_results[["ndcg@3"]][["eval"]]) - ndcg3_values) < TOLERANCE))
 
     # check details of each booster
     for (bst in cv_bst$boosters) {
