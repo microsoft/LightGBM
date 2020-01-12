@@ -183,7 +183,7 @@ test_that("lgb.prepare_rules2() should work correctly if you provide your own we
         , stringsAsFactors = FALSE
     )
     testDT <- data.table::as.data.table(testDF)
-    # value used by lgb.prepare_rules() when it encounters a categorical value that
+    # value used by lgb.prepare_rules2() when it encounters a categorical value that
     # is not in the provided rules
     UNKNOWN_FACTOR_VALUE <- 0L
     for (input_data in list(testDF, testDT)) {
