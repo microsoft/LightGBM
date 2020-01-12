@@ -165,7 +165,7 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with missing
         expect_is(rules, "list")
         expect_length(rules, 3L)
         expect_identical(rules[["character_col"]], stats::setNames(c(1L, NA_integer_, 2L), c("a", NA, "c")))
-        expect_identical(rules[["na_character_col"]],stats::setNames(NA_integer_, NA))
+        expect_identical(rules[["na_character_col"]], stats::setNames(NA_integer_, NA))
         expect_identical(rules[["factor_col"]], c("n" = 1L, "y" = 2L))
     }
 })
