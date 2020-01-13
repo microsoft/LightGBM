@@ -118,9 +118,6 @@ class BinMapper {
     }
   }
 
-  inline const int* bin_2_categorical() const {
-    return bin_2_categorical_.data();
-  }
   /*!
   * \brief Get sizes in byte of this object
   */
