@@ -171,7 +171,8 @@ class DenseBin: public Bin {
         }
       }
     } else {
-      if (default_bin <= threshold || (default_left && missing_type == MissingType::Zero)) {
+      if ((default_left && missing_type == MissingType::Zero)
+          || (default_bin <= threshold && missing_type != MissingType::Zero)) {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
       }
