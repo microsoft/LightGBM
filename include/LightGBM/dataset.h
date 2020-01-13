@@ -293,6 +293,7 @@ class Dataset {
     int num_total_features,
     const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
+    double** sample_values,
     const int* num_per_col,
     int num_sample_col,
     size_t total_sample_cnt,

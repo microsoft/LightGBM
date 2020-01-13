@@ -717,7 +717,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, num_per_col, num_col, total_sample_size, config_);
+  dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
@@ -1042,6 +1042,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   }
   sample_values.clear();
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
+                     Common::Vector2Ptr<double>(&sample_values).data(),
                      Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
 }
 

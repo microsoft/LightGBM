@@ -145,32 +145,34 @@ class SparseBin: public Bin {
     }
   }
 
+
   data_size_t Split(
-    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, MissingType missing_type, bool default_left,
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left,
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
-    // not need to split
     if (num_data <= 0) { return 0; }
     VAL_T th = static_cast<VAL_T>(threshold + min_bin);
     const VAL_T minb = static_cast<VAL_T>(min_bin);
     const VAL_T maxb = static_cast<VAL_T>(max_bin);
     VAL_T t_default_bin = static_cast<VAL_T>(min_bin + default_bin);
-    if (default_bin == 0) {
+    VAL_T t_most_freq_bin = static_cast<VAL_T>(min_bin + most_freq_bin);
+    if (most_freq_bin == 0) {
       th -= 1;
       t_default_bin -= 1;
+      t_most_freq_bin -= 1;
     }
-    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
+    data_size_t* missing_default_indices = gt_indices;
+    data_size_t* missing_default_count = &gt_count;
+    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
     if (missing_type == MissingType::NaN) {
-      if (default_bin <= threshold) {
+      if (most_freq_bin <= threshold) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
-      data_size_t* missing_default_indices = gt_indices;
-      data_size_t* missing_default_count = &gt_count;
       if (default_left) {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
@@ -178,10 +180,10 @@ class SparseBin: public Bin {
       for (data_size_t i = 0; i < num_data; ++i) {
         const data_size_t idx = data_indices[i];
         const VAL_T bin = iterator.InnerRawGet(idx);
-        if (bin < minb || bin > maxb || t_default_bin == bin) {
-          default_indices[(*default_count)++] = idx;
-        } else if (bin == maxb) {
+        if (bin == maxb) {
           missing_default_indices[(*missing_default_count)++] = idx;
+        } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
+          default_indices[(*default_count)++] = idx;
         } else if (bin > th) {
           gt_indices[gt_count++] = idx;
         } else {
@@ -189,14 +191,20 @@ class SparseBin: public Bin {
         }
       }
     } else {
-      if ((default_left && missing_type == MissingType::Zero) || (default_bin <= threshold && missing_type != MissingType::Zero)) {
+      if (most_freq_bin <= threshold) {
         default_indices = lte_indices;
         default_count = &lte_count;
+      }
+      if (default_left) {
+        missing_default_indices = lte_indices;
+        missing_default_count = &lte_count;
       }
       for (data_size_t i = 0; i < num_data; ++i) {
         const data_size_t idx = data_indices[i];
         const VAL_T bin = iterator.InnerRawGet(idx);
-        if (bin < minb || bin > maxb || t_default_bin == bin) {
+        if (bin == t_default_bin) {
+          missing_default_indices[(*missing_default_count)++] = idx;
+        } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
           default_indices[(*default_count)++] = idx;
         } else if (bin > th) {
           gt_indices[gt_count++] = idx;
@@ -209,7 +217,7 @@ class SparseBin: public Bin {
   }
 
   data_size_t SplitCategorical(
-    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+    uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
     const uint32_t* threshold, int num_threahold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
@@ -218,7 +226,7 @@ class SparseBin: public Bin {
     SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
-    if (Common::FindInBitset(threshold, num_threahold, default_bin)) {
+    if (Common::FindInBitset(threshold, num_threahold, most_freq_bin)) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }

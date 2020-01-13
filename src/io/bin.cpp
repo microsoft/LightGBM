@@ -4,6 +4,7 @@
  */
 #include <LightGBM/bin.h>
 
+#include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
 
@@ -512,8 +513,16 @@ namespace LightGBM {
       }
     }
     if (!is_trivial_) {
+      most_freq_bin_ = static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
       // calculate sparse rate
-      sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / static_cast<double>(total_sample_cnt);
+      sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / total_sample_cnt;
+      const double max_sparse_rate = static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
+      const double sparse_threshold = 0.7;
+      if (most_freq_bin_ != default_bin_ && max_sparse_rate > 0.7f) {
+        sparse_rate_ = max_sparse_rate;
+      } else {
+        most_freq_bin_ = default_bin_;
+      }
     } else {
       sparse_rate_ = 1.0f;
     }
@@ -529,7 +538,7 @@ namespace LightGBM {
     size += sizeof(BinType);
     size += 2 * sizeof(double);
     size += bin * sizeof(double);
-    size += sizeof(uint32_t);
+    size += sizeof(uint32_t) * 2;
     return size;
   }
 
@@ -550,6 +559,8 @@ namespace LightGBM {
     buffer += sizeof(max_val_);
     std::memcpy(buffer, &default_bin_, sizeof(default_bin_));
     buffer += sizeof(default_bin_);
+    std::memcpy(buffer, &most_freq_bin_, sizeof(most_freq_bin_));
+    buffer += sizeof(most_freq_bin_);
     if (bin_type_ == BinType::NumericalBin) {
       std::memcpy(buffer, bin_upper_bound_.data(), num_bin_ * sizeof(double));
     } else {
@@ -574,6 +585,8 @@ namespace LightGBM {
     buffer += sizeof(max_val_);
     std::memcpy(&default_bin_, buffer, sizeof(default_bin_));
     buffer += sizeof(default_bin_);
+    std::memcpy(&most_freq_bin_, buffer, sizeof(most_freq_bin_));
+    buffer += sizeof(most_freq_bin_);
     if (bin_type_ == BinType::NumericalBin) {
       bin_upper_bound_ = std::vector<double>(num_bin_);
       std::memcpy(bin_upper_bound_.data(), buffer, num_bin_ * sizeof(double));
@@ -596,6 +609,7 @@ namespace LightGBM {
     writer->Write(&min_val_, sizeof(min_val_));
     writer->Write(&max_val_, sizeof(max_val_));
     writer->Write(&default_bin_, sizeof(default_bin_));
+    writer->Write(&most_freq_bin_, sizeof(most_freq_bin_));
     if (bin_type_ == BinType::NumericalBin) {
       writer->Write(bin_upper_bound_.data(), sizeof(double) * num_bin_);
     } else {
@@ -605,7 +619,7 @@ namespace LightGBM {
 
   size_t BinMapper::SizesInByte() const {
     size_t ret = sizeof(num_bin_) + sizeof(missing_type_) + sizeof(is_trivial_) + sizeof(sparse_rate_)
-      + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_);
+      + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_) + sizeof(most_freq_bin_);
     if (bin_type_ == BinType::NumericalBin) {
       ret += sizeof(double) *  num_bin_;
     } else {
