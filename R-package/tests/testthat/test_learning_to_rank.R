@@ -113,7 +113,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
 
         # check that evaluation results make sense (0.0 < nDCG < 1.0)
         all_evals <- unlist(results_for_this_metric[["eval"]])
-        expect_true(all(all_evals > 0.0 && all_evals < 1.0))
+        expect_true(all(all_evals > 0.0 & all_evals < 1.0))
     }
 
     # first and last value of each metric should be as expected
