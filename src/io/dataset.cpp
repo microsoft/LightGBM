@@ -212,6 +212,9 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
   std::vector<std::vector<int>> tmp_indices;
   std::vector<int> tmp_num_per_col(num_sample_col, 0);
   for (auto fidx : used_features) {
+    if (fidx >= num_sample_col) {
+      continue;
+    }
     auto ret = FixSampleIndices(bin_mappers[fidx].get(), static_cast<int>(total_sample_cnt), num_per_col[fidx], sample_indices[fidx], sample_values[fidx]);
     if (!ret.empty()) {
       tmp_indices.push_back(ret);

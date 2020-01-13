@@ -1040,7 +1040,6 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
-  sample_values.clear();
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::Vector2Ptr<double>(&sample_values).data(),
                      Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
