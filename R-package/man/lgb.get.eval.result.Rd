@@ -13,7 +13,7 @@ lgb.get.eval.result(
 )
 }
 \arguments{
-\item{booster}{Object of class \code{\link{lgb.Booster}}}
+\item{booster}{Object of class \code{gb.Booster}}
 
 \item{data_name}{Name of the dataset to return evaluation results for.}
 

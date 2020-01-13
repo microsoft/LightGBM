@@ -884,9 +884,9 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 
 #' @name lgb.get.eval.result
 #' @title Get record evaluation result from booster
-#' @description Given a (\code{lgb.Booster}), return evaluation results for a
+#' @description Given a \code{lgb.Booster}, return evaluation results for a
 #'              particular metric on a particular dataset.
-#' @param booster Object of class \code{\link{lgb.Booster}}
+#' @param booster Object of class \code{lgb.Booster}
 #' @param data_name Name of the dataset to return evaluation results for.
 #' @param eval_name Name of the evaluation metric to return results for.
 #' @param iters An integer vector of iterations you want to get evaluation results for. If NULL
