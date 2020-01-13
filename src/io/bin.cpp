@@ -41,6 +41,7 @@ namespace LightGBM {
     min_val_ = other.min_val_;
     max_val_ = other.max_val_;
     default_bin_ = other.default_bin_;
+    most_freq_bin_ = other.most_freq_bin_;
   }
 
   BinMapper::BinMapper(const void* memory) {
