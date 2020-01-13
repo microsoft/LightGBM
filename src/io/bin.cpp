@@ -517,7 +517,6 @@ namespace LightGBM {
       // calculate sparse rate
       sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / total_sample_cnt;
       const double max_sparse_rate = static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
-      const double sparse_threshold = 0.7;
       if (most_freq_bin_ != default_bin_ && max_sparse_rate > 0.7f) {
         sparse_rate_ = max_sparse_rate;
       } else {
