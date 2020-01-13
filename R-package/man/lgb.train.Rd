@@ -65,11 +65,11 @@ original datasets}
 
 \item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
 \itemize{
-    \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
-    \item{num_leaves}{number of leaves in one tree. defaults to 127}
-    \item{max_depth}{Limit the max depth for tree model. This is used to deal with
+    \item{\code{boosting}: Boosting type. \code{"gbdt"} or \code{"dart"}}
+    \item{\code{num_leaves}: number of leaves in one tree. defaults to 127}
+    \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
-    \item{num_threads}{Number of threads for LightGBM. For the best speed, set this to
+    \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
                        the number of real CPU cores, not the number of threads (most
                        CPU using hyper-threading to generate 2 threads per CPU core).}
 }}

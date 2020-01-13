@@ -690,11 +690,9 @@ Dataset <- R6::R6Class(
   )
 )
 
-#' Construct \code{lgb.Dataset} object
-#'
-#' Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
-#' or local file (that was created previously by saving an \code{lgb.Dataset}).
-#'
+#' @title Construct \code{lgb.Dataset} object
+#' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
+#'              or local file (that was created previously by saving an \code{lgb.Dataset}).
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
 #' @param params a list of parameters
 #' @param reference reference dataset
@@ -741,10 +739,9 @@ lgb.Dataset <- function(data,
 
 }
 
-#' Construct validation data
-#'
-#' Construct validation data according to training data
-#'
+#' @name lgb.Dataset.create.valid
+#' @title Construct validation data
+#' @description Construct validation data according to training data
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
 #' @param info a list of information of the \code{lgb.Dataset} object
@@ -774,8 +771,9 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 
 }
 
-#' Construct Dataset explicitly
-#'
+#' @name lgb.Dataset.construct
+#' @title Construct Dataset explicitly
+#' @description Construct Dataset explicitly
 #' @param dataset Object of class \code{lgb.Dataset}
 #'
 #' @examples
@@ -798,9 +796,8 @@ lgb.Dataset.construct <- function(dataset) {
 
 }
 
-#' Dimensions of an \code{lgb.Dataset}
-#'
-#' Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
+#' @title Dimensions of an \code{lgb.Dataset}
+#' @description Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 #' @param x Object of class \code{lgb.Dataset}
 #' @param ... other parameters
 #'
@@ -834,11 +831,9 @@ dim.lgb.Dataset <- function(x, ...) {
 
 }
 
-#' Handling of column names of \code{lgb.Dataset}
-#'
-#' Only column names are supported for \code{lgb.Dataset}, thus setting of
-#' row names would have no effect and returned row names would be NULL.
-#'
+#' @title Handling of column names of \code{lgb.Dataset}
+#' @description Only column names are supported for \code{lgb.Dataset}, thus setting of
+#'              row names would have no effect and returned row names would be NULL.
 #' @param x object of class \code{lgb.Dataset}
 #' @param value a list of two elements: the first one is ignored
 #'              and the second one is column names
@@ -912,11 +907,9 @@ dimnames.lgb.Dataset <- function(x) {
 
 }
 
-#' Slice a dataset
-#'
-#' Get a new \code{lgb.Dataset} containing the specified rows of
-#' original \code{lgb.Dataset} object
-#'
+#' @title Slice a dataset
+#' @description Get a new \code{lgb.Dataset} containing the specified rows of
+#'              original \code{lgb.Dataset} object
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param idxset an integer vector of indices of rows needed
 #' @param ... other parameters (currently not used)
@@ -951,8 +944,8 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
 }
 
-#' Get information of an \code{lgb.Dataset} object
-#'
+#' @title Get information of an \code{lgb.Dataset} object
+#' @description Get one attribute of a \code{lgb.Dataset}
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the information field to get (see details)
 #' @param ... other parameters
@@ -1000,8 +993,8 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
 }
 
-#' Set information of an \code{lgb.Dataset} object
-#'
+#' @title Set information of an \code{lgb.Dataset} object
+#' @description Set one attribute of a \code{lgb.Dataset}
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the field to get
 #' @param info the specific field of information to set
@@ -1012,10 +1005,13 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #' The \code{name} field can be one of the following:
 #'
 #' \itemize{
-#'     \item \code{label}: label lightgbm learn from ;
-#'     \item \code{weight}: to do a weight rescale ;
-#'     \item \code{init_score}: initial score is the base prediction lightgbm will boost from ;
-#'     \item \code{group}.
+#'     \item{\code{label}: vector of labels to use as the target variable}
+#'     \item{\code{weight}: to do a weight rescale}
+#'     \item{\code{init_score}: initial score is the base prediction lightgbm will boost from}
+#'     \item{\code{group}: used for learning-to-rank tasks. An integer vector describing how to
+#'         group rows together as ordered results from the same set of candidate results to be ranked.
+#'         For example, if you have a 1000-row dataset that contains 250 4-document query results,
+#'         set this to \code{rep(4L, 250L)}}
 #' }
 #'
 #' @examples
@@ -1049,11 +1045,13 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
   invisible(dataset$setinfo(name, info))
 }
 
-#' Set categorical feature of \code{lgb.Dataset}
-#'
+#' @title Set categorical feature of \code{lgb.Dataset}
+#' @description Set the categorical features of an \code{lgb.Dataset} object. Use this function
+#'              to tell LightGBM which features should be treated as categorical.
 #' @param dataset object of class \code{lgb.Dataset}
-#' @param categorical_feature categorical features
-#'
+#' @param categorical_feature categorical features. This can either be a character vector of feature
+#'                            names or an integer vector with the indices of the features (e.g.
+#'                            \code{c(1L, 1L)} to say "the first and tenth columns").
 #' @return passed dataset
 #'
 #' @examples
@@ -1079,10 +1077,8 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 
 }
 
-#' Set reference of \code{lgb.Dataset}
-#'
-#' If you want to use validation data, you should set reference to training data
-#'
+#' @title Set reference of \code{lgb.Dataset}
+#' @description If you want to use validation data, you should set reference to training data
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param reference object of class \code{lgb.Dataset}
 #'
@@ -1111,11 +1107,10 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
   invisible(dataset$set_reference(reference))
 }
 
-#' Save \code{lgb.Dataset} to a binary file
-#'
-#' Please note that \code{init_score} is not saved in binary file.
-#' If you need it, please set it again after loading Dataset.
-#'
+#' @name lgb.Dataset.save
+#' @title Save \code{lgb.Dataset} to a binary file
+#' @description Please note that \code{init_score} is not saved in binary file.
+#'              If you need it, please set it again after loading Dataset.
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param fname object filename of output file
 #'
@@ -1127,8 +1122,6 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' lgb.Dataset.save(dtrain, "data.bin")
-#'
-#' @rdname lgb.Dataset.save
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
 

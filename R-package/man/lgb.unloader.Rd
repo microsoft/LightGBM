@@ -21,9 +21,9 @@ environment. Defaults to \code{FALSE} which means to not remove them.}
 NULL invisibly.
 }
 \description{
-Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R.
-This is useful for instance if an object becomes stuck for no apparent reason and you do not want
-to restart R to fix the lost object.
+Attempts to unload LightGBM packages so you can remove objects cleanly without
+             having to restart R. This is useful for instance if an object becomes stuck for no
+             apparent reason and you do not want to restart R to fix the lost object.
 }
 \examples{
 library(lightgbm)

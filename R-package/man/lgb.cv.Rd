@@ -66,9 +66,9 @@ the \code{nfold} and \code{stratified} parameters are ignored.}
 
 \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
 
-\item{categorical_feature}{list of str or int
-type int represents index,
-type str represents feature names}
+\item{categorical_feature}{categorical features. This can either be a character vector of feature
+names or an integer vector with the indices of the features (e.g.
+\code{c(1L, 1L)} to say "the first and tenth columns").}
 
 \item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
 and one metric. If there's more than one, will check all of them
@@ -82,11 +82,11 @@ into a predictor model which frees up memory and the original datasets}
 
 \item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
 \itemize{
-    \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
-    \item{num_leaves}{number of leaves in one tree. defaults to 127}
-    \item{max_depth}{Limit the max depth for tree model. This is used to deal with
+    \item{\code{boosting}: Boosting type. \code{"gbdt"} or \code{"dart"}}
+    \item{\code{num_leaves}: number of leaves in one tree. defaults to 127}
+    \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
-    \item{num_threads}{Number of threads for LightGBM. For the best speed, set this to
+    \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
                        the number of real CPU cores, not the number of threads (most
                        CPU using hyper-threading to generate 2 threads per CPU core).}
 }}
