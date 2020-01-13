@@ -881,6 +881,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             data_indices,
+            0,
             num_data,
             ptr_ordered_grad,
             ptr_ordered_hess,
@@ -910,6 +911,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
             data_indices,
+            0,
             num_data,
             ptr_ordered_grad,
             data_ptr);
@@ -942,6 +944,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
+            0,
             num_data,
             ptr_ordered_grad,
             ptr_ordered_hess,
@@ -970,6 +973,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
           feature_groups_[group]->bin_data_->ConstructHistogram(
+            0,
             num_data,
             ptr_ordered_grad,
             data_ptr);
