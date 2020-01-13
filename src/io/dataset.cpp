@@ -495,6 +495,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
+  feature_need_push_zeros_ = dataset->feature_need_push_zeros_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {
@@ -506,9 +507,13 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature2group_.clear();
   feature2subfeature_.clear();
   // copy feature bin mapper data
+  feature_need_push_zeros_.clear();
   for (int i = 0; i < num_features_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
     bin_mappers.emplace_back(new BinMapper(*(dataset->FeatureBinMapper(i))));
+    if (bin_mappers.back()->GetDefaultBin() != bin_mappers.back()->GetMostFreqBin()) {
+      feature_need_push_zeros_.push_back(i);
+    }
     feature_groups_.emplace_back(new FeatureGroup(
       1,
       &bin_mappers,
