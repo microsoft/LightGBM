@@ -328,37 +328,3 @@ class TestBasic(unittest.TestCase):
         lgb_data.set_weight(sequence)
         lgb_data.set_init_score(sequence)
         check_asserts(lgb_data)
-
-    def test_trees_to_dataframe(self):
-
-        def _imptcs_to_numpy(X, impcts_dict):
-            cols = ['Column_' + str(i) for i in range(X.shape[1])]
-            imptcs = [impcts_dict.get(col, 0.) for col in cols]
-            return np.array(imptcs)
-
-        X, y = load_breast_cancer(True)
-        data = lgb.Dataset(X, label=y)
-        num_trees = 10
-        bst = lgb.train({"objective": "binary"}, data, num_trees)
-        tree_df = bst.trees_to_dataframe()
-        split_dict = (tree_df[~tree_df['split_gain'].isnull()]
-                      .groupby('split_feature')
-                      .size()
-                      .to_dict())
-
-        gains_dict = (tree_df
-                      .groupby('split_feature')['split_gain']
-                      .sum()
-                      .to_dict())
-
-        tree_split = _imptcs_to_numpy(X, split_dict)
-        tree_gains = _imptcs_to_numpy(X, gains_dict)
-        mod_split = bst.feature_importance('split')
-        mod_gains = bst.feature_importance('gain')
-        num_trees_from_df = tree_df['tree_index'].nunique()
-        obs_counts_from_df = tree_df.loc[tree_df['node_depth'] == 1, 'count'].values
-
-        np.testing.assert_equal(tree_split, mod_split)
-        np.testing.assert_allclose(tree_gains, mod_gains)
-        self.assertEqual(num_trees_from_df, num_trees)
-        np.testing.assert_equal(obs_counts_from_df, len(y))

@@ -1810,3 +1810,54 @@ class TestEngine(unittest.TestCase):
         predicted = est.predict(new_x)
         self.assertNotAlmostEqual(predicted[0], predicted[1])
         self.assertAlmostEqual(predicted[1], predicted[2])
+
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_trees_to_dataframe(self):
+
+        def _imptcs_to_numpy(X, impcts_dict):
+            cols = ['Column_' + str(i) for i in range(X.shape[1])]
+            return [impcts_dict.get(col, 0.) for col in cols]
+
+        X, y = load_breast_cancer(True)
+        data = lgb.Dataset(X, label=y)
+        num_trees = 10
+        bst = lgb.train({"objective": "binary", "verbose": -1}, data, num_trees)
+        tree_df = bst.trees_to_dataframe()
+        split_dict = (tree_df[~tree_df['split_gain'].isnull()]
+                      .groupby('split_feature')
+                      .size()
+                      .to_dict())
+
+        gains_dict = (tree_df
+                      .groupby('split_feature')['split_gain']
+                      .sum()
+                      .to_dict())
+
+        tree_split = _imptcs_to_numpy(X, split_dict)
+        tree_gains = _imptcs_to_numpy(X, gains_dict)
+        mod_split = bst.feature_importance('split')
+        mod_gains = bst.feature_importance('gain')
+        num_trees_from_df = tree_df['tree_index'].nunique()
+        obs_counts_from_df = tree_df.loc[tree_df['node_depth'] == 1, 'count'].values
+
+        np.testing.assert_equal(tree_split, mod_split)
+        np.testing.assert_allclose(tree_gains, mod_gains)
+        self.assertEqual(num_trees_from_df, num_trees)
+        np.testing.assert_equal(obs_counts_from_df, len(y))
+
+        # test edge case with one leaf
+        X = np.ones((10, 2))
+        y = np.random.rand(10)
+        data = lgb.Dataset(X, label=y)
+        bst = lgb.train({"objective": "binary", "verbose": -1}, data, num_trees)
+        tree_df = bst.trees_to_dataframe()
+
+        self.assertEqual(len(tree_df), 1)
+        self.assertEqual(tree_df.loc[0, 'tree_index'], 0)
+        self.assertEqual(tree_df.loc[0, 'node_depth'], 1)
+        self.assertEqual(tree_df.loc[0, 'node_index'], "0-L0")
+        self.assertIsNotNone(tree_df.loc[0, 'value'])
+        for col in ('left_child', 'right_child', 'parent_index', 'split_feature',
+                    'split_gain', 'threshold', 'decision_type', 'missing_direction',
+                    'missing_type', 'weight', 'count'):
+            self.assertIsNone(tree_df.loc[0, col])
