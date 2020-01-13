@@ -306,6 +306,7 @@ void Dataset::Construct(
   real_feature_idx_.resize(num_features_);
   feature2group_.resize(num_features_);
   feature2subfeature_.resize(num_features_);
+  feature_need_push_zeros_.clear();
   for (int i = 0; i < num_groups_; ++i) {
     auto cur_features = features_in_group[i];
     int cur_cnt_features = static_cast<int>(cur_features.size());
@@ -318,6 +319,9 @@ void Dataset::Construct(
       feature2group_[cur_fidx] = i;
       feature2subfeature_[cur_fidx] = j;
       cur_bin_mappers.emplace_back(ref_bin_mappers[real_fidx].release());
+      if (cur_bin_mappers.back()->GetDefaultBin() != cur_bin_mappers.back()->GetMostFreqBin()) {
+        feature_need_push_zeros_.push_back(cur_fidx);
+      }
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(

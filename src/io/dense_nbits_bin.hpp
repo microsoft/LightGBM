@@ -154,11 +154,11 @@ class Dense4bitsBin : public Bin {
     data_size_t* default_count = &gt_count;
     data_size_t* missing_default_indices = gt_indices;
     data_size_t* missing_default_count = &gt_count;
+    if (most_freq_bin <= threshold) {
+      default_indices = lte_indices;
+      default_count = &lte_count;
+    }
     if (missing_type == MissingType::NaN) {
-      if (most_freq_bin <= threshold) {
-        default_indices = lte_indices;
-        default_count = &lte_count;
-      }
       if (default_left) {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
@@ -177,11 +177,7 @@ class Dense4bitsBin : public Bin {
         }
       }
     } else {
-      if (most_freq_bin <= threshold) {
-        default_indices = lte_indices;
-        default_count = &lte_count;
-      }
-      if (default_left) {
+      if (default_bin <= threshold || (default_left && missing_type == MissingType::Zero)) {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
       }

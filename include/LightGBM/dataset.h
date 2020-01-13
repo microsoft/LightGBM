@@ -320,6 +320,16 @@ class Dataset {
     return true;
   }
 
+  inline void FinishOneRow(int tid, data_size_t row_idx, const std::vector<bool>& is_feature_added) {
+    if (is_finish_load_) { return; }
+    for (auto fidx : feature_need_push_zeros_) {
+      if (is_feature_added[fidx]) { continue; }
+      const int group = feature2group_[fidx];
+      const int sub_feature = feature2subfeature_[fidx];
+      feature_groups_[group]->PushData(tid, sub_feature, row_idx, 0.0f);
+    }
+  }
+
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
     if (is_finish_load_) { return; }
     for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
@@ -334,15 +344,18 @@ class Dataset {
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     if (is_finish_load_) { return; }
+    std::vector<bool> is_feature_added(num_features_, false);
     for (auto& inner_data : feature_values) {
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {
+        is_feature_added[feature_idx] = true;
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
       }
     }
+    FinishOneRow(tid, row_idx, is_feature_added);
   }
 
   inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
@@ -648,6 +661,7 @@ class Dataset {
   int min_data_in_bin_;
   bool use_missing_;
   bool zero_as_missing_;
+  std::vector<int> feature_need_push_zeros_;
 };
 
 }  // namespace LightGBM

@@ -1066,11 +1066,13 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       ref_text_data[i].clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1083,6 +1085,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1110,10 +1113,12 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1126,6 +1131,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1167,11 +1173,13 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       }
       // set label
       dataset->metadata_.SetLabelAt(start_idx + i, static_cast<label_t>(tmp_label));
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1184,6 +1192,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
