@@ -1901,7 +1901,7 @@ class Booster(object):
                 return feature_name
 
             def _is_single_node_tree(tree):
-                return tree.keys() == {'leaf_value'}
+                return set(tree.keys()) == {'leaf_value'}
 
             # Create the node record, and populate universal data members
             node = OrderedDict()
