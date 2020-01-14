@@ -67,6 +67,27 @@ void MarkUsed(std::vector<bool>* mark, const int* indices, int num_indices) {
   }
 }
 
+std::vector<int> FixSampleIndices(const BinMapper* bin_mapper, int num_total_samples, int num_indices, const int* sample_indices, const double* sample_values) {
+  std::vector<int> ret;
+  if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin()) {
+    return ret;
+  }
+  int i = 0, j = 0;
+  while (i < num_total_samples) {
+    if (j < num_indices && sample_indices[j] < i) {
+      ++j;
+    } else if (j < num_indices && sample_indices[j] == i) {
+      if (bin_mapper->ValueToBin(sample_values[j]) != bin_mapper->GetMostFreqBin()) {
+        ret.push_back(i);
+      }
+      ++i;
+    } else {
+      ret.push_back(i++);
+    }
+  }
+  return ret;
+}
+
 std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
                                          const std::vector<int>& find_order,
                                          int** sample_indices,
@@ -147,6 +168,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
 
 std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
                                                   int** sample_indices,
+                                                  double** sample_values,
                                                   const int* num_per_col,
                                                   int num_sample_col,
                                                   size_t total_sample_cnt,
@@ -187,8 +209,23 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
   for (auto sidx : sorted_idx) {
     feature_order_by_cnt.push_back(used_features[sidx]);
   }
-  auto features_in_group = FindGroups(bin_mappers, used_features, sample_indices, num_per_col, num_sample_col, total_sample_cnt, max_error_cnt, filter_cnt, num_data, is_use_gpu);
-  auto group2 = FindGroups(bin_mappers, feature_order_by_cnt, sample_indices, num_per_col, num_sample_col, total_sample_cnt, max_error_cnt, filter_cnt, num_data, is_use_gpu);
+  std::vector<std::vector<int>> tmp_indices;
+  std::vector<int> tmp_num_per_col(num_sample_col, 0);
+  for (auto fidx : used_features) {
+    if (fidx >= num_sample_col) {
+      continue;
+    }
+    auto ret = FixSampleIndices(bin_mappers[fidx].get(), static_cast<int>(total_sample_cnt), num_per_col[fidx], sample_indices[fidx], sample_values[fidx]);
+    if (!ret.empty()) {
+      tmp_indices.push_back(ret);
+      tmp_num_per_col[fidx] = static_cast<int>(ret.size());
+      sample_indices[fidx] = tmp_indices.back().data();
+    } else {
+      tmp_num_per_col[fidx] = num_per_col[fidx];
+    }
+  }
+  auto features_in_group = FindGroups(bin_mappers, used_features, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, max_error_cnt, filter_cnt, num_data, is_use_gpu);
+  auto group2 = FindGroups(bin_mappers, feature_order_by_cnt, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, max_error_cnt, filter_cnt, num_data, is_use_gpu);
   if (features_in_group.size() > group2.size()) {
     features_in_group = group2;
   }
@@ -230,6 +267,7 @@ void Dataset::Construct(
   int num_total_features,
   const std::vector<std::vector<double>>& forced_bins,
   int** sample_non_zero_indices,
+  double** sample_values,
   const int* num_per_col,
   int num_sample_col,
   size_t total_sample_cnt,
@@ -252,7 +290,7 @@ void Dataset::Construct(
 
   if (io_config.enable_bundle && !used_features.empty()) {
     features_in_group = FastFeatureBundling(*bin_mappers,
-                                            sample_non_zero_indices, num_per_col, num_sample_col, total_sample_cnt,
+                                            sample_non_zero_indices, sample_values, num_per_col, num_sample_col, total_sample_cnt,
                                             used_features, io_config.max_conflict_rate,
                                             num_data_, io_config.min_data_in_leaf,
                                             sparse_threshold_, io_config.is_enable_sparse, io_config.device_type == std::string("gpu"));
@@ -268,6 +306,7 @@ void Dataset::Construct(
   real_feature_idx_.resize(num_features_);
   feature2group_.resize(num_features_);
   feature2subfeature_.resize(num_features_);
+  feature_need_push_zeros_.clear();
   for (int i = 0; i < num_groups_; ++i) {
     auto cur_features = features_in_group[i];
     int cur_cnt_features = static_cast<int>(cur_features.size());
@@ -280,6 +319,9 @@ void Dataset::Construct(
       feature2group_[cur_fidx] = i;
       feature2subfeature_[cur_fidx] = j;
       cur_bin_mappers.emplace_back(ref_bin_mappers[real_fidx].release());
+      if (cur_bin_mappers.back()->GetDefaultBin() != cur_bin_mappers.back()->GetMostFreqBin()) {
+        feature_need_push_zeros_.push_back(cur_fidx);
+      }
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
@@ -453,6 +495,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
+  feature_need_push_zeros_ = dataset->feature_need_push_zeros_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {
@@ -464,9 +507,13 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature2group_.clear();
   feature2subfeature_.clear();
   // copy feature bin mapper data
+  feature_need_push_zeros_.clear();
   for (int i = 0; i < num_features_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
     bin_mappers.emplace_back(new BinMapper(*(dataset->FeatureBinMapper(i))));
+    if (bin_mappers.back()->GetDefaultBin() != bin_mappers.back()->GetMostFreqBin()) {
+      feature_need_push_zeros_.push_back(i);
+    }
     feature_groups_.emplace_back(new FeatureGroup(
       1,
       &bin_mappers,
@@ -812,7 +859,7 @@ void Dataset::DumpTextFile(const char* text_filename) {
       if (inner_feature_idx < 0) {
         fprintf(file, "NA, ");
       } else {
-        fprintf(file, "%d, ", iterators[inner_feature_idx]->RawGet(i));
+        fprintf(file, "%d, ", iterators[inner_feature_idx]->Get(i));
       }
     }
   }
@@ -999,17 +1046,17 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hess
   const int group = feature2group_[feature_idx];
   const int sub_feature = feature2subfeature_[feature_idx];
   const BinMapper* bin_mapper = feature_groups_[group]->bin_mappers_[sub_feature].get();
-  const int default_bin = bin_mapper->GetDefaultBin();
-  if (default_bin > 0) {
+  const int most_freq_bin = bin_mapper->GetMostFreqBin();
+  if (most_freq_bin > 0) {
     const int num_bin = bin_mapper->num_bin();
-    data[default_bin].sum_gradients = sum_gradient;
-    data[default_bin].sum_hessians = sum_hessian;
-    data[default_bin].cnt = num_data;
+    data[most_freq_bin].sum_gradients = sum_gradient;
+    data[most_freq_bin].sum_hessians = sum_hessian;
+    data[most_freq_bin].cnt = num_data;
     for (int i = 0; i < num_bin; ++i) {
-      if (i != default_bin) {
-        data[default_bin].sum_gradients -= data[i].sum_gradients;
-        data[default_bin].sum_hessians -= data[i].sum_hessians;
-        data[default_bin].cnt -= data[i].cnt;
+      if (i != most_freq_bin) {
+        data[most_freq_bin].sum_gradients -= data[i].sum_gradients;
+        data[most_freq_bin].sum_hessians -= data[i].sum_hessians;
+        data[most_freq_bin].cnt -= data[i].cnt;
       }
     }
   }
