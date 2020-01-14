@@ -38,7 +38,7 @@ CVBooster <- R6::R6Class(
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature categorical features. This can either be a character vector of feature
 #'                            names or an integer vector with the indices of the features (e.g.
-#'                            \code{c(1L, 1L)} to say "the first and tenth columns").
+#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets

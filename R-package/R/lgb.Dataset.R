@@ -1051,7 +1051,7 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param categorical_feature categorical features. This can either be a character vector of feature
 #'                            names or an integer vector with the indices of the features (e.g.
-#'                            \code{c(1L, 1L)} to say "the first and tenth columns").
+#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
 #' @return passed dataset
 #'
 #' @examples
