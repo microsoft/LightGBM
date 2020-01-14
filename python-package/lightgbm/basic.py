@@ -7,6 +7,7 @@ import ctypes
 import os
 import warnings
 from tempfile import NamedTemporaryFile
+from collections import OrderedDict
 
 import numpy as np
 import scipy.sparse
@@ -784,6 +785,10 @@ class Dataset(object):
         self._predictor = None
         self.pandas_categorical = None
         self.params_back_up = None
+        self.feature_penalty = None
+        self.monotone_constraints = None
+        self.version = 0
+
 
     def __del__(self):
         try:
@@ -1196,6 +1201,11 @@ class Dataset(object):
     def save_binary(self, filename):
         """Save Dataset to a binary file.
 
+        .. note::
+
+            Please note that `init_score` is not saved in binary file.
+            If you need it, please set it again after loading Dataset.
+
         Parameters
         ----------
         filename : string
@@ -1288,6 +1298,7 @@ class Dataset(object):
             ptr_data,
             ctypes.c_int(len(data)),
             ctypes.c_int(type_data)))
+        self.version += 1
         return self
 
     def get_field(self, field_name):
@@ -1772,6 +1783,7 @@ class Booster(object):
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
+            self.train_set_version = train_set.version
         elif model_file is not None:
             # Prediction task
             out_num_iterations = ctypes.c_int(0)
@@ -1891,6 +1903,121 @@ class Booster(object):
         self.network = False
         return self
 
+    def trees_to_dataframe(self):
+        """Parse the fitted model and return in an easy-to-read pandas DataFrame.
+
+        Returns
+        -------
+        result : pandas DataFrame
+            Returns a pandas DataFrame of the parsed model.
+        """
+        if not PANDAS_INSTALLED:
+            raise LightGBMError('This method cannot be run without pandas installed')
+
+        if self.num_trees() == 0:
+            raise LightGBMError('There are no trees in this Booster and thus nothing to parse')
+
+        def _is_split_node(tree):
+            return 'split_index' in tree.keys()
+
+        def create_node_record(tree, node_depth=1, tree_index=None,
+                               feature_names=None, parent_node=None):
+
+            def _get_node_index(tree, tree_index):
+                tree_num = str(tree_index) + '-' if tree_index is not None else ''
+                is_split = _is_split_node(tree)
+                node_type = 'S' if is_split else 'L'
+                # if a single node tree it won't have `leaf_index` so return 0
+                node_num = str(tree.get('split_index' if is_split else 'leaf_index', 0))
+                return tree_num + node_type + node_num
+
+            def _get_split_feature(tree, feature_names):
+                if _is_split_node(tree):
+                    if feature_names is not None:
+                        feature_name = feature_names[tree['split_feature']]
+                    else:
+                        feature_name = tree['split_feature']
+                else:
+                    feature_name = None
+                return feature_name
+
+            def _is_single_node_tree(tree):
+                return tree.keys() == {'leaf_value'}
+
+            # Create the node record, and populate universal data members
+            node = OrderedDict()
+            node['tree_index'] = tree_index
+            node['node_depth'] = node_depth
+            node['node_index'] = _get_node_index(tree, tree_index)
+            node['left_child'] = None
+            node['right_child'] = None
+            node['parent_index'] = parent_node
+            node['split_feature'] = _get_split_feature(tree, feature_names)
+            node['split_gain'] = None
+            node['threshold'] = None
+            node['decision_type'] = None
+            node['missing_direction'] = None
+            node['missing_type'] = None
+            node['value'] = None
+            node['weight'] = None
+            node['count'] = None
+
+            # Update values to reflect node type (leaf or split)
+            if _is_split_node(tree):
+                node['left_child'] = _get_node_index(tree['left_child'], tree_index)
+                node['right_child'] = _get_node_index(tree['right_child'], tree_index)
+                node['split_gain'] = tree['split_gain']
+                node['threshold'] = tree['threshold']
+                node['decision_type'] = tree['decision_type']
+                node['missing_direction'] = 'left' if tree['default_left'] else 'right'
+                node['missing_type'] = tree['missing_type']
+                node['value'] = tree['internal_value']
+                node['weight'] = tree['internal_weight']
+                node['count'] = tree['internal_count']
+            else:
+                node['value'] = tree['leaf_value']
+                if not _is_single_node_tree(tree):
+                    node['weight'] = tree['leaf_weight']
+                    node['count'] = tree['leaf_count']
+
+            return node
+
+        def tree_dict_to_node_list(tree, node_depth=1, tree_index=None,
+                                   feature_names=None, parent_node=None):
+
+            node = create_node_record(tree,
+                                      node_depth=node_depth,
+                                      tree_index=tree_index,
+                                      feature_names=feature_names,
+                                      parent_node=parent_node)
+
+            res = [node]
+
+            if _is_split_node(tree):
+                # traverse the next level of the tree
+                children = ['left_child', 'right_child']
+                for child in children:
+                    subtree_list = tree_dict_to_node_list(
+                        tree[child],
+                        node_depth=node_depth + 1,
+                        tree_index=tree_index,
+                        feature_names=feature_names,
+                        parent_node=node['node_index'])
+                    # In tree format, "subtree_list" is a list of node records (dicts),
+                    # and we add node to the list.
+                    res.extend(subtree_list)
+            return res
+
+        model_dict = self.dump_model()
+        feature_names = model_dict['feature_names']
+        model_list = []
+        for tree in model_dict['tree_info']:
+            model_list.extend(tree_dict_to_node_list(tree['tree_structure'],
+                                                     tree_index=tree['tree_index'],
+                                                     feature_names=feature_names))
+
+        return DataFrame(model_list, columns=model_list[0].keys())
+
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.
 
@@ -1993,7 +2120,12 @@ class Booster(object):
             Whether the update was successfully finished.
         """
         # need reset training data
-        if train_set is not None and train_set is not self.train_set:
+        if train_set is None and self.train_set_version != self.train_set.version:
+            train_set = self.train_set
+            is_the_same_train_set = False
+        else:
+            is_the_same_train_set = train_set is self.train_set and self.train_set_version == train_set.version
+        if train_set is not None and not is_the_same_train_set:
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
@@ -2005,6 +2137,7 @@ class Booster(object):
                 self.handle,
                 self.train_set.construct().handle))
             self.__inner_predict_buffer[0] = None
+            self.train_set_version = self.train_set.version
         is_finished = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:

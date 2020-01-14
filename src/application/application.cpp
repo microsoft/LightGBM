@@ -215,7 +215,7 @@ void Application::Predict() {
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), -1, false, true, false, false, 1, 1);
-    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header);
+    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
     std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
@@ -245,7 +245,7 @@ void Application::Predict() {
                         config_.pred_early_stop, config_.pred_early_stop_freq,
                         config_.pred_early_stop_margin);
     predictor.Predict(config_.data.c_str(),
-                      config_.output_result.c_str(), config_.header);
+                      config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
     Log::Info("Finished prediction");
   }
 }

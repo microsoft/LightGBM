@@ -257,6 +257,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "pred_early_stop",
   "pred_early_stop_freq",
   "pred_early_stop_margin",
+  "predict_disable_shape_check",
   "convert_model_language",
   "convert_model",
   "num_class",
@@ -512,6 +513,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetDouble(params, "pred_early_stop_margin", &pred_early_stop_margin);
 
+  GetBool(params, "predict_disable_shape_check", &predict_disable_shape_check);
+
   GetString(params, "convert_model_language", &convert_model_language);
 
   GetString(params, "convert_model", &convert_model);
@@ -673,6 +676,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[pred_early_stop: " << pred_early_stop << "]\n";
   str_buf << "[pred_early_stop_freq: " << pred_early_stop_freq << "]\n";
   str_buf << "[pred_early_stop_margin: " << pred_early_stop_margin << "]\n";
+  str_buf << "[predict_disable_shape_check: " << predict_disable_shape_check << "]\n";
   str_buf << "[convert_model_language: " << convert_model_language << "]\n";
   str_buf << "[convert_model: " << convert_model << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";

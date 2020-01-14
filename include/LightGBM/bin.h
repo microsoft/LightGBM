@@ -344,17 +344,18 @@ class Bin {
   *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
   *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
   * \param data_indices Used data indices in current leaf
-  * \param num_data Number of used data
+  * \param start start index in data_indices
+  * \param end end index in data_indices
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
   * \param ordered_hessians Pointer to hessians, the data_indices[i]-th data's hessian is ordered_hessians[i]
   * \param out Output Result
   */
   virtual void ConstructHistogram(
-    const data_size_t* data_indices, data_size_t num_data,
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t num_data,
+  virtual void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const = 0;
 
@@ -366,14 +367,15 @@ class Bin {
   *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
   *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
   * \param data_indices Used data indices in current leaf
-  * \param num_data Number of used data
+  * \param start start index in data_indices
+  * \param end end index in data_indices
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
   * \param out Output Result
   */
-  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
+  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
                                   const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t num_data,
+  virtual void ConstructHistogram(data_size_t start, data_size_t end,
                                   const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
 
   /*!

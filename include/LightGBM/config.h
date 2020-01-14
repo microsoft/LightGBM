@@ -568,6 +568,7 @@ struct Config {
 
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+  // desc = **Note**: ``init_score`` is not saved in binary file
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
 
@@ -662,8 +663,15 @@ struct Config {
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
+  // desc = used only in ``prediction`` task
+  // desc = control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
+  // desc = if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
+  // desc = if ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model
+  // desc = **Note**: be very careful setting this parameter to ``true``
+  bool predict_disable_shape_check = false;
+
   // desc = used only in ``convert_model`` task
-  // desc = only ``cpp`` is supported yet
+  // desc = only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
   // desc = if ``convert_model_language`` is set and ``task=train``, the model will be also converted
   // desc = **Note**: can be used only in CLI version
   std::string convert_model_language = "";

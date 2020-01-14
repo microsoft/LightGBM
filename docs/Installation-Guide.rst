@@ -128,7 +128,7 @@ Install Using ``Homebrew``
 Build from GitHub
 *****************
 
-1. Install `CMake`_ (3.12 or higher):
+1. Install `CMake`_ (3.16 or higher):
 
    .. code::
 
@@ -146,19 +146,7 @@ Build from GitHub
 
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
-
-     # For Mojave or newer (>=10.14)
-     cmake \
-       -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
-       -DOpenMP_C_LIB_NAMES="omp" \
-       -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
-       -DOpenMP_CXX_LIB_NAMES="omp" \
-       -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib \
-       ..
-
-     # For High Sierra or earlier (<= 10.13)
      cmake ..
-
      make -j4
 
 gcc
@@ -424,7 +412,7 @@ Apple Clang
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
-1. Install `CMake`_ (3.12 or higher):
+1. Install `CMake`_ (3.16 or higher):
 
    .. code::
 
@@ -448,20 +436,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
 
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
-
-     # For Mojave or newer (>=10.14)
-     cmake \
-       -DUSE_MPI=ON \
-       -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
-       -DOpenMP_C_LIB_NAMES="omp" \
-       -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
-       -DOpenMP_CXX_LIB_NAMES="omp" \
-       -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib \
-       ..
-
-     # For High Sierra or earlier (<= 10.13)
      cmake -DUSE_MPI=ON ..
-
      make -j4
 
 gcc
@@ -693,7 +668,7 @@ Apple Clang
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
-1. Install `CMake`_ (3.12 or higher):
+1. Install `CMake`_ (3.16 or higher):
 
    .. code::
 
@@ -711,21 +686,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
 
      git clone --recursive https://github.com/microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
-
-     # For Mojave or newer (>=10.14)
-     cmake \
-       -DUSE_SWIG=ON \
-       -DAPPLE_OUTPUT_DYLIB=ON \
-       -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
-       -DOpenMP_C_LIB_NAMES="omp" \
-       -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
-       -DOpenMP_CXX_LIB_NAMES="omp" \
-       -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib \
-       ..
-
-     # For High Sierra or earlier (<= 10.13)
      cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
-
      make -j4
 
 gcc

@@ -24,7 +24,7 @@ For users who wants to install online with GPU or want to choose a specific comp
 
 #### Mac OS Preparation
 
-You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
+You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.16 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
 
 ```
 # replace 8 with version of gcc installed on your machine
@@ -125,3 +125,34 @@ Please visit [demo](https://github.com/microsoft/LightGBM/tree/master/R-package/
 * [Multiclass Training/Prediction](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/multiclass.R)
 * [Leaf (in)Stability](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/leaf_stability.R)
 * [Weight-Parameter Adjustment Relationship](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/weight_param.R)
+
+Testing
+-------
+
+The R package's unit tests are run automatically on every commit, via integrations like [Travis CI](https://travis-ci.org/microsoft/LightGBM/) and [Azure DevOps](https://dev.azure.com/lightgbm-ci/lightgbm-ci/_build). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R package.
+
+When adding tests, you may want to use test coverage to identify untested areas and to check if the tests you've added are covering all branches of the intended code.
+
+The example below shows how to generate code coverage for the R package on a macOS or Linux setup, using `gcc-8` to compile `LightGBM`. To adjust for your environment, swap out the 'Install' step with [the relevant code from the instructions above](#install).
+
+```shell
+# Install
+export CXX=/usr/local/bin/g++-8
+export CC=/usr/local/bin/gcc-8
+Rscript build_r.R
+
+# Get coverage
+rm -rf lightgbm_r/build
+Rscript -e " \
+    coverage  <- covr::package_coverage('./lightgbm_r', quiet=FALSE);
+    print(coverage);
+    covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
+    "
+```
+
+External (Unofficial) Repositories
+----------------------------------
+
+Projects listed here are not maintained or endorsed by the `LightGBM` development team, but may offer some features currently missing from the main R package.
+
+* [lightgbm.py](https://github.com/kapsner/lightgbm.py): This R package offers a wrapper built with `reticulate`, a package used to call Python code from R. If you are comfortable with the added installation complexity of installing `lightgbm`'s Python package and the performance cost of passing data between R and Python, you might find that this package offers some features that are not yet available in the native `lightgbm` R package.

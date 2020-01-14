@@ -326,8 +326,9 @@ class Booster {
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
-    if (ncol != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
+    if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
     if (single_row_predictor_[predict_type].get() == nullptr ||
@@ -347,8 +348,9 @@ class Booster {
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
-    if (ncol != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
+    if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
@@ -400,7 +402,7 @@ class Booster {
     Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
     bool bool_data_has_header = data_has_header > 0 ? true : false;
-    predictor.Predict(data_filename, result_filename, bool_data_has_header);
+    predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check);
   }
 
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {

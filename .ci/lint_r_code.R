@@ -34,7 +34,7 @@ LINTERS_TO_USE <- list(
     , "single_quotes" = lintr::single_quotes_linter
     , "spaces_inside" = lintr::spaces_inside_linter
     , "spaces_left_parens" = lintr::spaces_left_parentheses_linter
-    , "todo_comments" = lintr::todo_comment_linter
+    , "todo_comments" = lintr::todo_comment_linter(c("todo", "fixme", "to-do"))
     , "trailing_blank" = lintr::trailing_blank_lines_linter
     , "trailing_white" = lintr::trailing_whitespace_linter
     , "true_false" = lintr::T_and_F_symbol_linter

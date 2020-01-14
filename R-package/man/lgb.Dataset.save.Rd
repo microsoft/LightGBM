@@ -15,7 +15,8 @@ lgb.Dataset.save(dataset, fname)
 passed dataset
 }
 \description{
-Save \code{lgb.Dataset} to a binary file
+Please note that \code{init_score} is not saved in binary file.
+If you need it, please set it again after loading Dataset.
 }
 \examples{
 library(lightgbm)
