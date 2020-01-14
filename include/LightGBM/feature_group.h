@@ -34,7 +34,7 @@ class FeatureGroup {
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     data_size_t num_data, double sparse_threshold, bool is_enable_sparse) : num_feature_(num_feature) {
     CHECK(static_cast<int>(bin_mappers->size()) == num_feature);
-    // use bin at zero to store default_bin
+    // use bin at zero to store most_freq_bin
     num_total_bin_ = 1;
     bin_offsets_.emplace_back(num_total_bin_);
     int cnt_non_zero = 0;
@@ -57,7 +57,7 @@ class FeatureGroup {
                std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                data_size_t num_data, bool is_sparse) : num_feature_(num_feature) {
     CHECK(static_cast<int>(bin_mappers->size()) == num_feature);
-    // use bin at zero to store default_bin
+    // use bin at zero to store most_freq_bin
     num_total_bin_ = 1;
     bin_offsets_.emplace_back(num_total_bin_);
     for (int i = 0; i < num_feature_; ++i) {
@@ -157,8 +157,8 @@ class FeatureGroup {
   inline BinIterator* FeatureGroupIterator() {
     uint32_t min_bin = bin_offsets_[0];
     uint32_t max_bin = bin_offsets_.back() - 1;
-    uint32_t default_bin = 0;
-    return bin_data_->GetIterator(min_bin, max_bin, default_bin);
+    uint32_t most_freq_bin = 0;
+    return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
   }
 
   inline data_size_t Split(

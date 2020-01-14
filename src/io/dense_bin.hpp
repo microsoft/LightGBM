@@ -19,11 +19,11 @@ class DenseBin;
 template <typename VAL_T>
 class DenseBinIterator: public BinIterator {
  public:
-  explicit DenseBinIterator(const DenseBin<VAL_T>* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
+  explicit DenseBinIterator(const DenseBin<VAL_T>* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin)
     : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
     max_bin_(static_cast<VAL_T>(max_bin)),
-    default_bin_(static_cast<VAL_T>(default_bin)) {
-    if (default_bin_ == 0) {
+    most_freq_bin_(static_cast<VAL_T>(most_freq_bin)) {
+    if (most_freq_bin_ == 0) {
       offset_ = 1;
     } else {
       offset_ = 0;
@@ -37,7 +37,7 @@ class DenseBinIterator: public BinIterator {
   const DenseBin<VAL_T>* bin_data_;
   VAL_T min_bin_;
   VAL_T max_bin_;
-  VAL_T default_bin_;
+  VAL_T most_freq_bin_;
   uint8_t offset_;
 };
 /*!
@@ -66,7 +66,7 @@ class DenseBin: public Bin {
     }
   }
 
-  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
@@ -290,7 +290,7 @@ uint32_t DenseBinIterator<VAL_T>::Get(data_size_t idx) {
   if (ret >= min_bin_ && ret <= max_bin_) {
     return ret - min_bin_ + offset_;
   } else {
-    return default_bin_;
+    return most_freq_bin_;
   }
 }
 
@@ -300,8 +300,8 @@ inline uint32_t DenseBinIterator<VAL_T>::RawGet(data_size_t idx) {
 }
 
 template <typename VAL_T>
-BinIterator* DenseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const {
-  return new DenseBinIterator<VAL_T>(this, min_bin, max_bin, default_bin);
+BinIterator* DenseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const {
+  return new DenseBinIterator<VAL_T>(this, min_bin, max_bin, most_freq_bin);
 }
 
 }  // namespace LightGBM

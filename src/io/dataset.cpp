@@ -859,7 +859,7 @@ void Dataset::DumpTextFile(const char* text_filename) {
       if (inner_feature_idx < 0) {
         fprintf(file, "NA, ");
       } else {
-        fprintf(file, "%d, ", iterators[inner_feature_idx]->RawGet(i));
+        fprintf(file, "%d, ", iterators[inner_feature_idx]->Get(i));
       }
     }
   }

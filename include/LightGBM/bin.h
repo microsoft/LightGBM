@@ -314,10 +314,10 @@ class Bin {
   * \brief Get bin iterator of this bin for specific feature
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin default bin if bin not in [min_bin, max_bin]
+  * \param most_freq_bin
   * \return Iterator of this bin
   */
-  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const = 0;
+  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const = 0;
 
   /*!
   * \brief Save binary data to file
@@ -389,7 +389,8 @@ class Bin {
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin default bin if bin not in [min_bin, max_bin]
+  * \param default_bin default bin for feature value 0
+  * \param most_freq_bin
   * \param missing_type missing type
   * \param default_left missing bin will go to left child
   * \param threshold The split threshold.
@@ -441,7 +442,6 @@ class Bin {
   * \param is_enable_sparse True if enable sparse feature
   * \param sparse_threshold Threshold for treating a feature as a sparse feature
   * \param is_sparse Will set to true if this bin is sparse
-  * \param default_bin Default bin for zeros value
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,

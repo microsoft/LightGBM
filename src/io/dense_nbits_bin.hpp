@@ -17,11 +17,11 @@ class Dense4bitsBin;
 
 class Dense4bitsBinIterator : public BinIterator {
  public:
-  explicit Dense4bitsBinIterator(const Dense4bitsBin* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
+  explicit Dense4bitsBinIterator(const Dense4bitsBin* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin)
     : bin_data_(bin_data), min_bin_(static_cast<uint8_t>(min_bin)),
     max_bin_(static_cast<uint8_t>(max_bin)),
-    default_bin_(static_cast<uint8_t>(default_bin)) {
-    if (default_bin_ == 0) {
+    most_freq_bin_(static_cast<uint8_t>(most_freq_bin)) {
+    if (most_freq_bin_ == 0) {
       offset_ = 1;
     } else {
       offset_ = 0;
@@ -35,7 +35,7 @@ class Dense4bitsBinIterator : public BinIterator {
   const Dense4bitsBin* bin_data_;
   uint8_t min_bin_;
   uint8_t max_bin_;
-  uint8_t default_bin_;
+  uint8_t most_freq_bin_;
   uint8_t offset_;
 };
 
@@ -71,7 +71,7 @@ class Dense4bitsBin : public Bin {
     }
   }
 
-  inline BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
+  inline BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
@@ -322,7 +322,7 @@ uint32_t Dense4bitsBinIterator::Get(data_size_t idx) {
   if (bin >= min_bin_ && bin <= max_bin_) {
     return bin - min_bin_ + offset_;
   } else {
-    return default_bin_;
+    return most_freq_bin_;
   }
 }
 
@@ -330,8 +330,8 @@ uint32_t Dense4bitsBinIterator::RawGet(data_size_t idx) {
   return (bin_data_->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
 }
 
-inline BinIterator* Dense4bitsBin::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const {
-  return new Dense4bitsBinIterator(this, min_bin, max_bin, default_bin);
+inline BinIterator* Dense4bitsBin::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const {
+  return new Dense4bitsBinIterator(this, min_bin, max_bin, most_freq_bin);
 }
 
 }  // namespace LightGBM
