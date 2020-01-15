@@ -115,6 +115,21 @@ if(USE_HDFS)
     SET(HDFS_CXX_LIBRARIES ${HDFS_LIB} ${JAVA_JVM_LIBRARY})
 endif(USE_HDFS)
 
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <xmmintrin.h>
+int main() {
+  int a = 0;
+  _mm_prefetch(&a, _MM_HINT_NTA);
+  return 0;
+}
+" MM_PREFETCH)
+
+if(${MM_PREFETCH})
+  message(STATUS "Use _mm_prefetch")
+  ADD_DEFINITIONS(-DMM_PREFETCH)
+endif()
+
 if(UNIX OR MINGW OR CYGWIN)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -O3 -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type")
     if(USE_SWIG)

@@ -71,12 +71,17 @@ class DenseBin: public Bin {
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const override {
-
-    const data_size_t prefetch_size = 32 / sizeof(VAL_T);
-    for (data_size_t i = start; i < end; i++) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(data_.data() + data_indices[i + prefetch_size]);
-      }
+    const data_size_t pf_offset = 64 / sizeof(VAL_T);
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize / sizeof(VAL_T);
+    data_size_t i = start;
+    for (; i < pf_end; i++) {
+      PREFETCH_T0(data_.data() + data_indices[i + pf_offset]);
+      const VAL_T bin = data_[data_indices[i]];
+      out[bin].sum_gradients += ordered_gradients[i];
+      out[bin].sum_hessians += ordered_hessians[i];
+      ++out[bin].cnt;
+    }
+    for (; i < end; i++) {
       const VAL_T bin = data_[data_indices[i]];
       out[bin].sum_gradients += ordered_gradients[i];
       out[bin].sum_hessians += ordered_hessians[i];
@@ -87,11 +92,17 @@ class DenseBin: public Bin {
   void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 32 / sizeof(VAL_T);
-    for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(data_.data() + i + prefetch_size);
-      }
+    const data_size_t pf_offset = 64 / sizeof(VAL_T);
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize / sizeof(VAL_T);
+    data_size_t i = start;
+    for (; i < pf_end; i++) {
+      PREFETCH_T0(data_.data() + i + pf_offset);
+      const VAL_T bin = data_[i];
+      out[bin].sum_gradients += ordered_gradients[i];
+      out[bin].sum_hessians += ordered_hessians[i];
+      ++out[bin].cnt;
+    }
+    for (; i < end; i++) {
       const VAL_T bin = data_[i];
       out[bin].sum_gradients += ordered_gradients[i];
       out[bin].sum_hessians += ordered_hessians[i];
@@ -102,11 +113,16 @@ class DenseBin: public Bin {
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients,
     HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 32 / sizeof(VAL_T);
-    for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(data_.data() + data_indices[i + prefetch_size]);
-      }
+    const data_size_t pf_offset = 64 / sizeof(VAL_T);
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize / sizeof(VAL_T);
+    data_size_t i = start;
+    for (; i < pf_end; i++) {
+      PREFETCH_T0(data_.data() + data_indices[i + pf_offset]);
+      const VAL_T bin = data_[data_indices[i]];
+      out[bin].sum_gradients += ordered_gradients[i];
+      ++out[bin].cnt;
+    }
+    for (; i < end; i++) {
       const VAL_T bin = data_[data_indices[i]];
       out[bin].sum_gradients += ordered_gradients[i];
       ++out[bin].cnt;
@@ -116,11 +132,16 @@ class DenseBin: public Bin {
   void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients,
     HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 32 / sizeof(VAL_T);
-    for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(data_.data() + i + prefetch_size);
-      }
+    const data_size_t pf_offset = 64 / sizeof(VAL_T);
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize / sizeof(VAL_T);
+    data_size_t i = start;
+    for (; i < pf_end; i++) {
+      PREFETCH_T0(data_.data() + i + pf_offset);
+      const VAL_T bin = data_[i];
+      out[bin].sum_gradients += ordered_gradients[i];
+      ++out[bin].cnt;
+    }
+    for (; i < end; i++) {
       const VAL_T bin = data_[i];
       out[bin].sum_gradients += ordered_gradients[i];
       ++out[bin].cnt;

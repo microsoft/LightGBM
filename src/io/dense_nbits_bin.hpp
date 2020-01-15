@@ -76,11 +76,18 @@ class Dense4bitsBin : public Bin {
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 32;
-    for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(data_.data() + (data_indices[i + prefetch_size] >> 1));
-      }
+    const data_size_t pf_offset = 64;
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
+    data_size_t i = start;
+    for (; i < pf_end; i++) {
+      PREFETCH_T0(data_.data() + (data_indices[i + pf_offset] >> 1));
+      const data_size_t idx = data_indices[i];
+      const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      out[bin].sum_gradients += ordered_gradients[i];
+      out[bin].sum_hessians += ordered_hessians[i];
+      ++out[bin].cnt;
+    }
+    for (; i < end; i++) {
       const data_size_t idx = data_indices[i];
       const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
       out[bin].sum_gradients += ordered_gradients[i];
@@ -92,11 +99,17 @@ class Dense4bitsBin : public Bin {
   void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 32;
-    for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(data_.data() + ((i + prefetch_size) >> 1));
-      }
+    const data_size_t pf_offset = 64;
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
+    data_size_t i = start;
+    for (; i < pf_end; i++) {
+      PREFETCH_T0(data_.data() + ((i + pf_offset) >> 1));
+      const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
+      out[bin].sum_gradients += ordered_gradients[i];
+      out[bin].sum_hessians += ordered_hessians[i];
+      ++out[bin].cnt;
+    }
+    for (; i < end; i++) {
       const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
       out[bin].sum_gradients += ordered_gradients[i];
       out[bin].sum_hessians += ordered_hessians[i];
@@ -107,11 +120,17 @@ class Dense4bitsBin : public Bin {
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients,
     HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 32;
-    for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(data_.data() + (data_indices[i + prefetch_size] >> 1));
-      }
+    const data_size_t pf_offset = 64;
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
+    data_size_t i = start;
+    for (; i < pf_end; i++) {
+      PREFETCH_T0(data_.data() + (data_indices[i + pf_offset] >> 1));
+      const data_size_t idx = data_indices[i];
+      const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      out[bin].sum_gradients += ordered_gradients[i];
+      ++out[bin].cnt;
+    }
+    for (; i < end; i++) {
       const data_size_t idx = data_indices[i];
       const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
       out[bin].sum_gradients += ordered_gradients[i];
@@ -122,11 +141,16 @@ class Dense4bitsBin : public Bin {
   void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients,
     HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 32;
-    for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(data_.data() + ((i + prefetch_size) >> 1));
-      }
+    const data_size_t pf_offset = 64;
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
+    data_size_t i = start;
+    for (; i < pf_end; i++) {
+      PREFETCH_T0(data_.data() + ((i + pf_offset) >> 1));
+      const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
+      out[bin].sum_gradients += ordered_gradients[i];
+      ++out[bin].cnt;
+    }
+    for (; i < end; i++) {
       const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
       out[bin].sum_gradients += ordered_gradients[i];
       ++out[bin].cnt;
