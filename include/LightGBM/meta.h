@@ -71,6 +71,9 @@ typedef void(*AllgatherFunction)(char* input, comm_size_t input_size, const comm
 
 #define NO_SPECIFIC (-1)
 
+// Prefetch size is usually 64 bytes
+const int kCacheLineSize = 64;
+
 }  // namespace LightGBM
 
 #endif   // LightGBM_META_H_
