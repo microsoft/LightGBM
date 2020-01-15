@@ -77,7 +77,7 @@ class Dense4bitsBin : public Bin {
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const override {
     const data_size_t pf_offset = 64;
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize * 2;
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
     data_size_t i = start;
     for (; i < pf_end; i++) {
       PREFETCH_T0(data_.data() + (data_indices[i + pf_offset] >> 1));
@@ -100,7 +100,7 @@ class Dense4bitsBin : public Bin {
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const override {
     const data_size_t pf_offset = 64;
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize * 2;
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
     data_size_t i = start;
     for (; i < pf_end; i++) {
       PREFETCH_T0(data_.data() + ((i + pf_offset) >> 1));
@@ -121,7 +121,7 @@ class Dense4bitsBin : public Bin {
     const score_t* ordered_gradients,
     HistogramBinEntry* out) const override {
     const data_size_t pf_offset = 64;
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize * 2;
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
     data_size_t i = start;
     for (; i < pf_end; i++) {
       PREFETCH_T0(data_.data() + (data_indices[i + pf_offset] >> 1));
@@ -142,7 +142,7 @@ class Dense4bitsBin : public Bin {
     const score_t* ordered_gradients,
     HistogramBinEntry* out) const override {
     const data_size_t pf_offset = 64;
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize * 2;
+    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
     data_size_t i = start;
     for (; i < pf_end; i++) {
       PREFETCH_T0(data_.data() + ((i + pf_offset) >> 1));
