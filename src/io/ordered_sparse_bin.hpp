@@ -84,41 +84,30 @@ class OrderedSparseBin: public OrderedBin {
 
   void ConstructHistogram(int leaf, const score_t* gradient, const score_t* hessian,
                           HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 4;
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
     for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(ordered_pair_.data() + i + prefetch_size);
-        PREFETCH_T0(gradient + ordered_pair_[i + prefetch_size].ridx);
-        PREFETCH_T0(hessian + ordered_pair_[i + prefetch_size].ridx);
-      }
-      const VAL_T bin0 = ordered_pair_[i].bin;
-      const auto g0 = gradient[ordered_pair_[i].ridx];
-      const auto h0 = hessian[ordered_pair_[i].ridx];
+      const VAL_T bin = ordered_pair_[i].bin;
+      const auto g = gradient[ordered_pair_[i].ridx];
+      const auto h = hessian[ordered_pair_[i].ridx];
 
-      out[bin0].sum_gradients += g0;
-      out[bin0].sum_hessians += h0;
-      ++out[bin0].cnt;
+      out[bin].sum_gradients += g;
+      out[bin].sum_hessians += h;
+      ++out[bin].cnt;
     }
   }
 
   void ConstructHistogram(int leaf, const score_t* gradient,
                           HistogramBinEntry* out) const override {
-    const data_size_t prefetch_size = 4;
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
     for (data_size_t i = start; i < end; ++i) {
-      if (i + prefetch_size < end) {
-        PREFETCH_T0(ordered_pair_.data() + i + prefetch_size);
-        PREFETCH_T0(gradient + ordered_pair_[i + prefetch_size].ridx);
-      }
-      const VAL_T bin0 = ordered_pair_[i].bin;
-      const auto g0 = gradient[ordered_pair_[i].ridx];
-      out[bin0].sum_gradients += g0;
-      ++out[bin0].cnt;
+      const VAL_T bin = ordered_pair_[i].bin;
+      const auto g = gradient[ordered_pair_[i].ridx];
+      out[bin].sum_gradients += g;
+      ++out[bin].cnt;
     }
   }
 
