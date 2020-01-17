@@ -114,12 +114,12 @@ class DataPartition {
     const data_size_t begin = leaf_begin_[leaf];
     const data_size_t cnt = leaf_count_[leaf];
 
-    data_size_t inner_size = (cnt + num_threads_ - 1) / num_threads_;
-    if (inner_size < min_inner_size) { inner_size = min_inner_size; }
+    const int nblock = std::min(num_threads_, (cnt + min_inner_size - 1) / min_inner_size);
+    data_size_t inner_size = SIZE_ALIGNED((cnt + nblock - 1) / nblock);
     // split data multi-threading
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads_; ++i) {
+    for (int i = 0; i < nblock; ++i) {
       OMP_LOOP_EX_BEGIN();
       left_cnts_buf_[i] = 0;
       right_cnts_buf_[i] = 0;
@@ -139,14 +139,14 @@ class DataPartition {
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
-    for (int i = 1; i < num_threads_; ++i) {
+    for (int i = 1; i < nblock; ++i) {
       left_write_pos_buf_[i] = left_write_pos_buf_[i - 1] + left_cnts_buf_[i - 1];
       right_write_pos_buf_[i] = right_write_pos_buf_[i - 1] + right_cnts_buf_[i - 1];
     }
-    left_cnt = left_write_pos_buf_[num_threads_ - 1] + left_cnts_buf_[num_threads_ - 1];
+    left_cnt = left_write_pos_buf_[nblock - 1] + left_cnts_buf_[nblock - 1];
     // copy back indices of right leaf to indices_
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads_; ++i) {
+    for (int i = 0; i < nblock; ++i) {
       if (left_cnts_buf_[i] > 0) {
         std::memcpy(indices_.data() + begin + left_write_pos_buf_[i],
                     temp_left_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
@@ -201,11 +201,11 @@ class DataPartition {
   /*! \brief number of data on one leaf */
   std::vector<data_size_t> leaf_count_;
   /*! \brief Store all data's indices, order by leaf[data_in_leaf0,..,data_leaf1,..] */
-  std::vector<data_size_t> indices_;
+  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> indices_;
   /*! \brief team indices buffer for split */
-  std::vector<data_size_t> temp_left_indices_;
+  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> temp_left_indices_;
   /*! \brief team indices buffer for split */
-  std::vector<data_size_t> temp_right_indices_;
+  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> temp_right_indices_;
   /*! \brief used data indices, used for bagging */
   const data_size_t* used_data_indices_;
   /*! \brief used data count, used for bagging */

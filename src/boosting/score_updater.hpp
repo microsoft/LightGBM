@@ -119,7 +119,7 @@ class ScoreUpdater {
   /*! \brief Pointer of data set */
   const Dataset* data_;
   /*! \brief Scores for data set */
-  std::vector<double> score_;
+  std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>> score_;
   bool has_init_score_;
 };
 

@@ -161,9 +161,9 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_gradients_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_hessians_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_hessians_;
 #endif
 
   /*! \brief Store ordered bin */
@@ -171,7 +171,7 @@ class SerialTreeLearner: public TreeLearner {
   /*! \brief True if has ordered bin */
   bool has_ordered_bin_ = false;
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
-  std::vector<char> is_data_in_leaf_;
+  std::vector<char, Common::AlignmentAllocator<char, kAlignedSize>> is_data_in_leaf_;
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/

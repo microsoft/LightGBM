@@ -103,25 +103,25 @@ class SparseBin: public Bin {
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
 
   void ConstructHistogram(const data_size_t*, data_size_t, data_size_t, const score_t*,
-    const score_t*, HistogramBinEntry*) const override {
+    const score_t*, hist_t*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
   void ConstructHistogram(data_size_t, data_size_t, const score_t*,
-                          const score_t*, HistogramBinEntry*) const override {
+                          const score_t*, hist_t*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
   void ConstructHistogram(const data_size_t*, data_size_t, data_size_t, const score_t*,
-                          HistogramBinEntry*) const override {
+    hist_t*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
   void ConstructHistogram(data_size_t, data_size_t, const score_t*,
-                          HistogramBinEntry*) const override {
+    hist_t*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
@@ -439,8 +439,8 @@ class SparseBin: public Bin {
       fast_index_(other.fast_index_), fast_index_shift_(other.fast_index_shift_) {}
 
   data_size_t num_data_;
-  std::vector<uint8_t> deltas_;
-  std::vector<VAL_T> vals_;
+  std::vector<uint8_t, Common::AlignmentAllocator<uint8_t, kAlignedSize>> deltas_;
+  std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> vals_;
   data_size_t num_vals_;
   std::vector<std::vector<std::pair<data_size_t, VAL_T>>> push_buffers_;
   std::vector<std::pair<data_size_t, data_size_t>> fast_index_;

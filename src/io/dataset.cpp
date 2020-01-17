@@ -330,11 +330,16 @@ void Dataset::Construct(
   }
   feature_groups_.shrink_to_fit();
   group_bin_boundaries_.clear();
+  group_bin_boundaries_aligned_.clear();
   uint64_t num_total_bin = 0;
+  uint64_t num_total_bin_aligned = 0;
   group_bin_boundaries_.push_back(num_total_bin);
+  group_bin_boundaries_aligned_.push_back(num_total_bin_aligned);
   for (int i = 0; i < num_groups_; ++i) {
     num_total_bin += feature_groups_[i]->num_total_bin_;
+    num_total_bin_aligned += SIZE_ALIGNED(feature_groups_[i]->num_total_bin_);
     group_bin_boundaries_.push_back(num_total_bin);
+    group_bin_boundaries_aligned_.push_back(num_total_bin_aligned);
   }
   int last_group = 0;
   group_feature_start_.reserve(num_groups_);
@@ -490,6 +495,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature2group_ = dataset->feature2group_;
   feature2subfeature_ = dataset->feature2subfeature_;
   group_bin_boundaries_ = dataset->group_bin_boundaries_;
+  group_bin_boundaries_aligned_ = dataset->group_bin_boundaries_aligned_;
   group_feature_start_ = dataset->group_feature_start_;
   group_feature_cnt_ = dataset->group_feature_cnt_;
   monotone_types_ = dataset->monotone_types_;
@@ -531,11 +537,16 @@ void Dataset::CreateValid(const Dataset* dataset) {
   label_idx_ = dataset->label_idx_;
   real_feature_idx_ = dataset->real_feature_idx_;
   group_bin_boundaries_.clear();
+  group_bin_boundaries_aligned_.clear();
   uint64_t num_total_bin = 0;
+  uint64_t num_total_bin_aligned = 0;
   group_bin_boundaries_.push_back(num_total_bin);
+  group_bin_boundaries_aligned_.push_back(num_total_bin_aligned);
   for (int i = 0; i < num_groups_; ++i) {
     num_total_bin += feature_groups_[i]->num_total_bin_;
+    num_total_bin_aligned += SIZE_ALIGNED(feature_groups_[i]->num_total_bin_);
     group_bin_boundaries_.push_back(num_total_bin);
+    group_bin_boundaries_aligned_.push_back(num_total_bin_aligned);
   }
   int last_group = 0;
   group_feature_start_.reserve(num_groups_);
@@ -722,7 +733,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
       + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_) + sizeof(sparse_threshold_)
-      + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_ + sizeof(int8_t) * num_features_
+      + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) * 2 + 2 * sizeof(int) * num_groups_ + sizeof(int8_t) * num_features_
       + sizeof(double) * num_features_ + sizeof(int32_t) * num_total_features_ + sizeof(int) * 3 + sizeof(bool) * 2;
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
@@ -750,6 +761,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(feature2group_.data(), sizeof(int) * num_features_);
     writer->Write(feature2subfeature_.data(), sizeof(int) * num_features_);
     writer->Write(group_bin_boundaries_.data(), sizeof(uint64_t) * (num_groups_ + 1));
+    writer->Write(group_bin_boundaries_aligned_.data(), sizeof(uint64_t) * (num_groups_ + 1));
     writer->Write(group_feature_start_.data(), sizeof(int) * num_groups_);
     writer->Write(group_feature_cnt_.data(), sizeof(int) * num_groups_);
     if (monotone_types_.empty()) {
@@ -873,7 +885,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                                   const score_t* gradients, const score_t* hessians,
                                   score_t* ordered_gradients, score_t* ordered_hessians,
                                   bool is_constant_hessian,
-                                  HistogramBinEntry* hist_data) const {
+                                  hist_t* hist_data) const {
   if (leaf_idx < 0 || num_data < 0 || hist_data == nullptr) {
     return;
   }
@@ -920,9 +932,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         OMP_LOOP_EX_BEGIN();
         int group = used_group[gi];
         // feature is not used
-        auto data_ptr = hist_data + group_bin_boundaries_[group];
+        auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin* KHistEntrySize);
         // construct histograms for smaller leaf
         if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
@@ -950,9 +962,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         OMP_LOOP_EX_BEGIN();
         int group = used_group[gi];
         // feature is not used
-        auto data_ptr = hist_data + group_bin_boundaries_[group];
+        auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin* KHistEntrySize);
         // construct histograms for smaller leaf
         if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
@@ -970,7 +982,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         }
         // fixed hessian.
         for (int i = 0; i < num_bin; ++i) {
-          data_ptr[i].sum_hessians = data_ptr[i].cnt * hessians[0];
+          GET_HESS(data_ptr, i) = GET_HESS(data_ptr, i) * hessians[0];
         }
         OMP_LOOP_EX_END();
       }
@@ -984,9 +996,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         OMP_LOOP_EX_BEGIN();
         int group = used_group[gi];
         // feature is not used
-        auto data_ptr = hist_data + group_bin_boundaries_[group];
+        auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin* KHistEntrySize);
         // construct histograms for smaller leaf
         if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
@@ -1013,9 +1025,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         OMP_LOOP_EX_BEGIN();
         int group = used_group[gi];
         // feature is not used
-        auto data_ptr = hist_data + group_bin_boundaries_[group];
+        auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(reinterpret_cast<void*>(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * KHistEntrySize);
         // construct histograms for smaller leaf
         if (ref_ordered_bins[group] == nullptr) {
           // if not use ordered bin
@@ -1032,7 +1044,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         }
         // fixed hessian.
         for (int i = 0; i < num_bin; ++i) {
-          data_ptr[i].sum_hessians = data_ptr[i].cnt * hessians[0];
+          GET_HESS(data_ptr, i) = GET_HESS(data_ptr, i) * hessians[0];
         }
         OMP_LOOP_EX_END();
       }
@@ -1041,22 +1053,19 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
   }
 }
 
-void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, data_size_t num_data,
-                           HistogramBinEntry* data) const {
+void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const {
   const int group = feature2group_[feature_idx];
   const int sub_feature = feature2subfeature_[feature_idx];
   const BinMapper* bin_mapper = feature_groups_[group]->bin_mappers_[sub_feature].get();
   const int most_freq_bin = bin_mapper->GetMostFreqBin();
   if (most_freq_bin > 0) {
     const int num_bin = bin_mapper->num_bin();
-    data[most_freq_bin].sum_gradients = sum_gradient;
-    data[most_freq_bin].sum_hessians = sum_hessian;
-    data[most_freq_bin].cnt = num_data;
+    GET_GRAD(data, most_freq_bin) = sum_gradient;
+    GET_HESS(data, most_freq_bin) = sum_hessian;
     for (int i = 0; i < num_bin; ++i) {
       if (i != most_freq_bin) {
-        data[most_freq_bin].sum_gradients -= data[i].sum_gradients;
-        data[most_freq_bin].sum_hessians -= data[i].sum_hessians;
-        data[most_freq_bin].cnt -= data[i].cnt;
+        GET_GRAD(data, most_freq_bin) -= GET_GRAD(data, i);
+        GET_HESS(data, most_freq_bin) -= GET_HESS(data, i);
       }
     }
   }
@@ -1119,6 +1128,11 @@ void Dataset::addFeaturesFrom(Dataset* other) {
   // Skip the leading 0 when copying group_bin_boundaries.
   for (auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); ++i) {
     group_bin_boundaries_.push_back(*i + bin_offset);
+  }
+  bin_offset = group_bin_boundaries_aligned_.back();
+  // Skip the leading 0 when copying group_bin_boundaries.
+  for (auto i = other->group_bin_boundaries_aligned_.begin() + 1; i < other->group_bin_boundaries_aligned_.end(); ++i) {
+    group_bin_boundaries_aligned_.push_back(*i + bin_offset);
   }
   PushOffset(&group_feature_start_, other->group_feature_start_, num_features_);
 

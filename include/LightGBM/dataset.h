@@ -381,6 +381,15 @@ class Dataset {
   inline uint64_t NumTotalBin() const {
     return group_bin_boundaries_.back();
   }
+
+  inline uint64_t GroupBinBoundaryAlign(int group_idx) const {
+    return group_bin_boundaries_aligned_[group_idx];
+  }
+
+  inline uint64_t NumTotalBinAligned() const {
+    return group_bin_boundaries_aligned_.back();
+  }
+
   inline std::vector<int> ValidFeatureIndices() const {
     std::vector<int> ret;
     for (int i = 0; i < num_total_features_; ++i) {
@@ -428,10 +437,9 @@ class Dataset {
                            const score_t* gradients, const score_t* hessians,
                            score_t* ordered_gradients, score_t* ordered_hessians,
                            bool is_constant_hessian,
-                           HistogramBinEntry* histogram_data) const;
+                           hist_t* histogram_data) const;
 
-  void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, data_size_t num_data,
-                    HistogramBinEntry* data) const;
+  void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
   inline data_size_t Split(int feature,
                            const uint32_t* threshold, int num_threshold,  bool default_left,
@@ -649,6 +657,7 @@ class Dataset {
   std::vector<int> feature2group_;
   std::vector<int> feature2subfeature_;
   std::vector<uint64_t> group_bin_boundaries_;
+  std::vector<uint64_t> group_bin_boundaries_aligned_;
   std::vector<int> group_feature_start_;
   std::vector<int> group_feature_cnt_;
   std::vector<int8_t> monotone_types_;

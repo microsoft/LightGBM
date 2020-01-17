@@ -29,36 +29,28 @@ enum MissingType {
   NaN
 };
 
-/*! \brief Store data for one histogram bin */
-struct HistogramBinEntry {
- public:
-  /*! \brief Sum of gradients on this bin */
-  double sum_gradients = 0.0f;
-  /*! \brief Sum of hessians on this bin */
-  double sum_hessians = 0.0f;
-  /*! \brief Number of data on this bin */
-  data_size_t cnt = 0;
-  /*!
-  * \brief Sum up (reducers) functions for histogram bin
-  */
-  inline static void SumReducer(const char *src, char *dst, int type_size, comm_size_t len) {
-    comm_size_t used_size = 0;
-    const HistogramBinEntry* p1;
-    HistogramBinEntry* p2;
-    while (used_size < len) {
-      // convert
-      p1 = reinterpret_cast<const HistogramBinEntry*>(src);
-      p2 = reinterpret_cast<HistogramBinEntry*>(dst);
-      // add
-      p2->cnt += p1->cnt;
-      p2->sum_gradients += p1->sum_gradients;
-      p2->sum_hessians += p1->sum_hessians;
-      src += type_size;
-      dst += type_size;
-      used_size += type_size;
-    }
+typedef double hist_t;
+
+const size_t KHistEntrySize = 2 * sizeof(hist_t);
+const int KHistOffset = 2;
+
+#define GET_GRAD(hist, i) hist[(i) << 1]
+#define GET_HESS(hist, i) hist[((i) << 1) + 1]
+
+inline static void HistogramSumReducer(const char* src, char* dst, int type_size, comm_size_t len) {
+  comm_size_t used_size = 0;
+  const hist_t* p1;
+  hist_t* p2;
+  while (used_size < len) {
+    // convert
+    p1 = reinterpret_cast<const hist_t*>(src);
+    p2 = reinterpret_cast<hist_t*>(dst);
+    *p2 += *p1;
+    src += type_size;
+    dst += type_size;
+    used_size += type_size;
   }
-};
+}
 
 /*! \brief This class used to convert feature values into bin,
 *          and store some meta information for bin*/
@@ -252,7 +244,7 @@ class OrderedBin {
   * \param out Output Result
   */
   virtual void ConstructHistogram(int leaf, const score_t* gradients,
-    const score_t* hessians, HistogramBinEntry* out) const = 0;
+    const score_t* hessians, hist_t* out) const = 0;
 
   /*!
   * \brief Construct histogram by using this bin
@@ -262,7 +254,7 @@ class OrderedBin {
   * \param gradients Gradients, Note:non-ordered by leaf
   * \param out Output Result
   */
-  virtual void ConstructHistogram(int leaf, const score_t* gradients, HistogramBinEntry* out) const = 0;
+  virtual void ConstructHistogram(int leaf, const score_t* gradients, hist_t* out) const = 0;
 
   /*!
   * \brief Split current bin, and perform re-order by leaf
@@ -360,11 +352,11 @@ class Bin {
   virtual void ConstructHistogram(
     const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const = 0;
+    hist_t* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const = 0;
+    hist_t* out) const = 0;
 
   /*!
   * \brief Construct histogram of this feature,
@@ -380,10 +372,10 @@ class Bin {
   * \param out Output Result
   */
   virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-                                  const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
+                                  const score_t* ordered_gradients, hist_t* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
-                                  const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
+                                  const score_t* ordered_gradients, hist_t* out) const = 0;
 
   /*!
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
