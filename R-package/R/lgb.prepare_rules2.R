@@ -168,9 +168,8 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
 
       } else {
 
-        # What do you think you are doing here? Throw error.
         stop(
-          "lgb.prepare: you provided "
+          "lgb.prepare_rules2: you provided "
           , paste(class(data), collapse = " & ")
           , " but data should have class data.frame"
         )

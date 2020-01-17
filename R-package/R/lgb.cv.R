@@ -70,6 +70,7 @@ CVBooster <- R6::R6Class(
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
+#' @importFrom data.table data.table setorderv
 #' @export
 lgb.cv <- function(params = list()
                    , data
@@ -95,8 +96,7 @@ lgb.cv <- function(params = list()
                    ) {
 
   # Setup temporary variables
-  addiction_params <- list(...)
-  params <- append(params, addiction_params)
+  params <- append(params, list(...))
   params$verbose <- verbose
   params <- lgb.check.obj(params, obj)
   params <- lgb.check.eval(params, eval)
@@ -193,12 +193,12 @@ lgb.cv <- function(params = list()
 
     # Create folds
     folds <- generate.cv.folds(
-      nfold
-      , nrow(data)
-      , stratified
-      , getinfo(data, "label")
-      , getinfo(data, "group")
-      , params
+      nfold = nfold
+      , nrows = nrow(data)
+      , stratified = stratified
+      , label = getinfo(data, "label")
+      , group = getinfo(data, "group")
+      , params = params
     )
 
   }
@@ -264,35 +264,64 @@ lgb.cv <- function(params = list()
   # Categorize callbacks
   cb <- categorize.callbacks(callbacks)
 
-  # Construct booster using a list apply, check if requires group or not
-  if (!is.list(folds[[1L]])) {
-    bst_folds <- lapply(seq_along(folds), function(k) {
-      dtest <- slice(data, folds[[k]])
-      dtrain <- slice(data, seq_len(nrow(data))[-folds[[k]]])
-      setinfo(dtrain, "weight", getinfo(data, "weight")[-folds[[k]]])
-      setinfo(dtrain, "init_score", getinfo(data, "init_score")[-folds[[k]]])
-      setinfo(dtest, "weight", getinfo(data, "weight")[folds[[k]]])
-      setinfo(dtest, "init_score", getinfo(data, "init_score")[folds[[k]]])
-      booster <- Booster$new(params, dtrain)
-      booster$add_valid(dtest, "valid")
-      list(booster = booster)
-    })
-  } else {
-    bst_folds <- lapply(seq_along(folds), function(k) {
-      dtest <- slice(data, folds[[k]]$fold)
-      dtrain <- slice(data, (seq_len(nrow(data)))[-folds[[k]]$fold])
-      setinfo(dtrain, "weight", getinfo(data, "weight")[-folds[[k]]$fold])
-      setinfo(dtrain, "init_score", getinfo(data, "init_score")[-folds[[k]]$fold])
-      setinfo(dtrain, "group", getinfo(data, "group")[-folds[[k]]$group])
-      setinfo(dtest, "weight", getinfo(data, "weight")[folds[[k]]$fold])
-      setinfo(dtest, "init_score", getinfo(data, "init_score")[folds[[k]]$fold])
-      setinfo(dtest, "group", getinfo(data, "group")[folds[[k]]$group])
-      booster <- Booster$new(params, dtrain)
-      booster$add_valid(dtest, "valid")
-      list(booster = booster)
-    })
-  }
+  # Construct booster for each fold. The data.table() code below is used to
+  # guarantee that indices are sorted while keeping init_score and weight together
+  # with the correct indices. Note that it takes advantage of the fact that
+  # someDT$some_column returns NULL is 'some_column' does not exist in the data.table
+  bst_folds <- lapply(
+    X = seq_along(folds)
+    , FUN = function(k) {
 
+      # For learning-to-rank, each fold is a named list with two elements:
+      #   * `fold` = an integer vector of row indices
+      #   * `group` = an integer vector describing which groups are in the fold
+      # For classification or regression tasks, it will just be an integer
+      # vector of row indices
+      folds_have_group <- "group" %in% names(folds[[k]])
+      if (folds_have_group) {
+        test_indices <- folds[[k]]$fold
+        test_group_indices <- folds[[k]]$group
+        test_groups <- getinfo(data, "group")[test_group_indices]
+        train_groups <- getinfo(data, "group")[-test_group_indices]
+      } else {
+        test_indices <- folds[[k]]
+      }
+      train_indices <- seq_len(nrow(data))[-test_indices]
+
+      # set up test set
+      indexDT <- data.table::data.table(
+        indices = test_indices
+        , weight = getinfo(data, "weight")[test_indices]
+        , init_score = getinfo(data, "init_score")[test_indices]
+      )
+      data.table::setorderv(indexDT, "indices", order = 1L)
+      dtest <- slice(data, indexDT$indices)
+      setinfo(dtest, "weight", indexDT$weight)
+      setinfo(dtest, "init_score", indexDT$init_score)
+
+      # set up training set
+      indexDT <- data.table::data.table(
+        indices = train_indices
+        , weight = getinfo(data, "weight")[train_indices]
+        , init_score = getinfo(data, "init_score")[train_indices]
+      )
+      data.table::setorderv(indexDT, "indices", order = 1L)
+      dtrain <- slice(data, indexDT$indices)
+      setinfo(dtrain, "weight", indexDT$weight)
+      setinfo(dtrain, "init_score", indexDT$init_score)
+
+      if (folds_have_group) {
+        setinfo(dtest, "group", test_groups)
+        setinfo(dtrain, "group", train_groups)
+      }
+
+      booster <- Booster$new(params, dtrain)
+      booster$add_valid(dtest, "valid")
+      return(
+        list(booster = booster)
+      )
+    }
+  )
 
   # Create new booster
   cv_booster <- CVBooster$new(bst_folds)

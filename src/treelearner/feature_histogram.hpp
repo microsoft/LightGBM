@@ -710,7 +710,7 @@ class HistogramPool {
         feature_metas_[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
         feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
         feature_metas_[i].penalty = train_data->FeaturePenalte(i);
-        if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
+        if (train_data->FeatureBinMapper(i)->GetMostFreqBin() == 0) {
           feature_metas_[i].offset = 1;
         } else {
           feature_metas_[i].offset = 0;
@@ -740,7 +740,7 @@ class HistogramPool {
         offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
         pool_[i][j].Init(data_[i].data() + offset, &feature_metas_[j]);
         auto num_bin = train_data->FeatureNumBin(j);
-        if (train_data->FeatureBinMapper(j)->GetDefaultBin() == 0) {
+        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
           num_bin -= 1;
         }
         offset += static_cast<uint64_t>(num_bin);
