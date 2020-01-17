@@ -89,6 +89,7 @@ Dataset <- R6::R6Class(
       private$free_raw_data <- free_raw_data
       private$used_indices <- sort(used_indices, decreasing = FALSE)
       private$info <- info
+      private$version <- 0L
 
     },
 
@@ -503,6 +504,8 @@ Dataset <- R6::R6Class(
             , length(info)
           )
 
+          private$version <- private$version + 1L
+
         }
 
       }
@@ -638,6 +641,7 @@ Dataset <- R6::R6Class(
     free_raw_data = TRUE,
     used_indices = NULL,
     info = NULL,
+    version = 0L,
 
     # Get handle
     get_handle = function() {
@@ -1108,6 +1112,9 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 }
 
 #' Save \code{lgb.Dataset} to a binary file
+#'
+#' Please note that \code{init_score} is not saved in binary file.
+#' If you need it, please set it again after loading Dataset.
 #'
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param fname object filename of output file

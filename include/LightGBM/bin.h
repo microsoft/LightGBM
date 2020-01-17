@@ -117,6 +117,7 @@ class BinMapper {
       return bin_2_categorical_[bin];
     }
   }
+
   /*!
   * \brief Get sizes in byte of this object
   */
@@ -135,6 +136,11 @@ class BinMapper {
   inline uint32_t GetDefaultBin() const {
     return default_bin_;
   }
+
+  inline uint32_t GetMostFreqBin() const {
+    return most_freq_bin_;
+  }
+
   /*!
   * \brief Construct feature value to bin mapper according feature values
   * \param values (Sampled) values of this feature, Note: not include zero.
@@ -211,6 +217,8 @@ class BinMapper {
   double max_val_;
   /*! \brief bin value of feature value 0 */
   uint32_t default_bin_;
+
+  uint32_t most_freq_bin_;
 };
 
 /*!
@@ -306,10 +314,10 @@ class Bin {
   * \brief Get bin iterator of this bin for specific feature
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin default bin if bin not in [min_bin, max_bin]
+  * \param most_freq_bin
   * \return Iterator of this bin
   */
-  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const = 0;
+  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const = 0;
 
   /*!
   * \brief Save binary data to file
@@ -343,17 +351,18 @@ class Bin {
   *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
   *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
   * \param data_indices Used data indices in current leaf
-  * \param num_data Number of used data
+  * \param start start index in data_indices
+  * \param end end index in data_indices
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
   * \param ordered_hessians Pointer to hessians, the data_indices[i]-th data's hessian is ordered_hessians[i]
   * \param out Output Result
   */
   virtual void ConstructHistogram(
-    const data_size_t* data_indices, data_size_t num_data,
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t num_data,
+  virtual void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const = 0;
 
@@ -365,21 +374,23 @@ class Bin {
   *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
   *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
   * \param data_indices Used data indices in current leaf
-  * \param num_data Number of used data
+  * \param start start index in data_indices
+  * \param end end index in data_indices
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
   * \param out Output Result
   */
-  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
+  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
                                   const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t num_data,
+  virtual void ConstructHistogram(data_size_t start, data_size_t end,
                                   const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin default bin if bin not in [min_bin, max_bin]
+  * \param default_bin default bin for feature value 0
+  * \param most_freq_bin
   * \param missing_type missing type
   * \param default_left missing bin will go to left child
   * \param threshold The split threshold.
@@ -390,7 +401,7 @@ class Bin {
   * \return The number of less than or equal data.
   */
   virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin,
-    uint32_t default_bin, MissingType missing_type, bool default_left, uint32_t threshold,
+    uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left, uint32_t threshold,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
@@ -398,7 +409,7 @@ class Bin {
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin default bin if bin not in [min_bin, max_bin]
+  * \param most_freq_bin
   * \param threshold The split threshold.
   * \param num_threshold Number of threshold
   * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.
@@ -408,7 +419,7 @@ class Bin {
   * \return The number of less than or equal data.
   */
   virtual data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
-                            uint32_t default_bin, const uint32_t* threshold, int num_threshold,
+                            uint32_t most_freq_bin, const uint32_t* threshold, int num_threshold,
                             data_size_t* data_indices, data_size_t num_data,
                             data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
@@ -431,7 +442,6 @@ class Bin {
   * \param is_enable_sparse True if enable sparse feature
   * \param sparse_threshold Threshold for treating a feature as a sparse feature
   * \param is_sparse Will set to true if this bin is sparse
-  * \param default_bin Default bin for zeros value
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,

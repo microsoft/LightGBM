@@ -180,7 +180,6 @@ Predictor <- R6::R6Class(
         } else {
 
           # Cannot predict on unknown class
-          # to-do: predict from lgb.Dataset
           stop("predict: cannot predict on data of class ", sQuote(class(data)))
 
         }
