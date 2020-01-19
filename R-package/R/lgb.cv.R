@@ -17,9 +17,9 @@ CVBooster <- R6::R6Class(
   )
 )
 
+#' @name lgb.cv
 #' @title Main CV logic for LightGBM
 #' @description Cross validation logic used by LightGBM
-#' @name lgb.cv
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
 #' @param label vector of response values. Should be provided only when data is an R-matrix.
@@ -45,7 +45,7 @@ CVBooster <- R6::R6Class(
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
 #'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-#'                \item{\code{num_leaves}: Number of leaves in one tree. Defaults to 127.}
+#'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
 #'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
 #'                                 overfit when #data is small. Tree still grow by leaf-wise.}
 #'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to

@@ -944,6 +944,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
 }
 
+#' @name getinfo
 #' @title Get information of an \code{lgb.Dataset} object
 #' @description Get one attribute of a \code{lgb.Dataset}
 #' @param dataset Object of class \code{lgb.Dataset}
@@ -993,6 +994,7 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
 }
 
+#' @name setinfo
 #' @title Set information of an \code{lgb.Dataset} object
 #' @description Set one attribute of a \code{lgb.Dataset}
 #' @param dataset Object of class \code{lgb.Dataset}
@@ -1045,6 +1047,7 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
   invisible(dataset$setinfo(name, info))
 }
 
+#' @name lgb.Dataset.set.categorical
 #' @title Set categorical feature of \code{lgb.Dataset}
 #' @description Set the categorical features of an \code{lgb.Dataset} object. Use this function
 #'              to tell LightGBM which features should be treated as categorical.
@@ -1077,6 +1080,7 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 
 }
 
+#' @name lgb.Dataset.set.reference
 #' @title Set reference of \code{lgb.Dataset}
 #' @description If you want to use validation data, you should set reference to training data
 #' @param dataset object of class \code{lgb.Dataset}

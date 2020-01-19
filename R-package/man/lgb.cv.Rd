@@ -68,7 +68,7 @@ the \code{nfold} and \code{stratified} parameters are ignored.}
 
 \item{categorical_feature}{categorical features. This can either be a character vector of feature
 names or an integer vector with the indices of the features (e.g.
-\code{c(1L, 1L)} to say "the first and tenth columns").}
+\code{c(1L, 10L)} to say "the first and tenth columns").}
 
 \item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
 and one metric. If there's more than one, will check all of them
@@ -82,8 +82,8 @@ into a predictor model which frees up memory and the original datasets}
 
 \item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
 \itemize{
-    \item{\code{boosting}: Boosting type. \code{"gbdt"} or \code{"dart"}}
-    \item{\code{num_leaves}: number of leaves in one tree. defaults to 127}
+    \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
+    \item{\code{num_leaves}: Maximum number of leaves in one tree.}
     \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
     \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to

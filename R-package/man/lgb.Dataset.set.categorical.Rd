@@ -11,7 +11,7 @@ lgb.Dataset.set.categorical(dataset, categorical_feature)
 
 \item{categorical_feature}{categorical features. This can either be a character vector of feature
 names or an integer vector with the indices of the features (e.g.
-\code{c(1L, 1L)} to say "the first and tenth columns").}
+\code{c(1L, 10L)} to say "the first and tenth columns").}
 }
 \value{
 passed dataset

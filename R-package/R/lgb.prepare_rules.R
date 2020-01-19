@@ -1,3 +1,4 @@
+#' @name lgb.prepare_rules
 #' @title Data preparator for LightGBM datasets with rules (numeric)
 #' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
 #'              Factors and characters are converted to numeric. In addition, keeps rules created

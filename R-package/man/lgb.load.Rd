@@ -15,7 +15,7 @@ lgb.load(filename = NULL, model_str = NULL)
 lgb.Booster
 }
 \description{
-Load LightGBM takes in either a file path or model string
+Load LightGBM takes in either a file path or model string.
               If both are provided, Load will default to loading from file
 }
 \examples{

@@ -14,9 +14,8 @@
 #' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
 NULL
 
-
-#' @title Train a LightGBM model
 #' @name lightgbm
+#' @title Train a LightGBM model
 #' @description Simple interface for training a LightGBM model.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
@@ -37,7 +36,7 @@ NULL
 #'        \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                          into a predictor model which frees up memory and the original datasets}
 #'         \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-#'         \item{\code{num_leaves}: Number of leaves in one tree. Defaults to 127.}
+#'         \item{\code{num_leaves}: Maximum number of leaves in one tree.}
 #'         \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
 #'                          overfit when #data is small. Tree still grow by leaf-wise.}
 #'          \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
@@ -120,6 +119,7 @@ lightgbm <- function(data,
 #' rows and 127 variables
 NULL
 
+#' @name agaricus.test
 #' @title Test part from Mushroom Data Set
 #' @description This data set is originally from the Mushroom data set,
 #'              UCI Machine Learning Repository.
@@ -138,12 +138,12 @@ NULL
 #'
 #' @docType data
 #' @keywords datasets
-#' @name agaricus.test
 #' @usage data(agaricus.test)
 #' @format A list containing a label vector, and a dgCMatrix object with 1611
 #' rows and 126 variables
 NULL
 
+#' @name bank
 #' @title Bank Marketing Data Set
 #' @description This data set is originally from the Bank Marketing data set,
 #'              UCI Machine Learning Repository.
@@ -159,7 +159,6 @@ NULL
 #'
 #' @docType data
 #' @keywords datasets
-#' @name bank
 #' @usage data(bank)
 #' @format A data.table with 4521 rows and 17 variables
 NULL

@@ -1,5 +1,5 @@
-#' @title Main training logic for LightGBM
 #' @name lgb.train
+#' @title Main training logic for LightGBM
 #' @description Logic to train with LightGBM
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
@@ -19,7 +19,7 @@
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
 #'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-#'                \item{\code{num_leaves}: Number of leaves in one tree. Defaults to 127.}
+#'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
 #'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
 #'                                 overfit when #data is small. Tree still grow by leaf-wise.}
 #'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to

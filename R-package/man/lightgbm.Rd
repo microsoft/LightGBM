@@ -59,8 +59,8 @@ If early stopping occurs, the model will have 'best_iter' field.}
                        say "the first and tenth columns").}
    \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
                      into a predictor model which frees up memory and the original datasets}
-    \item{\code{boosting}: Boosting type. \code{"gbdt"} or \code{"dart"}}
-    \item{\code{num_leaves}: number of leaves in one tree. defaults to 127}
+    \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
+    \item{\code{num_leaves}: Maximum number of leaves in one tree.}
     \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
      \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to

@@ -1,3 +1,4 @@
+#' @name saveRDS.lgb.Booster
 #' @title saveRDS for \code{lgb.Booster} models
 #' @description Attempts to save a model using RDS. Has an additional parameter (\code{raw})
 #'              which decides whether to save the raw model or not.

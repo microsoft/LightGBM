@@ -1,3 +1,4 @@
+#' @name lgb.unloader
 #' @title LightGBM unloading error fix
 #' @description Attempts to unload LightGBM packages so you can remove objects cleanly without
 #'              having to restart R. This is useful for instance if an object becomes stuck for no
