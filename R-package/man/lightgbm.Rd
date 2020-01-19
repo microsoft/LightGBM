@@ -55,7 +55,7 @@ If early stopping occurs, the model will have 'best_iter' field.}
    \item{\code{record}: Boolean, TRUE will record iteration message to \code{booster$record_evals}}
    \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset}
    \item{\code{categorical_feature}: categorical features. This can either be a character vector of feature
-                       names or an integer vector with the indices of the features (e.g. \code{c(1L, 1L)} to
+                       names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
                        say "the first and tenth columns").}
    \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
                      into a predictor model which frees up memory and the original datasets}
