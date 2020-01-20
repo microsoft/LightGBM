@@ -433,6 +433,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     } else {
       Log::Fatal("Bug in GPU tree builder: dword_features_ can only be 4 or 8");
     }
+    #pragma omp critical
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
                         i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
