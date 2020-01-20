@@ -80,6 +80,7 @@ class FeatureGroup {
       is_sparse_ = true;
       bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
     } else {
+      is_sparse_ = false;
       bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
     }
   }
