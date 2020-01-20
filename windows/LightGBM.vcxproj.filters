@@ -210,6 +210,9 @@
     <ClInclude Include="..\src\treelearner\cost_effective_gradient_boosting.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\io\multi_val_dense_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">

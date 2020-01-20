@@ -62,7 +62,7 @@ class Predictor {
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, predict_leaf_index, predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
-    predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(num_feature_, 0.0f));
+    predict_buf_.resize(num_threads_, std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(num_feature_, 0.0f));
     const int kFeatureThreshold = 100000;
     const size_t KSparseThreshold = static_cast<size_t>(0.01 * num_feature_);
     if (predict_leaf_index) {
@@ -263,7 +263,7 @@ class Predictor {
   int num_feature_;
   int num_pred_one_row_;
   int num_threads_;
-  std::vector<std::vector<double>> predict_buf_;
+  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> predict_buf_;
 };
 
 }  // namespace LightGBM

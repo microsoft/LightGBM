@@ -16,7 +16,7 @@ namespace LightGBM {
 class Dense4bitsBin;
 
 class Dense4bitsBinIterator : public BinIterator {
- public:
+public:
   explicit Dense4bitsBinIterator(const Dense4bitsBin* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin)
     : bin_data_(bin_data), min_bin_(static_cast<uint8_t>(min_bin)),
     max_bin_(static_cast<uint8_t>(max_bin)),
@@ -31,7 +31,7 @@ class Dense4bitsBinIterator : public BinIterator {
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override {}
 
- private:
+private:
   const Dense4bitsBin* bin_data_;
   uint8_t min_bin_;
   uint8_t max_bin_;
@@ -40,12 +40,12 @@ class Dense4bitsBinIterator : public BinIterator {
 };
 
 class Dense4bitsBin : public Bin {
- public:
+public:
   friend Dense4bitsBinIterator;
   explicit Dense4bitsBin(data_size_t num_data)
     : num_data_(num_data) {
     int len = (num_data_ + 1) / 2;
-    data_ = std::vector<uint8_t>(len, static_cast<uint8_t>(0));
+    data_.resize(len, static_cast<uint8_t>(0));
     buf_ = std::vector<uint8_t>(len, static_cast<uint8_t>(0));
   }
 
@@ -73,9 +73,14 @@ class Dense4bitsBin : public Bin {
 
   inline BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
 
+  #define ACC_GH(hist, i, g, h) \
+  const auto ti = (i) << 1; \
+  hist[ti] += g; \
+  hist[ti + 1] += h; \
+
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const override {
+    hist_t* out) const override {
     const data_size_t pf_offset = 64;
     const data_size_t pf_end = end - pf_offset - kCacheLineSize;
     data_size_t i = start;
@@ -83,43 +88,35 @@ class Dense4bitsBin : public Bin {
       PREFETCH_T0(data_.data() + (data_indices[i + pf_offset] >> 1));
       const data_size_t idx = data_indices[i];
       const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      out[bin].sum_gradients += ordered_gradients[i];
-      out[bin].sum_hessians += ordered_hessians[i];
-      ++out[bin].cnt;
+      ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
     }
     for (; i < end; i++) {
       const data_size_t idx = data_indices[i];
       const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      out[bin].sum_gradients += ordered_gradients[i];
-      out[bin].sum_hessians += ordered_hessians[i];
-      ++out[bin].cnt;
+      ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
     }
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const override {
+    hist_t* out) const override {
     const data_size_t pf_offset = 64;
     const data_size_t pf_end = end - pf_offset - kCacheLineSize;
     data_size_t i = start;
     for (; i < pf_end; i++) {
       PREFETCH_T0(data_.data() + ((i + pf_offset) >> 1));
       const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
-      out[bin].sum_gradients += ordered_gradients[i];
-      out[bin].sum_hessians += ordered_hessians[i];
-      ++out[bin].cnt;
+      ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
     }
     for (; i < end; i++) {
       const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
-      out[bin].sum_gradients += ordered_gradients[i];
-      out[bin].sum_hessians += ordered_hessians[i];
-      ++out[bin].cnt;
+      ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
     }
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients,
-    HistogramBinEntry* out) const override {
+    hist_t* out) const override {
     const data_size_t pf_offset = 64;
     const data_size_t pf_end = end - pf_offset - kCacheLineSize;
     data_size_t i = start;
@@ -127,35 +124,33 @@ class Dense4bitsBin : public Bin {
       PREFETCH_T0(data_.data() + (data_indices[i + pf_offset] >> 1));
       const data_size_t idx = data_indices[i];
       const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      out[bin].sum_gradients += ordered_gradients[i];
-      ++out[bin].cnt;
+      ACC_GH(out, bin, ordered_gradients[i], 1.0f);
     }
     for (; i < end; i++) {
       const data_size_t idx = data_indices[i];
       const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      out[bin].sum_gradients += ordered_gradients[i];
-      ++out[bin].cnt;
+      ACC_GH(out, bin, ordered_gradients[i], 1.0f);
     }
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients,
-    HistogramBinEntry* out) const override {
+    hist_t* out) const override {
     const data_size_t pf_offset = 64;
     const data_size_t pf_end = end - pf_offset - kCacheLineSize;
     data_size_t i = start;
     for (; i < pf_end; i++) {
       PREFETCH_T0(data_.data() + ((i + pf_offset) >> 1));
       const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
-      out[bin].sum_gradients += ordered_gradients[i];
-      ++out[bin].cnt;
+      ACC_GH(out, bin, ordered_gradients[i], 1.0f);
     }
     for (; i < end; i++) {
       const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
-      out[bin].sum_gradients += ordered_gradients[i];
-      ++out[bin].cnt;
+      ACC_GH(out, bin, ordered_gradients[i], 1.0f);
     }
   }
+
+  #undef ACC_GH
 
   data_size_t Split(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left,
@@ -266,8 +261,6 @@ class Dense4bitsBin : public Bin {
 
   data_size_t num_data() const override { return num_data_; }
 
-  /*! \brief not ordered bin for dense feature */
-  OrderedBin* CreateOrderedBin() const override { return nullptr; }
 
   void FinishLoad() override {
     if (buf_.empty()) { return; }
@@ -325,19 +318,20 @@ class Dense4bitsBin : public Bin {
   }
 
   size_t SizesInByte() const override {
-    return sizeof(uint8_t) * data_.size();
+    return sizeof(uint8_t)* data_.size();
   }
 
   Dense4bitsBin* Clone() override {
     return new Dense4bitsBin(*this);
   }
 
- protected:
+protected:
   Dense4bitsBin(const Dense4bitsBin& other)
-    : num_data_(other.num_data_), data_(other.data_), buf_(other.buf_) {}
+    : num_data_(other.num_data_), data_(other.data_), buf_(other.buf_) {
+  }
 
   data_size_t num_data_;
-  std::vector<uint8_t> data_;
+  std::vector<uint8_t, Common::AlignmentAllocator<uint8_t, kAlignedSize>> data_;
   std::vector<uint8_t> buf_;
 };
 

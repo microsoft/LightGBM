@@ -22,10 +22,6 @@
 
 namespace LightGBM {
 
-#ifdef TIMETAG
-std::chrono::duration<double, std::milli> subset_time;
-std::chrono::duration<double, std::milli> re_init_tree_time;
-#endif
 
 class GOSS: public GBDT {
  public:
@@ -36,10 +32,7 @@ class GOSS: public GBDT {
   }
 
   ~GOSS() {
-    #ifdef TIMETAG
-    Log::Info("GOSS::subset costs %f", subset_time * 1e-3);
-    Log::Info("GOSS::re_init_tree costs %f", re_init_tree_time * 1e-3);
-    #endif
+
   }
 
   void Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
@@ -193,22 +186,10 @@ class GOSS: public GBDT {
     if (!is_use_subset_) {
       tree_learner_->SetBaggingData(bag_data_indices_.data(), bag_data_cnt_);
     } else {
-      // get subset
-      #ifdef TIMETAG
-      auto start_time = std::chrono::steady_clock::now();
-      #endif
       tmp_subset_->ReSize(bag_data_cnt_);
       tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
-      #ifdef TIMETAG
-      subset_time += std::chrono::steady_clock::now() - start_time;
-      #endif
-      #ifdef TIMETAG
-      start_time = std::chrono::steady_clock::now();
-      #endif
       tree_learner_->ResetTrainingData(tmp_subset_.get());
-      #ifdef TIMETAG
-      re_init_tree_time += std::chrono::steady_clock::now() - start_time;
-      #endif
+
     }
   }
 
