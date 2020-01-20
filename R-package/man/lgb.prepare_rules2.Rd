@@ -18,11 +18,11 @@ A list with the cleaned dataset (\code{data}) and the rules (\code{rules}).
 }
 \description{
 Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-Factors and characters are converted to numeric (specifically: integer).
-In addition, keeps rules created so you can convert other datasets using this converter.
-This is useful if you have a specific need for integer dataset instead of numeric dataset.
-Note that there are programs which do not support integer-only input.
-Consider this as a half memory technique which is dangerous, especially for LightGBM.
+             Factors and characters are converted to numeric (specifically: integer).
+             In addition, keeps rules created so you can convert other datasets using this converter.
+             This is useful if you have a specific need for integer dataset instead of numeric dataset.
+             Note that there are programs which do not support integer-only input.
+             Consider this as a half memory technique which is dangerous, especially for LightGBM.
 }
 \examples{
 library(lightgbm)

@@ -22,16 +22,19 @@ setinfo(dataset, ...)
 passed object
 }
 \description{
-Set information of an \code{lgb.Dataset} object
+Set one attribute of a \code{lgb.Dataset}
 }
 \details{
 The \code{name} field can be one of the following:
 
 \itemize{
-    \item \code{label}: label lightgbm learn from ;
-    \item \code{weight}: to do a weight rescale ;
-    \item \code{init_score}: initial score is the base prediction lightgbm will boost from ;
-    \item \code{group}.
+    \item{\code{label}: vector of labels to use as the target variable}
+    \item{\code{weight}: to do a weight rescale}
+    \item{\code{init_score}: initial score is the base prediction lightgbm will boost from}
+    \item{\code{group}: used for learning-to-rank tasks. An integer vector describing how to
+        group rows together as ordered results from the same set of candidate results to be ranked.
+        For example, if you have a 1000-row dataset that contains 250 4-document query results,
+        set this to \code{rep(4L, 250L)}}
 }
 }
 \examples{

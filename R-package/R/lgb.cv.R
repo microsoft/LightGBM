@@ -17,9 +17,9 @@ CVBooster <- R6::R6Class(
   )
 )
 
+#' @name lgb.cv
 #' @title Main CV logic for LightGBM
 #' @description Cross validation logic used by LightGBM
-#' @name lgb.cv
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
 #' @param label vector of response values. Should be provided only when data is an R-matrix.
@@ -36,19 +36,19 @@ CVBooster <- R6::R6Class(
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
-#' @param categorical_feature list of str or int
-#'                            type int represents index,
-#'                            type str represents feature names
+#' @param categorical_feature categorical features. This can either be a character vector of feature
+#'                            names or an integer vector with the indices of the features (e.g.
+#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
-#'                \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
-#'                \item{num_leaves}{number of leaves in one tree. defaults to 127}
-#'                \item{max_depth}{Limit the max depth for tree model. This is used to deal with
+#'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
+#'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
+#'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
 #'                                 overfit when #data is small. Tree still grow by leaf-wise.}
-#'                \item{num_threads}{Number of threads for LightGBM. For the best speed, set this to
+#'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
 #'                                   the number of real CPU cores, not the number of threads (most
 #'                                   CPU using hyper-threading to generate 2 threads per CPU core).}
 #'            }

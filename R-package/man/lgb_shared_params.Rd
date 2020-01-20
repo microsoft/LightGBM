@@ -4,8 +4,7 @@
 \alias{lgb_shared_params}
 \title{Shared parameter docs}
 \arguments{
-\item{callbacks}{list of callback functions
-List of callback functions that are applied at each iteration.}
+\item{callbacks}{List of callback functions that are applied at each iteration.}
 
 \item{data}{a \code{lgb.Dataset} object, used for training}
 

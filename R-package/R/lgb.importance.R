@@ -1,18 +1,15 @@
-#' Compute feature importance in a model
-#'
-#' Creates a \code{data.table} of feature importances in a model.
-#'
+#' @name lgb.importance
+#' @title Compute feature importance in a model
+#' @description Creates a \code{data.table} of feature importances in a model.
 #' @param model object of class \code{lgb.Booster}.
 #' @param percentage whether to show importance in relative percentage.
 #'
-#' @return
-#'
-#' For a tree model, a \code{data.table} with the following columns:
+#' @return For a tree model, a \code{data.table} with the following columns:
 #' \itemize{
-#'   \item \code{Feature} Feature names in the model.
-#'   \item \code{Gain} The total gain of this feature's splits.
-#'   \item \code{Cover} The number of observation related to this feature.
-#'   \item \code{Frequency} The number of times a feature splited in trees.
+#'   \item{\code{Feature}: Feature names in the model.}
+#'   \item{\code{Gain}: The total gain of this feature's splits.}
+#'   \item{\code{Cover}: The number of observation related to this feature.}
+#'   \item{\code{Frequency}: The number of times a feature splited in trees.}
 #' }
 #'
 #' @examples

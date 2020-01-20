@@ -1,11 +1,9 @@
-#' Data preparator for LightGBM datasets (numeric)
-#'
-#' Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-#' Factors and characters are converted to numeric without integers. Please use
-#' \code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
-#'
+#' @name lgb.prepare
+#' @title Data preparator for LightGBM datasets (numeric)
+#' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+#'              Factors and characters are converted to numeric without integers. Please use
+#'              \code{\link{lgb.prepare_rules}} if you want to apply this transformation to other datasets.
 #' @param data A data.frame or data.table to prepare.
-#'
 #' @return The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
 #'         for input in \code{lgb.Dataset}.
 #'

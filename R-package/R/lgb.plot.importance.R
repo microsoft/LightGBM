@@ -1,7 +1,6 @@
-#' Plot feature importance as a bar graph
-#'
-#' Plot previously calculated feature importance: Gain, Cover and Frequency, as a bar graph.
-#'
+#' @name lgb.plot.importance
+#' @title Plot feature importance as a bar graph
+#' @description Plot previously calculated feature importance: Gain, Cover and Frequency, as a bar graph.
 #' @param tree_imp a \code{data.table} returned by \code{\link{lgb.importance}}.
 #' @param top_n maximal number of top features to include into the plot.
 #' @param measure the name of importance measure to plot, can be "Gain", "Cover" or "Frequency".
