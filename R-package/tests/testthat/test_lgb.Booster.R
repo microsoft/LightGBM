@@ -53,7 +53,7 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
             , data_name = "testing"
             , eval_name = "l2"
         )
-    }, regexp = "Only the followwing datasets exist in record evals: [test]", fixed = TRUE)
+    }, regexp = "Only the following datasets exist in record evals: [test]", fixed = TRUE)
 })
 
 test_that("lgb.get.eval.result() should throw an informative error for incorrect eval_name", {
@@ -86,5 +86,5 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
             , data_name = "test"
             , eval_name = "l1"
         )
-    }, regexp = "Only the followwing eval_names exist for dataset 'test': [l2]", fixed = TRUE)
+    }, regexp = "Only the following eval_names exist for dataset 'test': [l2]", fixed = TRUE)
 })

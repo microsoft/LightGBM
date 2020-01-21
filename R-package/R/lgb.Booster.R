@@ -943,8 +943,8 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
     stop(paste0(
       "lgb.get.eval.result: data_name "
       , shQuote(data_name)
-      , " not found. Only the followwing datasets exist in record evals: ["
-      , paste(data_names, collapse = ",")
+      , " not found. Only the following datasets exist in record evals: ["
+      , paste(data_names, collapse = ", ")
       , "]"
     ))
   }
@@ -955,10 +955,10 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
     stop(paste0(
       "lgb.get.eval.result: eval_name "
       , shQuote(eval_name)
-      , " not found. Only the followwing eval_names exist for dataset "
+      , " not found. Only the following eval_names exist for dataset "
       , shQuote(data_name)
       , ": ["
-      , paste(eval_names, collapse = ",")
+      , paste(eval_names, collapse = ", ")
       , "]"
     ))
     stop("lgb.get.eval.result: wrong eval name")

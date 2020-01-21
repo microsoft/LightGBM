@@ -28,7 +28,7 @@ lgb.get.eval.result(
 vector of evaluation result
 }
 \description{
-Given a (\code{lgb.Booster}), return evaluation results for a
+Given a \code{lgb.Booster}, return evaluation results for a
              particular metric on a particular dataset.
 }
 \examples{
