@@ -69,7 +69,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   ordered_gradients_.resize(num_data_);
   ordered_hessians_.resize(num_data_);
 
-  GetMultiValBin(train_data_);
+  GetMultiValBin(train_data_, true);
 
   histogram_pool_.DynamicChangeSize(train_data_, is_hist_colwise_, config_, max_cache_size, config_->num_leaves);
   Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
@@ -79,9 +79,9 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   }
 }
 
-void SerialTreeLearner::GetMultiValBin(const Dataset* dataset) {
+void SerialTreeLearner::GetMultiValBin(const Dataset* dataset, bool is_first_time) {
   auto used_feature = GetUsedFeatures(true);
-  if (multi_val_bin_ == nullptr) {
+  if (is_first_time) {
     multi_val_bin_.reset(dataset->TestMultiThreadingMethod(ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
       is_constant_hessian_, config_->force_col_wise, config_->force_row_wise, &is_hist_colwise_));
   } else {
@@ -103,7 +103,7 @@ void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
   // initialize data partition
   data_partition_->ResetNumData(num_data_);
 
-  GetMultiValBin(train_data_);
+  GetMultiValBin(train_data_, false);
 
   // initialize ordered gradients and hessians
   ordered_gradients_.resize(num_data_);
@@ -704,9 +704,11 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   auto p_right = larger_leaf_splits_.get();
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
+    CHECK(best_split_info.left_count > 0);
     smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
     larger_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
   } else {
+    CHECK(best_split_info.right_count > 0);
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
     larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
     p_right = smaller_leaf_splits_.get();

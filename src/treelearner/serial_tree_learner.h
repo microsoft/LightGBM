@@ -79,9 +79,11 @@ class SerialTreeLearner: public TreeLearner {
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
+  bool IsHistColWise() const override { return is_hist_colwise_; }
+
  protected:
 
-  void GetMultiValBin(const Dataset* dataset);
+  void GetMultiValBin(const Dataset* dataset, bool is_first_time);
 
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
