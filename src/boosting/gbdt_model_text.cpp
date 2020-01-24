@@ -562,6 +562,9 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
     for (int iter = 0; iter < num_used_model; ++iter) {
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
+#ifdef DEBUG
+          CHECK(models_[iter]->split_feature(split_idx) >= 0);
+#endif
           feature_importances[models_[iter]->split_feature(split_idx)] += 1.0;
         }
       }
@@ -570,6 +573,9 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
     for (int iter = 0; iter < num_used_model; ++iter) {
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
+#ifdef DEBUG
+          CHECK(models_[iter]->split_feature(split_idx) >= 0);
+#endif
           feature_importances[models_[iter]->split_feature(split_idx)] += models_[iter]->split_gain(split_idx);
         }
       }
