@@ -884,16 +884,19 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 
 #' @name lgb.get.eval.result
 #' @title Get record evaluation result from booster
-#' @description Get record evaluation result from booster
+#' @description Given a \code{lgb.Booster}, return evaluation results for a
+#'              particular metric on a particular dataset.
 #' @param booster Object of class \code{lgb.Booster}
-#' @param data_name name of dataset
-#' @param eval_name name of evaluation
-#' @param iters iterations, NULL will return all
+#' @param data_name Name of the dataset to return evaluation results for.
+#' @param eval_name Name of the evaluation metric to return results for.
+#' @param iters An integer vector of iterations you want to get evaluation results for. If NULL
+#'              (the default), evaluation results for all iterations will be returned.
 #' @param is_err TRUE will return evaluation error instead
 #'
 #' @return vector of evaluation result
 #'
 #' @examples
+#' # train a regression model
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -912,6 +915,14 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
+#'
+#' # Examine valid data_name values
+#' print(setdiff(names(model$record_evals), "start_iter"))
+#'
+#' # Examine valid eval_name values for dataset "test"
+#' print(names(model$record_evals[["test"]]))
+#'
+#' # Get L2 values for "test" dataset
 #' lgb.get.eval.result(model, "test", "l2")
 #' @export
 lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_err = FALSE) {
@@ -926,13 +937,30 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
     stop("lgb.get.eval.result: data_name and eval_name should be characters")
   }
 
-  # Check if recorded evaluation is existing
-  if (is.null(booster$record_evals[[data_name]])) {
-    stop("lgb.get.eval.result: wrong data name")
+  # NOTE: "start_iter" exists in booster$record_evals but is not a valid data_name
+  data_names <- setdiff(names(booster$record_evals), "start_iter")
+  if (!(data_name %in% data_names)) {
+    stop(paste0(
+      "lgb.get.eval.result: data_name "
+      , shQuote(data_name)
+      , " not found. Only the following datasets exist in record evals: ["
+      , paste(data_names, collapse = ", ")
+      , "]"
+    ))
   }
 
   # Check if evaluation result is existing
-  if (is.null(booster$record_evals[[data_name]][[eval_name]])) {
+  eval_names <- names(booster$record_evals[[data_name]])
+  if (!(eval_name %in% eval_names)) {
+    stop(paste0(
+      "lgb.get.eval.result: eval_name "
+      , shQuote(eval_name)
+      , " not found. Only the following eval_names exist for dataset "
+      , shQuote(data_name)
+      , ": ["
+      , paste(eval_names, collapse = ", ")
+      , "]"
+    ))
     stop("lgb.get.eval.result: wrong eval name")
   }
 
