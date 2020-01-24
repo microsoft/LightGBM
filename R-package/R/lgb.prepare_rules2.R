@@ -1,15 +1,13 @@
-#' Data preparator for LightGBM datasets with rules (integer)
-#'
-#' Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-#' Factors and characters are converted to numeric (specifically: integer).
-#' In addition, keeps rules created so you can convert other datasets using this converter.
-#' This is useful if you have a specific need for integer dataset instead of numeric dataset.
-#' Note that there are programs which do not support integer-only input.
-#' Consider this as a half memory technique which is dangerous, especially for LightGBM.
-#'
+#' @name lgb.prepare_rules2
+#' @title Data preparator for LightGBM datasets with rules (integer)
+#' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+#'              Factors and characters are converted to numeric (specifically: integer).
+#'              In addition, keeps rules created so you can convert other datasets using this converter.
+#'              This is useful if you have a specific need for integer dataset instead of numeric dataset.
+#'              Note that there are programs which do not support integer-only input.
+#'              Consider this as a half memory technique which is dangerous, especially for LightGBM.
 #' @param data A data.frame or data.table to prepare.
 #' @param rules A set of rules from the data preparator, if already used.
-#'
 #' @return A list with the cleaned dataset (\code{data}) and the rules (\code{rules}).
 #'         The data must be converted to a matrix format (\code{as.matrix}) for input in
 #'         \code{lgb.Dataset}.
@@ -168,9 +166,8 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
 
       } else {
 
-        # What do you think you are doing here? Throw error.
         stop(
-          "lgb.prepare: you provided "
+          "lgb.prepare_rules2: you provided "
           , paste(class(data), collapse = " & ")
           , " but data should have class data.frame"
         )

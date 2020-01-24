@@ -1,11 +1,9 @@
-#' Data preparator for LightGBM datasets (numeric)
-#'
-#' Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-#' Factors and characters are converted to numeric without integers. Please use
-#' \code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
-#'
+#' @name lgb.prepare
+#' @title Data preparator for LightGBM datasets (numeric)
+#' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+#'              Factors and characters are converted to numeric without integers. Please use
+#'              \code{\link{lgb.prepare_rules}} if you want to apply this transformation to other datasets.
 #' @param data A data.frame or data.table to prepare.
-#'
 #' @return The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
 #'         for input in \code{lgb.Dataset}.
 #'
@@ -59,13 +57,13 @@ lgb.prepare <- function(data) {
       # Get data classes
       list_classes <- sapply(data, class)
 
-      # Convert characters to factors to numeric (integer is more efficient actually)
+      # Convert characters to factors to numeric
       is_char <- which(list_classes == "character")
       if (length(is_char) > 0L) {
         data[is_char] <- lapply(data[is_char], function(x) {as.numeric(as.factor(x))})
       }
 
-      # Convert factors to numeric (integer is more efficient actually)
+      # Convert factors to numeric
       is_fact <- which(list_classes == "factor")
       if (length(is_fact) > 0L) {
         data[is_fact] <- lapply(data[is_fact], function(x) {as.numeric(x)})
@@ -73,11 +71,10 @@ lgb.prepare <- function(data) {
 
     } else {
 
-      # What do you think you are doing here? Throw error.
       stop(
-        "lgb.prepare2: you provided "
+        "lgb.prepare: you provided "
         , paste(class(data), collapse = " & ")
-        , " but data should have class data.frame"
+        , " but data should have class data.frame or data.table"
       )
 
     }

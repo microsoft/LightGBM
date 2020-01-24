@@ -8,16 +8,6 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
-if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]] && [[ $(sw_vers -productVersion | cut -d'.' -f2) -ge "14" ]]; then
-    CMAKE_OPTS=(-DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
-                -DOpenMP_C_LIB_NAMES=omp
-                -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
-                -DOpenMP_CXX_LIB_NAMES=omp
-                -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib)
-else
-    CMAKE_OPTS=()
-fi
-
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
 source activate $CONDA_ENV
 
@@ -71,7 +61,7 @@ fi
 
 if [[ $TASK == "if-else" ]]; then
     conda install -q -y -n $CONDA_ENV numpy
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake "${CMAKE_OPTS[@]}" .. && make lightgbm -j4 || exit -1
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
@@ -97,9 +87,9 @@ if [[ $TASK == "sdist" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
         mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
         if [[ $OS_NAME == "macos" ]]; then
-            cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON "${CMAKE_OPTS[@]}" ..
+            cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
         else
-            cmake -DUSE_SWIG=ON "${CMAKE_OPTS[@]}" ..
+            cmake -DUSE_SWIG=ON ..
         fi
         make -j4 || exit -1
         if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
@@ -114,7 +104,7 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --universal || exit -1
-        mv dist/lightgbm-$LGB_VER-py2.py3-none-macosx.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.macosx_10_14_x86_64.macosx_10_15_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py2.py3-none-macosx.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_13_x86_64.macosx_10_14_x86_64.macosx_10_15_x86_64.whl
         if [[ $AZURE == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py2.py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
@@ -140,7 +130,7 @@ if [[ $TASK == "gpu" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ "${CMAKE_OPTS[@]}" ..
+    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
@@ -148,9 +138,9 @@ elif [[ $TASK == "mpi" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-    cmake -DUSE_MPI=ON "${CMAKE_OPTS[@]}" ..
+    cmake -DUSE_MPI=ON ..
 else
-    cmake "${CMAKE_OPTS[@]}" ..
+    cmake ..
 fi
 
 make _lightgbm -j4 || exit -1

@@ -61,7 +61,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
       feature_distribution[cur_min_machine].push_back(inner_feature_index);
       auto num_bin = this->train_data_->FeatureNumBin(inner_feature_index);
-      if (this->train_data_->FeatureBinMapper(inner_feature_index)->GetDefaultBin() == 0) {
+      if (this->train_data_->FeatureBinMapper(inner_feature_index)->GetMostFreqBin() == 0) {
         num_bin -= 1;
       }
       num_bins_distributed[cur_min_machine] += num_bin;
@@ -79,7 +79,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     block_len_[i] = 0;
     for (auto fid : feature_distribution[i]) {
       auto num_bin = this->train_data_->FeatureNumBin(fid);
-      if (this->train_data_->FeatureBinMapper(fid)->GetDefaultBin() == 0) {
+      if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
         num_bin -= 1;
       }
       block_len_[i] += num_bin * sizeof(HistogramBinEntry);
@@ -98,7 +98,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     for (auto fid : feature_distribution[i]) {
       buffer_write_start_pos_[fid] = bin_size;
       auto num_bin = this->train_data_->FeatureNumBin(fid);
-      if (this->train_data_->FeatureBinMapper(fid)->GetDefaultBin() == 0) {
+      if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
         num_bin -= 1;
       }
       bin_size += num_bin * sizeof(HistogramBinEntry);
@@ -110,7 +110,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
   for (auto fid : feature_distribution[rank_]) {
     buffer_read_start_pos_[fid] = bin_size;
     auto num_bin = this->train_data_->FeatureNumBin(fid);
-    if (this->train_data_->FeatureBinMapper(fid)->GetDefaultBin() == 0) {
+    if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
       num_bin -= 1;
     }
     bin_size += num_bin * sizeof(HistogramBinEntry);

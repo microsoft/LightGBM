@@ -100,7 +100,6 @@ cb.reset.parameters <- function(new_params) {
       p[i]
     })
 
-    # To-do check pars
     if (!is.null(env$model)) {
       env$model$reset_parameter(pars)
     }

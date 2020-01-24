@@ -1,7 +1,6 @@
-#' Plot feature contribution as a bar graph
-#'
-#' Plot previously calculated feature contribution as a bar graph.
-#'
+#' @name lgb.plot.interpretation
+#' @title Plot feature contribution as a bar graph
+#' @description Plot previously calculated feature contribution as a bar graph.
 #' @param tree_interpretation_dt a \code{data.table} returned by \code{\link{lgb.interprete}}.
 #' @param top_n maximal number of top features to include into the plot.
 #' @param cols the column numbers of layout, will be used only for multiclass classification feature contribution.
