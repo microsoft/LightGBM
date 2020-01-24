@@ -86,3 +86,16 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
   )
   expect_false(is.na(handle))
 })
+
+test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
+  ds <- lgb.Dataset(
+    data = matrix(rnorm(100L), nrow = 50L, ncol = 2L)
+    , label = sample(c(0L, 1L), size = 50L, replace = TRUE)
+  )
+  ds$construct()
+  current_group <- ds$getinfo("group")
+  expect_null(current_group)
+  group_as_numeric <- rep(25.0, 2L)
+  ds$setinfo("group", group_as_numeric)
+  expect_identical(ds$getinfo("group"), as.integer(group_as_numeric))
+})
