@@ -82,6 +82,12 @@ class SerialTreeLearner: public TreeLearner {
 
   bool IsHistColWise() const override { return is_hist_colwise_; }
 
+  void ComputeBestSplitForFeature(FeatureHistogram *histogram_array_,
+                                  const std::unique_ptr<LeafSplits>& leaf_splits_,
+                                  int feature_index, int real_fidx,
+                                  const std::vector<int8_t> &node_used_features,
+                                  const int tid, std::vector<SplitInfo> &best);
+
  protected:
   void GetMultiValBin(const Dataset* dataset, bool is_first_time);
 

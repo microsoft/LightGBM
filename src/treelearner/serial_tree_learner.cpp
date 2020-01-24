@@ -410,24 +410,15 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
     OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) { continue; }
     const int tid = omp_get_thread_num();
-    SplitInfo smaller_split;
     train_data_->FixHistogram(feature_index,
                               smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
                               smaller_leaf_histogram_array_[feature_index].RawData());
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
-    smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-      smaller_leaf_splits_->sum_gradients(),
-      smaller_leaf_splits_->sum_hessians(),
-      smaller_leaf_splits_->num_data_in_leaf(),
-      constraints_per_leaf_[smaller_leaf_splits_->LeafIndex()],
-      &smaller_split);
-    smaller_split.feature = real_fidx;
-    if (cegb_ != nullptr) {
-      smaller_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, smaller_leaf_splits_->LeafIndex(), smaller_leaf_splits_->num_data_in_leaf(), smaller_split);
-    }
-    if (smaller_split > smaller_best[tid] && smaller_node_used_features[feature_index]) {
-      smaller_best[tid] = smaller_split;
-    }
+
+    ComputeBestSplitForFeature(smaller_leaf_histogram_array_,
+                               smaller_leaf_splits_, feature_index, real_fidx,
+                               smaller_node_used_features, tid, smaller_best);
+
     // only has root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
 
@@ -437,21 +428,11 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       train_data_->FixHistogram(feature_index, larger_leaf_splits_->sum_gradients(), larger_leaf_splits_->sum_hessians(),
                                 larger_leaf_histogram_array_[feature_index].RawData());
     }
-    SplitInfo larger_split;
-    // find best threshold for larger child
-    larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-      larger_leaf_splits_->sum_gradients(),
-      larger_leaf_splits_->sum_hessians(),
-      larger_leaf_splits_->num_data_in_leaf(),
-      constraints_per_leaf_[larger_leaf_splits_->LeafIndex()],
-      &larger_split);
-    larger_split.feature = real_fidx;
-    if (cegb_ != nullptr) {
-      larger_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, larger_leaf_splits_->LeafIndex(), larger_leaf_splits_->num_data_in_leaf(), larger_split);
-    }
-    if (larger_split > larger_best[tid] && larger_node_used_features[feature_index]) {
-      larger_best[tid] = larger_split;
-    }
+
+    ComputeBestSplitForFeature(larger_leaf_histogram_array_,
+                               larger_leaf_splits_, feature_index, real_fidx,
+                               larger_node_used_features, tid, larger_best);
+
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -753,6 +734,32 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
         tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
       }
     }
+  }
+}
+
+void SerialTreeLearner::ComputeBestSplitForFeature(
+    FeatureHistogram *histogram_array_,
+    const std::unique_ptr<LeafSplits>& leaf_splits_, int feature_index, int real_fidx,
+    const std::vector<int8_t>& node_used_features, const int tid,
+    std::vector<SplitInfo>& best) {
+
+  SplitInfo new_split;
+
+  histogram_array_[feature_index].FindBestThreshold(
+      leaf_splits_->sum_gradients(), leaf_splits_->sum_hessians(),
+      leaf_splits_->num_data_in_leaf(),
+      constraints_per_leaf_[leaf_splits_->LeafIndex()], &new_split);
+
+  new_split.feature = real_fidx;
+
+  if (cegb_ != nullptr) {
+    new_split.gain -=
+        cegb_->DetlaGain(feature_index, real_fidx, leaf_splits_->LeafIndex(),
+                         leaf_splits_->num_data_in_leaf(), new_split);
+  }
+
+  if (new_split > best[tid] && node_used_features[feature_index]) {
+    best[tid] = new_split;
   }
 }
 
