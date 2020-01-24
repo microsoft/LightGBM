@@ -22,6 +22,7 @@
 #include "feature_histogram.hpp"
 #include "leaf_splits.hpp"
 #include "split_info.hpp"
+#include "monotone_constraints.hpp"
 
 #ifdef USE_GPU
 // Use 4KBytes aligned allocator for ordered gradients and ordered hessians when GPU is enabled.
@@ -151,6 +152,8 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<SplitInfo> best_split_per_leaf_;
   /*! \brief store best split per feature for all leaves */
   std::vector<SplitInfo> splits_per_leaf_;
+  // Stores minimum and maximum constraints for each leaf
+  std::vector<LeafConstraints> constraints_per_leaf_;
 
   /*! \brief stores best thresholds for all feature for smaller leaf */
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;

@@ -53,6 +53,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
+  constraints_per_leaf_.resize(config_->num_leaves, LeafConstraints());
 
   // initialize splits for leaf
   smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));
@@ -294,6 +295,7 @@ void SerialTreeLearner::BeforeTrain() {
   // reset the splits for leaves
   for (int i = 0; i < config_->num_leaves; ++i) {
     best_split_per_leaf_[i].Reset();
+    constraints_per_leaf_[i].Reset();
   }
 
   // Sumup for root
@@ -417,8 +419,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       smaller_leaf_splits_->sum_gradients(),
       smaller_leaf_splits_->sum_hessians(),
       smaller_leaf_splits_->num_data_in_leaf(),
-      smaller_leaf_splits_->min_constraint(),
-      smaller_leaf_splits_->max_constraint(),
+      constraints_per_leaf_[smaller_leaf_splits_->LeafIndex()],
       &smaller_split);
     smaller_split.feature = real_fidx;
     if (cegb_ != nullptr) {
@@ -442,8 +443,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       larger_leaf_splits_->sum_gradients(),
       larger_leaf_splits_->sum_hessians(),
       larger_leaf_splits_->num_data_in_leaf(),
-      larger_leaf_splits_->min_constraint(),
-      larger_leaf_splits_->max_constraint(),
+      constraints_per_leaf_[larger_leaf_splits_->LeafIndex()],
       &larger_split);
     larger_split.feature = real_fidx;
     if (cegb_ != nullptr) {
@@ -694,8 +694,10 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   }
   CHECK(*right_leaf == next_leaf_id);
 
-  auto p_left = smaller_leaf_splits_.get();
-  auto p_right = larger_leaf_splits_.get();
+  #ifdef DEBUG
+  CHECK(best_split_info.left_count == data_partition_->leaf_count(best_leaf));
+  #endif
+
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
     CHECK(best_split_info.left_count > 0);
@@ -705,21 +707,12 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
     CHECK(best_split_info.right_count > 0);
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
     larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
-    p_right = smaller_leaf_splits_.get();
-    p_left = larger_leaf_splits_.get();
   }
-  p_left->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
-  p_right->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
-  if (is_numerical_split) {
-    double mid = (best_split_info.left_output + best_split_info.right_output) / 2.0f;
-    if (best_split_info.monotone_type < 0) {
-      p_left->SetValueConstraint(mid, best_split_info.max_constraint);
-      p_right->SetValueConstraint(best_split_info.min_constraint, mid);
-    } else if (best_split_info.monotone_type > 0) {
-      p_left->SetValueConstraint(best_split_info.min_constraint, mid);
-      p_right->SetValueConstraint(mid, best_split_info.max_constraint);
-    }
-  }
+
+  LeafConstraints::SetChildrenConstraintsFastMethod(
+      constraints_per_leaf_, right_leaf, left_leaf,
+      best_split_info.monotone_type, best_split_info.right_output,
+      best_split_info.left_output, is_numerical_split);
 }
 
 

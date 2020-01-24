@@ -1089,6 +1089,7 @@ void GPUTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right
         Log::Fatal("Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
       }
     } else {
+      // FIXME won't compile, use SetChildrenConstraintsFastMethod from monotone_constraints.h
       double smaller_min = smaller_leaf_splits_->min_constraint();
       double smaller_max = smaller_leaf_splits_->max_constraint();
       double larger_min = larger_leaf_splits_->min_constraint();
