@@ -20,7 +20,9 @@ lightgbm(
 )
 }
 \arguments{
-\item{data}{a \code{lgb.Dataset} object, used for training}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
+may allow you to pass other types of data like \code{matrix} and then separately supply
+\code{label} as a keyword argument.}
 
 \item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 

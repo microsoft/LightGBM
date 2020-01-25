@@ -36,7 +36,7 @@
 lgb.importance <- function(model, percentage = TRUE) {
 
   # Check if model is a lightgbm model
-  if (!inherits(model, "lgb.Booster")) {
+  if (!lgb.is.Booster(model)) {
     stop("'model' has to be an object of class lgb.Booster")
   }
 

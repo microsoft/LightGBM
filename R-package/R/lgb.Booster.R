@@ -781,15 +781,21 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
   }
 
   # Return new booster
-  if (!is.null(filename) && !file.exists(filename)) stop("lgb.load: file does not exist for supplied filename")
-  if (!is.null(filename)) return(invisible(Booster$new(modelfile = filename)))
+  if (!is.null(filename) && !file.exists(filename)) {
+    stop("lgb.load: file does not exist for supplied filename")
+  }
+  if (!is.null(filename)) {
+    return(invisible(Booster$new(modelfile = filename)))
+  }
 
   # Load from model_str
   if (!is.null(model_str) && !is.character(model_str)) {
     stop("lgb.load: model_str should be character")
   }
   # Return new booster
-  if (!is.null(model_str)) return(invisible(Booster$new(model_str = model_str)))
+  if (!is.null(model_str)) {
+    return(invisible(Booster$new(model_str = model_str)))
+  }
 
 }
 
@@ -831,8 +837,8 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
   }
 
   # Check if file name is character
-  if (!is.character(filename)) {
-    stop("lgb.save: filename should be a character")
+  if (!(is.character(filename) && length(filename) == 1L)) {
+    stop("lgb.save: filename should be a string")
   }
 
   # Store booster
