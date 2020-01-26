@@ -39,5 +39,4 @@ model <- lgb.train(
   , early_stopping_rounds = 5L
 )
 lgb.save(model, "model.txt")
-
 }
