@@ -750,7 +750,7 @@ struct Config {
 
   // desc = random seed for objectives
   // desc = used only in the ``rank_xendcg`` objective
-  int objective_seed = 1;
+  int objective_seed = 5;
 
   #pragma endregion
 
