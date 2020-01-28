@@ -271,6 +271,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "max_position",
   "lambdamart_norm",
   "label_gain",
+  "objective_seed",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -549,6 +550,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
 
+  GetInt(params, "objective_seed", &objective_seed);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK(metric_freq >0);
 
@@ -679,6 +682,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_position: " << max_position << "]\n";
   str_buf << "[lambdamart_norm: " << lambdamart_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
+  str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";

@@ -162,6 +162,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
     bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
     drop_seed = static_cast<int>(rand.NextShort(0, int_max));
     feature_fraction_seed = static_cast<int>(rand.NextShort(0, int_max));
+    objective_seed = static_cast<int>(rand.NextShort(0, int_max));
   }
 
   GetTaskType(params, &task);

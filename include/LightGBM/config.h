@@ -748,6 +748,10 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
+  // desc = random seed for objectives
+  // desc = used only in the ``rank_xendcg`` objective
+  int objective_seed = 1;
+
   #pragma endregion
 
   #pragma region Metric Parameters

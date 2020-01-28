@@ -19,11 +19,7 @@ namespace LightGBM {
 class RankXENDCG: public ObjectiveFunction {
  public:
   explicit RankXENDCG(const Config& config) {
-    if (config.seed != 0) {
-      rand_ = new Random(config.seed);
-    } else {
-      rand_ = new Random();
-    }
+    rand_ = new Random(config.objective_seed);
   }
 
   explicit RankXENDCG(const std::vector<std::string>&) {
