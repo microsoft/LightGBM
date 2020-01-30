@@ -26,12 +26,6 @@
 #include <utility>
 #include <vector>
 
-#define MM_MALLOC 1
-
-#ifdef MM_MALLOC
-#include <malloc.h>
-#endif // MM_MALLOC
-
 #if defined(_MSC_VER) 
 #include <malloc.h>
 #elif MM_MALLOC

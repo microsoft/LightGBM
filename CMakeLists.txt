@@ -144,7 +144,7 @@ int main() {
 }
 " MM_MALLOC)
 
-if(${MM_PREFETCH})
+if(${MM_MALLOC})
   message(STATUS "Use _mm_malloc")
   ADD_DEFINITIONS(-DMM_MALLOC)
 endif()
