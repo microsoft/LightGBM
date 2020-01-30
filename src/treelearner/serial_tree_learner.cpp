@@ -80,13 +80,13 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 }
 
 void SerialTreeLearner::GetMultiValBin(const Dataset* dataset, bool is_first_time) {
-  auto used_feature = GetUsedFeatures(true);
   if (is_first_time) {
+    auto used_feature = GetUsedFeatures(true);
     multi_val_bin_.reset(dataset->TestMultiThreadingMethod(ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
       is_constant_hessian_, config_->force_col_wise, config_->force_row_wise, &is_hist_colwise_));
   } else {
     // cannot change is_hist_col_wise during training
-    multi_val_bin_.reset(dataset->TestMultiThreadingMethod(ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
+    multi_val_bin_.reset(dataset->TestMultiThreadingMethod(ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
       is_constant_hessian_, is_hist_colwise_, !is_hist_colwise_, &is_hist_colwise_));
   }
 }
@@ -405,7 +405,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
     larger_node_used_features = GetUsedFeatures(false);
   }
   OMP_INIT_EX();
-  // find splits
+  // find splits	
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
@@ -458,7 +458,6 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
   int leaf = smaller_leaf_splits_->LeafIndex();
   best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];
@@ -677,7 +676,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
     std::vector<uint32_t> cat_bitset = Common::ConstructBitset(threshold_int.data(), best_split_info.num_cat_threshold);
 
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
-      cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()), best_split_info.default_left, *right_leaf);
+      cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()), best_split_info.default_left, next_leaf_id);
 
     best_split_info.left_count = data_partition_->leaf_count(*left_leaf);
     best_split_info.right_count = data_partition_->leaf_count(next_leaf_id);

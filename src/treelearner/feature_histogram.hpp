@@ -138,7 +138,7 @@ public:
       for (int t = 0; t < used_bin; ++t) {
         const auto grad = GET_GRAD(data_, t);
         const auto hess = GET_HESS(data_, t);
-        data_size_t cnt = static_cast<data_size_t>(hess * cnt_factor);
+        data_size_t cnt = static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
         // if data not enough, or sum hessian too small
         if (cnt < meta_->config->min_data_in_leaf
           || hess < meta_->config->min_sum_hessian_in_leaf) continue;
@@ -171,7 +171,7 @@ public:
       }
     } else {
       for (int i = 0; i < used_bin; ++i) {
-        if (GET_HESS(data_, i) * cnt_factor >= meta_->config->cat_smooth) {
+        if (Common::RoundInt(GET_HESS(data_, i) * cnt_factor) >= meta_->config->cat_smooth) {
           sorted_idx.push_back(i);
         }
       }
@@ -207,7 +207,7 @@ public:
           start_pos += dir;
           const auto grad = GET_GRAD(data_, t);
           const auto hess = GET_HESS(data_, t);
-          data_size_t cnt = static_cast<data_size_t>(hess * cnt_factor);
+          data_size_t cnt = static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
 
           sum_left_gradient += grad;
           sum_left_hessian += hess;
@@ -329,7 +329,7 @@ public:
       if (skip_default_bin && (t + offset) == static_cast<int>(meta_->default_bin)) { continue; }
       const auto grad = GET_GRAD(data_, t);
       const auto hess = GET_HESS(data_, t);
-      data_size_t cnt = static_cast<data_size_t>(hess * cnt_factor);
+      data_size_t cnt = static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
       sum_right_gradient += grad;
       sum_right_hessian += hess;
       right_count += cnt;
@@ -390,7 +390,7 @@ public:
     const double cnt_factor = num_data / sum_hessian;
     const auto grad = GET_GRAD(data_, threshold);
     const auto hess = GET_HESS(data_, threshold);
-    data_size_t cnt = static_cast<data_size_t>(hess * cnt_factor);
+    data_size_t cnt = static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
 
     double l2 = meta_->config->lambda_l2;
     data_size_t left_count = cnt;
@@ -541,7 +541,7 @@ private:
 
         const auto grad = GET_GRAD(data_, t);
         const auto hess = GET_HESS(data_, t);
-        data_size_t cnt = static_cast<data_size_t>(hess * cnt_factor);
+        data_size_t cnt = static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
         sum_right_gradient += grad;
         sum_right_hessian += hess;
         right_count += cnt;
@@ -591,7 +591,7 @@ private:
         for (int i = 0; i < meta_->num_bin - offset; ++i) {
           const auto grad = GET_GRAD(data_, i);
           const auto hess = GET_HESS(data_, i);
-          data_size_t cnt = static_cast<data_size_t>(hess * cnt_factor);
+          data_size_t cnt = static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
           sum_left_gradient -= grad;
           sum_left_hessian -= hess;
           left_count -= cnt;
@@ -605,7 +605,7 @@ private:
         if (t >= 0) {
           sum_left_gradient += GET_GRAD(data_, t);
           sum_left_hessian += GET_HESS(data_, t);
-          left_count += static_cast<data_size_t>(GET_HESS(data_, t) * cnt_factor);
+          left_count += static_cast<data_size_t>(Common::RoundInt(GET_HESS(data_, t) * cnt_factor));
         }
         // if data not enough, or sum hessian too small
         if (left_count < meta_->config->min_data_in_leaf

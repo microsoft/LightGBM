@@ -948,6 +948,10 @@ inline bool CheckAllowedJSON(const std::string& s) {
   return true;
 }
 
+inline int RoundInt(double x) {
+  return static_cast<int>(x + 0.5f);
+}
+
 template <typename T, std::size_t N = 32>
 class AlignmentAllocator {
 public:

@@ -16,6 +16,7 @@
 #include "dense_bin.hpp"
 #include "dense_nbits_bin.hpp"
 #include "multi_val_dense_bin.hpp"
+#include "multi_val_sparse_bin.hpp"
 #include "sparse_bin.hpp"
 
 namespace LightGBM {
@@ -663,13 +664,24 @@ namespace LightGBM {
     }
   }
 
-  MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin) {
-    if (num_bin <= 256) {
-      return new MultiValDenseBin<uint8_t>(num_data, num_bin);
-    } else if (num_bin <= 65536) {
-      return new MultiValDenseBin<uint16_t>(num_data, num_bin);
+  MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature, double sparse_rate) {
+    const double multi_val_bin_sparse_threshold = 0.2;
+    if (sparse_rate >= multi_val_bin_sparse_threshold) {
+      if (num_bin <= 256) {
+        return new MultiValSparseBin<uint8_t>(num_data, num_bin);
+      } else if (num_bin <= 65536) {
+        return new MultiValSparseBin<uint16_t>(num_data, num_bin);
+      } else {
+        return new MultiValSparseBin<uint32_t>(num_data, num_bin);
+      }
     } else {
-      return new MultiValDenseBin<uint32_t>(num_data, num_bin);
+      if (num_bin <= 256) {
+        return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature);
+      } else if (num_bin <= 65536) {
+        return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature);
+      } else {
+        return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature);
+      }
     }
   }
 

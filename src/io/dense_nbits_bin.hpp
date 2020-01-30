@@ -78,79 +78,61 @@ public:
   hist[ti] += g; \
   hist[ti + 1] += h; \
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const override {
-    const data_size_t pf_offset = 64;
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
+  template<bool use_indices, bool use_prefetch, bool use_hessians>
+  void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const {
     data_size_t i = start;
-    for (; i < pf_end; i++) {
-      PREFETCH_T0(data_.data() + (data_indices[i + pf_offset] >> 1));
-      const data_size_t idx = data_indices[i];
-      const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+
+    if (use_prefetch) {
+      const data_size_t pf_offset = 64;
+      const data_size_t pf_end = end - pf_offset;
+      for (; i < pf_end; ++i) {
+        const auto idx = use_indices ? data_indices[i] : i;
+        const auto pf_idx = use_indices ? data_indices[i + pf_offset] : i + pf_offset;
+        PREFETCH_T0(data_.data() + (pf_idx >> 1));
+        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        if (use_hessians) {
+          ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+        } else {
+          ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+        }
+      }
     }
-    for (; i < end; i++) {
-      const data_size_t idx = data_indices[i];
+    for (; i < end; ++i) {
+      const auto idx = use_indices ? data_indices[i] : i;
       const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+      if (use_hessians) {
+        ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+      } else {
+        ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+      }
     }
   }
-
-  void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const override {
-    const data_size_t pf_offset = 64;
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
-    data_size_t i = start;
-    for (; i < pf_end; i++) {
-      PREFETCH_T0(data_.data() + ((i + pf_offset) >> 1));
-      const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
-      ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
-    }
-    for (; i < end; i++) {
-      const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
-      ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
-    }
-  }
-
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients,
-    hist_t* out) const override {
-    const data_size_t pf_offset = 64;
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
-    data_size_t i = start;
-    for (; i < pf_end; i++) {
-      PREFETCH_T0(data_.data() + (data_indices[i + pf_offset] >> 1));
-      const data_size_t idx = data_indices[i];
-      const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      ACC_GH(out, bin, ordered_gradients[i], 1.0f);
-    }
-    for (; i < end; i++) {
-      const data_size_t idx = data_indices[i];
-      const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      ACC_GH(out, bin, ordered_gradients[i], 1.0f);
-    }
-  }
-
-  void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients,
-    hist_t* out) const override {
-    const data_size_t pf_offset = 64;
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize;
-    data_size_t i = start;
-    for (; i < pf_end; i++) {
-      PREFETCH_T0(data_.data() + ((i + pf_offset) >> 1));
-      const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
-      ACC_GH(out, bin, ordered_gradients[i], 1.0f);
-    }
-    for (; i < end; i++) {
-      const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
-      ACC_GH(out, bin, ordered_gradients[i], 1.0f);
-    }
-  }
-
   #undef ACC_GH
+
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override {
+    ConstructHistogramInner<true, true, true>(data_indices, start, end, ordered_gradients, ordered_hessians, out);
+  }
+
+  void ConstructHistogram(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override {
+    ConstructHistogramInner<false, false, true>(nullptr, start, end, ordered_gradients, ordered_hessians, out);
+  }
+
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients,
+    hist_t* out) const override {
+    ConstructHistogramInner<true, true, false>(data_indices, start, end, ordered_gradients, nullptr, out);
+  }
+
+  void ConstructHistogram(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients,
+    hist_t* out) const override {
+    ConstructHistogramInner<false, false, false>(nullptr, start, end, ordered_gradients, nullptr, out);
+  }
 
   data_size_t Split(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left,

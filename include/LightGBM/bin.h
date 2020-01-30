@@ -477,7 +477,9 @@ public:
 
   virtual void FinishLoad() = 0;
 
-  static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin);
+  virtual bool IsSparse() = 0;
+
+  static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature, double sparse_rate);
 
   virtual MultiValBin* Clone() = 0;
 };

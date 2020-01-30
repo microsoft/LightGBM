@@ -55,7 +55,7 @@ int GetConfilctCount(const std::vector<bool>& mark, const int* indices, int num_
     if (mark[indices[i]]) {
       ++ret;
     }
-    if (ret >= max_cnt) {
+    if (ret > max_cnt) {
       return -1;
     }
   }
@@ -98,7 +98,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
                                          data_size_t total_sample_cnt,
                                          data_size_t num_data,
                                          bool is_use_gpu,
-                                         std::vector<bool>* multi_val_group) {
+                                         std::vector<int8_t>* multi_val_group) {
   const int max_search_group = 100;
   const int max_bin_per_group = 256;
   const data_size_t single_val_max_conflict_cnt = static_cast<data_size_t>(total_sample_cnt / 10000);
@@ -217,7 +217,7 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
                                                   const std::vector<int>& used_features,
                                                   data_size_t num_data,
                                                   bool is_use_gpu,
-                                                  std::vector<bool>* multi_val_group) {
+                                                  std::vector<int8_t>* multi_val_group) {
   Common::FunctionTimer fun_timer("Dataset::FastFeatureBundling", global_timer);
   std::vector<size_t> feature_non_zero_cnt;
   feature_non_zero_cnt.reserve(used_features.size());
@@ -262,7 +262,7 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
       tmp_num_per_col[fidx] = num_per_col[fidx];
     }
   }
-  std::vector<bool> group_is_multi_val, group_is_multi_val2;
+  std::vector<int8_t> group_is_multi_val, group_is_multi_val2;
   auto features_in_group = FindGroups(bin_mappers, used_features, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, num_data, is_use_gpu, &group_is_multi_val);
   auto group2 = FindGroups(bin_mappers, feature_order_by_cnt, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, num_data, is_use_gpu, &group_is_multi_val2);
 
@@ -277,7 +277,7 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
     int j = tmp_rand.NextShort(i + 1, num_group);
     std::swap(features_in_group[i], features_in_group[j]);
     // Use std::swap for vector<bool> will cause the wrong result..
-    std::vector<bool>::swap(group_is_multi_val[i], group_is_multi_val[j]);
+    std::swap(group_is_multi_val[i], group_is_multi_val[j]);
   }
   *multi_val_group = group_is_multi_val;
   return features_in_group;
@@ -307,7 +307,7 @@ void Dataset::Construct(
     Log::Warning("There are no meaningful features, as all feature values are constant.");
   }
   auto features_in_group = NoGroup(used_features);
-  std::vector<bool> group_is_multi_val(used_features.size(), false);
+  std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
     features_in_group = FastFeatureBundling(*bin_mappers,
                                             sample_non_zero_indices, sample_values, num_per_col, num_sample_col, static_cast<data_size_t>(total_sample_cnt),
@@ -482,6 +482,66 @@ void Dataset::FinishLoad() {
   is_finish_load_ = true;
 }
 
+void PushDataToMultiValBin(int num_threads, data_size_t num_data, const std::vector<uint32_t> most_freq_bins,
+  const std::vector<uint32_t> offsets, std::vector<std::vector<std::unique_ptr<BinIterator>>>& iters, MultiValBin* ret) {
+  Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin", global_timer);
+  const data_size_t min_block_size = 4096;
+  const int n_block = std::min(num_threads, (num_data + min_block_size - 1) / min_block_size);
+  const data_size_t block_size = (num_data + n_block - 1) / n_block;
+  if (ret->IsSparse()) {
+    #pragma omp parallel for schedule(static)
+    for (int tid = 0; tid < n_block; ++tid) {
+      std::vector<uint32_t> cur_data;
+      data_size_t start = tid * block_size;
+      data_size_t end = std::min(num_data, start + block_size);
+      for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+        iters[tid][j]->Reset(start);
+      }
+      for (data_size_t i = start; i < end; ++i) {
+        cur_data.clear();
+        for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+          auto cur_bin = iters[tid][j]->Get(i);
+          if (cur_bin == most_freq_bins[j]) {
+            continue;
+          }
+          cur_bin += offsets[j];
+          if (most_freq_bins[j] == 0) {
+            cur_bin -= 1;
+          }
+          cur_data.push_back(cur_bin);
+        }
+        ret->PushOneRow(tid, i, cur_data);
+      }
+    }
+  } else {
+    #pragma omp parallel for schedule(static)
+    for (int tid = 0; tid < n_block; ++tid) {
+      std::vector<uint32_t> cur_data;
+      data_size_t start = tid * block_size;
+      data_size_t end = std::min(num_data, start + block_size);
+      for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+        iters[tid][j]->Reset(start);
+      }
+      for (data_size_t i = start; i < end; ++i) {
+        cur_data.clear();
+        for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+          auto cur_bin = iters[tid][j]->Get(i);
+          if (cur_bin == most_freq_bins[j]) {
+            cur_bin = 0;
+          } else {
+            cur_bin += offsets[j];
+            if (most_freq_bins[j] == 0) {
+              cur_bin -= 1;
+            }
+          }
+          cur_data.push_back(cur_bin);
+        }
+        ret->PushOneRow(tid, i, cur_data);
+      }
+    }
+  }
+}
+
 MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromSparseFeatures", global_timer);
   int multi_group_id = -1;
@@ -508,44 +568,19 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
 
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
+  double sum_sparse_rate = 0;
   for (int i = 0; i < num_feature; ++i) {
     for (int tid = 0; tid < num_threads; ++tid) {
       iters[tid].emplace_back(feature_groups_[multi_group_id]->SubFeatureIterator(i));
     }
     most_freq_bins.push_back(feature_groups_[multi_group_id]->bin_mappers_[i]->GetMostFreqBin());
+    sum_sparse_rate += feature_groups_[multi_group_id]->bin_mappers_[i]->sparse_rate();
   }
-
+  sum_sparse_rate /= num_feature;
+  Log::Debug("GetMultiBinFromSparseFeatures:: sparse rate %f", sum_sparse_rate);
   std::unique_ptr<MultiValBin> ret;
-  ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back()));
-
-  const data_size_t min_block_size = 4096;
-  const int n_block = std::min(num_threads, (num_data_ + min_block_size - 1) / min_block_size);
-  const data_size_t block_size = (num_data_ + n_block - 1) / n_block;
-
-  #pragma omp parallel for schedule(static)
-  for (int tid = 0; tid < n_block; ++tid) {
-    std::vector<uint32_t> cur_data;
-    data_size_t start = tid * block_size;
-    data_size_t end = std::min(num_data_, start + block_size);
-    for (int j = 0; j < num_feature; ++j) {
-      iters[tid][j]->Reset(start);
-    }
-    for (data_size_t i = start; i < end; ++i) {
-      cur_data.clear();
-      for (int j = 0; j < num_feature; ++j) {
-        auto cur_bin = iters[tid][j]->Get(i);
-        if (cur_bin == most_freq_bins[j]) {
-          continue;
-        }
-        if (most_freq_bins[j] == 0) {
-          cur_bin -= 1;
-        }
-        cur_bin += offsets[j];
-        cur_data.push_back(cur_bin);
-      }
-      ret->PushOneRow(tid, i, cur_data);
-    }
-  }
+  ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(), num_feature, sum_sparse_rate));
+  PushDataToMultiValBin(num_threads, num_data_, most_freq_bins, offsets, iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
@@ -558,15 +593,19 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   {
     num_threads = omp_get_num_threads();
   }
-  std::vector<int> offsets;
+  double sum_dense_ratio = 0;
+
+  std::unique_ptr<MultiValBin> ret;
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
+  std::vector<uint32_t> offsets;
   int num_total_bin = 1;
   offsets.push_back(num_total_bin);
   for (int gid = 0; gid < num_groups_; ++gid) {
     if (feature_groups_[gid]->is_multi_val_) {
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
+        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
         num_total_bin += bin_mapper->num_bin();
         if (most_freq_bins.back() == 0) {
@@ -584,39 +623,16 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
         iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
       }
       offsets.push_back(num_total_bin);
-    }
-  }
-  std::unique_ptr<MultiValBin> ret;
-  ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back()));
-
-  const data_size_t min_block_size = 4096;
-  const int n_block = std::min(num_threads, (num_data_ + min_block_size - 1) / min_block_size);
-  const data_size_t block_size = (num_data_ + n_block - 1) / n_block;
-
-  #pragma omp parallel for schedule(static)
-  for (int tid = 0; tid < n_block; ++tid) {
-    std::vector<uint32_t> cur_data;
-    data_size_t start = tid * block_size;
-    data_size_t end = std::min(num_data_, start + block_size);
-    for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-      iters[tid][j]->Reset(start);
-    }
-    for (data_size_t i = start; i < end; ++i) {
-      cur_data.clear();
-      for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-        auto cur_bin = iters[tid][j]->Get(i);
-        if (cur_bin == most_freq_bins[j]) {
-          continue;
-        }
-        if (most_freq_bins[j] == 0) {
-          cur_bin -= 1;
-        }
-        cur_bin += offsets[j];
-        cur_data.push_back(cur_bin);
+      for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
+        const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
+        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
       }
-      ret->PushOneRow(tid, i, cur_data);
     }
   }
+  sum_dense_ratio /= static_cast<double>(most_freq_bins.size());
+  Log::Debug("GetMultiBinFromAllFeatures:: sparse rate %f", 1.0 - sum_dense_ratio);
+  ret.reset(MultiValBin::CreateMultiValBin(num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()), 1.0 - sum_dense_ratio));
+  PushDataToMultiValBin(num_threads, num_data_, most_freq_bins, offsets, iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
@@ -627,13 +643,16 @@ MultiValBin* Dataset::TestMultiThreadingMethod(score_t* gradients, score_t* hess
   if (force_colwise && force_rowwise) {
     Log::Fatal("cannot set both `force_col_wise` and `force_row_wise` to `true`.");
   }
-  CHECK(num_groups_ > 0);
+  if (num_groups_ <= 0) {
+    return nullptr;
+  }
   if (force_colwise) {
     *is_hist_col_wise = true;
     return GetMultiBinFromSparseFeatures();
   } else if (force_rowwise) {
     *is_hist_col_wise = false;
-    return GetMultiBinFromAllFeatures();
+    auto ret = GetMultiBinFromAllFeatures();
+    return ret;
   } else {
     std::unique_ptr<MultiValBin> sparse_bin;
     std::unique_ptr<MultiValBin> all_bin;
@@ -654,6 +673,11 @@ MultiValBin* Dataset::TestMultiThreadingMethod(score_t* gradients, score_t* hess
     } else {
       *is_hist_col_wise = false;
       Log::Info("Use row-wise multi-threading, may increase memory usage. If memory is not enough, you can set `force_col_wise=true`.");
+      if (all_bin->IsSparse()) {
+        Log::Debug("Use Sparse Multi-Val Bin");
+      } else {
+        Log::Debug("Use Dense Multi-Val Bin");
+      }
       return all_bin.release();
     }
   }

@@ -516,11 +516,6 @@ class Dataset {
     return feature_groups_[group]->bin_mappers_[sub_feature].get();
   }
 
-  inline const Bin* FeatureBin(int i) const {
-    const int group = feature2group_[i];
-    return feature_groups_[group]->bin_data_.get();
-  }
-
   inline const Bin* FeatureGroupBin(int group) const {
     return feature_groups_[group]->bin_data_.get();
   }
@@ -529,6 +524,14 @@ class Dataset {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->SubFeatureIterator(sub_feature);
+  }
+
+  inline BinIterator* FeatureGroupIterator(int group) const {
+    return feature_groups_[group]->FeatureGroupIterator();
+  }
+
+  inline bool IsMultiGroup(int i) const {
+    return feature_groups_[i]->is_multi_val_;
   }
 
   inline double RealThreshold(int i, uint32_t threshold) const {
