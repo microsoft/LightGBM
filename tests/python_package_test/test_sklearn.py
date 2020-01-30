@@ -117,6 +117,21 @@ class TestSklearn(unittest.TestCase):
         self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.5769)
         self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.5920)
 
+    def test_xendcg(self):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        X_train, y_train = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.train'))
+        X_test, y_test = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.test'))
+        q_train = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.train.query'))
+        q_test = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.test.query'))
+        gbm = lgb.LGBMRanker(n_estimators=50, objective='rank_xendcg', random_state=5, n_jobs=1)
+        gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
+                eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
+                eval_metric='ndcg',
+                callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
+        self.assertLessEqual(gbm.best_iteration_, 24)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6579)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6421)
+
     def test_regression_with_custom_objective(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)

@@ -4,10 +4,11 @@
 \alias{lgb_shared_params}
 \title{Shared parameter docs}
 \arguments{
-\item{callbacks}{list of callback functions
-List of callback functions that are applied at each iteration.}
+\item{callbacks}{List of callback functions that are applied at each iteration.}
 
-\item{data}{a \code{lgb.Dataset} object, used for training}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
+may allow you to pass other types of data like \code{matrix} and then separately supply
+\code{label} as a keyword argument.}
 
 \item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
 and one metric. If there's more than one, will check all of them
