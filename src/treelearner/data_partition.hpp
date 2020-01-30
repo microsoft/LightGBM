@@ -117,20 +117,22 @@ class DataPartition {
 
     const int nblock = std::min(num_threads_, (cnt + min_inner_size - 1) / min_inner_size);
     data_size_t inner_size = SIZE_ALIGNED((cnt + nblock - 1) / nblock);
+    auto left_start = indices_.data() + begin;
     global_timer.Start("DataPartition::Split.MT");
     // split data multi-threading
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < nblock; ++i) {
       OMP_LOOP_EX_BEGIN();
-      left_cnts_buf_[i] = 0;
-      right_cnts_buf_[i] = 0;
       data_size_t cur_start = i * inner_size;
-      if (cur_start > cnt) { continue; }
-      data_size_t cur_cnt = inner_size;
-      if (cur_start + cur_cnt > cnt) { cur_cnt = cnt - cur_start; }
+      data_size_t cur_cnt = std::min(inner_size, cnt - cur_start);
+      if (cur_cnt <= 0) {
+        left_cnts_buf_[i] = 0;
+        right_cnts_buf_[i] = 0;
+        continue;
+      }
       // split data inner, reduce the times of function called
-      data_size_t cur_left_count = dataset->Split(feature, threshold, num_threshold, default_left, indices_.data() + begin + cur_start, cur_cnt,
+      data_size_t cur_left_count = dataset->Split(feature, threshold, num_threshold, default_left, left_start + cur_start, cur_cnt,
                                                   temp_left_indices_.data() + cur_start, temp_right_indices_.data() + cur_start);
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
@@ -140,24 +142,29 @@ class DataPartition {
     OMP_THROW_EX();
     global_timer.Stop("DataPartition::Split.MT");
     global_timer.Start("DataPartition::Split.Merge");
-    data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
     for (int i = 1; i < nblock; ++i) {
       left_write_pos_buf_[i] = left_write_pos_buf_[i - 1] + left_cnts_buf_[i - 1];
       right_write_pos_buf_[i] = right_write_pos_buf_[i - 1] + right_cnts_buf_[i - 1];
     }
-    left_cnt = left_write_pos_buf_[nblock - 1] + left_cnts_buf_[nblock - 1];
+    data_size_t left_cnt = left_write_pos_buf_[nblock - 1] + left_cnts_buf_[nblock - 1];
+
+    auto right_start = left_start + left_cnt;
     // copy back indices of right leaf to indices_
-    #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < nblock; ++i) {
-      if (left_cnts_buf_[i] > 0) {
-        std::memcpy(indices_.data() + begin + left_write_pos_buf_[i],
-                    temp_left_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
-      }
-      if (right_cnts_buf_[i] > 0) {
-        std::memcpy(indices_.data() + begin + left_cnt + right_write_pos_buf_[i],
-                    temp_right_indices_.data() + offsets_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < nblock * 2; ++i) {
+      if (i < nblock) {
+        if (left_cnts_buf_[i] > 0) {
+          std::memcpy(left_start + left_write_pos_buf_[i],
+            temp_left_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
+        }
+      } else {
+        const auto j = i - nblock;
+        if (right_cnts_buf_[j] > 0) {
+          std::memcpy(right_start + right_write_pos_buf_[j],
+            temp_right_indices_.data() + offsets_buf_[j], right_cnts_buf_[j] * sizeof(data_size_t));
+        }
       }
     }
     // update leaf boundary
