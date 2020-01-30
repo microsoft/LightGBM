@@ -18,6 +18,7 @@
 #include <functional>
 #include <iomanip>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <type_traits>
