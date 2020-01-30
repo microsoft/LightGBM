@@ -665,7 +665,7 @@ namespace LightGBM {
   }
 
   MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature, double sparse_rate) {
-    const double multi_val_bin_sparse_threshold = 0.2;
+    const double multi_val_bin_sparse_threshold = 0.25f;
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
       if (num_bin <= 256) {
         return new MultiValSparseBin<uint8_t>(num_data, num_bin);
