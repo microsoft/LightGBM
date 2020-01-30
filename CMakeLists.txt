@@ -138,7 +138,7 @@ include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
 #include <mm_malloc.h>
 int main() {
-  int *a = _mm_malloc(8, 8);
+  char *a = (char*)_mm_malloc(8, 16);
   _mm_free(a);
   return 0;
 }
