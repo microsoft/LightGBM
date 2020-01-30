@@ -117,6 +117,7 @@ class DataPartition {
 
     const int nblock = std::min(num_threads_, (cnt + min_inner_size - 1) / min_inner_size);
     data_size_t inner_size = SIZE_ALIGNED((cnt + nblock - 1) / nblock);
+    global_timer.Start("DataPartition::Split.MT");
     // split data multi-threading
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static, 1)
@@ -137,6 +138,8 @@ class DataPartition {
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    global_timer.Stop("DataPartition::Split.MT");
+    global_timer.Start("DataPartition::Split.Merge");
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
@@ -161,6 +164,7 @@ class DataPartition {
     leaf_count_[leaf] = left_cnt;
     leaf_begin_[right_leaf] = left_cnt + begin;
     leaf_count_[right_leaf] = cnt - left_cnt;
+    global_timer.Stop("DataPartition::Split.Merge");
   }
 
   /*!
