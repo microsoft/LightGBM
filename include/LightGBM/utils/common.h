@@ -1043,7 +1043,8 @@ class Timer {
 
   void Print() const {
     #ifdef  TIMETAG
-    for (auto it = stats_.begin(); it != stats_.end(); ++it) {
+    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(stats_.begin(), stats_.end());
+    for (auto it = ordered.begin(); it != ordered.end(); ++it) {
       Log::Info("%s costs:\t %f ", it->first.c_str(), it->second * 1e-3);
     }
     #endif
