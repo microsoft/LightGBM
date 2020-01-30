@@ -134,6 +134,21 @@ if(${MM_PREFETCH})
   ADD_DEFINITIONS(-DMM_PREFETCH)
 endif()
 
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <mm_malloc.h>
+int main() {
+  int *a = _mm_malloc(8, 8);
+  _mm_free(a);
+  return 0;
+}
+" MM_MALLOC)
+
+if(${MM_PREFETCH})
+  message(STATUS "Use _mm_malloc")
+  ADD_DEFINITIONS(-DMM_MALLOC)
+endif()
+
 if(UNIX OR MINGW OR CYGWIN)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -O3 -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type")
     if(USE_SWIG)
