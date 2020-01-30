@@ -1,16 +1,17 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_BOOSTING_DART_H_
 #define LIGHTGBM_BOOSTING_DART_H_
 
 #include <LightGBM/boosting.h>
 
-#include <string>
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
+#include <string>
 #include <vector>
 
 #include "gbdt.h"
@@ -18,26 +19,27 @@
 
 namespace LightGBM {
 /*!
-* \brief DART algorithm implementation. including Training, prediction, bagging.
-*/
-class DART: public GBDT {
+ * \brief DART algorithm implementation. including Training, prediction,
+ * bagging.
+ */
+class DART : public GBDT {
  public:
   /*!
-  * \brief Constructor
-  */
-  DART() : GBDT() { }
+   * \brief Constructor
+   */
+  DART() : GBDT() {}
   /*!
-  * \brief Destructor
-  */
-  ~DART() { }
+   * \brief Destructor
+   */
+  ~DART() {}
   /*!
-  * \brief Initialization logic
-  * \param config Config for boosting
-  * \param train_data Training data
-  * \param objective_function Training objective function
-  * \param training_metrics Training metrics
-  * \param output_model_filename Filename of output model
-  */
+   * \brief Initialization logic
+   * \param config Config for boosting
+   * \param train_data Training data
+   * \param objective_function Training objective function
+   * \param training_metrics Training metrics
+   * \param output_model_filename Filename of output model
+   */
   void Init(const Config* config, const Dataset* train_data,
             const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override {
@@ -53,8 +55,8 @@ class DART: public GBDT {
   }
 
   /*!
-  * \brief one training iteration
-  */
+   * \brief one training iteration
+   */
   bool TrainOneIter(const score_t* gradient, const score_t* hessian) override {
     is_update_score_cur_iter_ = false;
     bool ret = GBDT::TrainOneIter(gradient, hessian);
@@ -71,17 +73,18 @@ class DART: public GBDT {
   }
 
   /*!
-  * \brief Get current training score
-  * \param out_len length of returned score
-  * \return training score
-  */
+   * \brief Get current training score
+   * \param out_len length of returned score
+   * \return training score
+   */
   const double* GetTrainingScore(int64_t* out_len) override {
     if (!is_update_score_cur_iter_) {
       // only drop one time in one iteration
       DroppingTrees();
       is_update_score_cur_iter_ = true;
     }
-    *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
+    *out_len =
+        static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
     return train_score_updater_->score();
   }
 
@@ -92,8 +95,8 @@ class DART: public GBDT {
 
  private:
   /*!
-  * \brief drop trees based on drop_rate
-  */
+   * \brief drop trees based on drop_rate
+   */
   void DroppingTrees() {
     drop_index_.clear();
     bool is_skip = random_for_drop_.NextFloat() < config_->skip_drop;
@@ -101,12 +104,15 @@ class DART: public GBDT {
     if (!is_skip) {
       double drop_rate = config_->drop_rate;
       if (!config_->uniform_drop) {
-        double inv_average_weight = static_cast<double>(tree_weight_.size()) / sum_weight_;
+        double inv_average_weight =
+            static_cast<double>(tree_weight_.size()) / sum_weight_;
         if (config_->max_drop > 0) {
-          drop_rate = std::min(drop_rate, config_->max_drop * inv_average_weight / sum_weight_);
+          drop_rate = std::min(
+              drop_rate, config_->max_drop * inv_average_weight / sum_weight_);
         }
         for (int i = 0; i < iter_; ++i) {
-          if (random_for_drop_.NextFloat() < drop_rate * tree_weight_[i] * inv_average_weight) {
+          if (random_for_drop_.NextFloat() <
+              drop_rate * tree_weight_[i] * inv_average_weight) {
             drop_index_.push_back(num_init_iteration_ + i);
             if (drop_index_.size() >= static_cast<size_t>(config_->max_drop)) {
               break;
@@ -115,7 +121,8 @@ class DART: public GBDT {
         }
       } else {
         if (config_->max_drop > 0) {
-          drop_rate = std::min(drop_rate, config_->max_drop / static_cast<double>(iter_));
+          drop_rate = std::min(drop_rate,
+                               config_->max_drop / static_cast<double>(iter_));
         }
         for (int i = 0; i < iter_; ++i) {
           if (random_for_drop_.NextFloat() < drop_rate) {
@@ -129,37 +136,42 @@ class DART: public GBDT {
     }
     // drop trees
     for (auto i : drop_index_) {
-      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_;
+           ++cur_tree_id) {
         auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
         models_[curr_tree]->Shrinkage(-1.0);
         train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
       }
     }
     if (!config_->xgboost_dart_mode) {
-      shrinkage_rate_ = config_->learning_rate / (1.0f + static_cast<double>(drop_index_.size()));
+      shrinkage_rate_ = config_->learning_rate /
+                        (1.0f + static_cast<double>(drop_index_.size()));
     } else {
       if (drop_index_.empty()) {
         shrinkage_rate_ = config_->learning_rate;
       } else {
-        shrinkage_rate_ = config_->learning_rate / (config_->learning_rate + static_cast<double>(drop_index_.size()));
+        shrinkage_rate_ =
+            config_->learning_rate /
+            (config_->learning_rate + static_cast<double>(drop_index_.size()));
       }
     }
   }
   /*!
-  * \brief normalize dropped trees
-  * NOTE: num_drop_tree(k), learning_rate(lr), shrinkage_rate_ = lr / (k + 1)
-  *       step 1: shrink tree to -1 -> drop tree
-  *       step 2: shrink tree to k / (k + 1) - 1 from -1, by 1/(k+1)
-  *               -> normalize for valid data
-  *       step 3: shrink tree to k / (k + 1) from k / (k + 1) - 1, by -k
-  *               -> normalize for train data
-  *       end with tree weight = (k / (k + 1)) * old_weight
-  */
+   * \brief normalize dropped trees
+   * NOTE: num_drop_tree(k), learning_rate(lr), shrinkage_rate_ = lr / (k + 1)
+   *       step 1: shrink tree to -1 -> drop tree
+   *       step 2: shrink tree to k / (k + 1) - 1 from -1, by 1/(k+1)
+   *               -> normalize for valid data
+   *       step 3: shrink tree to k / (k + 1) from k / (k + 1) - 1, by -k
+   *               -> normalize for train data
+   *       end with tree weight = (k / (k + 1)) * old_weight
+   */
   void Normalize() {
     double k = static_cast<double>(drop_index_.size());
     if (!config_->xgboost_dart_mode) {
       for (auto i : drop_index_) {
-        for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_;
+             ++cur_tree_id) {
           auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
           // update validation score
           models_[curr_tree]->Shrinkage(1.0f / (k + 1.0f));
@@ -171,13 +183,15 @@ class DART: public GBDT {
           train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
         }
         if (!config_->uniform_drop) {
-          sum_weight_ -= tree_weight_[i - num_init_iteration_] * (1.0f / (k + 1.0f));
+          sum_weight_ -=
+              tree_weight_[i - num_init_iteration_] * (1.0f / (k + 1.0f));
           tree_weight_[i - num_init_iteration_] *= (k / (k + 1.0f));
         }
       }
     } else {
       for (auto i : drop_index_) {
-        for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_;
+             ++cur_tree_id) {
           auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
           // update validation score
           models_[curr_tree]->Shrinkage(shrinkage_rate_);
@@ -189,8 +203,11 @@ class DART: public GBDT {
           train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
         }
         if (!config_->uniform_drop) {
-          sum_weight_ -= tree_weight_[i - num_init_iteration_] * (1.0f / (k + config_->learning_rate));;
-          tree_weight_[i - num_init_iteration_] *= (k / (k + config_->learning_rate));
+          sum_weight_ -= tree_weight_[i - num_init_iteration_] *
+                         (1.0f / (k + config_->learning_rate));
+          ;
+          tree_weight_[i - num_init_iteration_] *=
+              (k / (k + config_->learning_rate));
         }
       }
     }
@@ -208,4 +225,4 @@ class DART: public GBDT {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_BOOSTING_DART_H_
+#endif  // LightGBM_BOOSTING_DART_H_

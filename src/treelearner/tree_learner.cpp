@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #include <LightGBM/tree_learner.h>
 
@@ -10,7 +11,9 @@
 
 namespace LightGBM {
 
-TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, const std::string& device_type, const Config* config) {
+TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type,
+                                            const std::string& device_type,
+                                            const Config* config) {
   if (device_type == std::string("cpu")) {
     if (learner_type == std::string("serial")) {
       return new SerialTreeLearner(config);

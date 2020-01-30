@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_METRIC_MAP_METRIC_HPP_
 #define LIGHTGBM_METRIC_MAP_METRIC_HPP_
@@ -10,29 +11,26 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <string>
 #include <algorithm>
 #include <sstream>
+#include <string>
 #include <vector>
 
 namespace LightGBM {
 
-class MapMetric:public Metric {
+class MapMetric : public Metric {
  public:
   explicit MapMetric(const Config& config) {
     // get eval position
     eval_at_ = config.eval_at;
     DCGCalculator::DefaultEvalAt(&eval_at_);
-    // get number of threads
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
+// get number of threads
+#pragma omp parallel
+#pragma omp master
+    { num_threads_ = omp_get_num_threads(); }
   }
 
-  ~MapMetric() {
-  }
+  ~MapMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     for (auto k : eval_at_) {
@@ -61,7 +59,8 @@ class MapMetric:public Metric {
 
     npos_per_query_.resize(num_queries_, 0);
     for (data_size_t i = 0; i < num_queries_; ++i) {
-      for (data_size_t j = query_boundaries_[i]; j < query_boundaries_[i + 1]; ++j) {
+      for (data_size_t j = query_boundaries_[i]; j < query_boundaries_[i + 1];
+           ++j) {
         if (label_[j] > 0.5f) {
           ++npos_per_query_[i];
         }
@@ -69,30 +68,30 @@ class MapMetric:public Metric {
     }
   }
 
-  const std::vector<std::string>& GetName() const override {
-    return name_;
-  }
+  const std::vector<std::string>& GetName() const override { return name_; }
 
-  double factor_to_bigger_better() const override {
-    return 1.0f;
-  }
+  double factor_to_bigger_better() const override { return 1.0f; }
 
   void CalMapAtK(std::vector<int> ks, data_size_t npos, const label_t* label,
-                 const double* score, data_size_t num_data, std::vector<double>* out) const {
+                 const double* score, data_size_t num_data,
+                 std::vector<double>* out) const {
     // get sorted indices by score
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data; ++i) {
       sorted_idx.emplace_back(i);
     }
-    std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
-                     [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
+    std::stable_sort(
+        sorted_idx.begin(), sorted_idx.end(),
+        [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
 
     int num_hit = 0;
     double sum_ap = 0.0f;
     data_size_t cur_left = 0;
     for (size_t i = 0; i < ks.size(); ++i) {
       data_size_t cur_k = static_cast<data_size_t>(ks[i]);
-      if (cur_k > num_data) { cur_k = num_data; }
+      if (cur_k > num_data) {
+        cur_k = num_data;
+      }
       for (data_size_t j = cur_left; j < cur_k; ++j) {
         data_size_t idx = sorted_idx[j];
         if (label[idx] > 0.5f) {
@@ -108,7 +107,8 @@ class MapMetric:public Metric {
       cur_left = cur_k;
     }
   }
-  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
+  std::vector<double> Eval(const double* score,
+                           const ObjectiveFunction*) const override {
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads_; ++i) {
@@ -116,21 +116,23 @@ class MapMetric:public Metric {
     }
     std::vector<double> tmp_map(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
-      #pragma omp parallel for schedule(guided) firstprivate(tmp_map)
+#pragma omp parallel for schedule(guided) firstprivate(tmp_map)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         CalMapAtK(eval_at_, npos_per_query_[i], label_ + query_boundaries_[i],
-                  score + query_boundaries_[i], query_boundaries_[i + 1] - query_boundaries_[i], &tmp_map);
+                  score + query_boundaries_[i],
+                  query_boundaries_[i + 1] - query_boundaries_[i], &tmp_map);
         for (size_t j = 0; j < eval_at_.size(); ++j) {
           result_buffer_[tid][j] += tmp_map[j];
         }
       }
     } else {
-      #pragma omp parallel for schedule(guided) firstprivate(tmp_map)
+#pragma omp parallel for schedule(guided) firstprivate(tmp_map)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         CalMapAtK(eval_at_, npos_per_query_[i], label_ + query_boundaries_[i],
-                  score + query_boundaries_[i], query_boundaries_[i + 1] - query_boundaries_[i], &tmp_map);
+                  score + query_boundaries_[i],
+                  query_boundaries_[i + 1] - query_boundaries_[i], &tmp_map);
         for (size_t j = 0; j < eval_at_.size(); ++j) {
           result_buffer_[tid][j] += tmp_map[j] * query_weights_[i];
         }
@@ -170,4 +172,4 @@ class MapMetric:public Metric {
 
 }  // namespace LightGBM
 
-#endif   // LIGHTGBM_METRIC_MAP_METRIC_HPP_
+#endif  // LIGHTGBM_METRIC_MAP_METRIC_HPP_

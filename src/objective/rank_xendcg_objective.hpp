@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2019 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_OBJECTIVE_RANK_XENDCG_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_RANK_XENDCG_OBJECTIVE_HPP_
@@ -14,20 +15,18 @@
 
 namespace LightGBM {
 /*!
-* \brief Implementation of the learning-to-rank objective function, XE_NDCG [arxiv.org/abs/1911.09798].
-*/
-class RankXENDCG: public ObjectiveFunction {
+ * \brief Implementation of the learning-to-rank objective function, XE_NDCG
+ * [arxiv.org/abs/1911.09798].
+ */
+class RankXENDCG : public ObjectiveFunction {
  public:
   explicit RankXENDCG(const Config& config) {
     rand_ = new Random(config.objective_seed);
   }
 
-  explicit RankXENDCG(const std::vector<std::string>&) {
-    rand_ = new Random();
-  }
+  explicit RankXENDCG(const std::vector<std::string>&) { rand_ = new Random(); }
 
-  ~RankXENDCG() {
-  }
+  ~RankXENDCG() {}
   void Init(const Metadata& metadata, data_size_t) override {
     // get label
     label_ = metadata.label();
@@ -41,19 +40,19 @@ class RankXENDCG: public ObjectiveFunction {
 
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
-    #pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       GetGradientsForOneQuery(score, gradients, hessians, i);
     }
   }
 
-  inline void GetGradientsForOneQuery(
-      const double* score,
-      score_t* lambdas, score_t* hessians, data_size_t query_id) const {
+  inline void GetGradientsForOneQuery(const double* score, score_t* lambdas,
+                                      score_t* hessians,
+                                      data_size_t query_id) const {
     // get doc boundary for current query
     const data_size_t start = query_boundaries_[query_id];
     const data_size_t cnt =
-      query_boundaries_[query_id + 1] - query_boundaries_[query_id];
+        query_boundaries_[query_id + 1] - query_boundaries_[query_id];
     // add pointers with offset
     const label_t* label = label_ + start;
     score += start;
@@ -71,11 +70,11 @@ class RankXENDCG: public ObjectiveFunction {
     }
 
     // Skip query if sum of labels is 0.
-    float sum_labels = 0;
+    float sum_labels = 0.0f;
     for (data_size_t i = 0; i < cnt; ++i) {
-      sum_labels += phi(label[i], gammas[i]);
+      sum_labels += static_cast<float>(phi(label[i], gammas[i]));
     }
-    if (sum_labels == 0) {
+    if (std::fabs(sum_labels) < kEpsilon) {
       return;
     }
 
@@ -83,7 +82,7 @@ class RankXENDCG: public ObjectiveFunction {
     // First order terms.
     std::vector<double> L1s(cnt);
     for (data_size_t i = 0; i < cnt; ++i) {
-      L1s[i] = -phi(label[i], gammas[i])/sum_labels + rho[i];
+      L1s[i] = -phi(label[i], gammas[i]) / sum_labels + rho[i];
     }
     // Second-order terms.
     std::vector<double> L2s(cnt);
@@ -104,19 +103,15 @@ class RankXENDCG: public ObjectiveFunction {
 
     // Finally, prepare lambdas and hessians.
     for (data_size_t i = 0; i < cnt; ++i) {
-      lambdas[i] = static_cast<score_t>(
-          L1s[i] + rho[i]*L2s[i] + rho[i]*L3s[i]);
+      lambdas[i] =
+          static_cast<score_t>(L1s[i] + rho[i] * L2s[i] + rho[i] * L3s[i]);
       hessians[i] = static_cast<score_t>(rho[i] * (1.0 - rho[i]));
     }
   }
 
-  double phi(const label_t l, double g) const {
-    return Common::Pow(2, l) - g;
-  }
+  double phi(const label_t l, double g) const { return Common::Pow(2, static_cast<int>(l)) - g; }
 
-  const char* GetName() const override {
-    return "rank_xendcg";
-  }
+  const char* GetName() const override { return "rank_xendcg"; }
 
   std::string ToString() const override {
     std::stringstream str_buf;
@@ -138,4 +133,4 @@ class RankXENDCG: public ObjectiveFunction {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_OBJECTIVE_RANK_XENDCG_OBJECTIVE_HPP_
+#endif  // LightGBM_OBJECTIVE_RANK_XENDCG_OBJECTIVE_HPP_

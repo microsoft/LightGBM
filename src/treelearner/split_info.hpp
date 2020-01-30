@@ -1,24 +1,25 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_TREELEARNER_SPLIT_INFO_HPP_
 #define LIGHTGBM_TREELEARNER_SPLIT_INFO_HPP_
 
 #include <LightGBM/meta.h>
 
-#include <limits>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <limits>
 #include <vector>
 
 namespace LightGBM {
 
 /*!
-* \brief Used to store some information for gain split point
-*/
+ * \brief Used to store some information for gain split point
+ */
 struct SplitInfo {
  public:
   /*! \brief Feature index */
@@ -51,7 +52,9 @@ struct SplitInfo {
   double min_constraint = -std::numeric_limits<double>::max();
   double max_constraint = std::numeric_limits<double>::max();
   inline static int Size(int max_cat_threshold) {
-    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 9 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t);
+    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) +
+           sizeof(double) * 9 + sizeof(data_size_t) * 2 +
+           max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t);
   }
 
   inline void CopyTo(char* buffer) const {
@@ -87,7 +90,8 @@ struct SplitInfo {
     buffer += sizeof(max_constraint);
     std::memcpy(buffer, &num_cat_threshold, sizeof(num_cat_threshold));
     buffer += sizeof(num_cat_threshold);
-    std::memcpy(buffer, cat_threshold.data(), sizeof(uint32_t) * num_cat_threshold);
+    std::memcpy(buffer, cat_threshold.data(),
+                sizeof(uint32_t) * num_cat_threshold);
   }
 
   void CopyFrom(const char* buffer) {
@@ -124,7 +128,8 @@ struct SplitInfo {
     std::memcpy(&num_cat_threshold, buffer, sizeof(num_cat_threshold));
     buffer += sizeof(num_cat_threshold);
     cat_threshold.resize(num_cat_threshold);
-    std::memcpy(cat_threshold.data(), buffer, sizeof(uint32_t) * num_cat_threshold);
+    std::memcpy(cat_threshold.data(), buffer,
+                sizeof(uint32_t) * num_cat_threshold);
   }
 
   inline void Reset() {
@@ -133,7 +138,7 @@ struct SplitInfo {
     gain = kMinScore;
   }
 
-  inline bool operator > (const SplitInfo& si) const {
+  inline bool operator>(const SplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
     // replace nan with -inf
@@ -162,7 +167,7 @@ struct SplitInfo {
     }
   }
 
-  inline bool operator == (const SplitInfo& si) const {
+  inline bool operator==(const SplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
     // replace nan with -inf
@@ -227,7 +232,7 @@ struct LightSplitInfo {
     buffer += sizeof(gain);
   }
 
-  inline bool operator > (const LightSplitInfo& si) const {
+  inline bool operator>(const LightSplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
     // replace nan with -inf
@@ -256,7 +261,7 @@ struct LightSplitInfo {
     }
   }
 
-  inline bool operator == (const LightSplitInfo& si) const {
+  inline bool operator==(const LightSplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
     // replace nan with -inf
@@ -287,4 +292,4 @@ struct LightSplitInfo {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_TREELEARNER_SPLIT_INFO_HPP_
+#endif  // LightGBM_TREELEARNER_SPLIT_INFO_HPP_

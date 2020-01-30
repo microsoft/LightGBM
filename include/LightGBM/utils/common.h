@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
 #define LIGHTGBM_UTILS_COMMON_FUN_H_
@@ -8,8 +9,6 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <limits>
-#include <string>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -18,15 +17,17 @@
 #include <functional>
 #include <iomanip>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#if defined(_MSC_VER) 
+#if defined(_MSC_VER)
 #include <malloc.h>
 #elif MM_MALLOC
 #include <mm_malloc.h>
@@ -40,14 +41,12 @@
 #define _mm_free(a) free(a)
 #endif
 
-
 namespace LightGBM {
 
 namespace Common {
 
 inline static char tolower(char in) {
-  if (in <= 'Z' && in >= 'A')
-    return in - ('Z' - 'z');
+  if (in <= 'Z' && in >= 'A') return in - ('Z' - 'z');
   return in;
 }
 
@@ -69,7 +68,8 @@ inline static std::string RemoveQuotationSymbol(std::string str) {
   return str;
 }
 
-inline static bool StartsWith(const std::string& str, const std::string prefix) {
+inline static bool StartsWith(const std::string& str,
+                              const std::string prefix) {
   if (str.substr(0, prefix.size()) == prefix) {
     return true;
   } else {
@@ -77,7 +77,8 @@ inline static bool StartsWith(const std::string& str, const std::string prefix) 
   }
 }
 
-inline static std::vector<std::string> Split(const char* c_str, char delimiter) {
+inline static std::vector<std::string> Split(const char* c_str,
+                                             char delimiter) {
   std::vector<std::string> ret;
   std::string str(c_str);
   size_t i = 0;
@@ -123,7 +124,8 @@ inline static std::vector<std::string> SplitLines(const char* c_str) {
   return ret;
 }
 
-inline static std::vector<std::string> Split(const char* c_str, const char* delimiters) {
+inline static std::vector<std::string> Split(const char* c_str,
+                                             const char* delimiters) {
   std::vector<std::string> ret;
   std::string str(c_str);
   size_t i = 0;
@@ -152,7 +154,7 @@ inline static std::vector<std::string> Split(const char* c_str, const char* deli
   return ret;
 }
 
-template<typename T>
+template <typename T>
 inline static const char* Atoi(const char* p, T* out) {
   int sign;
   T value;
@@ -176,16 +178,16 @@ inline static const char* Atoi(const char* p, T* out) {
   return p;
 }
 
-template<typename T>
+template <typename T>
 inline static double Pow(T base, int power) {
   if (power < 0) {
     return 1.0 / Pow(base, -power);
   } else if (power == 0) {
     return 1;
   } else if (power % 2 == 0) {
-    return Pow(base*base, power / 2);
+    return Pow(base * base, power / 2);
   } else if (power % 3 == 0) {
-    return Pow(base*base*base, power / 3);
+    return Pow(base * base * base, power / 3);
   } else {
     return base * Pow(base, power - 1);
   }
@@ -247,27 +249,37 @@ inline static const char* Atof(const char* p, double* out) {
       }
       if (expon > 308) expon = 308;
       // Calculate scaling factor.
-      while (expon >= 50) { scale *= 1E50; expon -= 50; }
-      while (expon >= 8) { scale *= 1E8;  expon -= 8; }
-      while (expon > 0) { scale *= 10.0; expon -= 1; }
+      while (expon >= 50) {
+        scale *= 1E50;
+        expon -= 50;
+      }
+      while (expon >= 8) {
+        scale *= 1E8;
+        expon -= 8;
+      }
+      while (expon > 0) {
+        scale *= 10.0;
+        expon -= 1;
+      }
     }
     // Return signed and scaled floating point result.
     *out = sign * (frac ? (value / scale) : (value * scale));
   } else {
     size_t cnt = 0;
-    while (*(p + cnt) != '\0' && *(p + cnt) != ' '
-           && *(p + cnt) != '\t' && *(p + cnt) != ','
-           && *(p + cnt) != '\n' && *(p + cnt) != '\r'
-           && *(p + cnt) != ':') {
+    while (*(p + cnt) != '\0' && *(p + cnt) != ' ' && *(p + cnt) != '\t' &&
+           *(p + cnt) != ',' && *(p + cnt) != '\n' && *(p + cnt) != '\r' &&
+           *(p + cnt) != ':') {
       ++cnt;
     }
     if (cnt > 0) {
       std::string tmp_str(p, cnt);
-      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), Common::tolower);
+      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(),
+                     Common::tolower);
       if (tmp_str == std::string("na") || tmp_str == std::string("nan") ||
           tmp_str == std::string("null")) {
         *out = NAN;
-      } else if (tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
+      } else if (tmp_str == std::string("inf") ||
+                 tmp_str == std::string("infinity")) {
         *out = sign * 1e308;
       } else {
         Log::Fatal("Unknown token %s in data file", tmp_str.c_str());
@@ -302,17 +314,8 @@ inline static bool AtofAndCheck(const char* p, double* out) {
 inline static unsigned CountDecimalDigit32(uint32_t n) {
 #if defined(_MSC_VER) || defined(__GNUC__)
   static const uint32_t powers_of_10[] = {
-    0,
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-    1000000,
-    10000000,
-    100000000,
-    1000000000
-  };
+      0,      10,      100,      1000,      10000,
+      100000, 1000000, 10000000, 100000000, 1000000000};
 #ifdef _MSC_VER
   unsigned long i = 0;
   _BitScanReverse(&i, n | 1);
@@ -337,17 +340,20 @@ inline static unsigned CountDecimalDigit32(uint32_t n) {
 
 inline static void Uint32ToStr(uint32_t value, char* buffer) {
   const char kDigitsLut[200] = {
-    '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9',
-    '1', '0', '1', '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9',
-    '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',
-    '3', '0', '3', '1', '3', '2', '3', '3', '3', '4', '3', '5', '3', '6', '3', '7', '3', '8', '3', '9',
-    '4', '0', '4', '1', '4', '2', '4', '3', '4', '4', '4', '5', '4', '6', '4', '7', '4', '8', '4', '9',
-    '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5', '5', '6', '5', '7', '5', '8', '5', '9',
-    '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8', '6', '9',
-    '7', '0', '7', '1', '7', '2', '7', '3', '7', '4', '7', '5', '7', '6', '7', '7', '7', '8', '7', '9',
-    '8', '0', '8', '1', '8', '2', '8', '3', '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9',
-    '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7', '9', '8', '9', '9'
-  };
+      '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0',
+      '7', '0', '8', '0', '9', '1', '0', '1', '1', '1', '2', '1', '3', '1', '4',
+      '1', '5', '1', '6', '1', '7', '1', '8', '1', '9', '2', '0', '2', '1', '2',
+      '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',
+      '3', '0', '3', '1', '3', '2', '3', '3', '3', '4', '3', '5', '3', '6', '3',
+      '7', '3', '8', '3', '9', '4', '0', '4', '1', '4', '2', '4', '3', '4', '4',
+      '4', '5', '4', '6', '4', '7', '4', '8', '4', '9', '5', '0', '5', '1', '5',
+      '2', '5', '3', '5', '4', '5', '5', '5', '6', '5', '7', '5', '8', '5', '9',
+      '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6',
+      '7', '6', '8', '6', '9', '7', '0', '7', '1', '7', '2', '7', '3', '7', '4',
+      '7', '5', '7', '6', '7', '7', '7', '8', '7', '9', '8', '0', '8', '1', '8',
+      '2', '8', '3', '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9',
+      '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9',
+      '7', '9', '8', '9', '9'};
   unsigned digit = CountDecimalDigit32(value);
   buffer += digit;
   *buffer = '\0';
@@ -377,16 +383,17 @@ inline static void Int32ToStr(int32_t value, char* buffer) {
   Uint32ToStr(u, buffer);
 }
 
-inline static void DoubleToStr(double value, char* buffer, size_t
-                               #ifdef _MSC_VER
-                               buffer_len
-                               #endif
+inline static void DoubleToStr(double value, char* buffer,
+                               size_t
+#ifdef _MSC_VER
+                                   buffer_len
+#endif
 ) {
-  #ifdef _MSC_VER
+#ifdef _MSC_VER
   sprintf_s(buffer, buffer_len, "%.17g", value);
-  #else
+#else
   sprintf(buffer, "%.17g", value);
-  #endif
+#endif
 }
 
 inline static const char* SkipSpaceAndTab(const char* p) {
@@ -403,7 +410,7 @@ inline static const char* SkipReturn(const char* p) {
   return p;
 }
 
-template<typename T, typename T2>
+template <typename T, typename T2>
 inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
   std::vector<T2> ret(arr.size());
   for (size_t i = 0; i < arr.size(); ++i) {
@@ -412,42 +419,45 @@ inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
   return ret;
 }
 
-template<typename T, bool is_float, bool is_unsign>
+template <typename T, bool is_float, bool is_unsign>
 struct __TToStringHelperFast {
   void operator()(T value, char* buffer, size_t) const {
     Int32ToStr(value, buffer);
   }
 };
 
-template<typename T>
+template <typename T>
 struct __TToStringHelperFast<T, true, false> {
-  void operator()(T value, char* buffer, size_t
-                  #ifdef _MSC_VER
-                  buf_len
-                  #endif
-                  )
-  const {
-    #ifdef _MSC_VER
+  void operator()(T value, char* buffer,
+                  size_t
+#ifdef _MSC_VER
+                      buf_len
+#endif
+                  ) const {
+#ifdef _MSC_VER
     sprintf_s(buffer, buf_len, "%g", value);
-    #else
+#else
     sprintf(buffer, "%g", value);
-    #endif
+#endif
   }
 };
 
-template<typename T>
+template <typename T>
 struct __TToStringHelperFast<T, false, true> {
   void operator()(T value, char* buffer, size_t) const {
     Uint32ToStr(value, buffer);
   }
 };
 
-template<typename T>
-inline static std::string ArrayToStringFast(const std::vector<T>& arr, size_t n) {
+template <typename T>
+inline static std::string ArrayToStringFast(const std::vector<T>& arr,
+                                            size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
-  __TToStringHelperFast<T, std::is_floating_point<T>::value, std::is_unsigned<T>::value> helper;
+  __TToStringHelperFast<T, std::is_floating_point<T>::value,
+                        std::is_unsigned<T>::value>
+      helper;
   const size_t buf_len = 16;
   std::vector<char> buffer(buf_len);
   std::stringstream str_buf;
@@ -460,7 +470,8 @@ inline static std::string ArrayToStringFast(const std::vector<T>& arr, size_t n)
   return str_buf.str();
 }
 
-inline static std::string ArrayToString(const std::vector<double>& arr, size_t n) {
+inline static std::string ArrayToString(const std::vector<double>& arr,
+                                        size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
@@ -476,7 +487,7 @@ inline static std::string ArrayToString(const std::vector<double>& arr, size_t n
   return str_buf.str();
 }
 
-template<typename T, bool is_float>
+template <typename T, bool is_float>
 struct __StringToTHelper {
   T operator()(const std::string& str) const {
     T ret = 0;
@@ -485,15 +496,16 @@ struct __StringToTHelper {
   }
 };
 
-template<typename T>
+template <typename T>
 struct __StringToTHelper<T, true> {
   T operator()(const std::string& str) const {
     return static_cast<T>(std::stod(str));
   }
 };
 
-template<typename T>
-inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
+template <typename T>
+inline static std::vector<T> StringToArray(const std::string& str,
+                                           char delimiter) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   std::vector<T> ret;
   ret.reserve(strs.size());
@@ -504,7 +516,7 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
   return ret;
 }
 
-template<typename T>
+template <typename T>
 inline static std::vector<T> StringToArray(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
@@ -520,16 +532,14 @@ inline static std::vector<T> StringToArray(const std::string& str, int n) {
   return ret;
 }
 
-template<typename T, bool is_float>
+template <typename T, bool is_float>
 struct __StringToTHelperFast {
-  const char* operator()(const char*p, T* out) const {
-    return Atoi(p, out);
-  }
+  const char* operator()(const char* p, T* out) const { return Atoi(p, out); }
 };
 
-template<typename T>
+template <typename T>
 struct __StringToTHelperFast<T, true> {
-  const char* operator()(const char*p, T* out) const {
+  const char* operator()(const char* p, T* out) const {
     double tmp = 0.0f;
     auto ret = Atof(p, &tmp);
     *out = static_cast<T>(tmp);
@@ -537,7 +547,7 @@ struct __StringToTHelperFast<T, true> {
   }
 };
 
-template<typename T>
+template <typename T>
 inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
@@ -551,8 +561,9 @@ inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
   return ret;
 }
 
-template<typename T>
-inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
+template <typename T>
+inline static std::string Join(const std::vector<T>& strs,
+                               const char* delimiter) {
   if (strs.empty()) {
     return std::string("");
   }
@@ -566,8 +577,9 @@ inline static std::string Join(const std::vector<T>& strs, const char* delimiter
   return str_buf.str();
 }
 
-template<>
-inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter) {
+template <>
+inline std::string Join<int8_t>(const std::vector<int8_t>& strs,
+                                const char* delimiter) {
   if (strs.empty()) {
     return std::string("");
   }
@@ -581,8 +593,9 @@ inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* del
   return str_buf.str();
 }
 
-template<typename T>
-inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
+template <typename T>
+inline static std::string Join(const std::vector<T>& strs, size_t start,
+                               size_t end, const char* delimiter) {
   if (end - start <= 0) {
     return std::string("");
   }
@@ -614,7 +627,7 @@ inline static int64_t Pow2RoundUp(int64_t x) {
  * \param p_rec The input/output vector of the values.
  */
 inline static void Softmax(std::vector<double>* p_rec) {
-  std::vector<double> &rec = *p_rec;
+  std::vector<double>& rec = *p_rec;
   double wmax = rec[0];
   for (size_t i = 1; i < rec.size(); ++i) {
     wmax = std::max(rec[i], wmax);
@@ -644,17 +657,19 @@ inline static void Softmax(const double* input, double* output, int len) {
   }
 }
 
-template<typename T>
-std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
+template <typename T>
+std::vector<const T*> ConstPtrInVectorWrapper(
+    const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;
-  for (auto t = input.begin(); t !=input.end(); ++t) {
+  for (auto t = input.begin(); t != input.end(); ++t) {
     ret.push_back(t->get());
   }
   return ret;
 }
 
-template<typename T1, typename T2>
-inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, size_t start, bool is_reverse = false) {
+template <typename T1, typename T2>
+inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values,
+                               size_t start, bool is_reverse = false) {
   std::vector<std::pair<T1, T2>> arr;
   auto& ref_key = *keys;
   auto& ref_value = *values;
@@ -662,13 +677,17 @@ inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, s
     arr.emplace_back(ref_key[i], ref_value[i]);
   }
   if (!is_reverse) {
-    std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
-      return a.first < b.first;
-    });
+    std::stable_sort(
+        arr.begin(), arr.end(),
+        [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+          return a.first < b.first;
+        });
   } else {
-    std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
-      return a.first > b.first;
-    });
+    std::stable_sort(
+        arr.begin(), arr.end(),
+        [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+          return a.first > b.first;
+        });
   }
   for (size_t i = start; i < arr.size(); ++i) {
     ref_key[i] = arr[i].first;
@@ -687,7 +706,8 @@ inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>* data) {
 }
 
 template <typename T>
-inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& data) {
+inline static std::vector<int> VectorSize(
+    const std::vector<std::vector<T>>& data) {
   std::vector<int> ret(data.size());
   for (size_t i = 0; i < data.size(); ++i) {
     ret[i] = static_cast<int>(data[i].size());
@@ -719,21 +739,21 @@ inline static float AvoidInf(float x) {
   }
 }
 
-template<typename _Iter> inline
-static typename std::iterator_traits<_Iter>::value_type* IteratorValType(_Iter) {
+template <typename _Iter>
+inline static typename std::iterator_traits<_Iter>::value_type* IteratorValType(
+    _Iter) {
   return (0);
 }
 
-template<typename _RanIt, typename _Pr, typename _VTRanIt> inline
-static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
+template <typename _RanIt, typename _Pr, typename _VTRanIt>
+inline static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred,
+                                _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
   int num_threads = 1;
-  #pragma omp parallel
-  #pragma omp master
-  {
-    num_threads = omp_get_num_threads();
-  }
+#pragma omp parallel
+#pragma omp master
+  { num_threads = omp_get_num_threads(); }
   if (len <= kMinInnerLen || num_threads <= 1) {
     std::sort(_First, _Last, _Pred);
     return;
@@ -741,9 +761,9 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t inner_size = (len + num_threads - 1) / num_threads;
   inner_size = std::max(inner_size, kMinInnerLen);
   num_threads = static_cast<int>((len + inner_size - 1) / inner_size);
-  #pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
   for (int i = 0; i < num_threads; ++i) {
-    size_t left = inner_size*i;
+    size_t left = inner_size * i;
     size_t right = left + inner_size;
     right = std::min(right, len);
     if (right > left) {
@@ -757,31 +777,37 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   // Recursive merge
   while (s < len) {
     int loop_size = static_cast<int>((len + s * 2 - 1) / (s * 2));
-    #pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < loop_size; ++i) {
       size_t left = i * 2 * s;
       size_t mid = left + s;
       size_t right = mid + s;
       right = std::min(len, right);
-      if (mid >= right) { continue; }
+      if (mid >= right) {
+        continue;
+      }
       std::copy(_First + left, _First + mid, buf + left);
-      std::merge(buf + left, buf + mid, _First + mid, _First + right, _First + left, _Pred);
+      std::merge(buf + left, buf + mid, _First + mid, _First + right,
+                 _First + left, _Pred);
     }
     s *= 2;
   }
 }
 
-template<typename _RanIt, typename _Pr> inline
-static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
+template <typename _RanIt, typename _Pr>
+inline static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
   return ParallelSort(_First, _Last, _Pred, IteratorValType(_First));
 }
 
-// Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
+// Check that all y[] are in interval [ymin, ymax] (end points included); throws
+// error if not
 template <typename T>
-inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
+inline static void CheckElementsIntervalClosed(const T* y, T ymin, T ymax,
+                                               int ny, const char* callername) {
   auto fatal_msg = [&y, &ymin, &ymax, &callername](int i) {
     std::ostringstream os;
-    os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", " << ymax << "]";
+    os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside ["
+       << ymin << ", " << ymax << "]";
     Log::Fatal(os.str().c_str(), callername, i);
   };
   for (int i = 1; i < ny; i += 2) {
@@ -806,10 +832,11 @@ inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int n
   }
 }
 
-// One-pass scan over array w with nw elements: find min, max and sum of elements;
-// this is useful for checking weight requirements.
+// One-pass scan over array w with nw elements: find min, max and sum of
+// elements; this is useful for checking weight requirements.
 template <typename T1, typename T2>
-inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) {
+inline static void ObtainMinMaxSum(const T1* w, int nw, T1* mi, T1* ma,
+                                   T2* su) {
   T1 minw;
   T1 maxw;
   T1 sumw;
@@ -857,7 +884,7 @@ inline static std::vector<uint32_t> EmptyBitset(int n) {
   return std::vector<uint32_t>(size);
 }
 
-template<typename T>
+template <typename T>
 inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
   auto& ref_v = *vec;
   int i1 = val / 32;
@@ -868,7 +895,7 @@ inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
   ref_v[i1] |= (1 << i2);
 }
 
-template<typename T>
+template <typename T>
 inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   std::vector<uint32_t> ret;
   for (int i = 0; i < n; ++i) {
@@ -882,7 +909,7 @@ inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   return ret;
 }
 
-template<typename T>
+template <typename T>
 inline static bool FindInBitset(const uint32_t* bits, int n, T pos) {
   int i1 = pos / 32;
   if (i1 >= n) {
@@ -898,7 +925,8 @@ inline static bool CheckDoubleEqualOrdered(double a, double b) {
 }
 
 inline static double GetDoubleUpperBound(double a) {
-  return std::nextafter(a, INFINITY);;
+  return std::nextafter(a, INFINITY);
+  ;
 }
 
 inline static size_t GetLine(const char* str) {
@@ -953,20 +981,18 @@ inline bool CheckAllowedJSON(const std::string& s) {
         || char_code == 93   // ]
         || char_code == 123  // {
         || char_code == 125  // }
-        ) {
+    ) {
       return false;
     }
   }
   return true;
 }
 
-inline int RoundInt(double x) {
-  return static_cast<int>(x + 0.5f);
-}
+inline int RoundInt(double x) { return static_cast<int>(x + 0.5f); }
 
 template <typename T, std::size_t N = 32>
 class AlignmentAllocator {
-public:
+ public:
   typedef T value_type;
   typedef std::size_t size_type;
   typedef std::ptrdiff_t difference_type;
@@ -977,39 +1003,31 @@ public:
   typedef T& reference;
   typedef const T& const_reference;
 
-public:
-  inline AlignmentAllocator() throw () {}
+ public:
+  inline AlignmentAllocator() throw() {}
 
   template <typename T2>
-  inline AlignmentAllocator(const AlignmentAllocator<T2, N>&) throw () {}
+  inline AlignmentAllocator(const AlignmentAllocator<T2, N>&) throw() {}
 
-  inline ~AlignmentAllocator() throw () {}
+  inline ~AlignmentAllocator() throw() {}
 
-  inline pointer adress(reference r) {
-    return &r;
-  }
+  inline pointer adress(reference r) { return &r; }
 
-  inline const_pointer adress(const_reference r) const {
-    return &r;
-  }
+  inline const_pointer adress(const_reference r) const { return &r; }
 
   inline pointer allocate(size_type n) {
     return (pointer)_mm_malloc(n * sizeof(value_type), N);
   }
 
-  inline void deallocate(pointer p, size_type) {
-    _mm_free(p);
-  }
+  inline void deallocate(pointer p, size_type) { _mm_free(p); }
 
   inline void construct(pointer p, const value_type& wert) {
     new (p) value_type(wert);
   }
 
-  inline void destroy(pointer p) {
-    p->~value_type();
-  }
+  inline void destroy(pointer p) { p->~value_type(); }
 
-  inline size_type max_size() const throw () {
+  inline size_type max_size() const throw() {
     return size_type(-1) / sizeof(value_type);
   }
 
@@ -1025,19 +1043,15 @@ public:
   // Returns true if and only if storage allocated from *this
   // can be deallocated from other, and vice versa.
   // Always returns true for stateless allocators.
-  bool operator==(const AlignmentAllocator<T, N>&) const {
-    return true;
-  }
+  bool operator==(const AlignmentAllocator<T, N>&) const { return true; }
 };
 
 // Note: this class is not thread-safe, don't use it inside omp blocks
 class Timer {
  public:
   Timer() {}
-  ~Timer() {
-    Print();
-  }
-  #ifdef TIMETAG
+  ~Timer() { Print(); }
+#ifdef TIMETAG
   void Start(const std::string& name) {
     auto cur_time = std::chrono::steady_clock::now();
     start_time_[name] = cur_time;
@@ -1048,36 +1062,37 @@ class Timer {
     }
     stats_[name] += std::chrono::steady_clock::now() - start_time_[name];
   }
-  #else
-  void Start(const std::string&) { }
-  void Stop(const std::string&) { }
-  #endif // TIMETAG
+#else
+  void Start(const std::string&) {}
+  void Stop(const std::string&) {}
+#endif  // TIMETAG
 
   void Print() const {
-    #ifdef  TIMETAG
-    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(stats_.begin(), stats_.end());
+#ifdef TIMETAG
+    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(
+        stats_.begin(), stats_.end());
     for (auto it = ordered.begin(); it != ordered.end(); ++it) {
       Log::Info("%s costs:\t %f ", it->first.c_str(), it->second * 1e-3);
     }
-    #endif
+#endif
   }
-  std::unordered_map<std::string, std::chrono::steady_clock::time_point> start_time_;
-  std::unordered_map<std::string, std::chrono::duration<double, std::milli>> stats_;
+  std::unordered_map<std::string, std::chrono::steady_clock::time_point>
+      start_time_;
+  std::unordered_map<std::string, std::chrono::duration<double, std::milli>>
+      stats_;
 };
 
 // Note: this class is not thread-safe, don't use it inside omp blocks
 class FunctionTimer {
  public:
-  FunctionTimer(const std::string& name, Timer& timer): timer_(timer) {
+  FunctionTimer(const std::string& name, Timer& timer) : timer_(timer) {
     timer.Start(name);
-    #ifdef TIMETAG
+#ifdef TIMETAG
     name_ = name;
-    #endif // TIMETAG
+#endif  // TIMETAG
+  }
+  ~FunctionTimer() { timer_.Stop(name_); }
 
-  }
-  ~FunctionTimer() {
-    timer_.Stop(name_);
-  }
  private:
   std::string name_;
   Timer& timer_;
@@ -1089,4 +1104,4 @@ extern Common::Timer global_timer;
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_COMMON_FUN_H_
+#endif  // LightGBM_UTILS_COMMON_FUN_H_

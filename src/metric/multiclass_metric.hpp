@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_METRIC_MULTICLASS_METRIC_HPP_
 #define LIGHTGBM_METRIC_MULTICLASS_METRIC_HPP_
@@ -8,25 +9,24 @@
 #include <LightGBM/metric.h>
 #include <LightGBM/utils/log.h>
 
-#include <string>
 #include <cmath>
+#include <string>
 #include <utility>
 #include <vector>
 
 namespace LightGBM {
 /*!
-* \brief Metric for multiclass task.
-* Use static class "PointWiseLossCalculator" to calculate loss point-wise
-*/
-template<typename PointWiseLossCalculator>
-class MulticlassMetric: public Metric {
+ * \brief Metric for multiclass task.
+ * Use static class "PointWiseLossCalculator" to calculate loss point-wise
+ */
+template <typename PointWiseLossCalculator>
+class MulticlassMetric : public Metric {
  public:
-  explicit MulticlassMetric(const Config& config) :config_(config) {
+  explicit MulticlassMetric(const Config& config) : config_(config) {
     num_class_ = config.num_class;
   }
 
-  virtual ~MulticlassMetric() {
-  }
+  virtual ~MulticlassMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     name_.emplace_back(PointWiseLossCalculator::Name(config_));
@@ -45,15 +45,12 @@ class MulticlassMetric: public Metric {
     }
   }
 
-  const std::vector<std::string>& GetName() const override {
-    return name_;
-  }
+  const std::vector<std::string>& GetName() const override { return name_; }
 
-  double factor_to_bigger_better() const override {
-    return -1.0f;
-  }
+  double factor_to_bigger_better() const override { return -1.0f; }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
+  std::vector<double> Eval(const double* score,
+                           const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0;
     int num_tree_per_iteration = num_class_;
     int num_pred_per_row = num_class_;
@@ -63,7 +60,7 @@ class MulticlassMetric: public Metric {
     }
     if (objective != nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           std::vector<double> raw_score(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
@@ -73,10 +70,11 @@ class MulticlassMetric: public Metric {
           std::vector<double> rec(num_pred_per_row);
           objective->ConvertOutput(raw_score.data(), rec.data());
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_);
+          sum_loss +=
+              PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           std::vector<double> raw_score(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
@@ -86,12 +84,14 @@ class MulticlassMetric: public Metric {
           std::vector<double> rec(num_pred_per_row);
           objective->ConvertOutput(raw_score.data(), rec.data());
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_) * weights_[i];
+          sum_loss +=
+              PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_) *
+              weights_[i];
         }
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           std::vector<double> rec(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
@@ -99,10 +99,11 @@ class MulticlassMetric: public Metric {
             rec[k] = static_cast<double>(score[idx]);
           }
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_);
+          sum_loss +=
+              PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           std::vector<double> rec(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
@@ -110,7 +111,9 @@ class MulticlassMetric: public Metric {
             rec[k] = static_cast<double>(score[idx]);
           }
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_) * weights_[i];
+          sum_loss +=
+              PointWiseLossCalculator::LossOnPoint(label_[i], &rec, config_) *
+              weights_[i];
         }
       }
     }
@@ -134,12 +137,15 @@ class MulticlassMetric: public Metric {
   Config config_;
 };
 
-/*! \brief top-k error for multiclass task; if k=1 (default) this is the usual multi-error */
-class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
+/*! \brief top-k error for multiclass task; if k=1 (default) this is the usual
+ * multi-error */
+class MultiErrorMetric : public MulticlassMetric<MultiErrorMetric> {
  public:
-  explicit MultiErrorMetric(const Config& config) :MulticlassMetric<MultiErrorMetric>(config) {}
+  explicit MultiErrorMetric(const Config& config)
+      : MulticlassMetric<MultiErrorMetric>(config) {}
 
-  inline static double LossOnPoint(label_t label, std::vector<double>* score, const Config& config) {
+  inline static double LossOnPoint(label_t label, std::vector<double>* score,
+                                   const Config& config) {
     size_t k = static_cast<size_t>(label);
     auto& ref_score = *score;
     int num_larger = 0;
@@ -160,11 +166,14 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
 };
 
 /*! \brief Logloss for multiclass task */
-class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetric> {
+class MultiSoftmaxLoglossMetric
+    : public MulticlassMetric<MultiSoftmaxLoglossMetric> {
  public:
-  explicit MultiSoftmaxLoglossMetric(const Config& config) :MulticlassMetric<MultiSoftmaxLoglossMetric>(config) {}
+  explicit MultiSoftmaxLoglossMetric(const Config& config)
+      : MulticlassMetric<MultiSoftmaxLoglossMetric>(config) {}
 
-  inline static double LossOnPoint(label_t label, std::vector<double>* score, const Config&) {
+  inline static double LossOnPoint(label_t label, std::vector<double>* score,
+                                   const Config&) {
     size_t k = static_cast<size_t>(label);
     auto& ref_score = *score;
     if (ref_score[k] > kEpsilon) {
@@ -204,13 +213,15 @@ class AucMuMetric : public Metric {
     for (data_size_t i = 0; i < num_data_; ++i) {
       sorted_data_idx_[i] = i;
     }
-    Common::ParallelSort(sorted_data_idx_.begin(), sorted_data_idx_.end(),
-      [this](data_size_t a, data_size_t b) { return label_[a] < label_[b]; });
+    Common::ParallelSort(
+        sorted_data_idx_.begin(), sorted_data_idx_.end(),
+        [this](data_size_t a, data_size_t b) { return label_[a] < label_[b]; });
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
-    // the notation follows that used in the paper introducing the auc-mu metric:
-    // http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
+  std::vector<double> Eval(const double* score,
+                           const ObjectiveFunction*) const override {
+    // the notation follows that used in the paper introducing the auc-mu
+    // metric: http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
 
     // get size of each class
     auto class_sizes = std::vector<data_size_t>(num_class_, 0);
@@ -219,7 +230,8 @@ class AucMuMetric : public Metric {
       ++class_sizes[curr_label];
     }
 
-    auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
+    auto S = std::vector<std::vector<double>>(
+        num_class_, std::vector<double>(num_class_, 0));
     int i_start = 0;
     for (int i = 0; i < num_class_; ++i) {
       int j_start = i_start + class_sizes[i];
@@ -231,12 +243,16 @@ class AucMuMetric : public Metric {
         double t1 = curr_v[i] - curr_v[j];
         // extract the data indices belonging to class i or j
         std::vector<data_size_t> class_i_j_indices;
-        class_i_j_indices.assign(sorted_data_idx_.begin() + i_start, sorted_data_idx_.begin() + i_start + class_sizes[i]);
-        class_i_j_indices.insert(class_i_j_indices.end(),
-          sorted_data_idx_.begin() + j_start, sorted_data_idx_.begin() + j_start + class_sizes[j]);
+        class_i_j_indices.assign(
+            sorted_data_idx_.begin() + i_start,
+            sorted_data_idx_.begin() + i_start + class_sizes[i]);
+        class_i_j_indices.insert(
+            class_i_j_indices.end(), sorted_data_idx_.begin() + j_start,
+            sorted_data_idx_.begin() + j_start + class_sizes[j]);
         // sort according to distance from separating hyperplane
         std::vector<std::pair<data_size_t, double>> dist;
-        for (data_size_t k = 0; static_cast<size_t>(k) < class_i_j_indices.size(); ++k) {
+        for (data_size_t k = 0;
+             static_cast<size_t>(k) < class_i_j_indices.size(); ++k) {
           data_size_t a = class_i_j_indices[k];
           double v_a = 0;
           for (int m = 0; m < num_class_; ++m) {
@@ -245,16 +261,17 @@ class AucMuMetric : public Metric {
           dist.push_back(std::pair<data_size_t, double>(a, t1 * v_a));
         }
         Common::ParallelSort(dist.begin(), dist.end(),
-          [this](std::pair<data_size_t, double> a, std::pair<data_size_t, double> b) {
-          // if scores are equal, put j class first
-          if (std::fabs(a.second - b.second) < kEpsilon) {
-            return label_[a.first] > label_[b.first];
-          } else if (a.second < b.second) {
-            return true;
-          } else {
-            return false;
-          }
-        });
+                             [this](std::pair<data_size_t, double> a,
+                                    std::pair<data_size_t, double> b) {
+                               // if scores are equal, put j class first
+                               if (std::fabs(a.second - b.second) < kEpsilon) {
+                                 return label_[a.first] > label_[b.first];
+                               } else if (a.second < b.second) {
+                                 return true;
+                               } else {
+                                 return false;
+                               }
+                             });
         // calculate auc
         double num_j = 0;
         double last_j_dist = 0;
@@ -264,7 +281,9 @@ class AucMuMetric : public Metric {
           double curr_dist = dist[k].second;
           if (label_[a] == i) {
             if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
-              S[i][j] += num_j - 0.5 * num_current_j;  // members of class j with same distance as a contribute 0.5
+              S[i][j] +=
+                  num_j - 0.5 * num_current_j;  // members of class j with same
+                                                // distance as a contribute 0.5
             } else {
               S[i][j] += num_j;
             }
@@ -311,4 +330,4 @@ class AucMuMetric : public Metric {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_METRIC_MULTICLASS_METRIC_HPP_
+#endif  // LightGBM_METRIC_MULTICLASS_METRIC_HPP_

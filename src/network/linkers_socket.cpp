@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifdef USE_SOCKET
 
@@ -8,9 +9,9 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <string>
 #include <chrono>
 #include <cstring>
+#include <string>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -37,7 +38,8 @@ Linkers::Linkers(Config config) {
     std::unordered_set<std::string> local_ip_list = TcpSocket::GetLocalIpList();
     // get local rank
     for (size_t i = 0; i < client_ips_.size(); ++i) {
-      if (local_ip_list.count(client_ips_[i]) > 0 && client_ports_[i] == local_listen_port_) {
+      if (local_ip_list.count(client_ips_[i]) > 0 &&
+          client_ports_[i] == local_listen_port_) {
         rank_ = static_cast<int>(i);
         break;
       }
@@ -77,7 +79,8 @@ Linkers::~Linkers() {
   }
 }
 
-void Linkers::ParseMachineList(const std::string& machines, const std::string& filename) {
+void Linkers::ParseMachineList(const std::string& machines,
+                               const std::string& filename) {
   std::vector<std::string> lines;
   if (machines.empty()) {
     TextReader<size_t> machine_list_reader(filename.c_str(), false);
@@ -92,7 +95,8 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
   for (auto& line : lines) {
     line = Common::Trim(line);
     if (line.find_first_of("rank=") != std::string::npos) {
-      std::vector<std::string> str_after_split = Common::Split(line.c_str(), '=');
+      std::vector<std::string> str_after_split =
+          Common::Split(line.c_str(), '=');
       Common::Atoi(str_after_split[1].c_str(), &rank_);
       continue;
     }
@@ -104,7 +108,9 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
       }
     }
     if (client_ips_.size() >= static_cast<size_t>(num_machines_)) {
-      Log::Warning("machine_list size is larger than the parameter num_machines, ignoring redundant entries");
+      Log::Warning(
+          "machine_list size is larger than the parameter num_machines, "
+          "ignoring redundant entries");
       break;
     }
     str_after_split[0] = Common::Trim(str_after_split[0]);
@@ -113,11 +119,15 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
   if (client_ips_.empty()) {
-    Log::Fatal("Cannot find any ip and port.\n"
-               "Please check machine_list_filename or machines parameter");
+    Log::Fatal(
+        "Cannot find any ip and port.\n"
+        "Please check machine_list_filename or machines parameter");
   }
   if (client_ips_.size() != static_cast<size_t>(num_machines_)) {
-    Log::Warning("World size is larger than the machine_list size, change world size to %d", client_ips_.size());
+    Log::Warning(
+        "World size is larger than the machine_list size, change world size to "
+        "%d",
+        client_ips_.size());
     num_machines_ = static_cast<int>(client_ips_.size());
   }
 }
@@ -151,7 +161,8 @@ void Linkers::ListenThread(int incoming_cnt) {
     int read_cnt = 0;
     int size_of_int = static_cast<int>(sizeof(int));
     while (read_cnt < size_of_int) {
-      int cur_read_cnt = handler.Recv(buffer + read_cnt, size_of_int - read_cnt);
+      int cur_read_cnt =
+          handler.Recv(buffer + read_cnt, size_of_int - read_cnt);
       read_cnt += cur_read_cnt;
     }
     int* ptr_in_rank = reinterpret_cast<int*>(buffer);
@@ -197,12 +208,17 @@ void Linkers::Construct() {
       TcpSocket cur_socket;
       int connect_fail_delay_time = connect_fail_retry_first_delay_interval;
       for (int i = 0; i < connect_fail_retry_cnt; ++i) {
-        if (cur_socket.Connect(client_ips_[out_rank].c_str(), client_ports_[out_rank])) {
+        if (cur_socket.Connect(client_ips_[out_rank].c_str(),
+                               client_ports_[out_rank])) {
           break;
         } else {
-          Log::Warning("Connecting to rank %d failed, waiting for %d milliseconds", out_rank, connect_fail_delay_time);
-          std::this_thread::sleep_for(std::chrono::milliseconds(connect_fail_delay_time));
-          connect_fail_delay_time = static_cast<int>(connect_fail_delay_time * connect_fail_retry_delay_factor);
+          Log::Warning(
+              "Connecting to rank %d failed, waiting for %d milliseconds",
+              out_rank, connect_fail_delay_time);
+          std::this_thread::sleep_for(
+              std::chrono::milliseconds(connect_fail_delay_time));
+          connect_fail_delay_time = static_cast<int>(
+              connect_fail_delay_time * connect_fail_retry_delay_factor);
         }
       }
       // send local rank

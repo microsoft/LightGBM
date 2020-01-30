@@ -1,14 +1,15 @@
 /*!
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_PREDICTION_EARLY_STOP_H_
 #define LIGHTGBM_PREDICTION_EARLY_STOP_H_
 
 #include <LightGBM/export.h>
 
-#include <string>
 #include <functional>
+#include <string>
 
 namespace LightGBM {
 
@@ -19,7 +20,7 @@ struct PredictionEarlyStopInstance {
   using FunctionType = std::function<bool(const double*, int)>;
 
   FunctionType callback_function;  // callback function itself
-  int          round_period;       // call callback_function every `runPeriod` iterations
+  int round_period;  // call callback_function every `runPeriod` iterations
 };
 
 struct PredictionEarlyStopConfig {
@@ -27,10 +28,11 @@ struct PredictionEarlyStopConfig {
   double margin_threshold;
 };
 
-/// Create an early stopping algorithm of type `type`, with given round_period and margin threshold
-LIGHTGBM_EXPORT PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string& type,
-                                                                              const PredictionEarlyStopConfig& config);
+/// Create an early stopping algorithm of type `type`, with given round_period
+/// and margin threshold
+LIGHTGBM_EXPORT PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(
+    const std::string& type, const PredictionEarlyStopConfig& config);
 
-}   // namespace LightGBM
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_PREDICTION_EARLY_STOP_H_

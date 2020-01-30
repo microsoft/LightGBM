@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_IO_DENSE_BIN_HPP_
 #define LIGHTGBM_IO_DENSE_BIN_HPP_
@@ -17,12 +18,14 @@ template <typename VAL_T>
 class DenseBin;
 
 template <typename VAL_T>
-class DenseBinIterator: public BinIterator {
+class DenseBinIterator : public BinIterator {
  public:
-  explicit DenseBinIterator(const DenseBin<VAL_T>* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin)
-    : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
-    max_bin_(static_cast<VAL_T>(max_bin)),
-    most_freq_bin_(static_cast<VAL_T>(most_freq_bin)) {
+  explicit DenseBinIterator(const DenseBin<VAL_T>* bin_data, uint32_t min_bin,
+                            uint32_t max_bin, uint32_t most_freq_bin)
+      : bin_data_(bin_data),
+        min_bin_(static_cast<VAL_T>(min_bin)),
+        max_bin_(static_cast<VAL_T>(max_bin)),
+        most_freq_bin_(static_cast<VAL_T>(most_freq_bin)) {
     if (most_freq_bin_ == 0) {
       offset_ = 1;
     } else {
@@ -33,7 +36,7 @@ class DenseBinIterator: public BinIterator {
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override {}
 
-private:
+ private:
   const DenseBin<VAL_T>* bin_data_;
   VAL_T min_bin_;
   VAL_T max_bin_;
@@ -41,19 +44,17 @@ private:
   uint8_t offset_;
 };
 /*!
-* \brief Used to store bins for dense feature
-* Use template to reduce memory cost
-*/
+ * \brief Used to store bins for dense feature
+ * Use template to reduce memory cost
+ */
 template <typename VAL_T>
-class DenseBin: public Bin {
-public:
+class DenseBin : public Bin {
+ public:
   friend DenseBinIterator<VAL_T>;
   explicit DenseBin(data_size_t num_data)
-    : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {
-  }
+      : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {}
 
-  ~DenseBin() {
-  }
+  ~DenseBin() {}
 
   void Push(int, data_size_t idx, uint32_t value) override {
     data_[idx] = static_cast<VAL_T>(value);
@@ -66,16 +67,20 @@ public:
     }
   }
 
-  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin,
+                           uint32_t most_freq_bin) const override;
 
-  #define ACC_GH(hist, i, g, h) \
+#define ACC_GH(hist, i, g, h)               \
   const auto ti = static_cast<int>(i) << 1; \
-  hist[ti] += g; \
-  hist[ti + 1] += h; \
+  hist[ti] += g;                            \
+  hist[ti + 1] += h;
 
-  template<bool use_indices, bool use_prefetch, bool use_hessians>
-  void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const {
+  template <bool use_indices, bool use_prefetch, bool use_hessians>
+  void ConstructHistogramInner(const data_size_t* data_indices,
+                               data_size_t start, data_size_t end,
+                               const score_t* ordered_gradients,
+                               const score_t* ordered_hessians,
+                               hist_t* out) const {
     data_size_t i = start;
 
     if (use_prefetch) {
@@ -83,7 +88,8 @@ public:
       const data_size_t pf_end = end - pf_offset;
       for (; i < pf_end; ++i) {
         const auto idx = use_indices ? data_indices[i] : i;
-        const auto pf_idx = use_indices ? data_indices[i + pf_offset] : i + pf_offset;
+        const auto pf_idx =
+            use_indices ? data_indices[i + pf_offset] : i + pf_offset;
         PREFETCH_T0(data_.data() + pf_idx);
         const VAL_T bin = data_[idx];
         if (use_hessians) {
@@ -103,37 +109,47 @@ public:
       }
     }
   }
-  #undef ACC_GH
+#undef ACC_GH
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const override {
-    ConstructHistogramInner<true, true, true>(data_indices, start, end, ordered_gradients, ordered_hessians, out);
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
+                          data_size_t end, const score_t* ordered_gradients,
+                          const score_t* ordered_hessians,
+                          hist_t* out) const override {
+    ConstructHistogramInner<true, true, true>(
+        data_indices, start, end, ordered_gradients, ordered_hessians, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const override {
-    ConstructHistogramInner<false, false, true>(nullptr, start, end, ordered_gradients, ordered_hessians, out);
+                          const score_t* ordered_gradients,
+                          const score_t* ordered_hessians,
+                          hist_t* out) const override {
+    ConstructHistogramInner<false, false, true>(
+        nullptr, start, end, ordered_gradients, ordered_hessians, out);
   }
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients,
-    hist_t* out) const override {
-    ConstructHistogramInner<true, true, false>(data_indices, start, end, ordered_gradients, nullptr, out);
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
+                          data_size_t end, const score_t* ordered_gradients,
+                          hist_t* out) const override {
+    ConstructHistogramInner<true, true, false>(data_indices, start, end,
+                                               ordered_gradients, nullptr, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients,
-    hist_t* out) const override {
-    ConstructHistogramInner<false, false, false>(nullptr, start, end, ordered_gradients, nullptr, out);
+                          const score_t* ordered_gradients,
+                          hist_t* out) const override {
+    ConstructHistogramInner<false, false, false>(
+        nullptr, start, end, ordered_gradients, nullptr, out);
   }
 
-  data_size_t Split(
-    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left,
-    uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const override {
-    if (num_data <= 0) { return 0; }
+  data_size_t Split(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+                    uint32_t most_freq_bin, MissingType missing_type,
+                    bool default_left, uint32_t threshold,
+                    data_size_t* data_indices, data_size_t num_data,
+                    data_size_t* lte_indices,
+                    data_size_t* gt_indices) const override {
+    if (num_data <= 0) {
+      return 0;
+    }
     VAL_T th = static_cast<VAL_T>(threshold + min_bin);
     const VAL_T minb = static_cast<VAL_T>(min_bin);
     const VAL_T maxb = static_cast<VAL_T>(max_bin);
@@ -173,8 +189,8 @@ public:
         }
       }
     } else {
-      if ((default_left && missing_type == MissingType::Zero)
-          || (default_bin <= threshold && missing_type != MissingType::Zero)) {
+      if ((default_left && missing_type == MissingType::Zero) ||
+          (default_bin <= threshold && missing_type != MissingType::Zero)) {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
       }
@@ -209,11 +225,15 @@ public:
     return lte_count;
   }
 
-  data_size_t SplitCategorical(
-    uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
-    const uint32_t* threshold, int num_threahold, data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const override {
-    if (num_data <= 0) { return 0; }
+  data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
+                               uint32_t most_freq_bin,
+                               const uint32_t* threshold, int num_threahold,
+                               data_size_t* data_indices, data_size_t num_data,
+                               data_size_t* lte_indices,
+                               data_size_t* gt_indices) const override {
+    if (num_data <= 0) {
+      return 0;
+    }
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
@@ -227,7 +247,8 @@ public:
       const uint32_t bin = data_[idx];
       if (bin < min_bin || bin > max_bin) {
         default_indices[(*default_count)++] = idx;
-      } else if (Common::FindInBitset(threshold, num_threahold, bin - min_bin)) {
+      } else if (Common::FindInBitset(threshold, num_threahold,
+                                      bin - min_bin)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;
@@ -240,7 +261,9 @@ public:
 
   void FinishLoad() override {}
 
-  void LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices) override {
+  void LoadFromMemory(
+      const void* memory,
+      const std::vector<data_size_t>& local_used_indices) override {
     const VAL_T* mem_data = reinterpret_cast<const VAL_T*>(memory);
     if (!local_used_indices.empty()) {
       for (int i = 0; i < num_data_; ++i) {
@@ -253,7 +276,8 @@ public:
     }
   }
 
-  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+  void CopySubset(const Bin* full_bin, const data_size_t* used_indices,
+                  data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const DenseBin<VAL_T>*>(full_bin);
     for (int i = 0; i < num_used_indices; ++i) {
       data_[i] = other_bin->data_[used_indices[i]];
@@ -264,22 +288,19 @@ public:
     writer->Write(data_.data(), sizeof(VAL_T) * num_data_);
   }
 
-  size_t SizesInByte() const override {
-    return sizeof(VAL_T)* num_data_;
-  }
+  size_t SizesInByte() const override { return sizeof(VAL_T) * num_data_; }
 
   DenseBin<VAL_T>* Clone() override;
 
-private:
+ private:
   data_size_t num_data_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
 
   DenseBin<VAL_T>(const DenseBin<VAL_T>& other)
-    : num_data_(other.num_data_), data_(other.data_) {
-  }
+      : num_data_(other.num_data_), data_(other.data_) {}
 };
 
-template<typename VAL_T>
+template <typename VAL_T>
 DenseBin<VAL_T>* DenseBin<VAL_T>::Clone() {
   return new DenseBin<VAL_T>(*this);
 }
@@ -300,9 +321,10 @@ inline uint32_t DenseBinIterator<VAL_T>::RawGet(data_size_t idx) {
 }
 
 template <typename VAL_T>
-BinIterator* DenseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const {
+BinIterator* DenseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin,
+                                          uint32_t most_freq_bin) const {
   return new DenseBinIterator<VAL_T>(this, min_bin, max_bin, most_freq_bin);
 }
 
 }  // namespace LightGBM
-#endif   // LightGBM_IO_DENSE_BIN_HPP_
+#endif  // LightGBM_IO_DENSE_BIN_HPP_

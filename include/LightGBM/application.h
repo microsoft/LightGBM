@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_APPLICATION_H_
 #define LIGHTGBM_APPLICATION_H_
@@ -20,12 +21,12 @@ class ObjectiveFunction;
 class Metric;
 
 /*!
-* \brief The main entrance of LightGBM. this application has two tasks:
-*        Train and Predict.
-*        Train task will train a new model
-*        Predict task will predict the scores of test data using existing model,
-*        and save the score to disk.
-*/
+ * \brief The main entrance of LightGBM. this application has two tasks:
+ *        Train and Predict.
+ *        Train task will train a new model
+ *        Predict task will predict the scores of test data using existing
+ * model, and save the score to disk.
+ */
 class Application {
  public:
   Application(int argc, char** argv);
@@ -74,9 +75,9 @@ class Application {
   std::unique_ptr<ObjectiveFunction> objective_fun_;
 };
 
-
 inline void Application::Run() {
-  if (config_.task == TaskType::kPredict || config_.task == TaskType::KRefitTree) {
+  if (config_.task == TaskType::kPredict ||
+      config_.task == TaskType::KRefitTree) {
     InitPredict();
     Predict();
   } else if (config_.task == TaskType::kConvertModel) {
@@ -89,4 +90,4 @@ inline void Application::Run() {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_APPLICATION_H_
+#endif  // LightGBM_APPLICATION_H_

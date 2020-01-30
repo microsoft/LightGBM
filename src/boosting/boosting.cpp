@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #include <LightGBM/boosting.h>
 
@@ -27,12 +28,14 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
       return false;
     }
   }
-  std::chrono::duration<double, std::milli> delta = (std::chrono::steady_clock::now() - start_time);
-  Log::Debug("Time for loading model: %f seconds", 1e-3*delta);
+  std::chrono::duration<double, std::milli> delta =
+      (std::chrono::steady_clock::now() - start_time);
+  Log::Debug("Time for loading model: %f seconds", 1e-3 * delta);
   return true;
 }
 
-Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
+Boosting* Boosting::CreateBoosting(const std::string& type,
+                                   const char* filename) {
   if (filename == nullptr || filename[0] == '\0') {
     if (type == std::string("gbdt")) {
       return new GBDT();
@@ -61,7 +64,8 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       }
       LoadFileToBoosting(ret.get(), filename);
     } else {
-      Log::Fatal("Unknown model format or submodel type in model file %s", filename);
+      Log::Fatal("Unknown model format or submodel type in model file %s",
+                 filename);
     }
     return ret.release();
   }

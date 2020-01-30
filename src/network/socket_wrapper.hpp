@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #define LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
@@ -8,9 +9,9 @@
 
 #include <LightGBM/utils/log.h>
 
-#include <string>
 #include <cerrno>
 #include <cstdlib>
+#include <string>
 #include <unordered_set>
 
 #if defined(_WIN32)
@@ -66,14 +67,15 @@ inline int inet_pton(int af, const char *src, void *dst) {
   strncpy(src_copy, src, INET6_ADDRSTRLEN + 1);
   src_copy[INET6_ADDRSTRLEN] = 0;
 
-  if (WSAStringToAddress(src_copy, af, NULL, (struct sockaddr *)&ss, &size) == 0) {
+  if (WSAStringToAddress(src_copy, af, NULL, (struct sockaddr *)&ss, &size) ==
+      0) {
     switch (af) {
-    case AF_INET:
-      *(struct in_addr *)dst = ((struct sockaddr_in *)&ss)->sin_addr;
-      return 1;
-    case AF_INET6:
-      *(struct in6_addr *)dst = ((struct sockaddr_in6 *)&ss)->sin6_addr;
-      return 1;
+      case AF_INET:
+        *(struct in_addr *)dst = ((struct sockaddr_in *)&ss)->sin_addr;
+        return 1;
+      case AF_INET6:
+        *(struct in6_addr *)dst = ((struct sockaddr_in6 *)&ss)->sin6_addr;
+        return 1;
     }
   }
   return 0;
@@ -88,7 +90,7 @@ namespace SocketConfig {
 const int kSocketBufferSize = 100 * 1000;
 const int kMaxReceiveSize = 100 * 1000;
 const bool kNoDelay = true;
-}
+}  // namespace SocketConfig
 
 class TcpSocket {
  public:
@@ -114,24 +116,36 @@ class TcpSocket {
     sockfd_ = object.sockfd_;
     ConfigSocket();
   }
-  ~TcpSocket() {
-  }
+  ~TcpSocket() {}
   inline void SetTimeout(int timeout) {
-    setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&timeout), sizeof(timeout));
+    setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO,
+               reinterpret_cast<char *>(&timeout), sizeof(timeout));
   }
   inline void ConfigSocket() {
     if (sockfd_ == INVALID_SOCKET) {
       return;
     }
 
-    if (setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
-      Log::Warning("Set SO_RCVBUF failed, please increase your net.core.rmem_max to 100k at least");
+    if (setsockopt(
+            sockfd_, SOL_SOCKET, SO_RCVBUF,
+            reinterpret_cast<const char *>(&SocketConfig::kSocketBufferSize),
+            sizeof(SocketConfig::kSocketBufferSize)) != 0) {
+      Log::Warning(
+          "Set SO_RCVBUF failed, please increase your net.core.rmem_max to "
+          "100k at least");
     }
 
-    if (setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
-      Log::Warning("Set SO_SNDBUF failed, please increase your net.core.wmem_max to 100k at least");
+    if (setsockopt(
+            sockfd_, SOL_SOCKET, SO_SNDBUF,
+            reinterpret_cast<const char *>(&SocketConfig::kSocketBufferSize),
+            sizeof(SocketConfig::kSocketBufferSize)) != 0) {
+      Log::Warning(
+          "Set SO_SNDBUF failed, please increase your net.core.wmem_max to "
+          "100k at least");
     }
-    if (setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&SocketConfig::kNoDelay), sizeof(SocketConfig::kNoDelay)) != 0) {
+    if (setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY,
+                   reinterpret_cast<const char *>(&SocketConfig::kNoDelay),
+                   sizeof(SocketConfig::kNoDelay)) != 0) {
       Log::Warning("Set TCP_NODELAY failed");
     }
   }
@@ -163,22 +177,22 @@ class TcpSocket {
 #endif
   }
 
-
-
 #if defined(_WIN32)
   inline static std::unordered_set<std::string> GetLocalIpList() {
     std::unordered_set<std::string> ip_list;
     char buffer[512];
     // get hostName
     if (gethostname(buffer, sizeof(buffer)) == SOCKET_ERROR) {
-      Log::Fatal("Error code %d, when getting local host name", WSAGetLastError());
+      Log::Fatal("Error code %d, when getting local host name",
+                 WSAGetLastError());
     }
     // push local ip
     PIP_ADAPTER_INFO pAdapterInfo;
     PIP_ADAPTER_INFO pAdapter = NULL;
     DWORD dwRetVal = 0;
     ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
-    pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(sizeof(IP_ADAPTER_INFO)));
+    pAdapterInfo =
+        reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(sizeof(IP_ADAPTER_INFO)));
     if (pAdapterInfo == NULL) {
       Log::Fatal("GetAdaptersinfo error: allocating memory");
     }
@@ -200,16 +214,15 @@ class TcpSocket {
     } else {
       Log::Fatal("GetAdaptersinfo error: code %d", dwRetVal);
     }
-    if (pAdapterInfo)
-      FREE(pAdapterInfo);
+    if (pAdapterInfo) FREE(pAdapterInfo);
     return ip_list;
   }
 #else
   inline static std::unordered_set<std::string> GetLocalIpList() {
     std::unordered_set<std::string> ip_list;
-    struct ifaddrs * ifAddrStruct = NULL;
-    struct ifaddrs * ifa = NULL;
-    void * tmpAddrPtr = NULL;
+    struct ifaddrs *ifAddrStruct = NULL;
+    struct ifaddrs *ifa = NULL;
+    void *tmpAddrPtr = NULL;
 
     getifaddrs(&ifAddrStruct);
 
@@ -228,7 +241,7 @@ class TcpSocket {
     return ip_list;
   }
 #endif
-  inline static sockaddr_in GetAddress(const char* url, int port) {
+  inline static sockaddr_in GetAddress(const char *url, int port) {
     sockaddr_in addr = sockaddr_in();
     std::memset(&addr, 0, sizeof(sockaddr_in));
     inet_pton(AF_INET, url, &addr.sin_addr);
@@ -239,23 +252,23 @@ class TcpSocket {
 
   inline bool Bind(int port) {
     sockaddr_in local_addr = GetAddress("0.0.0.0", port);
-    if (bind(sockfd_, reinterpret_cast<const sockaddr*>(&local_addr), sizeof(sockaddr_in)) == 0) {
+    if (bind(sockfd_, reinterpret_cast<const sockaddr *>(&local_addr),
+             sizeof(sockaddr_in)) == 0) {
       return true;
     }
     return false;
   }
 
   inline bool Connect(const char *url, int port) {
-    sockaddr_in  server_addr = GetAddress(url, port);
-    if (connect(sockfd_, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(sockaddr_in)) == 0) {
+    sockaddr_in server_addr = GetAddress(url, port);
+    if (connect(sockfd_, reinterpret_cast<const sockaddr *>(&server_addr),
+                sizeof(sockaddr_in)) == 0) {
       return true;
     }
     return false;
   }
 
-  inline void Listen(int backlog = 128) {
-    listen(sockfd_, backlog);
-  }
+  inline void Listen(int backlog = 128) { listen(sockfd_, backlog); }
 
   inline TcpSocket Accept() {
     SOCKET newfd = accept(sockfd_, NULL, NULL);
@@ -274,16 +287,14 @@ class TcpSocket {
   }
 
   inline int Recv(char *buf_, int len, int flags = 0) {
-    int cur_cnt = recv(sockfd_, buf_ , len , flags);
+    int cur_cnt = recv(sockfd_, buf_, len, flags);
     if (cur_cnt == SOCKET_ERROR) {
       Log::Fatal("Socket recv error, code: %d", GetLastError());
     }
     return cur_cnt;
   }
 
-  inline bool IsClosed() {
-    return sockfd_ == INVALID_SOCKET;
-  }
+  inline bool IsClosed() { return sockfd_ == INVALID_SOCKET; }
 
   inline void Close() {
     if (!IsClosed()) {
@@ -302,4 +313,4 @@ class TcpSocket {
 
 }  // namespace LightGBM
 #endif  // USE_SOCKET
-#endif   // LightGBM_NETWORK_SOCKET_WRAPPER_HPP_
+#endif  // LightGBM_NETWORK_SOCKET_WRAPPER_HPP_

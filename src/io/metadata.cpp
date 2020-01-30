@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
@@ -29,15 +30,15 @@ void Metadata::Init(const char* data_filename, const char* initscore_file) {
   LoadInitialScore(initscore_file);
 }
 
-Metadata::~Metadata() {
-}
+Metadata::~Metadata() {}
 
 void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
   num_data_ = num_data;
   label_ = std::vector<label_t>(num_data_);
   if (weight_idx >= 0) {
     if (!weights_.empty()) {
-      Log::Info("Using weights in data file, ignoring the additional weights file");
+      Log::Info(
+          "Using weights in data file, ignoring the additional weights file");
       weights_.clear();
     }
     weights_ = std::vector<label_t>(num_data_, 0.0f);
@@ -46,20 +47,24 @@ void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
   }
   if (query_idx >= 0) {
     if (!query_boundaries_.empty()) {
-      Log::Info("Using query id in data file, ignoring the additional query file");
+      Log::Info(
+          "Using query id in data file, ignoring the additional query file");
       query_boundaries_.clear();
     }
-    if (!query_weights_.empty()) { query_weights_.clear(); }
+    if (!query_weights_.empty()) {
+      query_weights_.clear();
+    }
     queries_ = std::vector<data_size_t>(num_data_, 0);
     query_load_from_file_ = false;
   }
 }
 
-void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, data_size_t num_used_indices) {
+void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices,
+                    data_size_t num_used_indices) {
   num_data_ = num_used_indices;
 
   label_ = std::vector<label_t>(num_used_indices);
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_used_indices; ++i) {
     label_[i] = fullset.label_[used_indices[i]];
   }
@@ -67,7 +72,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
   if (!fullset.weights_.empty()) {
     weights_ = std::vector<label_t>(num_used_indices);
     num_weights_ = num_used_indices;
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_used_indices; ++i) {
       weights_[i] = fullset.weights_[used_indices[i]];
     }
@@ -76,15 +81,18 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
   }
 
   if (!fullset.init_score_.empty()) {
-    int num_class = static_cast<int>(fullset.num_init_score_ / fullset.num_data_);
-    init_score_ = std::vector<double>(static_cast<size_t>(num_used_indices) * num_class);
+    int num_class =
+        static_cast<int>(fullset.num_init_score_ / fullset.num_data_);
+    init_score_ =
+        std::vector<double>(static_cast<size_t>(num_used_indices) * num_class);
     num_init_score_ = static_cast<int64_t>(num_used_indices) * num_class;
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
     for (int k = 0; k < num_class; ++k) {
       const size_t offset_dest = static_cast<size_t>(k) * num_data_;
       const size_t offset_src = static_cast<size_t>(k) * fullset.num_data_;
       for (data_size_t i = 0; i < num_used_indices; ++i) {
-        init_score_[offset_dest + i] = fullset.init_score_[offset_src + used_indices[i]];
+        init_score_[offset_dest + i] =
+            fullset.init_score_[offset_src + used_indices[i]];
       }
     }
   } else {
@@ -94,14 +102,16 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
   if (!fullset.query_boundaries_.empty()) {
     std::vector<data_size_t> used_query;
     data_size_t data_idx = 0;
-    for (data_size_t qid = 0; qid < num_queries_ && data_idx < num_used_indices; ++qid) {
+    for (data_size_t qid = 0; qid < num_queries_ && data_idx < num_used_indices;
+         ++qid) {
       data_size_t start = fullset.query_boundaries_[qid];
       data_size_t end = fullset.query_boundaries_[qid + 1];
       data_size_t len = end - start;
       if (used_indices[data_idx] > start) {
         continue;
       } else if (used_indices[data_idx] == start) {
-        if (num_used_indices >= data_idx + len && used_indices[data_idx + len - 1] == end - 1) {
+        if (num_used_indices >= data_idx + len &&
+            used_indices[data_idx + len - 1] == end - 1) {
           used_query.push_back(qid);
           data_idx += len;
         } else {
@@ -116,7 +126,8 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
     query_boundaries_[0] = 0;
     for (data_size_t i = 0; i < num_queries_; ++i) {
       data_size_t qid = used_query[i];
-      data_size_t len = fullset.query_boundaries_[qid + 1] - fullset.query_boundaries_[qid];
+      data_size_t len =
+          fullset.query_boundaries_[qid + 1] - fullset.query_boundaries_[qid];
       query_boundaries_[i + 1] = query_boundaries_[i] + len;
     }
   } else {
@@ -131,14 +142,16 @@ void Metadata::PartitionLabel(const std::vector<data_size_t>& used_indices) {
   auto old_label = label_;
   num_data_ = static_cast<data_size_t>(used_indices.size());
   label_ = std::vector<label_t>(num_data_);
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = old_label[used_indices[i]];
   }
   old_label.clear();
 }
 
-void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data_size_t>& used_data_indices) {
+void Metadata::CheckOrPartition(
+    data_size_t num_all_data,
+    const std::vector<data_size_t>& used_data_indices) {
   if (used_data_indices.empty()) {
     if (!queries_.empty()) {
       // need convert query_id to boundaries
@@ -173,7 +186,8 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
 
     // check query boundries
-    if (!query_boundaries_.empty() && query_boundaries_[num_queries_] != num_data_) {
+    if (!query_boundaries_.empty() &&
+        query_boundaries_[num_queries_] != num_data_) {
       query_boundaries_.clear();
       num_queries_ = 0;
       Log::Fatal("Query size doesn't match data size");
@@ -189,7 +203,8 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     if (!queries_.empty()) {
       Log::Fatal("Cannot used query_id for parallel training");
     }
-    data_size_t num_used_data = static_cast<data_size_t>(used_data_indices.size());
+    data_size_t num_used_data =
+        static_cast<data_size_t>(used_data_indices.size());
     // check weights
     if (weight_load_from_file_) {
       if (weights_.size() > 0 && num_weights_ != num_all_data) {
@@ -202,7 +217,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
         auto old_weights = weights_;
         num_weights_ = num_data_;
         weights_ = std::vector<label_t>(num_data_);
-        #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
         for (int i = 0; i < static_cast<int>(used_data_indices.size()); ++i) {
           weights_[i] = old_weights[used_data_indices[i]];
         }
@@ -211,7 +226,8 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
     if (query_load_from_file_) {
       // check query boundries
-      if (!query_boundaries_.empty() && query_boundaries_[num_queries_] != num_all_data) {
+      if (!query_boundaries_.empty() &&
+          query_boundaries_[num_queries_] != num_all_data) {
         query_boundaries_.clear();
         num_queries_ = 0;
         Log::Fatal("Query size doesn't match data size");
@@ -220,14 +236,16 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       if (!query_boundaries_.empty()) {
         std::vector<data_size_t> used_query;
         data_size_t data_idx = 0;
-        for (data_size_t qid = 0; qid < num_queries_ && data_idx < num_used_data; ++qid) {
+        for (data_size_t qid = 0;
+             qid < num_queries_ && data_idx < num_used_data; ++qid) {
           data_size_t start = query_boundaries_[qid];
           data_size_t end = query_boundaries_[qid + 1];
           data_size_t len = end - start;
           if (used_data_indices[data_idx] > start) {
             continue;
           } else if (used_data_indices[data_idx] == start) {
-            if (num_used_data >= data_idx + len && used_data_indices[data_idx + len - 1] == end - 1) {
+            if (num_used_data >= data_idx + len &&
+                used_data_indices[data_idx + len - 1] == end - 1) {
               used_query.push_back(qid);
               data_idx += len;
             } else {
@@ -243,7 +261,8 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
         query_boundaries_[0] = 0;
         for (data_size_t i = 0; i < num_queries_; ++i) {
           data_size_t qid = used_query[i];
-          data_size_t len = old_query_boundaries[qid + 1] - old_query_boundaries[qid];
+          data_size_t len =
+              old_query_boundaries[qid + 1] - old_query_boundaries[qid];
           query_boundaries_[i + 1] = query_boundaries_[i] + len;
         }
         old_query_boundaries.clear();
@@ -263,12 +282,13 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
         int num_class = static_cast<int>(num_init_score_ / num_all_data);
         num_init_score_ = static_cast<int64_t>(num_data_) * num_class;
         init_score_ = std::vector<double>(num_init_score_);
-        #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
         for (int k = 0; k < num_class; ++k) {
           const size_t offset_dest = static_cast<size_t>(k) * num_data_;
           const size_t offset_src = static_cast<size_t>(k) * num_all_data;
           for (size_t i = 0; i < used_data_indices.size(); ++i) {
-            init_score_[offset_dest + i] = old_scores[offset_src + used_data_indices[i]];
+            init_score_[offset_dest + i] =
+                old_scores[offset_src + used_data_indices[i]];
           }
         }
         old_scores.clear();
@@ -290,10 +310,12 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   if ((len % num_data_) != 0) {
     Log::Fatal("Initial score size doesn't match data size");
   }
-  if (init_score_.empty()) { init_score_.resize(len); }
+  if (init_score_.empty()) {
+    init_score_.resize(len);
+  }
   num_init_score_ = len;
 
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
   for (int64_t i = 0; i < num_init_score_; ++i) {
     init_score_[i] = Common::AvoidInf(init_score[i]);
   }
@@ -308,9 +330,11 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("Length of label is not same with #data");
   }
-  if (label_.empty()) { label_.resize(num_data_); }
- 
-  #pragma omp parallel for schedule(static)
+  if (label_.empty()) {
+    label_.resize(num_data_);
+  }
+
+#pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = Common::AvoidInf(label[i]);
   }
@@ -327,10 +351,12 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("Length of weights is not same with #data");
   }
-  if (weights_.empty()) { weights_.resize(num_data_); }
+  if (weights_.empty()) {
+    weights_.resize(num_data_);
+  }
   num_weights_ = num_data_;
- 
-  #pragma omp parallel for schedule(static)
+
+#pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_weights_; ++i) {
     weights_[i] = Common::AvoidInf(weights[i]);
   }
@@ -347,7 +373,7 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
     return;
   }
   data_size_t sum = 0;
-  #pragma omp parallel for schedule(static) reduction(+:sum)
+#pragma omp parallel for schedule(static) reduction(+ : sum)
   for (data_size_t i = 0; i < len; ++i) {
     sum += query[i];
   }
@@ -377,7 +403,7 @@ void Metadata::LoadWeights() {
   Log::Info("Loading weights...");
   num_weights_ = static_cast<data_size_t>(reader.Lines().size());
   weights_ = std::vector<label_t>(num_weights_);
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_weights_; ++i) {
     double tmp_weight = 0.0f;
     Common::Atof(reader.Lines()[i].c_str(), &tmp_weight);
@@ -402,13 +428,14 @@ void Metadata::LoadInitialScore(const char* initscore_file) {
   Log::Info("Loading initial scores...");
 
   // use first line to count number class
-  int num_class = static_cast<int>(Common::Split(reader.Lines()[0].c_str(), '\t').size());
+  int num_class =
+      static_cast<int>(Common::Split(reader.Lines()[0].c_str(), '\t').size());
   data_size_t num_line = static_cast<data_size_t>(reader.Lines().size());
   num_init_score_ = static_cast<int64_t>(num_line) * num_class;
 
   init_score_ = std::vector<double>(num_init_score_);
   if (num_class == 1) {
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_line; ++i) {
       double tmp = 0.0f;
       Common::Atof(reader.Lines()[i].c_str(), &tmp);
@@ -416,16 +443,18 @@ void Metadata::LoadInitialScore(const char* initscore_file) {
     }
   } else {
     std::vector<std::string> oneline_init_score;
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_line; ++i) {
       double tmp = 0.0f;
       oneline_init_score = Common::Split(reader.Lines()[i].c_str(), '\t');
       if (static_cast<int>(oneline_init_score.size()) != num_class) {
-        Log::Fatal("Invalid initial score file. Redundant or insufficient columns");
+        Log::Fatal(
+            "Invalid initial score file. Redundant or insufficient columns");
       }
       for (int k = 0; k < num_class; ++k) {
         Common::Atof(oneline_init_score[k].c_str(), &tmp);
-        init_score_[static_cast<size_t>(k) * num_line + i] = Common::AvoidInf(static_cast<double>(tmp));
+        init_score_[static_cast<size_t>(k) * num_line + i] =
+            Common::AvoidInf(static_cast<double>(tmp));
       }
     }
   }
@@ -449,7 +478,8 @@ void Metadata::LoadQueryBoundaries() {
   for (size_t i = 0; i < reader.Lines().size(); ++i) {
     int tmp_cnt;
     Common::Atoi(reader.Lines()[i].c_str(), &tmp_cnt);
-    query_boundaries_[i + 1] = query_boundaries_[i] + static_cast<data_size_t>(tmp_cnt);
+    query_boundaries_[i + 1] =
+        query_boundaries_[i] + static_cast<data_size_t>(tmp_cnt);
   }
   query_load_from_file_ = true;
 }
@@ -463,7 +493,8 @@ void Metadata::LoadQueryWeights() {
   query_weights_ = std::vector<label_t>(num_queries_);
   for (data_size_t i = 0; i < num_queries_; ++i) {
     query_weights_[i] = 0.0f;
-    for (data_size_t j = query_boundaries_[i]; j < query_boundaries_[i + 1]; ++j) {
+    for (data_size_t j = query_boundaries_[i]; j < query_boundaries_[i + 1];
+         ++j) {
       query_weights_[i] += weights_[j];
     }
     query_weights_[i] /= (query_boundaries_[i + 1] - query_boundaries_[i]);
@@ -480,22 +511,29 @@ void Metadata::LoadFromMemory(const void* memory) {
   num_queries_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
   mem_ptr += sizeof(num_queries_);
 
-  if (!label_.empty()) { label_.clear(); }
+  if (!label_.empty()) {
+    label_.clear();
+  }
   label_ = std::vector<label_t>(num_data_);
   std::memcpy(label_.data(), mem_ptr, sizeof(label_t) * num_data_);
   mem_ptr += sizeof(label_t) * num_data_;
 
   if (num_weights_ > 0) {
-    if (!weights_.empty()) { weights_.clear(); }
+    if (!weights_.empty()) {
+      weights_.clear();
+    }
     weights_ = std::vector<label_t>(num_weights_);
     std::memcpy(weights_.data(), mem_ptr, sizeof(label_t) * num_weights_);
     mem_ptr += sizeof(label_t) * num_weights_;
     weight_load_from_file_ = true;
   }
   if (num_queries_ > 0) {
-    if (!query_boundaries_.empty()) { query_boundaries_.clear(); }
+    if (!query_boundaries_.empty()) {
+      query_boundaries_.clear();
+    }
     query_boundaries_ = std::vector<data_size_t>(num_queries_ + 1);
-    std::memcpy(query_boundaries_.data(), mem_ptr, sizeof(data_size_t) * (num_queries_ + 1));
+    std::memcpy(query_boundaries_.data(), mem_ptr,
+                sizeof(data_size_t) * (num_queries_ + 1));
     mem_ptr += sizeof(data_size_t) * (num_queries_ + 1);
     query_load_from_file_ = true;
   }
@@ -511,17 +549,18 @@ void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
     writer->Write(weights_.data(), sizeof(label_t) * num_weights_);
   }
   if (!query_boundaries_.empty()) {
-    writer->Write(query_boundaries_.data(), sizeof(data_size_t) * (num_queries_ + 1));
+    writer->Write(query_boundaries_.data(),
+                  sizeof(data_size_t) * (num_queries_ + 1));
   }
   if (num_init_score_ > 0) {
-    Log::Warning("Please note that `init_score` is not saved in binary file.\n"
-      "If you need it, please set it again after loading Dataset.");
+    Log::Warning(
+        "Please note that `init_score` is not saved in binary file.\n"
+        "If you need it, please set it again after loading Dataset.");
   }
 }
 
 size_t Metadata::SizesInByte() const {
-  size_t size = sizeof(num_data_) + sizeof(num_weights_)
-    + sizeof(num_queries_);
+  size_t size = sizeof(num_data_) + sizeof(num_weights_) + sizeof(num_queries_);
   size += sizeof(label_t) * num_data_;
   if (!weights_.empty()) {
     size += sizeof(label_t) * num_weights_;
@@ -531,6 +570,5 @@ size_t Metadata::SizesInByte() const {
   }
   return size;
 }
-
 
 }  // namespace LightGBM

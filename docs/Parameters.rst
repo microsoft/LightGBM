@@ -190,6 +190,38 @@ Core Parameters
 Learning Control Parameters
 ---------------------------
 
+-  ``force_col_wise`` :raw-html:`<a id="force_col_wise" title="Permalink to this parameter" href="#force_col_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  set ``force_col_wise=true`` will force LightGBM to use col-wise histogram build
+
+   -  Recommend ``force_col_wise=true`` when:
+
+      -  the number of cloumns is large, or the total number of bin is large
+
+      -  when ``num_threads`` is large, e.g. ``>20``
+
+      -  want to use small ``feature_fraction``, e.g. ``0.5``, to speed-up
+
+      -  want to reduce memory cost
+
+   -  when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one
+
+-  ``force_row_wise`` :raw-html:`<a id="force_row_wise" title="Permalink to this parameter" href="#force_row_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  set ``force_row_wise=true`` will force LightGBM to use row-wise histogram build
+
+   -  Recommend ``force_row_wise=true`` when:
+
+      -  the number of data is large, and the number of total bin is relatively small
+
+      -  want to use small ``bagging``, or ``goss``, to speed-up
+
+      -  when ``num_threads`` is relatively small, e.g. ``<=16``
+
+   -  set ``force_row_wise=true`` will double the memory cost for Dataset object, if your memory is not enough, you can try ``force_col_wise=true``
+
+   -  when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one.
+
 -  ``max_depth`` :raw-html:`<a id="max_depth" title="Permalink to this parameter" href="#max_depth">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
    -  limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
@@ -558,22 +590,6 @@ IO Parameters
    -  set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree>`__
 
    -  **Note**: disabling this may cause the slow training speed for sparse datasets
-
--  ``max_conflict_rate`` :raw-html:`<a id="max_conflict_rate" title="Permalink to this parameter" href="#max_conflict_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= max_conflict_rate < 1.0``
-
-   -  max conflict rate for bundles in EFB
-
-   -  set this to ``0.0`` to disallow the conflict and provide more accurate results
-
-   -  set this to a larger value to achieve faster speed
-
--  ``is_enable_sparse`` :raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" href="#is_enable_sparse">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
-
-   -  used to enable/disable sparse optimization
-
--  ``sparse_threshold`` :raw-html:`<a id="sparse_threshold" title="Permalink to this parameter" href="#sparse_threshold">&#x1F517;&#xFE0E;</a>`, default = ``0.8``, type = double, constraints: ``0.0 < sparse_threshold <= 1.0``
-
-   -  the threshold of zero elements percentage for treating a feature as a sparse one
 
 -  ``use_missing`` :raw-html:`<a id="use_missing" title="Permalink to this parameter" href="#use_missing">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 

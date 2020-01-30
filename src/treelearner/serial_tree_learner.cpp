@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #include "serial_tree_learner.h"
 
@@ -18,22 +19,17 @@
 
 namespace LightGBM {
 
-
-SerialTreeLearner::SerialTreeLearner(const Config* config)
-  :config_(config) {
+SerialTreeLearner::SerialTreeLearner(const Config* config) : config_(config) {
   random_ = Random(config_->feature_fraction_seed);
-  #pragma omp parallel
-  #pragma omp master
-  {
-    num_threads_ = omp_get_num_threads();
-  }
+#pragma omp parallel
+#pragma omp master
+  { num_threads_ = omp_get_num_threads(); }
 }
 
-SerialTreeLearner::~SerialTreeLearner() {
+SerialTreeLearner::~SerialTreeLearner() {}
 
-}
-
-void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
+void SerialTreeLearner::Init(const Dataset* train_data,
+                             bool is_constant_hessian) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   num_features_ = train_data_->num_features();
@@ -47,13 +43,13 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     for (int i = 0; i < train_data_->num_features(); ++i) {
       total_histogram_size += KHistEntrySize * train_data_->FeatureNumBin(i);
     }
-    max_cache_size = static_cast<int>(config_->histogram_pool_size * 1024 * 1024 / total_histogram_size);
+    max_cache_size = static_cast<int>(config_->histogram_pool_size * 1024 *
+                                      1024 / total_histogram_size);
   }
   // at least need 2 leaves
   max_cache_size = std::max(2, max_cache_size);
   max_cache_size = std::min(max_cache_size, config_->num_leaves);
 
-  
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
 
@@ -71,23 +67,31 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 
   GetMultiValBin(train_data_, true);
 
-  histogram_pool_.DynamicChangeSize(train_data_, is_hist_colwise_, config_, max_cache_size, config_->num_leaves);
-  Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
+  histogram_pool_.DynamicChangeSize(train_data_, is_hist_colwise_, config_,
+                                    max_cache_size, config_->num_leaves);
+  Log::Info(
+      "Number of data points in the train set: %d, number of used features: %d",
+      num_data_, num_features_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
   }
 }
 
-void SerialTreeLearner::GetMultiValBin(const Dataset* dataset, bool is_first_time) {
+void SerialTreeLearner::GetMultiValBin(const Dataset* dataset,
+                                       bool is_first_time) {
   if (is_first_time) {
     auto used_feature = GetUsedFeatures(true);
-    multi_val_bin_.reset(dataset->TestMultiThreadingMethod(ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
-      is_constant_hessian_, config_->force_col_wise, config_->force_row_wise, &is_hist_colwise_));
+    multi_val_bin_.reset(dataset->TestMultiThreadingMethod(
+        ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
+        is_constant_hessian_, config_->force_col_wise, config_->force_row_wise,
+        &is_hist_colwise_));
   } else {
     // cannot change is_hist_col_wise during training
-    multi_val_bin_.reset(dataset->TestMultiThreadingMethod(ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
-      is_constant_hessian_, is_hist_colwise_, !is_hist_colwise_, &is_hist_colwise_));
+    multi_val_bin_.reset(dataset->TestMultiThreadingMethod(
+        ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
+        is_constant_hessian_, is_hist_colwise_, !is_hist_colwise_,
+        &is_hist_colwise_));
   }
 }
 
@@ -126,12 +130,14 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
       for (int i = 0; i < train_data_->num_features(); ++i) {
         total_histogram_size += KHistEntrySize * train_data_->FeatureNumBin(i);
       }
-      max_cache_size = static_cast<int>(config_->histogram_pool_size * 1024 * 1024 / total_histogram_size);
+      max_cache_size = static_cast<int>(config_->histogram_pool_size * 1024 *
+                                        1024 / total_histogram_size);
     }
     // at least need 2 leaves
     max_cache_size = std::max(2, max_cache_size);
     max_cache_size = std::min(max_cache_size, config_->num_leaves);
-    histogram_pool_.DynamicChangeSize(train_data_, is_hist_colwise_, config_, max_cache_size, config_->num_leaves);
+    histogram_pool_.DynamicChangeSize(train_data_, is_hist_colwise_, config_,
+                                      max_cache_size, config_->num_leaves);
 
     // push split information for all leaves
     best_split_per_leaf_.resize(config_->num_leaves);
@@ -146,7 +152,10 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   }
 }
 
-Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, const Json& forced_split_json) {
+Tree* SerialTreeLearner::Train(const score_t* gradients,
+                               const score_t* hessians,
+                               bool is_constant_hessian,
+                               const Json& forced_split_json) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
@@ -165,13 +174,15 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   int init_splits = 0;
   bool aborted_last_force_split = false;
   if (!forced_split_json.is_null()) {
-    init_splits = ForceSplits(tree.get(), forced_split_json, &left_leaf,
-                              &right_leaf, &cur_depth, &aborted_last_force_split);
+    init_splits =
+        ForceSplits(tree.get(), forced_split_json, &left_leaf, &right_leaf,
+                    &cur_depth, &aborted_last_force_split);
   }
 
   for (int split = init_splits; split < config_->num_leaves - 1; ++split) {
     // some initial works before finding best split
-    if (!aborted_last_force_split && BeforeFindBestSplit(tree.get(), left_leaf, right_leaf)) {
+    if (!aborted_last_force_split &&
+        BeforeFindBestSplit(tree.get(), left_leaf, right_leaf)) {
       // find best threshold for every feature
       FindBestSplits();
     } else if (aborted_last_force_split) {
@@ -179,27 +190,32 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     }
 
     // Get a leaf with max split gain
-    int best_leaf = static_cast<int>(ArrayArgs<SplitInfo>::ArgMax(best_split_per_leaf_));
+    int best_leaf =
+        static_cast<int>(ArrayArgs<SplitInfo>::ArgMax(best_split_per_leaf_));
     // Get split information for best leaf
     const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
     // cannot split, quit
     if (best_leaf_SplitInfo.gain <= 0.0) {
-      Log::Warning("No further splits with positive gain, best gain: %f", best_leaf_SplitInfo.gain);
+      Log::Warning("No further splits with positive gain, best gain: %f",
+                   best_leaf_SplitInfo.gain);
       break;
     }
     // split tree with best leaf
     Split(tree.get(), best_leaf, &left_leaf, &right_leaf);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
-  Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
+  Log::Debug("Trained a tree with leaves = %d and max_depth = %d",
+             tree->num_leaves(), cur_depth);
   return tree.release();
 }
 
-Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
+Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree,
+                                           const score_t* gradients,
+                                           const score_t* hessians) const {
   auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
   CHECK(data_partition_->num_leaves() >= tree->num_leaves());
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
   for (int i = 0; i < tree->num_leaves(); ++i) {
     OMP_LOOP_EX_BEGIN();
     data_size_t cnt_leaf_data = 0;
@@ -211,18 +227,24 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
       sum_grad += gradients[idx];
       sum_hess += hessians[idx];
     }
-    double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
-                                                                  config_->lambda_l1, config_->lambda_l2, config_->max_delta_step);
+    double output = FeatureHistogram::CalculateSplittedLeafOutput(
+        sum_grad, sum_hess, config_->lambda_l1, config_->lambda_l2,
+        config_->max_delta_step);
     auto old_leaf_output = tree->LeafOutput(i);
     auto new_leaf_output = output * tree->shrinkage();
-    tree->SetLeafOutput(i, config_->refit_decay_rate * old_leaf_output + (1.0 - config_->refit_decay_rate) * new_leaf_output);
+    tree->SetLeafOutput(
+        i, config_->refit_decay_rate * old_leaf_output +
+               (1.0 - config_->refit_decay_rate) * new_leaf_output);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
   return tree.release();
 }
 
-Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred, const score_t* gradients, const score_t *hessians) {
+Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree,
+                                           const std::vector<int>& leaf_pred,
+                                           const score_t* gradients,
+                                           const score_t* hessians) {
   data_partition_->ResetByLeafPred(leaf_pred, old_tree->num_leaves());
   return FitByExistingTree(old_tree, gradients, hessians);
 }
@@ -236,13 +258,16 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     return ret;
   }
   std::memset(ret.data(), 0, sizeof(int8_t) * num_features_);
-  const int min_used_features = std::min(2, static_cast<int>(valid_feature_indices_.size()));
+  const int min_used_features =
+      std::min(2, static_cast<int>(valid_feature_indices_.size()));
   if (is_tree_level) {
-    int used_feature_cnt = static_cast<int>(std::round(valid_feature_indices_.size() * config_->feature_fraction));
+    int used_feature_cnt = static_cast<int>(
+        std::round(valid_feature_indices_.size() * config_->feature_fraction));
     used_feature_cnt = std::max(used_feature_cnt, min_used_features);
-    used_feature_indices_ = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
+    used_feature_indices_ = random_.Sample(
+        static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
     int omp_loop_size = static_cast<int>(used_feature_indices_.size());
-    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
+#pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[used_feature_indices_[i]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
@@ -250,11 +275,13 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
       ret[inner_feature_index] = 1;
     }
   } else if (used_feature_indices_.size() <= 0) {
-    int used_feature_cnt = static_cast<int>(std::round(valid_feature_indices_.size() * config_->feature_fraction_bynode));
+    int used_feature_cnt = static_cast<int>(std::round(
+        valid_feature_indices_.size() * config_->feature_fraction_bynode));
     used_feature_cnt = std::max(used_feature_cnt, min_used_features);
-    auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
+    auto sampled_indices = random_.Sample(
+        static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
     int omp_loop_size = static_cast<int>(sampled_indices.size());
-    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
+#pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[sampled_indices[i]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
@@ -262,13 +289,16 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
       ret[inner_feature_index] = 1;
     }
   } else {
-    int used_feature_cnt = static_cast<int>(std::round(used_feature_indices_.size() * config_->feature_fraction_bynode));
+    int used_feature_cnt = static_cast<int>(std::round(
+        used_feature_indices_.size() * config_->feature_fraction_bynode));
     used_feature_cnt = std::max(used_feature_cnt, min_used_features);
-    auto sampled_indices = random_.Sample(static_cast<int>(used_feature_indices_.size()), used_feature_cnt);
+    auto sampled_indices = random_.Sample(
+        static_cast<int>(used_feature_indices_.size()), used_feature_cnt);
     int omp_loop_size = static_cast<int>(sampled_indices.size());
-    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
+#pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
     for (int i = 0; i < omp_loop_size; ++i) {
-      int used_feature = valid_feature_indices_[used_feature_indices_[sampled_indices[i]]];
+      int used_feature =
+          valid_feature_indices_[used_feature_indices_[sampled_indices[i]]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
       CHECK(inner_feature_index >= 0);
       ret[inner_feature_index] = 1;
@@ -278,14 +308,15 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
 }
 
 void SerialTreeLearner::BeforeTrain() {
-  Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeTrain", global_timer);
+  Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeTrain",
+                                  global_timer);
   // reset histogram pool
   histogram_pool_.ResetMap();
 
   if (config_->feature_fraction < 1.0f) {
     is_feature_used_ = GetUsedFeatures(true);
   } else {
-    #pragma omp parallel for schedule(static, 512) if (num_features_ >= 1024)
+#pragma omp parallel for schedule(static, 512) if (num_features_ >= 1024)
     for (int i = 0; i < num_features_; ++i) {
       is_feature_used_[i] = 1;
     }
@@ -312,11 +343,14 @@ void SerialTreeLearner::BeforeTrain() {
   larger_leaf_splits_->Init();
 }
 
-bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
-  Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeFindBestSplit", global_timer);
+bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf,
+                                            int right_leaf) {
+  Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeFindBestSplit",
+                                  global_timer);
   // check depth of current leaf
   if (config_->max_depth > 0) {
-    // only need to check left leaf, since right leaf is in same level of left leaf
+    // only need to check left leaf, since right leaf is in same level of left
+    // leaf
     if (tree->leaf_depth(left_leaf) >= config_->max_depth) {
       best_split_per_leaf_[left_leaf].gain = kMinScore;
       if (right_leaf >= 0) {
@@ -328,8 +362,10 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
   data_size_t num_data_in_left_child = GetGlobalDataCountInLeaf(left_leaf);
   data_size_t num_data_in_right_child = GetGlobalDataCountInLeaf(right_leaf);
   // no enough data to continue
-  if (num_data_in_right_child < static_cast<data_size_t>(config_->min_data_in_leaf * 2)
-      && num_data_in_left_child < static_cast<data_size_t>(config_->min_data_in_leaf * 2)) {
+  if (num_data_in_right_child <
+          static_cast<data_size_t>(config_->min_data_in_leaf * 2) &&
+      num_data_in_left_child <
+          static_cast<data_size_t>(config_->min_data_in_leaf * 2)) {
     best_split_per_leaf_[left_leaf].gain = kMinScore;
     if (right_leaf >= 0) {
       best_split_per_leaf_[right_leaf].gain = kMinScore;
@@ -343,12 +379,16 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
     larger_leaf_histogram_array_ = nullptr;
   } else if (num_data_in_left_child < num_data_in_right_child) {
     // put parent(left) leaf's histograms into larger leaf's histograms
-    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) { parent_leaf_histogram_array_ = larger_leaf_histogram_array_; }
+    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) {
+      parent_leaf_histogram_array_ = larger_leaf_histogram_array_;
+    }
     histogram_pool_.Move(left_leaf, right_leaf);
     histogram_pool_.Get(left_leaf, &smaller_leaf_histogram_array_);
   } else {
     // put parent(left) leaf's histograms to larger leaf's histograms
-    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) { parent_leaf_histogram_array_ = larger_leaf_histogram_array_; }
+    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) {
+      parent_leaf_histogram_array_ = larger_leaf_histogram_array_;
+    }
     histogram_pool_.Get(right_leaf, &smaller_leaf_histogram_array_);
   }
   return true;
@@ -356,11 +396,11 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
 
 void SerialTreeLearner::FindBestSplits() {
   std::vector<int8_t> is_feature_used(num_features_, 0);
-  #pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
+#pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used_[feature_index]) continue;
-    if (parent_leaf_histogram_array_ != nullptr
-        && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
+    if (parent_leaf_histogram_array_ != nullptr &&
+        !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
       continue;
     }
@@ -371,31 +411,36 @@ void SerialTreeLearner::FindBestSplits() {
   FindBestSplitsFromHistograms(is_feature_used, use_subtract);
 }
 
-void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
-  Common::FunctionTimer fun_timer("SerialTreeLearner::ConstructHistograms", global_timer);
+void SerialTreeLearner::ConstructHistograms(
+    const std::vector<int8_t>& is_feature_used, bool use_subtract) {
+  Common::FunctionTimer fun_timer("SerialTreeLearner::ConstructHistograms",
+                                  global_timer);
   // construct smaller leaf
-  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - KHistOffset;
-  train_data_->ConstructHistograms(is_feature_used,
-                                   smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
-                                   gradients_, hessians_,
-                                   ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-                                   multi_val_bin_.get(), is_hist_colwise_,
-                                   ptr_smaller_leaf_hist_data);
+  hist_t* ptr_smaller_leaf_hist_data =
+      smaller_leaf_histogram_array_[0].RawData() - KHistOffset;
+  train_data_->ConstructHistograms(
+      is_feature_used, smaller_leaf_splits_->data_indices(),
+      smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
+      ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
+      multi_val_bin_.get(), is_hist_colwise_, ptr_smaller_leaf_hist_data);
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
-    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - KHistOffset;
-    train_data_->ConstructHistograms(is_feature_used,
-                                     larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
-                                     gradients_, hessians_,
-                                     ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-                                     multi_val_bin_.get(), is_hist_colwise_,
-                                     ptr_larger_leaf_hist_data);
+    hist_t* ptr_larger_leaf_hist_data =
+        larger_leaf_histogram_array_[0].RawData() - KHistOffset;
+    train_data_->ConstructHistograms(
+        is_feature_used, larger_leaf_splits_->data_indices(),
+        larger_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
+        ordered_gradients_.data(), ordered_hessians_.data(),
+        is_constant_hessian_, multi_val_bin_.get(), is_hist_colwise_,
+        ptr_larger_leaf_hist_data);
   }
 }
 
-void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
-  Common::FunctionTimer fun_timer("SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
+void SerialTreeLearner::FindBestSplitsFromHistograms(
+    const std::vector<int8_t>& is_feature_used, bool use_subtract) {
+  Common::FunctionTimer fun_timer(
+      "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
   std::vector<int8_t> smaller_node_used_features(num_features_, 1);
@@ -405,54 +450,67 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
     larger_node_used_features = GetUsedFeatures(false);
   }
   OMP_INIT_EX();
-  // find splits	
-  #pragma omp parallel for schedule(static)
+// find splits
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
-    if (!is_feature_used[feature_index]) { continue; }
+    if (!is_feature_used[feature_index]) {
+      continue;
+    }
     const int tid = omp_get_thread_num();
     SplitInfo smaller_split;
-    train_data_->FixHistogram(feature_index,
-                              smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
-                              smaller_leaf_histogram_array_[feature_index].RawData());
+    train_data_->FixHistogram(
+        feature_index, smaller_leaf_splits_->sum_gradients(),
+        smaller_leaf_splits_->sum_hessians(),
+        smaller_leaf_histogram_array_[feature_index].RawData());
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
     smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-      smaller_leaf_splits_->sum_gradients(),
-      smaller_leaf_splits_->sum_hessians(),
-      smaller_leaf_splits_->num_data_in_leaf(),
-      smaller_leaf_splits_->min_constraint(),
-      smaller_leaf_splits_->max_constraint(),
-      &smaller_split);
+        smaller_leaf_splits_->sum_gradients(),
+        smaller_leaf_splits_->sum_hessians(),
+        smaller_leaf_splits_->num_data_in_leaf(),
+        smaller_leaf_splits_->min_constraint(),
+        smaller_leaf_splits_->max_constraint(), &smaller_split);
     smaller_split.feature = real_fidx;
     if (cegb_ != nullptr) {
-      smaller_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, smaller_leaf_splits_->LeafIndex(), smaller_leaf_splits_->num_data_in_leaf(), smaller_split);
+      smaller_split.gain -= cegb_->DetlaGain(
+          feature_index, real_fidx, smaller_leaf_splits_->LeafIndex(),
+          smaller_leaf_splits_->num_data_in_leaf(), smaller_split);
     }
-    if (smaller_split > smaller_best[tid] && smaller_node_used_features[feature_index]) {
+    if (smaller_split > smaller_best[tid] &&
+        smaller_node_used_features[feature_index]) {
       smaller_best[tid] = smaller_split;
     }
     // only has root leaf
-    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
+    if (larger_leaf_splits_ == nullptr ||
+        larger_leaf_splits_->LeafIndex() < 0) {
+      continue;
+    }
 
     if (use_subtract) {
-      larger_leaf_histogram_array_[feature_index].Subtract(smaller_leaf_histogram_array_[feature_index]);
+      larger_leaf_histogram_array_[feature_index].Subtract(
+          smaller_leaf_histogram_array_[feature_index]);
     } else {
-      train_data_->FixHistogram(feature_index, larger_leaf_splits_->sum_gradients(), larger_leaf_splits_->sum_hessians(),
-                                larger_leaf_histogram_array_[feature_index].RawData());
+      train_data_->FixHistogram(
+          feature_index, larger_leaf_splits_->sum_gradients(),
+          larger_leaf_splits_->sum_hessians(),
+          larger_leaf_histogram_array_[feature_index].RawData());
     }
     SplitInfo larger_split;
     // find best threshold for larger child
     larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-      larger_leaf_splits_->sum_gradients(),
-      larger_leaf_splits_->sum_hessians(),
-      larger_leaf_splits_->num_data_in_leaf(),
-      larger_leaf_splits_->min_constraint(),
-      larger_leaf_splits_->max_constraint(),
-      &larger_split);
+        larger_leaf_splits_->sum_gradients(),
+        larger_leaf_splits_->sum_hessians(),
+        larger_leaf_splits_->num_data_in_leaf(),
+        larger_leaf_splits_->min_constraint(),
+        larger_leaf_splits_->max_constraint(), &larger_split);
     larger_split.feature = real_fidx;
     if (cegb_ != nullptr) {
-      larger_split.gain -= cegb_->DetlaGain(feature_index, real_fidx, larger_leaf_splits_->LeafIndex(), larger_leaf_splits_->num_data_in_leaf(), larger_split);
+      larger_split.gain -= cegb_->DetlaGain(
+          feature_index, real_fidx, larger_leaf_splits_->LeafIndex(),
+          larger_leaf_splits_->num_data_in_leaf(), larger_split);
     }
-    if (larger_split > larger_best[tid] && larger_node_used_features[feature_index]) {
+    if (larger_split > larger_best[tid] &&
+        larger_node_used_features[feature_index]) {
       larger_best[tid] = larger_split;
     }
     OMP_LOOP_EX_END();
@@ -469,9 +527,11 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
   }
 }
 
-int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
-                                       int* right_leaf, int *cur_depth,
-                                       bool *aborted_last_force_split) {
+int32_t SerialTreeLearner::ForceSplits(Tree* tree,
+                                       const Json& forced_split_json,
+                                       int* left_leaf, int* right_leaf,
+                                       int* cur_depth,
+                                       bool* aborted_last_force_split) {
   int32_t result_count = 0;
   // start at root leaf
   *left_leaf = 0;
@@ -482,8 +542,9 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
   std::unordered_map<int, SplitInfo> forceSplitMap;
   q.push(std::make_pair(forced_split_json, *left_leaf));
   while (!q.empty()) {
-    // before processing next node from queue, store info for current left/right leaf
-    // store "best split" for left and right, even if they might be overwritten by forced split
+    // before processing next node from queue, store info for current left/right
+    // leaf store "best split" for left and right, even if they might be
+    // overwritten by forced split
     if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
       FindBestSplits();
     }
@@ -494,17 +555,17 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
     if (!left.is_null()) {
       const int left_feature = left["feature"].int_value();
       const double left_threshold_double = left["threshold"].number_value();
-      const int left_inner_feature_index = train_data_->InnerFeatureIndex(left_feature);
+      const int left_inner_feature_index =
+          train_data_->InnerFeatureIndex(left_feature);
       const uint32_t left_threshold = train_data_->BinThreshold(
-              left_inner_feature_index, left_threshold_double);
-      auto leaf_histogram_array = (left_smaller) ? smaller_leaf_histogram_array_ : larger_leaf_histogram_array_;
-      auto left_leaf_splits = (left_smaller) ? smaller_leaf_splits_.get() : larger_leaf_splits_.get();
+          left_inner_feature_index, left_threshold_double);
+      auto leaf_histogram_array = (left_smaller) ? smaller_leaf_histogram_array_
+                                                 : larger_leaf_histogram_array_;
+      auto left_leaf_splits = (left_smaller) ? smaller_leaf_splits_.get()
+                                             : larger_leaf_splits_.get();
       leaf_histogram_array[left_inner_feature_index].GatherInfoForThreshold(
-              left_leaf_splits->sum_gradients(),
-              left_leaf_splits->sum_hessians(),
-              left_threshold,
-              left_leaf_splits->num_data_in_leaf(),
-              &left_split);
+          left_leaf_splits->sum_gradients(), left_leaf_splits->sum_hessians(),
+          left_threshold, left_leaf_splits->num_data_in_leaf(), &left_split);
       left_split.feature = left_feature;
       forceSplitMap[*left_leaf] = left_split;
       if (left_split.gain < 0) {
@@ -515,17 +576,18 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
     if (!right.is_null()) {
       const int right_feature = right["feature"].int_value();
       const double right_threshold_double = right["threshold"].number_value();
-      const int right_inner_feature_index = train_data_->InnerFeatureIndex(right_feature);
+      const int right_inner_feature_index =
+          train_data_->InnerFeatureIndex(right_feature);
       const uint32_t right_threshold = train_data_->BinThreshold(
-              right_inner_feature_index, right_threshold_double);
-      auto leaf_histogram_array = (left_smaller) ? larger_leaf_histogram_array_ : smaller_leaf_histogram_array_;
-      auto right_leaf_splits = (left_smaller) ? larger_leaf_splits_.get() : smaller_leaf_splits_.get();
+          right_inner_feature_index, right_threshold_double);
+      auto leaf_histogram_array = (left_smaller)
+                                      ? larger_leaf_histogram_array_
+                                      : smaller_leaf_histogram_array_;
+      auto right_leaf_splits = (left_smaller) ? larger_leaf_splits_.get()
+                                              : smaller_leaf_splits_.get();
       leaf_histogram_array[right_inner_feature_index].GatherInfoForThreshold(
-        right_leaf_splits->sum_gradients(),
-        right_leaf_splits->sum_hessians(),
-        right_threshold,
-        right_leaf_splits->num_data_in_leaf(),
-        &right_split);
+          right_leaf_splits->sum_gradients(), right_leaf_splits->sum_hessians(),
+          right_threshold, right_leaf_splits->num_data_in_leaf(), &right_split);
       right_split.feature = right_feature;
       forceSplitMap[*right_leaf] = right_split;
       if (right_split.gain < 0) {
@@ -536,64 +598,63 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
     std::pair<Json, int> pair = q.front();
     q.pop();
     int current_leaf = pair.second;
-    // split info should exist because searching in bfs fashion - should have added from parent
+    // split info should exist because searching in bfs fashion - should have
+    // added from parent
     if (forceSplitMap.find(current_leaf) == forceSplitMap.end()) {
-        *aborted_last_force_split = true;
-        break;
+      *aborted_last_force_split = true;
+      break;
     }
     SplitInfo current_split_info = forceSplitMap[current_leaf];
-    const int inner_feature_index = train_data_->InnerFeatureIndex(
-            current_split_info.feature);
+    const int inner_feature_index =
+        train_data_->InnerFeatureIndex(current_split_info.feature);
     auto threshold_double = train_data_->RealThreshold(
-            inner_feature_index, current_split_info.threshold);
+        inner_feature_index, current_split_info.threshold);
 
     // split tree, will return right leaf
     *left_leaf = current_leaf;
-    if (train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin) {
-      *right_leaf = tree->Split(current_leaf,
-                                inner_feature_index,
-                                current_split_info.feature,
-                                current_split_info.threshold,
-                                threshold_double,
-                                static_cast<double>(current_split_info.left_output),
-                                static_cast<double>(current_split_info.right_output),
-                                static_cast<data_size_t>(current_split_info.left_count),
-                                static_cast<data_size_t>(current_split_info.right_count),
-                                static_cast<double>(current_split_info.left_sum_hessian),
-                                static_cast<double>(current_split_info.right_sum_hessian),
-                                static_cast<float>(current_split_info.gain),
-                                train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
-                                current_split_info.default_left);
+    if (train_data_->FeatureBinMapper(inner_feature_index)->bin_type() ==
+        BinType::NumericalBin) {
+      *right_leaf = tree->Split(
+          current_leaf, inner_feature_index, current_split_info.feature,
+          current_split_info.threshold, threshold_double,
+          static_cast<double>(current_split_info.left_output),
+          static_cast<double>(current_split_info.right_output),
+          static_cast<data_size_t>(current_split_info.left_count),
+          static_cast<data_size_t>(current_split_info.right_count),
+          static_cast<double>(current_split_info.left_sum_hessian),
+          static_cast<double>(current_split_info.right_sum_hessian),
+          static_cast<float>(current_split_info.gain),
+          train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
+          current_split_info.default_left);
       data_partition_->Split(current_leaf, train_data_, inner_feature_index,
                              &current_split_info.threshold, 1,
                              current_split_info.default_left, *right_leaf);
     } else {
-      std::vector<uint32_t> cat_bitset_inner = Common::ConstructBitset(
-              current_split_info.cat_threshold.data(), current_split_info.num_cat_threshold);
+      std::vector<uint32_t> cat_bitset_inner =
+          Common::ConstructBitset(current_split_info.cat_threshold.data(),
+                                  current_split_info.num_cat_threshold);
       std::vector<int> threshold_int(current_split_info.num_cat_threshold);
       for (int i = 0; i < current_split_info.num_cat_threshold; ++i) {
         threshold_int[i] = static_cast<int>(train_data_->RealThreshold(
-                    inner_feature_index, current_split_info.cat_threshold[i]));
+            inner_feature_index, current_split_info.cat_threshold[i]));
       }
       std::vector<uint32_t> cat_bitset = Common::ConstructBitset(
-              threshold_int.data(), current_split_info.num_cat_threshold);
-      *right_leaf = tree->SplitCategorical(current_leaf,
-                                           inner_feature_index,
-                                           current_split_info.feature,
-                                           cat_bitset_inner.data(),
-                                           static_cast<int>(cat_bitset_inner.size()),
-                                           cat_bitset.data(),
-                                           static_cast<int>(cat_bitset.size()),
-                                           static_cast<double>(current_split_info.left_output),
-                                           static_cast<double>(current_split_info.right_output),
-                                           static_cast<data_size_t>(current_split_info.left_count),
-                                           static_cast<data_size_t>(current_split_info.right_count),
-                                           static_cast<double>(current_split_info.left_sum_hessian),
-                                           static_cast<double>(current_split_info.right_sum_hessian),
-                                           static_cast<float>(current_split_info.gain),
-                                           train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
+          threshold_int.data(), current_split_info.num_cat_threshold);
+      *right_leaf = tree->SplitCategorical(
+          current_leaf, inner_feature_index, current_split_info.feature,
+          cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()),
+          cat_bitset.data(), static_cast<int>(cat_bitset.size()),
+          static_cast<double>(current_split_info.left_output),
+          static_cast<double>(current_split_info.right_output),
+          static_cast<data_size_t>(current_split_info.left_count),
+          static_cast<data_size_t>(current_split_info.right_count),
+          static_cast<double>(current_split_info.left_sum_hessian),
+          static_cast<double>(current_split_info.right_sum_hessian),
+          static_cast<float>(current_split_info.gain),
+          train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
       data_partition_->Split(current_leaf, train_data_, inner_feature_index,
-                             cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()),
+                             cat_bitset_inner.data(),
+                             static_cast<int>(cat_bitset_inner.size()),
                              current_split_info.default_left, *right_leaf);
     }
 
@@ -608,22 +669,26 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
     } else {
       left_smaller = false;
       smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
-                                 current_split_info.right_sum_gradient, current_split_info.right_sum_hessian);
+                                 current_split_info.right_sum_gradient,
+                                 current_split_info.right_sum_hessian);
       larger_leaf_splits_->Init(*left_leaf, data_partition_.get(),
-                                current_split_info.left_sum_gradient, current_split_info.left_sum_hessian);
+                                current_split_info.left_sum_gradient,
+                                current_split_info.left_sum_hessian);
     }
 
     left = Json();
     right = Json();
     if ((pair.first).object_items().count("left") > 0) {
       left = (pair.first)["left"];
-      if (left.object_items().count("feature") > 0 && left.object_items().count("threshold") > 0) {
+      if (left.object_items().count("feature") > 0 &&
+          left.object_items().count("threshold") > 0) {
         q.push(std::make_pair(left, *left_leaf));
       }
     }
     if ((pair.first).object_items().count("right") > 0) {
       right = (pair.first)["right"];
-      if (right.object_items().count("feature") > 0 && right.object_items().count("threshold") > 0) {
+      if (right.object_items().count("feature") > 0 &&
+          right.object_items().count("threshold") > 0) {
         q.push(std::make_pair(right, *right_leaf));
       }
     }
@@ -633,69 +698,76 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
   return result_count;
 }
 
-void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) {
+void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf,
+                              int* right_leaf) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::Split", global_timer);
   SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
-  const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
+  const int inner_feature_index =
+      train_data_->InnerFeatureIndex(best_split_info.feature);
   if (cegb_ != nullptr) {
-    cegb_->UpdateLeafBestSplits(tree, best_leaf, &best_split_info, &best_split_per_leaf_);
+    cegb_->UpdateLeafBestSplits(tree, best_leaf, &best_split_info,
+                                &best_split_per_leaf_);
   }
   *left_leaf = best_leaf;
   auto next_leaf_id = tree->NextLeafId();
 
-  bool is_numerical_split = train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin;
+  bool is_numerical_split =
+      train_data_->FeatureBinMapper(inner_feature_index)->bin_type() ==
+      BinType::NumericalBin;
   if (is_numerical_split) {
-    auto threshold_double = train_data_->RealThreshold(inner_feature_index, best_split_info.threshold);
+    auto threshold_double = train_data_->RealThreshold(
+        inner_feature_index, best_split_info.threshold);
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
-      &best_split_info.threshold, 1, best_split_info.default_left, next_leaf_id);
+                           &best_split_info.threshold, 1,
+                           best_split_info.default_left, next_leaf_id);
     best_split_info.left_count = data_partition_->leaf_count(*left_leaf);
     best_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
     // split tree, will return right leaf
-    *right_leaf = tree->Split(best_leaf,
-      inner_feature_index,
-      best_split_info.feature,
-      best_split_info.threshold,
-      threshold_double,
-      static_cast<double>(best_split_info.left_output),
-      static_cast<double>(best_split_info.right_output),
-      static_cast<data_size_t>(best_split_info.left_count),
-      static_cast<data_size_t>(best_split_info.right_count),
-      static_cast<double>(best_split_info.left_sum_hessian),
-      static_cast<double>(best_split_info.right_sum_hessian),
-      static_cast<float>(best_split_info.gain),
-      train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
-      best_split_info.default_left);
+    *right_leaf = tree->Split(
+        best_leaf, inner_feature_index, best_split_info.feature,
+        best_split_info.threshold, threshold_double,
+        static_cast<double>(best_split_info.left_output),
+        static_cast<double>(best_split_info.right_output),
+        static_cast<data_size_t>(best_split_info.left_count),
+        static_cast<data_size_t>(best_split_info.right_count),
+        static_cast<double>(best_split_info.left_sum_hessian),
+        static_cast<double>(best_split_info.right_sum_hessian),
+        static_cast<float>(best_split_info.gain),
+        train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
+        best_split_info.default_left);
 
   } else {
-
-    std::vector<uint32_t> cat_bitset_inner = Common::ConstructBitset(best_split_info.cat_threshold.data(), best_split_info.num_cat_threshold);
+    std::vector<uint32_t> cat_bitset_inner =
+        Common::ConstructBitset(best_split_info.cat_threshold.data(),
+                                best_split_info.num_cat_threshold);
     std::vector<int> threshold_int(best_split_info.num_cat_threshold);
     for (int i = 0; i < best_split_info.num_cat_threshold; ++i) {
-      threshold_int[i] = static_cast<int>(train_data_->RealThreshold(inner_feature_index, best_split_info.cat_threshold[i]));
+      threshold_int[i] = static_cast<int>(train_data_->RealThreshold(
+          inner_feature_index, best_split_info.cat_threshold[i]));
     }
-    std::vector<uint32_t> cat_bitset = Common::ConstructBitset(threshold_int.data(), best_split_info.num_cat_threshold);
+    std::vector<uint32_t> cat_bitset = Common::ConstructBitset(
+        threshold_int.data(), best_split_info.num_cat_threshold);
 
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
-      cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()), best_split_info.default_left, next_leaf_id);
+                           cat_bitset_inner.data(),
+                           static_cast<int>(cat_bitset_inner.size()),
+                           best_split_info.default_left, next_leaf_id);
 
     best_split_info.left_count = data_partition_->leaf_count(*left_leaf);
     best_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
 
-    *right_leaf = tree->SplitCategorical(best_leaf,
-      inner_feature_index,
-      best_split_info.feature,
-      cat_bitset_inner.data(),
-      static_cast<int>(cat_bitset_inner.size()),
-      cat_bitset.data(),
-      static_cast<int>(cat_bitset.size()),
-      static_cast<double>(best_split_info.left_output),
-      static_cast<double>(best_split_info.right_output),
-      static_cast<data_size_t>(best_split_info.left_count),
-      static_cast<data_size_t>(best_split_info.right_count),
-      static_cast<double>(best_split_info.left_sum_hessian),
-      static_cast<double>(best_split_info.right_sum_hessian),
-      static_cast<float>(best_split_info.gain),
-      train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
+    *right_leaf = tree->SplitCategorical(
+        best_leaf, inner_feature_index, best_split_info.feature,
+        cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()),
+        cat_bitset.data(), static_cast<int>(cat_bitset.size()),
+        static_cast<double>(best_split_info.left_output),
+        static_cast<double>(best_split_info.right_output),
+        static_cast<data_size_t>(best_split_info.left_count),
+        static_cast<data_size_t>(best_split_info.right_count),
+        static_cast<double>(best_split_info.left_sum_hessian),
+        static_cast<double>(best_split_info.right_sum_hessian),
+        static_cast<float>(best_split_info.gain),
+        train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
   }
   CHECK(*right_leaf == next_leaf_id);
 
@@ -704,19 +776,30 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
     CHECK(best_split_info.left_count > 0);
-    smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
-    larger_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
+    smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
+                               best_split_info.left_sum_gradient,
+                               best_split_info.left_sum_hessian);
+    larger_leaf_splits_->Init(*right_leaf, data_partition_.get(),
+                              best_split_info.right_sum_gradient,
+                              best_split_info.right_sum_hessian);
   } else {
     CHECK(best_split_info.right_count > 0);
-    smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
-    larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
+    smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
+                               best_split_info.right_sum_gradient,
+                               best_split_info.right_sum_hessian);
+    larger_leaf_splits_->Init(*left_leaf, data_partition_.get(),
+                              best_split_info.left_sum_gradient,
+                              best_split_info.left_sum_hessian);
     p_right = smaller_leaf_splits_.get();
     p_left = larger_leaf_splits_.get();
   }
-  p_left->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
-  p_right->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
+  p_left->SetValueConstraint(best_split_info.min_constraint,
+                             best_split_info.max_constraint);
+  p_right->SetValueConstraint(best_split_info.min_constraint,
+                              best_split_info.max_constraint);
   if (is_numerical_split) {
-    double mid = (best_split_info.left_output + best_split_info.right_output) / 2.0f;
+    double mid =
+        (best_split_info.left_output + best_split_info.right_output) / 2.0f;
     if (best_split_info.monotone_type < 0) {
       p_left->SetValueConstraint(mid, best_split_info.max_constraint);
       p_right->SetValueConstraint(best_split_info.min_constraint, mid);
@@ -727,9 +810,11 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   }
 }
 
-
-void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+void SerialTreeLearner::RenewTreeOutput(
+    Tree* tree, const ObjectiveFunction* obj,
+    std::function<double(const label_t*, int)> residual_getter,
+    data_size_t total_num_data, const data_size_t* bag_indices,
+    data_size_t bag_cnt) const {
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
     const data_size_t* bag_mapper = nullptr;
@@ -739,14 +824,15 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
     }
     std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
     int num_machines = Network::num_machines();
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       const double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
       auto index_mapper = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       if (cnt_leaf_data > 0) {
         // bag_mapper[index_mapper[i]]
-        const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
+        const double new_output = obj->RenewTreeOutput(
+            output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
       } else {
         CHECK(num_machines > 1);

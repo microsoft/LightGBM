@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
@@ -8,20 +9,21 @@
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
-#include <string>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "binary_objective.hpp"
 
 namespace LightGBM {
 /*!
-* \brief Objective function for multiclass classification, use softmax as objective functions
-*/
-class MulticlassSoftmax: public ObjectiveFunction {
+ * \brief Objective function for multiclass classification, use softmax as
+ * objective functions
+ */
+class MulticlassSoftmax : public ObjectiveFunction {
  public:
   explicit MulticlassSoftmax(const Config& config) {
     num_class_ = config.num_class;
@@ -42,8 +44,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
   }
 
-  ~MulticlassSoftmax() {
-  }
+  ~MulticlassSoftmax() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
@@ -55,7 +56,8 @@ class MulticlassSoftmax: public ObjectiveFunction {
     for (int i = 0; i < num_data_; ++i) {
       label_int_[i] = static_cast<int>(label_[i]);
       if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
-        Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
+        Log::Fatal("Label must be in [0, %d), but found %d in label",
+                   num_class_, label_int_[i]);
       }
       if (weights_ == nullptr) {
         class_init_probs_[label_int_[i]] += 1.0;
@@ -78,10 +80,11 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
   }
 
-  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
       std::vector<double> rec;
-      #pragma omp parallel for schedule(static) private(rec)
+#pragma omp parallel for schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k) {
@@ -102,7 +105,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
       }
     } else {
       std::vector<double> rec;
-      #pragma omp parallel for schedule(static) private(rec)
+#pragma omp parallel for schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k) {
@@ -116,9 +119,10 @@ class MulticlassSoftmax: public ObjectiveFunction {
           if (label_int_[i] == k) {
             gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]);
           } else {
-            gradients[idx] = static_cast<score_t>((p) * weights_[i]);
+            gradients[idx] = static_cast<score_t>((p)*weights_[i]);
           }
-          hessians[idx] = static_cast<score_t>((2.0f * p * (1.0f - p))* weights_[i]);
+          hessians[idx] =
+              static_cast<score_t>((2.0f * p * (1.0f - p)) * weights_[i]);
         }
       }
     }
@@ -128,9 +132,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     Common::Softmax(input, output, num_class_);
   }
 
-  const char* GetName() const override {
-    return "multiclass";
-  }
+  const char* GetName() const override { return "multiclass"; }
 
   std::string ToString() const override {
     std::stringstream str_buf;
@@ -152,8 +154,8 @@ class MulticlassSoftmax: public ObjectiveFunction {
   }
 
   bool ClassNeedTrain(int class_id) const override {
-    if (std::fabs(class_init_probs_[class_id]) <= kEpsilon
-        || std::fabs(class_init_probs_[class_id]) >= 1.0 - kEpsilon) {
+    if (std::fabs(class_init_probs_[class_id]) <= kEpsilon ||
+        std::fabs(class_init_probs_[class_id]) >= 1.0 - kEpsilon) {
       return false;
     } else {
       return true;
@@ -175,15 +177,16 @@ class MulticlassSoftmax: public ObjectiveFunction {
 };
 
 /*!
-* \brief Objective function for multiclass classification, use one-vs-all binary objective function
-*/
-class MulticlassOVA: public ObjectiveFunction {
+ * \brief Objective function for multiclass classification, use one-vs-all
+ * binary objective function
+ */
+class MulticlassOVA : public ObjectiveFunction {
  public:
   explicit MulticlassOVA(const Config& config) {
     num_class_ = config.num_class;
     for (int i = 0; i < num_class_; ++i) {
-      binary_loss_.emplace_back(
-        new BinaryLogloss(config, [i](label_t label) { return static_cast<int>(label) == i; }));
+      binary_loss_.emplace_back(new BinaryLogloss(
+          config, [i](label_t label) { return static_cast<int>(label) == i; }));
     }
     sigmoid_ = config.sigmoid;
   }
@@ -209,8 +212,7 @@ class MulticlassOVA: public ObjectiveFunction {
     }
   }
 
-  ~MulticlassOVA() {
-  }
+  ~MulticlassOVA() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
@@ -219,16 +221,16 @@ class MulticlassOVA: public ObjectiveFunction {
     }
   }
 
-  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
     for (int i = 0; i < num_class_; ++i) {
       int64_t offset = static_cast<int64_t>(num_data_) * i;
-      binary_loss_[i]->GetGradients(score + offset, gradients + offset, hessians + offset);
+      binary_loss_[i]->GetGradients(score + offset, gradients + offset,
+                                    hessians + offset);
     }
   }
 
-  const char* GetName() const override {
-    return "multiclassova";
-  }
+  const char* GetName() const override { return "multiclassova"; }
 
   void ConvertOutput(const double* input, double* output) const override {
     for (int i = 0; i < num_class_; ++i) {
@@ -270,4 +272,4 @@ class MulticlassOVA: public ObjectiveFunction {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
+#endif  // LightGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
