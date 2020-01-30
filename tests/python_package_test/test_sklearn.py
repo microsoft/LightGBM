@@ -77,7 +77,7 @@ class TestSklearn(unittest.TestCase):
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = log_loss(y_test, gbm.predict_proba(X_test))
-        self.assertLess(ret, 0.11)
+        self.assertLess(ret, 0.12)
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_regression(self):
@@ -114,8 +114,8 @@ class TestSklearn(unittest.TestCase):
                 eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
                 callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
         self.assertLessEqual(gbm.best_iteration_, 24)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6333)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6048)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.5769)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.5920)
 
     def test_regression_with_custom_objective(self):
         X, y = load_boston(True)

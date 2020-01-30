@@ -38,7 +38,9 @@ class FileLoader(object):
         return np.loadtxt(os.path.join(self.directory, result_file))
 
     def train_predict_check(self, lgb_train, X_test, X_test_fn, sk_pred):
-        gbm = lgb.train(self.params, lgb_train)
+        params = dict(self.params)
+        params['force_row_wise'] = True
+        gbm = lgb.train(params, lgb_train)
         y_pred = gbm.predict(X_test)
         cpp_pred = gbm.predict(X_test_fn)
         np.testing.assert_allclose(y_pred, cpp_pred)
@@ -105,7 +107,9 @@ class TestEngine(unittest.TestCase):
         X_test, _, X_test_fn = fd.load_dataset('.test', is_sparse=True)
         group_train = fd.load_field('.train.query')
         lgb_train = lgb.Dataset(X_train, y_train, group=group_train)
-        gbm = lgb.LGBMRanker(**fd.params)
+        params = dict(fd.params)
+        params['force_col_wise'] = True
+        gbm = lgb.LGBMRanker(**params)
         gbm.fit(X_train, y_train, group=group_train)
         sk_pred = gbm.predict(X_test)
         fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
