@@ -461,7 +461,7 @@ class GBDT : public GBDTBase {
   /*! \brief Secend order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> hessians_;
   /*! \brief Store the indices of in-bag data */
-  std::vector<data_size_t, Common::AlignmentAllocator<score_t, kAlignedSize>> bag_data_indices_;
+  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
   /*! \brief Number of in-bag data */
   data_size_t bag_data_cnt_;
   /*! \brief Store the indices of in-bag data */
