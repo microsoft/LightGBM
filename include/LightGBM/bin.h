@@ -444,7 +444,6 @@ class Bin {
 };
 
 
-
 class MultiValBin {
 public:
 
