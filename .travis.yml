@@ -44,11 +44,11 @@ before_install:
   - export BUILD_DIRECTORY="$TRAVIS_BUILD_DIR"
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         export OS_NAME="macos";
-        export COMPILER="gcc";
+        export COMPILER="clang";
         export R_MAC_VERSION=3.6.1;
     else
         export OS_NAME="linux";
-        export COMPILER="clang";
+        export COMPILER="gcc";
         export R_TRAVIS_LINUX_VERSION=3.6.1-3bionic;
     fi
   - export CONDA="$HOME/miniconda"
