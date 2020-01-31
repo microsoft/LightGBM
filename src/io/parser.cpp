@@ -1,21 +1,19 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include "parser.hpp"
 
+#include <string>
 #include <algorithm>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <memory>
-#include <string>
 
 namespace LightGBM {
 
-void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt,
-                  int* colon_cnt) {
+void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt) {
   *comma_cnt = 0;
   *tab_cnt = 0;
   *colon_cnt = 0;
@@ -30,8 +28,7 @@ void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt,
   }
 }
 
-int GetLabelIdxForLibsvm(const std::string& str, int num_features,
-                         int label_idx) {
+int GetLabelIdxForLibsvm(const std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }
@@ -71,11 +68,14 @@ int GetLabelIdxForCSV(const std::string& str, int num_features, int label_idx) {
   }
 }
 
-enum DataType { INVALID, CSV, TSV, LIBSVM };
+enum DataType {
+  INVALID,
+  CSV,
+  TSV,
+  LIBSVM
+};
 
-void GetLine(std::stringstream* ss, std::string* line,
-             const VirtualFileReader* reader, std::vector<char>* buffer,
-             size_t buffer_size) {
+void GetLine(std::stringstream* ss, std::string* line, const VirtualFileReader* reader, std::vector<char>* buffer, size_t buffer_size) {
   std::getline(*ss, *line);
   while (ss->eof()) {
     size_t read_len = reader->Read(buffer->data(), buffer_size);
@@ -90,8 +90,7 @@ void GetLine(std::stringstream* ss, std::string* line,
   }
 }
 
-std::vector<std::string> ReadKLineFromFile(const char* filename, bool header,
-                                           int k) {
+std::vector<std::string> ReadKLineFromFile(const char* filename, bool header, int k) {
   auto reader = VirtualFileReader::Make(filename);
   if (!reader->Init()) {
     Log::Fatal("Data file %s doesn't exist.", filename);
@@ -193,8 +192,7 @@ DataType GetDataType(const std::vector<std::string>& lines, int* num_col) {
   return type;
 }
 
-Parser* Parser::CreateParser(const char* filename, bool header,
-                             int num_features, int label_idx) {
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx) {
   const int n_read_line = 20;
   auto lines = ReadKLineFromFile(filename, header, n_read_line);
   int num_col = 0;
@@ -205,8 +203,7 @@ Parser* Parser::CreateParser(const char* filename, bool header,
   std::unique_ptr<Parser> ret;
   int output_label_index = -1;
   if (type == DataType::LIBSVM) {
-    output_label_index =
-        GetLabelIdxForLibsvm(lines[0], num_features, label_idx);
+    output_label_index = GetLabelIdxForLibsvm(lines[0], num_features, label_idx);
     ret.reset(new LibSVMParser(output_label_index, num_col));
   } else if (type == DataType::TSV) {
     output_label_index = GetLabelIdxForTSV(lines[0], num_features, label_idx);

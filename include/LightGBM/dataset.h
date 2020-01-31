@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_DATASET_H_
 #define LIGHTGBM_DATASET_H_
@@ -15,10 +14,10 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 
+#include <string>
 #include <functional>
 #include <memory>
 #include <mutex>
-#include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -28,68 +27,62 @@ namespace LightGBM {
 /*! \brief forward declaration */
 class DatasetLoader;
 /*!
- * \brief This class is used to store some meta(non-feature) data for training
- * data, e.g. labels, weights, initial scores, query level informations.
- *
- *        Some details:
- *        1. Label, used for training.
- *        2. Weights, weighs of records, optional
- *        3. Query Boundaries, necessary for lambdarank.
- *           The documents of i-th query is in [ query_boundaries[i],
- * query_boundaries[i+1] )
- *        4. Query Weights, auto calculate by weights and query_boundaries(if
- * both of them are existed) the weight for i-th query is
- * sum(query_boundaries[i] , .., query_boundaries[i+1]) / (query_boundaries[i +
- * 1] -  query_boundaries[i+1])
- *        5. Initial score. optional. if existing, the model will boost from
- * this score, otherwise will start from 0.
- */
+* \brief This class is used to store some meta(non-feature) data for training data,
+*        e.g. labels, weights, initial scores, query level informations.
+*
+*        Some details:
+*        1. Label, used for training.
+*        2. Weights, weighs of records, optional
+*        3. Query Boundaries, necessary for lambdarank.
+*           The documents of i-th query is in [ query_boundaries[i], query_boundaries[i+1] )
+*        4. Query Weights, auto calculate by weights and query_boundaries(if both of them are existed)
+*           the weight for i-th query is sum(query_boundaries[i] , .., query_boundaries[i+1]) / (query_boundaries[i + 1] -  query_boundaries[i+1])
+*        5. Initial score. optional. if existing, the model will boost from this score, otherwise will start from 0.
+*/
 class Metadata {
  public:
   /*!
-   * \brief Null constructor
-   */
+  * \brief Null constructor
+  */
   Metadata();
   /*!
-   * \brief Initialization will load query level informations, since it is need
-   * for sampling data \param data_filename Filename of data \param
-   * init_score_filename Filename of initial score
-   */
+  * \brief Initialization will load query level informations, since it is need for sampling data
+  * \param data_filename Filename of data
+  * \param init_score_filename Filename of initial score
+  */
   void Init(const char* data_filename, const char* initscore_file);
   /*!
-   * \brief init as subset
-   * \param metadata Filename of data
-   * \param used_indices
-   * \param num_used_indices
-   */
-  void Init(const Metadata& metadata, const data_size_t* used_indices,
-            data_size_t num_used_indices);
+  * \brief init as subset
+  * \param metadata Filename of data
+  * \param used_indices
+  * \param num_used_indices
+  */
+  void Init(const Metadata& metadata, const data_size_t* used_indices, data_size_t num_used_indices);
   /*!
-   * \brief Initial with binary memory
-   * \param memory Pointer to memory
-   */
+  * \brief Initial with binary memory
+  * \param memory Pointer to memory
+  */
   void LoadFromMemory(const void* memory);
   /*! \brief Destructor */
   ~Metadata();
 
   /*!
-   * \brief Initial work, will allocate space for label, weight(if exists) and
-   * query(if exists) \param num_data Number of training data \param weight_idx
-   * Index of weight column, < 0 means doesn't exists \param query_idx Index of
-   * query id column, < 0 means doesn't exists
-   */
+  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
+  * \param num_data Number of training data
+  * \param weight_idx Index of weight column, < 0 means doesn't exists
+  * \param query_idx Index of query id column, < 0 means doesn't exists
+  */
   void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
-   * \brief Partition label by used indices
-   * \param used_indices Indices of local used
-   */
+  * \brief Partition label by used indices
+  * \param used_indices Indices of local used
+  */
   void PartitionLabel(const std::vector<data_size_t>& used_indices);
 
   /*!
   * \brief Partition meta data according to local used indices if need
-  * \param num_all_data Number of total training data,
-  including other machines' data on parallel learning
+  * \param num_all_data Number of total training data, including other machines' data on parallel learning
   * \param used_data_indices Indices of local used training data
   */
   void CheckOrPartition(data_size_t num_all_data,
@@ -102,60 +95,60 @@ class Metadata {
   void SetQuery(const data_size_t* query, data_size_t len);
 
   /*!
-   * \brief Set initial scores
-   * \param init_score Initial scores, this class will manage memory for
-   * init_score.
-   */
+  * \brief Set initial scores
+  * \param init_score Initial scores, this class will manage memory for init_score.
+  */
   void SetInitScore(const double* init_score, data_size_t len);
 
+
   /*!
-   * \brief Save binary data to file
-   * \param file File want to write
-   */
+  * \brief Save binary data to file
+  * \param file File want to write
+  */
   void SaveBinaryToFile(const VirtualFileWriter* writer) const;
 
   /*!
-   * \brief Get sizes in byte of this object
-   */
+  * \brief Get sizes in byte of this object
+  */
   size_t SizesInByte() const;
 
   /*!
-   * \brief Get pointer of label
-   * \return Pointer of label
-   */
+  * \brief Get pointer of label
+  * \return Pointer of label
+  */
   inline const label_t* label() const { return label_.data(); }
 
   /*!
-   * \brief Set label for one record
-   * \param idx Index of this record
-   * \param value Label value of this record
-   */
+  * \brief Set label for one record
+  * \param idx Index of this record
+  * \param value Label value of this record
+  */
   inline void SetLabelAt(data_size_t idx, label_t value) {
     label_[idx] = value;
   }
 
   /*!
-   * \brief Set Weight for one record
-   * \param idx Index of this record
-   * \param value Weight value of this record
-   */
+  * \brief Set Weight for one record
+  * \param idx Index of this record
+  * \param value Weight value of this record
+  */
   inline void SetWeightAt(data_size_t idx, label_t value) {
     weights_[idx] = value;
   }
 
   /*!
-   * \brief Set Query Id for one record
-   * \param idx Index of this record
-   * \param value Query Id value of this record
-   */
+  * \brief Set Query Id for one record
+  * \param idx Index of this record
+  * \param value Query Id value of this record
+  */
   inline void SetQueryAt(data_size_t idx, data_size_t value) {
     queries_[idx] = static_cast<data_size_t>(value);
   }
 
   /*!
-   * \brief Get weights, if not exists, will return nullptr
-   * \return Pointer of weights
-   */
+  * \brief Get weights, if not exists, will return nullptr
+  * \return Pointer of weights
+  */
   inline const label_t* weights() const {
     if (!weights_.empty()) {
       return weights_.data();
@@ -165,12 +158,12 @@ class Metadata {
   }
 
   /*!
-   * \brief Get data boundaries on queries, if not exists, will return nullptr
-   *        we assume data will order by query,
-   *        the interval of [query_boundaris[i], query_boundaris[i+1])
-   *        is the data indices for query i.
-   * \return Pointer of data boundaries on queries
-   */
+  * \brief Get data boundaries on queries, if not exists, will return nullptr
+  *        we assume data will order by query,
+  *        the interval of [query_boundaris[i], query_boundaris[i+1])
+  *        is the data indices for query i.
+  * \return Pointer of data boundaries on queries
+  */
   inline const data_size_t* query_boundaries() const {
     if (!query_boundaries_.empty()) {
       return query_boundaries_.data();
@@ -180,15 +173,15 @@ class Metadata {
   }
 
   /*!
-   * \brief Get Number of queries
-   * \return Number of queries
-   */
+  * \brief Get Number of queries
+  * \return Number of queries
+  */
   inline data_size_t num_queries() const { return num_queries_; }
 
   /*!
-   * \brief Get weights for queries, if not exists, will return nullptr
-   * \return Pointer of weights for queries
-   */
+  * \brief Get weights for queries, if not exists, will return nullptr
+  * \return Pointer of weights for queries
+  */
   inline const label_t* query_weights() const {
     if (!query_weights_.empty()) {
       return query_weights_.data();
@@ -198,9 +191,9 @@ class Metadata {
   }
 
   /*!
-   * \brief Get initial scores, if not exists, will return nullptr
-   * \return Pointer of initial scores
-   */
+  * \brief Get initial scores, if not exists, will return nullptr
+  * \return Pointer of initial scores
+  */
   inline const double* init_score() const {
     if (!init_score_.empty()) {
       return init_score_.data();
@@ -210,8 +203,8 @@ class Metadata {
   }
 
   /*!
-   * \brief Get size of initial scores
-   */
+  * \brief Get size of initial scores
+  */
   inline int64_t num_init_score() const { return num_init_score_; }
 
   /*! \brief Disable copy */
@@ -257,6 +250,7 @@ class Metadata {
   bool init_score_load_from_file_;
 };
 
+
 /*! \brief Interface for Parser */
 class Parser {
  public:
@@ -264,33 +258,29 @@ class Parser {
   virtual ~Parser() {}
 
   /*!
-   * \brief Parse one line with label
-   * \param str One line record, string format, should end with '\0'
-   * \param out_features Output columns, store in (column_idx, values)
-   * \param out_label Label will store to this if exists
-   */
+  * \brief Parse one line with label
+  * \param str One line record, string format, should end with '\0'
+  * \param out_features Output columns, store in (column_idx, values)
+  * \param out_label Label will store to this if exists
+  */
   virtual void ParseOneLine(const char* str,
-                            std::vector<std::pair<int, double>>* out_features,
-                            double* out_label) const = 0;
+                            std::vector<std::pair<int, double>>* out_features, double* out_label) const = 0;
 
   virtual int NumFeatures() const = 0;
 
   /*!
-  * \brief Create an object of parser, will auto choose the format depend on
-  file
+  * \brief Create an object of parser, will auto choose the format depend on file
   * \param filename One Filename of data
-  * \param num_features Pass num_features of this data file if you know,
-  <=0 means don't know
+  * \param num_features Pass num_features of this data file if you know, <=0 means don't know
   * \param label_idx index of label column
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename, bool header,
-                              int num_features, int label_idx);
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
 /*! \brief The main class of data set,
- *          which are used to training or validation
- */
+*          which are used to training or validation
+*/
 class Dataset {
  public:
   friend DatasetLoader;
@@ -299,12 +289,16 @@ class Dataset {
 
   LIGHTGBM_EXPORT Dataset(data_size_t num_data);
 
-  void Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-                 int num_total_features,
-                 const std::vector<std::vector<double>>& forced_bins,
-                 int** sample_non_zero_indices, double** sample_values,
-                 const int* num_per_col, int num_sample_col,
-                 size_t total_sample_cnt, const Config& io_config);
+  void Construct(
+    std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+    int num_total_features,
+    const std::vector<std::vector<double>>& forced_bins,
+    int** sample_non_zero_indices,
+    double** sample_values,
+    const int* num_per_col,
+    int num_sample_col,
+    size_t total_sample_cnt,
+    const Config& io_config);
 
   /*! \brief Destructor */
   LIGHTGBM_EXPORT ~Dataset();
@@ -327,64 +321,45 @@ class Dataset {
     return true;
   }
 
-  inline void FinishOneRow(int tid, data_size_t row_idx,
-                           const std::vector<bool>& is_feature_added) {
-    if (is_finish_load_) {
-      return;
-    }
+  inline void FinishOneRow(int tid, data_size_t row_idx, const std::vector<bool>& is_feature_added) {
+    if (is_finish_load_) { return; }
     for (auto fidx : feature_need_push_zeros_) {
-      if (is_feature_added[fidx]) {
-        continue;
-      }
+      if (is_feature_added[fidx]) { continue; }
       const int group = feature2group_[fidx];
       const int sub_feature = feature2subfeature_[fidx];
       feature_groups_[group]->PushData(tid, sub_feature, row_idx, 0.0f);
     }
   }
 
-  inline void PushOneRow(int tid, data_size_t row_idx,
-                         const std::vector<double>& feature_values) {
-    if (is_finish_load_) {
-      return;
-    }
-    for (size_t i = 0; i < feature_values.size() &&
-                       i < static_cast<size_t>(num_total_features_);
-         ++i) {
+  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
+    if (is_finish_load_) { return; }
+    for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
       int feature_idx = used_feature_map_[i];
       if (feature_idx >= 0) {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
-        feature_groups_[group]->PushData(tid, sub_feature, row_idx,
-                                         feature_values[i]);
+        feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
       }
     }
   }
 
-  inline void PushOneRow(
-      int tid, data_size_t row_idx,
-      const std::vector<std::pair<int, double>>& feature_values) {
-    if (is_finish_load_) {
-      return;
-    }
+  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
+    if (is_finish_load_) { return; }
     std::vector<bool> is_feature_added(num_features_, false);
     for (auto& inner_data : feature_values) {
-      if (inner_data.first >= num_total_features_) {
-        continue;
-      }
+      if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {
         is_feature_added[feature_idx] = true;
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
-        feature_groups_[group]->PushData(tid, sub_feature, row_idx,
-                                         inner_data.second);
+        feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
       }
     }
     FinishOneRow(tid, row_idx, is_feature_added);
   }
 
-  inline void PushOneData(int tid, data_size_t row_idx, int group,
-                          int sub_feature, double value) {
+  inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
     feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
   }
 
@@ -404,7 +379,9 @@ class Dataset {
   inline uint64_t GroupBinBoundary(int group_idx) const {
     return group_bin_boundaries_[group_idx];
   }
-  inline uint64_t NumTotalBin() const { return group_bin_boundaries_.back(); }
+  inline uint64_t NumTotalBin() const {
+    return group_bin_boundaries_.back();
+  }
 
   inline uint64_t GroupBinBoundaryAlign(int group_idx) const {
     return group_bin_boundaries_aligned_[group_idx];
@@ -425,50 +402,34 @@ class Dataset {
   }
   void ReSize(data_size_t num_data);
 
-  void CopySubset(const Dataset* fullset, const data_size_t* used_indices,
-                  data_size_t num_used_indices, bool need_meta_data);
+  void CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
   MultiValBin* GetMultiBinFromSparseFeatures() const;
 
   MultiValBin* GetMultiBinFromAllFeatures() const;
 
-  MultiValBin* TestMultiThreadingMethod(
-      score_t* gradients, score_t* hessians,
-      const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-      bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const;
+  MultiValBin* TestMultiThreadingMethod(score_t* gradients, score_t* hessians, const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
+    bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
-  LIGHTGBM_EXPORT bool SetFloatField(const char* field_name,
-                                     const float* field_data,
-                                     data_size_t num_element);
+  LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 
-  LIGHTGBM_EXPORT bool SetDoubleField(const char* field_name,
-                                      const double* field_data,
-                                      data_size_t num_element);
+  LIGHTGBM_EXPORT bool SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element);
 
-  LIGHTGBM_EXPORT bool SetIntField(const char* field_name,
-                                   const int* field_data,
-                                   data_size_t num_element);
+  LIGHTGBM_EXPORT bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
 
-  LIGHTGBM_EXPORT bool GetFloatField(const char* field_name,
-                                     data_size_t* out_len,
-                                     const float** out_ptr);
+  LIGHTGBM_EXPORT bool GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr);
 
-  LIGHTGBM_EXPORT bool GetDoubleField(const char* field_name,
-                                      data_size_t* out_len,
-                                      const double** out_ptr);
+  LIGHTGBM_EXPORT bool GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr);
 
-  LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len,
-                                   const int** out_ptr);
+  LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
 
-  LIGHTGBM_EXPORT bool GetInt8Field(const char* field_name,
-                                    data_size_t* out_len,
-                                    const int8_t** out_ptr);
+  LIGHTGBM_EXPORT bool GetInt8Field(const char* field_name, data_size_t* out_len, const int8_t** out_ptr);
 
   /*!
-   * \brief Save current dataset into binary file, will save to "filename.bin"
-   */
+  * \brief Save current dataset into binary file, will save to "filename.bin"
+  */
   LIGHTGBM_EXPORT void SaveBinaryFile(const char* bin_filename);
 
   LIGHTGBM_EXPORT void DumpTextFile(const char* text_filename);
@@ -478,31 +439,27 @@ class Dataset {
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
 
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
-                           const data_size_t* data_indices,
-                           data_size_t num_data, const score_t* gradients,
-                           const score_t* hessians, score_t* ordered_gradients,
-                           score_t* ordered_hessians, bool is_constant_hessian,
+                           const data_size_t* data_indices, data_size_t num_data,
+                           const score_t* gradients, const score_t* hessians,
+                           score_t* ordered_gradients, score_t* ordered_hessians,
+                           bool is_constant_hessian,
                            const MultiValBin* multi_val_bin, bool is_colwise,
                            hist_t* histogram_data) const;
 
-  void ConstructHistogramsMultiVal(
-      const MultiValBin* multi_val_bin, const data_size_t* data_indices,
-      data_size_t num_data, const score_t* gradients, const score_t* hessians,
-      bool is_constant_hessian, hist_t* histogram_data) const;
+  void ConstructHistogramsMultiVal(const MultiValBin* multi_val_bin, const data_size_t* data_indices, data_size_t num_data,
+                                  const score_t* gradients, const score_t* hessians,
+                                  bool is_constant_hessian,
+                                  hist_t* histogram_data) const;
 
-  void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian,
-                    hist_t* data) const;
+  void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
-  inline data_size_t Split(int feature, const uint32_t* threshold,
-                           int num_threshold, bool default_left,
+  inline data_size_t Split(int feature,
+                           const uint32_t* threshold, int num_threshold,  bool default_left,
                            data_size_t* data_indices, data_size_t num_data,
-                           data_size_t* lte_indices,
-                           data_size_t* gt_indices) const {
+                           data_size_t* lte_indices, data_size_t* gt_indices) const {
     const int group = feature2group_[feature];
     const int sub_feature = feature2subfeature_[feature];
-    return feature_groups_[group]->Split(sub_feature, threshold, num_threshold,
-                                         default_left, data_indices, num_data,
-                                         lte_indices, gt_indices);
+    return feature_groups_[group]->Split(sub_feature, threshold, num_threshold, default_left, data_indices, num_data, lte_indices, gt_indices);
   }
 
   inline int SubFeatureBinOffset(int i) const {
@@ -580,29 +537,27 @@ class Dataset {
   inline double RealThreshold(int i, uint32_t threshold) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
-    return feature_groups_[group]->bin_mappers_[sub_feature]->BinToValue(
-        threshold);
+    return feature_groups_[group]->bin_mappers_[sub_feature]->BinToValue(threshold);
   }
 
   // given a real threshold, find the closest threshold bin
   inline uint32_t BinThreshold(int i, double threshold_double) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
-    return feature_groups_[group]->bin_mappers_[sub_feature]->ValueToBin(
-        threshold_double);
+    return feature_groups_[group]->bin_mappers_[sub_feature]->ValueToBin(threshold_double);
   }
 
   /*!
-   * \brief Get meta data pointer
-   * \return Pointer of meta data
-   */
+  * \brief Get meta data pointer
+  * \return Pointer of meta data
+  */
   inline const Metadata& metadata() const { return metadata_; }
 
   /*! \brief Get Number of used features */
   inline int num_features() const { return num_features_; }
 
   /*! \brief Get Number of feature groups */
-  inline int num_feature_groups() const { return num_groups_; }
+  inline int num_feature_groups() const { return num_groups_;}
 
   /*! \brief Get Number of total features */
   inline int num_total_features() const { return num_total_features_; }
@@ -611,15 +566,11 @@ class Dataset {
   inline int label_idx() const { return label_idx_; }
 
   /*! \brief Get names of current data set */
-  inline const std::vector<std::string>& feature_names() const {
-    return feature_names_;
-  }
+  inline const std::vector<std::string>& feature_names() const { return feature_names_; }
 
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
-      Log::Fatal(
-          "Size of feature_names error, should equal with total number of "
-          "features");
+      Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
     feature_names_ = std::vector<std::string>(feature_names);
     std::unordered_set<std::string> feature_name_set;
@@ -639,14 +590,12 @@ class Dataset {
         std::replace(feature_name.begin(), feature_name.end(), ' ', '_');
       }
       if (feature_name_set.count(feature_name) > 0) {
-        Log::Fatal("Feature (%s) appears more than one time.",
-                   feature_name.c_str());
+        Log::Fatal("Feature (%s) appears more than one time.", feature_name.c_str());
       }
       feature_name_set.insert(feature_name);
     }
     if (spaceInFeatureName) {
-      Log::Warning(
-          "Find whitespaces in feature_names, replace with underlines");
+      Log::Warning("Find whitespaces in feature_names, replace with underlines");
     }
   }
 
@@ -715,10 +664,10 @@ class Dataset {
   bool use_missing_;
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
-  mutable std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
-      hist_buf_;
+  mutable std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
+
 };
 
 }  // namespace LightGBM
 
-#endif  // LightGBM_DATA_H_
+#endif   // LightGBM_DATA_H_

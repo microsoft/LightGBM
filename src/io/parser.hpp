@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_IO_PARSER_HPP_
 #define LIGHTGBM_IO_PARSER_HPP_
@@ -16,13 +15,13 @@
 
 namespace LightGBM {
 
-class CSVParser : public Parser {
+class CSVParser: public Parser {
  public:
   explicit CSVParser(int label_idx, int total_columns)
-      : label_idx_(label_idx), total_columns_(total_columns) {}
+    :label_idx_(label_idx), total_columns_(total_columns) {
+  }
   inline void ParseOneLine(const char* str,
-                           std::vector<std::pair<int, double>>* out_features,
-                           double* out_label) const override {
+    std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
     int offset = 0;
@@ -53,13 +52,13 @@ class CSVParser : public Parser {
   int total_columns_ = -1;
 };
 
-class TSVParser : public Parser {
+class TSVParser: public Parser {
  public:
   explicit TSVParser(int label_idx, int total_columns)
-      : label_idx_(label_idx), total_columns_(total_columns) {}
+    :label_idx_(label_idx), total_columns_(total_columns) {
+  }
   inline void ParseOneLine(const char* str,
-                           std::vector<std::pair<int, double>>* out_features,
-                           double* out_label) const override {
+    std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
     int offset = 0;
@@ -89,17 +88,16 @@ class TSVParser : public Parser {
   int total_columns_ = -1;
 };
 
-class LibSVMParser : public Parser {
+class LibSVMParser: public Parser {
  public:
   explicit LibSVMParser(int label_idx, int total_columns)
-      : label_idx_(label_idx), total_columns_(total_columns) {
+    :label_idx_(label_idx), total_columns_(total_columns) {
     if (label_idx > 0) {
       Log::Fatal("Label should be the first column in a LibSVM file");
     }
   }
   inline void ParseOneLine(const char* str,
-                           std::vector<std::pair<int, double>>* out_features,
-                           double* out_label) const override {
+    std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
     if (label_idx_ == 0) {
@@ -121,7 +119,9 @@ class LibSVMParser : public Parser {
     }
   }
 
-  inline int NumFeatures() const override { return total_columns_; }
+  inline int NumFeatures() const override {
+    return total_columns_;
+  }
 
  private:
   int label_idx_ = 0;
@@ -129,4 +129,4 @@ class LibSVMParser : public Parser {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_IO_PARSER_HPP_
+#endif   // LightGBM_IO_PARSER_HPP_

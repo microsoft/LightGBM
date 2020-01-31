@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_METRIC_RANK_METRIC_HPP_
 #define LIGHTGBM_METRIC_RANK_METRIC_HPP_
@@ -11,13 +10,13 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <sstream>
 #include <string>
+#include <sstream>
 #include <vector>
 
 namespace LightGBM {
 
-class NDCGMetric : public Metric {
+class NDCGMetric:public Metric {
  public:
   explicit NDCGMetric(const Config& config) {
     // get eval position
@@ -27,13 +26,16 @@ class NDCGMetric : public Metric {
     DCGCalculator::DefaultLabelGain(&label_gain);
     // initialize DCG calculator
     DCGCalculator::Init(label_gain);
-// get number of threads
-#pragma omp parallel
-#pragma omp master
-    { num_threads_ = omp_get_num_threads(); }
+    // get number of threads
+    #pragma omp parallel
+    #pragma omp master
+    {
+      num_threads_ = omp_get_num_threads();
+    }
   }
 
-  ~NDCGMetric() {}
+  ~NDCGMetric() {
+  }
   void Init(const Metadata& metadata, data_size_t num_data) override {
     for (auto k : eval_at_) {
       name_.emplace_back(std::string("ndcg@") + std::to_string(k));
@@ -59,8 +61,8 @@ class NDCGMetric : public Metric {
       }
     }
     inverse_max_dcgs_.resize(num_queries_);
-// cache the inverse max DCG for all querys, used to calculate NDCG
-#pragma omp parallel for schedule(static)
+    // cache the inverse max DCG for all querys, used to calculate NDCG
+    #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i].resize(eval_at_.size(), 0.0f);
       DCGCalculator::CalMaxDCG(eval_at_, label_ + query_boundaries_[i],
@@ -78,12 +80,15 @@ class NDCGMetric : public Metric {
     }
   }
 
-  const std::vector<std::string>& GetName() const override { return name_; }
+  const std::vector<std::string>& GetName() const override {
+    return name_;
+  }
 
-  double factor_to_bigger_better() const override { return 1.0f; }
+  double factor_to_bigger_better() const override {
+    return 1.0f;
+  }
 
-  std::vector<double> Eval(const double* score,
-                           const ObjectiveFunction*) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads_; ++i) {
@@ -91,7 +96,7 @@ class NDCGMetric : public Metric {
     }
     std::vector<double> tmp_dcg(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
-#pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
+      #pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -103,8 +108,7 @@ class NDCGMetric : public Metric {
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
                                 score + query_boundaries_[i],
-                                query_boundaries_[i + 1] - query_boundaries_[i],
-                                &tmp_dcg);
+                                query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
             result_buffer_[tid][j] += tmp_dcg[j] * inverse_max_dcgs_[i][j];
@@ -112,7 +116,7 @@ class NDCGMetric : public Metric {
         }
       }
     } else {
-#pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
+      #pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -124,12 +128,10 @@ class NDCGMetric : public Metric {
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
                                 score + query_boundaries_[i],
-                                query_boundaries_[i + 1] - query_boundaries_[i],
-                                &tmp_dcg);
+                                query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
-            result_buffer_[tid][j] +=
-                tmp_dcg[j] * inverse_max_dcgs_[i][j] * query_weights_[i];
+            result_buffer_[tid][j] += tmp_dcg[j] * inverse_max_dcgs_[i][j] * query_weights_[i];
           }
         }
       }
@@ -170,4 +172,4 @@ class NDCGMetric : public Metric {
 
 }  // namespace LightGBM
 
-#endif  // LightGBM_METRIC_RANK_METRIC_HPP_
+#endif   // LightGBM_METRIC_RANK_METRIC_HPP_

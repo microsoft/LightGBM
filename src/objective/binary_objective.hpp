@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
@@ -9,20 +8,19 @@
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
+#include <string>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <string>
 #include <vector>
 
 namespace LightGBM {
 /*!
- * \brief Objective function for binary classification
- */
-class BinaryLogloss : public ObjectiveFunction {
+* \brief Objective function for binary classification
+*/
+class BinaryLogloss: public ObjectiveFunction {
  public:
-  explicit BinaryLogloss(const Config& config,
-                         std::function<bool(label_t)> is_pos = nullptr) {
+  explicit BinaryLogloss(const Config& config, std::function<bool(label_t)> is_pos = nullptr) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
@@ -30,12 +28,11 @@ class BinaryLogloss : public ObjectiveFunction {
     is_unbalance_ = config.is_unbalance;
     scale_pos_weight_ = static_cast<double>(config.scale_pos_weight);
     if (is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
-      Log::Fatal(
-          "Cannot set is_unbalance and scale_pos_weight at the same time");
+      Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time");
     }
     is_pos_ = is_pos;
     if (is_pos_ == nullptr) {
-      is_pos_ = [](label_t label) { return label > 0; };
+      is_pos_ = [](label_t label) {return label > 0; };
     }
   }
 
@@ -63,16 +60,12 @@ class BinaryLogloss : public ObjectiveFunction {
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
     // REMOVEME: remove the warning after 2.4 version release
-    Log::Warning(
-        "Starting from the 2.1.2 version, default value for "
-        "the \"boost_from_average\" parameter in \"binary\" objective is "
-        "true.\n"
-        "This may cause significantly different results comparing to the "
-        "previous versions of LightGBM.\n"
-        "Try to set boost_from_average=false, if your old models produce bad "
-        "results");
-// count for positive and negative samples
-#pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
+    Log::Warning("Starting from the 2.1.2 version, default value for "
+                 "the \"boost_from_average\" parameter in \"binary\" objective is true.\n"
+                 "This may cause significantly different results comparing to the previous versions of LightGBM.\n"
+                 "Try to set boost_from_average=false, if your old models produce bad results");
+    // count for positive and negative samples
+    #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
       if (is_pos_(label_[i])) {
         ++cnt_positive;
@@ -91,8 +84,7 @@ class BinaryLogloss : public ObjectiveFunction {
       // not need to boost.
       need_train_ = false;
     }
-    Log::Info("Number of positive: %d, number of negative: %d", cnt_positive,
-              cnt_negative);
+    Log::Info("Number of positive: %d, number of negative: %d", cnt_positive, cnt_negative);
     // use -1 for negative class, and 1 for positive class
     label_val_[0] = -1;
     label_val_[1] = 1;
@@ -112,42 +104,35 @@ class BinaryLogloss : public ObjectiveFunction {
     label_weights_[1] *= scale_pos_weight_;
   }
 
-  void GetGradients(const double* score, score_t* gradients,
-                    score_t* hessians) const override {
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (!need_train_) {
       return;
     }
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
         const int is_pos = is_pos_(label_[i]);
         const int label = label_val_[is_pos];
         const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
-        const double response =
-            -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
+        const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight);
-        hessians[i] = static_cast<score_t>(
-            abs_response * (sigmoid_ - abs_response) * label_weight);
+        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
         const int is_pos = is_pos_(label_[i]);
         const int label = label_val_[is_pos];
         const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
-        const double response =
-            -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
+        const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
-        gradients[i] =
-            static_cast<score_t>(response * label_weight * weights_[i]);
-        hessians[i] =
-            static_cast<score_t>(abs_response * (sigmoid_ - abs_response) *
-                                 label_weight * weights_[i]);
+        gradients[i] = static_cast<score_t>(response * label_weight  * weights_[i]);
+        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
       }
     }
   }
@@ -157,14 +142,14 @@ class BinaryLogloss : public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-#pragma omp parallel for schedule(static) reduction(+ : suml, sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-#pragma omp parallel for schedule(static) reduction(+ : suml)
+      #pragma omp parallel for schedule(static) reduction(+:suml)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]);
       }
@@ -173,14 +158,17 @@ class BinaryLogloss : public ObjectiveFunction {
     pavg = std::min(pavg, 1.0 - kEpsilon);
     pavg = std::max<double>(pavg, kEpsilon);
     double initscore = std::log(pavg / (1.0f - pavg)) / sigmoid_;
-    Log::Info("[%s:%s]: pavg=%f -> initscore=%f", GetName(), __func__, pavg,
-              initscore);
+    Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, initscore);
     return initscore;
   }
 
-  bool ClassNeedTrain(int /*class_id*/) const override { return need_train_; }
+  bool ClassNeedTrain(int /*class_id*/) const override {
+    return need_train_;
+  }
 
-  const char* GetName() const override { return "binary"; }
+  const char* GetName() const override {
+    return "binary";
+  }
 
   void ConvertOutput(const double* input, double* output) const override {
     output[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[0]));
@@ -222,4 +210,4 @@ class BinaryLogloss : public ObjectiveFunction {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
+#endif   // LightGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_

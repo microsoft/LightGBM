@@ -1,37 +1,43 @@
 /*!
  * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
 #define LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
 
+
 #include <LightGBM/bin.h>
 
-#include <omp.h>
 #include <cstdint>
 #include <cstring>
+#include <omp.h>
 #include <vector>
 
 namespace LightGBM {
 
+
 template <typename VAL_T>
 class MultiValDenseBin : public MultiValBin {
- public:
+public:
+
   explicit MultiValDenseBin(data_size_t num_data, int num_bin, int num_feature)
-      : num_data_(num_data), num_bin_(num_bin), num_feature_(num_feature) {
-    data_.resize(static_cast<size_t>(num_data_) * num_feature_,
-                 static_cast<VAL_T>(0));
+    : num_data_(num_data), num_bin_(num_bin), num_feature_(num_feature) {
+    data_.resize(static_cast<size_t>(num_data_) * num_feature_, static_cast<VAL_T>(0));
   }
 
-  ~MultiValDenseBin() {}
+  ~MultiValDenseBin() {
+  }
 
-  data_size_t num_data() const override { return num_data_; }
+  data_size_t num_data() const override {
+    return num_data_;
+  }
 
-  int num_bin() const override { return num_bin_; }
+  int num_bin() const override {
+    return num_bin_;
+  }
 
-  void PushOneRow(int, data_size_t idx,
-                  const std::vector<uint32_t>& values) override {
+
+  void PushOneRow(int , data_size_t idx, const std::vector<uint32_t>& values) override {
     auto start = RowPtr(idx);
     CHECK(num_feature_ == static_cast<int>(values.size()));
     for (auto i = 0; i < num_feature_; ++i) {
@@ -39,9 +45,13 @@ class MultiValDenseBin : public MultiValBin {
     }
   }
 
-  void FinishLoad() override {}
+  void FinishLoad() override {
 
-  bool IsSparse() override { return false; }
+  }
+
+  bool IsSparse() override{
+    return false;
+  }
 
   void ReSize(data_size_t num_data) override {
     if (num_data_ != num_data) {
@@ -49,16 +59,14 @@ class MultiValDenseBin : public MultiValBin {
     }
   }
 
-#define ACC_GH(hist, i, g, h)               \
+  #define ACC_GH(hist, i, g, h) \
   const auto ti = static_cast<int>(i) << 1; \
-  hist[ti] += g;                            \
-  hist[ti + 1] += h;
+  hist[ti] += g; \
+  hist[ti + 1] += h; \
 
-  template <bool use_indices, bool use_prefetch, bool use_hessians>
-  void ConstructHistogramInner(const data_size_t* data_indices,
-                               data_size_t start, data_size_t end,
-                               const score_t* gradients,
-                               const score_t* hessians, hist_t* out) const {
+  template<bool use_indices, bool use_prefetch, bool use_hessians>
+  void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* gradients, const score_t* hessians, hist_t* out) const {
     data_size_t i = start;
     if (use_prefetch) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
@@ -66,8 +74,7 @@ class MultiValDenseBin : public MultiValBin {
 
       for (; i < pf_end; ++i) {
         const auto idx = use_indices ? data_indices[i] : i;
-        const auto pf_idx =
-            use_indices ? data_indices[i + pf_offset] : i + pf_offset;
+        const auto pf_idx = use_indices ? data_indices[i + pf_offset] : i + pf_offset;
         PREFETCH_T0(gradients + pf_idx);
         if (use_hessians) {
           PREFETCH_T0(hessians + pf_idx);
@@ -97,43 +104,37 @@ class MultiValDenseBin : public MultiValBin {
       }
     }
   }
-#undef ACC_GH
+  #undef ACC_GH
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
-                          data_size_t end, const score_t* gradients,
-                          const score_t* hessians, hist_t* out) const override {
-    ConstructHistogramInner<true, true, true>(data_indices, start, end,
-                                              gradients, hessians, out);
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* gradients, const score_t* hessians,
+    hist_t* out) const override {
+    ConstructHistogramInner<true, true, true>(data_indices, start, end, gradients, hessians, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-                          const score_t* gradients, const score_t* hessians,
-                          hist_t* out) const override {
-    ConstructHistogramInner<false, false, true>(nullptr, start, end, gradients,
-                                                hessians, out);
+    const score_t* gradients, const score_t* hessians,
+    hist_t* out) const override {
+    ConstructHistogramInner<false, false, true>(nullptr, start, end, gradients, hessians, out);
   }
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
-                          data_size_t end, const score_t* gradients,
-                          hist_t* out) const override {
-    ConstructHistogramInner<true, true, false>(data_indices, start, end,
-                                               gradients, nullptr, out);
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* gradients,
+    hist_t* out) const override {
+    ConstructHistogramInner<true, true, false>(data_indices, start, end, gradients, nullptr, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-                          const score_t* gradients,
-                          hist_t* out) const override {
-    ConstructHistogramInner<false, false, false>(nullptr, start, end, gradients,
-                                                 nullptr, out);
+    const score_t* gradients,
+    hist_t* out) const override {
+    ConstructHistogramInner<false, false, false>(nullptr, start, end, gradients, nullptr, out);
   }
 
-  void CopySubset(const Bin* full_bin, const data_size_t* used_indices,
-                  data_size_t num_used_indices) override {
+  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
     data_.clear();
     for (data_size_t i = 0; i < num_used_indices; ++i) {
-      for (int64_t j = other_bin->RowPtr(used_indices[i]);
-           j < other_bin->RowPtr(used_indices[i] + 1); ++j) {
+      for (int64_t j = other_bin->RowPtr(used_indices[i]); j < other_bin->RowPtr(used_indices[i] + 1); ++j) {
         data_.push_back(other_bin->data_[j]);
       }
     }
@@ -145,23 +146,23 @@ class MultiValDenseBin : public MultiValBin {
 
   MultiValDenseBin<VAL_T>* Clone() override;
 
- private:
+private:
   data_size_t num_data_;
   int num_bin_;
   int num_feature_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>> data_;
 
   MultiValDenseBin<VAL_T>(const MultiValDenseBin<VAL_T>& other)
-      : num_data_(other.num_data_),
-        num_bin_(other.num_bin_),
-        num_feature_(other.num_feature_),
-        data_(other.data_) {}
+    : num_data_(other.num_data_), num_bin_(other.num_bin_), num_feature_(other.num_feature_), data_(other.data_) {
+  }
 };
 
-template <typename VAL_T>
+template<typename VAL_T>
 MultiValDenseBin<VAL_T>* MultiValDenseBin<VAL_T>::Clone() {
   return new MultiValDenseBin<VAL_T>(*this);
 }
 
+
+
 }  // namespace LightGBM
-#endif  // LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
+#endif   // LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_

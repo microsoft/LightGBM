@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 #define LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
@@ -16,30 +15,30 @@
 namespace LightGBM {
 
 /*!
- * \brief used to find split candidates for a leaf
- */
+* \brief used to find split candidates for a leaf
+*/
 class LeafSplits {
  public:
   explicit LeafSplits(data_size_t num_data)
-      : num_data_in_leaf_(num_data),
-        num_data_(num_data),
-        data_indices_(nullptr) {}
+    :num_data_in_leaf_(num_data), num_data_(num_data),
+    data_indices_(nullptr) {
+  }
   void ResetNumData(data_size_t num_data) {
     num_data_ = num_data;
     num_data_in_leaf_ = num_data;
   }
-  ~LeafSplits() {}
+  ~LeafSplits() {
+  }
 
   /*!
 
-  * \brief Init split on current leaf on partial data.
+  * \brief Init split on current leaf on partial data. 
   * \param leaf Index of current leaf
   * \param data_partition current data partition
   * \param sum_gradients
   * \param sum_hessians
   */
-  void Init(int leaf, const DataPartition* data_partition, double sum_gradients,
-            double sum_hessians) {
+  void Init(int leaf, const DataPartition* data_partition, double sum_gradients, double sum_hessians) {
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     sum_gradients_ = sum_gradients;
@@ -53,10 +52,12 @@ class LeafSplits {
     max_val_ = max;
   }
 
+
   /*!
-   * \brief Init splits on current leaf, it will traverse all data to sum up the
-   * results \param gradients \param hessians
-   */
+  * \brief Init splits on current leaf, it will traverse all data to sum up the results
+  * \param gradients
+  * \param hessians
+  */
   void Init(const score_t* gradients, const score_t* hessians) {
     num_data_in_leaf_ = num_data_;
     leaf_index_ = 0;
@@ -75,14 +76,13 @@ class LeafSplits {
   }
 
   /*!
-   * \brief Init splits on current leaf of partial data.
-   * \param leaf Index of current leaf
-   * \param data_partition current data partition
-   * \param gradients
-   * \param hessians
-   */
-  void Init(int leaf, const DataPartition* data_partition,
-            const score_t* gradients, const score_t* hessians) {
+  * \brief Init splits on current leaf of partial data.
+  * \param leaf Index of current leaf
+  * \param data_partition current data partition
+  * \param gradients
+  * \param hessians
+  */
+  void Init(int leaf, const DataPartition* data_partition, const score_t* gradients, const score_t* hessians) {
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     double tmp_sum_gradients = 0.0f;
@@ -99,10 +99,12 @@ class LeafSplits {
     max_val_ = std::numeric_limits<double>::max();
   }
 
+
   /*!
-   * \brief Init splits on current leaf, only update sum_gradients and
-   * sum_hessians \param sum_gradients \param sum_hessians
-   */
+  * \brief Init splits on current leaf, only update sum_gradients and sum_hessians
+  * \param sum_gradients
+  * \param sum_hessians
+  */
   void Init(double sum_gradients, double sum_hessians) {
     leaf_index_ = 0;
     sum_gradients_ = sum_gradients;
@@ -112,8 +114,8 @@ class LeafSplits {
   }
 
   /*!
-   * \brief Init splits on current leaf
-   */
+  * \brief Init splits on current leaf
+  */
   void Init() {
     leaf_index_ = -1;
     data_indices_ = nullptr;
@@ -121,6 +123,7 @@ class LeafSplits {
     min_val_ = -std::numeric_limits<double>::max();
     max_val_ = std::numeric_limits<double>::max();
   }
+
 
   /*! \brief Get current leaf index */
   int LeafIndex() const { return leaf_index_; }
@@ -141,6 +144,7 @@ class LeafSplits {
   /*! \brief Get indices of data of current leaf */
   const data_size_t* data_indices() const { return data_indices_; }
 
+
  private:
   /*! \brief current leaf index */
   int leaf_index_;
@@ -159,4 +163,4 @@ class LeafSplits {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_TREELEARNER_LEAF_SPLITS_HPP_
+#endif   // LightGBM_TREELEARNER_LEAF_SPLITS_HPP_

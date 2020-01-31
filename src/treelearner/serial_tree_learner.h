@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
@@ -12,11 +11,11 @@
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/random.h>
 
+#include <string>
 #include <cmath>
 #include <cstdio>
 #include <memory>
 #include <random>
-#include <string>
 #include <vector>
 
 #include "data_partition.hpp"
@@ -25,9 +24,8 @@
 #include "split_info.hpp"
 
 #ifdef USE_GPU
-// Use 4KBytes aligned allocator for ordered gradients and ordered hessians when
-// GPU is enabled. This is necessary to pin the two arrays in memory and make
-// transferring faster.
+// Use 4KBytes aligned allocator for ordered gradients and ordered hessians when GPU is enabled.
+// This is necessary to pin the two arrays in memory and make transferring faster.
 #include <boost/align/aligned_allocator.hpp>
 #endif
 
@@ -37,9 +35,9 @@ namespace LightGBM {
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
 /*!
- * \brief Used for learning a tree by single machine
- */
-class SerialTreeLearner : public TreeLearner {
+* \brief Used for learning a tree by single machine
+*/
+class SerialTreeLearner: public TreeLearner {
  public:
   friend CostEfficientGradientBoosting;
   explicit SerialTreeLearner(const Config* config);
@@ -52,29 +50,22 @@ class SerialTreeLearner : public TreeLearner {
 
   void ResetConfig(const Config* config) override;
 
-  Tree* Train(const score_t* gradients, const score_t* hessians,
-              bool is_constant_hessian, const Json& forced_split_json) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
+              const Json& forced_split_json) override;
 
-  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients,
-                          const score_t* hessians) const override;
+  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
-  Tree* FitByExistingTree(const Tree* old_tree,
-                          const std::vector<int>& leaf_pred,
-                          const score_t* gradients,
-                          const score_t* hessians) override;
+  Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
+                          const score_t* gradients, const score_t* hessians) override;
 
-  void SetBaggingData(const data_size_t* used_indices,
-                      data_size_t num_data) override {
+  void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     data_partition_->SetUsedDataIndices(used_indices, num_data);
   }
 
-  void AddPredictionToScore(const Tree* tree,
-                            double* out_score) const override {
-    if (tree->num_leaves() <= 1) {
-      return;
-    }
+  void AddPredictionToScore(const Tree* tree, double* out_score) const override {
+    if (tree->num_leaves() <= 1) { return; }
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
-#pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
@@ -85,58 +76,51 @@ class SerialTreeLearner : public TreeLearner {
     }
   }
 
-  void RenewTreeOutput(
-      Tree* tree, const ObjectiveFunction* obj,
-      std::function<double(const label_t*, int)> residual_getter,
-      data_size_t total_num_data, const data_size_t* bag_indices,
-      data_size_t bag_cnt) const override;
+  void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
+                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
   bool IsHistColWise() const override { return is_hist_colwise_; }
 
  protected:
+
   void GetMultiValBin(const Dataset* dataset, bool is_first_time);
 
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
-   * \brief Some initial works before training
-   */
+  * \brief Some initial works before training
+  */
   virtual void BeforeTrain();
 
   /*!
-   * \brief Some initial works before FindBestSplit
-   */
-  virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf,
-                                   int right_leaf);
+  * \brief Some initial works before FindBestSplit
+  */
+  virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf);
 
   virtual void FindBestSplits();
 
-  virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
-                                   bool use_subtract);
+  virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
-  virtual void FindBestSplitsFromHistograms(
-      const std::vector<int8_t>& is_feature_used, bool use_subtract);
+  virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
   /*!
-   * \brief Partition tree and data according best split.
-   * \param tree Current tree, will be splitted on this function.
-   * \param best_leaf The index of leaf that will be splitted.
-   * \param left_leaf The index of left leaf after splitted.
-   * \param right_leaf The index of right leaf after splitted.
-   */
-  virtual void Split(Tree* tree, int best_leaf, int* left_leaf,
-                     int* right_leaf);
+  * \brief Partition tree and data according best split.
+  * \param tree Current tree, will be splitted on this function.
+  * \param best_leaf The index of leaf that will be splitted.
+  * \param left_leaf The index of left leaf after splitted.
+  * \param right_leaf The index of right leaf after splitted.
+  */
+  virtual void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
 
-  /* Force splits with forced_split_json dict and then return num splits
-   * forced.*/
-  virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json,
-                              int* left_leaf, int* right_leaf, int* cur_depth,
-                              bool* aborted_last_force_split);
+  /* Force splits with forced_split_json dict and then return num splits forced.*/
+  virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
+                              int* right_leaf, int* cur_depth,
+                              bool *aborted_last_force_split);
 
   /*!
-   * \brief Get the number of data in a leaf
-   * \param leaf_idx The index of leaf
-   * \return The number of data in the leaf_idx leaf
-   */
+  * \brief Get the number of data in a leaf
+  * \param leaf_idx The index of leaf
+  * \return The number of data in the leaf_idx leaf
+  */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
 
   /*! \brief number of data */
@@ -153,8 +137,7 @@ class SerialTreeLearner : public TreeLearner {
   std::unique_ptr<DataPartition> data_partition_;
   /*! \brief used for generate used features */
   Random random_;
-  /*! \brief used for sub feature training, is_feature_used_[i] = false means
-   * don't used feature i */
+  /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
   std::vector<int8_t> is_feature_used_;
   /*! \brief used feature indices in current tree */
   std::vector<int> used_feature_indices_;
@@ -177,26 +160,19 @@ class SerialTreeLearner : public TreeLearner {
   std::vector<int> valid_feature_indices_;
 
 #ifdef USE_GPU
-  /*! \brief gradients of current iteration, ordered for cache optimized,
-   * aligned to 4K page */
-  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>>
-      ordered_gradients_;
-  /*! \brief hessians of current iteration, ordered for cache optimized, aligned
-   * to 4K page */
-  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>>
-      ordered_hessians_;
+  /*! \brief gradients of current iteration, ordered for cache optimized, aligned to 4K page */
+  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
+  /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
+  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
-  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>
-      ordered_gradients_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
-  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>
-      ordered_hessians_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_hessians_;
 #endif
 
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
-  std::vector<char, Common::AlignmentAllocator<char, kAlignedSize>>
-      is_data_in_leaf_;
+  std::vector<char, Common::AlignmentAllocator<char, kAlignedSize>> is_data_in_leaf_;
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
@@ -209,8 +185,7 @@ class SerialTreeLearner : public TreeLearner {
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
 
-inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(
-    int leaf_idx) const {
+inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {
   if (leaf_idx >= 0) {
     return data_partition_->leaf_count(leaf_idx);
   } else {
@@ -219,4 +194,4 @@ inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(
 }
 
 }  // namespace LightGBM
-#endif  // LightGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
+#endif   // LightGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_

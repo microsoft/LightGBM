@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/objective_function.h>
 
@@ -14,8 +13,7 @@
 
 namespace LightGBM {
 
-ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(
-    const std::string& type, const Config& config) {
+ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
   if (type == std::string("regression")) {
     return new RegressionL2loss(config);
   } else if (type == std::string("regression_l1")) {
@@ -54,8 +52,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(
   Log::Fatal("Unknown objective type name: %s", type.c_str());
 }
 
-ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(
-    const std::string& str) {
+ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& str) {
   auto strs = Common::Split(str.c_str(), ' ');
   auto type = strs[0];
   if (type == std::string("regression")) {

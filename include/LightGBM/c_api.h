@@ -1,15 +1,14 @@
 /*!
  * \file c_api.h
  * \copyright Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- *            Licensed under the MIT License. See LICENSE file in the project
- * root for license information. \note To avoid type conversion on large data,
- * the most of our exposed interface supports both float32 and float64, except
- * the following:
+ *            Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * \note
+ * To avoid type conversion on large data, the most of our exposed interface supports both float32 and float64,
+ * except the following:
  *   1. gradient and Hessian;
  *   2. current score for training and validation data.
  *   .
- * The reason is that they are called frequently, and the type conversion on
- * them may be time-cost.
+ * The reason is that they are called frequently, and the type conversion on them may be time-cost.
  */
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
@@ -19,23 +18,20 @@
 #include <cstdint>
 #include <cstring>
 
-typedef void* DatasetHandle; /*!< \brief Handle of dataset. */
-typedef void* BoosterHandle; /*!< \brief Handle of booster. */
 
-#define C_API_DTYPE_FLOAT32 (0) /*!< \brief float32 (single precision float). \
-                                 */
-#define C_API_DTYPE_FLOAT64 (1) /*!< \brief float64 (double precision float). \
-                                 */
-#define C_API_DTYPE_INT32 (2)   /*!< \brief int32. */
-#define C_API_DTYPE_INT64 (3)   /*!< \brief int64. */
-#define C_API_DTYPE_INT8 (4)    /*!< \brief int8. */
+typedef void* DatasetHandle;  /*!< \brief Handle of dataset. */
+typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
 
-#define C_API_PREDICT_NORMAL \
-  (0) /*!< \brief Normal prediction, with transform (if needed). */
-#define C_API_PREDICT_RAW_SCORE (1)  /*!< \brief Predict raw score. */
-#define C_API_PREDICT_LEAF_INDEX (2) /*!< \brief Predict leaf index. */
-#define C_API_PREDICT_CONTRIB \
-  (3) /*!< \brief Predict feature contributions (SHAP values). */
+#define C_API_DTYPE_FLOAT32 (0)  /*!< \brief float32 (single precision float). */
+#define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
+#define C_API_DTYPE_INT32   (2)  /*!< \brief int32. */
+#define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
+#define C_API_DTYPE_INT8    (4)  /*!< \brief int8. */
+
+#define C_API_PREDICT_NORMAL     (0)  /*!< \brief Normal prediction, with transform (if needed). */
+#define C_API_PREDICT_RAW_SCORE  (1)  /*!< \brief Predict raw score. */
+#define C_API_PREDICT_LEAF_INDEX (2)  /*!< \brief Predict leaf index. */
+#define C_API_PREDICT_CONTRIB    (3)  /*!< \brief Predict feature contributions (SHAP values). */
 
 /*!
  * \brief Get string message of the last error.
@@ -49,8 +45,7 @@ LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
  * \brief Load dataset from file (like LightGBM CLI version does).
  * \param filename The name of the file
  * \param parameters Additional parameters
- * \param reference Used to align bin mapper
- with other dataset, nullptr means isn't used
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out A loaded dataset
  * \return 0 when succeed, -1 when failure happens
  */
@@ -60,148 +55,167 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
                                                  DatasetHandle* out);
 
 /*!
- * \brief Allocate the space for dataset and bucket feature bins according to
- * sampled data. \param sample_data Sampled data, grouped by the column \param
- * sample_indices Indices of sampled data \param ncol Number of columns \param
- * num_per_col Size of each sampling column \param num_sample_row Number of
- * sampled rows \param num_total_row Number of total rows \param parameters
- * Additional parameters \param[out] out Created dataset \return 0 when succeed,
- * -1 when failure happens
+ * \brief Allocate the space for dataset and bucket feature bins according to sampled data.
+ * \param sample_data Sampled data, grouped by the column
+ * \param sample_indices Indices of sampled data
+ * \param ncol Number of columns
+ * \param num_per_col Size of each sampling column
+ * \param num_sample_row Number of sampled rows
+ * \param num_total_row Number of total rows
+ * \param parameters Additional parameters
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledColumn(
-    double** sample_data, int** sample_indices, int32_t ncol,
-    const int* num_per_col, int32_t num_sample_row, int32_t num_total_row,
-    const char* parameters, DatasetHandle* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
+                                                          int** sample_indices,
+                                                          int32_t ncol,
+                                                          const int* num_per_col,
+                                                          int32_t num_sample_row,
+                                                          int32_t num_total_row,
+                                                          const char* parameters,
+                                                          DatasetHandle* out);
 
 /*!
- * \brief Allocate the space for dataset and bucket feature bins according to
- * reference dataset. \param reference Used to align bin mapper with other
- * dataset \param num_total_row Number of total rows \param[out] out Created
- * dataset \return 0 when succeed, -1 when failure happens
+ * \brief Allocate the space for dataset and bucket feature bins according to reference dataset.
+ * \param reference Used to align bin mapper with other dataset
+ * \param num_total_row Number of total rows
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(
-    const DatasetHandle reference, int64_t num_total_row, DatasetHandle* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle reference,
+                                                    int64_t num_total_row,
+                                                    DatasetHandle* out);
 
 /*!
- * \brief Push data to existing dataset, if ``nrow + start_row ==
- num_total_row``, will call ``dataset->FinishLoad``.
+ * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
  * \param dataset Handle of dataset
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
  * \param ncol Number of columns
  * \param start_row Row start index
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
-                                           const void* data, int data_type,
-                                           int32_t nrow, int32_t ncol,
+                                           const void* data,
+                                           int data_type,
+                                           int32_t nrow,
+                                           int32_t ncol,
                                            int32_t start_row);
 
 /*!
- * \brief Push data to existing dataset, if ``nrow + start_row ==
- num_total_row``, will call ``dataset->FinishLoad``.
+ * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
  * \param dataset Handle of dataset
  * \param indptr Pointer to row headers
- * \param indptr_type Type of ``indptr``,
- can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
  * \param indices Pointer to column indices
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col Number of columns
  * \param start_row Row start index
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(
-    DatasetHandle dataset, const void* indptr, int indptr_type,
-    const int32_t* indices, const void* data, int data_type, int64_t nindptr,
-    int64_t nelem, int64_t num_col, int64_t start_row);
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
+                                                const void* indptr,
+                                                int indptr_type,
+                                                const int32_t* indices,
+                                                const void* data,
+                                                int data_type,
+                                                int64_t nindptr,
+                                                int64_t nelem,
+                                                int64_t num_col,
+                                                int64_t start_row);
 
 /*!
  * \brief Create a dataset from CSR format.
  * \param indptr Pointer to row headers
- * \param indptr_type Type of ``indptr``,
- can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
  * \param indices Pointer to column indices
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col Number of columns
  * \param parameters Additional parameters
- * \param reference Used to align bin mapper
- with other dataset, nullptr means isn't used
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(
-    const void* indptr, int indptr_type, const int32_t* indices,
-    const void* data, int data_type, int64_t nindptr, int64_t nelem,
-    int64_t num_col, const char* parameters, const DatasetHandle reference,
-    DatasetHandle* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
+                                                int indptr_type,
+                                                const int32_t* indices,
+                                                const void* data,
+                                                int data_type,
+                                                int64_t nindptr,
+                                                int64_t nelem,
+                                                int64_t num_col,
+                                                const char* parameters,
+                                                const DatasetHandle reference,
+                                                DatasetHandle* out);
 
 /*!
  * \brief Create a dataset from CSR format through callbacks.
- * \param get_row_funptr Pointer to
- ``std::function<void(int idx, std::vector<std::pair<int, double>>& ret)>``
- (called for every row and expected to clear and fill ``ret``)
+ * \param get_row_funptr Pointer to ``std::function<void(int idx, std::vector<std::pair<int, double>>& ret)>``
+ *                       (called for every row and expected to clear and fill ``ret``)
  * \param num_rows Number of rows
  * \param num_col Number of columns
  * \param parameters Additional parameters
- * \param reference Used to align bin mapper
- with other dataset, nullptr means isn't used
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSRFunc(
-    void* get_row_funptr, int num_rows, int64_t num_col, const char* parameters,
-    const DatasetHandle reference, DatasetHandle* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
+                                                    int num_rows,
+                                                    int64_t num_col,
+                                                    const char* parameters,
+                                                    const DatasetHandle reference,
+                                                    DatasetHandle* out);
 
 /*!
  * \brief Create a dataset from CSC format.
  * \param col_ptr Pointer to column headers
- * \param col_ptr_type Type of ``col_ptr``,
- can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param col_ptr_type Type of ``col_ptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
  * \param indices Pointer to row indices
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param ncol_ptr Number of columns in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
  * \param num_row Number of rows
  * \param parameters Additional parameters
- * \param reference Used to align bin mapper
- with other dataset, nullptr means isn't used
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(
-    const void* col_ptr, int col_ptr_type, const int32_t* indices,
-    const void* data, int data_type, int64_t ncol_ptr, int64_t nelem,
-    int64_t num_row, const char* parameters, const DatasetHandle reference,
-    DatasetHandle* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
+                                                int col_ptr_type,
+                                                const int32_t* indices,
+                                                const void* data,
+                                                int data_type,
+                                                int64_t ncol_ptr,
+                                                int64_t nelem,
+                                                int64_t num_row,
+                                                const char* parameters,
+                                                const DatasetHandle reference,
+                                                DatasetHandle* out);
 
 /*!
  * \brief Create dataset from dense matrix.
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
  * \param ncol Number of columns
  * \param is_row_major 1 for row-major, 0 for column-major
  * \param parameters Additional parameters
- * \param reference Used to align bin mapper
- with other dataset, nullptr means isn't used
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data, int data_type,
-                                                int32_t nrow, int32_t ncol,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
+                                                int data_type,
+                                                int32_t nrow,
+                                                int32_t ncol,
                                                 int is_row_major,
                                                 const char* parameters,
                                                 const DatasetHandle reference,
@@ -211,21 +225,24 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data, int data_type,
  * \brief Create dataset from array of dense matrices.
  * \param nmat Number of dense matrices
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
  * \param ncol Number of columns
  * \param is_row_major 1 for row-major, 0 for column-major
  * \param parameters Additional parameters
- * \param reference Used to align bin mapper
- with other dataset, nullptr means isn't used
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(
-    int32_t nmat, const void** data, int data_type, int32_t* nrow, int32_t ncol,
-    int is_row_major, const char* parameters, const DatasetHandle reference,
-    DatasetHandle* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
+                                                 const void** data,
+                                                 int data_type,
+                                                 int32_t* nrow,
+                                                 int32_t ncol,
+                                                 int is_row_major,
+                                                 const char* parameters,
+                                                 const DatasetHandle reference,
+                                                 DatasetHandle* out);
 
 /*!
  * \brief Create subset of a data.
@@ -256,8 +273,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetFeatureNames(DatasetHandle handle,
 /*!
  * \brief Get feature names of dataset.
  * \param handle Handle of dataset
- * \param[out] feature_names Feature names,
- should pre-allocate memory
+ * \param[out] feature_names Feature names, should pre-allocate memory
  * \param[out] num_feature_names Number of feature names
  * \return 0 when succeed, -1 when failure happens
  */
@@ -297,19 +313,17 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetDumpText(DatasetHandle handle,
  * - \a label and \a weight only work for ``C_API_DTYPE_FLOAT32``;
  * - \a init_score only works for ``C_API_DTYPE_FLOAT64``.
  * \param handle Handle of dataset
- * \param field_name Field name, can be \a label, \a weight, \a init_score, \a
- group
+ * \param field_name Field name, can be \a label, \a weight, \a init_score, \a group
  * \param field_data Pointer to data vector
  * \param num_element Number of elements in ``field_data``
- * \param type Type of ``field_data`` pointer,
- can be ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or
- ``C_API_DTYPE_FLOAT64``
+ * \param type Type of ``field_data`` pointer, can be ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
                                            const char* field_name,
                                            const void* field_data,
-                                           int num_element, int type);
+                                           int num_element,
+                                           int type);
 
 /*!
  * \brief Get info vector from dataset.
@@ -317,14 +331,14 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
  * \param field_name Field name
  * \param[out] out_len Used to set result length
  * \param[out] out_ptr Pointer to the result
- * \param[out] out_type Type of result pointer,
- can be ``C_API_DTYPE_INT8``, ``C_API_DTYPE_INT32``,
- ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param[out] out_type Type of result pointer, can be ``C_API_DTYPE_INT8``, ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
-                                           const char* field_name, int* out_len,
-                                           const void** out_ptr, int* out_type);
+                                           const char* field_name,
+                                           int* out_len,
+                                           const void** out_ptr,
+                                           int* out_type);
 
 /*!
  * \brief Update parameters for a dataset.
@@ -340,7 +354,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetUpdateParam(DatasetHandle handle,
  * \param[out] out The address to hold number of data points
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumData(DatasetHandle handle, int* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumData(DatasetHandle handle,
+                                             int* out);
 
 /*!
  * \brief Get number of features.
@@ -348,7 +363,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumData(DatasetHandle handle, int* out);
  * \param[out] out The address to hold number of features
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle, int* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
+                                                int* out);
 
 /*!
  * \brief Add features from ``source`` to ``target``.
@@ -409,12 +425,12 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFree(BoosterHandle handle);
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterShuffleModels(BoosterHandle handle,
-                                                int start_iter, int end_iter);
+                                                int start_iter,
+                                                int end_iter);
 
 /*!
  * \brief Merge model from ``other_handle`` into ``handle``.
- * \param handle Handle of booster,
- will merge another booster into this one
+ * \param handle Handle of booster, will merge another booster into this one
  * \param other_handle Other handle of booster
  * \return 0 when succeed, -1 when failure happens
  */
@@ -436,8 +452,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterAddValidData(BoosterHandle handle,
  * \param train_data Training dataset
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterResetTrainingData(
-    BoosterHandle handle, const DatasetHandle train_data);
+LIGHTGBM_C_EXPORT int LGBM_BoosterResetTrainingData(BoosterHandle handle,
+                                                    const DatasetHandle train_data);
 
 /*!
  * \brief Reset config for booster.
@@ -460,9 +476,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle,
 /*!
  * \brief Update the model for one iteration.
  * \param handle Handle of booster
- * \param[out] is_finished 1 means the update
- was successfully finished (cannot split any more),
- 0 indicates failure
+ * \param[out] is_finished 1 means the update was successfully finished (cannot split any more), 0 indicates failure
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle,
@@ -477,7 +491,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
-                                        const int32_t* leaf_preds, int32_t nrow,
+                                        const int32_t* leaf_preds,
+                                        int32_t nrow,
                                         int32_t ncol);
 
 /*!
@@ -486,9 +501,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
  * \param handle Handle of booster
  * \param grad The first order derivative (gradient) statistics
  * \param hess The second order derivative (Hessian) statistics
- * \param[out] is_finished 1 means the update was
- successfully finished (cannot split any more),
- 0 indicates failure
+ * \param[out] is_finished 1 means the update was successfully finished (cannot split any more), 0 indicates failure
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
@@ -518,8 +531,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetCurrentIteration(BoosterHandle handle,
  * \param[out] out_tree_per_iteration Number of trees per iteration
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterNumModelPerIteration(
-    BoosterHandle handle, int* out_tree_per_iteration);
+LIGHTGBM_C_EXPORT int LGBM_BoosterNumModelPerIteration(BoosterHandle handle,
+                                                       int* out_tree_per_iteration);
 
 /*!
  * \brief Get number of weak sub-models.
@@ -543,12 +556,12 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle,
  * \brief Get names of evaluation datasets.
  * \param handle Handle of booster
  * \param[out] out_len Total number of evaluation datasets
- * \param[out] out_strs Names of evaluation datasets,
- should pre-allocate memory
+ * \param[out] out_strs Names of evaluation datasets, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle,
-                                               int* out_len, char** out_strs);
+                                               int* out_len,
+                                               char** out_strs);
 
 /*!
  * \brief Get names of features.
@@ -573,45 +586,43 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumFeature(BoosterHandle handle,
 /*!
  * \brief Get evaluation for training data and validation data.
  * \note
- *   1. You should call ``LGBM_BoosterGetEvalNames`` first to get the names of
- evaluation datasets.
- *   2. You should pre-allocate memory for ``out_results``, you can get its
- length by ``LGBM_BoosterGetEvalCounts``.
+ *   1. You should call ``LGBM_BoosterGetEvalNames`` first to get the names of evaluation datasets.
+ *   2. You should pre-allocate memory for ``out_results``, you can get its length by ``LGBM_BoosterGetEvalCounts``.
  * \param handle Handle of booster
- * \param data_idx Index of data, 0: training data,
- 1: 1st validation data, 2: 2nd validation data and so on
+ * \param data_idx Index of data, 0: training data, 1: 1st validation data, 2: 2nd validation data and so on
  * \param[out] out_len Length of output result
  * \param[out] out_results Array with evaluation results
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetEval(BoosterHandle handle, int data_idx,
-                                          int* out_len, double* out_results);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEval(BoosterHandle handle,
+                                          int data_idx,
+                                          int* out_len,
+                                          double* out_results);
 
 /*!
  * \brief Get number of predictions for training data and validation data
  *        (this can be used to support customized evaluation functions).
  * \param handle Handle of booster
- * \param data_idx Index of data, 0: training data,
- 1: 1st validation data, 2: 2nd validation data and so on
+ * \param data_idx Index of data, 0: training data, 1: 1st validation data, 2: 2nd validation data and so on
  * \param[out] out_len Number of predictions
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumPredict(BoosterHandle handle,
-                                                int data_idx, int64_t* out_len);
+                                                int data_idx,
+                                                int64_t* out_len);
 
 /*!
  * \brief Get prediction for training data and validation data.
  * \note
- * You should pre-allocate memory for ``out_result``, its length is equal to
- ``num_class * num_data``.
+ * You should pre-allocate memory for ``out_result``, its length is equal to ``num_class * num_data``.
  * \param handle Handle of booster
- * \param data_idx Index of data, 0: training data,
- 1: 1st validation data, 2: 2nd validation data and so on
+ * \param data_idx Index of data, 0: training data, 1: 1st validation data, 2: 2nd validation data and so on
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle, int data_idx,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle,
+                                             int data_idx,
                                              int64_t* out_len,
                                              double* out_result);
 
@@ -625,18 +636,18 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle, int data_idx,
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
- * \param num_iteration Number of iterations for prediction,
- <= 0 means no limit
- * \param parameter Other parameters for prediction,
- e.g. early stopping for prediction
- * \param result_filename Filename of result file in which
- predictions will be written
+ * \param num_iteration Number of iterations for prediction, <= 0 means no limit
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
+ * \param result_filename Filename of result file in which predictions will be written
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(
-    BoosterHandle handle, const char* data_filename, int data_has_header,
-    int predict_type, int num_iteration, const char* parameter,
-    const char* result_filename);
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
+                                                 const char* data_filename,
+                                                 int data_has_header,
+                                                 int predict_type,
+                                                 int num_iteration,
+                                                 const char* parameter,
+                                                 const char* result_filename);
 
 /*!
  * \brief Get number of predictions.
@@ -652,7 +663,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
-                                                 int num_row, int predict_type,
+                                                 int num_row,
+                                                 int predict_type,
                                                  int num_iteration,
                                                  int64_t* out_len);
 
@@ -660,20 +672,15 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
  * \brief Make prediction for a new dataset in CSR format.
  * \note
  * You should pre-allocate memory for ``out_result``:
- *   - for normal and raw score, its length is equal to ``num_class *
- num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data *
- num_iteration``;
- *   - for feature contributions, its length is equal to ``num_class * num_data
- * (num_feature + 1)``.
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param indptr Pointer to row headers
- * \param indptr_type Type of ``indptr``,
- can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
  * \param indices Pointer to column indices
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col Number of columns
@@ -683,38 +690,40 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
- * \param parameter Other parameters for prediction, e.g. early stopping for
- prediction
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(
-    BoosterHandle handle, const void* indptr, int indptr_type,
-    const int32_t* indices, const void* data, int data_type, int64_t nindptr,
-    int64_t nelem, int64_t num_col, int predict_type, int num_iteration,
-    const char* parameter, int64_t* out_len, double* out_result);
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
+                                                const void* indptr,
+                                                int indptr_type,
+                                                const int32_t* indices,
+                                                const void* data,
+                                                int data_type,
+                                                int64_t nindptr,
+                                                int64_t nelem,
+                                                int64_t num_col,
+                                                int predict_type,
+                                                int num_iteration,
+                                                const char* parameter,
+                                                int64_t* out_len,
+                                                double* out_result);
 
 /*!
- * \brief Make prediction for a new dataset in CSR format. This method re-uses
- the internal predictor structure
+ * \brief Make prediction for a new dataset in CSR format. This method re-uses the internal predictor structure
  *        from previous calls and is optimized for single row invocation.
  * \note
  * You should pre-allocate memory for ``out_result``:
- *   - for normal and raw score, its length is equal to ``num_class *
- num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data *
- num_iteration``;
- *   - for feature contributions, its length is equal to ``num_class * num_data
- * (num_feature + 1)``.
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param indptr Pointer to row headers
- * \param indptr_type Type of ``indptr``,
- can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
  * \param indices Pointer to column indices
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col Number of columns
@@ -724,36 +733,39 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
- * \param parameter Other parameters for prediction, e.g. early stopping for
- prediction
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(
-    BoosterHandle handle, const void* indptr, int indptr_type,
-    const int32_t* indices, const void* data, int data_type, int64_t nindptr,
-    int64_t nelem, int64_t num_col, int predict_type, int num_iteration,
-    const char* parameter, int64_t* out_len, double* out_result);
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
+                                                         const void* indptr,
+                                                         int indptr_type,
+                                                         const int32_t* indices,
+                                                         const void* data,
+                                                         int data_type,
+                                                         int64_t nindptr,
+                                                         int64_t nelem,
+                                                         int64_t num_col,
+                                                         int predict_type,
+                                                         int num_iteration,
+                                                         const char* parameter,
+                                                         int64_t* out_len,
+                                                         double* out_result);
 
 /*!
  * \brief Make prediction for a new dataset in CSC format.
  * \note
  * You should pre-allocate memory for ``out_result``:
- *   - for normal and raw score, its length is equal to ``num_class *
- num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data *
- num_iteration``;
- *   - for feature contributions, its length is equal to ``num_class * num_data
- * (num_feature + 1)``.
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param col_ptr Pointer to column headers
- * \param col_ptr_type Type of ``col_ptr``,
- can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param col_ptr_type Type of ``col_ptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
  * \param indices Pointer to row indices
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param ncol_ptr Number of columns in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
  * \param num_row Number of rows
@@ -763,32 +775,36 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
  * \param num_iteration Number of iteration for prediction, <= 0 means no limit
- * \param parameter Other parameters for prediction, e.g. early stopping for
- prediction
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(
-    BoosterHandle handle, const void* col_ptr, int col_ptr_type,
-    const int32_t* indices, const void* data, int data_type, int64_t ncol_ptr,
-    int64_t nelem, int64_t num_row, int predict_type, int num_iteration,
-    const char* parameter, int64_t* out_len, double* out_result);
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
+                                                const void* col_ptr,
+                                                int col_ptr_type,
+                                                const int32_t* indices,
+                                                const void* data,
+                                                int data_type,
+                                                int64_t ncol_ptr,
+                                                int64_t nelem,
+                                                int64_t num_row,
+                                                int predict_type,
+                                                int num_iteration,
+                                                const char* parameter,
+                                                int64_t* out_len,
+                                                double* out_result);
 
 /*!
  * \brief Make prediction for a new dataset.
  * \note
  * You should pre-allocate memory for ``out_result``:
- *   - for normal and raw score, its length is equal to ``num_class *
- num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data *
- num_iteration``;
- *   - for feature contributions, its length is equal to ``num_class * num_data
- * (num_feature + 1)``.
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
  * \param ncol Number of columns
  * \param is_row_major 1 for row-major, 0 for column-major
@@ -798,33 +814,34 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
  * \param num_iteration Number of iteration for prediction, <= 0 means no limit
- * \param parameter Other parameters for prediction, e.g. early stopping for
- prediction
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(
-    BoosterHandle handle, const void* data, int data_type, int32_t nrow,
-    int32_t ncol, int is_row_major, int predict_type, int num_iteration,
-    const char* parameter, int64_t* out_len, double* out_result);
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
+                                                const void* data,
+                                                int data_type,
+                                                int32_t nrow,
+                                                int32_t ncol,
+                                                int is_row_major,
+                                                int predict_type,
+                                                int num_iteration,
+                                                const char* parameter,
+                                                int64_t* out_len,
+                                                double* out_result);
 
 /*!
- * \brief Make prediction for a new dataset. This method re-uses the internal
- predictor structure
+ * \brief Make prediction for a new dataset. This method re-uses the internal predictor structure
  *        from previous calls and is optimized for single row invocation.
  * \note
  * You should pre-allocate memory for ``out_result``:
- *   - for normal and raw score, its length is equal to ``num_class *
- num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data *
- num_iteration``;
- *   - for feature contributions, its length is equal to ``num_class * num_data
- * (num_feature + 1)``.
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param ncol Number columns
  * \param is_row_major 1 for row-major, 0 for column-major
  * \param predict_type What should be predicted
@@ -833,32 +850,32 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
  * \param num_iteration Number of iteration for prediction, <= 0 means no limit
- * \param parameter Other parameters for prediction, e.g. early stopping for
- prediction
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(
-    BoosterHandle handle, const void* data, int data_type, int ncol,
-    int is_row_major, int predict_type, int num_iteration,
-    const char* parameter, int64_t* out_len, double* out_result);
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
+                                                         const void* data,
+                                                         int data_type,
+                                                         int ncol,
+                                                         int is_row_major,
+                                                         int predict_type,
+                                                         int num_iteration,
+                                                         const char* parameter,
+                                                         int64_t* out_len,
+                                                         double* out_result);
 
 /*!
- * \brief Make prediction for a new dataset presented in a form of array of
- pointers to rows.
+ * \brief Make prediction for a new dataset presented in a form of array of pointers to rows.
  * \note
  * You should pre-allocate memory for ``out_result``:
- *   - for normal and raw score, its length is equal to ``num_class *
- num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data *
- num_iteration``;
- *   - for feature contributions, its length is equal to ``num_class * num_data
- * (num_feature + 1)``.
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer,
- can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
  * \param ncol Number columns
  * \param predict_type What should be predicted
@@ -867,24 +884,27 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
  * \param num_iteration Number of iteration for prediction, <= 0 means no limit
- * \param parameter Other parameters for prediction, e.g. early stopping for
- prediction
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(
-    BoosterHandle handle, const void** data, int data_type, int32_t nrow,
-    int32_t ncol, int predict_type, int num_iteration, const char* parameter,
-    int64_t* out_len, double* out_result);
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
+                                                 const void** data,
+                                                 int data_type,
+                                                 int32_t nrow,
+                                                 int32_t ncol,
+                                                 int predict_type,
+                                                 int num_iteration,
+                                                 const char* parameter,
+                                                 int64_t* out_len,
+                                                 double* out_result);
 
 /*!
  * \brief Save model into file.
  * \param handle Handle of booster
- * \param start_iteration Start index of the iteration
- that should be saved
- * \param num_iteration Index of the iteration that should be saved,
- <= 0 means save all
+ * \param start_iteration Start index of the iteration that should be saved
+ * \param num_iteration Index of the iteration that should be saved, <= 0 means save all
  * \param filename The name of the file
  * \return 0 when succeed, -1 when failure happens
  */
@@ -896,28 +916,26 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
 /*!
  * \brief Save model to string.
  * \param handle Handle of booster
- * \param start_iteration Start index of the iteration
- that should be saved
- * \param num_iteration Index of the iteration that should be saved,
- <= 0 means save all
- * \param buffer_len String buffer length, if ``buffer_len < out_len``,
- you should re-allocate buffer
+ * \param start_iteration Start index of the iteration that should be saved
+ * \param num_iteration Index of the iteration that should be saved, <= 0 means save all
+ * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
  * \param[out] out_len Actual output length
  * \param[out] out_str String of model, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(
-    BoosterHandle handle, int start_iteration, int num_iteration,
-    int64_t buffer_len, int64_t* out_len, char* out_str);
+LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
+                                                    int start_iteration,
+                                                    int num_iteration,
+                                                    int64_t buffer_len,
+                                                    int64_t* out_len,
+                                                    char* out_str);
 
 /*!
  * \brief Dump model to JSON.
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be dumped
- * \param num_iteration Index of the iteration
- that should be dumped, <= 0 means dump all
- * \param buffer_len String buffer length, if ``buffer_len < out_len``,
- you should re-allocate buffer
+ * \param num_iteration Index of the iteration that should be dumped, <= 0 means dump all
+ * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
  * \param[out] out_len Actual output length
  * \param[out] out_str JSON format string of model, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
@@ -926,7 +944,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
                                             int start_iteration,
                                             int num_iteration,
                                             int64_t buffer_len,
-                                            int64_t* out_len, char* out_str);
+                                            int64_t* out_len,
+                                            char* out_str);
 
 /*!
  * \brief Get leaf value.
@@ -937,7 +956,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetLeafValue(BoosterHandle handle,
-                                               int tree_idx, int leaf_idx,
+                                               int tree_idx,
+                                               int leaf_idx,
                                                double* out_val);
 
 /*!
@@ -949,17 +969,16 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetLeafValue(BoosterHandle handle,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
-                                               int tree_idx, int leaf_idx,
+                                               int tree_idx,
+                                               int leaf_idx,
                                                double val);
 
 /*!
  * \brief Get model feature importance.
  * \param handle Handle of booster
- * \param num_iteration Number of iterations for
- which feature importance is calculated, <= 0 means use all
+ * \param num_iteration Number of iterations for which feature importance is calculated, <= 0 means use all
  * \param importance_type Method of importance calculation:
- *   - 0 for split, result contains numbers of times the feature is used in a
- model;
+ *   - 0 for split, result contains numbers of times the feature is used in a model;
  *   - 1 for gain, result contains total gains of splits which use the feature
  * \param[out] out_results Result array with feature importance
  * \return 0 when succeed, -1 when failure happens
@@ -979,7 +998,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
  */
 LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
                                        int local_listen_port,
-                                       int listen_time_out, int num_machines);
+                                       int listen_time_out,
+                                       int num_machines);
 
 /*!
  * \brief Finalize the network.
@@ -995,24 +1015,22 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
  * \param allgather_ext_fun The external allgather function
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(
-    int num_machines, int rank, void* reduce_scatter_ext_fun,
-    void* allgather_ext_fun);
+LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
+                                                    int rank,
+                                                    void* reduce_scatter_ext_fun,
+                                                    void* allgather_ext_fun);
 
 #if defined(_MSC_VER)
-#define THREAD_LOCAL __declspec(thread) /*!< \brief Thread local specifier. */
+#define THREAD_LOCAL __declspec(thread)  /*!< \brief Thread local specifier. */
 #else
-#define THREAD_LOCAL thread_local /*!< \brief Thread local specifier. */
+#define THREAD_LOCAL thread_local  /*!< \brief Thread local specifier. */
 #endif
 
 /*!
  * \brief Handle of error message.
  * \return Error message
  */
-static char* LastErrorMsg() {
-  static THREAD_LOCAL char err_msg[512] = "Everything is fine";
-  return err_msg;
-}
+static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everything is fine"; return err_msg; }
 
 #pragma warning(disable : 4996)
 /*!

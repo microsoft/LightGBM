@@ -1,17 +1,16 @@
 /*!
  * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_UTILS_FILE_IO_H_
 #define LIGHTGBM_UTILS_FILE_IO_H_
 
+#include <string>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <memory>
-#include <string>
 
 namespace LightGBM {
 
@@ -77,4 +76,4 @@ struct VirtualFileReader {
 
 }  // namespace LightGBM
 
-#endif  // LightGBM_UTILS_FILE_IO_H_
+#endif   // LightGBM_UTILS_FILE_IO_H_

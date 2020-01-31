@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_METRIC_BINARY_METRIC_HPP_
 #define LIGHTGBM_METRIC_BINARY_METRIC_HPP_
@@ -10,23 +9,25 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
+#include <string>
 #include <algorithm>
 #include <sstream>
-#include <string>
 #include <vector>
 
 namespace LightGBM {
 
 /*!
- * \brief Metric for binary classification task.
- * Use static class "PointWiseLossCalculator" to calculate loss point-wise
- */
-template <typename PointWiseLossCalculator>
-class BinaryMetric : public Metric {
+* \brief Metric for binary classification task.
+* Use static class "PointWiseLossCalculator" to calculate loss point-wise
+*/
+template<typename PointWiseLossCalculator>
+class BinaryMetric: public Metric {
  public:
-  explicit BinaryMetric(const Config&) {}
+  explicit BinaryMetric(const Config&) {
+  }
 
-  virtual ~BinaryMetric() {}
+  virtual ~BinaryMetric() {
+  }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     name_.emplace_back(PointWiseLossCalculator::Name());
@@ -48,32 +49,33 @@ class BinaryMetric : public Metric {
     }
   }
 
-  const std::vector<std::string>& GetName() const override { return name_; }
+  const std::vector<std::string>& GetName() const override {
+    return name_;
+  }
 
-  double factor_to_bigger_better() const override { return -1.0f; }
+  double factor_to_bigger_better() const override {
+    return -1.0f;
+  }
 
-  std::vector<double> Eval(const double* score,
-                           const ObjectiveFunction* objective) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static) reduction(+ : sum_loss)
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]);
         }
       } else {
-#pragma omp parallel for schedule(static) reduction(+ : sum_loss)
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
-          sum_loss +=
-              PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) *
-              weights_[i];
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
         }
       }
     } else {
       if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static) reduction(+ : sum_loss)
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double prob = 0;
           objective->ConvertOutput(&score[i], &prob);
@@ -81,13 +83,12 @@ class BinaryMetric : public Metric {
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
         }
       } else {
-#pragma omp parallel for schedule(static) reduction(+ : sum_loss)
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double prob = 0;
           objective->ConvertOutput(&score[i], &prob);
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) *
-                      weights_[i];
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
         }
       }
     }
@@ -109,12 +110,11 @@ class BinaryMetric : public Metric {
 };
 
 /*!
- * \brief Log loss metric for binary classification task.
- */
-class BinaryLoglossMetric : public BinaryMetric<BinaryLoglossMetric> {
+* \brief Log loss metric for binary classification task.
+*/
+class BinaryLoglossMetric: public BinaryMetric<BinaryLoglossMetric> {
  public:
-  explicit BinaryLoglossMetric(const Config& config)
-      : BinaryMetric<BinaryLoglossMetric>(config) {}
+  explicit BinaryLoglossMetric(const Config& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
     if (label <= 0) {
@@ -129,15 +129,16 @@ class BinaryLoglossMetric : public BinaryMetric<BinaryLoglossMetric> {
     return -std::log(kEpsilon);
   }
 
-  inline static const char* Name() { return "binary_logloss"; }
+  inline static const char* Name() {
+    return "binary_logloss";
+  }
 };
 /*!
- * \brief Error rate metric for binary classification task.
- */
-class BinaryErrorMetric : public BinaryMetric<BinaryErrorMetric> {
+* \brief Error rate metric for binary classification task.
+*/
+class BinaryErrorMetric: public BinaryMetric<BinaryErrorMetric> {
  public:
-  explicit BinaryErrorMetric(const Config& config)
-      : BinaryMetric<BinaryErrorMetric>(config) {}
+  explicit BinaryErrorMetric(const Config& config) :BinaryMetric<BinaryErrorMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
     if (prob <= 0.5f) {
@@ -147,21 +148,29 @@ class BinaryErrorMetric : public BinaryMetric<BinaryErrorMetric> {
     }
   }
 
-  inline static const char* Name() { return "binary_error"; }
+  inline static const char* Name() {
+    return "binary_error";
+  }
 };
 
 /*!
- * \brief Auc Metric for binary classification task.
- */
-class AUCMetric : public Metric {
+* \brief Auc Metric for binary classification task.
+*/
+class AUCMetric: public Metric {
  public:
-  explicit AUCMetric(const Config&) {}
+  explicit AUCMetric(const Config&) {
+  }
 
-  virtual ~AUCMetric() {}
+  virtual ~AUCMetric() {
+  }
 
-  const std::vector<std::string>& GetName() const override { return name_; }
+  const std::vector<std::string>& GetName() const override {
+    return name_;
+  }
 
-  double factor_to_bigger_better() const override { return 1.0f; }
+  double factor_to_bigger_better() const override {
+    return 1.0f;
+  }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     name_.emplace_back("auc");
@@ -182,16 +191,13 @@ class AUCMetric : public Metric {
     }
   }
 
-  std::vector<double> Eval(const double* score,
-                           const ObjectiveFunction*) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {
       sorted_idx.emplace_back(i);
     }
-    Common::ParallelSort(
-        sorted_idx.begin(), sorted_idx.end(),
-        [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
+    Common::ParallelSort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
     // temp sum of postive label
     double cur_pos = 0.0f;
     // total sum of postive label
@@ -209,7 +215,7 @@ class AUCMetric : public Metric {
         if (cur_score != threshold) {
           threshold = cur_score;
           // accmulate
-          accum += cur_neg * (cur_pos * 0.5f + sum_pos);
+          accum += cur_neg*(cur_pos * 0.5f + sum_pos);
           sum_pos += cur_pos;
           // reset
           cur_neg = cur_pos = 0.0f;
@@ -226,20 +232,20 @@ class AUCMetric : public Metric {
         if (cur_score != threshold) {
           threshold = cur_score;
           // accmulate
-          accum += cur_neg * (cur_pos * 0.5f + sum_pos);
+          accum += cur_neg*(cur_pos * 0.5f + sum_pos);
           sum_pos += cur_pos;
           // reset
           cur_neg = cur_pos = 0.0f;
         }
-        cur_neg += (cur_label <= 0) * cur_weight;
-        cur_pos += (cur_label > 0) * cur_weight;
+        cur_neg += (cur_label <= 0)*cur_weight;
+        cur_pos += (cur_label > 0)*cur_weight;
       }
     }
-    accum += cur_neg * (cur_pos * 0.5f + sum_pos);
+    accum += cur_neg*(cur_pos * 0.5f + sum_pos);
     sum_pos += cur_pos;
     double auc = 1.0f;
     if (sum_pos > 0.0f && sum_pos != sum_weights_) {
-      auc = accum / (sum_pos * (sum_weights_ - sum_pos));
+      auc = accum / (sum_pos *(sum_weights_ - sum_pos));
     }
     return std::vector<double>(1, auc);
   }
@@ -258,4 +264,4 @@ class AUCMetric : public Metric {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_METRIC_BINARY_METRIC_HPP_
+#endif   // LightGBM_METRIC_BINARY_METRIC_HPP_

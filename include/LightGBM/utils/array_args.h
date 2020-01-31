@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_UTILS_ARRAY_AGRS_H_
 #define LIGHTGBM_UTILS_ARRAY_AGRS_H_
@@ -15,25 +14,24 @@
 namespace LightGBM {
 
 /*!
- * \brief Contains some operation for an array, e.g. ArgMax, TopK.
- */
-template <typename VAL_T>
+* \brief Contains some operation for an array, e.g. ArgMax, TopK.
+*/
+template<typename VAL_T>
 class ArrayArgs {
  public:
   inline static size_t ArgMaxMT(const std::vector<VAL_T>& array) {
     int num_threads = 1;
 #pragma omp parallel
 #pragma omp master
-    { num_threads = omp_get_num_threads(); }
-    int step = std::max(
-        1, (static_cast<int>(array.size()) + num_threads - 1) / num_threads);
+    {
+      num_threads = omp_get_num_threads();
+    }
+    int step = std::max(1, (static_cast<int>(array.size()) + num_threads - 1) / num_threads);
     std::vector<size_t> arg_maxs(num_threads, 0);
-#pragma omp parallel for schedule(static, 1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads; ++i) {
       size_t start = step * i;
-      if (start >= array.size()) {
-        continue;
-      }
+      if (start >= array.size()) { continue; }
       size_t end = std::min(array.size(), start + step);
       size_t arg_max = start;
       for (size_t j = start + 1; j < end; ++j) {
@@ -107,8 +105,7 @@ class ArrayArgs {
     return arg_min;
   }
 
-  inline static void Partition(std::vector<VAL_T>* arr, int start, int end,
-                               int* l, int* r) {
+  inline static void Partition(std::vector<VAL_T>* arr, int start, int end, int* l, int* r) {
     int i = start - 1;
     int j = end - 1;
     int p = i;
@@ -119,42 +116,24 @@ class ArrayArgs {
     std::vector<VAL_T>& ref = *arr;
     VAL_T v = ref[end - 1];
     for (;;) {
-      while (ref[++i] > v) {
-      }
-      while (v > ref[--j]) {
-        if (j == start) {
-          break;
-        }
-      }
-      if (i >= j) {
-        break;
-      }
+      while (ref[++i] > v) {}
+      while (v > ref[--j]) { if (j == start) { break; } }
+      if (i >= j) { break; }
       std::swap(ref[i], ref[j]);
-      if (ref[i] == v) {
-        p++;
-        std::swap(ref[p], ref[i]);
-      }
-      if (v == ref[j]) {
-        q--;
-        std::swap(ref[j], ref[q]);
-      }
+      if (ref[i] == v) { p++; std::swap(ref[p], ref[i]); }
+      if (v == ref[j]) { q--; std::swap(ref[j], ref[q]); }
     }
     std::swap(ref[i], ref[end - 1]);
     j = i - 1;
     i = i + 1;
-    for (int k = start; k <= p; k++, j--) {
-      std::swap(ref[k], ref[j]);
-    }
-    for (int k = end - 2; k >= q; k--, i++) {
-      std::swap(ref[i], ref[k]);
-    }
+    for (int k = start; k <= p; k++, j--) { std::swap(ref[k], ref[j]); }
+    for (int k = end - 2; k >= q; k--, i++) { std::swap(ref[i], ref[k]); }
     *l = j;
     *r = i;
   }
 
   // Note: k refer to index here. e.g. k=0 means get the max number.
-  inline static int ArgMaxAtK(std::vector<VAL_T>* arr, int start, int end,
-                              int k) {
+  inline static int ArgMaxAtK(std::vector<VAL_T>* arr, int start, int end, int k) {
     if (start >= end - 1) {
       return start;
     }
@@ -172,8 +151,7 @@ class ArrayArgs {
   }
 
   // Note: k is 1-based here. e.g. k=3 means get the top-3 numbers.
-  inline static void MaxK(const std::vector<VAL_T>& array, int k,
-                          std::vector<VAL_T>* out) {
+  inline static void MaxK(const std::vector<VAL_T>& array, int k, std::vector<VAL_T>* out) {
     out->clear();
     if (k <= 0) {
       return;
@@ -216,4 +194,5 @@ class ArrayArgs {
 
 }  // namespace LightGBM
 
-#endif  // LightGBM_UTILS_ARRAY_AGRS_H_
+#endif   // LightGBM_UTILS_ARRAY_AGRS_H_
+

@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  *
  * \note
  * desc and descl2 fields must be written in reStructuredText format
@@ -14,9 +13,9 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
+#include <string>
 #include <algorithm>
 #include <memory>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -24,60 +23,60 @@
 namespace LightGBM {
 
 /*! \brief Types of tasks */
-enum TaskType { kTrain, kPredict, kConvertModel, KRefitTree };
+enum TaskType {
+  kTrain, kPredict, kConvertModel, KRefitTree
+};
 const int kDefaultNumLeaves = 31;
 
 struct Config {
  public:
   std::string ToString() const;
   /*!
-   * \brief Get string value by specific name of key
-   * \param params Store the key and value for params
-   * \param name Name of key
-   * \param out Value will assign to out if key exists
-   * \return True if key exists
-   */
+  * \brief Get string value by specific name of key
+  * \param params Store the key and value for params
+  * \param name Name of key
+  * \param out Value will assign to out if key exists
+  * \return True if key exists
+  */
   inline static bool GetString(
-      const std::unordered_map<std::string, std::string>& params,
-      const std::string& name, std::string* out);
+    const std::unordered_map<std::string, std::string>& params,
+    const std::string& name, std::string* out);
 
   /*!
-   * \brief Get int value by specific name of key
-   * \param params Store the key and value for params
-   * \param name Name of key
-   * \param out Value will assign to out if key exists
-   * \return True if key exists
-   */
+  * \brief Get int value by specific name of key
+  * \param params Store the key and value for params
+  * \param name Name of key
+  * \param out Value will assign to out if key exists
+  * \return True if key exists
+  */
   inline static bool GetInt(
-      const std::unordered_map<std::string, std::string>& params,
-      const std::string& name, int* out);
+    const std::unordered_map<std::string, std::string>& params,
+    const std::string& name, int* out);
 
   /*!
-   * \brief Get double value by specific name of key
-   * \param params Store the key and value for params
-   * \param name Name of key
-   * \param out Value will assign to out if key exists
-   * \return True if key exists
-   */
+  * \brief Get double value by specific name of key
+  * \param params Store the key and value for params
+  * \param name Name of key
+  * \param out Value will assign to out if key exists
+  * \return True if key exists
+  */
   inline static bool GetDouble(
-      const std::unordered_map<std::string, std::string>& params,
-      const std::string& name, double* out);
+    const std::unordered_map<std::string, std::string>& params,
+    const std::string& name, double* out);
 
   /*!
-   * \brief Get bool value by specific name of key
-   * \param params Store the key and value for params
-   * \param name Name of key
-   * \param out Value will assign to out if key exists
-   * \return True if key exists
-   */
+  * \brief Get bool value by specific name of key
+  * \param params Store the key and value for params
+  * \param name Name of key
+  * \param out Value will assign to out if key exists
+  * \return True if key exists
+  */
   inline static bool GetBool(
-      const std::unordered_map<std::string, std::string>& params,
-      const std::string& name, bool* out);
+    const std::unordered_map<std::string, std::string>& params,
+    const std::string& name, bool* out);
 
-  static void KV2Map(std::unordered_map<std::string, std::string>* params,
-                     const char* kv);
-  static std::unordered_map<std::string, std::string> Str2Map(
-      const char* parameters);
+  static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
+  static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
   #pragma region Parameters
 
@@ -887,23 +886,21 @@ struct Config {
 
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
-  LIGHTGBM_EXPORT void Set(
-      const std::unordered_map<std::string, std::string>& params);
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static std::unordered_map<std::string, std::string> alias_table;
   static std::unordered_set<std::string> parameter_set;
   std::vector<std::vector<double>> auc_mu_weights_matrix;
 
  private:
   void CheckParamConflict();
-  void GetMembersFromString(
-      const std::unordered_map<std::string, std::string>& params);
+  void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();
 };
 
 inline bool Config::GetString(
-    const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, std::string* out) {
+  const std::unordered_map<std::string, std::string>& params,
+  const std::string& name, std::string* out) {
   if (params.count(name) > 0 && !params.at(name).empty()) {
     *out = params.at(name);
     return true;
@@ -912,12 +909,12 @@ inline bool Config::GetString(
 }
 
 inline bool Config::GetInt(
-    const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, int* out) {
+  const std::unordered_map<std::string, std::string>& params,
+  const std::string& name, int* out) {
   if (params.count(name) > 0 && !params.at(name).empty()) {
     if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
-      Log::Fatal("Parameter %s should be of type int, got \"%s\"", name.c_str(),
-                 params.at(name).c_str());
+      Log::Fatal("Parameter %s should be of type int, got \"%s\"",
+                 name.c_str(), params.at(name).c_str());
     }
     return true;
   }
@@ -925,8 +922,8 @@ inline bool Config::GetInt(
 }
 
 inline bool Config::GetDouble(
-    const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, double* out) {
+  const std::unordered_map<std::string, std::string>& params,
+  const std::string& name, double* out) {
   if (params.count(name) > 0 && !params.at(name).empty()) {
     if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
       Log::Fatal("Parameter %s should be of type double, got \"%s\"",
@@ -938,8 +935,8 @@ inline bool Config::GetDouble(
 }
 
 inline bool Config::GetBool(
-    const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, bool* out) {
+  const std::unordered_map<std::string, std::string>& params,
+  const std::string& name, bool* out) {
   if (params.count(name) > 0 && !params.at(name).empty()) {
     std::string value = params.at(name);
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
@@ -948,10 +945,8 @@ inline bool Config::GetBool(
     } else if (value == std::string("true") || value == std::string("+")) {
       *out = true;
     } else {
-      Log::Fatal(
-          "Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", got "
-          "\"%s\"",
-          name.c_str(), params.at(name).c_str());
+      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", got \"%s\"",
+                 name.c_str(), params.at(name).c_str());
     }
     return true;
   }
@@ -959,42 +954,29 @@ inline bool Config::GetBool(
 }
 
 struct ParameterAlias {
-  static void KeyAliasTransform(
-      std::unordered_map<std::string, std::string>* params) {
+  static void KeyAliasTransform(std::unordered_map<std::string, std::string>* params) {
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
       auto alias = Config::alias_table.find(pair.first);
       if (alias != Config::alias_table.end()) {  // found alias
         auto alias_set = tmp_map.find(alias->second);
-        if (alias_set !=
-            tmp_map.end()) {  // alias already set
-                              // set priority by length & alphabetically to
-                              // ensure reproducible behavior
+        if (alias_set != tmp_map.end()) {  // alias already set
+                                           // set priority by length & alphabetically to ensure reproducible behavior
           if (alias_set->second.size() < pair.first.size() ||
-              (alias_set->second.size() == pair.first.size() &&
-               alias_set->second < pair.first)) {
-            Log::Warning(
-                "%s is set with %s=%s, %s=%s will be ignored. Current value: "
-                "%s=%s",
-                alias->second.c_str(), alias_set->second.c_str(),
-                params->at(alias_set->second).c_str(), pair.first.c_str(),
-                pair.second.c_str(), alias->second.c_str(),
-                params->at(alias_set->second).c_str());
+            (alias_set->second.size() == pair.first.size() && alias_set->second < pair.first)) {
+            Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s",
+                         alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
+                         pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), params->at(alias_set->second).c_str());
           } else {
-            Log::Warning(
-                "%s is set with %s=%s, will be overridden by %s=%s. Current "
-                "value: %s=%s",
-                alias->second.c_str(), alias_set->second.c_str(),
-                params->at(alias_set->second).c_str(), pair.first.c_str(),
-                pair.second.c_str(), alias->second.c_str(),
-                pair.second.c_str());
+            Log::Warning("%s is set with %s=%s, will be overridden by %s=%s. Current value: %s=%s",
+                         alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
+                         pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), pair.second.c_str());
             tmp_map[alias->second] = pair.first;
           }
         } else {  // alias not set
           tmp_map.emplace(alias->second, pair.first);
         }
-      } else if (Config::parameter_set.find(pair.first) ==
-                 Config::parameter_set.end()) {
+      } else if (Config::parameter_set.find(pair.first) == Config::parameter_set.end()) {
         Log::Warning("Unknown parameter: %s", pair.first.c_str());
       }
     }
@@ -1004,110 +986,73 @@ struct ParameterAlias {
         params->emplace(pair.first, params->at(pair.second));
         params->erase(pair.second);
       } else {
-        Log::Warning(
-            "%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
-            pair.first.c_str(), alias->second.c_str(), pair.second.c_str(),
-            params->at(pair.second).c_str(), pair.first.c_str(),
-            alias->second.c_str());
+        Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
+                     pair.first.c_str(), alias->second.c_str(), pair.second.c_str(), params->at(pair.second).c_str(),
+                     pair.first.c_str(), alias->second.c_str());
       }
     }
   }
 };
 
 inline std::string ParseObjectiveAlias(const std::string& type) {
-  if (type == std::string("regression") ||
-      type == std::string("regression_l2") ||
-      type == std::string("mean_squared_error") || type == std::string("mse") ||
-      type == std::string("l2") || type == std::string("l2_root") ||
-      type == std::string("root_mean_squared_error") ||
-      type == std::string("rmse")) {
+  if (type == std::string("regression") || type == std::string("regression_l2")
+    || type == std::string("mean_squared_error") || type == std::string("mse") || type == std::string("l2")
+    || type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
     return "regression";
-  } else if (type == std::string("regression_l1") ||
-             type == std::string("mean_absolute_error") ||
-             type == std::string("l1") || type == std::string("mae")) {
+  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error")
+    || type == std::string("l1") || type == std::string("mae")) {
     return "regression_l1";
-  } else if (type == std::string("multiclass") ||
-             type == std::string("softmax")) {
+  } else if (type == std::string("multiclass") || type == std::string("softmax")) {
     return "multiclass";
-  } else if (type == std::string("multiclassova") ||
-             type == std::string("multiclass_ova") ||
-             type == std::string("ova") || type == std::string("ovr")) {
+  } else if (type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
     return "multiclassova";
-  } else if (type == std::string("xentropy") ||
-             type == std::string("cross_entropy")) {
+  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
     return "cross_entropy";
-  } else if (type == std::string("xentlambda") ||
-             type == std::string("cross_entropy_lambda")) {
+  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
     return "cross_entropy_lambda";
-  } else if (type == std::string("mean_absolute_percentage_error") ||
-             type == std::string("mape")) {
+  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
-  } else if (type == std::string("rank_xendcg") ||
-             type == std::string("xendcg") || type == std::string("xe_ndcg") ||
-             type == std::string("xe_ndcg_mart") ||
-             type == std::string("xendcg_mart")) {
+  } else if (type == std::string("rank_xendcg") || type == std::string("xendcg") || type == std::string("xe_ndcg")
+             || type == std::string("xe_ndcg_mart") || type == std::string("xendcg_mart")) {
     return "rank_xendcg";
-  } else if (type == std::string("none") || type == std::string("null") ||
-             type == std::string("custom") || type == std::string("na")) {
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }
   return type;
 }
 
 inline std::string ParseMetricAlias(const std::string& type) {
-  if (type == std::string("regression") ||
-      type == std::string("regression_l2") || type == std::string("l2") ||
-      type == std::string("mean_squared_error") || type == std::string("mse")) {
+  if (type == std::string("regression") || type == std::string("regression_l2") || type == std::string("l2") || type == std::string("mean_squared_error") || type == std::string("mse")) {
     return "l2";
-  } else if (type == std::string("l2_root") ||
-             type == std::string("root_mean_squared_error") ||
-             type == std::string("rmse")) {
+  } else if (type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
     return "rmse";
-  } else if (type == std::string("regression_l1") ||
-             type == std::string("l1") ||
-             type == std::string("mean_absolute_error") ||
-             type == std::string("mae")) {
+  } else if (type == std::string("regression_l1") || type == std::string("l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
     return "l1";
-  } else if (type == std::string("binary_logloss") ||
-             type == std::string("binary")) {
+  } else if (type == std::string("binary_logloss") || type == std::string("binary")) {
     return "binary_logloss";
-  } else if (type == std::string("ndcg") || type == std::string("lambdarank") ||
-             type == std::string("rank_xendcg") ||
-             type == std::string("xendcg") || type == std::string("xe_ndcg") ||
-             type == std::string("xe_ndcg_mart") ||
-             type == std::string("xendcg_mart")) {
+  } else if (type == std::string("ndcg") || type == std::string("lambdarank") || type == std::string("rank_xendcg")
+             || type == std::string("xendcg") || type == std::string("xe_ndcg") || type == std::string("xe_ndcg_mart") || type == std::string("xendcg_mart")) {
     return "ndcg";
-  } else if (type == std::string("map") ||
-             type == std::string("mean_average_precision")) {
+  } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
     return "map";
-  } else if (type == std::string("multi_logloss") ||
-             type == std::string("multiclass") ||
-             type == std::string("softmax") ||
-             type == std::string("multiclassova") ||
-             type == std::string("multiclass_ova") ||
-             type == std::string("ova") || type == std::string("ovr")) {
+  } else if (type == std::string("multi_logloss") || type == std::string("multiclass") || type == std::string("softmax") || type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
     return "multi_logloss";
-  } else if (type == std::string("xentropy") ||
-             type == std::string("cross_entropy")) {
+  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
     return "cross_entropy";
-  } else if (type == std::string("xentlambda") ||
-             type == std::string("cross_entropy_lambda")) {
+  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
     return "cross_entropy_lambda";
-  } else if (type == std::string("kldiv") ||
-             type == std::string("kullback_leibler")) {
+  } else if (type == std::string("kldiv") || type == std::string("kullback_leibler")) {
     return "kullback_leibler";
-  } else if (type == std::string("mean_absolute_percentage_error") ||
-             type == std::string("mape")) {
+  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
   } else if (type == std::string("auc_mu")) {
     return "auc_mu";
-  } else if (type == std::string("none") || type == std::string("null") ||
-             type == std::string("custom") || type == std::string("na")) {
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }
   return type;
 }
 
-}  // namespace LightGBM
+}   // namespace LightGBM
 
-#endif  // LightGBM_CONFIG_H_
+#endif   // LightGBM_CONFIG_H_
