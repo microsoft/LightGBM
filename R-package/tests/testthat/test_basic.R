@@ -288,7 +288,7 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
 
   # check some basic details of the boosters just to be sure force_col_wise
   # and force_row_wise are not causing any weird side effects
-  for (bst in list(bst_row_wise, bst_colwise)){
+  for (bst in list(bst_row_wise, bst_colwise)) {
     expect_equal(bst$current_iter(), nrounds)
     parsed_model <- jsonlite::fromJSON(bst$dump_model())
     expect_equal(parsed_model$objective, "binary sigmoid:1")

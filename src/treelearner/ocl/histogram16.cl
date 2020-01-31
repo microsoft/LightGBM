@@ -193,13 +193,9 @@ void within_kernel_reduction16x8(uchar8 feature_mask,
     // now overwrite the local_hist for final reduction and output
     // reverse the f7...f0 order to match the real order
     feature_id = DWORD_FEATURES_MASK - feature_id;
-    local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + is_hessian_first] = stat_val;
-    bin_id = ltid >> (LOG2_DWORD_FEATURES); // range 0 - 16, for counter
-    if (ltid < LOCAL_SIZE_0 / 2) {
-        local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 2] = as_acc_type((acc_int_type)cnt_val);
-    }
+    local_hist[feature_id * 2 * NUM_BINS + bin_id * 2 + is_hessian_first] = stat_val;
     barrier(CLK_LOCAL_MEM_FENCE);
-    for (i = ltid; i < DWORD_FEATURES * 3 * NUM_BINS; i += lsize) {
+    for (i = ltid; i < DWORD_FEATURES * 2 * NUM_BINS; i += lsize) {
         output_buf[i] = local_hist[i];
     }
 }
@@ -303,6 +299,33 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     // all threads within a quarter-wavefront (half-warp) will not have any bank conflict
 
     __local acc_type * gh_hist = (__local acc_type *)shared_array;
+    // counter histogram
+    // each bank: 8 * 16 * size_of(uint) = 0.5 KB
+    // there are 8 banks used by 256 threads total 4 KB
+    /* memory layout in cnt_hist:
+       -----------------------------------------------
+       bk0_c_f0_bin0   bk0_c_f1_bin0   bk0_c_f2_bin0   bk0_c_f3_bin0   bk0_c_f4_bin0   bk0_c_f5_bin0   bk0_c_f6_bin0   bk0_c_f7_bin0
+       bk1_c_f0_bin0   bk1_c_f1_bin0   bk1_c_f2_bin0   bk1_c_f3_bin0   bk1_c_f4_bin0   bk1_c_f5_bin0   bk1_c_f6_bin0   bk1_c_f7_bin0
+       bk2_c_f0_bin0   bk2_c_f1_bin0   bk2_c_f2_bin0   bk2_c_f3_bin0   bk2_c_f4_bin0   bk2_c_f5_bin0   bk2_c_f6_bin0   bk2_c_f7_bin0
+       bk3_c_f0_bin0   bk3_c_f1_bin0   bk3_c_f2_bin0   bk3_c_f3_bin0   bk3_c_f4_bin0   bk3_c_f5_bin0   bk3_c_f6_bin0   bk3_c_f7_bin0
+       bk4_c_f0_bin0   bk4_c_f1_bin0   bk4_c_f2_bin0   bk4_c_f3_bin0   bk4_c_f4_bin0   bk4_c_f5_bin0   bk4_c_f6_bin0   bk4_c_f7_bin0
+       bk5_c_f0_bin0   bk5_c_f1_bin0   bk5_c_f2_bin0   bk5_c_f3_bin0   bk5_c_f4_bin0   bk5_c_f5_bin0   bk5_c_f6_bin0   bk5_c_f7_bin0
+       bk6_c_f0_bin0   bk6_c_f1_bin0   bk6_c_f2_bin0   bk6_c_f3_bin0   bk6_c_f4_bin0   bk6_c_f5_bin0   bk6_c_f6_bin0   bk6_c_f7_bin0
+       bk7_c_f0_bin0   bk7_c_f1_bin0   bk7_c_f2_bin0   bk7_c_f3_bin0   bk7_c_f4_bin0   bk7_c_f5_bin0   bk7_c_f6_bin0   bk7_c_f7_bin0
+       ...
+       bk0_c_f0_bin16  bk0_c_f1_bin16  bk0_c_f2_bin16  bk0_c_f3_bin16  bk0_c_f4_bin16  bk0_c_f5_bin16  bk0_c_f6_bin16  bk0_c_f7_bin0
+       bk1_c_f0_bin16  bk1_c_f1_bin16  bk1_c_f2_bin16  bk1_c_f3_bin16  bk1_c_f4_bin16  bk1_c_f5_bin16  bk1_c_f6_bin16  bk1_c_f7_bin0
+       bk2_c_f0_bin16  bk2_c_f1_bin16  bk2_c_f2_bin16  bk2_c_f3_bin16  bk2_c_f4_bin16  bk2_c_f5_bin16  bk2_c_f6_bin16  bk2_c_f7_bin0
+       bk3_c_f0_bin16  bk3_c_f1_bin16  bk3_c_f2_bin16  bk3_c_f3_bin16  bk3_c_f4_bin16  bk3_c_f5_bin16  bk3_c_f6_bin16  bk3_c_f7_bin0
+       bk4_c_f0_bin16  bk4_c_f1_bin16  bk4_c_f2_bin16  bk4_c_f3_bin16  bk4_c_f4_bin16  bk4_c_f5_bin16  bk4_c_f6_bin16  bk4_c_f7_bin0
+       bk5_c_f0_bin16  bk5_c_f1_bin16  bk5_c_f2_bin16  bk5_c_f3_bin16  bk5_c_f4_bin16  bk5_c_f5_bin16  bk5_c_f6_bin16  bk5_c_f7_bin0
+       bk6_c_f0_bin16  bk6_c_f1_bin16  bk6_c_f2_bin16  bk6_c_f3_bin16  bk6_c_f4_bin16  bk6_c_f5_bin16  bk6_c_f6_bin16  bk6_c_f7_bin0
+       bk7_c_f0_bin16  bk7_c_f1_bin16  bk7_c_f2_bin16  bk7_c_f3_bin16  bk7_c_f4_bin16  bk7_c_f5_bin16  bk7_c_f6_bin16  bk7_c_f7_bin0
+       -----------------------------------------------
+    */
+    #if CONST_HESSIAN == 1
+    __local uint * cnt_hist = (__local uint *)(gh_hist + 2 * DWORD_FEATURES * NUM_BINS * NUM_BANKS);
+    #endif
 
     // thread 0, 1, 2, 3, 4, 5, 6, 7 compute histograms for gradients first
     // thread 8, 9, 10, 11, 12, 13, 14, 15 compute histograms for hessians first
@@ -404,8 +427,6 @@ R""()
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 0, 1, 2, 3, 4, 5, 6, 7's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
-            #else
-            atom_inc((uint*)(gh_hist + addr2));
             #endif
         }
         offset = (offset + 1) & DWORD_FEATURES_MASK;
@@ -420,8 +441,6 @@ R""()
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 1, 2, 3, 4, 5, 6, 7, 0's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
-            #else
-            atom_inc((uint*)(gh_hist + addr2));
             #endif
         }
 
@@ -437,8 +456,6 @@ R""()
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 2, 3, 4, 5, 6, 7, 0, 1's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
-            #else
-            atom_inc((uint*)(gh_hist + addr2));
             #endif
         }
         offset = (offset + 1) & DWORD_FEATURES_MASK;
@@ -453,8 +470,6 @@ R""()
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 3, 4, 5, 6, 7, 0, 1, 2's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
-            #else
-            atom_inc((uint*)(gh_hist + addr2));
             #endif
         }
 
@@ -477,8 +492,6 @@ R""()
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 4, 5, 6, 7, 0, 1, 2, 3's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
-            #else
-            atom_inc((uint*)(gh_hist + addr2));
             #endif
         }
         offset = (offset + 1) & DWORD_FEATURES_MASK;
@@ -493,8 +506,6 @@ R""()
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 5, 6, 7, 0, 1, 2, 3, 4's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
-            #else
-            atom_inc((uint*)(gh_hist + addr2));
             #endif
         }
 
@@ -510,8 +521,6 @@ R""()
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 6, 7, 0, 1, 2, 3, 4, 5's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
-            #else
-            atom_inc((uint*)(gh_hist + addr2));
             #endif
         }
         offset = (offset + 1) & DWORD_FEATURES_MASK;
@@ -526,10 +535,76 @@ R""()
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 7, 0, 1, 2, 3, 4, 5, 6's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
-            #else
-            atom_inc((uint*)(gh_hist + addr2));
             #endif
         }
+        #if CONST_HESSIAN == 1
+        // STAGE 3: accumulate counter
+        // there are 8 counters for 8 features
+        // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 0, 1, 2, 3, 4, 5, 6, 7's counts for example 0, 1, 2, 3, 4, 5, 6, 7
+        offset = (ltid & DWORD_FEATURES_MASK);
+        if (feature_mask.s7) {
+            bin = feature4.s3 >> 4;
+            addr = bin * CNT_BIN_MULT + bank * DWORD_FEATURES + offset;
+            // printf("thread %x add counter %d feature %d (0)\n", ltid, bin, offset);
+            atom_inc(cnt_hist + addr);
+        }
+        // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 1, 2, 3, 4, 5, 6, 7, 0's counts for example 0, 1, 2, 3, 4, 5, 6, 7
+        offset = (offset + 1) & DWORD_FEATURES_MASK;
+        if (feature_mask.s6) {
+            bin = feature4.s3 & 0xf;
+            addr = bin * CNT_BIN_MULT + bank * DWORD_FEATURES + offset;
+            // printf("thread %x add counter %d feature %d (1)\n", ltid, bin, offset);
+            atom_inc(cnt_hist + addr);
+        }
+        // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 2, 3, 4, 5, 6, 7, 0, 1's counts for example 0, 1, 2, 3, 4, 5, 6, 7
+        offset = (offset + 1) & DWORD_FEATURES_MASK;
+        if (feature_mask.s5) {
+            bin = feature4.s2 >> 4;
+            addr = bin * CNT_BIN_MULT + bank * DWORD_FEATURES + offset;
+            // printf("thread %x add counter %d feature %d (2)\n", ltid, bin, offset);
+            atom_inc(cnt_hist + addr);
+        }
+        // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 3, 4, 5, 6, 7, 0, 1, 2's counts for example 0, 1, 2, 3, 4, 5, 6, 7
+        offset = (offset + 1) & DWORD_FEATURES_MASK;
+        if (feature_mask.s4) {
+            bin = feature4.s2 & 0xf;
+            addr = bin * CNT_BIN_MULT + bank * DWORD_FEATURES + offset;
+            // printf("thread %x add counter %d feature %d (3)\n", ltid, bin, offset);
+            atom_inc(cnt_hist + addr);
+        }
+        // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 4, 5, 6, 7, 0, 1, 2, 3's counts for example 0, 1, 2, 3, 4, 5, 6, 7
+        offset = (offset + 1) & DWORD_FEATURES_MASK;
+        if (feature_mask.s3) {
+            bin = feature4.s1 >> 4;
+            addr = bin * CNT_BIN_MULT + bank * DWORD_FEATURES + offset;
+            // printf("thread %x add counter %d feature %d (4)\n", ltid, bin, offset);
+            atom_inc(cnt_hist + addr);
+        }
+        // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 5, 6, 7, 0, 1, 2, 3, 4's counts for example 0, 1, 2, 3, 4, 5, 6, 7
+        offset = (offset + 1) & DWORD_FEATURES_MASK;
+        if (feature_mask.s2) {
+            bin = feature4.s1 & 0xf;
+            addr = bin * CNT_BIN_MULT + bank * DWORD_FEATURES + offset;
+            // printf("thread %x add counter %d feature %d (5)\n", ltid, bin, offset);
+            atom_inc(cnt_hist + addr);
+        }
+        // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 6, 7, 0, 1, 2, 3, 4, 5's counts for example 0, 1, 2, 3, 4, 5, 6, 7
+        offset = (offset + 1) & DWORD_FEATURES_MASK;
+        if (feature_mask.s1) {
+            bin = feature4.s0 >> 4;
+            addr = bin * CNT_BIN_MULT + bank * DWORD_FEATURES + offset;
+            // printf("thread %x add counter %d feature %d (6)\n", ltid, bin, offset);
+            atom_inc(cnt_hist + addr);
+        }
+        // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 7, 0, 1, 2, 3, 4, 5, 6's counts for example 0, 1, 2, 3, 4, 5, 6, 7
+        offset = (offset + 1) & DWORD_FEATURES_MASK;
+        if (feature_mask.s0) {
+            bin = feature4.s0 & 0xf;
+            addr = bin * CNT_BIN_MULT + bank * DWORD_FEATURES + offset;
+            // printf("thread %x add counter %d feature %d (7)\n", ltid, bin, offset);
+            atom_inc(cnt_hist + addr);
+        }
+        #endif
         stat1 = stat1_next;
         stat2 = stat2_next;
         feature4 = feature4_next;
@@ -558,6 +633,17 @@ R""()
         ushort bank_id = (i + offset) & BANK_MASK;
         stat_val += gh_hist[bin_id * HG_BIN_MULT + bank_id * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + feature_id];
     }
+    #if CONST_HESSIAN == 1
+    if (ltid < LOCAL_SIZE_0 / 2) {
+        // first 128 threads accumulate the 8 * 16 = 128 counter values
+        bin_id = ltid >> LOG2_DWORD_FEATURES; // bits 3 - 6 range 0 - 16 is bin ID
+        offset = (ltid >> LOG2_DWORD_FEATURES) & BANK_MASK; // helps avoid LDS bank conflicts
+        for (int i = 0; i < NUM_BANKS; ++i) {
+            ushort bank_id = (i + offset) & BANK_MASK;
+            cnt_val += cnt_hist[bin_id * CNT_BIN_MULT + bank_id * DWORD_FEATURES + feature_id];
+        }
+    }
+    #endif
     
     // now thread 0 - 7  holds feature 0 - 7's gradient for bin 0 and counter bin 0
     // now thread 8 - 15 holds feature 0 - 7's hessian  for bin 0 and counter bin 1
@@ -565,7 +651,6 @@ R""()
     // now thread 24- 31 holds feature 0 - 7's hessian  for bin 1 and counter bin 3
     // etc,
 
-    // FIXME: correct way to fix hessians
 #if CONST_HESSIAN == 1
     // Combine the two banks into one, and fill the hessians with counter value * hessian constant
     barrier(CLK_LOCAL_MEM_FENCE);
@@ -595,7 +680,7 @@ R""()
     // write to output
     // write gradients and hessians histogram for all 4 features
     // output data in linear order for further reduction
-    // output size = 4 (features) * 3 (counters) * 64 (bins) * sizeof(float)
+    // output size = 4 (features) * 2 (counters) * 64 (bins) * sizeof(float)
     /* memory layout of output:
        g_f0_bin0   g_f1_bin0   g_f2_bin0   g_f3_bin0   g_f4_bin0   g_f5_bin0   g_f6_bin0   g_f7_bin0
        h_f0_bin0   h_f1_bin0   h_f2_bin0   h_f3_bin0   h_f4_bin0   h_f5_bin0   h_f6_bin0   h_f7_bin0
@@ -642,7 +727,7 @@ R""()
     // The is done by using an global atomic counter.
     // On AMD GPUs ideally this should be done in GDS,
     // but currently there is no easy way to access it via OpenCL.
-    __local uint * counter_val = (__local uint *)(gh_hist + 2 * DWORD_FEATURES * NUM_BINS * NUM_BANKS);
+    __local uint * counter_val = (__local uint *)(gh_hist + 2 * DWORD_FEATURES * NUM_BINS * NUM_BANKS);;
     if (ltid == 0) {
         // all workgroups processing the same feature add this counter
         *counter_val = atom_inc(sync_counters + feature4_id);
@@ -680,4 +765,3 @@ R""()
 // the +9 skips extra characters ")", newline, "#endif" and newline at the beginning
 // )"" "\n#endif" + 9
 #endif
-

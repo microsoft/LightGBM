@@ -328,7 +328,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = multi_logloss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.15)
+        self.assertLess(ret, 0.16)
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
     def test_multiclass_rf(self):
@@ -1740,7 +1740,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.13)
+        self.assertLess(ret, 0.14)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
         params['feature_fraction'] = 0.5
         gbm2 = lgb.train(params, lgb_train, num_boost_round=25)

@@ -216,7 +216,7 @@ struct Config {
 
   // desc = set ``force_col_wise=true`` will force LightGBM to use col-wise histogram build
   // desc = Recommend ``force_col_wise=true`` when:
-  // descl2 = the number of cloumns is large, or the total number of bin is large
+  // descl2 = the number of columns is large, or the total number of bin is large
   // descl2 = when ``num_threads`` is large, e.g. ``>20``
   // descl2 = want to use small ``feature_fraction``, e.g. ``0.5``, to speed-up
   // descl2 = want to reduce memory cost

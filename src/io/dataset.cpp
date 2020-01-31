@@ -188,7 +188,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
   if (!second_round_features.empty()) {
     features_in_group.emplace_back();
     conflict_marks.emplace_back(total_sample_cnt, false);
-    bool is_multi_val = false;
+    bool is_multi_val = is_use_gpu ? true : false;
     int conflict_cnt = 0;
     for (auto fidx : second_round_features) {
       features_in_group.back().push_back(fidx);
@@ -1211,114 +1211,105 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
   int num_used_dense_group = static_cast<int>(used_dense_group.size());
   global_timer.Stop("Dataset::Get used group");
   global_timer.Start("Dataset::dense_bin_histogram");
-  auto ptr_ordered_grad = gradients;
-  auto ptr_ordered_hess = hessians;
-  if (data_indices != nullptr && num_data < num_data_) {
-    if (!is_constant_hessian) {
-      #pragma omp parallel for schedule(static)
-      for (data_size_t i = 0; i < num_data; ++i) {
-        ordered_gradients[i] = gradients[data_indices[i]];
-        ordered_hessians[i] = hessians[data_indices[i]];
+  if (num_used_dense_group > 0) {
+    auto ptr_ordered_grad = gradients;
+    auto ptr_ordered_hess = hessians;
+    if (data_indices != nullptr && num_data < num_data_) {
+      if (!is_constant_hessian) {
+#pragma omp parallel for schedule(static)
+        for (data_size_t i = 0; i < num_data; ++i) {
+          ordered_gradients[i] = gradients[data_indices[i]];
+          ordered_hessians[i] = hessians[data_indices[i]];
+        }
+      } else {
+#pragma omp parallel for schedule(static)
+        for (data_size_t i = 0; i < num_data; ++i) {
+          ordered_gradients[i] = gradients[data_indices[i]];
+        }
       }
-    } else {
-      #pragma omp parallel for schedule(static)
-      for (data_size_t i = 0; i < num_data; ++i) {
-        ordered_gradients[i] = gradients[data_indices[i]];
-      }
-    }
-    ptr_ordered_grad = ordered_gradients;
-    ptr_ordered_hess = ordered_hessians;
-    if (!is_constant_hessian) {
-      OMP_INIT_EX();
-      #pragma omp parallel for schedule(static)
-      for (int gi = 0; gi < num_used_dense_group; ++gi) {
-        OMP_LOOP_EX_BEGIN();
-        int group = used_dense_group[gi];
-        // feature is not used
-        auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
-        const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin* KHistEntrySize);
-        // construct histograms for smaller leaf
-        feature_groups_[group]->bin_data_->ConstructHistogram(
-          data_indices,
-          0,
-          num_data,
-          ptr_ordered_grad,
-          ptr_ordered_hess,
-          data_ptr);
-        OMP_LOOP_EX_END();
-      }
-      OMP_THROW_EX();
+      ptr_ordered_grad = ordered_gradients;
+      ptr_ordered_hess = ordered_hessians;
+      if (!is_constant_hessian) {
+        OMP_INIT_EX();
+#pragma omp parallel for schedule(static)
+        for (int gi = 0; gi < num_used_dense_group; ++gi) {
+          OMP_LOOP_EX_BEGIN();
+          int group = used_dense_group[gi];
+          // feature is not used
+          auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
+          const int num_bin = feature_groups_[group]->num_total_bin_;
+          std::memset(reinterpret_cast<void*>(data_ptr), 0,
+                      num_bin * KHistEntrySize);
+          // construct histograms for smaller leaf
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+              data_indices, 0, num_data, ptr_ordered_grad, ptr_ordered_hess,
+              data_ptr);
+          OMP_LOOP_EX_END();
+        }
+        OMP_THROW_EX();
 
-    } else {
-      OMP_INIT_EX();
-      #pragma omp parallel for schedule(static)
-      for (int gi = 0; gi < num_used_dense_group; ++gi) {
-        OMP_LOOP_EX_BEGIN();
-        int group = used_dense_group[gi];
-        // feature is not used
-        auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
-        const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin* KHistEntrySize);
-        // construct histograms for smaller leaf
-        feature_groups_[group]->bin_data_->ConstructHistogram(
-          data_indices,
-          0,
-          num_data,
-          ptr_ordered_grad,
-          data_ptr);
-        // fixed hessian.
-        for (int i = 0; i < num_bin; ++i) {
-          GET_HESS(data_ptr, i) = GET_HESS(data_ptr, i) * hessians[0];
+      } else {
+        OMP_INIT_EX();
+#pragma omp parallel for schedule(static)
+        for (int gi = 0; gi < num_used_dense_group; ++gi) {
+          OMP_LOOP_EX_BEGIN();
+          int group = used_dense_group[gi];
+          // feature is not used
+          auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
+          const int num_bin = feature_groups_[group]->num_total_bin_;
+          std::memset(reinterpret_cast<void*>(data_ptr), 0,
+                      num_bin * KHistEntrySize);
+          // construct histograms for smaller leaf
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+              data_indices, 0, num_data, ptr_ordered_grad, data_ptr);
+          // fixed hessian.
+          for (int i = 0; i < num_bin; ++i) {
+            GET_HESS(data_ptr, i) = GET_HESS(data_ptr, i) * hessians[0];
+          }
+          OMP_LOOP_EX_END();
         }
-        OMP_LOOP_EX_END();
+        OMP_THROW_EX();
       }
-      OMP_THROW_EX();
-    }
-  } else {
-    if (!is_constant_hessian) {
-      OMP_INIT_EX();
-      #pragma omp parallel for schedule(static)
-      for (int gi = 0; gi < num_used_dense_group; ++gi) {
-        OMP_LOOP_EX_BEGIN();
-        int group = used_dense_group[gi];
-        // feature is not used
-        auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
-        const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin* KHistEntrySize);
-        // construct histograms for smaller leaf
-        feature_groups_[group]->bin_data_->ConstructHistogram(
-          0,
-          num_data,
-          ptr_ordered_grad,
-          ptr_ordered_hess,
-          data_ptr);
-        OMP_LOOP_EX_END();
-      }
-      OMP_THROW_EX();
     } else {
-      OMP_INIT_EX();
-      #pragma omp parallel for schedule(static)
-      for (int gi = 0; gi < num_used_dense_group; ++gi) {
-        OMP_LOOP_EX_BEGIN();
-        int group = used_dense_group[gi];
-        // feature is not used
-        auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
-        const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin* KHistEntrySize);
-        // construct histograms for smaller leaf
-        feature_groups_[group]->bin_data_->ConstructHistogram(
-          0,
-          num_data,
-          ptr_ordered_grad,
-          data_ptr);
-        // fixed hessian.
-        for (int i = 0; i < num_bin; ++i) {
-          GET_HESS(data_ptr, i) = GET_HESS(data_ptr, i) * hessians[0];
+      if (!is_constant_hessian) {
+        OMP_INIT_EX();
+#pragma omp parallel for schedule(static)
+        for (int gi = 0; gi < num_used_dense_group; ++gi) {
+          OMP_LOOP_EX_BEGIN();
+          int group = used_dense_group[gi];
+          // feature is not used
+          auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
+          const int num_bin = feature_groups_[group]->num_total_bin_;
+          std::memset(reinterpret_cast<void*>(data_ptr), 0,
+                      num_bin * KHistEntrySize);
+          // construct histograms for smaller leaf
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+              0, num_data, ptr_ordered_grad, ptr_ordered_hess, data_ptr);
+          OMP_LOOP_EX_END();
         }
-        OMP_LOOP_EX_END();
+        OMP_THROW_EX();
+      } else {
+        OMP_INIT_EX();
+#pragma omp parallel for schedule(static)
+        for (int gi = 0; gi < num_used_dense_group; ++gi) {
+          OMP_LOOP_EX_BEGIN();
+          int group = used_dense_group[gi];
+          // feature is not used
+          auto data_ptr = hist_data + group_bin_boundaries_aligned_[group] * 2;
+          const int num_bin = feature_groups_[group]->num_total_bin_;
+          std::memset(reinterpret_cast<void*>(data_ptr), 0,
+                      num_bin * KHistEntrySize);
+          // construct histograms for smaller leaf
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+              0, num_data, ptr_ordered_grad, data_ptr);
+          // fixed hessian.
+          for (int i = 0; i < num_bin; ++i) {
+            GET_HESS(data_ptr, i) = GET_HESS(data_ptr, i) * hessians[0];
+          }
+          OMP_LOOP_EX_END();
+        }
+        OMP_THROW_EX();
       }
-      OMP_THROW_EX();
     }
   }
   global_timer.Stop("Dataset::dense_bin_histogram");

@@ -97,7 +97,7 @@ class TestSklearn(unittest.TestCase):
         ret = multi_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.05)
         ret = multi_logloss(y_test, gbm.predict_proba(X_test))
-        self.assertLess(ret, 0.15)
+        self.assertLess(ret, 0.16)
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_lambdarank(self):

@@ -196,7 +196,7 @@ Learning Control Parameters
 
    -  Recommend ``force_col_wise=true`` when:
 
-      -  the number of cloumns is large, or the total number of bin is large
+      -  the number of columns is large, or the total number of bin is large
 
       -  when ``num_threads`` is large, e.g. ``>20``
 

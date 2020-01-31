@@ -73,9 +73,9 @@ class RankXENDCG: public ObjectiveFunction {
     // Skip query if sum of labels is 0.
     float sum_labels = 0;
     for (data_size_t i = 0; i < cnt; ++i) {
-      sum_labels += phi(label[i], gammas[i]);
+      sum_labels += static_cast<float>(phi(label[i], gammas[i]));
     }
-    if (sum_labels == 0) {
+    if (std::fabs(sum_labels) < kEpsilon) {
       return;
     }
 
@@ -111,7 +111,7 @@ class RankXENDCG: public ObjectiveFunction {
   }
 
   double phi(const label_t l, double g) const {
-    return Common::Pow(2, l) - g;
+    return Common::Pow(2, static_cast<int>(l)) - g;
   }
 
   const char* GetName() const override {
