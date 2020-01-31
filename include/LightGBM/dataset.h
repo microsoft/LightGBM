@@ -383,7 +383,7 @@ class Dataset {
     return group_bin_boundaries_.back();
   }
 
-  inline uint64_t GroupBinBoundaryAlign(int group_idx) const {
+  inline uint64_t GroupBinBoundaryAligned(int group_idx) const {
     return group_bin_boundaries_aligned_[group_idx];
   }
 

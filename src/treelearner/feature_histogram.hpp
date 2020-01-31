@@ -752,7 +752,7 @@ public:
       for (int j = 0; j < train_data->num_features(); ++j) {
         if (train_data->Feature2Group(j) != last_gid) {
           last_gid = train_data->Feature2Group(j);
-          offset = static_cast<int>(train_data->GroupBinBoundaryAlign(last_gid));
+          offset = static_cast<int>(train_data->GroupBinBoundaryAligned(last_gid));
         }
         offset += train_data->SubFeatureBinOffset(j);
         offsets.push_back(offset);
