@@ -22,7 +22,7 @@ CVBooster <- R6::R6Class(
 #' @description Cross validation logic used by LightGBM
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
-#' @param label vector of response values. Should be provided only when data is an R-matrix.
+#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},
@@ -95,6 +95,19 @@ lgb.cv <- function(params = list()
                    , ...
                    ) {
 
+  # validate parameters
+  if (nrounds <= 0L) {
+    stop("nrounds should be greater than zero")
+  }
+
+  # If 'data' is not an lgb.Dataset, try to construct one using 'label'
+  if (!lgb.is.Dataset(data)) {
+    if (is.null(label)) {
+      stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
+    }
+    data <- lgb.Dataset(data, label = label)
+  }
+
   # Setup temporary variables
   params <- append(params, list(...))
   params$verbose <- verbose
@@ -102,10 +115,6 @@ lgb.cv <- function(params = list()
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
   feval <- NULL
-
-  if (nrounds <= 0L) {
-    stop("nrounds should be greater than zero")
-  }
 
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -139,14 +148,6 @@ lgb.cv <- function(params = list()
     end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1L]]] - 1L
   } else {
     end_iteration <- begin_iteration + nrounds - 1L
-  }
-
-  # Check for training dataset type correctness
-  if (!lgb.is.Dataset(data)) {
-    if (is.null(label)) {
-      stop("Labels must be provided for lgb.cv")
-    }
-    data <- lgb.Dataset(data, label = label)
   }
 
   # Check for weights

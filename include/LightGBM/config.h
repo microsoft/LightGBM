@@ -102,7 +102,7 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, cross_entropy, cross_entropy_lambda, lambdarank
+  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, cross_entropy, cross_entropy_lambda, lambdarank, rank_xendcg
   // alias = objective_type, app, application
   // desc = regression application
   // descl2 = ``regression``, L2 loss, aliases: ``regression_l2``, ``l2``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
@@ -127,6 +127,8 @@ struct Config {
   // descl2 = label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   // descl2 = `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
   // descl2 = all values in ``label`` must be smaller than number of elements in ``label_gain``
+  // desc = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+  // descl2 = to obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1
   std::string objective = "regression";
 
   // [doc-only]
@@ -754,6 +756,10 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
+  // desc = random seed for objectives
+  // desc = used only in the ``rank_xendcg`` objective
+  int objective_seed = 5;
+
   #pragma endregion
 
   #pragma region Metric Parameters
@@ -1004,6 +1010,9 @@ inline std::string ParseObjectiveAlias(const std::string& type) {
     return "cross_entropy_lambda";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
+  } else if (type == std::string("rank_xendcg") || type == std::string("xendcg") || type == std::string("xe_ndcg")
+             || type == std::string("xe_ndcg_mart") || type == std::string("xendcg_mart")) {
+    return "rank_xendcg";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }
@@ -1019,7 +1028,8 @@ inline std::string ParseMetricAlias(const std::string& type) {
     return "l1";
   } else if (type == std::string("binary_logloss") || type == std::string("binary")) {
     return "binary_logloss";
-  } else if (type == std::string("ndcg") || type == std::string("lambdarank")) {
+  } else if (type == std::string("ndcg") || type == std::string("lambdarank") || type == std::string("rank_xendcg")
+             || type == std::string("xendcg") || type == std::string("xe_ndcg") || type == std::string("xe_ndcg_mart") || type == std::string("xendcg_mart")) {
     return "ndcg";
   } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
     return "map";

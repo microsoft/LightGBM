@@ -7,6 +7,7 @@
 #include "binary_objective.hpp"
 #include "multiclass_objective.hpp"
 #include "rank_objective.hpp"
+#include "rank_xendcg_objective.hpp"
 #include "regression_objective.hpp"
 #include "xentropy_objective.hpp"
 
@@ -29,6 +30,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new BinaryLogloss(config);
   } else if (type == std::string("lambdarank")) {
     return new LambdarankNDCG(config);
+  } else if (type == std::string("rank_xendcg")) {
+    return new RankXENDCG(config);
   } else if (type == std::string("multiclass")) {
     return new MulticlassSoftmax(config);
   } else if (type == std::string("multiclassova")) {
@@ -68,6 +71,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new BinaryLogloss(strs);
   } else if (type == std::string("lambdarank")) {
     return new LambdarankNDCG(strs);
+  } else if (type == std::string("rank_xendcg")) {
+    return new RankXENDCG(strs);
   } else if (type == std::string("multiclass")) {
     return new MulticlassSoftmax(strs);
   } else if (type == std::string("multiclassova")) {

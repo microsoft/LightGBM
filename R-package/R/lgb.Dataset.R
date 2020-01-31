@@ -32,6 +32,14 @@ Dataset <- R6::R6Class(
                           info = list(),
                           ...) {
 
+      # validate inputs early to avoid unnecessary computation
+      if (!(is.null(reference) || lgb.check.r6.class(reference, "lgb.Dataset"))) {
+          stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset"))
+      }
+      if (!(is.null(predictor) || lgb.check.r6.class(predictor, "lgb.Predictor"))) {
+          stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
+      }
+
       # Check for additional parameters
       additional_params <- list(...)
 
@@ -54,20 +62,6 @@ Dataset <- R6::R6Class(
 
         }
 
-      }
-
-      # Check for dataset reference
-      if (!is.null(reference)) {
-        if (!lgb.check.r6.class(reference, "lgb.Dataset")) {
-          stop("lgb.Dataset: Can only use ", sQuote("lgb.Dataset"), " as reference")
-        }
-      }
-
-      # Check for predictor reference
-      if (!is.null(predictor)) {
-        if (!lgb.check.r6.class(predictor, "lgb.Predictor")) {
-          stop("lgb.Dataset: Only can use ", sQuote("lgb.Predictor"), " as predictor")
-        }
       }
 
       # Check for matrix format
