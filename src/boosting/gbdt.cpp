@@ -214,19 +214,21 @@ void GBDT::Bagging(int iter) {
   if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0)
       || need_re_bagging_) {
     need_re_bagging_ = false;
-    const data_size_t min_inner_size = 1000;
-    data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
-    if (inner_size < min_inner_size) { inner_size = min_inner_size; }
+    const data_size_t min_inner_size = 1024;
+    const int n_block = std::min(
+        num_threads_, (num_data_ + min_inner_size - 1) / min_inner_size);
+    data_size_t inner_size = SIZE_ALIGNED((num_data_ + n_block - 1) / n_block);
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads_; ++i) {
+    for (int i = 0; i < n_block; ++i) {
       OMP_LOOP_EX_BEGIN();
-      left_cnts_buf_[i] = 0;
-      right_cnts_buf_[i] = 0;
       data_size_t cur_start = i * inner_size;
-      if (cur_start > num_data_) { continue; }
-      data_size_t cur_cnt = inner_size;
-      if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
+      data_size_t cur_cnt = std::min(inner_size, num_data_ - cur_start);
+      if (cur_cnt <= 0) {
+        left_cnts_buf_[i] = 0;
+        right_cnts_buf_[i] = 0;
+        continue;
+      }
       Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
       data_size_t cur_left_count = 0;
       if (balanced_bagging_) {
@@ -243,15 +245,14 @@ void GBDT::Bagging(int iter) {
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
-    for (int i = 1; i < num_threads_; ++i) {
+    for (int i = 1; i < n_block; ++i) {
       left_write_pos_buf_[i] = left_write_pos_buf_[i - 1] + left_cnts_buf_[i - 1];
       right_write_pos_buf_[i] = right_write_pos_buf_[i - 1] + right_cnts_buf_[i - 1];
     }
-    left_cnt = left_write_pos_buf_[num_threads_ - 1] + left_cnts_buf_[num_threads_ - 1];
+    left_cnt = left_write_pos_buf_[n_block - 1] + left_cnts_buf_[n_block - 1];
 
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads_; ++i) {
-      OMP_LOOP_EX_BEGIN();
+    for (int i = 0; i < n_block; ++i) {
       if (left_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_write_pos_buf_[i],
                     tmp_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
@@ -260,9 +261,7 @@ void GBDT::Bagging(int iter) {
         std::memcpy(bag_data_indices_.data() + left_cnt + right_write_pos_buf_[i],
                     tmp_indices_.data() + offsets_buf_[i] + left_cnts_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
       }
-      OMP_LOOP_EX_END();
     }
-    OMP_THROW_EX();
     bag_data_cnt_ = left_cnt;
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
