@@ -7,10 +7,10 @@
 
 
 #include <LightGBM/bin.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstdint>
 #include <cstring>
-#include <omp.h>
 #include <vector>
 
 namespace LightGBM {
