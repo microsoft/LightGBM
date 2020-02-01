@@ -743,17 +743,12 @@ public:
       pool_.resize(cache_size);
       data_.resize(cache_size);
     }
-    int num_total_bin = static_cast<int>(train_data->NumTotalBinAligned());
+    int num_total_bin = static_cast<int>(train_data->NumTotalBin());
 
     std::vector<int> offsets;
     if (is_hist_colwise) {
       int offset = 0;
-      int last_gid = -1;
       for (int j = 0; j < train_data->num_features(); ++j) {
-        if (train_data->Feature2Group(j) != last_gid) {
-          last_gid = train_data->Feature2Group(j);
-          offset = static_cast<int>(train_data->GroupBinBoundaryAligned(last_gid));
-        }
         offset += train_data->SubFeatureBinOffset(j);
         offsets.push_back(offset);
         auto num_bin = train_data->FeatureNumBin(j);

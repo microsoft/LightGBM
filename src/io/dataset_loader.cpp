@@ -373,13 +373,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
   mem_ptr += sizeof(uint64_t) * (dataset->num_groups_ + 1);
 
-  const uint64_t* tmp_ptr_group_bin_boundaries_aligned = reinterpret_cast<const uint64_t*>(mem_ptr);
-  dataset->group_bin_boundaries_aligned_.clear();
-  for (int i = 0; i < dataset->num_groups_ + 1; ++i) {
-    dataset->group_bin_boundaries_aligned_.push_back(tmp_ptr_group_bin_boundaries_aligned[i]);
-  }
-  mem_ptr += sizeof(uint64_t) * (dataset->num_groups_ + 1);
-
   // group_feature_start_
   const int* tmp_ptr_group_feature_start = reinterpret_cast<const int*>(mem_ptr);
   dataset->group_feature_start_.clear();

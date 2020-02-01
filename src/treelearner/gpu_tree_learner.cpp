@@ -197,7 +197,7 @@ void GPUTreeLearner::WaitAndGetHistograms(hist_t* histograms) {
       continue;
     }
     int dense_group_index = dense_feature_group_map_[i];
-    auto old_histogram_array = histograms + train_data_->GroupBinBoundaryAligned(dense_group_index) * 2;
+    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
     int bin_size = train_data_->FeatureGroupNumBin(dense_group_index);
     if (device_bin_mults_[i] == 1) {
       for (int j = 0; j < bin_size; ++j) {
@@ -995,7 +995,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     int dense_feature_group_index = dense_feature_group_map_[i];
     size_t size = train_data_->FeatureGroupNumBin(dense_feature_group_index);
     hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - KHistOffset;
-    hist_t* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundaryAligned(dense_feature_group_index) * 2;
+    hist_t* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index) * 2;
     hist_t* gpu_histogram = new hist_t[size * 2];
     data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
     printf("Comparing histogram for feature %d size %d, %lu bins\n", dense_feature_group_index, num_data, size);
