@@ -386,60 +386,6 @@ void Dataset::Construct(
   zero_as_missing_ = io_config.zero_as_missing;
 }
 
-void Dataset::ResetConfig(const char* parameters) {
-  auto param = Config::Str2Map(parameters);
-  Config io_config;
-  io_config.Set(param);
-  if (param.count("max_bin") && io_config.max_bin != max_bin_) {
-    Log::Warning("Cannot change max_bin after constructed Dataset handle.");
-  }
-  if (param.count("max_bin_by_feature") && io_config.max_bin_by_feature != max_bin_by_feature_) {
-    Log::Warning("Cannot change max_bin_by_feature after constructed Dataset handle.");
-  }
-  if (param.count("bin_construct_sample_cnt") && io_config.bin_construct_sample_cnt != bin_construct_sample_cnt_) {
-    Log::Warning("Cannot change bin_construct_sample_cnt after constructed Dataset handle.");
-  }
-  if (param.count("min_data_in_bin") && io_config.min_data_in_bin != min_data_in_bin_) {
-    Log::Warning("Cannot change min_data_in_bin after constructed Dataset handle.");
-  }
-  if (param.count("use_missing") && io_config.use_missing != use_missing_) {
-    Log::Warning("Cannot change use_missing after constructed Dataset handle.");
-  }
-  if (param.count("zero_as_missing") && io_config.zero_as_missing != zero_as_missing_) {
-    Log::Warning("Cannot change zero_as_missing after constructed Dataset handle.");
-  }
-  if (param.count("forcedbins_filename")) {
-    Log::Warning("Cannot change forced bins after constructed Dataset handle.");
-  }
-
-  if (!io_config.monotone_constraints.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) == io_config.monotone_constraints.size());
-    monotone_types_.resize(num_features_);
-    for (int i = 0; i < num_total_features_; ++i) {
-      int inner_fidx = InnerFeatureIndex(i);
-      if (inner_fidx >= 0) {
-        monotone_types_[inner_fidx] = io_config.monotone_constraints[i];
-      }
-    }
-    if (ArrayArgs<int8_t>::CheckAllZero(monotone_types_)) {
-      monotone_types_.clear();
-    }
-  }
-  if (!io_config.feature_contri.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) == io_config.feature_contri.size());
-    feature_penalty_.resize(num_features_);
-    for (int i = 0; i < num_total_features_; ++i) {
-      int inner_fidx = InnerFeatureIndex(i);
-      if (inner_fidx >= 0) {
-        feature_penalty_[inner_fidx] = std::max(0.0, io_config.feature_contri[i]);
-      }
-    }
-    if (ArrayArgs<double>::CheckAll(feature_penalty_, 1.0)) {
-      feature_penalty_.clear();
-    }
-  }
-}
-
 void Dataset::FinishLoad() {
   if (is_finish_load_) { return; }
   if (num_groups_ > 0) {

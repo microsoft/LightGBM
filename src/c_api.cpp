@@ -194,9 +194,6 @@ class Booster {
     if (new_param.count("zero_as_missing") && new_config.zero_as_missing != old_config.zero_as_missing) {
       Log::Fatal("Cannot change zero_as_missing after constructed Dataset handle.");
     }
-    if (new_param.count("sparse_threshold") && new_config.sparse_threshold != old_config.sparse_threshold) {
-      Log::Fatal("Cannot change sparse_threshold after constructed Dataset handle.");
-    }
     if (new_param.count("categorical_feature") && new_config.categorical_feature != old_config.categorical_feature) {
       Log::Fatal("Cannot change categorical_feature after constructed Dataset handle.");
     }
@@ -208,12 +205,6 @@ class Booster {
     }
     if (new_param.count("enable_bundle") && new_config.enable_bundle != old_config.enable_bundle) {
       Log::Fatal("Cannot change enable_bundle after constructed Dataset handle.");
-    }
-    if (new_param.count("max_conflict_rate") && new_config.max_conflict_rate != old_config.max_conflict_rate) {
-      Log::Fatal("Cannot change max_conflict_rate after constructed Dataset handle.");
-    }
-    if (new_param.count("is_enable_sparse") && new_config.is_enable_sparse != old_config.is_enable_sparse) {
-      Log::Fatal("Cannot change is_enable_sparse after constructed Dataset handle.");
     }
     if (new_param.count("header") && new_config.header != old_config.header) {
       Log::Fatal("Cannot change header after constructed Dataset handle.");
