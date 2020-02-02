@@ -27,6 +27,8 @@
 
 namespace LightGBM {
 
+Common::Timer global_timer;
+
 Application::Application(int argc, char** argv) {
   LoadParameters(argc, argv);
   // set number of threads for openmp

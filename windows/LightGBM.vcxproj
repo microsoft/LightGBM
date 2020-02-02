@@ -30,24 +30,24 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccProvider>SAK</SccProvider>
     <ProjectName>LightGBM</ProjectName>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL|x64'" Label="Configuration">
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release_mpi|x64'">
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -95,6 +95,8 @@
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>
@@ -116,6 +118,8 @@
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalDependencies>
@@ -137,6 +141,8 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>
@@ -162,6 +168,8 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <OmitFramePointers>true</OmitFramePointers>
       <FunctionLevelLinking>true</FunctionLevelLinking>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalDependencies />
@@ -181,6 +189,8 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <OmitFramePointers>true</OmitFramePointers>
       <FunctionLevelLinking>true</FunctionLevelLinking>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalDependencies>
@@ -224,7 +234,8 @@
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
     <ClInclude Include="..\src\io\dense_nbits_bin.hpp" />
-    <ClInclude Include="..\src\io\ordered_sparse_bin.hpp" />
+    <ClInclude Include="..\src\io\multi_val_dense_bin.hpp" />
+    <ClInclude Include="..\src\io\multi_val_sparse_bin.hpp" />
     <ClInclude Include="..\src\io\parser.hpp" />
     <ClInclude Include="..\src\io\sparse_bin.hpp" />
     <ClInclude Include="..\src\metric\binary_metric.hpp" />
