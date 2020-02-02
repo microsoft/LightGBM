@@ -664,13 +664,14 @@ MultiValBin* Dataset::TestMultiThreadingMethod(score_t* gradients, score_t* hess
     col_wise_init_time = std::chrono::steady_clock::now() - start_time;
     start_time = std::chrono::steady_clock::now();
     all_bin.reset(GetMultiBinFromAllFeatures());
-    row_wise_init_time = std::chrono::steady_clock::now() - start_time;
-    Log::Debug("init for colwise cost %f seconds, init for rowwise cost %f seconds",
-               col_wise_init_time * 1e-3, row_wise_init_time * 1e-3);
     std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_data(NumTotalBin() * 2);
     const int num_bin_aligned =
         (all_bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     hist_buf_.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_threads);
+    row_wise_init_time = std::chrono::steady_clock::now() - start_time;
+    Log::Debug(
+        "init for colwise cost %f seconds, init for rowwise cost %f seconds",
+        col_wise_init_time * 1e-3, row_wise_init_time * 1e-3);
     std::chrono::duration<double, std::milli> col_wise_time, row_wise_time;
     start_time = std::chrono::steady_clock::now();
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients, hessians, gradients, hessians, is_constant_hessian, sparse_bin.get(), true, hist_data.data());
