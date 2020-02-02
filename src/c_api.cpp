@@ -253,8 +253,9 @@ class Booster {
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
-    if (ncol != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
+    if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
     if (single_row_predictor_[predict_type].get() == nullptr ||
@@ -274,8 +275,9 @@ class Booster {
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
-    if (ncol != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", ncol, boosting_->MaxFeatureIdx() + 1);
+    if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
@@ -327,7 +329,7 @@ class Booster {
     Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
     bool bool_data_has_header = data_has_header > 0 ? true : false;
-    predictor.Predict(data_filename, result_filename, bool_data_has_header);
+    predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check);
   }
 
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
@@ -887,13 +889,21 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     int group = ret->Feature2Group(feature_idx);
     int sub_feature = ret->Feture2SubFeature(feature_idx);
     CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
-    int row_idx = 0;
-    while (row_idx < nrow) {
-      auto pair = col_it.NextNonZero();
-      row_idx = pair.first;
-      // no more data
-      if (row_idx < 0) { break; }
-      ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
+    auto bin_mapper = ret->FeatureBinMapper(feature_idx);
+    if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin()) {
+      int row_idx = 0;
+      while (row_idx < nrow) {
+        auto pair = col_it.NextNonZero();
+        row_idx = pair.first;
+        // no more data
+        if (row_idx < 0) { break; }
+        ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
+      }
+    } else {
+      for (int row_idx = 0; row_idx < nrow; ++row_idx) {
+        auto val = col_it.Get(row_idx);
+        ret->PushOneData(tid, row_idx, group, sub_feature, val);
+      }
     }
     OMP_LOOP_EX_END();
   }
@@ -1055,7 +1065,7 @@ int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
   API_BEGIN();
   auto target_d = reinterpret_cast<Dataset*>(target);
   auto source_d = reinterpret_cast<Dataset*>(source);
-  target_d->addFeaturesFrom(source_d);
+  target_d->AddFeaturesFrom(source_d);
   API_END();
 }
 

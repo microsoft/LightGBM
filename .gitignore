@@ -321,6 +321,9 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+**/coverage.html
+**/coverage.html.zip
+R-package/tests/testthat/Rplots.pdf
 
 # Translations
 *.mo

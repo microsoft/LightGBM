@@ -37,7 +37,7 @@ constructed dataset
 }
 \description{
 Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
-or local file (that was created previously by saving an \code{lgb.Dataset}).
+             or local file (that was created previously by saving an \code{lgb.Dataset}).
 }
 \examples{
 library(lightgbm)

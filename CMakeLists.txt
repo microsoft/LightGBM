@@ -29,7 +29,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.1.0")
     message(FATAL_ERROR "Insufficient AppleClang version")
   endif()
-  cmake_minimum_required(VERSION 3.12)
+  cmake_minimum_required(VERSION 3.16)
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
     message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC.")
@@ -67,6 +67,10 @@ endif(USE_SWIG)
 if(USE_R35)
     ADD_DEFINITIONS(-DR_VER_ABOVE_35)
 endif(USE_R35)
+
+if(USE_TIMETAG)
+    ADD_DEFINITIONS(-DTIMETAG)
+endif(USE_TIMETAG)
 
 if(USE_MPI)
     find_package(MPI REQUIRED)
@@ -114,6 +118,36 @@ if(USE_HDFS)
     ADD_DEFINITIONS(-DUSE_HDFS)
     SET(HDFS_CXX_LIBRARIES ${HDFS_LIB} ${JAVA_JVM_LIBRARY})
 endif(USE_HDFS)
+
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <xmmintrin.h>
+int main() {
+  int a = 0;
+  _mm_prefetch(&a, _MM_HINT_NTA);
+  return 0;
+}
+" MM_PREFETCH)
+
+if(${MM_PREFETCH})
+  message(STATUS "Use _mm_prefetch")
+  ADD_DEFINITIONS(-DMM_PREFETCH)
+endif()
+
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <mm_malloc.h>
+int main() {
+  char *a = (char*)_mm_malloc(8, 16);
+  _mm_free(a);
+  return 0;
+}
+" MM_MALLOC)
+
+if(${MM_MALLOC})
+  message(STATUS "Use _mm_malloc")
+  ADD_DEFINITIONS(-DMM_MALLOC)
+endif()
 
 if(UNIX OR MINGW OR CYGWIN)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -O3 -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type")

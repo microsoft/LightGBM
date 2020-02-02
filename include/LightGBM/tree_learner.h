@@ -71,6 +71,8 @@ class TreeLearner {
   virtual void SetBaggingData(const data_size_t* used_indices,
     data_size_t num_data) = 0;
 
+  virtual bool IsHistColWise() const = 0;
+
   /*!
   * \brief Using last trained tree to predict score then adding to out_score;
   * \param out_score output score

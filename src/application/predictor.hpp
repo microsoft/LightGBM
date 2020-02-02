@@ -62,7 +62,7 @@ class Predictor {
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, predict_leaf_index, predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
-    predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(num_feature_, 0.0f));
+    predict_buf_.resize(num_threads_, std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(num_feature_, 0.0f));
     const int kFeatureThreshold = 100000;
     const size_t KSparseThreshold = static_cast<size_t>(0.01 * num_feature_);
     if (predict_leaf_index) {
@@ -130,7 +130,7 @@ class Predictor {
   * \param data_filename Filename of data
   * \param result_filename Filename of output result
   */
-  void Predict(const char* data_filename, const char* result_filename, bool header) {
+  void Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check) {
     auto writer = VirtualFileWriter::Make(result_filename);
     if (!writer->Init()) {
       Log::Fatal("Prediction results file %s cannot be found", result_filename);
@@ -141,8 +141,9 @@ class Predictor {
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
-    if (!header && parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
-      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
+    if (!header && !disable_shape_check && parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
+      Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
+                 "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
     }
     TextReader<data_size_t> predict_data_reader(data_filename, header);
     std::vector<int> feature_remapper(parser->NumFeatures(), -1);
@@ -262,7 +263,7 @@ class Predictor {
   int num_feature_;
   int num_pred_one_row_;
   int num_threads_;
-  std::vector<std::vector<double>> predict_buf_;
+  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> predict_buf_;
 };
 
 }  // namespace LightGBM

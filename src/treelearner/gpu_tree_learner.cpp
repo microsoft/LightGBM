@@ -49,15 +49,15 @@ void GPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
 // some functions used for debugging the GPU histogram construction
 #if GPU_DEBUG > 0
 
-void PrintHistograms(HistogramBinEntry* h, size_t size) {
-  size_t total = 0;
+void PrintHistograms(hist_t* h, size_t size) {
+  double total_hess = 0;
   for (size_t i = 0; i < size; ++i) {
-    printf("%03lu=%9.3g,%9.3g,%7d\t", i, h[i].sum_gradients, h[i].sum_hessians, h[i].cnt);
-    total += h[i].cnt;
-    if ((i & 3) == 3)
+    printf("%03lu=%9.3g,%9.3g\t", i, GET_GRAD(h, i), GET_HESS(h, i));
+    if ((i & 2) == 2)
         printf("\n");
+    total_hess += GET_HESS(h, i);
   }
-  printf("\nTotal examples: %lu\n", total);
+  printf("\nSum hessians: %9.3g\n", total_hess);
 }
 
 union Float_t {
@@ -69,27 +69,23 @@ union Float_t {
 };
 
 
-void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size, int feature_id) {
+void CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id) {
   size_t i;
   Float_t a, b;
   for (i = 0; i < size; ++i) {
-    a.f = h1[i].sum_gradients;
-    b.f = h2[i].sum_gradients;
+    a.f = GET_GRAD(h1, i);
+    b.f = GET_GRAD(h2, i);
     int32_t ulps = Float_t::ulp_diff(a, b);
-    if (fabs(h1[i].cnt           - h2[i].cnt != 0)) {
-      printf("%d != %d\n", h1[i].cnt, h2[i].cnt);
-      goto err;
-    }
     if (ulps > 0) {
-      // printf("grad %g != %g (%d ULPs)\n", h1[i].sum_gradients, h2[i].sum_gradients, ulps);
+      // printf("grad %g != %g (%d ULPs)\n", GET_GRAD(h1, i), GET_GRAD(h2, i), ulps);
       // goto err;
     }
-    a.f = h1[i].sum_hessians;
-    b.f = h2[i].sum_hessians;
+    a.f = GET_HESS(h1, i);
+    b.f = GET_HESS(h2, i);
     ulps = Float_t::ulp_diff(a, b);
-    if (ulps > 0) {
-      // printf("hessian %g != %g (%d ULPs)\n", h1[i].sum_hessians, h2[i].sum_hessians, ulps);
-      // goto err;
+    if (std::fabs(a.f - b.f) >= 1e-20) {
+      printf("hessian %g != %g (%d ULPs)\n", GET_HESS(h1, i), GET_HESS(h2, i), ulps);
+      goto err;
     }
   }
   return;
@@ -191,7 +187,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
 }
 
 template <typename HistType>
-void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms) {
+void GPUTreeLearner::WaitAndGetHistograms(hist_t* histograms) {
   HistType* hist_outputs = reinterpret_cast<HistType*>(host_histogram_outputs_);
   // when the output is ready, the computation is done
   histograms_wait_obj_.wait();
@@ -201,29 +197,25 @@ void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms) {
       continue;
     }
     int dense_group_index = dense_feature_group_map_[i];
-    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index);
+    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
     int bin_size = train_data_->FeatureGroupNumBin(dense_group_index);
     if (device_bin_mults_[i] == 1) {
       for (int j = 0; j < bin_size; ++j) {
-        old_histogram_array[j].sum_gradients = hist_outputs[i * device_bin_size_+ j].sum_gradients;
-        old_histogram_array[j].sum_hessians = hist_outputs[i * device_bin_size_ + j].sum_hessians;
-        old_histogram_array[j].cnt = (data_size_t)hist_outputs[i * device_bin_size_ + j].cnt;
+        GET_GRAD(old_histogram_array, j) = GET_GRAD(hist_outputs, i * device_bin_size_+ j);
+        GET_HESS(old_histogram_array, j) = GET_HESS(hist_outputs, i * device_bin_size_+ j);
       }
     } else {
       // values of this feature has been redistributed to multiple bins; need a reduction here
       int ind = 0;
       for (int j = 0; j < bin_size; ++j) {
         double sum_g = 0.0, sum_h = 0.0;
-        size_t cnt = 0;
         for (int k = 0; k < device_bin_mults_[i]; ++k) {
-          sum_g += hist_outputs[i * device_bin_size_+ ind].sum_gradients;
-          sum_h += hist_outputs[i * device_bin_size_+ ind].sum_hessians;
-          cnt += hist_outputs[i * device_bin_size_ + ind].cnt;
+          sum_g += GET_GRAD(hist_outputs, i * device_bin_size_+ ind);
+          sum_h += GET_HESS(hist_outputs, i * device_bin_size_+ ind);
           ind++;
         }
-        old_histogram_array[j].sum_gradients = sum_g;
-        old_histogram_array[j].sum_hessians = sum_h;
-        old_histogram_array[j].cnt = (data_size_t)cnt;
+        GET_GRAD(old_histogram_array, j) = sum_g;
+        GET_HESS(old_histogram_array, j) = sum_h;
       }
     }
   }
@@ -233,7 +225,7 @@ void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms) {
 void GPUTreeLearner::AllocateGPUMemory() {
   num_dense_feature_groups_ = 0;
   for (int i = 0; i < num_feature_groups_; ++i) {
-    if (ordered_bins_[i] == nullptr) {
+    if (!train_data_->IsMultiGroup(i)) {
       num_dense_feature_groups_++;
     }
   }
@@ -303,7 +295,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   device_data_indices_ = std::unique_ptr<boost::compute::vector<data_size_t>>(new boost::compute::vector<data_size_t>(allocated_num_data_, ctx_));
   boost::compute::fill(device_data_indices_->begin(), device_data_indices_->end(), 0, queue_);
   // histogram bin entry size depends on the precision (single/double)
-  hist_bin_entry_sz_ = config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
+  hist_bin_entry_sz_ = config_->gpu_use_dp ? sizeof(hist_t) * 2 : sizeof(gpu_hist_t) * 2;
   Log::Info("Size of histogram bin entry: %d", hist_bin_entry_sz_);
   // create output buffer, each feature has a histogram with device_bin_size_ bins,
   // each work group generates a sub-histogram of dword_features_ features.
@@ -326,7 +318,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   std::vector<int> dense_dword_ind(dword_features_);
   for (int i = 0; i < num_feature_groups_; ++i) {
     // looking for dword_features_ non-sparse feature-groups
-    if (ordered_bins_[i] == nullptr) {
+    if (!train_data_->IsMultiGroup(i)) {
       dense_dword_ind[k] = i;
       // decide if we need to redistribute the bin
       double t = device_bin_size_ / static_cast<double>(train_data_->FeatureGroupNumBin(i));
@@ -433,6 +425,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     } else {
       Log::Fatal("Bug in GPU tree builder: dword_features_ can only be 4 or 8");
     }
+    #pragma omp critical
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
                         i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
@@ -681,6 +674,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   printf("bin size: ");
   #endif
   for (int i = 0; i < num_feature_groups_; ++i) {
+    if (train_data_->IsMultiGroup(i)) {
+      continue;
+    }
     #if GPU_DEBUG >= 1
     printf("%d, ", train_data_->FeatureGroupNumBin(i));
     #endif
@@ -959,35 +955,34 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used_[feature_index]) continue;
     if (!is_feature_used[feature_index]) continue;
-    if (ordered_bins_[train_data_->Feature2Group(feature_index)]) {
+    if (train_data_->IsMultiGroup(train_data_->Feature2Group(feature_index))) {
       is_sparse_feature_used[feature_index] = 1;
     } else {
       is_dense_feature_used[feature_index] = 1;
     }
   }
   // construct smaller leaf
-  HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
+  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - KHistOffset;
   // ConstructGPUHistogramsAsync will return true if there are availabe feature gourps dispatched to GPU
   bool is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
     nullptr, smaller_leaf_splits_->num_data_in_leaf(),
     nullptr, nullptr,
     nullptr, nullptr);
   // then construct sparse features on CPU
-  // We set data_indices to null to avoid rebuilding ordered gradients/hessians
   train_data_->ConstructHistograms(is_sparse_feature_used,
-    nullptr, smaller_leaf_splits_->num_data_in_leaf(),
-    smaller_leaf_splits_->LeafIndex(),
-    &ordered_bins_, gradients_, hessians_,
+    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
+    gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
+    multi_val_bin_.get(), is_hist_colwise_,
     ptr_smaller_leaf_hist_data);
   // wait for GPU to finish, only if GPU is actually used
   if (is_gpu_used) {
     if (config_->gpu_use_dp) {
       // use double precision
-      WaitAndGetHistograms<HistogramBinEntry>(ptr_smaller_leaf_hist_data);
+      WaitAndGetHistograms<hist_t>(ptr_smaller_leaf_hist_data);
     } else {
       // use single precision
-      WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_smaller_leaf_hist_data);
+      WaitAndGetHistograms<gpu_hist_t>(ptr_smaller_leaf_hist_data);
     }
   }
 
@@ -999,48 +994,58 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
       continue;
     int dense_feature_group_index = dense_feature_group_map_[i];
     size_t size = train_data_->FeatureGroupNumBin(dense_feature_group_index);
-    HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
-    HistogramBinEntry* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index);
-    HistogramBinEntry* gpu_histogram = new HistogramBinEntry[size];
+    hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - KHistOffset;
+    hist_t* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index) * 2;
+    hist_t* gpu_histogram = new hist_t[size * 2];
     data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
     printf("Comparing histogram for feature %d size %d, %lu bins\n", dense_feature_group_index, num_data, size);
-    std::copy(current_histogram, current_histogram + size, gpu_histogram);
-    std::memset(current_histogram, 0, train_data_->FeatureGroupNumBin(dense_feature_group_index) * sizeof(HistogramBinEntry));
-    train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
-      num_data != num_data_ ? smaller_leaf_splits_->data_indices() : nullptr,
-      num_data,
-      num_data != num_data_ ? ordered_gradients_.data() : gradients_,
-      num_data != num_data_ ? ordered_hessians_.data() : hessians_,
-      current_histogram);
+    std::copy(current_histogram, current_histogram + size * 2, gpu_histogram);
+    std::memset(current_histogram, 0, size * sizeof(hist_t) * 2);
+    if(train_data_->FeatureGroupBin(dense_feature_group_index) == nullptr){continue;}
+    if (num_data != num_data_ ) {
+      train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
+        smaller_leaf_splits_->data_indices(),
+        0,
+        num_data,
+        ordered_gradients_.data(),
+        ordered_hessians_.data(),
+        current_histogram);
+    } else {
+      train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
+        0,
+        num_data,
+        gradients_,
+        hessians_,
+        current_histogram);
+    }
     CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index);
-    std::copy(gpu_histogram, gpu_histogram + size, current_histogram);
+    std::copy(gpu_histogram, gpu_histogram + size * 2, current_histogram);
     delete [] gpu_histogram;
   }
   #endif
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
-    HistogramBinEntry* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - 1;
+    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - KHistOffset;
     is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data());
     // then construct sparse features on CPU
-    // We set data_indices to null to avoid rebuilding ordered gradients/hessians
     train_data_->ConstructHistograms(is_sparse_feature_used,
-      nullptr, larger_leaf_splits_->num_data_in_leaf(),
-      larger_leaf_splits_->LeafIndex(),
-      &ordered_bins_, gradients_, hessians_,
+      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
+      gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
+      multi_val_bin_.get(), is_hist_colwise_,
       ptr_larger_leaf_hist_data);
     // wait for GPU to finish, only if GPU is actually used
     if (is_gpu_used) {
       if (config_->gpu_use_dp) {
         // use double precision
-        WaitAndGetHistograms<HistogramBinEntry>(ptr_larger_leaf_hist_data);
+        WaitAndGetHistograms<hist_t>(ptr_larger_leaf_hist_data);
       } else {
         // use single precision
-        WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_larger_leaf_hist_data);
+        WaitAndGetHistograms<gpu_hist_t>(ptr_larger_leaf_hist_data);
       }
     }
   }

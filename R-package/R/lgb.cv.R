@@ -17,12 +17,12 @@ CVBooster <- R6::R6Class(
   )
 )
 
+#' @name lgb.cv
 #' @title Main CV logic for LightGBM
 #' @description Cross validation logic used by LightGBM
-#' @name lgb.cv
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
-#' @param label vector of response values. Should be provided only when data is an R-matrix.
+#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},
@@ -36,19 +36,19 @@ CVBooster <- R6::R6Class(
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
-#' @param categorical_feature list of str or int
-#'                            type int represents index,
-#'                            type str represents feature names
+#' @param categorical_feature categorical features. This can either be a character vector of feature
+#'                            names or an integer vector with the indices of the features (e.g.
+#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
-#'                \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
-#'                \item{num_leaves}{number of leaves in one tree. defaults to 127}
-#'                \item{max_depth}{Limit the max depth for tree model. This is used to deal with
+#'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
+#'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
+#'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
 #'                                 overfit when #data is small. Tree still grow by leaf-wise.}
-#'                \item{num_threads}{Number of threads for LightGBM. For the best speed, set this to
+#'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
 #'                                   the number of real CPU cores, not the number of threads (most
 #'                                   CPU using hyper-threading to generate 2 threads per CPU core).}
 #'            }
@@ -70,6 +70,7 @@ CVBooster <- R6::R6Class(
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
+#' @importFrom data.table data.table setorderv
 #' @export
 lgb.cv <- function(params = list()
                    , data
@@ -94,18 +95,26 @@ lgb.cv <- function(params = list()
                    , ...
                    ) {
 
+  # validate parameters
+  if (nrounds <= 0L) {
+    stop("nrounds should be greater than zero")
+  }
+
+  # If 'data' is not an lgb.Dataset, try to construct one using 'label'
+  if (!lgb.is.Dataset(data)) {
+    if (is.null(label)) {
+      stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
+    }
+    data <- lgb.Dataset(data, label = label)
+  }
+
   # Setup temporary variables
-  addiction_params <- list(...)
-  params <- append(params, addiction_params)
+  params <- append(params, list(...))
   params$verbose <- verbose
   params <- lgb.check.obj(params, obj)
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
   feval <- NULL
-
-  if (nrounds <= 0L) {
-    stop("nrounds should be greater than zero")
-  }
 
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -139,14 +148,6 @@ lgb.cv <- function(params = list()
     end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1L]]] - 1L
   } else {
     end_iteration <- begin_iteration + nrounds - 1L
-  }
-
-  # Check for training dataset type correctness
-  if (!lgb.is.Dataset(data)) {
-    if (is.null(label)) {
-      stop("Labels must be provided for lgb.cv")
-    }
-    data <- lgb.Dataset(data, label = label)
   }
 
   # Check for weights
@@ -193,12 +194,12 @@ lgb.cv <- function(params = list()
 
     # Create folds
     folds <- generate.cv.folds(
-      nfold
-      , nrow(data)
-      , stratified
-      , getinfo(data, "label")
-      , getinfo(data, "group")
-      , params
+      nfold = nfold
+      , nrows = nrow(data)
+      , stratified = stratified
+      , label = getinfo(data, "label")
+      , group = getinfo(data, "group")
+      , params = params
     )
 
   }
@@ -264,35 +265,64 @@ lgb.cv <- function(params = list()
   # Categorize callbacks
   cb <- categorize.callbacks(callbacks)
 
-  # Construct booster using a list apply, check if requires group or not
-  if (!is.list(folds[[1L]])) {
-    bst_folds <- lapply(seq_along(folds), function(k) {
-      dtest <- slice(data, folds[[k]])
-      dtrain <- slice(data, seq_len(nrow(data))[-folds[[k]]])
-      setinfo(dtrain, "weight", getinfo(data, "weight")[-folds[[k]]])
-      setinfo(dtrain, "init_score", getinfo(data, "init_score")[-folds[[k]]])
-      setinfo(dtest, "weight", getinfo(data, "weight")[folds[[k]]])
-      setinfo(dtest, "init_score", getinfo(data, "init_score")[folds[[k]]])
-      booster <- Booster$new(params, dtrain)
-      booster$add_valid(dtest, "valid")
-      list(booster = booster)
-    })
-  } else {
-    bst_folds <- lapply(seq_along(folds), function(k) {
-      dtest <- slice(data, folds[[k]]$fold)
-      dtrain <- slice(data, (seq_len(nrow(data)))[-folds[[k]]$fold])
-      setinfo(dtrain, "weight", getinfo(data, "weight")[-folds[[k]]$fold])
-      setinfo(dtrain, "init_score", getinfo(data, "init_score")[-folds[[k]]$fold])
-      setinfo(dtrain, "group", getinfo(data, "group")[-folds[[k]]$group])
-      setinfo(dtest, "weight", getinfo(data, "weight")[folds[[k]]$fold])
-      setinfo(dtest, "init_score", getinfo(data, "init_score")[folds[[k]]$fold])
-      setinfo(dtest, "group", getinfo(data, "group")[folds[[k]]$group])
-      booster <- Booster$new(params, dtrain)
-      booster$add_valid(dtest, "valid")
-      list(booster = booster)
-    })
-  }
+  # Construct booster for each fold. The data.table() code below is used to
+  # guarantee that indices are sorted while keeping init_score and weight together
+  # with the correct indices. Note that it takes advantage of the fact that
+  # someDT$some_column returns NULL is 'some_column' does not exist in the data.table
+  bst_folds <- lapply(
+    X = seq_along(folds)
+    , FUN = function(k) {
 
+      # For learning-to-rank, each fold is a named list with two elements:
+      #   * `fold` = an integer vector of row indices
+      #   * `group` = an integer vector describing which groups are in the fold
+      # For classification or regression tasks, it will just be an integer
+      # vector of row indices
+      folds_have_group <- "group" %in% names(folds[[k]])
+      if (folds_have_group) {
+        test_indices <- folds[[k]]$fold
+        test_group_indices <- folds[[k]]$group
+        test_groups <- getinfo(data, "group")[test_group_indices]
+        train_groups <- getinfo(data, "group")[-test_group_indices]
+      } else {
+        test_indices <- folds[[k]]
+      }
+      train_indices <- seq_len(nrow(data))[-test_indices]
+
+      # set up test set
+      indexDT <- data.table::data.table(
+        indices = test_indices
+        , weight = getinfo(data, "weight")[test_indices]
+        , init_score = getinfo(data, "init_score")[test_indices]
+      )
+      data.table::setorderv(indexDT, "indices", order = 1L)
+      dtest <- slice(data, indexDT$indices)
+      setinfo(dtest, "weight", indexDT$weight)
+      setinfo(dtest, "init_score", indexDT$init_score)
+
+      # set up training set
+      indexDT <- data.table::data.table(
+        indices = train_indices
+        , weight = getinfo(data, "weight")[train_indices]
+        , init_score = getinfo(data, "init_score")[train_indices]
+      )
+      data.table::setorderv(indexDT, "indices", order = 1L)
+      dtrain <- slice(data, indexDT$indices)
+      setinfo(dtrain, "weight", indexDT$weight)
+      setinfo(dtrain, "init_score", indexDT$init_score)
+
+      if (folds_have_group) {
+        setinfo(dtest, "group", test_groups)
+        setinfo(dtrain, "group", train_groups)
+      }
+
+      booster <- Booster$new(params, dtrain)
+      booster$add_valid(dtest, "valid")
+      return(
+        list(booster = booster)
+      )
+    }
+  )
 
   # Create new booster
   cv_booster <- CVBooster$new(bst_folds)

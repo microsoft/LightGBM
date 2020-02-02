@@ -20,7 +20,7 @@ getinfo(dataset, ...)
 info data
 }
 \description{
-Get information of an \code{lgb.Dataset} object
+Get one attribute of a \code{lgb.Dataset}
 }
 \details{
 The \code{name} field can be one of the following:

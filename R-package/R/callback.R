@@ -29,11 +29,10 @@ cb.reset.parameters <- function(new_params) {
   # Run some checks in the beginning
   init <- function(env) {
 
-    # Store boosting rounds
-    nrounds <<- env$end_iteration - env$begin_iteration + 1L
-
     # Check for model environment
-    if (is.null(env$model)) { stop("Env should have a ", sQuote("model")) }
+    if (is.null(env$model)) {
+      stop("Env should have a ", sQuote("model"))
+    }
 
     # Some parameters are not allowed to be changed,
     # since changing them would simply wreck some chaos
@@ -49,6 +48,9 @@ cb.reset.parameters <- function(new_params) {
         , " cannot be changed during boosting"
       )
     }
+
+    # Store boosting rounds
+    nrounds <<- env$end_iteration - env$begin_iteration + 1L
 
     # Check parameter names
     for (n in pnames) {
@@ -100,7 +102,6 @@ cb.reset.parameters <- function(new_params) {
       p[i]
     })
 
-    # To-do check pars
     if (!is.null(env$model)) {
       env$model$reset_parameter(pars)
     }
@@ -286,13 +287,13 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
   # Initialization function
   init <- function(env) {
 
-    # Store evaluation length
-    eval_len <<- length(env$eval_list)
-
     # Early stopping cannot work without metrics
-    if (eval_len == 0L) {
+    if (length(env$eval_list) == 0L) {
       stop("For early stopping, valids must have at least one element")
     }
+
+    # Store evaluation length
+    eval_len <<- length(env$eval_list)
 
     # Check if verbose or not
     if (isTRUE(verbose)) {

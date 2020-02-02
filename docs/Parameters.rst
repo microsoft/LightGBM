@@ -51,7 +51,7 @@ Core Parameters
 
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
 
--  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gamma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``cross_entropy``, ``cross_entropy_lambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
+-  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gamma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``cross_entropy``, ``cross_entropy_lambda``, ``lambdarank``, ``rank_xendcg``, aliases: ``objective_type``, ``app``, ``application``
 
    -  regression application
 
@@ -98,6 +98,10 @@ Core Parameters
       -  `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
 
       -  all values in ``label`` must be smaller than number of elements in ``label_gain``
+
+   -  ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+
+      -  to obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1
 
 -  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
 
@@ -185,6 +189,38 @@ Core Parameters
 
 Learning Control Parameters
 ---------------------------
+
+-  ``force_col_wise`` :raw-html:`<a id="force_col_wise" title="Permalink to this parameter" href="#force_col_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  set ``force_col_wise=true`` will force LightGBM to use col-wise histogram build
+
+   -  Recommend ``force_col_wise=true`` when:
+
+      -  the number of columns is large, or the total number of bin is large
+
+      -  when ``num_threads`` is large, e.g. ``>20``
+
+      -  want to use small ``feature_fraction``, e.g. ``0.5``, to speed-up
+
+      -  want to reduce memory cost
+
+   -  when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one
+
+-  ``force_row_wise`` :raw-html:`<a id="force_row_wise" title="Permalink to this parameter" href="#force_row_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  set ``force_row_wise=true`` will force LightGBM to use row-wise histogram build
+
+   -  Recommend ``force_row_wise=true`` when:
+
+      -  the number of data is large, and the number of total bin is relatively small
+
+      -  want to use small ``bagging``, or ``goss``, to speed-up
+
+      -  when ``num_threads`` is relatively small, e.g. ``<=16``
+
+   -  set ``force_row_wise=true`` will double the memory cost for Dataset object, if your memory is not enough, you can try ``force_col_wise=true``
+
+   -  when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one.
 
 -  ``max_depth`` :raw-html:`<a id="max_depth" title="Permalink to this parameter" href="#max_depth">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
@@ -563,22 +599,6 @@ IO Parameters
 
    -  **Note**: disabling this may cause the slow training speed for sparse datasets
 
--  ``max_conflict_rate`` :raw-html:`<a id="max_conflict_rate" title="Permalink to this parameter" href="#max_conflict_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= max_conflict_rate < 1.0``
-
-   -  max conflict rate for bundles in EFB
-
-   -  set this to ``0.0`` to disallow the conflict and provide more accurate results
-
-   -  set this to a larger value to achieve faster speed
-
--  ``is_enable_sparse`` :raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" href="#is_enable_sparse">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
-
-   -  used to enable/disable sparse optimization
-
--  ``sparse_threshold`` :raw-html:`<a id="sparse_threshold" title="Permalink to this parameter" href="#sparse_threshold">&#x1F517;&#xFE0E;</a>`, default = ``0.8``, type = double, constraints: ``0.0 < sparse_threshold <= 1.0``
-
-   -  the threshold of zero elements percentage for treating a feature as a sparse one
-
 -  ``use_missing`` :raw-html:`<a id="use_missing" title="Permalink to this parameter" href="#use_missing">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
    -  set this to ``false`` to disable the special handle of missing value
@@ -733,6 +753,18 @@ IO Parameters
 
    -  the threshold of margin in early-stopping prediction
 
+-  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only in ``prediction`` task
+
+   -  control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
+
+   -  if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
+
+   -  if ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model
+
+   -  **Note**: be very careful setting this parameter to ``true``
+
 -  ``convert_model_language`` :raw-html:`<a id="convert_model_language" title="Permalink to this parameter" href="#convert_model_language">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
    -  used only in ``convert_model`` task
@@ -847,6 +879,12 @@ Objective Parameters
    -  relevant gain for labels. For example, the gain of label ``2`` is ``3`` in case of default label gains
 
    -  separate by ``,``
+
+-  ``objective_seed`` :raw-html:`<a id="objective_seed" title="Permalink to this parameter" href="#objective_seed">&#x1F517;&#xFE0E;</a>`, default = ``5``, type = int
+
+   -  random seed for objectives
+
+   -  used only in the ``rank_xendcg`` objective
 
 Metric Parameters
 -----------------

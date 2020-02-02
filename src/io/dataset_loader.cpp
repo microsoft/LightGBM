@@ -335,8 +335,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(dataset->use_missing_);
   dataset->zero_as_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
   mem_ptr += sizeof(dataset->zero_as_missing_);
-  dataset->sparse_threshold_ = *(reinterpret_cast<const double*>(mem_ptr));
-  mem_ptr += sizeof(dataset->sparse_threshold_);
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
   for (int i = 0; i < dataset->num_total_features_; ++i) {
@@ -717,7 +715,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, num_per_col, num_col, total_sample_size, config_);
+  dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
@@ -1040,8 +1038,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
-  sample_values.clear();
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
+                     Common::Vector2Ptr<double>(&sample_values).data(),
                      Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
 }
 
@@ -1066,11 +1064,13 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       ref_text_data[i].clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1083,6 +1083,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1110,10 +1111,12 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1126,6 +1129,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1167,11 +1171,13 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       }
       // set label
       dataset->metadata_.SetLabelAt(start_idx + i, static_cast<label_t>(tmp_label));
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1184,6 +1190,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();

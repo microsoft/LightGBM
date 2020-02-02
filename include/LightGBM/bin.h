@@ -29,36 +29,29 @@ enum MissingType {
   NaN
 };
 
-/*! \brief Store data for one histogram bin */
-struct HistogramBinEntry {
- public:
-  /*! \brief Sum of gradients on this bin */
-  double sum_gradients = 0.0f;
-  /*! \brief Sum of hessians on this bin */
-  double sum_hessians = 0.0f;
-  /*! \brief Number of data on this bin */
-  data_size_t cnt = 0;
-  /*!
-  * \brief Sum up (reducers) functions for histogram bin
-  */
-  inline static void SumReducer(const char *src, char *dst, int type_size, comm_size_t len) {
-    comm_size_t used_size = 0;
-    const HistogramBinEntry* p1;
-    HistogramBinEntry* p2;
-    while (used_size < len) {
-      // convert
-      p1 = reinterpret_cast<const HistogramBinEntry*>(src);
-      p2 = reinterpret_cast<HistogramBinEntry*>(dst);
-      // add
-      p2->cnt += p1->cnt;
-      p2->sum_gradients += p1->sum_gradients;
-      p2->sum_hessians += p1->sum_hessians;
-      src += type_size;
-      dst += type_size;
-      used_size += type_size;
-    }
+typedef double hist_t;
+
+const size_t KHistEntrySize = 2 * sizeof(hist_t);
+const int KHistOffset = 2;
+const double kSparseThreshold = 0.7;
+
+#define GET_GRAD(hist, i) hist[(i) << 1]
+#define GET_HESS(hist, i) hist[((i) << 1) + 1]
+
+inline static void HistogramSumReducer(const char* src, char* dst, int type_size, comm_size_t len) {
+  comm_size_t used_size = 0;
+  const hist_t* p1;
+  hist_t* p2;
+  while (used_size < len) {
+    // convert
+    p1 = reinterpret_cast<const hist_t*>(src);
+    p2 = reinterpret_cast<hist_t*>(dst);
+    *p2 += *p1;
+    src += type_size;
+    dst += type_size;
+    used_size += type_size;
   }
-};
+}
 
 /*! \brief This class used to convert feature values into bin,
 *          and store some meta information for bin*/
@@ -117,6 +110,7 @@ class BinMapper {
       return bin_2_categorical_[bin];
     }
   }
+
   /*!
   * \brief Get sizes in byte of this object
   */
@@ -135,6 +129,11 @@ class BinMapper {
   inline uint32_t GetDefaultBin() const {
     return default_bin_;
   }
+
+  inline uint32_t GetMostFreqBin() const {
+    return most_freq_bin_;
+  }
+
   /*!
   * \brief Construct feature value to bin mapper according feature values
   * \param values (Sampled) values of this feature, Note: not include zero.
@@ -211,6 +210,8 @@ class BinMapper {
   double max_val_;
   /*! \brief bin value of feature value 0 */
   uint32_t default_bin_;
+
+  uint32_t most_freq_bin_;
 };
 
 /*!
@@ -244,7 +245,7 @@ class OrderedBin {
   * \param out Output Result
   */
   virtual void ConstructHistogram(int leaf, const score_t* gradients,
-    const score_t* hessians, HistogramBinEntry* out) const = 0;
+    const score_t* hessians, hist_t* out) const = 0;
 
   /*!
   * \brief Construct histogram by using this bin
@@ -254,7 +255,7 @@ class OrderedBin {
   * \param gradients Gradients, Note:non-ordered by leaf
   * \param out Output Result
   */
-  virtual void ConstructHistogram(int leaf, const score_t* gradients, HistogramBinEntry* out) const = 0;
+  virtual void ConstructHistogram(int leaf, const score_t* gradients, hist_t* out) const = 0;
 
   /*!
   * \brief Split current bin, and perform re-order by leaf
@@ -306,10 +307,10 @@ class Bin {
   * \brief Get bin iterator of this bin for specific feature
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin default bin if bin not in [min_bin, max_bin]
+  * \param most_freq_bin
   * \return Iterator of this bin
   */
-  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const = 0;
+  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const = 0;
 
   /*!
   * \brief Save binary data to file
@@ -343,19 +344,20 @@ class Bin {
   *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
   *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
   * \param data_indices Used data indices in current leaf
-  * \param num_data Number of used data
+  * \param start start index in data_indices
+  * \param end end index in data_indices
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
   * \param ordered_hessians Pointer to hessians, the data_indices[i]-th data's hessian is ordered_hessians[i]
   * \param out Output Result
   */
   virtual void ConstructHistogram(
-    const data_size_t* data_indices, data_size_t num_data,
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const = 0;
+    hist_t* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t num_data,
+  virtual void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const = 0;
+    hist_t* out) const = 0;
 
   /*!
   * \brief Construct histogram of this feature,
@@ -365,21 +367,23 @@ class Bin {
   *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
   *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
   * \param data_indices Used data indices in current leaf
-  * \param num_data Number of used data
+  * \param start start index in data_indices
+  * \param end end index in data_indices
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
   * \param out Output Result
   */
-  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
-                                  const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
+  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
+                                  const score_t* ordered_gradients, hist_t* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t num_data,
-                                  const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
+  virtual void ConstructHistogram(data_size_t start, data_size_t end,
+                                  const score_t* ordered_gradients, hist_t* out) const = 0;
 
   /*!
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin default bin if bin not in [min_bin, max_bin]
+  * \param default_bin default bin for feature value 0
+  * \param most_freq_bin
   * \param missing_type missing type
   * \param default_left missing bin will go to left child
   * \param threshold The split threshold.
@@ -390,7 +394,7 @@ class Bin {
   * \return The number of less than or equal data.
   */
   virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin,
-    uint32_t default_bin, MissingType missing_type, bool default_left, uint32_t threshold,
+    uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left, uint32_t threshold,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
@@ -398,7 +402,7 @@ class Bin {
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin default bin if bin not in [min_bin, max_bin]
+  * \param most_freq_bin
   * \param threshold The split threshold.
   * \param num_threshold Number of threshold
   * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.
@@ -408,34 +412,14 @@ class Bin {
   * \return The number of less than or equal data.
   */
   virtual data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
-                            uint32_t default_bin, const uint32_t* threshold, int num_threshold,
+                            uint32_t most_freq_bin, const uint32_t* threshold, int num_threshold,
                             data_size_t* data_indices, data_size_t num_data,
                             data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
-
-  /*!
-  * \brief Create the ordered bin for this bin
-  * \return Pointer to ordered bin
-  */
-  virtual OrderedBin* CreateOrderedBin() const = 0;
 
   /*!
   * \brief After pushed all feature data, call this could have better refactor for bin data
   */
   virtual void FinishLoad() = 0;
-
-  /*!
-  * \brief Create object for bin data of one feature, will call CreateDenseBin or CreateSparseBin according to "is_sparse"
-  * \param num_data Total number of data
-  * \param num_bin Number of bin
-  * \param sparse_rate Sparse rate of this bins( num_bin0/num_data )
-  * \param is_enable_sparse True if enable sparse feature
-  * \param sparse_threshold Threshold for treating a feature as a sparse feature
-  * \param is_sparse Will set to true if this bin is sparse
-  * \param default_bin Default bin for zeros value
-  * \return The bin data object
-  */
-  static Bin* CreateBin(data_size_t num_data, int num_bin,
-    double sparse_rate, bool is_enable_sparse, double sparse_threshold, bool* is_sparse);
 
   /*!
   * \brief Create object for bin data of one feature, used for dense feature
@@ -457,6 +441,46 @@ class Bin {
   * \brief Deep copy the bin
   */
   virtual Bin* Clone() = 0;
+};
+
+
+class MultiValBin {
+public:
+
+  virtual ~MultiValBin() {}
+
+  virtual data_size_t num_data() const = 0;
+
+  virtual int32_t num_bin() const = 0;
+
+  virtual void ReSize(data_size_t num_data) = 0;
+
+  virtual void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t>& values) = 0;
+
+  virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
+
+  virtual void ConstructHistogram(
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* gradients, const score_t* hessians,
+    hist_t* out) const = 0;
+
+  virtual void ConstructHistogram(data_size_t start, data_size_t end,
+    const score_t* gradients, const score_t* hessians,
+    hist_t* out) const = 0;
+
+  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, hist_t* out) const = 0;
+
+  virtual void ConstructHistogram(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, hist_t* out) const = 0;
+
+  virtual void FinishLoad() = 0;
+
+  virtual bool IsSparse() = 0;
+
+  static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature, double sparse_rate);
+
+  virtual MultiValBin* Clone() = 0;
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {

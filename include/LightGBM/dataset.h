@@ -8,6 +8,7 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
@@ -293,6 +294,7 @@ class Dataset {
     int num_total_features,
     const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
+    double** sample_values,
     const int* num_per_col,
     int num_sample_col,
     size_t total_sample_cnt,
@@ -319,6 +321,16 @@ class Dataset {
     return true;
   }
 
+  inline void FinishOneRow(int tid, data_size_t row_idx, const std::vector<bool>& is_feature_added) {
+    if (is_finish_load_) { return; }
+    for (auto fidx : feature_need_push_zeros_) {
+      if (is_feature_added[fidx]) { continue; }
+      const int group = feature2group_[fidx];
+      const int sub_feature = feature2subfeature_[fidx];
+      feature_groups_[group]->PushData(tid, sub_feature, row_idx, 0.0f);
+    }
+  }
+
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
     if (is_finish_load_) { return; }
     for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
@@ -333,15 +345,18 @@ class Dataset {
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     if (is_finish_load_) { return; }
+    std::vector<bool> is_feature_added(num_features_, false);
     for (auto& inner_data : feature_values) {
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {
+        is_feature_added[feature_idx] = true;
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
       }
     }
+    FinishOneRow(tid, row_idx, is_feature_added);
   }
 
   inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
@@ -367,6 +382,7 @@ class Dataset {
   inline uint64_t NumTotalBin() const {
     return group_bin_boundaries_.back();
   }
+
   inline std::vector<int> ValidFeatureIndices() const {
     std::vector<int> ret;
     for (int i = 0; i < num_total_features_; ++i) {
@@ -379,6 +395,13 @@ class Dataset {
   void ReSize(data_size_t num_data);
 
   void CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
+
+  MultiValBin* GetMultiBinFromSparseFeatures() const;
+
+  MultiValBin* GetMultiBinFromAllFeatures() const;
+
+  MultiValBin* TestMultiThreadingMethod(score_t* gradients, score_t* hessians, const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
+    bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
@@ -409,15 +432,18 @@ class Dataset {
 
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                            const data_size_t* data_indices, data_size_t num_data,
-                           int leaf_idx,
-                           std::vector<std::unique_ptr<OrderedBin>>* ordered_bins,
                            const score_t* gradients, const score_t* hessians,
                            score_t* ordered_gradients, score_t* ordered_hessians,
                            bool is_constant_hessian,
-                           HistogramBinEntry* histogram_data) const;
+                           const MultiValBin* multi_val_bin, bool is_colwise,
+                           hist_t* histogram_data) const;
 
-  void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, data_size_t num_data,
-                    HistogramBinEntry* data) const;
+  void ConstructHistogramsMultiVal(const MultiValBin* multi_val_bin, const data_size_t* data_indices, data_size_t num_data,
+                                  const score_t* gradients, const score_t* hessians,
+                                  bool is_constant_hessian,
+                                  hist_t* histogram_data) const;
+
+  void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
   inline data_size_t Split(int feature,
                            const uint32_t* threshold, int num_threshold,  bool default_left,
@@ -482,17 +508,8 @@ class Dataset {
     return feature_groups_[group]->bin_mappers_[sub_feature].get();
   }
 
-  inline const Bin* FeatureBin(int i) const {
-    const int group = feature2group_[i];
-    return feature_groups_[group]->bin_data_.get();
-  }
-
   inline const Bin* FeatureGroupBin(int group) const {
     return feature_groups_[group]->bin_data_.get();
-  }
-
-  inline bool FeatureGroupIsSparse(int group) const {
-    return feature_groups_[group]->is_sparse_;
   }
 
   inline BinIterator* FeatureIterator(int i) const {
@@ -503,6 +520,10 @@ class Dataset {
 
   inline BinIterator* FeatureGroupIterator(int group) const {
     return feature_groups_[group]->FeatureGroupIterator();
+  }
+
+  inline bool IsMultiGroup(int i) const {
+    return feature_groups_[i]->is_multi_val_;
   }
 
   inline double RealThreshold(int i, uint32_t threshold) const {
@@ -516,18 +537,6 @@ class Dataset {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->bin_mappers_[sub_feature]->ValueToBin(threshold_double);
-  }
-
-  inline void CreateOrderedBins(std::vector<std::unique_ptr<OrderedBin>>* ordered_bins) const {
-    ordered_bins->resize(num_groups_);
-    OMP_INIT_EX();
-    #pragma omp parallel for schedule(guided)
-    for (int i = 0; i < num_groups_; ++i) {
-      OMP_LOOP_EX_BEGIN();
-      ordered_bins->at(i).reset(feature_groups_[i]->bin_data_->CreateOrderedBin());
-      OMP_LOOP_EX_END();
-    }
-    OMP_THROW_EX();
   }
 
   /*!
@@ -606,7 +615,7 @@ class Dataset {
   /*! \brief Disable copy */
   Dataset(const Dataset&) = delete;
 
-  void addFeaturesFrom(Dataset* other);
+  void AddFeaturesFrom(Dataset* other);
 
  private:
   std::string data_filename_;
@@ -624,8 +633,6 @@ class Dataset {
   Metadata metadata_;
   /*! \brief index of label column */
   int label_idx_ = 0;
-  /*! \brief Threshold for treating a feature as a sparse feature */
-  double sparse_threshold_;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
   /*! \brief store feature names */
@@ -647,6 +654,9 @@ class Dataset {
   int min_data_in_bin_;
   bool use_missing_;
   bool zero_as_missing_;
+  std::vector<int> feature_need_push_zeros_;
+  mutable std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
+
 };
 
 }  // namespace LightGBM
