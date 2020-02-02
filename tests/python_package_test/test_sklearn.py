@@ -280,7 +280,7 @@ class TestSklearn(unittest.TestCase):
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
                                "D": np.random.permutation([True, False] * 30),
-                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                               "E": pd.Categorical(np.random.permutation(['z', 'y'] * 30),
                                                    ordered=True)})
         np.random.seed()  # reset seed
         cat_cols_actual = ["A", "B", "C", "D"]
