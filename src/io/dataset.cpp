@@ -658,27 +658,47 @@ MultiValBin* Dataset::TestMultiThreadingMethod(score_t* gradients, score_t* hess
   } else {
     std::unique_ptr<MultiValBin> sparse_bin;
     std::unique_ptr<MultiValBin> all_bin;
+    std::chrono::duration<double, std::milli> col_wise_init_time, row_wise_init_time;
+    auto start_time = std::chrono::steady_clock::now();
     sparse_bin.reset(GetMultiBinFromSparseFeatures());
+    col_wise_init_time = std::chrono::steady_clock::now() - start_time;
+    start_time = std::chrono::steady_clock::now();
     all_bin.reset(GetMultiBinFromAllFeatures());
+    row_wise_init_time = std::chrono::steady_clock::now() - start_time;
+    Log::Debug("init for colwise cost %f seconds, init for rowwise cost %f seconds",
+               col_wise_init_time * 1e-3, row_wise_init_time * 1e-3);
     std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_data(NumTotalBin() * 2);
     const int num_bin_aligned =
         (all_bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     hist_buf_.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_threads);
     std::chrono::duration<double, std::milli> col_wise_time, row_wise_time;
-    auto start_time = std::chrono::steady_clock::now();
+    start_time = std::chrono::steady_clock::now();
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients, hessians, gradients, hessians, is_constant_hessian, sparse_bin.get(), true, hist_data.data());
     col_wise_time = std::chrono::steady_clock::now() - start_time;
     start_time = std::chrono::steady_clock::now();
     ConstructHistogramsMultiVal(all_bin.get(), nullptr, num_data_, gradients, hessians, is_constant_hessian, hist_data.data());
     row_wise_time = std::chrono::steady_clock::now() - start_time;
-    Log::Debug("colwise cost %f seconds, rowwise cost %f seconds", col_wise_time * 1e-3, row_wise_time * 1e-3);
+    Log::Debug("colwise cost %f seconds, rowwise cost %f seconds",
+               col_wise_time * 1e-3, row_wise_time * 1e-3);
     if (col_wise_time < row_wise_time) {
       *is_hist_col_wise = true;
       hist_buf_.clear();
+      auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time;
+      Log::Warning(
+          "Auto choose col-wise multi-threading, the overhead of testing is %f "
+          "seconds.\n You can set `force_col_wise=true` to remove the "
+          "overhead.",
+          overhead_cost * 1e-3);
       return sparse_bin.release();
     } else {
       *is_hist_col_wise = false;
-      Log::Info("Use row-wise multi-threading, may increase memory usage. If memory is not enough, you can set `force_col_wise=true`.");
+      auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time;
+      Log::Warning(
+          "Auto choose row-wise multi-threading, the overhead of testing is %f "
+          "seconds.\n You can set `force_row_wise=true` to remove the "
+          "overhead.\n And if memory is not enough, you can set "
+          "`force_col_wise=true`.",
+          overhead_cost * 1e-3);
       if (all_bin->IsSparse()) {
         Log::Debug("Use Sparse Multi-Val Bin");
       } else {
