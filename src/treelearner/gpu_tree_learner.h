@@ -76,12 +76,7 @@ class GPUTreeLearner: public SerialTreeLearner {
       uint8_t s[4];
   };
 
-  /*! \brief Single precision histogram entiry for GPU */
-  struct GPUHistogramBinEntry {
-    score_t sum_gradients;
-    score_t sum_hessians;
-    uint32_t cnt;
-  };
+  typedef float gpu_hist_t;
 
   /*!
   * \brief Find the best number of workgroups processing one feature for maximizing efficiency
@@ -133,7 +128,7 @@ class GPUTreeLearner: public SerialTreeLearner {
    * \param histograms Destination of histogram results from GPU.
   */
   template <typename HistType>
-  void WaitAndGetHistograms(HistogramBinEntry* histograms);
+  void WaitAndGetHistograms(hist_t* histograms);
 
   /*!
    * \brief Construct GPU histogram asynchronously.

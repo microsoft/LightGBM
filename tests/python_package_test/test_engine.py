@@ -66,7 +66,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.11)
+        self.assertLess(ret, 0.14)
         self.assertEqual(len(evals_result['valid_0']['binary_logloss']), 50)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
@@ -328,7 +328,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = multi_logloss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.15)
+        self.assertLess(ret, 0.16)
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
     def test_multiclass_rf(self):
@@ -518,7 +518,7 @@ class TestEngine(unittest.TestCase):
                         valid_names=valid_set_name,
                         verbose_eval=False,
                         early_stopping_rounds=5)
-        self.assertLessEqual(gbm.best_iteration, 31)
+        self.assertLessEqual(gbm.best_iteration, 39)
         self.assertIn(valid_set_name, gbm.best_score)
         self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
 
@@ -1740,7 +1740,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.13)
+        self.assertLess(ret, 0.14)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
         params['feature_fraction'] = 0.5
         gbm2 = lgb.train(params, lgb_train, num_boost_round=25)
@@ -1890,3 +1890,55 @@ class TestEngine(unittest.TestCase):
                                                         else "forced bins"))
             with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
                 lgb.train(new_params, lgb_data, num_boost_round=3)
+
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_trees_to_dataframe(self):
+
+        def _imptcs_to_numpy(X, impcts_dict):
+            cols = ['Column_' + str(i) for i in range(X.shape[1])]
+            return [impcts_dict.get(col, 0.) for col in cols]
+
+        X, y = load_breast_cancer(True)
+        data = lgb.Dataset(X, label=y)
+        num_trees = 10
+        bst = lgb.train({"objective": "binary", "verbose": -1}, data, num_trees)
+        tree_df = bst.trees_to_dataframe()
+        split_dict = (tree_df[~tree_df['split_gain'].isnull()]
+                      .groupby('split_feature')
+                      .size()
+                      .to_dict())
+
+        gains_dict = (tree_df
+                      .groupby('split_feature')['split_gain']
+                      .sum()
+                      .to_dict())
+
+        tree_split = _imptcs_to_numpy(X, split_dict)
+        tree_gains = _imptcs_to_numpy(X, gains_dict)
+        mod_split = bst.feature_importance('split')
+        mod_gains = bst.feature_importance('gain')
+        num_trees_from_df = tree_df['tree_index'].nunique()
+        obs_counts_from_df = tree_df.loc[tree_df['node_depth'] == 1, 'count'].values
+
+        np.testing.assert_equal(tree_split, mod_split)
+        np.testing.assert_allclose(tree_gains, mod_gains)
+        self.assertEqual(num_trees_from_df, num_trees)
+        np.testing.assert_equal(obs_counts_from_df, len(y))
+
+        # test edge case with one leaf
+        X = np.ones((10, 2))
+        y = np.random.rand(10)
+        data = lgb.Dataset(X, label=y)
+        bst = lgb.train({"objective": "binary", "verbose": -1}, data, num_trees)
+        tree_df = bst.trees_to_dataframe()
+
+        self.assertEqual(len(tree_df), 1)
+        self.assertEqual(tree_df.loc[0, 'tree_index'], 0)
+        self.assertEqual(tree_df.loc[0, 'node_depth'], 1)
+        self.assertEqual(tree_df.loc[0, 'node_index'], "0-L0")
+        self.assertIsNotNone(tree_df.loc[0, 'value'])
+        for col in ('left_child', 'right_child', 'parent_index', 'split_feature',
+                    'split_gain', 'threshold', 'decision_type', 'missing_direction',
+                    'missing_type', 'weight', 'count'):
+            self.assertIsNone(tree_df.loc[0, col])
+

@@ -71,5 +71,4 @@ model <- lgb.train(
   , early_stopping_rounds = 5L
 )
 preds <- predict(model, test$data)
-
 }

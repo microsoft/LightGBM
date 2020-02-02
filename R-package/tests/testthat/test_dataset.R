@@ -86,3 +86,43 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
   )
   expect_false(is.na(handle))
 })
+
+test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
+  ds <- lgb.Dataset(
+    data = matrix(rnorm(100L), nrow = 50L, ncol = 2L)
+    , label = sample(c(0L, 1L), size = 50L, replace = TRUE)
+  )
+  ds$construct()
+  current_group <- ds$getinfo("group")
+  expect_null(current_group)
+  group_as_numeric <- rep(25.0, 2L)
+  ds$setinfo("group", group_as_numeric)
+  expect_identical(ds$getinfo("group"), as.integer(group_as_numeric))
+})
+
+test_that("lgb.Dataset should throw an error if 'reference' is provided but of the wrong format", {
+  data(agaricus.test, package = "lightgbm")
+  test_data <- agaricus.test$data[1L:100L, ]
+  test_label <- agaricus.test$label[1L:100L]
+  # Try to trick lgb.Dataset() into accepting bad input
+  expect_error({
+    dtest <- lgb.Dataset(
+      data = test_data
+      , label = test_label
+      , reference = data.frame(x = seq_len(10L), y = seq_len(10L))
+    )
+  }, regexp = "reference must be a")
+})
+
+test_that("Dataset$new() should throw an error if 'predictor' is provided but of the wrong format", {
+  data(agaricus.test, package = "lightgbm")
+  test_data <- agaricus.test$data[1L:100L, ]
+  test_label <- agaricus.test$label[1L:100L]
+  expect_error({
+    dtest <- Dataset$new(
+      data = test_data
+      , label = test_label
+      , predictor = data.frame(x = seq_len(10L), y = seq_len(10L))
+    )
+  }, regexp = "predictor must be a", fixed = TRUE)
+})

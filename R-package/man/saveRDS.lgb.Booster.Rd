@@ -38,8 +38,8 @@ compression to be used. Ignored if file is a connection.}
 NULL invisibly.
 }
 \description{
-Attempts to save a model using RDS. Has an additional parameter (\code{raw}) which decides
-whether to save the raw model or not.
+Attempts to save a model using RDS. Has an additional parameter (\code{raw})
+             which decides whether to save the raw model or not.
 }
 \examples{
 library(lightgbm)

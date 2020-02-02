@@ -68,6 +68,10 @@ if(USE_R35)
     ADD_DEFINITIONS(-DR_VER_ABOVE_35)
 endif(USE_R35)
 
+if(USE_TIMETAG)
+    ADD_DEFINITIONS(-DTIMETAG)
+endif(USE_TIMETAG)
+
 if(USE_MPI)
     find_package(MPI REQUIRED)
     ADD_DEFINITIONS(-DUSE_MPI)
@@ -114,6 +118,36 @@ if(USE_HDFS)
     ADD_DEFINITIONS(-DUSE_HDFS)
     SET(HDFS_CXX_LIBRARIES ${HDFS_LIB} ${JAVA_JVM_LIBRARY})
 endif(USE_HDFS)
+
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <xmmintrin.h>
+int main() {
+  int a = 0;
+  _mm_prefetch(&a, _MM_HINT_NTA);
+  return 0;
+}
+" MM_PREFETCH)
+
+if(${MM_PREFETCH})
+  message(STATUS "Use _mm_prefetch")
+  ADD_DEFINITIONS(-DMM_PREFETCH)
+endif()
+
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <mm_malloc.h>
+int main() {
+  char *a = (char*)_mm_malloc(8, 16);
+  _mm_free(a);
+  return 0;
+}
+" MM_MALLOC)
+
+if(${MM_MALLOC})
+  message(STATUS "Use _mm_malloc")
+  ADD_DEFINITIONS(-DMM_MALLOC)
+endif()
 
 if(UNIX OR MINGW OR CYGWIN)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -O3 -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type")

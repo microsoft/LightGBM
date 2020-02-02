@@ -962,13 +962,21 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     int group = ret->Feature2Group(feature_idx);
     int sub_feature = ret->Feture2SubFeature(feature_idx);
     CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
-    int row_idx = 0;
-    while (row_idx < nrow) {
-      auto pair = col_it.NextNonZero();
-      row_idx = pair.first;
-      // no more data
-      if (row_idx < 0) { break; }
-      ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
+    auto bin_mapper = ret->FeatureBinMapper(feature_idx);
+    if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin()) {
+      int row_idx = 0;
+      while (row_idx < nrow) {
+        auto pair = col_it.NextNonZero();
+        row_idx = pair.first;
+        // no more data
+        if (row_idx < 0) { break; }
+        ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
+      }
+    } else {
+      for (int row_idx = 0; row_idx < nrow; ++row_idx) {
+        auto val = col_it.Get(row_idx);
+        ret->PushOneData(tid, row_idx, group, sub_feature, val);
+      }
     }
     OMP_LOOP_EX_END();
   }
@@ -1130,7 +1138,7 @@ int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
   API_BEGIN();
   auto target_d = reinterpret_cast<Dataset*>(target);
   auto source_d = reinterpret_cast<Dataset*>(source);
-  target_d->addFeaturesFrom(source_d);
+  target_d->AddFeaturesFrom(source_d);
   API_END();
 }
 

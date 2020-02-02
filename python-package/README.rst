@@ -20,7 +20,7 @@ For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/297
 
 For **Linux** users, **glibc** >= 2.14 is required.
 
-For **macOS** users:
+For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
 - Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.3) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
 

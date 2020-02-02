@@ -1,9 +1,8 @@
-#' LightGBM unloading error fix
-#'
-#' Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R.
-#' This is useful for instance if an object becomes stuck for no apparent reason and you do not want
-#' to restart R to fix the lost object.
-#'
+#' @name lgb.unloader
+#' @title LightGBM unloading error fix
+#' @description Attempts to unload LightGBM packages so you can remove objects cleanly without
+#'              having to restart R. This is useful for instance if an object becomes stuck for no
+#'              apparent reason and you do not want to restart R to fix the lost object.
 #' @param restore Whether to reload \code{LightGBM} immediately after detaching from R.
 #'                Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once
 #'                unloading is performed.

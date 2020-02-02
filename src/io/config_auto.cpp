@@ -116,9 +116,6 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"is_pre_partition", "pre_partition"},
   {"is_enable_bundle", "enable_bundle"},
   {"bundle", "enable_bundle"},
-  {"is_sparse", "is_enable_sparse"},
-  {"enable_sparse", "is_enable_sparse"},
-  {"sparse", "is_enable_sparse"},
   {"two_round_loading", "two_round"},
   {"use_two_round_loading", "two_round"},
   {"is_save_binary", "save_binary"},
@@ -181,6 +178,8 @@ std::unordered_set<std::string> Config::parameter_set({
   "num_threads",
   "device_type",
   "seed",
+  "force_col_wise",
+  "force_row_wise",
   "max_depth",
   "min_data_in_leaf",
   "min_sum_hessian_in_leaf",
@@ -237,9 +236,6 @@ std::unordered_set<std::string> Config::parameter_set({
   "valid_data_initscores",
   "pre_partition",
   "enable_bundle",
-  "max_conflict_rate",
-  "is_enable_sparse",
-  "sparse_threshold",
   "use_missing",
   "zero_as_missing",
   "two_round",
@@ -273,6 +269,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "max_position",
   "lambdamart_norm",
   "label_gain",
+  "objective_seed",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -308,6 +305,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(num_leaves <=131072);
 
   GetInt(params, "num_threads", &num_threads);
+
+  GetBool(params, "force_col_wise", &force_col_wise);
+
+  GetBool(params, "force_row_wise", &force_row_wise);
 
   GetInt(params, "max_depth", &max_depth);
 
@@ -469,16 +470,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "enable_bundle", &enable_bundle);
 
-  GetDouble(params, "max_conflict_rate", &max_conflict_rate);
-  CHECK(max_conflict_rate >=0.0);
-  CHECK(max_conflict_rate <1.0);
-
-  GetBool(params, "is_enable_sparse", &is_enable_sparse);
-
-  GetDouble(params, "sparse_threshold", &sparse_threshold);
-  CHECK(sparse_threshold >0.0);
-  CHECK(sparse_threshold <=1.0);
-
   GetBool(params, "use_missing", &use_missing);
 
   GetBool(params, "zero_as_missing", &zero_as_missing);
@@ -556,6 +547,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
 
+  GetInt(params, "objective_seed", &objective_seed);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK(metric_freq >0);
 
@@ -600,6 +593,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[force_col_wise: " << force_col_wise << "]\n";
+  str_buf << "[force_row_wise: " << force_row_wise << "]\n";
   str_buf << "[max_depth: " << max_depth << "]\n";
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
@@ -656,9 +651,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores, ",") << "]\n";
   str_buf << "[pre_partition: " << pre_partition << "]\n";
   str_buf << "[enable_bundle: " << enable_bundle << "]\n";
-  str_buf << "[max_conflict_rate: " << max_conflict_rate << "]\n";
-  str_buf << "[is_enable_sparse: " << is_enable_sparse << "]\n";
-  str_buf << "[sparse_threshold: " << sparse_threshold << "]\n";
   str_buf << "[use_missing: " << use_missing << "]\n";
   str_buf << "[zero_as_missing: " << zero_as_missing << "]\n";
   str_buf << "[two_round: " << two_round << "]\n";
@@ -692,6 +684,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_position: " << max_position << "]\n";
   str_buf << "[lambdamart_norm: " << lambdamart_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
+  str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";

@@ -84,10 +84,10 @@ class Random {
       }
     } else {
       std::set<int> sample_set;
-      while (static_cast<int>(sample_set.size()) < K) {
-        int next = RandInt32() % N;
-        if (sample_set.count(next) == 0) {
-          sample_set.insert(next);
+      for (int r = N - K; r < N; ++r) {
+        int v = NextInt(0, r);
+        if (!sample_set.insert(v).second) {
+          sample_set.insert(r);
         }
       }
       for (auto iter = sample_set.begin(); iter != sample_set.end(); ++iter) {

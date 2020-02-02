@@ -1,7 +1,6 @@
-#' Compute feature contribution of prediction
-#'
-#' Computes feature contribution components of rawscore prediction.
-#'
+#' @name lgb.interprete
+#' @title Compute feature contribution of prediction
+#' @description Computes feature contribution components of rawscore prediction.
 #' @param model object of class \code{lgb.Booster}.
 #' @param data a matrix object or a dgCMatrix object.
 #' @param idxset an integer vector of indices of rows needed.
@@ -10,8 +9,8 @@
 #' @return For regression, binary classification and lambdarank model, a \code{list} of \code{data.table}
 #'         with the following columns:
 #'         \itemize{
-#'             \item \code{Feature} Feature names in the model.
-#'             \item \code{Contribution} The total contribution of this feature's splits.
+#'             \item{\code{Feature}: Feature names in the model.}
+#'             \item{\code{Contribution}: The total contribution of this feature's splits.}
 #'         }
 #'         For multiclass classification, a \code{list} of \code{data.table} with the Feature column and
 #'         Contribution columns to each class.
