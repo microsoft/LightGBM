@@ -634,6 +634,10 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
 
 MultiValBin* Dataset::TestMultiThreadingMethod(score_t* gradients, score_t* hessians, const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
   bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const {
+  int num_threads = 1;
+#pragma omp parallel
+#pragma omp master
+  { num_threads = omp_get_num_threads(); }
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod", global_timer);
   if (force_colwise && force_rowwise) {
     Log::Fatal("cannot set both `force_col_wise` and `force_row_wise` to `true`.");
@@ -647,6 +651,9 @@ MultiValBin* Dataset::TestMultiThreadingMethod(score_t* gradients, score_t* hess
   } else if (force_rowwise) {
     *is_hist_col_wise = false;
     auto ret = GetMultiBinFromAllFeatures();
+    const int num_bin_aligned =
+        (ret->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+    hist_buf_.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_threads);
     return ret;
   } else {
     std::unique_ptr<MultiValBin> sparse_bin;
@@ -654,18 +661,20 @@ MultiValBin* Dataset::TestMultiThreadingMethod(score_t* gradients, score_t* hess
     sparse_bin.reset(GetMultiBinFromSparseFeatures());
     all_bin.reset(GetMultiBinFromAllFeatures());
     std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_data(NumTotalBin() * 2);
+    const int num_bin_aligned =
+        (all_bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+    hist_buf_.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_threads);
     std::chrono::duration<double, std::milli> col_wise_time, row_wise_time;
     auto start_time = std::chrono::steady_clock::now();
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients, hessians, gradients, hessians, is_constant_hessian, sparse_bin.get(), true, hist_data.data());
     col_wise_time = std::chrono::steady_clock::now() - start_time;
-    // init the buffer first
-    ConstructHistogramsMultiVal(all_bin.get(), nullptr, num_data_, gradients, hessians, is_constant_hessian, hist_data.data());
     start_time = std::chrono::steady_clock::now();
     ConstructHistogramsMultiVal(all_bin.get(), nullptr, num_data_, gradients, hessians, is_constant_hessian, hist_data.data());
     row_wise_time = std::chrono::steady_clock::now() - start_time;
     Log::Debug("colwise cost %f seconds, rowwise cost %f seconds", col_wise_time * 1e-3, row_wise_time * 1e-3);
     if (col_wise_time < row_wise_time) {
       *is_hist_col_wise = true;
+      hist_buf_.clear();
       return sparse_bin.release();
     } else {
       *is_hist_col_wise = false;
