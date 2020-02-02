@@ -96,7 +96,7 @@ public:
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
     int rand_threshold = 0;
     if (meta_->num_bin - 2 > 0){
-      rand_threshold = rand_.NextInt(0, std::max(meta_->num_bin - 2, 0));
+      rand_threshold = rand_.NextInt(0, meta_->num_bin - 2);
     }
     if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
       if (meta_->missing_type == MissingType::Zero) {
