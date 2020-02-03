@@ -64,7 +64,7 @@ public:
       find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdCategorical, this, std::placeholders::_1
         , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6);
     }
-    rand_ = Random(meta_->config->seed);
+    rand_ = Random(meta_->config->extra_seed);
   }
 
   hist_t* RawData() {
@@ -98,7 +98,7 @@ public:
     if (meta_->num_bin - 2 > 0){
       rand_threshold = rand_.NextInt(0, meta_->num_bin - 2);
     }
-    bool is_rand = !meta_->config->extra_trees;
+    bool is_rand = meta_->config->extra_trees;
     if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
       if (meta_->missing_type == MissingType::Zero) {
         if (is_rand) {
