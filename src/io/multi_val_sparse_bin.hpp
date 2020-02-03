@@ -65,12 +65,16 @@ public:
       row_ptr_[i + 1] += row_ptr_[i];
     }
     if (t_data_.size() > 0) {
-      size_t offset = data_.size();
+      std::vector<size_t> offsets;
+      offsets.push_back(data_.size());
+      for (size_t tid = 0; tid < t_data_.size() - 1; ++tid) {
+        offsets.push_back(offsets.back() + t_data_[tid].size());
+      }
       data_.resize(row_ptr_[num_data_]);
-      for (size_t tid = 0; tid < t_data_.size(); ++tid) {
-        std::memcpy(data_.data() + offset, t_data_[tid].data(), t_data_[tid].size() * sizeof(VAL_T));
-        offset += t_data_[tid].size();
-        t_data_[tid].clear();
+#pragma omp parallel for schedule(static)
+      for (int tid = 0; tid < static_cast<int>(t_data_.size()); ++tid) {
+        std::copy_n(t_data_[tid].data(), t_data_[tid].size(),
+                    data_.data() + offsets[tid]);
       }
     }
     row_ptr_.shrink_to_fit();

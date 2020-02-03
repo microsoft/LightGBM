@@ -493,6 +493,7 @@ void PushDataToMultiValBin(int num_threads, data_size_t num_data, const std::vec
     #pragma omp parallel for schedule(static)
     for (int tid = 0; tid < n_block; ++tid) {
       std::vector<uint32_t> cur_data;
+      cur_data.reserve(most_freq_bins.size());
       data_size_t start = tid * block_size;
       data_size_t end = std::min(num_data, start + block_size);
       for (size_t j = 0; j < most_freq_bins.size(); ++j) {
@@ -517,14 +518,13 @@ void PushDataToMultiValBin(int num_threads, data_size_t num_data, const std::vec
   } else {
     #pragma omp parallel for schedule(static)
     for (int tid = 0; tid < n_block; ++tid) {
-      std::vector<uint32_t> cur_data;
+      std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
       data_size_t start = tid * block_size;
       data_size_t end = std::min(num_data, start + block_size);
       for (size_t j = 0; j < most_freq_bins.size(); ++j) {
         iters[tid][j]->Reset(start);
       }
       for (data_size_t i = start; i < end; ++i) {
-        cur_data.clear();
         for (size_t j = 0; j < most_freq_bins.size(); ++j) {
           auto cur_bin = iters[tid][j]->Get(i);
           if (cur_bin == most_freq_bins[j]) {
@@ -535,7 +535,7 @@ void PushDataToMultiValBin(int num_threads, data_size_t num_data, const std::vec
               cur_bin -= 1;
             }
           }
-          cur_data.push_back(cur_bin);
+          cur_data[j] = cur_bin;
         }
         ret->PushOneRow(tid, i, cur_data);
       }

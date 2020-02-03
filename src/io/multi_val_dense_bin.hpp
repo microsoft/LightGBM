@@ -7,7 +7,6 @@
 
 
 #include <LightGBM/bin.h>
-#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstdint>
 #include <cstring>
@@ -39,7 +38,9 @@ public:
 
   void PushOneRow(int , data_size_t idx, const std::vector<uint32_t>& values) override {
     auto start = RowPtr(idx);
+#ifdef DEBUG
     CHECK(num_feature_ == static_cast<int>(values.size()));
+#endif  // DEBUG
     for (auto i = 0; i < num_feature_; ++i) {
       data_[start + i] = static_cast<VAL_T>(values[i]);
     }
