@@ -92,6 +92,9 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"forced_splits_file", "forcedsplits_filename"},
   {"forced_splits", "forcedsplits_filename"},
   {"verbose", "verbosity"},
+  {"is_sparse", "is_enable_sparse"},
+  {"enable_sparse", "is_enable_sparse"},
+  {"sparse", "is_enable_sparse"},
   {"subsample_for_bin", "bin_construct_sample_cnt"},
   {"hist_pool_size", "histogram_pool_size"},
   {"data_seed", "data_random_seed"},
@@ -222,6 +225,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "cegb_penalty_feature_coupled",
   "verbosity",
   "max_bin",
+  "is_enable_sparse",
   "max_bin_by_feature",
   "min_data_in_bin",
   "feature_pre_filter",
@@ -436,6 +440,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
 
+  GetBool(params, "is_enable_sparse", &is_enable_sparse);
+
   if (GetString(params, "max_bin_by_feature", &tmp_str)) {
     max_bin_by_feature = Common::StringToArray<int32_t>(tmp_str, ',');
   }
@@ -637,6 +643,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
+  str_buf << "[is_enable_sparse: " << is_enable_sparse << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
   str_buf << "[feature_pre_filter: " << feature_pre_filter << "]\n";

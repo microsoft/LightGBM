@@ -50,8 +50,6 @@ test_that(".PARAMETER_ALIASES() returns a named list", {
   expect_true(is.character(names(param_aliases)))
   expect_true(is.character(param_aliases[["boosting"]]))
   expect_true(is.character(param_aliases[["early_stopping_round"]]))
-  expect_true(is.character(param_aliases[["metric"]]))
-  expect_true(is.character(param_aliases[["num_class"]]))
   expect_true(is.character(param_aliases[["num_iterations"]]))
 })
 
