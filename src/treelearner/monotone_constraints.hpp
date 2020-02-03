@@ -2,6 +2,9 @@
 #define LIGHTGBM_TREELEARNER_MONOTONE_CONSTRAINTS_H_
 
 #include <algorithm>
+#include <vector>
+#include <cstdint>
+#include <limits>
 
 namespace LightGBM {
 
