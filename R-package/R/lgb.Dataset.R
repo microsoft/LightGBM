@@ -569,6 +569,7 @@ Dataset <- R6::R6Class(
                 "categorical_feature",
                 "cat_column",
                 "cat_feature",
+                "data_random_seed",
                 "enable_bundle",
                 "enable_sparse",
                 "feature_pre_filter",

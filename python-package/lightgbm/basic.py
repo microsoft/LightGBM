@@ -807,6 +807,7 @@ class Dataset(object):
             # no min_data, nthreads and verbose in this function
             dataset_params = _ConfigAliases.get("bin_construct_sample_cnt",
                                                 "categorical_feature",
+                                                "data_random_seed",
                                                 "enable_bundle",
                                                 "feature_pre_filter",
                                                 "forcedbins_filename",

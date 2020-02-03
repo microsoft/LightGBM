@@ -178,6 +178,10 @@ class Booster {
       const std::unordered_map<std::string, std::string>& new_param) {
     Config new_config;
     new_config.Set(new_param);
+    if (new_param.count("data_random_seed") &&
+        new_config.data_random_seed != old_config.data_random_seed) {
+      Log::Fatal("Cannot change data_random_seed after constructed Dataset handle.");
+    }
     if (new_param.count("max_bin") &&
         new_config.max_bin != old_config.max_bin) {
       Log::Fatal("Cannot change max_bin after constructed Dataset handle.");
