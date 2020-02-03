@@ -734,7 +734,7 @@ public:
       } else {
         ref_feature_meta[i].penalty = 1.0;
       }
-      if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
+      if (train_data->FeatureBinMapper(i)->GetMostFreqBin() == 0) {
         ref_feature_meta[i].offset = 1;
       } else {
         ref_feature_meta[i].offset = 0;
