@@ -98,6 +98,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
                                          data_size_t total_sample_cnt,
                                          data_size_t num_data,
                                          bool is_use_gpu,
+                                         bool is_sparse,
                                          std::vector<int8_t>* multi_val_group) {
   const int max_search_group = 100;
   const int max_bin_per_group = 256;
@@ -165,6 +166,10 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
       group_num_bin.push_back(1 + bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0));
     }
   }
+  if (!is_sparse) {
+    multi_val_group->resize(features_in_group.size(), false);
+    return features_in_group;
+  }
   std::vector<int> second_round_features;
   std::vector<std::vector<int>> features_in_group2;
   std::vector<std::vector<bool>> conflict_marks2;
@@ -217,6 +222,7 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
                                                   const std::vector<int>& used_features,
                                                   data_size_t num_data,
                                                   bool is_use_gpu,
+                                                  bool is_sparse,
                                                   std::vector<int8_t>* multi_val_group) {
   Common::FunctionTimer fun_timer("Dataset::FastFeatureBundling", global_timer);
   std::vector<size_t> feature_non_zero_cnt;
@@ -263,8 +269,8 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
     }
   }
   std::vector<int8_t> group_is_multi_val, group_is_multi_val2;
-  auto features_in_group = FindGroups(bin_mappers, used_features, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, num_data, is_use_gpu, &group_is_multi_val);
-  auto group2 = FindGroups(bin_mappers, feature_order_by_cnt, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, num_data, is_use_gpu, &group_is_multi_val2);
+  auto features_in_group = FindGroups(bin_mappers, used_features, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, num_data, is_use_gpu, is_sparse, &group_is_multi_val);
+  auto group2 = FindGroups(bin_mappers, feature_order_by_cnt, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, num_data, is_use_gpu, is_sparse, &group_is_multi_val2);
 
   if (features_in_group.size() > group2.size()) {
     features_in_group = group2;
@@ -311,7 +317,7 @@ void Dataset::Construct(
   if (io_config.enable_bundle && !used_features.empty()) {
     features_in_group = FastFeatureBundling(*bin_mappers,
                                             sample_non_zero_indices, sample_values, num_per_col, num_sample_col, static_cast<data_size_t>(total_sample_cnt),
-                                            used_features, num_data_, io_config.device_type == std::string("gpu"), &group_is_multi_val);
+                                            used_features, num_data_, io_config.device_type == std::string("gpu"), io_config.is_enable_sparse, &group_is_multi_val);
   }
 
   num_features_ = 0;

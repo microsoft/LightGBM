@@ -478,6 +478,11 @@ struct Config {
   // desc = LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
   int max_bin = 255;
 
+
+  // alias = is_sparse, enable_sparse, sparse
+  // desc = used to enable/disable sparse optimization
+  bool is_enable_sparse = true;
+
   // type = multi-int
   // default = None
   // desc = max number of bins for each feature
