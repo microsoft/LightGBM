@@ -1937,4 +1937,3 @@ class TestEngine(unittest.TestCase):
                     'split_gain', 'threshold', 'decision_type', 'missing_direction',
                     'missing_type', 'weight', 'count'):
             self.assertIsNone(tree_df.loc[0, col])
-

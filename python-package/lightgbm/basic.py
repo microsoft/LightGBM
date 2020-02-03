@@ -789,7 +789,6 @@ class Dataset(object):
         self.monotone_constraints = None
         self.version = 0
 
-
     def __del__(self):
         try:
             self._free_handle()
