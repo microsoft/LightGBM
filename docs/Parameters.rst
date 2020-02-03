@@ -91,17 +91,13 @@ Core Parameters
 
       -  label is anything in interval [0, 1]
 
-   -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
+   -  ranking application
 
-      -  label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+      -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
 
-      -  `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
+      -  ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function. To obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
 
-      -  all values in ``label`` must be smaller than number of elements in ``label_gain``
-
-   -  ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
-
-      -  to obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1
+      -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
 -  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
 
@@ -878,9 +874,9 @@ Objective Parameters
 
 -  ``objective_seed`` :raw-html:`<a id="objective_seed" title="Permalink to this parameter" href="#objective_seed">&#x1F517;&#xFE0E;</a>`, default = ``5``, type = int
 
-   -  random seed for objectives
-
    -  used only in the ``rank_xendcg`` objective
+
+   -  random seed for objectives
 
 Metric Parameters
 -----------------
@@ -915,7 +911,7 @@ Metric Parameters
 
       -  ``tweedie``, negative log-likelihood for **Tweedie** regression
 
-      -  ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``
+      -  ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``, ``rank_xendcg``, ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
 
       -  ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
 
@@ -1079,7 +1075,7 @@ Also, you can include weight column in your data file. Please refer to the ``wei
 Query Data
 ~~~~~~~~~~
 
-For LambdaRank learning, it needs query information for training data.
+For learning to rank, it needs query information for training data.
 LightGBM uses an additional file to store query data, like the following:
 
 ::

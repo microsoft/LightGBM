@@ -123,12 +123,10 @@ struct Config {
   // descl2 = ``cross_entropy``, objective function for cross-entropy (with optional linear weights), aliases: ``xentropy``
   // descl2 = ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
   // descl2 = label is anything in interval [0, 1]
-  // desc = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
-  // descl2 = label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
-  // descl2 = `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
-  // descl2 = all values in ``label`` must be smaller than number of elements in ``label_gain``
-  // desc = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
-  // descl2 = to obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1
+  // desc = ranking application
+  // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
+  // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function. To obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+  // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   std::string objective = "regression";
 
   // [doc-only]
@@ -763,8 +761,8 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
-  // desc = random seed for objectives
   // desc = used only in the ``rank_xendcg`` objective
+  // desc = random seed for objectives
   int objective_seed = 5;
 
   #pragma endregion
@@ -789,7 +787,7 @@ struct Config {
   // descl2 = ``gamma``, negative log-likelihood for **Gamma** regression
   // descl2 = ``gamma_deviance``, residual deviance for **Gamma** regression
   // descl2 = ``tweedie``, negative log-likelihood for **Tweedie** regression
-  // descl2 = ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``
+  // descl2 = ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``, ``rank_xendcg``, ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
   // descl2 = ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
   // descl2 = ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
