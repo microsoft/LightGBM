@@ -296,6 +296,18 @@ class GBDT : public GBDTBase {
   std::vector<double> FeatureImportance(int num_iteration, int importance_type) const override;
 
   /*!
+  * \brief Calculate max possible value
+  * \return max possible value
+  */
+  double GetMaxValue() const override;
+
+  /*!
+  * \brief Calculate min possible value
+  * \return min possible value
+  */
+  double GetMinValue() const override;
+
+  /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */

@@ -204,6 +204,14 @@ void Tree::AddPredictionToScore(const Dataset* data,
   }
 }
 
+void Tree::AddMaxValueToScore(double& score) const {
+    score += *std::max_element(leaf_value_.begin(), leaf_value_.end());
+}
+
+void Tree::AddMinValueToScore(double& score) const {
+    score += *std::min_element(leaf_value_.begin(), leaf_value_.end());
+}
+
 #undef PredictionFun
 
 std::string Tree::ToString() const {

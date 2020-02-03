@@ -989,6 +989,24 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
                                                     double* out_results);
 
 /*!
+ * \brief Get model max possible value.
+ * \param handle Handle of booster
+ * \param[out] out_results Result pointer to max value
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetMaxValue(BoosterHandle handle,
+                                              double* out_results);
+
+/*!
+ * \brief Get model min possible value.
+ * \param handle Handle of booster
+ * \param[out] out_results Result pointing to min value
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetMinValue(BoosterHandle handle,
+                                              double* out_results);
+
+/*!
  * \brief Initialize the network.
  * \param machines List of machines in format 'ip1:port1,ip2:port2'
  * \param local_listen_port TCP listen port for local machines

@@ -114,6 +114,18 @@ class Tree {
                             data_size_t num_data, double* score) const;
 
   /*!
+  * \brief Adding max leaf value of this tree model to score
+  * \param score Will add value to score
+  */
+  void AddMaxValueToScore(double& score) const;
+
+  /*!
+  * \brief Adding min leaf value of this tree model to score
+  * \param score Will add valu to score
+  */
+  void AddMinValueToScore(double& score) const;
+
+  /*!
   * \brief Prediction on one record
   * \param feature_values Feature value of this record
   * \return Prediction result

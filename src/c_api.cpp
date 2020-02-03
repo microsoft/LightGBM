@@ -357,6 +357,14 @@ class Booster {
     return boosting_->FeatureImportance(num_iteration, importance_type);
   }
 
+  double MaxValue() {
+    return boosting_->GetMaxValue();
+  }
+
+  double MinValue() {
+    return boosting_->GetMinValue();
+  }
+
   double GetLeafValue(int tree_idx, int leaf_idx) const {
     return dynamic_cast<GBDTBase*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
   }
@@ -1580,6 +1588,24 @@ int LGBM_BoosterFeatureImportance(BoosterHandle handle,
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     (out_results)[i] = feature_importances[i];
   }
+  API_END();
+}
+
+int LGBM_BoosterGetMaxValue(BoosterHandle handle,
+                               double* out_results) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  double max_value = ref_booster->MaxValue();
+  out_results[0] = max_value;
+  API_END();
+}
+
+int LGBM_BoosterGetMinValue(BoosterHandle handle,
+                               double* out_results) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  double min_value = ref_booster->MinValue();
+  out_results[0] = min_value;
   API_END();
 }
 
