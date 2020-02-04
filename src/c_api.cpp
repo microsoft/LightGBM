@@ -357,12 +357,12 @@ class Booster {
     return boosting_->FeatureImportance(num_iteration, importance_type);
   }
 
-  double MaxValue() {
-    return boosting_->GetMaxValue();
+  double UpperBoundValue() {
+    return boosting_->GetUpperBoundValue();
   }
 
-  double MinValue() {
-    return boosting_->GetMinValue();
+  double LowerBoundValue() {
+    return boosting_->GetLowerBoundValue();
   }
 
   double GetLeafValue(int tree_idx, int leaf_idx) const {
@@ -1591,20 +1591,20 @@ int LGBM_BoosterFeatureImportance(BoosterHandle handle,
   API_END();
 }
 
-int LGBM_BoosterGetMaxValue(BoosterHandle handle,
-                               double* out_results) {
+int LGBM_BoosterGetUpperBoundValue(BoosterHandle handle,
+                                   double* out_results) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  double max_value = ref_booster->MaxValue();
+  double max_value = ref_booster->UpperBoundValue();
   out_results[0] = max_value;
   API_END();
 }
 
-int LGBM_BoosterGetMinValue(BoosterHandle handle,
-                               double* out_results) {
+int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
+                                   double* out_results) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  double min_value = ref_booster->MinValue();
+  double min_value = ref_booster->LowerBoundValue();
   out_results[0] = min_value;
   API_END();
 }

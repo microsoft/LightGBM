@@ -989,22 +989,22 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
                                                     double* out_results);
 
 /*!
- * \brief Get model max possible value.
+ * \brief Get model upper bound value.
  * \param handle Handle of booster
  * \param[out] out_results Result pointer to max value
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetMaxValue(BoosterHandle handle,
-                                              double* out_results);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetUpperBoundValue(BoosterHandle handle,
+                                                     double* out_results);
 
 /*!
- * \brief Get model min possible value.
+ * \brief Get model lower bound value.
  * \param handle Handle of booster
  * \param[out] out_results Result pointing to min value
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetMinValue(BoosterHandle handle,
-                                              double* out_results);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
+                                                     double* out_results);
 
 /*!
  * \brief Initialize the network.

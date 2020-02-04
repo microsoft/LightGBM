@@ -114,16 +114,16 @@ class Tree {
                             data_size_t num_data, double* score) const;
 
   /*!
-  * \brief Adding max leaf value of this tree model to score
+  * \brief Get upper bound leaf value of this tree model
   * \param score Will add value to score
   */
-  void AddMaxValueToScore(double& score) const;
+  double GetUpperBoundValue() const;
 
   /*!
-  * \brief Adding min leaf value of this tree model to score
+  * \brief Get lower bound leaf value of this tree model
   * \param score Will add valu to score
   */
-  void AddMinValueToScore(double& score) const;
+  double GetLowerBoundValue() const;
 
   /*!
   * \brief Prediction on one record

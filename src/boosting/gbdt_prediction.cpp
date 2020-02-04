@@ -88,22 +88,4 @@ void GBDT::PredictLeafIndexByMap(const std::unordered_map<int, double>& features
   }
 }
 
-double GBDT::GetMaxValue() const {
-  double max_value = 0.0;
-  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
-  for (int i = 0; i < total_tree; ++i) {
-    models_[i]->AddMaxValueToScore(max_value);
-  }
-  return max_value;
-}
-
-double GBDT::GetMinValue() const {
-  double min_value = 0.0;
-  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
-  for (int i = 0; i < total_tree; ++i) {
-    models_[i]->AddMinValueToScore(min_value);
-  }
-  return min_value;
-}
-
 }  // namespace LightGBM

@@ -657,6 +657,24 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
   }
 }
 
+double GBDT::GetUpperBoundValue() const {
+  double max_value = 0.0;
+  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
+  for (int i = 0; i < total_tree; ++i) {
+    max_value += models_[i]->GetUpperBoundValue();
+  }
+  return max_value;
+}
+
+double GBDT::GetLowerBoundValue() const {
+  double min_value = 0.0;
+  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
+  for (int i = 0; i < total_tree; ++i) {
+    min_value += models_[i]->GetLowerBoundValue();
+  }
+  return min_value;
+}
+
 void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
                              const std::vector<const Metric*>& training_metrics) {
   if (train_data != train_data_ && !train_data_->CheckAlign(*train_data)) {
