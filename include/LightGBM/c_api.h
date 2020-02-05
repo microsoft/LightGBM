@@ -991,7 +991,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
 /*!
  * \brief Get model upper bound value.
  * \param handle Handle of booster
- * \param[out] out_results Result pointer to max value
+ * \param[out] out_results Result pointing to max value
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetUpperBoundValue(BoosterHandle handle,
