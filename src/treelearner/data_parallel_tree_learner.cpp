@@ -207,7 +207,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
     this->ComputeBestSplitForFeature(
         this->larger_leaf_histogram_array_, feature_index, real_feature_index,
         this->larger_leaf_splits_->LeafIndex(),
-        smaller_node_used_features[feature_index],
+        larger_node_used_features[feature_index],
         this->larger_leaf_splits_->sum_gradients(),
         this->larger_leaf_splits_->sum_hessians(),
         GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
