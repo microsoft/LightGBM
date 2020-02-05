@@ -734,7 +734,7 @@ class LGBMModel(_LGBMModelBase):
         """Get feature name
         """
         if self._n_features is None:
-            raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
+            raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
         return self._Booster.feature_name()
 
 
