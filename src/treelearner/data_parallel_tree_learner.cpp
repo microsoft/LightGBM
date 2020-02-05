@@ -190,15 +190,13 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
 
     this->ComputeBestSplitForFeature(
         this->smaller_leaf_histogram_array_, feature_index, real_feature_index,
-        this->smaller_leaf_splits_->LeafIndex(),
         smaller_node_used_features[feature_index],
-        this->smaller_leaf_splits_->sum_gradients(),
-        this->smaller_leaf_splits_->sum_hessians(),
-        GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
+        GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->leaf_index()),
+        this->smaller_leaf_splits_.get(),
         &smaller_bests_per_thread[tid]);
 
     // only root leaf
-    if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->LeafIndex() < 0) continue;
+    if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->leaf_index() < 0) continue;
 
     // construct histgroms for large leaf, we init larger leaf as the parent, so we can just subtract the smaller leaf's histograms
     this->larger_leaf_histogram_array_[feature_index].Subtract(
@@ -206,40 +204,38 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
 
     this->ComputeBestSplitForFeature(
         this->larger_leaf_histogram_array_, feature_index, real_feature_index,
-        this->larger_leaf_splits_->LeafIndex(),
         larger_node_used_features[feature_index],
-        this->larger_leaf_splits_->sum_gradients(),
-        this->larger_leaf_splits_->sum_hessians(),
-        GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
+        GetGlobalDataCountInLeaf(this->larger_leaf_splits_->leaf_index()),
+        this->larger_leaf_splits_.get(),
         &larger_bests_per_thread[tid]);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
 
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_bests_per_thread);
-  int leaf = this->smaller_leaf_splits_->LeafIndex();
+  int leaf = this->smaller_leaf_splits_->leaf_index();
   this->best_split_per_leaf_[leaf] = smaller_bests_per_thread[smaller_best_idx];
 
-  if (this->larger_leaf_splits_ != nullptr &&  this->larger_leaf_splits_->LeafIndex() >= 0) {
-    leaf = this->larger_leaf_splits_->LeafIndex();
+  if (this->larger_leaf_splits_ != nullptr &&  this->larger_leaf_splits_->leaf_index() >= 0) {
+    leaf = this->larger_leaf_splits_->leaf_index();
     auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_bests_per_thread);
     this->best_split_per_leaf_[leaf] = larger_bests_per_thread[larger_best_idx];
   }
 
   SplitInfo smaller_best_split, larger_best_split;
-  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
+  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->leaf_index()];
   // find local best split for larger leaf
-  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
+  if (this->larger_leaf_splits_->leaf_index() >= 0) {
+    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->leaf_index()];
   }
 
   // sync global best info
   SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->config_->max_cat_threshold);
 
   // set best split
-  this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()] = smaller_best_split;
-  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()] = larger_best_split;
+  this->best_split_per_leaf_[this->smaller_leaf_splits_->leaf_index()] = smaller_best_split;
+  if (this->larger_leaf_splits_->leaf_index() >= 0) {
+    this->best_split_per_leaf_[this->larger_leaf_splits_->leaf_index()] = larger_best_split;
   }
 }
 

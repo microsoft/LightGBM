@@ -294,13 +294,11 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
 
     this->ComputeBestSplitForFeature(
         this->smaller_leaf_histogram_array_, feature_index, real_feature_index,
-        this->smaller_leaf_splits_->LeafIndex(), true,
-        this->smaller_leaf_splits_->sum_gradients(),
-        this->smaller_leaf_splits_->sum_hessians(),
-        this->smaller_leaf_splits_->num_data_in_leaf(),
+        true, this->smaller_leaf_splits_->num_data_in_leaf(),
+        this->smaller_leaf_splits_.get(),
         &smaller_bestsplit_per_features[feature_index]);
     // only has root leaf
-    if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->LeafIndex() < 0) { continue; }
+    if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->leaf_index() < 0) { continue; }
 
     if (use_subtract) {
       this->larger_leaf_histogram_array_[feature_index].Subtract(this->smaller_leaf_histogram_array_[feature_index]);
@@ -310,10 +308,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
     }
     this->ComputeBestSplitForFeature(
         this->larger_leaf_histogram_array_, feature_index, real_feature_index,
-        this->larger_leaf_splits_->LeafIndex(), true,
-        this->larger_leaf_splits_->sum_gradients(),
-        this->larger_leaf_splits_->sum_hessians(),
-        this->larger_leaf_splits_->num_data_in_leaf(),
+        true, this->larger_leaf_splits_->num_data_in_leaf(),
+        this->larger_leaf_splits_.get(),
         &larger_bestsplit_per_features[feature_index]);
     OMP_LOOP_EX_END();
   }
@@ -356,8 +352,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
   }
   // global voting
   std::vector<int> smaller_top_features, larger_top_features;
-  GlobalVoting(this->smaller_leaf_splits_->LeafIndex(), smaller_top_k_splits_global, &smaller_top_features);
-  GlobalVoting(this->larger_leaf_splits_->LeafIndex(), larger_top_k_splits_global, &larger_top_features);
+  GlobalVoting(this->smaller_leaf_splits_->leaf_index(), smaller_top_k_splits_global, &smaller_top_features);
+  GlobalVoting(this->larger_leaf_splits_->leaf_index(), larger_top_k_splits_global, &larger_top_features);
   // copy local histgrams to buffer
   CopyLocalHistogram(smaller_top_features, larger_top_features);
 
@@ -397,12 +393,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
 
       this->ComputeBestSplitForFeature(
           smaller_leaf_histogram_array_global_.get(), feature_index,
-          real_feature_index, smaller_leaf_splits_global_->LeafIndex(),
-          smaller_node_used_features[feature_index],
-          smaller_leaf_splits_global_->sum_gradients(),
-          smaller_leaf_splits_global_->sum_hessians(),
-          GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
-          &smaller_bests_per_thread[tid]);
+          real_feature_index, smaller_node_used_features[feature_index],
+          GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->leaf_index()),
+          smaller_leaf_splits_global_.get(), &smaller_bests_per_thread[tid]);
     }
 
     if (larger_is_feature_aggregated_[feature_index]) {
@@ -416,11 +409,10 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
 
       this->ComputeBestSplitForFeature(
           larger_leaf_histogram_array_global_.get(), feature_index,
-          real_feature_index, larger_leaf_splits_global_->LeafIndex(),
+          real_feature_index, 
           larger_node_used_features[feature_index],
-          larger_leaf_splits_global_->sum_gradients(),
-          larger_leaf_splits_global_->sum_hessians(),
-          GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
+          GetGlobalDataCountInLeaf(larger_leaf_splits_global_->leaf_index()),
+          larger_leaf_splits_global_.get(),
           &larger_best_per_thread[tid]);
     }
     OMP_LOOP_EX_END();
@@ -428,29 +420,29 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
   OMP_THROW_EX();
 
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_bests_per_thread);
-  int leaf = this->smaller_leaf_splits_->LeafIndex();
+  int leaf = this->smaller_leaf_splits_->leaf_index();
   this->best_split_per_leaf_[leaf] = smaller_bests_per_thread[smaller_best_idx];
 
-  if (this->larger_leaf_splits_ != nullptr && this->larger_leaf_splits_->LeafIndex() >= 0) {
-    leaf = this->larger_leaf_splits_->LeafIndex();
+  if (this->larger_leaf_splits_ != nullptr && this->larger_leaf_splits_->leaf_index() >= 0) {
+    leaf = this->larger_leaf_splits_->leaf_index();
     auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best_per_thread);
     this->best_split_per_leaf_[leaf] = larger_best_per_thread[larger_best_idx];
   }
 
   // find local best
   SplitInfo smaller_best_split, larger_best_split;
-  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
+  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->leaf_index()];
   // find local best split for larger leaf
-  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
+  if (this->larger_leaf_splits_->leaf_index() >= 0) {
+    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->leaf_index()];
   }
   // sync global best info
   SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->config_->max_cat_threshold);
 
   // copy back
-  this->best_split_per_leaf_[smaller_leaf_splits_global_->LeafIndex()] = smaller_best_split;
-  if (larger_best_split.feature >= 0 && larger_leaf_splits_global_->LeafIndex() >= 0) {
-    this->best_split_per_leaf_[larger_leaf_splits_global_->LeafIndex()] = larger_best_split;
+  this->best_split_per_leaf_[smaller_leaf_splits_global_->leaf_index()] = smaller_best_split;
+  if (larger_best_split.feature >= 0 && larger_leaf_splits_global_->leaf_index() >= 0) {
+    this->best_split_per_leaf_[larger_leaf_splits_global_->leaf_index()] = larger_best_split;
   }
 }
 

@@ -110,7 +110,7 @@ class LeafSplits {
 
 
   /*! \brief Get current leaf index */
-  int LeafIndex() const { return leaf_index_; }
+  int leaf_index() const { return leaf_index_; }
 
   /*! \brief Get numer of data in current leaf */
   data_size_t num_data_in_leaf() const { return num_data_in_leaf_; }
