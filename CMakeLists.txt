@@ -68,6 +68,10 @@ if(USE_R35)
     ADD_DEFINITIONS(-DR_VER_ABOVE_35)
 endif(USE_R35)
 
+if(USE_TIMETAG)
+    ADD_DEFINITIONS(-DTIMETAG)
+endif(USE_TIMETAG)
+
 if(USE_MPI)
     find_package(MPI REQUIRED)
     ADD_DEFINITIONS(-DUSE_MPI)
@@ -128,6 +132,21 @@ int main() {
 if(${MM_PREFETCH})
   message(STATUS "Use _mm_prefetch")
   ADD_DEFINITIONS(-DMM_PREFETCH)
+endif()
+
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <mm_malloc.h>
+int main() {
+  char *a = (char*)_mm_malloc(8, 16);
+  _mm_free(a);
+  return 0;
+}
+" MM_MALLOC)
+
+if(${MM_MALLOC})
+  message(STATUS "Use _mm_malloc")
+  ADD_DEFINITIONS(-DMM_MALLOC)
 endif()
 
 if(UNIX OR MINGW OR CYGWIN)

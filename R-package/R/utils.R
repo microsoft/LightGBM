@@ -209,6 +209,11 @@ lgb.check.obj <- function(params, obj) {
     , "mape"
     , "gamma"
     , "tweedie"
+    , "rank_xendcg"
+    , "xendcg"
+    , "xe_ndcg"
+    , "xe_ndcg_mart"
+    , "xendcg_mart"
   )
 
   # Check whether the objective is empty or not, and take it from params if needed

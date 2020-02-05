@@ -92,6 +92,9 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"forced_splits_file", "forcedsplits_filename"},
   {"forced_splits", "forcedsplits_filename"},
   {"verbose", "verbosity"},
+  {"is_sparse", "is_enable_sparse"},
+  {"enable_sparse", "is_enable_sparse"},
+  {"sparse", "is_enable_sparse"},
   {"subsample_for_bin", "bin_construct_sample_cnt"},
   {"hist_pool_size", "histogram_pool_size"},
   {"data_seed", "data_random_seed"},
@@ -116,9 +119,6 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"is_pre_partition", "pre_partition"},
   {"is_enable_bundle", "enable_bundle"},
   {"bundle", "enable_bundle"},
-  {"is_sparse", "is_enable_sparse"},
-  {"enable_sparse", "is_enable_sparse"},
-  {"sparse", "is_enable_sparse"},
   {"two_round_loading", "two_round"},
   {"use_two_round_loading", "two_round"},
   {"is_save_binary", "save_binary"},
@@ -181,6 +181,8 @@ std::unordered_set<std::string> Config::parameter_set({
   "num_threads",
   "device_type",
   "seed",
+  "force_col_wise",
+  "force_row_wise",
   "max_depth",
   "min_data_in_leaf",
   "min_sum_hessian_in_leaf",
@@ -223,6 +225,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "cegb_penalty_feature_coupled",
   "verbosity",
   "max_bin",
+  "is_enable_sparse",
   "max_bin_by_feature",
   "min_data_in_bin",
   "bin_construct_sample_cnt",
@@ -236,9 +239,6 @@ std::unordered_set<std::string> Config::parameter_set({
   "valid_data_initscores",
   "pre_partition",
   "enable_bundle",
-  "max_conflict_rate",
-  "is_enable_sparse",
-  "sparse_threshold",
   "use_missing",
   "zero_as_missing",
   "two_round",
@@ -308,6 +308,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(num_leaves <=131072);
 
   GetInt(params, "num_threads", &num_threads);
+
+  GetBool(params, "force_col_wise", &force_col_wise);
+
+  GetBool(params, "force_row_wise", &force_row_wise);
 
   GetInt(params, "max_depth", &max_depth);
 
@@ -435,6 +439,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
 
+  GetBool(params, "is_enable_sparse", &is_enable_sparse);
+
   if (GetString(params, "max_bin_by_feature", &tmp_str)) {
     max_bin_by_feature = Common::StringToArray<int32_t>(tmp_str, ',');
   }
@@ -466,16 +472,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "pre_partition", &pre_partition);
 
   GetBool(params, "enable_bundle", &enable_bundle);
-
-  GetDouble(params, "max_conflict_rate", &max_conflict_rate);
-  CHECK(max_conflict_rate >=0.0);
-  CHECK(max_conflict_rate <1.0);
-
-  GetBool(params, "is_enable_sparse", &is_enable_sparse);
-
-  GetDouble(params, "sparse_threshold", &sparse_threshold);
-  CHECK(sparse_threshold >0.0);
-  CHECK(sparse_threshold <=1.0);
 
   GetBool(params, "use_missing", &use_missing);
 
@@ -600,6 +596,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[force_col_wise: " << force_col_wise << "]\n";
+  str_buf << "[force_row_wise: " << force_row_wise << "]\n";
   str_buf << "[max_depth: " << max_depth << "]\n";
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
@@ -642,6 +640,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
+  str_buf << "[is_enable_sparse: " << is_enable_sparse << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
   str_buf << "[bin_construct_sample_cnt: " << bin_construct_sample_cnt << "]\n";
@@ -655,9 +654,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores, ",") << "]\n";
   str_buf << "[pre_partition: " << pre_partition << "]\n";
   str_buf << "[enable_bundle: " << enable_bundle << "]\n";
-  str_buf << "[max_conflict_rate: " << max_conflict_rate << "]\n";
-  str_buf << "[is_enable_sparse: " << is_enable_sparse << "]\n";
-  str_buf << "[sparse_threshold: " << sparse_threshold << "]\n";
   str_buf << "[use_missing: " << use_missing << "]\n";
   str_buf << "[zero_as_missing: " << zero_as_missing << "]\n";
   str_buf << "[two_round: " << two_round << "]\n";

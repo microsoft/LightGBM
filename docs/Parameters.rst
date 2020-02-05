@@ -91,17 +91,13 @@ Core Parameters
 
       -  label is anything in interval [0, 1]
 
-   -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
+   -  ranking application
 
-      -  label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+      -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
 
-      -  `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
+      -  ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function. To obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
 
-      -  all values in ``label`` must be smaller than number of elements in ``label_gain``
-
-   -  ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
-
-      -  to obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1
+      -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
 -  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
 
@@ -189,6 +185,38 @@ Core Parameters
 
 Learning Control Parameters
 ---------------------------
+
+-  ``force_col_wise`` :raw-html:`<a id="force_col_wise" title="Permalink to this parameter" href="#force_col_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  set ``force_col_wise=true`` will force LightGBM to use col-wise histogram build
+
+   -  Recommend ``force_col_wise=true`` when:
+
+      -  the number of columns is large, or the total number of bin is large
+
+      -  when ``num_threads`` is large, e.g. ``>20``
+
+      -  want to use small ``feature_fraction``, e.g. ``0.5``, to speed-up
+
+      -  want to reduce memory cost
+
+   -  when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one
+
+-  ``force_row_wise`` :raw-html:`<a id="force_row_wise" title="Permalink to this parameter" href="#force_row_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  set ``force_row_wise=true`` will force LightGBM to use row-wise histogram build
+
+   -  Recommend ``force_row_wise=true`` when:
+
+      -  the number of data is large, and the number of total bin is relatively small
+
+      -  want to use small ``bagging``, or ``goss``, to speed-up
+
+      -  when ``num_threads`` is relatively small, e.g. ``<=16``
+
+   -  set ``force_row_wise=true`` will double the memory cost for Dataset object, if your memory is not enough, you can try ``force_col_wise=true``
+
+   -  when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one.
 
 -  ``max_depth`` :raw-html:`<a id="max_depth" title="Permalink to this parameter" href="#max_depth">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
@@ -469,6 +497,10 @@ IO Parameters
 
    -  LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
 
+-  ``is_enable_sparse`` :raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" href="#is_enable_sparse">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
+
+   -  used to enable/disable sparse optimization
+
 -  ``max_bin_by_feature`` :raw-html:`<a id="max_bin_by_feature" title="Permalink to this parameter" href="#max_bin_by_feature">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-int
 
    -  max number of bins for each feature
@@ -558,22 +590,6 @@ IO Parameters
    -  set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree>`__
 
    -  **Note**: disabling this may cause the slow training speed for sparse datasets
-
--  ``max_conflict_rate`` :raw-html:`<a id="max_conflict_rate" title="Permalink to this parameter" href="#max_conflict_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= max_conflict_rate < 1.0``
-
-   -  max conflict rate for bundles in EFB
-
-   -  set this to ``0.0`` to disallow the conflict and provide more accurate results
-
-   -  set this to a larger value to achieve faster speed
-
--  ``is_enable_sparse`` :raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" href="#is_enable_sparse">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
-
-   -  used to enable/disable sparse optimization
-
--  ``sparse_threshold`` :raw-html:`<a id="sparse_threshold" title="Permalink to this parameter" href="#sparse_threshold">&#x1F517;&#xFE0E;</a>`, default = ``0.8``, type = double, constraints: ``0.0 < sparse_threshold <= 1.0``
-
-   -  the threshold of zero elements percentage for treating a feature as a sparse one
 
 -  ``use_missing`` :raw-html:`<a id="use_missing" title="Permalink to this parameter" href="#use_missing">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
@@ -858,9 +874,9 @@ Objective Parameters
 
 -  ``objective_seed`` :raw-html:`<a id="objective_seed" title="Permalink to this parameter" href="#objective_seed">&#x1F517;&#xFE0E;</a>`, default = ``5``, type = int
 
-   -  random seed for objectives
-
    -  used only in the ``rank_xendcg`` objective
+
+   -  random seed for objectives
 
 Metric Parameters
 -----------------
@@ -895,7 +911,7 @@ Metric Parameters
 
       -  ``tweedie``, negative log-likelihood for **Tweedie** regression
 
-      -  ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``
+      -  ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``, ``rank_xendcg``, ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
 
       -  ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
 
@@ -1059,7 +1075,7 @@ Also, you can include weight column in your data file. Please refer to the ``wei
 Query Data
 ~~~~~~~~~~
 
-For LambdaRank learning, it needs query information for training data.
+For learning to rank, it needs query information for training data.
 LightGBM uses an additional file to store query data, like the following:
 
 ::
