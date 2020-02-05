@@ -31,8 +31,8 @@ enum MissingType {
 
 typedef double hist_t;
 
-const size_t KHistEntrySize = 2 * sizeof(hist_t);
-const int KHistOffset = 2;
+const size_t kHistEntrySize = 2 * sizeof(hist_t);
+const int kHistOffset = 2;
 const double kSparseThreshold = 0.7;
 
 #define GET_GRAD(hist, i) hist[(i) << 1]
@@ -445,8 +445,7 @@ class Bin {
 
 
 class MultiValBin {
-public:
-
+ public:
   virtual ~MultiValBin() {}
 
   virtual data_size_t num_data() const = 0;

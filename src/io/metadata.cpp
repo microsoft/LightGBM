@@ -309,7 +309,7 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
     Log::Fatal("Length of label is not same with #data");
   }
   if (label_.empty()) { label_.resize(num_data_); }
- 
+
   #pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = Common::AvoidInf(label[i]);
@@ -329,7 +329,7 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   }
   if (weights_.empty()) { weights_.resize(num_data_); }
   num_weights_ = num_data_;
- 
+
   #pragma omp parallel for schedule(static)
   for (data_size_t i = 0; i < num_weights_; ++i) {
     weights_[i] = Common::AvoidInf(weights[i]);

@@ -114,7 +114,9 @@ struct Config {
   // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
   // descl2 = ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Occurrence_and_applications>`__
   // descl2 = ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Occurrence_and_applications>`__
-  // desc = ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
+  // desc = binary classification application
+  // descl2 = ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression)
+  // descl2 = requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
   // desc = multi-class classification application
   // descl2 = ``multiclass``, `softmax <https://en.wikipedia.org/wiki/Softmax_function>`__ objective function, aliases: ``softmax``
   // descl2 = ``multiclassova``, `One-vs-All <https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest>`__ binary objective function, aliases: ``multiclass_ova``, ``ova``, ``ovr``
@@ -124,7 +126,7 @@ struct Config {
   // descl2 = ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
   // descl2 = label is anything in interval [0, 1]
   // desc = ranking application
-  // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
+  // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
   // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function. To obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   std::string objective = "regression";
@@ -212,22 +214,26 @@ struct Config {
 
   #pragma region Learning Control Parameters
 
-  // desc = set ``force_col_wise=true`` will force LightGBM to use col-wise histogram build
-  // desc = Recommend ``force_col_wise=true`` when:
-  // descl2 = the number of columns is large, or the total number of bin is large
-  // descl2 = when ``num_threads`` is large, e.g. ``>20``
-  // descl2 = want to use small ``feature_fraction``, e.g. ``0.5``, to speed-up
-  // descl2 = want to reduce memory cost
-  // desc = when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one
+  // desc = set this to ``true`` to force col-wise histogram building
+  // desc = enabling this is recommended when:
+  // descl2 = the number of columns is large, or the total number of bins is large
+  // descl2 = ``num_threads`` is large, e.g. ``>20``
+  // descl2 = you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
+  // descl2 = you want to reduce memory cost
+  // desc = **Note**: used only with ``cpu`` device type
+  // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+  // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
   bool force_col_wise = false;
 
-  // desc = set ``force_row_wise=true`` will force LightGBM to use row-wise histogram build
-  // desc = Recommend ``force_row_wise=true`` when:
-  // descl2 = the number of data is large, and the number of total bin is relatively small
-  // descl2 = want to use small ``bagging``, or ``goss``, to speed-up
-  // descl2 = when ``num_threads`` is relatively small, e.g. ``<=16``
-  // desc = set ``force_row_wise=true`` will double the memory cost for Dataset object, if your memory is not enough, you can try ``force_col_wise=true``
-  // desc = when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one.
+  // desc = set this to ``true`` to force row-wise histogram building
+  // desc = enabling this is recommended when:
+  // descl2 = the number of data points is large, and the total number of bins is relatively small
+  // descl2 = ``num_threads`` is relatively small, e.g. ``<=16``
+  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
+  // desc = **Note**: used only with ``cpu`` device type
+  // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
+  // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+  // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
   bool force_row_wise = false;
 
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
@@ -403,7 +409,7 @@ struct Config {
 
   // alias = topk
   // check = >0
-  // desc = used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
+  // desc = used only in ``voting`` tree learner, refer to `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
   // desc = set this to larger value for more accurate result, but it will slow down the training speed
   int top_k = 20;
 

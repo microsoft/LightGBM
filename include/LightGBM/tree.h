@@ -214,6 +214,7 @@ class Tree {
   void RecomputeMaxDepth();
 
   int NextLeafId() const { return num_leaves_; }
+
  private:
   std::string NumericalDecisionIfElse(int node) const;
 
