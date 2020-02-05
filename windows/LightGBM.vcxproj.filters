@@ -57,9 +57,6 @@
     <ClInclude Include="..\src\io\dense_bin.hpp">
       <Filter>src\io</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\io\ordered_sparse_bin.hpp">
-      <Filter>src\io</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\io\parser.hpp">
       <Filter>src\io</Filter>
     </ClInclude>
@@ -85,6 +82,9 @@
       <Filter>src\objective</Filter>
     </ClInclude>
     <ClInclude Include="..\src\objective\rank_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\objective\rank_xendcg_objective.hpp">
       <Filter>src\objective</Filter>
     </ClInclude>
     <ClInclude Include="..\src\objective\regression_objective.hpp">
@@ -209,6 +209,12 @@
     </ClInclude>
     <ClInclude Include="..\src\treelearner\cost_effective_gradient_boosting.hpp">
       <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\multi_val_dense_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\multi_val_sparse_bin.hpp">
+      <Filter>src\io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

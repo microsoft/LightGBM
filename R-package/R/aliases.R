@@ -18,15 +18,6 @@
             , "early_stopping"
             , "n_iter_no_change"
         )
-        , "metric" = c(
-            "metric"
-            , "metrics"
-            , "metric_types"
-        )
-        , "num_class" = c(
-            "num_class"
-            , "num_classes"
-        )
         , "num_iterations" = c(
             "num_iterations"
             , "num_iteration"

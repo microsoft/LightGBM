@@ -130,8 +130,6 @@ def reset_parameter(**kwargs):
     def _callback(env):
         new_parameters = {}
         for key, value in kwargs.items():
-            if key in _ConfigAliases.get("num_class", "boosting", "metric"):
-                raise RuntimeError("Cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
                     raise ValueError("Length of list {} has to equal to 'num_boost_round'."

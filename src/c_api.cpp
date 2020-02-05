@@ -1065,7 +1065,7 @@ int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
   API_BEGIN();
   auto target_d = reinterpret_cast<Dataset*>(target);
   auto source_d = reinterpret_cast<Dataset*>(source);
-  target_d->addFeaturesFrom(source_d);
+  target_d->AddFeaturesFrom(source_d);
   API_END();
 }
 
