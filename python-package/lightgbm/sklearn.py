@@ -729,6 +729,14 @@ class LGBMModel(_LGBMModelBase):
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
         return self._Booster.feature_importance(importance_type=self.importance_type)
 
+    @property
+    def feature_name_(self):
+        """Get feature name
+        """
+        if self._n_features is None:
+            raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
+        return self._Booster.feature_name()
+
 
 class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
     """LightGBM regressor."""
