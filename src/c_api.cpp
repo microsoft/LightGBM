@@ -263,6 +263,7 @@ class Booster {
       single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, boosting_.get(),
                                                                        config, num_iteration));
     }
+    //TODO: Degrade here to read lock, or set this predictor in a private with write lock
     auto one_row = get_row_fun(0);
     auto pred_wrt_ptr = out_result;
     single_row_predictor_[predict_type]->predict_function(one_row, pred_wrt_ptr);
@@ -274,7 +275,7 @@ class Booster {
   void Predict(int num_iteration, int predict_type, int nrow, int ncol,
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
-               double* out_result, int64_t* out_len) {
+               double* out_result, int64_t* out_len) const {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
@@ -312,7 +313,7 @@ class Booster {
 
   void Predict(int num_iteration, int predict_type, const char* data_filename,
                int data_has_header, const Config& config,
-               const char* result_filename) {
+               const char* result_filename) const {
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
@@ -332,11 +333,11 @@ class Booster {
     predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check);
   }
 
-  void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
+  void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) const {
     boosting_->GetPredictAt(data_idx, out_result, out_len);
   }
 
-  void SaveModelToFile(int start_iteration, int num_iteration, const char* filename) {
+  void SaveModelToFile(int start_iteration, int num_iteration, const char* filename) const {
     boosting_->SaveModelToFile(start_iteration, num_iteration, filename);
   }
 
@@ -345,15 +346,15 @@ class Booster {
     boosting_->LoadModelFromString(model_str, len);
   }
 
-  std::string SaveModelToString(int start_iteration, int num_iteration) {
+  std::string SaveModelToString(int start_iteration, int num_iteration) const {
     return boosting_->SaveModelToString(start_iteration, num_iteration);
   }
 
-  std::string DumpModel(int start_iteration, int num_iteration) {
+  std::string DumpModel(int start_iteration, int num_iteration) const {
     return boosting_->DumpModel(start_iteration, num_iteration);
   }
 
-  std::vector<double> FeatureImportance(int num_iteration, int importance_type) {
+  std::vector<double> FeatureImportance(int num_iteration, int importance_type) const {
     return boosting_->FeatureImportance(num_iteration, importance_type);
   }
 
