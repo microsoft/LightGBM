@@ -7,7 +7,8 @@
  */
 #include<LightGBM/config.h>
 namespace LightGBM {
-std::unordered_map<std::string, std::string> Config::alias_table({
+std::unordered_map<std::string, std::string> Config::alias_table() {
+  static std::unordered_map<std::string, std::string> aliases({
   {"config_file", "config"},
   {"task_type", "task"},
   {"objective_type", "objective"},
@@ -165,9 +166,12 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"mlist", "machine_list_filename"},
   {"workers", "machines"},
   {"nodes", "machines"},
-});
+  });
+  return aliases;
+}
 
-std::unordered_set<std::string> Config::parameter_set({
+std::unordered_set<std::string> Config::parameter_set() {
+  static std::unordered_set<std::string> params({
   "config",
   "task",
   "objective",
@@ -286,7 +290,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "gpu_platform_id",
   "gpu_device_id",
   "gpu_use_dp",
-});
+  });  return params;}
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
   std::string tmp_str = "";
