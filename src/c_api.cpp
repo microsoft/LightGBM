@@ -357,11 +357,13 @@ class Booster {
     return boosting_->FeatureImportance(num_iteration, importance_type);
   }
 
-  double UpperBoundValue() {
+  double UpperBoundValue() const  {
+    std::lock_guard<std::mutex> lock(mutex_);
     return boosting_->GetUpperBoundValue();
   }
 
-  double LowerBoundValue() {
+  double LowerBoundValue() const {
+    std::lock_guard<std::mutex> lock(mutex_);
     return boosting_->GetLowerBoundValue();
   }
 
@@ -423,7 +425,7 @@ class Booster {
   /*! \brief Training objective function */
   std::unique_ptr<ObjectiveFunction> objective_fun_;
   /*! \brief mutex for threading safe call */
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
 };
 
 }  // namespace LightGBM
