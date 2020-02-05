@@ -290,7 +290,8 @@ std::unordered_set<std::string> Config::parameter_set() {
   "gpu_platform_id",
   "gpu_device_id",
   "gpu_use_dp",
-  });  return params;}
+  });  return params;
+}
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
   std::string tmp_str = "";
