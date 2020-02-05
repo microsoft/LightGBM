@@ -187,20 +187,15 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
     this->train_data_->FixHistogram(feature_index,
                                     this->smaller_leaf_splits_->sum_gradients(), this->smaller_leaf_splits_->sum_hessians(),
                                     this->smaller_leaf_histogram_array_[feature_index].RawData());
-    SplitInfo smaller_split;
-    // FIXME Fill the vectors with the actual constraints as in serial_tree_learner.cpp
-    LeafConstraints constraints;
-    // find best threshold for smaller child
-    this->smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-      this->smaller_leaf_splits_->sum_gradients(),
-      this->smaller_leaf_splits_->sum_hessians(),
-      GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
-      constraints,
-      &smaller_split);
-    smaller_split.feature = real_feature_index;
-    if (smaller_split > smaller_bests_per_thread[tid] && smaller_node_used_features[feature_index]) {
-      smaller_bests_per_thread[tid] = smaller_split;
-    }
+
+    this->ComputeBestSplitForFeature(
+        this->smaller_leaf_histogram_array_, feature_index, real_feature_index,
+        this->smaller_leaf_splits_->LeafIndex(),
+        smaller_node_used_features[feature_index],
+        this->smaller_leaf_splits_->sum_gradients(),
+        this->smaller_leaf_splits_->sum_hessians(),
+        GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
+        &smaller_bests_per_thread[tid]);
 
     // only root leaf
     if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->LeafIndex() < 0) continue;
@@ -208,18 +203,15 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
     // construct histgroms for large leaf, we init larger leaf as the parent, so we can just subtract the smaller leaf's histograms
     this->larger_leaf_histogram_array_[feature_index].Subtract(
       this->smaller_leaf_histogram_array_[feature_index]);
-    SplitInfo larger_split;
-    // find best threshold for larger child
-    this->larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-      this->larger_leaf_splits_->sum_gradients(),
-      this->larger_leaf_splits_->sum_hessians(),
-      GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
-      constraints,
-      &larger_split);
-    larger_split.feature = real_feature_index;
-    if (larger_split > larger_bests_per_thread[tid] && larger_node_used_features[feature_index]) {
-      larger_bests_per_thread[tid] = larger_split;
-    }
+
+    this->ComputeBestSplitForFeature(
+        this->larger_leaf_histogram_array_, feature_index, real_feature_index,
+        this->larger_leaf_splits_->LeafIndex(),
+        smaller_node_used_features[feature_index],
+        this->larger_leaf_splits_->sum_gradients(),
+        this->larger_leaf_splits_->sum_hessians(),
+        GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
+        &larger_bests_per_thread[tid]);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();

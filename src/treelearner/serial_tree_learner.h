@@ -82,13 +82,13 @@ class SerialTreeLearner: public TreeLearner {
 
   bool IsHistColWise() const override { return is_hist_colwise_; }
 
-  void ComputeBestSplitForFeature(FeatureHistogram *histogram_array_,
-                                  const std::unique_ptr<LeafSplits>& leaf_splits_,
-                                  int feature_index, int real_fidx,
-                                  const std::vector<int8_t> &node_used_features,
-                                  const int tid, std::vector<SplitInfo> &best);
-
  protected:
+  void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
+                                  int feature_index, int real_fidx,
+                                  int leaf_index, bool is_feature_used,
+                                  double sum_gradients, double sum_hessians,
+                                  int num_data_in_leaf, SplitInfo* best_split);
+
   void GetMultiValBin(const Dataset* dataset, bool is_first_time);
 
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
@@ -159,7 +159,7 @@ class SerialTreeLearner: public TreeLearner {
   /*! \brief store best split per feature for all leaves */
   std::vector<SplitInfo> splits_per_leaf_;
   // Stores minimum and maximum constraints for each leaf
-  std::vector<LeafConstraints> constraints_per_leaf_;
+  std::unique_ptr<LeafConstraints<ConstraintEntry>> constraints_;
 
   /*! \brief stores best thresholds for all feature for smaller leaf */
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;

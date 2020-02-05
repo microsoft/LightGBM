@@ -8,31 +8,55 @@
 
 namespace LightGBM {
 
-struct LeafConstraints {
-  double min_constraint;
-  double max_constraint;
+struct ConstraintEntry {
+  double min = -std::numeric_limits<double>::max();
+  double max = std::numeric_limits<double>::max();
 
-  static void SetChildrenConstraintsFastMethod(
-    std::vector<LeafConstraints> &constraints_per_leaf, int *right_leaf,
-    int *left_leaf, int8_t monotone_type, double right_output,
-    double left_output, bool is_numerical_split);
-
-  LeafConstraints() {
-    Reset();
-  }
+  ConstraintEntry(){};
 
   void Reset() {
-    min_constraint = -std::numeric_limits<double>::max();
-    max_constraint = std::numeric_limits<double>::max();
+    min = -std::numeric_limits<double>::max();
+    max = std::numeric_limits<double>::max();
   }
 
-  void UpdateMinConstraint(double min) {
-    min_constraint = std::max(min, min_constraint);
+  void UpdateMin(double new_min) { min = std::min(new_min, min); }
+
+  void UpdateMax(double new_max) { max = std::max(new_max, max); }
+
+};
+
+template <typename ConstraintEntry>
+class LeafConstraints {
+ public:
+  LeafConstraints(int num_leaves) : num_leaves_(num_leaves) {
+    entries_.resize(num_leaves_);
+  }
+  void Reset() {
+    for (auto& entry : entries_) {
+      entry.Reset();
+    }
+  }
+  void UpdateConstraints(bool is_numerical_split, int leaf, int new_leaf,
+                         int8_t monotone_type, double right_output,
+                         double left_output) {
+    entries_[new_leaf] = entries_[leaf];
+    if (is_numerical_split) {
+      double mid = (left_output + right_output) / 2.0f;
+      if (monotone_type < 0) {
+        entries_[leaf].UpdateMin(mid);
+        entries_[new_leaf].UpdateMax(mid);
+      } else if (monotone_type > 0) {
+        entries_[leaf].UpdateMax(mid);
+        entries_[new_leaf].UpdateMin(mid);
+      }
+    }
   }
 
-  void UpdateMaxConstraint(double max) {
-    max_constraint = std::min(max, max_constraint);
-  }
+  const ConstraintEntry& Get(int leaf_idx) const { return entries_[leaf_idx]; }
+
+ private:
+  int num_leaves_;
+  std::vector<ConstraintEntry> entries_;
 };
 
 } // namespace LightGBM

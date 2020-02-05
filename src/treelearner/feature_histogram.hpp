@@ -82,7 +82,7 @@ class FeatureHistogram {
   }
 
   void FindBestThreshold(double sum_gradient, double sum_hessian, data_size_t num_data,
-    const LeafConstraints &constraints, SplitInfo* output) {
+    const ConstraintEntry& constraints, SplitInfo* output) {
     output->default_left = true;
     output->gain = kMinScore;
     find_best_threshold_fun_(sum_gradient, sum_hessian + 2 * kEpsilon, num_data, constraints, output);
@@ -90,7 +90,7 @@ class FeatureHistogram {
   }
 
   void FindBestThresholdNumerical(double sum_gradient, double sum_hessian, data_size_t num_data,
-    const LeafConstraints &constraints, SplitInfo* output) {
+    const ConstraintEntry& constraints, SplitInfo* output) {
     is_splittable_ = false;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
       meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
@@ -134,7 +134,7 @@ class FeatureHistogram {
   }
 
   void FindBestThresholdCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
-    const LeafConstraints &constraints, SplitInfo* output) {
+    const ConstraintEntry& constraints, SplitInfo* output) {
     output->default_left = false;
     double best_gain = kMinScore;
     data_size_t best_left_count = 0;
@@ -478,7 +478,7 @@ class FeatureHistogram {
   static double GetSplitGains(double sum_left_gradients, double sum_left_hessians,
     double sum_right_gradients, double sum_right_hessians,
     double l1, double l2, double max_delta_step,
-    const LeafConstraints &constraints, int8_t monotone_constraint) {
+    const ConstraintEntry& constraints, int8_t monotone_constraint) {
     double left_output = CalculateSplittedLeafOutput(sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step, constraints);
     double right_output = CalculateSplittedLeafOutput(sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step, constraints);
     if (((monotone_constraint > 0) && (left_output > right_output)) ||
@@ -497,13 +497,12 @@ class FeatureHistogram {
   */
   static double
   CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians,
-                              double l1, double l2, double max_delta_step,
-                              const LeafConstraints &constraints) {
+                              double l1, double l2, double max_delta_step, const ConstraintEntry& constraints) {
     double ret = CalculateSplittedLeafOutput(sum_gradients, sum_hessians, l1, l2, max_delta_step);
-    if (ret < constraints.min_constraint) {
-      ret = constraints.min_constraint;
-    } else if (ret > constraints.max_constraint) {
-      ret = constraints.max_constraint;
+    if (ret < constraints.min) {
+      ret = constraints.min;
+    } else if (ret > constraints.max) {
+      ret = constraints.max;
     }
     return ret;
   }
@@ -525,7 +524,7 @@ class FeatureHistogram {
   }
 
   template<bool is_rand>
-  void FindBestThresholdSequence(double sum_gradient, double sum_hessian, data_size_t num_data, const LeafConstraints &constraints,
+  void FindBestThresholdSequence(double sum_gradient, double sum_hessian, data_size_t num_data, const ConstraintEntry& constraints,
                                  double min_gain_shift, SplitInfo* output, int dir, bool skip_default_bin, bool use_na_as_missing, int rand_threshold) {
     const int8_t offset = meta_->offset;
 
@@ -681,7 +680,9 @@ class FeatureHistogram {
   /*! \brief random number generator for extremely randomized trees */
   Random rand_;
 
-  std::function<void(double, double, data_size_t, const LeafConstraints&, SplitInfo*)> find_best_threshold_fun_;
+  std::function<void(double, double, data_size_t, const ConstraintEntry&,
+                     SplitInfo*)>
+      find_best_threshold_fun_;
 };
 class HistogramPool {
  public:
