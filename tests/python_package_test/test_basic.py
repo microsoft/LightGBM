@@ -39,6 +39,8 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(bst.current_iteration(), 20)
         self.assertEqual(bst.num_trees(), 20)
         self.assertEqual(bst.num_model_per_iteration(), 1)
+        self.assertAlmostEqual(bst.upper_bound(), 3.2911086148583832)
+        self.assertAlmostEqual(bst.lower_bound(), -3.1790540458505645)
 
         bst.save_model("model.txt")
         pred_from_matr = bst.predict(X_test)

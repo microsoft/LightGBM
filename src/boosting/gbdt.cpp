@@ -659,18 +659,16 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
 
 double GBDT::GetUpperBoundValue() const {
   double max_value = 0.0;
-  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
-  for (int i = 0; i < total_tree; ++i) {
-    max_value += models_[i]->GetUpperBoundValue();
+  for (const auto &tree: models_) {
+      max_value += tree->GetUpperBoundValue();
   }
   return max_value;
 }
 
 double GBDT::GetLowerBoundValue() const {
   double min_value = 0.0;
-  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
-  for (int i = 0; i < total_tree; ++i) {
-    min_value += models_[i]->GetLowerBoundValue();
+  for (const auto &tree: models_) {
+    min_value += tree->GetLowerBoundValue();
   }
   return min_value;
 }

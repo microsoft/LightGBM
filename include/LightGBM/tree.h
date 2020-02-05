@@ -115,13 +115,11 @@ class Tree {
 
   /*!
   * \brief Get upper bound leaf value of this tree model
-  * \param score Will add value to score
   */
   double GetUpperBoundValue() const;
 
   /*!
   * \brief Get lower bound leaf value of this tree model
-  * \param score Will add valu to score
   */
   double GetLowerBoundValue() const;
 

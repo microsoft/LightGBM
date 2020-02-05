@@ -422,6 +422,24 @@ LGBM_SE LGBM_BoosterGetCurrentIteration_R(LGBM_SE handle,
   R_API_END();
 }
 
+LGBM_SE LGBM_BoosterGetUpperBoundValue_R(LGBM_SE handle,
+  LGBM_SE out_result,
+  LGBM_SE call_state) {
+  R_API_BEGIN();
+  double* ptr_ret = R_REAL_PTR(out_result);
+  CHECK_CALL(LGBM_BoosterGetUpperBoundValue(R_GET_PTR(handle), ptr_ret));
+  R_API_END();
+}
+
+LGBM_SE LGBM_BoosterGetLowerBoundValue_R(LGBM_SE handle,
+  LGBM_SE out_result,
+  LGBM_SE call_state) {
+  R_API_BEGIN();
+  double* ptr_ret = R_REAL_PTR(out_result);
+  CHECK_CALL(LGBM_BoosterGetLowerBoundValue(R_GET_PTR(handle), ptr_ret));
+  R_API_END();
+}
+
 LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   LGBM_SE buf_len,
   LGBM_SE actual_len,

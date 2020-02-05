@@ -2204,6 +2204,34 @@ class Booster(object):
             ctypes.byref(num_trees)))
         return num_trees.value
 
+    def upper_bound(self):
+        """Get upper bound value of a model.
+
+        Returns
+        -------
+        upper_bound : double
+            Upper bound value of the model.
+        """
+        ret = ctypes.c_double(0)
+        _safe_call(_LIB.LGBM_BoosterGetUpperBoundValue(
+            self.handle,
+            ctypes.byref(ret)))
+        return ret.value
+
+    def lower_bound(self):
+        """Get lower bound value of a model.
+
+        Returns
+        -------
+        lower_bound : double
+            Lower bound value of the model.
+        """
+        ret = ctypes.c_double(0)
+        _safe_call(_LIB.LGBM_BoosterGetLowerBoundValue(
+            self.handle,
+            ctypes.byref(ret)))
+        return ret.value
+
     def eval(self, data, name, feval=None):
         """Evaluate for data.
 
