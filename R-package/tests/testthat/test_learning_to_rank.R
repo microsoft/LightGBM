@@ -47,8 +47,8 @@ test_that("learning-to-rank with lgb.train() works as expected", {
     }
     expect_identical(sapply(eval_results, function(x) {x$name}), eval_names)
     expect_equal(eval_results[[1L]][["value"]], 0.825)
-    expect_true(abs(eval_results[[2L]][["value"]] - 0.795986) < TOLERANCE)
-    expect_true(abs(eval_results[[3L]][["value"]] - 0.7734639) < TOLERANCE)
+    expect_true(abs(eval_results[[2L]][["value"]] - 0.7766434) < TOLERANCE)
+    expect_true(abs(eval_results[[3L]][["value"]] - 0.7527939) < TOLERANCE)
 })
 
 test_that("learning-to-rank with lgb.cv() works as expected", {
