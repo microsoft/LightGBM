@@ -20,8 +20,6 @@
 #include <unordered_set>
 #include <vector>
 
-// Dummy comment
-
 namespace LightGBM {
 
 /*! \brief Types of tasks */

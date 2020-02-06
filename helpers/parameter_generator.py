@@ -284,11 +284,10 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     
     for name in names:
         str_to_write += "  \"%s\",\n" % (name)
-    # str_to_write += "});\n\n"
-    str_to_write += "  });"
+    str_to_write += "  });\n"
     str_to_write += "  return params;\n"
     str_to_write += "}\n\n"
-# from strings
+    # from strings
     str_to_write += "void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {\n"
     str_to_write += "  std::string tmp_str = \"\";\n"
     for x in infos:
