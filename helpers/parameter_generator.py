@@ -281,7 +281,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     # names
     str_to_write += "const std::unordered_set<std::string>& Config::parameter_set() {\n"
     str_to_write += "  static std::unordered_set<std::string> params({\n"
-    
+
     for name in names:
         str_to_write += "  \"%s\",\n" % (name)
     str_to_write += "  });\n"
