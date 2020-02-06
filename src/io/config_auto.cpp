@@ -7,7 +7,7 @@
  */
 #include<LightGBM/config.h>
 namespace LightGBM {
-std::unordered_map<std::string, std::string> Config::alias_table() {
+const std::unordered_map<std::string, std::string>& Config::alias_table() {
   static std::unordered_map<std::string, std::string> aliases({
   {"config_file", "config"},
   {"task_type", "task"},
@@ -170,7 +170,7 @@ std::unordered_map<std::string, std::string> Config::alias_table() {
   return aliases;
 }
 
-std::unordered_set<std::string> Config::parameter_set() {
+const std::unordered_set<std::string>& Config::parameter_set() {
   static std::unordered_set<std::string> params({
   "config",
   "task",

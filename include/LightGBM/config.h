@@ -890,8 +890,8 @@ struct Config {
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
-  static std::unordered_map<std::string, std::string> alias_table();
-  static std::unordered_set<std::string> parameter_set();
+  static const std::unordered_map<std::string, std::string>& alias_table();
+  static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
 
  private:
