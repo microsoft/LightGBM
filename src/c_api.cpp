@@ -22,7 +22,7 @@
 #include <cstdio>
 #include <functional>
 #include <memory>
-#include <mutex>
+#include <shared_mutex>
 #include <stdexcept>
 #include <vector>
 
@@ -131,7 +131,7 @@ class Booster {
   }
 
   void MergeFrom(const Booster* other) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     boosting_->MergeFrom(other->boosting_.get());
   }
 
@@ -164,7 +164,7 @@ class Booster {
 
   void ResetTrainingData(const Dataset* train_data) {
     if (train_data != train_data_) {
-      std::lock_guard<std::mutex> lock(mutex_);
+      std::unique_lock<std::shared_mutex> lock(mutex_);
       train_data_ = train_data;
       CreateObjectiveAndMetrics();
       // reset the boosting
@@ -174,7 +174,7 @@ class Booster {
   }
 
   void ResetConfig(const char* parameters) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     auto param = Config::Str2Map(parameters);
     if (param.count("num_class")) {
       Log::Fatal("Cannot change num_class during training");
@@ -210,7 +210,7 @@ class Booster {
   }
 
   void AddValidData(const Dataset* valid_data) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     valid_metrics_.emplace_back();
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
@@ -224,12 +224,12 @@ class Booster {
   }
 
   bool TrainOneIter() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     return boosting_->TrainOneIter(nullptr, nullptr);
   }
 
   void Refit(const int32_t* leaf_preds, int32_t nrow, int32_t ncol) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     std::vector<std::vector<int32_t>> v_leaf_preds(nrow, std::vector<int32_t>(ncol, 0));
     for (int i = 0; i < nrow; ++i) {
       for (int j = 0; j < ncol; ++j) {
@@ -240,12 +240,12 @@ class Booster {
   }
 
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     return boosting_->TrainOneIter(gradients, hessians);
   }
 
   void RollbackOneIter() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     boosting_->RollbackOneIter();
   }
 
@@ -257,7 +257,7 @@ class Booster {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     if (single_row_predictor_[predict_type].get() == nullptr ||
         !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, boosting_.get())) {
       single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, boosting_.get(),
@@ -280,7 +280,7 @@ class Booster {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     bool predict_contrib = false;
@@ -314,7 +314,7 @@ class Booster {
   void Predict(int num_iteration, int predict_type, const char* data_filename,
                int data_has_header, const Config& config,
                const char* result_filename) const {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     bool predict_contrib = false;
@@ -359,12 +359,12 @@ class Booster {
   }
 
   double UpperBoundValue() const  {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     return boosting_->GetUpperBoundValue();
   }
 
   double LowerBoundValue() const {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     return boosting_->GetLowerBoundValue();
   }
 
@@ -373,12 +373,12 @@ class Booster {
   }
 
   void SetLeafValue(int tree_idx, int leaf_idx, double val) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     dynamic_cast<GBDTBase*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
   }
 
   void ShuffleModels(int start_iter, int end_iter) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     boosting_->ShuffleModels(start_iter, end_iter);
   }
 
@@ -426,7 +426,7 @@ class Booster {
   /*! \brief Training objective function */
   std::unique_ptr<ObjectiveFunction> objective_fun_;
   /*! \brief mutex for threading safe call */
-  mutable std::mutex mutex_;
+  mutable std::shared_mutex mutex_;
 };
 
 }  // namespace LightGBM
