@@ -345,15 +345,15 @@ class FeatureGroup {
       }
       is_multi_val_ = true;
     } else {
-      CHECK(num_feature_ == 1);
-      if (force_dense || (!force_sparse &&
-                          bin_mappers_[0]->sparse_rate() < kSparseThreshold)) {
-        is_sparse_ = false;
-        bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
-      } else {
+      if (force_sparse || (!force_dense && num_feature_ == 1 &&
+                           bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
         is_sparse_ = true;
         bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
+      } else {
+        is_sparse_ = false;
+        bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
       }
+      is_multi_val_ = false;
     }
   }
 
