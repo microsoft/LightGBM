@@ -57,6 +57,9 @@ class FeatureGroup {
     bin_offsets_ = other.bin_offsets_;
 
     bin_mappers_.reserve(other.bin_mappers_.size());
+    for (auto& bin_mapper : other.bin_mappers_) {
+      bin_mappers_.emplace_back(new BinMapper(*bin_mapper));
+    }
     CreateBinData(num_data, is_multi_val_, !is_sparse_, is_sparse_);
   }
 
