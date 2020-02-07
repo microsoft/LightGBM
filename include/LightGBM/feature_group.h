@@ -46,19 +46,18 @@ class FeatureGroup {
       num_total_bin_ += num_bin;
       bin_offsets_.emplace_back(num_total_bin_);
     }
-    if (is_multi_val_) {
-      multi_bin_data_.clear();
-      for (int i = 0; i < num_feature_; ++i) {
-        int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;
-        if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
-          multi_bin_data_.emplace_back(Bin::CreateSparseBin(num_data, bin_mappers_[i]->num_bin() + addi));
-        } else {
-          multi_bin_data_.emplace_back(Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
-        }
-      }
-    } else {
-      bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
-    }
+    CreateBinData(num_data, is_multi_val_, true, false);
+  }
+
+  FeatureGroup(const FeatureGroup& other, int num_data) {
+    num_feature_ = other.num_feature_;
+    is_multi_val_ = other.is_multi_val_;
+    is_sparse_ = other.is_sparse_;
+    num_total_bin_ = other.num_total_bin_;
+    bin_offsets_ = other.bin_offsets_;
+
+    bin_mappers_.reserve(other.bin_mappers_.size());
+    CreateBinData(num_data, is_multi_val_, !is_sparse_, is_sparse_);
   }
 
   FeatureGroup(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
@@ -76,13 +75,7 @@ class FeatureGroup {
       num_total_bin_ += num_bin;
       bin_offsets_.emplace_back(num_total_bin_);
     }
-    if (bin_mappers_[0]->sparse_rate() >=  kSparseThreshold) {
-      is_sparse_ = true;
-      bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
-    } else {
-      is_sparse_ = false;
-      bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
-    }
+    CreateBinData(num_data, false, false, false);
   }
 
   /*!
@@ -163,6 +156,16 @@ class FeatureGroup {
     } else {
       bin += bin_offsets_[sub_feature_idx];
       bin_data_->Push(tid, line_idx, bin);
+    }
+  }
+
+  void ReSize(int num_data) {
+    if (!is_multi_val_) {
+      bin_data_->ReSize(num_data);
+    } else {
+      for (int i = 0; i < num_feature_; ++i) {
+        multi_bin_data_[i]->ReSize(num_data);
+      }
     }
   }
 
@@ -297,6 +300,7 @@ class FeatureGroup {
     }
     return ret;
   }
+
   /*! \brief Disable copy */
   FeatureGroup& operator=(const FeatureGroup&) = delete;
   /*! \brief Deep copy */
@@ -322,6 +326,34 @@ class FeatureGroup {
   }
 
  private:
+
+  void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
+    if (is_multi_val) {
+      multi_bin_data_.clear();
+      for (int i = 0; i < num_feature_; ++i) {
+        int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;
+        if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
+          multi_bin_data_.emplace_back(Bin::CreateSparseBin(
+              num_data, bin_mappers_[i]->num_bin() + addi));
+        } else {
+          multi_bin_data_.emplace_back(
+              Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
+        }
+      }
+      is_multi_val_ = true;
+    } else {
+      CHECK(num_feature_ == 1);
+      if (force_dense || (!force_sparse &&
+                          bin_mappers_[0]->sparse_rate() < kSparseThreshold)) {
+        is_sparse_ = false;
+        bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
+      } else {
+        is_sparse_ = true;
+        bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
+      }
+    }
+  }
+
   /*! \brief Number of features */
   int num_feature_;
   /*! \brief Bin mapper for sub features */
