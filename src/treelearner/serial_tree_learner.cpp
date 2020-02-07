@@ -758,7 +758,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         cegb_->DetlaGain(feature_index, real_fidx, leaf_splits->leaf_index(),
                          num_data, new_split);
   }
-  if (new_split > *best_split && is_feature_used) {
+  if (new_split > *best_split) {
     *best_split = new_split;
   }
 }
