@@ -1394,6 +1394,8 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   PushVector(&group_feature_cnt_, other->group_feature_cnt_);
   PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
   feature_groups_.reserve(other->feature_groups_.size());
+  // FIXME: fix the multiple multi-val feature groups, they need to be merged
+  // into one multi-val group
   for (auto& fg : other->feature_groups_) {
     feature_groups_.emplace_back(new FeatureGroup(*fg));
   }
