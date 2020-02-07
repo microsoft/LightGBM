@@ -19,9 +19,9 @@ struct ConstraintEntry {
     max = std::numeric_limits<double>::max();
   }
 
-  void UpdateMin(double new_min) { min = std::min(new_min, min); }
+  void UpdateMin(double new_min) { min = std::max(new_min, min); }
 
-  void UpdateMax(double new_max) { max = std::max(new_max, max); }
+  void UpdateMax(double new_max) { max = std::min(new_max, max); }
 
 };
 
