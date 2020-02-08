@@ -314,10 +314,12 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                 flatted_group = np.zeros(num_data, dtype=np.int32)
             folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
     else:
-        if any(params.get(obj_alias, "") == "lambdarank" for obj_alias in _ConfigAliases.get("objective")):
+        if any(params.get(obj_alias, "") in {"lambdarank", "rank_xendcg", "xendcg",
+                                             "xe_ndcg", "xe_ndcg_mart", "xendcg_mart"}
+               for obj_alias in _ConfigAliases.get("objective")):
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('Scikit-learn is required for lambdarank cv.')
-            # lambdarank task, split according to groups
+                raise LightGBMError('Scikit-learn is required for ranking cv.')
+            # ranking task, split according to groups
             group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
             flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)

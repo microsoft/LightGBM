@@ -18,7 +18,6 @@
 
 namespace LightGBM {
 
-
 SerialTreeLearner::SerialTreeLearner(const Config* config)
   :config_(config) {
   random_ = Random(config_->feature_fraction_seed);
@@ -30,7 +29,6 @@ SerialTreeLearner::SerialTreeLearner(const Config* config)
 }
 
 SerialTreeLearner::~SerialTreeLearner() {
-
 }
 
 void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
@@ -45,7 +43,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   } else {
     size_t total_histogram_size = 0;
     for (int i = 0; i < train_data_->num_features(); ++i) {
-      total_histogram_size += KHistEntrySize * train_data_->FeatureNumBin(i);
+      total_histogram_size += kHistEntrySize * train_data_->FeatureNumBin(i);
     }
     max_cache_size = static_cast<int>(config_->histogram_pool_size * 1024 * 1024 / total_histogram_size);
   }
@@ -53,7 +51,6 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   max_cache_size = std::max(2, max_cache_size);
   max_cache_size = std::min(max_cache_size, config_->num_leaves);
 
-  
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
 
@@ -124,7 +121,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     } else {
       size_t total_histogram_size = 0;
       for (int i = 0; i < train_data_->num_features(); ++i) {
-        total_histogram_size += KHistEntrySize * train_data_->FeatureNumBin(i);
+        total_histogram_size += kHistEntrySize * train_data_->FeatureNumBin(i);
       }
       max_cache_size = static_cast<int>(config_->histogram_pool_size * 1024 * 1024 / total_histogram_size);
     }
@@ -374,7 +371,7 @@ void SerialTreeLearner::FindBestSplits() {
 void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::ConstructHistograms", global_timer);
   // construct smaller leaf
-  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - KHistOffset;
+  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
   train_data_->ConstructHistograms(is_feature_used,
                                    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
                                    gradients_, hessians_,
@@ -384,7 +381,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
-    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - KHistOffset;
+    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - kHistOffset;
     train_data_->ConstructHistograms(is_feature_used,
                                      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
                                      gradients_, hessians_,
@@ -405,7 +402,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
     larger_node_used_features = GetUsedFeatures(false);
   }
   OMP_INIT_EX();
-  // find splits	
+  // find splits
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
@@ -665,9 +662,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
       static_cast<float>(best_split_info.gain),
       train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
       best_split_info.default_left);
-
   } else {
-
     std::vector<uint32_t> cat_bitset_inner = Common::ConstructBitset(best_split_info.cat_threshold.data(), best_split_info.num_cat_threshold);
     std::vector<int> threshold_int(best_split_info.num_cat_threshold);
     for (int i = 0; i < best_split_info.num_cat_threshold; ++i) {

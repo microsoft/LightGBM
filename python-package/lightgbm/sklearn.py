@@ -269,6 +269,8 @@ class LGBMModel(_LGBMModelBase):
             The evaluation results if ``early_stopping_rounds`` has been specified.
         feature_importances_ : array of shape = [n_features]
             The feature importances (the higher, the more important the feature).
+        feature_name_ : array of shape = [n_features]
+            The names of features.
 
         Note
         ----
@@ -728,6 +730,13 @@ class LGBMModel(_LGBMModelBase):
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
         return self._Booster.feature_importance(importance_type=self.importance_type)
+
+    @property
+    def feature_name_(self):
+        """Get feature name."""
+        if self._n_features is None:
+            raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
+        return self._Booster.feature_name()
 
 
 class LGBMRegressor(LGBMModel, _LGBMRegressorBase):

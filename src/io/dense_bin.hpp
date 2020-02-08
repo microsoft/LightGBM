@@ -33,7 +33,7 @@ class DenseBinIterator: public BinIterator {
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override {}
 
-private:
+ private:
   const DenseBin<VAL_T>* bin_data_;
   VAL_T min_bin_;
   VAL_T max_bin_;
@@ -46,7 +46,7 @@ private:
 */
 template <typename VAL_T>
 class DenseBin: public Bin {
-public:
+ public:
   friend DenseBinIterator<VAL_T>;
   explicit DenseBin(data_size_t num_data)
     : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {
@@ -265,12 +265,12 @@ public:
   }
 
   size_t SizesInByte() const override {
-    return sizeof(VAL_T)* num_data_;
+    return sizeof(VAL_T) * num_data_;
   }
 
   DenseBin<VAL_T>* Clone() override;
 
-private:
+ private:
   data_size_t num_data_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
 

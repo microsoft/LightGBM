@@ -40,7 +40,6 @@ balanced_bagging_(false) {
 }
 
 GBDT::~GBDT() {
-
 }
 
 void GBDT::Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,

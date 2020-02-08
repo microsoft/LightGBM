@@ -5,9 +5,7 @@
 #ifndef LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
 #define LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
 
-
 #include <LightGBM/bin.h>
-#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstdint>
 #include <cstring>
@@ -15,11 +13,9 @@
 
 namespace LightGBM {
 
-
 template <typename VAL_T>
 class MultiValDenseBin : public MultiValBin {
-public:
-
+ public:
   explicit MultiValDenseBin(data_size_t num_data, int num_bin, int num_feature)
     : num_data_(num_data), num_bin_(num_bin), num_feature_(num_feature) {
     data_.resize(static_cast<size_t>(num_data_) * num_feature_, static_cast<VAL_T>(0));
@@ -36,20 +32,20 @@ public:
     return num_bin_;
   }
 
-
   void PushOneRow(int , data_size_t idx, const std::vector<uint32_t>& values) override {
     auto start = RowPtr(idx);
+#ifdef DEBUG
     CHECK(num_feature_ == static_cast<int>(values.size()));
+#endif  // DEBUG
     for (auto i = 0; i < num_feature_; ++i) {
       data_[start + i] = static_cast<VAL_T>(values[i]);
     }
   }
 
   void FinishLoad() override {
-
   }
 
-  bool IsSparse() override{
+  bool IsSparse() override {
     return false;
   }
 
@@ -146,7 +142,7 @@ public:
 
   MultiValDenseBin<VAL_T>* Clone() override;
 
-private:
+ private:
   data_size_t num_data_;
   int num_bin_;
   int num_feature_;
@@ -161,8 +157,6 @@ template<typename VAL_T>
 MultiValDenseBin<VAL_T>* MultiValDenseBin<VAL_T>::Clone() {
   return new MultiValDenseBin<VAL_T>(*this);
 }
-
-
 
 }  // namespace LightGBM
 #endif   // LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_

@@ -114,7 +114,9 @@ struct Config {
   // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
   // descl2 = ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Occurrence_and_applications>`__
   // descl2 = ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Occurrence_and_applications>`__
-  // desc = ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
+  // desc = binary classification application
+  // descl2 = ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression)
+  // descl2 = requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
   // desc = multi-class classification application
   // descl2 = ``multiclass``, `softmax <https://en.wikipedia.org/wiki/Softmax_function>`__ objective function, aliases: ``softmax``
   // descl2 = ``multiclassova``, `One-vs-All <https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest>`__ binary objective function, aliases: ``multiclass_ova``, ``ova``, ``ovr``
@@ -123,12 +125,10 @@ struct Config {
   // descl2 = ``cross_entropy``, objective function for cross-entropy (with optional linear weights), aliases: ``xentropy``
   // descl2 = ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
   // descl2 = label is anything in interval [0, 1]
-  // desc = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
-  // descl2 = label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
-  // descl2 = `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
-  // descl2 = all values in ``label`` must be smaller than number of elements in ``label_gain``
-  // desc = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
-  // descl2 = to obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1
+  // desc = ranking application
+  // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
+  // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function. To obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+  // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   std::string objective = "regression";
 
   // [doc-only]
@@ -214,22 +214,26 @@ struct Config {
 
   #pragma region Learning Control Parameters
 
-  // desc = set ``force_col_wise=true`` will force LightGBM to use col-wise histogram build
-  // desc = Recommend ``force_col_wise=true`` when:
-  // descl2 = the number of columns is large, or the total number of bin is large
-  // descl2 = when ``num_threads`` is large, e.g. ``>20``
-  // descl2 = want to use small ``feature_fraction``, e.g. ``0.5``, to speed-up
-  // descl2 = want to reduce memory cost
-  // desc = when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one
+  // desc = used only with ``cpu`` device type
+  // desc = set this to ``true`` to force col-wise histogram building
+  // desc = enabling this is recommended when:
+  // descl2 = the number of columns is large, or the total number of bins is large
+  // descl2 = ``num_threads`` is large, e.g. ``>20``
+  // descl2 = you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
+  // descl2 = you want to reduce memory cost
+  // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+  // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
   bool force_col_wise = false;
 
-  // desc = set ``force_row_wise=true`` will force LightGBM to use row-wise histogram build
-  // desc = Recommend ``force_row_wise=true`` when:
-  // descl2 = the number of data is large, and the number of total bin is relatively small
-  // descl2 = want to use small ``bagging``, or ``goss``, to speed-up
-  // descl2 = when ``num_threads`` is relatively small, e.g. ``<=16``
-  // desc = set ``force_row_wise=true`` will double the memory cost for Dataset object, if your memory is not enough, you can try ``force_col_wise=true``
-  // desc = when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one.
+  // desc = used only with ``cpu`` device type
+  // desc = set this to ``true`` to force row-wise histogram building
+  // desc = enabling this is recommended when:
+  // descl2 = the number of data points is large, and the total number of bins is relatively small
+  // descl2 = ``num_threads`` is relatively small, e.g. ``<=16``
+  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
+  // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
+  // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+  // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
   bool force_row_wise = false;
 
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
@@ -308,6 +312,14 @@ struct Config {
 
   // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
+
+  // desc = use extremely randomized trees
+  // desc = if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
+  // desc = can be used to deal with over-fitting
+  bool extra_trees = false;
+
+  // desc = random seed for selecting thresholds when ``extra_trees`` is true
+  int extra_seed = 6;
 
   // alias = early_stopping_rounds, early_stopping, n_iter_no_change
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
@@ -405,7 +417,7 @@ struct Config {
 
   // alias = topk
   // check = >0
-  // desc = used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
+  // desc = used only in ``voting`` tree learner, refer to `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
   // desc = set this to larger value for more accurate result, but it will slow down the training speed
   int top_k = 20;
 
@@ -768,8 +780,8 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
-  // desc = random seed for objectives
   // desc = used only in the ``rank_xendcg`` objective
+  // desc = random seed for objectives
   int objective_seed = 5;
 
   #pragma endregion
@@ -794,7 +806,7 @@ struct Config {
   // descl2 = ``gamma``, negative log-likelihood for **Gamma** regression
   // descl2 = ``gamma_deviance``, residual deviance for **Gamma** regression
   // descl2 = ``tweedie``, negative log-likelihood for **Tweedie** regression
-  // descl2 = ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``
+  // descl2 = ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``, ``rank_xendcg``, ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
   // descl2 = ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
   // descl2 = ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
@@ -897,8 +909,8 @@ struct Config {
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
-  static std::unordered_map<std::string, std::string> alias_table;
-  static std::unordered_set<std::string> parameter_set;
+  static const std::unordered_map<std::string, std::string>& alias_table();
+  static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
 
  private:
@@ -967,8 +979,8 @@ struct ParameterAlias {
   static void KeyAliasTransform(std::unordered_map<std::string, std::string>* params) {
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
-      auto alias = Config::alias_table.find(pair.first);
-      if (alias != Config::alias_table.end()) {  // found alias
+      auto alias = Config::alias_table().find(pair.first);
+      if (alias != Config::alias_table().end()) {  // found alias
         auto alias_set = tmp_map.find(alias->second);
         if (alias_set != tmp_map.end()) {  // alias already set
                                            // set priority by length & alphabetically to ensure reproducible behavior
@@ -986,7 +998,7 @@ struct ParameterAlias {
         } else {  // alias not set
           tmp_map.emplace(alias->second, pair.first);
         }
-      } else if (Config::parameter_set.find(pair.first) == Config::parameter_set.end()) {
+      } else if (Config::parameter_set().find(pair.first) == Config::parameter_set().end()) {
         Log::Warning("Unknown parameter: %s", pair.first.c_str());
       }
     }

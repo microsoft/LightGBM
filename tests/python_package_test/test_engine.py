@@ -714,7 +714,7 @@ class TestEngine(unittest.TestCase):
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
                                "D": np.random.permutation([True, False] * 30),
-                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                               "E": pd.Categorical(np.random.permutation(['z', 'y'] * 30),
                                                    ordered=True)})
         np.random.seed()  # reset seed
         cat_cols_actual = ["A", "B", "C", "D"]
@@ -1888,6 +1888,24 @@ class TestEngine(unittest.TestCase):
                                                         else "forced bins"))
             with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
                 lgb.train(new_params, lgb_data, num_boost_round=3)
+
+    def test_extra_trees(self):
+        # check extra trees increases regularization
+        X, y = load_boston(True)
+        lgb_x = lgb.Dataset(X, label=y)
+        params = {'objective': 'regression',
+                  'num_leaves': 32,
+                  'verbose': -1,
+                  'extra_trees': False,
+                  'seed': 0}
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted = est.predict(X)
+        err = mean_squared_error(y, predicted)
+        params['extra_trees'] = True
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted_new = est.predict(X)
+        err_new = mean_squared_error(y, predicted_new)
+        self.assertLess(err, err_new)
 
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_trees_to_dataframe(self):

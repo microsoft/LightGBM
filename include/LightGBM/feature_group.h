@@ -76,7 +76,7 @@ class FeatureGroup {
       num_total_bin_ += num_bin;
       bin_offsets_.emplace_back(num_total_bin_);
     }
-    if (bin_mappers_[0]->sparse_rate() >=  kSparseThreshold) {
+    if (bin_mappers_[0]->sparse_rate() >= kSparseThreshold) {
       is_sparse_ = true;
       bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
     } else {
@@ -142,6 +142,7 @@ class FeatureGroup {
       bin_data_->LoadFromMemory(memory_ptr, local_used_indices);
     }
   }
+
   /*! \brief Destructor */
   ~FeatureGroup() {
   }
@@ -252,6 +253,7 @@ class FeatureGroup {
       }
     }
   }
+
   /*!
   * \brief From bin to feature value
   * \param bin
@@ -280,6 +282,7 @@ class FeatureGroup {
       bin_data_->SaveBinaryToFile(writer);
     }
   }
+
   /*!
   * \brief Get sizes in byte of this object
   */
@@ -297,8 +300,10 @@ class FeatureGroup {
     }
     return ret;
   }
+
   /*! \brief Disable copy */
   FeatureGroup& operator=(const FeatureGroup&) = delete;
+
   /*! \brief Deep copy */
   FeatureGroup(const FeatureGroup& other) {
     num_feature_ = other.num_feature_;
