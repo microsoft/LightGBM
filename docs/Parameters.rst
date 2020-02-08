@@ -73,7 +73,11 @@ Core Parameters
 
       -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Occurrence_and_applications>`__
 
-   -  ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
+   -  binary classification application
+
+      -  ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression)
+
+      -  requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
 
    -  multi-class classification application
 
@@ -93,7 +97,7 @@ Core Parameters
 
    -  ranking application
 
-      -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
+      -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
 
       -  ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function. To obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
 
@@ -188,35 +192,43 @@ Learning Control Parameters
 
 -  ``force_col_wise`` :raw-html:`<a id="force_col_wise" title="Permalink to this parameter" href="#force_col_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  set ``force_col_wise=true`` will force LightGBM to use col-wise histogram build
+   -  used only with ``cpu`` device type
 
-   -  Recommend ``force_col_wise=true`` when:
+   -  set this to ``true`` to force col-wise histogram building
 
-      -  the number of columns is large, or the total number of bin is large
+   -  enabling this is recommended when:
 
-      -  when ``num_threads`` is large, e.g. ``>20``
+      -  the number of columns is large, or the total number of bins is large
 
-      -  want to use small ``feature_fraction``, e.g. ``0.5``, to speed-up
+      -  ``num_threads`` is large, e.g. ``>20``
 
-      -  want to reduce memory cost
+      -  you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
 
-   -  when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one
+      -  you want to reduce memory cost
+
+   -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+
+   -  **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
 
 -  ``force_row_wise`` :raw-html:`<a id="force_row_wise" title="Permalink to this parameter" href="#force_row_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  set ``force_row_wise=true`` will force LightGBM to use row-wise histogram build
+   -  used only with ``cpu`` device type
 
-   -  Recommend ``force_row_wise=true`` when:
+   -  set this to ``true`` to force row-wise histogram building
 
-      -  the number of data is large, and the number of total bin is relatively small
+   -  enabling this is recommended when:
 
-      -  want to use small ``bagging``, or ``goss``, to speed-up
+      -  the number of data points is large, and the total number of bins is relatively small
 
-      -  when ``num_threads`` is relatively small, e.g. ``<=16``
+      -  ``num_threads`` is relatively small, e.g. ``<=16``
 
-   -  set ``force_row_wise=true`` will double the memory cost for Dataset object, if your memory is not enough, you can try ``force_col_wise=true``
+      -  you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
 
-   -  when both ``force_col_wise`` and ``force_col_wise`` are ``false``, LightGBM will firstly try them both, and uses the faster one.
+   -  **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
+
+   -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+
+   -  **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
 
 -  ``max_depth`` :raw-html:`<a id="max_depth" title="Permalink to this parameter" href="#max_depth">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
@@ -307,6 +319,18 @@ Learning Control Parameters
 -  ``feature_fraction_seed`` :raw-html:`<a id="feature_fraction_seed" title="Permalink to this parameter" href="#feature_fraction_seed">&#x1F517;&#xFE0E;</a>`, default = ``2``, type = int
 
    -  random seed for ``feature_fraction``
+
+-  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  use extremely randomized trees
+
+   -  if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
+
+   -  can be used to deal with over-fitting
+
+-  ``extra_seed`` :raw-html:`<a id="extra_seed" title="Permalink to this parameter" href="#extra_seed">&#x1F517;&#xFE0E;</a>`, default = ``6``, type = int
+
+   -  random seed for selecting thresholds when ``extra_trees`` is true
 
 -  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``, ``n_iter_no_change``
 
@@ -416,7 +440,7 @@ Learning Control Parameters
 
 -  ``top_k`` :raw-html:`<a id="top_k" title="Permalink to this parameter" href="#top_k">&#x1F517;&#xFE0E;</a>`, default = ``20``, type = int, aliases: ``topk``, constraints: ``top_k > 0``
 
-   -  used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
+   -  used only in ``voting`` tree learner, refer to `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
 
    -  set this to larger value for more accurate result, but it will slow down the training speed
 

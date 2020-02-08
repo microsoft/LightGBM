@@ -8,7 +8,6 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
-#include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
@@ -439,9 +438,9 @@ class Dataset {
                            hist_t* histogram_data) const;
 
   void ConstructHistogramsMultiVal(const MultiValBin* multi_val_bin, const data_size_t* data_indices, data_size_t num_data,
-                                  const score_t* gradients, const score_t* hessians,
-                                  bool is_constant_hessian,
-                                  hist_t* histogram_data) const;
+                                   const score_t* gradients, const score_t* hessians,
+                                   bool is_constant_hessian,
+                                   hist_t* histogram_data) const;
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
@@ -656,7 +655,6 @@ class Dataset {
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
   mutable std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
-
 };
 
 }  // namespace LightGBM

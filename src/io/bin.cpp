@@ -641,7 +641,6 @@ namespace LightGBM {
   template class MultiValDenseBin<uint16_t>;
   template class MultiValDenseBin<uint32_t>;
 
-
   Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin) {
     if (num_bin <= 16) {
       return new Dense4bitsBin(num_data);
