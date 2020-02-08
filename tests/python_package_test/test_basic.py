@@ -48,6 +48,7 @@ def find_upper_and_lower_bounds(bst):
         expected_lower_bound += find_bound_value_in_tree(tree, MAX, operator.lt)
     return (expected_lower_bound, expected_upper_bound)
 
+
 class TestBasic(unittest.TestCase):
 
     def test(self):
@@ -369,7 +370,3 @@ class TestBasic(unittest.TestCase):
         lgb_data.set_weight(sequence)
         lgb_data.set_init_score(sequence)
         check_asserts(lgb_data)
-
-if __name__== "__main__":
-	test = TestBasic()
-	test.test()
