@@ -22,11 +22,6 @@
 
 namespace LightGBM {
 
-#ifdef TIMETAG
-std::chrono::duration<double, std::milli> subset_time;
-std::chrono::duration<double, std::milli> re_init_tree_time;
-#endif
-
 class GOSS: public GBDT {
  public:
   /*!
@@ -36,10 +31,6 @@ class GOSS: public GBDT {
   }
 
   ~GOSS() {
-    #ifdef TIMETAG
-    Log::Info("GOSS::subset costs %f", subset_time * 1e-3);
-    Log::Info("GOSS::re_init_tree costs %f", re_init_tree_time * 1e-3);
-    #endif
   }
 
   void Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
@@ -143,19 +134,21 @@ class GOSS: public GBDT {
     // not subsample for first iterations
     if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
 
-    const data_size_t min_inner_size = 100;
-    data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
-    if (inner_size < min_inner_size) { inner_size = min_inner_size; }
+    const data_size_t min_inner_size = 128;
+    const int n_block = std::min(
+        num_threads_, (num_data_ + min_inner_size - 1) / min_inner_size);
+    data_size_t inner_size = SIZE_ALIGNED((num_data_ + n_block - 1) / n_block);
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads_; ++i) {
+    for (int i = 0; i < n_block; ++i) {
       OMP_LOOP_EX_BEGIN();
-      left_cnts_buf_[i] = 0;
-      right_cnts_buf_[i] = 0;
       data_size_t cur_start = i * inner_size;
-      if (cur_start > num_data_) { continue; }
-      data_size_t cur_cnt = inner_size;
-      if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
+      data_size_t cur_cnt = std::min(inner_size, num_data_ - cur_start);
+      if (cur_cnt <= 0) {
+        left_cnts_buf_[i] = 0;
+        right_cnts_buf_[i] = 0;
+        continue;
+      }
       Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
       data_size_t cur_left_count = BaggingHelper(&cur_rand, cur_start, cur_cnt,
                                                  tmp_indices_.data() + cur_start, tmp_indice_right_.data() + cur_start);
@@ -168,14 +161,14 @@ class GOSS: public GBDT {
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
-    for (int i = 1; i < num_threads_; ++i) {
+    for (int i = 1; i < n_block; ++i) {
       left_write_pos_buf_[i] = left_write_pos_buf_[i - 1] + left_cnts_buf_[i - 1];
       right_write_pos_buf_[i] = right_write_pos_buf_[i - 1] + right_cnts_buf_[i - 1];
     }
-    left_cnt = left_write_pos_buf_[num_threads_ - 1] + left_cnts_buf_[num_threads_ - 1];
+    left_cnt = left_write_pos_buf_[n_block - 1] + left_cnts_buf_[n_block - 1];
 
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads_; ++i) {
+    for (int i = 0; i < n_block; ++i) {
       OMP_LOOP_EX_BEGIN();
       if (left_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_write_pos_buf_[i],
@@ -193,22 +186,9 @@ class GOSS: public GBDT {
     if (!is_use_subset_) {
       tree_learner_->SetBaggingData(bag_data_indices_.data(), bag_data_cnt_);
     } else {
-      // get subset
-      #ifdef TIMETAG
-      auto start_time = std::chrono::steady_clock::now();
-      #endif
       tmp_subset_->ReSize(bag_data_cnt_);
       tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
-      #ifdef TIMETAG
-      subset_time += std::chrono::steady_clock::now() - start_time;
-      #endif
-      #ifdef TIMETAG
-      start_time = std::chrono::steady_clock::now();
-      #endif
       tree_learner_->ResetTrainingData(tmp_subset_.get());
-      #ifdef TIMETAG
-      re_init_tree_time += std::chrono::steady_clock::now() - start_time;
-      #endif
     }
   }
 

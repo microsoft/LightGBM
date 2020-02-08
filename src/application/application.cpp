@@ -27,6 +27,8 @@
 
 namespace LightGBM {
 
+Common::Timer global_timer;
+
 Application::Application(int argc, char** argv) {
   LoadParameters(argc, argv);
   // set number of threads for openmp
@@ -36,7 +38,6 @@ Application::Application(int argc, char** argv) {
   if (config_.data.size() == 0 && config_.task != TaskType::kConvertModel) {
     Log::Fatal("No training/prediction data, application quit");
   }
-  omp_set_nested(0);
 }
 
 Application::~Application() {

@@ -192,6 +192,8 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
     bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
     drop_seed = static_cast<int>(rand.NextShort(0, int_max));
     feature_fraction_seed = static_cast<int>(rand.NextShort(0, int_max));
+    objective_seed = static_cast<int>(rand.NextShort(0, int_max));
+    extra_seed = static_cast<int>(rand.NextShort(0, int_max));
   }
 
   GetTaskType(params, &task);
@@ -310,6 +312,11 @@ void Config::CheckParamConflict() {
       // Fits in an int, and is more restrictive than the current num_leaves
       num_leaves = static_cast<int>(full_num_leaves);
     }
+  }
+  // force col-wise for gpu
+  if (device_type == std::string("gpu")) {
+    force_col_wise = true;
+    force_row_wise = false;
   }
 }
 
