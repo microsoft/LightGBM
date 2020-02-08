@@ -1640,6 +1640,11 @@ class Dataset(object):
         if self.handle is None or other.handle is None:
             raise ValueError('Both source and target Datasets must be constructed before adding features')
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        if other.data is None:
+            self.data = None
+        if self.data is not None:
+            # FIXME: concat two dataset
+            self.data = [self.data, other.data]
         return self
 
     def _dump_text(self, filename):

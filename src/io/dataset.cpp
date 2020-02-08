@@ -330,14 +330,17 @@ void Dataset::Construct(
   real_feature_idx_.resize(num_features_);
   feature2group_.resize(num_features_);
   feature2subfeature_.resize(num_features_);
-  int num_multi_val_group = 0;
   feature_need_push_zeros_.clear();
+  group_bin_boundaries_.clear();
+  uint64_t num_total_bin = 0;
+  group_bin_boundaries_.push_back(num_total_bin);
+  group_feature_start_.resize(num_groups_);
+  group_feature_cnt_.resize(num_groups_);
   for (int i = 0; i < num_groups_; ++i) {
     auto cur_features = features_in_group[i];
     int cur_cnt_features = static_cast<int>(cur_features.size());
-    if (group_is_multi_val[i]) {
-      ++num_multi_val_group;
-    }
+    group_feature_start_[i] = cur_fidx;
+    group_feature_cnt_[i] = cur_cnt_features;
     // get bin_mappers
     std::vector<std::unique_ptr<BinMapper>> cur_bin_mappers;
     for (int j = 0; j < cur_cnt_features; ++j) {
@@ -354,30 +357,10 @@ void Dataset::Construct(
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
       new FeatureGroup(cur_cnt_features, group_is_multi_val[i], &cur_bin_mappers, num_data_)));
-  }
-  feature_groups_.shrink_to_fit();
-  group_bin_boundaries_.clear();
-  uint64_t num_total_bin = 0;
-  group_bin_boundaries_.push_back(num_total_bin);
-  for (int i = 0; i < num_groups_; ++i) {
     num_total_bin += feature_groups_[i]->num_total_bin_;
     group_bin_boundaries_.push_back(num_total_bin);
   }
-  int last_group = 0;
-  group_feature_start_.reserve(num_groups_);
-  group_feature_cnt_.reserve(num_groups_);
-  group_feature_start_.push_back(0);
-  group_feature_cnt_.push_back(1);
-  for (int i = 1; i < num_features_; ++i) {
-    const int group = feature2group_[i];
-    if (group == last_group) {
-      group_feature_cnt_.back() = group_feature_cnt_.back() + 1;
-    } else {
-      group_feature_start_.push_back(i);
-      group_feature_cnt_.push_back(1);
-      last_group = group;
-    }
-  }
+  feature_groups_.shrink_to_fit();
 
   if (!io_config.monotone_constraints.empty()) {
     CHECK(static_cast<size_t>(num_total_features_) == io_config.monotone_constraints.size());
@@ -747,8 +730,13 @@ void Dataset::CreateValid(const Dataset* dataset) {
   num_groups_ = num_features_;
   feature2group_.clear();
   feature2subfeature_.clear();
-  // copy feature bin mapper data
+
   feature_need_push_zeros_.clear();
+  group_bin_boundaries_.clear();
+  uint64_t num_total_bin = 0;
+  group_bin_boundaries_.push_back(num_total_bin);
+  group_feature_start_.resize(num_groups_);
+  group_feature_cnt_.resize(num_groups_);
   for (int i = 0; i < num_features_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
     bin_mappers.emplace_back(new BinMapper(*(dataset->FeatureBinMapper(i))));
@@ -759,6 +747,10 @@ void Dataset::CreateValid(const Dataset* dataset) {
                                                   num_data_));
     feature2group_.push_back(i);
     feature2subfeature_.push_back(0);
+    num_total_bin += feature_groups_[i]->num_total_bin_;
+    group_bin_boundaries_.push_back(num_total_bin);
+    group_feature_start_[i] = i;
+    group_feature_cnt_[i] = 1;
   }
 
   feature_groups_.shrink_to_fit();
@@ -767,28 +759,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature_names_ = dataset->feature_names_;
   label_idx_ = dataset->label_idx_;
   real_feature_idx_ = dataset->real_feature_idx_;
-  group_bin_boundaries_.clear();
-  uint64_t num_total_bin = 0;
-  group_bin_boundaries_.push_back(num_total_bin);
-  for (int i = 0; i < num_groups_; ++i) {
-    num_total_bin += feature_groups_[i]->num_total_bin_;
-    group_bin_boundaries_.push_back(num_total_bin);
-  }
-  int last_group = 0;
-  group_feature_start_.reserve(num_groups_);
-  group_feature_cnt_.reserve(num_groups_);
-  group_feature_start_.push_back(0);
-  group_feature_cnt_.push_back(1);
-  for (int i = 1; i < num_features_; ++i) {
-    const int group = feature2group_[i];
-    if (group == last_group) {
-      group_feature_cnt_.back() = group_feature_cnt_.back() + 1;
-    } else {
-      group_feature_start_.push_back(i);
-      group_feature_cnt_.push_back(1);
-      last_group = group;
-    }
-  }
+
   monotone_types_ = dataset->monotone_types_;
   feature_penalty_ = dataset->feature_penalty_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
@@ -1207,10 +1178,11 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
   int multi_val_groud_id = -1;
   used_dense_group.reserve(num_groups_);
   for (int group = 0; group < num_groups_; ++group) {
+    const int f_start = group_feature_start_[group]; 
     const int f_cnt = group_feature_cnt_[group];
     bool is_group_used = false;
     for (int j = 0; j < f_cnt; ++j) {
-      const int fidx = group_feature_start_[group] + j;
+      const int fidx = f_start + j;
       if (is_feature_used[fidx]) {
         is_group_used = true;
         break;
@@ -1389,39 +1361,134 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   if (other->num_data_ != num_data_) {
     throw std::runtime_error("Cannot add features from other Dataset with a different number of rows");
   }
-  PushVector(&feature_names_, other->feature_names_);
-  PushVector(&feature2subfeature_, other->feature2subfeature_);
-  PushVector(&group_feature_cnt_, other->group_feature_cnt_);
-  PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
-  feature_groups_.reserve(other->feature_groups_.size());
-  // FIXME: fix the multiple multi-val feature groups, they need to be merged
-  // into one multi-val group
-  for (auto& fg : other->feature_groups_) {
-    feature_groups_.emplace_back(new FeatureGroup(*fg));
-  }
-  for (auto feature_idx : other->used_feature_map_) {
-    if (feature_idx >= 0) {
-      used_feature_map_.push_back(feature_idx + num_features_);
-    } else {
-      used_feature_map_.push_back(-1);  // Unused feature.
+  int mv_gid = -1;
+  int other_mv_gid = -1;
+  for (int i = 0; i < num_groups_; ++i) {
+    if (IsMultiGroup(i)) {
+      mv_gid = i;
     }
   }
-  PushOffset(&real_feature_idx_, other->real_feature_idx_, num_total_features_);
-  PushOffset(&feature2group_, other->feature2group_, num_groups_);
-  auto bin_offset = group_bin_boundaries_.back();
-  // Skip the leading 0 when copying group_bin_boundaries.
-  for (auto i = other->group_bin_boundaries_.begin()+1; i < other->group_bin_boundaries_.end(); ++i) {
-    group_bin_boundaries_.push_back(*i + bin_offset);
+  for (int i = 0; i < other->num_groups_; ++i) {
+    if (other->IsMultiGroup(i)) {
+      other_mv_gid = i;
+    }
   }
-  PushOffset(&group_feature_start_, other->group_feature_start_, num_features_);
+  // Only one multi-val group, just simply merge
+  if (mv_gid < 0 || other_mv_gid < 0) {
+    PushVector(&feature2subfeature_, other->feature2subfeature_);
+    PushVector(&group_feature_cnt_, other->group_feature_cnt_);
+    feature_groups_.reserve(other->feature_groups_.size());
+    for (auto& fg : other->feature_groups_) {
+      feature_groups_.emplace_back(new FeatureGroup(*fg));
+    }
+    for (auto feature_idx : other->used_feature_map_) {
+      if (feature_idx >= 0) {
+        used_feature_map_.push_back(feature_idx + num_features_);
+      } else {
+        used_feature_map_.push_back(-1);  // Unused feature.
+      }
+    }
+    PushOffset(&real_feature_idx_, other->real_feature_idx_,
+               num_total_features_);
+    PushOffset(&feature2group_, other->feature2group_, num_groups_);
+    auto bin_offset = group_bin_boundaries_.back();
+    // Skip the leading 0 when copying group_bin_boundaries.
+    for (auto i = other->group_bin_boundaries_.begin() + 1;
+         i < other->group_bin_boundaries_.end(); ++i) {
+      group_bin_boundaries_.push_back(*i + bin_offset);
+    }
+    PushOffset(&group_feature_start_, other->group_feature_start_,
+               num_features_);
+    num_groups_ += other->num_groups_;
+    num_features_ += other->num_features_;
+    num_total_features_ += other->num_total_features_;
+  } else {
+    std::vector<std::vector<int>> features_in_group;
+    for (int i = 0; i < num_groups_; ++i) {
+      int f_start = group_feature_start_[i];
+      int f_cnt = group_feature_cnt_[i];
+      features_in_group.emplace_back();
+      for (int j = 0; j < f_cnt; ++j) {
+        features_in_group.back().push_back(f_start + j);
+      }
+    }
+    feature_groups_[mv_gid]->AddFeaturesFrom(
+        other->feature_groups_[other_mv_gid].get());
+    for (int i = 0; i < other->num_groups_; ++i) {
+      int f_start = other->group_feature_start_[i];
+      int f_cnt = other->group_feature_cnt_[i];
+      if (i == other_mv_gid) {
+        for (int j = 0; j < f_cnt; ++j) {
+          features_in_group[mv_gid].push_back(f_start + j);
+        }
+      } else {
+        features_in_group.emplace_back();
+        for (int j = 0; j < f_cnt; ++j) {
+          features_in_group.back().push_back(f_start + j);
+        }
+        feature_groups_.emplace_back(
+            new FeatureGroup(*other->feature_groups_[i]));
+      }
+    }
 
-  PushClearIfEmpty(&monotone_types_, num_total_features_, other->monotone_types_, other->num_total_features_, (int8_t)0);
-  PushClearIfEmpty(&feature_penalty_, num_total_features_, other->feature_penalty_, other->num_total_features_, 1.0);
-  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_, other->max_bin_by_feature_, other->num_total_features_, -1);
+    // regenerate other fields
+    num_groups_ += other->num_groups_ - 1;
+    CHECK(num_groups_ == static_cast<int>(features_in_group.size()));
+    num_total_features_ += other->num_total_features_;
+    num_features_ += other->num_features_;
 
-  num_features_ += other->num_features_;
-  num_total_features_ += other->num_total_features_;
-  num_groups_ += other->num_groups_;
+    int cur_fidx = 0;
+    used_feature_map_ = std::vector<int>(num_total_features_, -1);
+    real_feature_idx_.resize(num_features_);
+    feature2group_.resize(num_features_);
+    feature2subfeature_.resize(num_features_);
+    group_feature_start_.resize(num_groups_);
+    group_feature_cnt_.resize(num_groups_);
+
+    group_bin_boundaries_.clear();
+    uint64_t num_total_bin = 0;
+    group_bin_boundaries_.push_back(num_total_bin);
+    for (int i = 0; i < num_groups_; ++i) {
+      auto cur_features = features_in_group[i];
+      int cur_cnt_features = static_cast<int>(cur_features.size());
+      group_feature_start_[i] = cur_fidx;
+      group_feature_cnt_[i] = cur_cnt_features;
+      for (int j = 0; j < cur_cnt_features; ++j) {
+        int real_fidx = cur_features[j];
+        used_feature_map_[real_fidx] = cur_fidx;
+        real_feature_idx_[cur_fidx] = real_fidx;
+        feature2group_[cur_fidx] = i;
+        feature2subfeature_[cur_fidx] = j;
+        ++cur_fidx;
+      }
+      num_total_bin += feature_groups_[i]->num_total_bin_;
+      group_bin_boundaries_.push_back(num_total_bin);
+    }
+  }
+  std::unordered_set<std::string> feature_names_set;
+  for (const auto& val : feature_names_) {
+    feature_names_set.emplace(val);
+  }
+  for (const auto& val : other->feature_names_) {
+    if (feature_names_set.count(val)) {
+      std::string new_name = "D2_" + val;
+      feature_names_.push_back(new_name);
+      Log::Warning(
+          "Find the same feature name (%s) in Dataset::AddFeaturesFrom, change "
+          "its name to (%s)",
+          val.c_str(), new_name.c_str());
+    } else {
+      feature_names_.push_back(val);
+    }
+  }
+  PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
+  PushClearIfEmpty(&monotone_types_, num_total_features_,
+                   other->monotone_types_, other->num_total_features_,
+                   (int8_t)0);
+  PushClearIfEmpty(&feature_penalty_, num_total_features_,
+                   other->feature_penalty_, other->num_total_features_, 1.0);
+  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_,
+                   other->max_bin_by_feature_, other->num_total_features_, -1);
 }
 
 }  // namespace LightGBM
