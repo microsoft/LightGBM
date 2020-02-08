@@ -198,6 +198,8 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "feature_fraction",
   "feature_fraction_bynode",
   "feature_fraction_seed",
+  "extra_trees",
+  "extra_seed",
   "early_stopping_round",
   "first_metric_only",
   "max_delta_step",
@@ -352,6 +354,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(feature_fraction_bynode <=1.0);
 
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
+
+  GetBool(params, "extra_trees", &extra_trees);
+
+  GetInt(params, "extra_seed", &extra_seed);
 
   GetInt(params, "early_stopping_round", &early_stopping_round);
 
@@ -615,6 +621,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";
   str_buf << "[feature_fraction_bynode: " << feature_fraction_bynode << "]\n";
   str_buf << "[feature_fraction_seed: " << feature_fraction_seed << "]\n";
+  str_buf << "[extra_trees: " << extra_trees << "]\n";
+  str_buf << "[extra_seed: " << extra_seed << "]\n";
   str_buf << "[early_stopping_round: " << early_stopping_round << "]\n";
   str_buf << "[first_metric_only: " << first_metric_only << "]\n";
   str_buf << "[max_delta_step: " << max_delta_step << "]\n";
