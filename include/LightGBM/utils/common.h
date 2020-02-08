@@ -11,20 +11,33 @@
 #include <limits>
 #include <string>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <functional>
 #include <iomanip>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#ifdef _MSC_VER
-#include "intrin.h"
+#if defined(_MSC_VER)
+#include <malloc.h>
+#elif MM_MALLOC
+#include <mm_malloc.h>
+#elif defined(__GNUC__)
+#include <malloc.h>
+#define _mm_malloc(a, b) memalign(b, a)
+#define _mm_free(a) free(a)
+#else
+#include <stdlib.h>
+#define _mm_malloc(a, b) malloc(a)
+#define _mm_free(a) free(a)
 #endif
 
 namespace LightGBM {
@@ -946,7 +959,138 @@ inline bool CheckAllowedJSON(const std::string& s) {
   return true;
 }
 
+inline int RoundInt(double x) {
+  return static_cast<int>(x + 0.5f);
+}
+
+template <typename T, std::size_t N = 32>
+class AlignmentAllocator {
+ public:
+  typedef T value_type;
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
+
+  typedef T* pointer;
+  typedef const T* const_pointer;
+
+  typedef T& reference;
+  typedef const T& const_reference;
+
+  inline AlignmentAllocator() throw() {}
+
+  template <typename T2>
+  inline AlignmentAllocator(const AlignmentAllocator<T2, N>&) throw() {}
+
+  inline ~AlignmentAllocator() throw() {}
+
+  inline pointer adress(reference r) {
+    return &r;
+  }
+
+  inline const_pointer adress(const_reference r) const {
+    return &r;
+  }
+
+  inline pointer allocate(size_type n) {
+    return (pointer)_mm_malloc(n * sizeof(value_type), N);
+  }
+
+  inline void deallocate(pointer p, size_type) {
+    _mm_free(p);
+  }
+
+  inline void construct(pointer p, const value_type& wert) {
+    new (p) value_type(wert);
+  }
+
+  inline void destroy(pointer p) {
+    p->~value_type();
+  }
+
+  inline size_type max_size() const throw() {
+    return size_type(-1) / sizeof(value_type);
+  }
+
+  template <typename T2>
+  struct rebind {
+    typedef AlignmentAllocator<T2, N> other;
+  };
+
+  bool operator!=(const AlignmentAllocator<T, N>& other) const {
+    return !(*this == other);
+  }
+
+  // Returns true if and only if storage allocated from *this
+  // can be deallocated from other, and vice versa.
+  // Always returns true for stateless allocators.
+  bool operator==(const AlignmentAllocator<T, N>&) const {
+    return true;
+  }
+};
+
+// Note: this class is not thread-safe, don't use it inside omp blocks
+class Timer {
+ public:
+  Timer() {}
+
+  ~Timer() {
+    Print();
+  }
+
+  #ifdef TIMETAG
+  void Start(const std::string& name) {
+    auto cur_time = std::chrono::steady_clock::now();
+    start_time_[name] = cur_time;
+  }
+
+  void Stop(const std::string& name) {
+    if (stats_.find(name) == stats_.end()) {
+      stats_[name] = std::chrono::duration<double, std::milli>(0);
+    }
+    stats_[name] += std::chrono::steady_clock::now() - start_time_[name];
+  }
+
+  #else
+  void Start(const std::string&) { }
+
+  void Stop(const std::string&) { }
+  #endif  // TIMETAG
+
+  void Print() const {
+    #ifdef TIMETAG
+    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(stats_.begin(), stats_.end());
+    for (auto it = ordered.begin(); it != ordered.end(); ++it) {
+      Log::Info("%s costs:\t %f", it->first.c_str(), it->second * 1e-3);
+    }
+    #endif  // TIMETAG
+  }
+
+  std::unordered_map<std::string, std::chrono::steady_clock::time_point> start_time_;
+  std::unordered_map<std::string, std::chrono::duration<double, std::milli>> stats_;
+};
+
+// Note: this class is not thread-safe, don't use it inside omp blocks
+class FunctionTimer {
+ public:
+  FunctionTimer(const std::string& name, Timer& timer): timer_(timer) {
+    timer.Start(name);
+    #ifdef TIMETAG
+    name_ = name;
+    #endif  // TIMETAG
+  }
+
+  ~FunctionTimer() {
+    timer_.Stop(name_);
+  }
+
+ private:
+  std::string name_;
+  Timer& timer_;
+};
+
 }  // namespace Common
+
+extern Common::Timer global_timer;
 
 }  // namespace LightGBM
 

@@ -181,8 +181,8 @@ class VotingParallelTreeLearner: public TREELEARNER_T {
   /*! \brief Store global histogram for larger leaf  */
   std::unique_ptr<FeatureHistogram[]> larger_leaf_histogram_array_global_;
 
-  std::vector<HistogramBinEntry> smaller_leaf_histogram_data_;
-  std::vector<HistogramBinEntry> larger_leaf_histogram_data_;
+  std::vector<hist_t> smaller_leaf_histogram_data_;
+  std::vector<hist_t> larger_leaf_histogram_data_;
   std::vector<FeatureMetainfo> feature_metas_;
 };
 

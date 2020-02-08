@@ -66,7 +66,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.11)
+        self.assertLess(ret, 0.14)
         self.assertEqual(len(evals_result['valid_0']['binary_logloss']), 50)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
@@ -328,7 +328,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = multi_logloss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.15)
+        self.assertLess(ret, 0.16)
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
     def test_multiclass_rf(self):
@@ -518,7 +518,7 @@ class TestEngine(unittest.TestCase):
                         valid_names=valid_set_name,
                         verbose_eval=False,
                         early_stopping_rounds=5)
-        self.assertLessEqual(gbm.best_iteration, 31)
+        self.assertLessEqual(gbm.best_iteration, 39)
         self.assertIn(valid_set_name, gbm.best_score)
         self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
 
@@ -714,7 +714,7 @@ class TestEngine(unittest.TestCase):
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
                                "D": np.random.permutation([True, False] * 30),
-                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                               "E": pd.Categorical(np.random.permutation(['z', 'y'] * 30),
                                                    ordered=True)})
         np.random.seed()  # reset seed
         cat_cols_actual = ["A", "B", "C", "D"]
@@ -1740,7 +1740,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.13)
+        self.assertLess(ret, 0.14)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
         params['feature_fraction'] = 0.5
         gbm2 = lgb.train(params, lgb_train, num_boost_round=25)
@@ -1810,6 +1810,24 @@ class TestEngine(unittest.TestCase):
         predicted = est.predict(new_x)
         self.assertNotAlmostEqual(predicted[0], predicted[1])
         self.assertAlmostEqual(predicted[1], predicted[2])
+
+    def test_extra_trees(self):
+        # check extra trees increases regularization
+        X, y = load_boston(True)
+        lgb_x = lgb.Dataset(X, label=y)
+        params = {'objective': 'regression',
+                  'num_leaves': 32,
+                  'verbose': -1,
+                  'extra_trees': False,
+                  'seed': 0}
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted = est.predict(X)
+        err = mean_squared_error(y, predicted)
+        params['extra_trees'] = True
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted_new = est.predict(X)
+        err_new = mean_squared_error(y, predicted_new)
+        self.assertLess(err, err_new)
 
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_trees_to_dataframe(self):

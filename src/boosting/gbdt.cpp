@@ -17,7 +17,6 @@
 
 namespace LightGBM {
 
-
 GBDT::GBDT() : iter_(0),
 train_data_(nullptr),
 objective_function_(nullptr),
@@ -148,6 +147,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
 }
 
 void GBDT::Boosting() {
+  Common::FunctionTimer fun_timer("GBDT::Boosting", global_timer);
   if (objective_function_ == nullptr) {
     Log::Fatal("No object function provided");
   }
@@ -208,23 +208,26 @@ data_size_t GBDT::BalancedBaggingHelper(Random* cur_rand, data_size_t start, dat
 }
 
 void GBDT::Bagging(int iter) {
+  Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
   // if need bagging
   if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0)
       || need_re_bagging_) {
     need_re_bagging_ = false;
-    const data_size_t min_inner_size = 1000;
-    data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
-    if (inner_size < min_inner_size) { inner_size = min_inner_size; }
+    const data_size_t min_inner_size = 1024;
+    const int n_block = std::min(
+        num_threads_, (num_data_ + min_inner_size - 1) / min_inner_size);
+    data_size_t inner_size = SIZE_ALIGNED((num_data_ + n_block - 1) / n_block);
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads_; ++i) {
+    for (int i = 0; i < n_block; ++i) {
       OMP_LOOP_EX_BEGIN();
-      left_cnts_buf_[i] = 0;
-      right_cnts_buf_[i] = 0;
       data_size_t cur_start = i * inner_size;
-      if (cur_start > num_data_) { continue; }
-      data_size_t cur_cnt = inner_size;
-      if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
+      data_size_t cur_cnt = std::min(inner_size, num_data_ - cur_start);
+      if (cur_cnt <= 0) {
+        left_cnts_buf_[i] = 0;
+        right_cnts_buf_[i] = 0;
+        continue;
+      }
       Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
       data_size_t cur_left_count = 0;
       if (balanced_bagging_) {
@@ -241,15 +244,14 @@ void GBDT::Bagging(int iter) {
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
-    for (int i = 1; i < num_threads_; ++i) {
+    for (int i = 1; i < n_block; ++i) {
       left_write_pos_buf_[i] = left_write_pos_buf_[i - 1] + left_cnts_buf_[i - 1];
       right_write_pos_buf_[i] = right_write_pos_buf_[i - 1] + right_cnts_buf_[i - 1];
     }
-    left_cnt = left_write_pos_buf_[num_threads_ - 1] + left_cnts_buf_[num_threads_ - 1];
+    left_cnt = left_write_pos_buf_[n_block - 1] + left_cnts_buf_[n_block - 1];
 
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads_; ++i) {
-      OMP_LOOP_EX_BEGIN();
+    for (int i = 0; i < n_block; ++i) {
       if (left_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_write_pos_buf_[i],
                     tmp_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
@@ -258,9 +260,7 @@ void GBDT::Bagging(int iter) {
         std::memcpy(bag_data_indices_.data() + left_cnt + right_write_pos_buf_[i],
                     tmp_indices_.data() + offsets_buf_[i] + left_cnts_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
       }
-      OMP_LOOP_EX_END();
     }
-    OMP_THROW_EX();
     bag_data_cnt_ = left_cnt;
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
@@ -276,6 +276,7 @@ void GBDT::Bagging(int iter) {
 }
 
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
+  Common::FunctionTimer fun_timer("GBDT::Train", global_timer);
   bool is_finished = false;
   auto start_time = std::chrono::steady_clock::now();
   for (int iter = 0; iter < config_->num_iterations && !is_finished; ++iter) {
@@ -342,6 +343,7 @@ double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, int class_id) 
 }
 
 double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
+  Common::FunctionTimer fun_timer("GBDT::BoostFromAverage", global_timer);
   // boosting from average label; or customized "average" if implemented for the current objective
   if (models_.empty() && !train_score_updater_->has_init_score() && objective_function_ != nullptr) {
     if (config_->boost_from_average || (train_data_ != nullptr && train_data_->num_features() == 0)) {
@@ -366,6 +368,7 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
+  Common::FunctionTimer fun_timer("GBDT::TrainOneIter", global_timer);
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
   // boosting first
   if (gradients == nullptr || hessians == nullptr) {
@@ -486,6 +489,7 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 }
 
 void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
+  Common::FunctionTimer fun_timer("GBDT::UpdateScore", global_timer);
   // update training score
   if (!is_use_subset_) {
     train_score_updater_->AddScore(tree_learner_.get(), tree, cur_tree_id);
@@ -755,17 +759,10 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     right_write_pos_buf_.resize(num_threads_);
 
     double average_bag_rate = (bag_data_cnt_ / num_data_) / config->bagging_freq;
-    int sparse_group = 0;
-    for (int i = 0; i < train_data_->num_feature_groups(); ++i) {
-      if (train_data_->FeatureGroupIsSparse(i)) {
-        ++sparse_group;
-      }
-    }
     is_use_subset_ = false;
     const int group_threshold_usesubset = 100;
-    const int sparse_group_threshold_usesubset = train_data_->num_feature_groups() / 4;
-    if (average_bag_rate <= 0.5
-        && (train_data_->num_feature_groups() < group_threshold_usesubset || sparse_group < sparse_group_threshold_usesubset)) {
+    if (tree_learner_->IsHistColWise() && average_bag_rate <= 0.5
+        && (train_data_->num_feature_groups() < group_threshold_usesubset)) {
       if (tmp_subset_ == nullptr || is_change_dataset) {
         tmp_subset_.reset(new Dataset(bag_data_cnt_));
         tmp_subset_->CopyFeatureMapperFrom(train_data_);

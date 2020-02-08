@@ -31,7 +31,7 @@ class DenseBinIterator: public BinIterator {
   }
   inline uint32_t RawGet(data_size_t idx) override;
   inline uint32_t Get(data_size_t idx) override;
-  inline void Reset(data_size_t) override { }
+  inline void Reset(data_size_t) override {}
 
  private:
   const DenseBin<VAL_T>* bin_data_;
@@ -68,84 +68,65 @@ class DenseBin: public Bin {
 
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
 
+  #define ACC_GH(hist, i, g, h) \
+  const auto ti = static_cast<int>(i) << 1; \
+  hist[ti] += g; \
+  hist[ti + 1] += h; \
+
+  template<bool use_indices, bool use_prefetch, bool use_hessians>
+  void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const {
+    data_size_t i = start;
+
+    if (use_prefetch) {
+      const data_size_t pf_offset = 64 / sizeof(VAL_T);
+      const data_size_t pf_end = end - pf_offset;
+      for (; i < pf_end; ++i) {
+        const auto idx = use_indices ? data_indices[i] : i;
+        const auto pf_idx = use_indices ? data_indices[i + pf_offset] : i + pf_offset;
+        PREFETCH_T0(data_.data() + pf_idx);
+        const VAL_T bin = data_[idx];
+        if (use_hessians) {
+          ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+        } else {
+          ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+        }
+      }
+    }
+    for (; i < end; ++i) {
+      const auto idx = use_indices ? data_indices[i] : i;
+      const VAL_T bin = data_[idx];
+      if (use_hessians) {
+        ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+      } else {
+        ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+      }
+    }
+  }
+  #undef ACC_GH
+
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const override {
-    const data_size_t pf_offset = 64 / sizeof(VAL_T);
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize / sizeof(VAL_T);
-    data_size_t i = start;
-    for (; i < pf_end; i++) {
-      PREFETCH_T0(data_.data() + data_indices[i + pf_offset]);
-      const VAL_T bin = data_[data_indices[i]];
-      out[bin].sum_gradients += ordered_gradients[i];
-      out[bin].sum_hessians += ordered_hessians[i];
-      ++out[bin].cnt;
-    }
-    for (; i < end; i++) {
-      const VAL_T bin = data_[data_indices[i]];
-      out[bin].sum_gradients += ordered_gradients[i];
-      out[bin].sum_hessians += ordered_hessians[i];
-      ++out[bin].cnt;
-    }
+    hist_t* out) const override {
+    ConstructHistogramInner<true, true, true>(data_indices, start, end, ordered_gradients, ordered_hessians, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const override {
-    const data_size_t pf_offset = 64 / sizeof(VAL_T);
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize / sizeof(VAL_T);
-    data_size_t i = start;
-    for (; i < pf_end; i++) {
-      PREFETCH_T0(data_.data() + i + pf_offset);
-      const VAL_T bin = data_[i];
-      out[bin].sum_gradients += ordered_gradients[i];
-      out[bin].sum_hessians += ordered_hessians[i];
-      ++out[bin].cnt;
-    }
-    for (; i < end; i++) {
-      const VAL_T bin = data_[i];
-      out[bin].sum_gradients += ordered_gradients[i];
-      out[bin].sum_hessians += ordered_hessians[i];
-      ++out[bin].cnt;
-    }
+    hist_t* out) const override {
+    ConstructHistogramInner<false, false, true>(nullptr, start, end, ordered_gradients, ordered_hessians, out);
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients,
-    HistogramBinEntry* out) const override {
-    const data_size_t pf_offset = 64 / sizeof(VAL_T);
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize / sizeof(VAL_T);
-    data_size_t i = start;
-    for (; i < pf_end; i++) {
-      PREFETCH_T0(data_.data() + data_indices[i + pf_offset]);
-      const VAL_T bin = data_[data_indices[i]];
-      out[bin].sum_gradients += ordered_gradients[i];
-      ++out[bin].cnt;
-    }
-    for (; i < end; i++) {
-      const VAL_T bin = data_[data_indices[i]];
-      out[bin].sum_gradients += ordered_gradients[i];
-      ++out[bin].cnt;
-    }
+    hist_t* out) const override {
+    ConstructHistogramInner<true, true, false>(data_indices, start, end, ordered_gradients, nullptr, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
     const score_t* ordered_gradients,
-    HistogramBinEntry* out) const override {
-    const data_size_t pf_offset = 64 / sizeof(VAL_T);
-    const data_size_t pf_end = end - pf_offset - kCacheLineSize / sizeof(VAL_T);
-    data_size_t i = start;
-    for (; i < pf_end; i++) {
-      PREFETCH_T0(data_.data() + i + pf_offset);
-      const VAL_T bin = data_[i];
-      out[bin].sum_gradients += ordered_gradients[i];
-      ++out[bin].cnt;
-    }
-    for (; i < end; i++) {
-      const VAL_T bin = data_[i];
-      out[bin].sum_gradients += ordered_gradients[i];
-      ++out[bin].cnt;
-    }
+    hist_t* out) const override {
+    ConstructHistogramInner<false, false, false>(nullptr, start, end, ordered_gradients, nullptr, out);
   }
 
   data_size_t Split(
@@ -257,9 +238,6 @@ class DenseBin: public Bin {
 
   data_size_t num_data() const override { return num_data_; }
 
-  /*! \brief not ordered bin for dense feature */
-  OrderedBin* CreateOrderedBin() const override { return nullptr; }
-
   void FinishLoad() override {}
 
   void LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices) override {
@@ -294,10 +272,11 @@ class DenseBin: public Bin {
 
  private:
   data_size_t num_data_;
-  std::vector<VAL_T> data_;
+  std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
 
   DenseBin<VAL_T>(const DenseBin<VAL_T>& other)
-    : num_data_(other.num_data_), data_(other.data_){}
+    : num_data_(other.num_data_), data_(other.data_) {
+  }
 };
 
 template<typename VAL_T>

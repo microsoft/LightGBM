@@ -89,7 +89,12 @@ class Tree {
 
   /*! \brief Set the output of one leaf */
   inline void SetLeafOutput(int leaf, double output) {
-    leaf_value_[leaf] = output;
+    // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
+    if (IsZero(output)) {
+      leaf_value_[leaf] = 0;
+    } else {
+      leaf_value_[leaf] = output;
+    }
   }
 
   /*!
@@ -149,7 +154,13 @@ class Tree {
   inline void Shrinkage(double rate) {
     #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
-      leaf_value_[i] *= rate;
+      double new_leaf_value = leaf_value_[i] * rate;
+      // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
+      if (IsZero(new_leaf_value)) {
+        leaf_value_[i] = 0;
+      } else {
+        leaf_value_[i] = new_leaf_value;
+      }
     }
     shrinkage_ *= rate;
   }
@@ -161,7 +172,13 @@ class Tree {
   inline void AddBias(double val) {
     #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
-      leaf_value_[i] = val + leaf_value_[i];
+      double new_leaf_value = val + leaf_value_[i];
+      // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
+      if (IsZero(new_leaf_value)) {
+        leaf_value_[i] = 0;
+      } else {
+        leaf_value_[i] = new_leaf_value;
+      }
     }
     // force to 1.0
     shrinkage_ = 1.0f;
@@ -212,6 +229,8 @@ class Tree {
   }
 
   void RecomputeMaxDepth();
+
+  int NextLeafId() const { return num_leaves_; }
 
  private:
   std::string NumericalDecisionIfElse(int node) const;

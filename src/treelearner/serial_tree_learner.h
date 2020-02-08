@@ -79,7 +79,11 @@ class SerialTreeLearner: public TreeLearner {
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
+  bool IsHistColWise() const override { return is_hist_colwise_; }
+
  protected:
+  void GetMultiValBin(const Dataset* dataset, bool is_first_time);
+
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
   * \brief Some initial works before training
@@ -161,17 +165,13 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_gradients_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_hessians_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_hessians_;
 #endif
 
-  /*! \brief Store ordered bin */
-  std::vector<std::unique_ptr<OrderedBin>> ordered_bins_;
-  /*! \brief True if has ordered bin */
-  bool has_ordered_bin_ = false;
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
-  std::vector<char> is_data_in_leaf_;
+  std::vector<char, Common::AlignmentAllocator<char, kAlignedSize>> is_data_in_leaf_;
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
@@ -179,6 +179,8 @@ class SerialTreeLearner: public TreeLearner {
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
+  std::unique_ptr<MultiValBin> multi_val_bin_;
+  bool is_hist_colwise_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
 

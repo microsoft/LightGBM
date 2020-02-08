@@ -7,7 +7,8 @@
  */
 #include<LightGBM/config.h>
 namespace LightGBM {
-std::unordered_map<std::string, std::string> Config::alias_table({
+const std::unordered_map<std::string, std::string>& Config::alias_table() {
+  static std::unordered_map<std::string, std::string> aliases({
   {"config_file", "config"},
   {"task_type", "task"},
   {"objective_type", "objective"},
@@ -92,6 +93,9 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"forced_splits_file", "forcedsplits_filename"},
   {"forced_splits", "forcedsplits_filename"},
   {"verbose", "verbosity"},
+  {"is_sparse", "is_enable_sparse"},
+  {"enable_sparse", "is_enable_sparse"},
+  {"sparse", "is_enable_sparse"},
   {"subsample_for_bin", "bin_construct_sample_cnt"},
   {"hist_pool_size", "histogram_pool_size"},
   {"data_seed", "data_random_seed"},
@@ -116,9 +120,6 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"is_pre_partition", "pre_partition"},
   {"is_enable_bundle", "enable_bundle"},
   {"bundle", "enable_bundle"},
-  {"is_sparse", "is_enable_sparse"},
-  {"enable_sparse", "is_enable_sparse"},
-  {"sparse", "is_enable_sparse"},
   {"two_round_loading", "two_round"},
   {"use_two_round_loading", "two_round"},
   {"is_save_binary", "save_binary"},
@@ -165,9 +166,12 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"mlist", "machine_list_filename"},
   {"workers", "machines"},
   {"nodes", "machines"},
-});
+  });
+  return aliases;
+}
 
-std::unordered_set<std::string> Config::parameter_set({
+const std::unordered_set<std::string>& Config::parameter_set() {
+  static std::unordered_set<std::string> params({
   "config",
   "task",
   "objective",
@@ -181,6 +185,8 @@ std::unordered_set<std::string> Config::parameter_set({
   "num_threads",
   "device_type",
   "seed",
+  "force_col_wise",
+  "force_row_wise",
   "max_depth",
   "min_data_in_leaf",
   "min_sum_hessian_in_leaf",
@@ -192,6 +198,8 @@ std::unordered_set<std::string> Config::parameter_set({
   "feature_fraction",
   "feature_fraction_bynode",
   "feature_fraction_seed",
+  "extra_trees",
+  "extra_seed",
   "early_stopping_round",
   "first_metric_only",
   "max_delta_step",
@@ -223,6 +231,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "cegb_penalty_feature_coupled",
   "verbosity",
   "max_bin",
+  "is_enable_sparse",
   "max_bin_by_feature",
   "min_data_in_bin",
   "bin_construct_sample_cnt",
@@ -236,9 +245,6 @@ std::unordered_set<std::string> Config::parameter_set({
   "valid_data_initscores",
   "pre_partition",
   "enable_bundle",
-  "max_conflict_rate",
-  "is_enable_sparse",
-  "sparse_threshold",
   "use_missing",
   "zero_as_missing",
   "two_round",
@@ -272,6 +278,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "max_position",
   "lambdamart_norm",
   "label_gain",
+  "objective_seed",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -286,7 +293,9 @@ std::unordered_set<std::string> Config::parameter_set({
   "gpu_platform_id",
   "gpu_device_id",
   "gpu_use_dp",
-});
+  });
+  return params;
+}
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
   std::string tmp_str = "";
@@ -307,6 +316,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(num_leaves <=131072);
 
   GetInt(params, "num_threads", &num_threads);
+
+  GetBool(params, "force_col_wise", &force_col_wise);
+
+  GetBool(params, "force_row_wise", &force_row_wise);
 
   GetInt(params, "max_depth", &max_depth);
 
@@ -341,6 +354,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(feature_fraction_bynode <=1.0);
 
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
+
+  GetBool(params, "extra_trees", &extra_trees);
+
+  GetInt(params, "extra_seed", &extra_seed);
 
   GetInt(params, "early_stopping_round", &early_stopping_round);
 
@@ -434,6 +451,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
 
+  GetBool(params, "is_enable_sparse", &is_enable_sparse);
+
   if (GetString(params, "max_bin_by_feature", &tmp_str)) {
     max_bin_by_feature = Common::StringToArray<int32_t>(tmp_str, ',');
   }
@@ -465,16 +484,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "pre_partition", &pre_partition);
 
   GetBool(params, "enable_bundle", &enable_bundle);
-
-  GetDouble(params, "max_conflict_rate", &max_conflict_rate);
-  CHECK(max_conflict_rate >=0.0);
-  CHECK(max_conflict_rate <1.0);
-
-  GetBool(params, "is_enable_sparse", &is_enable_sparse);
-
-  GetDouble(params, "sparse_threshold", &sparse_threshold);
-  CHECK(sparse_threshold >0.0);
-  CHECK(sparse_threshold <=1.0);
 
   GetBool(params, "use_missing", &use_missing);
 
@@ -553,6 +562,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
 
+  GetInt(params, "objective_seed", &objective_seed);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK(metric_freq >0);
 
@@ -597,6 +608,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[force_col_wise: " << force_col_wise << "]\n";
+  str_buf << "[force_row_wise: " << force_row_wise << "]\n";
   str_buf << "[max_depth: " << max_depth << "]\n";
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
@@ -608,6 +621,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";
   str_buf << "[feature_fraction_bynode: " << feature_fraction_bynode << "]\n";
   str_buf << "[feature_fraction_seed: " << feature_fraction_seed << "]\n";
+  str_buf << "[extra_trees: " << extra_trees << "]\n";
+  str_buf << "[extra_seed: " << extra_seed << "]\n";
   str_buf << "[early_stopping_round: " << early_stopping_round << "]\n";
   str_buf << "[first_metric_only: " << first_metric_only << "]\n";
   str_buf << "[max_delta_step: " << max_delta_step << "]\n";
@@ -639,6 +654,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
+  str_buf << "[is_enable_sparse: " << is_enable_sparse << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
   str_buf << "[bin_construct_sample_cnt: " << bin_construct_sample_cnt << "]\n";
@@ -652,9 +668,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores, ",") << "]\n";
   str_buf << "[pre_partition: " << pre_partition << "]\n";
   str_buf << "[enable_bundle: " << enable_bundle << "]\n";
-  str_buf << "[max_conflict_rate: " << max_conflict_rate << "]\n";
-  str_buf << "[is_enable_sparse: " << is_enable_sparse << "]\n";
-  str_buf << "[sparse_threshold: " << sparse_threshold << "]\n";
   str_buf << "[use_missing: " << use_missing << "]\n";
   str_buf << "[zero_as_missing: " << zero_as_missing << "]\n";
   str_buf << "[two_round: " << two_round << "]\n";
@@ -688,6 +701,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_position: " << max_position << "]\n";
   str_buf << "[lambdamart_norm: " << lambdamart_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
+  str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
