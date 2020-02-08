@@ -27,7 +27,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
   // allocate buffer for communication
-  size_t buffer_size = this->train_data_->NumTotalBin() * KHistEntrySize;
+  size_t buffer_size = this->train_data_->NumTotalBin() * kHistEntrySize;
 
   input_buffer_.resize(buffer_size);
   output_buffer_.resize(buffer_size);
@@ -82,7 +82,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
       if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
         num_bin -= 1;
       }
-      block_len_[i] += num_bin * KHistEntrySize;
+      block_len_[i] += num_bin * kHistEntrySize;
     }
     reduce_scatter_size_ += block_len_[i];
   }
@@ -101,7 +101,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
       if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
         num_bin -= 1;
       }
-      bin_size += num_bin * KHistEntrySize;
+      bin_size += num_bin * kHistEntrySize;
     }
   }
 
@@ -113,7 +113,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
       num_bin -= 1;
     }
-    bin_size += num_bin * KHistEntrySize;
+    bin_size += num_bin * kHistEntrySize;
   }
 
   // sync global data sumup info
