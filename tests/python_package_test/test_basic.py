@@ -12,6 +12,40 @@ from sklearn.model_selection import train_test_split
 import json
 
 
+def find_upper_and_lower_bounds(bst):
+    class _max:
+        def __lt__(self, other): return False
+        def __gt__(self, other): return True
+
+    class _min:
+        def __lt__(self, other): return True
+        def __gt__(self, other): return False
+
+    MAX, MIN = _max(), _min()
+
+    def find_max_leaf_value_in_tree(tree, max_value = MIN):
+        max_candidate = max_value
+        if ('left_child' in tree):
+            max_candidate = find_max_leaf_value_in_tree(tree['left_child'], max_value)
+        if ('right_child' in tree):
+            max_candidate = find_max_leaf_value_in_tree(tree['right_child'], max_candidate)
+        if ('leaf_value' in tree):
+            leaf_value = float(tree['leaf_value'])
+            if (leaf_value > max_candidate):
+                return leaf_value
+            else:
+                return max_candidate
+        return max_candidate
+
+    result_str = json.dumps(bst.dump_model(), sort_keys=False, indent=4)
+    result_dict = json.loads(result_str)
+    expected_upper_bound = 0.0
+    tree_info = result_dict['tree_info']
+    for item in tree_info:
+        tree = item['tree_structure']
+        expected_upper_bound += find_max_leaf_value_in_tree(tree)
+    return expected_upper_bound
+
 class TestBasic(unittest.TestCase):
 
     def test(self):
@@ -37,17 +71,11 @@ class TestBasic(unittest.TestCase):
             if i % 10 == 0:
                 print(bst.eval_train(), bst.eval_valid())
 
-        f = open("expected_model.json", "r")
-        expected_json = json.load(f)
-        expected_str = json.dumps(expected_json, sort_keys=True, indent=4)
-        result_str = json.dumps(bst.dump_model(), sort_keys=True, indent=4)
-        result_json = json.loads(result_str)
-        self.assertEqual(result_str, expected_str)
 
         self.assertEqual(bst.current_iteration(), 20)
         self.assertEqual(bst.num_trees(), 20)
         self.assertEqual(bst.num_model_per_iteration(), 1)
-        self.assertAlmostEqual(bst.upper_bound(), 3.32, places=2)
+        self.assertAlmostEqual(bst.upper_bound(), find_upper_and_lower_bounds(bst), places=5)
         self.assertAlmostEqual(bst.lower_bound(), -3.13, places=2)
 
         bst.save_model("model.txt")
@@ -338,3 +366,7 @@ class TestBasic(unittest.TestCase):
         lgb_data.set_weight(sequence)
         lgb_data.set_init_score(sequence)
         check_asserts(lgb_data)
+
+if __name__== "__main__":
+	test = TestBasic()
+	test.test()
