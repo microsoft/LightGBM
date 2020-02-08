@@ -89,7 +89,7 @@ class Tree {
 
   /*! \brief Set the output of one leaf */
   inline void SetLeafOutput(int leaf, double output) {
-    // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles 
+    // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
     if (IsZero(output)) {
       leaf_value_[leaf] = 0;
     } else {
@@ -155,7 +155,7 @@ class Tree {
     #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
       double new_leaf_value = leaf_value_[i] * rate;
-      // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles 
+      // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
       if (IsZero(new_leaf_value)) {
         leaf_value_[i] = 0;
       } else {
@@ -173,7 +173,7 @@ class Tree {
     #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
       double new_leaf_value = val + leaf_value_[i];
-      // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles 
+      // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
       if (IsZero(new_leaf_value)) {
         leaf_value_[i] = 0;
       } else {

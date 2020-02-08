@@ -95,7 +95,7 @@ class FeatureHistogram {
       meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
     int rand_threshold = 0;
-    if (meta_->num_bin - 2 > 0){
+    if (meta_->num_bin - 2 > 0) {
       rand_threshold = rand_.NextInt(0, meta_->num_bin - 2);
     }
     bool is_rand = meta_->config->extra_trees;
@@ -104,8 +104,7 @@ class FeatureHistogram {
         if (is_rand) {
           FindBestThresholdSequence<true>(sum_gradient, sum_hessian, num_data, min_constraint, max_constraint, min_gain_shift, output, -1, true, false, rand_threshold);
           FindBestThresholdSequence<true>(sum_gradient, sum_hessian, num_data, min_constraint, max_constraint, min_gain_shift, output, 1, true, false, rand_threshold);
-        }
-        else {
+        } else {
           FindBestThresholdSequence<false>(sum_gradient, sum_hessian, num_data, min_constraint, max_constraint, min_gain_shift, output, -1, true, false, rand_threshold);
           FindBestThresholdSequence<false>(sum_gradient, sum_hessian, num_data, min_constraint, max_constraint, min_gain_shift, output, 1, true, false, rand_threshold);
         }
@@ -217,7 +216,7 @@ class FeatureHistogram {
       if (max_threshold > 0) {
         rand_threshold = rand_.NextInt(0, max_threshold);
       }
-      
+
       is_splittable_ = false;
       for (size_t out_i = 0; out_i < find_direction.size(); ++out_i) {
         auto dir = find_direction[out_i];
