@@ -26,7 +26,7 @@
 #include <utility>
 #include <vector>
 
-#if defined(_MSC_VER) 
+#if defined(_MSC_VER)
 #include <malloc.h>
 #elif MM_MALLOC
 #include <mm_malloc.h>
@@ -39,7 +39,6 @@
 #define _mm_malloc(a, b) malloc(a)
 #define _mm_free(a) free(a)
 #endif
-
 
 namespace LightGBM {
 
@@ -966,7 +965,7 @@ inline int RoundInt(double x) {
 
 template <typename T, std::size_t N = 32>
 class AlignmentAllocator {
-public:
+ public:
   typedef T value_type;
   typedef std::size_t size_type;
   typedef std::ptrdiff_t difference_type;
@@ -977,13 +976,12 @@ public:
   typedef T& reference;
   typedef const T& const_reference;
 
-public:
-  inline AlignmentAllocator() throw () {}
+  inline AlignmentAllocator() throw() {}
 
   template <typename T2>
-  inline AlignmentAllocator(const AlignmentAllocator<T2, N>&) throw () {}
+  inline AlignmentAllocator(const AlignmentAllocator<T2, N>&) throw() {}
 
-  inline ~AlignmentAllocator() throw () {}
+  inline ~AlignmentAllocator() throw() {}
 
   inline pointer adress(reference r) {
     return &r;
@@ -1009,7 +1007,7 @@ public:
     p->~value_type();
   }
 
-  inline size_type max_size() const throw () {
+  inline size_type max_size() const throw() {
     return size_type(-1) / sizeof(value_type);
   }
 
@@ -1034,33 +1032,39 @@ public:
 class Timer {
  public:
   Timer() {}
+
   ~Timer() {
     Print();
   }
+
   #ifdef TIMETAG
   void Start(const std::string& name) {
     auto cur_time = std::chrono::steady_clock::now();
     start_time_[name] = cur_time;
   }
+
   void Stop(const std::string& name) {
     if (stats_.find(name) == stats_.end()) {
       stats_[name] = std::chrono::duration<double, std::milli>(0);
     }
     stats_[name] += std::chrono::steady_clock::now() - start_time_[name];
   }
+
   #else
   void Start(const std::string&) { }
+
   void Stop(const std::string&) { }
-  #endif // TIMETAG
+  #endif  // TIMETAG
 
   void Print() const {
-    #ifdef  TIMETAG
+    #ifdef TIMETAG
     std::map<std::string, std::chrono::duration<double, std::milli>> ordered(stats_.begin(), stats_.end());
     for (auto it = ordered.begin(); it != ordered.end(); ++it) {
-      Log::Info("%s costs:\t %f ", it->first.c_str(), it->second * 1e-3);
+      Log::Info("%s costs:\t %f", it->first.c_str(), it->second * 1e-3);
     }
-    #endif
+    #endif  // TIMETAG
   }
+
   std::unordered_map<std::string, std::chrono::steady_clock::time_point> start_time_;
   std::unordered_map<std::string, std::chrono::duration<double, std::milli>> stats_;
 };
@@ -1072,12 +1076,13 @@ class FunctionTimer {
     timer.Start(name);
     #ifdef TIMETAG
     name_ = name;
-    #endif // TIMETAG
-
+    #endif  // TIMETAG
   }
+
   ~FunctionTimer() {
     timer_.Stop(name_);
   }
+
  private:
   std::string name_;
   Timer& timer_;

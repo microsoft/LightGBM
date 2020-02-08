@@ -1811,6 +1811,24 @@ class TestEngine(unittest.TestCase):
         self.assertNotAlmostEqual(predicted[0], predicted[1])
         self.assertAlmostEqual(predicted[1], predicted[2])
 
+    def test_extra_trees(self):
+        # check extra trees increases regularization
+        X, y = load_boston(True)
+        lgb_x = lgb.Dataset(X, label=y)
+        params = {'objective': 'regression',
+                  'num_leaves': 32,
+                  'verbose': -1,
+                  'extra_trees': False,
+                  'seed': 0}
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted = est.predict(X)
+        err = mean_squared_error(y, predicted)
+        params['extra_trees'] = True
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted_new = est.predict(X)
+        err_new = mean_squared_error(y, predicted_new)
+        self.assertLess(err, err_new)
+
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_trees_to_dataframe(self):
 

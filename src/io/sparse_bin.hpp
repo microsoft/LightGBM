@@ -24,7 +24,7 @@ const size_t kNumFastIndex = 64;
 
 template <typename VAL_T>
 class SparseBinIterator: public BinIterator {
-public:
+ public:
   SparseBinIterator(const SparseBin<VAL_T>* bin_data,
     uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin)
     : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
@@ -56,7 +56,7 @@ public:
 
   inline void Reset(data_size_t idx) override;
 
-private:
+ private:
   const SparseBin<VAL_T>* bin_data_;
   data_size_t cur_pos_;
   data_size_t i_delta_;
@@ -68,7 +68,7 @@ private:
 
 template <typename VAL_T>
 class SparseBin: public Bin {
-public:
+ public:
   friend class SparseBinIterator<VAL_T>;
 
   explicit SparseBin(data_size_t num_data)
@@ -104,8 +104,7 @@ public:
   hist[ti + 1] += h; \
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const override {
+    const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(data_indices[start], &i_delta, &cur_pos);
     data_size_t i = start;
@@ -126,8 +125,7 @@ public:
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const override {
+    const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(start, &i_delta, &cur_pos);
     while (cur_pos < start && i_delta < num_vals_) {
@@ -141,8 +139,7 @@ public:
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients,
-    hist_t* out) const override {
+    const score_t* ordered_gradients, hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(data_indices[start], &i_delta, &cur_pos);
     data_size_t i = start;
@@ -163,8 +160,7 @@ public:
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients,
-    hist_t* out) const override {
+    const score_t* ordered_gradients, hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(start, &i_delta, &cur_pos);
     while (cur_pos < start && i_delta < num_vals_) {
@@ -178,8 +174,7 @@ public:
   }
   #undef ACC_GH
 
-  inline void NextNonzeroFast(data_size_t* i_delta,
-    data_size_t* cur_pos) const {
+  inline void NextNonzeroFast(data_size_t* i_delta, data_size_t* cur_pos) const {
     *cur_pos += deltas_[++(*i_delta)];
     if (*i_delta >= num_vals_) {
       *cur_pos = num_data_;
@@ -199,7 +194,8 @@ public:
 
 
   data_size_t Split(
-    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left,
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t most_freq_bin,
+    MissingType missing_type, bool default_left,
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
@@ -501,8 +497,7 @@ public:
     }
   }
 
-private:
-
+ private:
   data_size_t num_data_;
   std::vector<uint8_t, Common::AlignmentAllocator<uint8_t, kAlignedSize>> deltas_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> vals_;

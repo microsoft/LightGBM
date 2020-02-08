@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for
- * license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_FEATURE_GROUP_H_
 #define LIGHTGBM_FEATURE_GROUP_H_
@@ -147,6 +146,7 @@ class FeatureGroup {
       bin_data_->LoadFromMemory(memory_ptr, local_used_indices);
     }
   }
+
   /*! \brief Destructor */
   ~FeatureGroup() {}
 
@@ -297,6 +297,7 @@ class FeatureGroup {
       }
     }
   }
+
   /*!
    * \brief From bin to feature value
    * \param bin
@@ -325,6 +326,7 @@ class FeatureGroup {
       bin_data_->SaveBinaryToFile(writer);
     }
   }
+
   /*!
    * \brief Get sizes in byte of this object
    */
@@ -346,6 +348,7 @@ class FeatureGroup {
 
   /*! \brief Disable copy */
   FeatureGroup& operator=(const FeatureGroup&) = delete;
+
   /*! \brief Deep copy */
   FeatureGroup(const FeatureGroup& other) {
     num_feature_ = other.num_feature_;
