@@ -70,7 +70,7 @@ Rscript -e "install.packages(c('jsonlite', 'Matrix', 'R6', 'testthat'))" || exit
 if [[ $OS_NAME == "macos" ]]; then
     Rscript -e "install.packages('data.table', type = 'mac.binary')" || exit -1
 else
-    Rscript -e "install.packages('data.table', type = 'both')" || exit -1
+    Rscript -e "install.packages('data.table', type = 'source')" || exit -1
 fi
 
 cd ${BUILD_DIRECTORY}
