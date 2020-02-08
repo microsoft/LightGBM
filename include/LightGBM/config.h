@@ -313,6 +313,14 @@ struct Config {
   // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
 
+  // desc = use extremely randomized trees
+  // desc = if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
+  // desc = can be used to deal with over-fitting
+  bool extra_trees = false;
+
+  // desc = random seed for selecting thresholds when ``extra_trees`` is true
+  int extra_seed = 6;
+
   // alias = early_stopping_rounds, early_stopping, n_iter_no_change
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
   // desc = ``<= 0`` means disable
@@ -896,8 +904,8 @@ struct Config {
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
-  static std::unordered_map<std::string, std::string> alias_table;
-  static std::unordered_set<std::string> parameter_set;
+  static const std::unordered_map<std::string, std::string>& alias_table();
+  static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
 
  private:
@@ -966,8 +974,8 @@ struct ParameterAlias {
   static void KeyAliasTransform(std::unordered_map<std::string, std::string>* params) {
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
-      auto alias = Config::alias_table.find(pair.first);
-      if (alias != Config::alias_table.end()) {  // found alias
+      auto alias = Config::alias_table().find(pair.first);
+      if (alias != Config::alias_table().end()) {  // found alias
         auto alias_set = tmp_map.find(alias->second);
         if (alias_set != tmp_map.end()) {  // alias already set
                                            // set priority by length & alphabetically to ensure reproducible behavior
@@ -985,7 +993,7 @@ struct ParameterAlias {
         } else {  // alias not set
           tmp_map.emplace(alias->second, pair.first);
         }
-      } else if (Config::parameter_set.find(pair.first) == Config::parameter_set.end()) {
+      } else if (Config::parameter_set().find(pair.first) == Config::parameter_set().end()) {
         Log::Warning("Unknown parameter: %s", pair.first.c_str());
       }
     }

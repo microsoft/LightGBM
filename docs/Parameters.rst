@@ -320,6 +320,18 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
+-  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  use extremely randomized trees
+
+   -  if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
+
+   -  can be used to deal with over-fitting
+
+-  ``extra_seed`` :raw-html:`<a id="extra_seed" title="Permalink to this parameter" href="#extra_seed">&#x1F517;&#xFE0E;</a>`, default = ``6``, type = int
+
+   -  random seed for selecting thresholds when ``extra_trees`` is true
+
 -  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``, ``n_iter_no_change``
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
