@@ -82,7 +82,6 @@ class SerialTreeLearner: public TreeLearner {
   bool IsHistColWise() const override { return is_hist_colwise_; }
 
  protected:
-
   void GetMultiValBin(const Dataset* dataset, bool is_first_time);
 
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
