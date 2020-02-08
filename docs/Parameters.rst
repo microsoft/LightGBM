@@ -192,6 +192,8 @@ Learning Control Parameters
 
 -  ``force_col_wise`` :raw-html:`<a id="force_col_wise" title="Permalink to this parameter" href="#force_col_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
+   -  used only with ``cpu`` device type
+
    -  set this to ``true`` to force col-wise histogram building
 
    -  enabling this is recommended when:
@@ -204,13 +206,13 @@ Learning Control Parameters
 
       -  you want to reduce memory cost
 
-   -  **Note**: used only with ``cpu`` device type
-
    -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
 
    -  **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
 
 -  ``force_row_wise`` :raw-html:`<a id="force_row_wise" title="Permalink to this parameter" href="#force_row_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only with ``cpu`` device type
 
    -  set this to ``true`` to force row-wise histogram building
 
@@ -221,8 +223,6 @@ Learning Control Parameters
       -  ``num_threads`` is relatively small, e.g. ``<=16``
 
       -  you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
-
-   -  **Note**: used only with ``cpu`` device type
 
    -  **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
 
