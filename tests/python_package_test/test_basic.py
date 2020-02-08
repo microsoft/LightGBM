@@ -9,6 +9,7 @@ import numpy as np
 from scipy import sparse
 from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
+import json
 
 
 class TestBasic(unittest.TestCase):
@@ -35,6 +36,13 @@ class TestBasic(unittest.TestCase):
             bst.update()
             if i % 10 == 0:
                 print(bst.eval_train(), bst.eval_valid())
+
+        f = open("expected_model.json", "r")
+        expected_json = json.load(f)
+        expected_str = json.dumps(expected_json, sort_keys=True, indent=4)
+        result_str = json.dumps(bst.dump_model(), sort_keys=True, indent=4)
+        result_json = json.loads(result_str)
+        self.assertEqual(result_str, expected_str)
 
         self.assertEqual(bst.current_iteration(), 20)
         self.assertEqual(bst.num_trees(), 20)
