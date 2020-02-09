@@ -171,6 +171,8 @@ class _ConfigAliases(object):
                                        "cat_feature",
                                        "categorical_column",
                                        "cat_column"},
+               "data_random_seed": {"data_random_seed",
+                                    "data_seed"},
                "early_stopping_round": {"early_stopping_round",
                                         "early_stopping_rounds",
                                         "early_stopping",
