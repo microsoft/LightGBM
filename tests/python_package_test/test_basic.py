@@ -15,12 +15,18 @@ import operator
 
 def find_upper_and_lower_bounds(bst):
     class _max:
-        def __lt__(self, other): return False
-        def __gt__(self, other): return True
+        def __lt__(self, other):
+            return False
+
+        def __gt__(self, other):
+            return True
 
     class _min:
-        def __lt__(self, other): return True
-        def __gt__(self, other): return False
+        def __lt__(self, other):
+            return True
+
+        def __gt__(self, other):
+            return False
 
     MAX, MIN = _max(), _min()
 
@@ -79,8 +85,10 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(bst.current_iteration(), 20)
         self.assertEqual(bst.num_trees(), 20)
         self.assertEqual(bst.num_model_per_iteration(), 1)
-        self.assertAlmostEqual(bst.upper_bound(), upper_bound, places=5)
-        self.assertAlmostEqual(bst.lower_bound(), lower_bound, places=5)
+        self.assertAlmostEqual(bst.upper_bound(), upper_bound, places=4)
+        self.assertAlmostEqual(bst.upper_bound(), 3.3182, places=4)
+        self.assertAlmostEqual(bst.lower_bound(), lower_bound, places=4)
+        self.assertAlmostEqual(bst.lower_bound(), -2.904, places=3)
 
         bst.save_model("model.txt")
         pred_from_matr = bst.predict(X_test)

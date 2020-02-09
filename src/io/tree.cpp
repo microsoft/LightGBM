@@ -208,8 +208,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
 
 double Tree::GetUpperBoundValue() const {
   double upper_bound = leaf_value_[0];
-  size_t size = std::min(static_cast<size_t>(num_leaves_), leaf_value_.size());
-  for (size_t i = 1; i < size; i++) {
+  for (auto i = 1; i < num_leaves_; i++) {
     if (leaf_value_[i] > upper_bound) {
       upper_bound = leaf_value_[i];
     }
@@ -219,8 +218,7 @@ double Tree::GetUpperBoundValue() const {
 
 double Tree::GetLowerBoundValue() const {
   double lower_bound = leaf_value_[0];
-  size_t size = std::min(static_cast<size_t>(num_leaves_), leaf_value_.size());
-  for (size_t i = 1; i < size; i++) {
+  for (auto i = 1; i < num_leaves_; i++) {
     if (leaf_value_[i] < lower_bound) {
       lower_bound = leaf_value_[i];
     }
