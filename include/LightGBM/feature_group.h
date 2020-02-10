@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_FEATURE_GROUP_H_
 #define LIGHTGBM_FEATURE_GROUP_H_
@@ -186,7 +187,6 @@ class FeatureGroup {
   inline void CopySubset(const FeatureGroup* full_feature,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices) {
-  inline void CopySubset(const FeatureGroup* full_feature, const data_size_t* used_indices, data_size_t num_used_indices) {
     if (!is_multi_val_) {
       bin_data_->CopySubset(full_feature->bin_data_.get(), used_indices,
                             num_used_indices);
@@ -233,7 +233,7 @@ class FeatureGroup {
   inline void FinishLoad() {
     if (is_multi_val_) {
       OMP_INIT_EX();
-      #pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided)
       for (int i = 0; i < num_feature_; ++i) {
         OMP_LOOP_EX_BEGIN();
         multi_bin_data_[i]->FinishLoad();
@@ -245,11 +245,6 @@ class FeatureGroup {
     }
   }
 
-  /*!
-   * \brief Returns a BinIterator that can access the entire feature group's raw data.
-   *        The RawGet() function of the iterator should be called for best efficiency.
-   * \return A pointer to the BinIterator object
-   */
   inline BinIterator* FeatureGroupIterator() {
     if (is_multi_val_) {
       return nullptr;
