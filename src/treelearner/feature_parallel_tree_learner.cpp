@@ -56,17 +56,17 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(con
   TREELEARNER_T::FindBestSplitsFromHistograms(is_feature_used, use_subtract);
   SplitInfo smaller_best_split, larger_best_split;
   // get best split at smaller leaf
-  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
+  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->leaf_index()];
   // find local best split for larger leaf
-  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
+  if (this->larger_leaf_splits_->leaf_index() >= 0) {
+    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->leaf_index()];
   }
   // sync global best info
   SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->config_->max_cat_threshold);
   // update best split
-  this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()] = smaller_best_split;
-  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()] = larger_best_split;
+  this->best_split_per_leaf_[this->smaller_leaf_splits_->leaf_index()] = smaller_best_split;
+  if (this->larger_leaf_splits_->leaf_index() >= 0) {
+    this->best_split_per_leaf_[this->larger_leaf_splits_->leaf_index()] = larger_best_split;
   }
 }
 
