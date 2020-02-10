@@ -1398,7 +1398,6 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
                num_features_);
     num_groups_ += other->num_groups_;
     num_features_ += other->num_features_;
-    num_total_features_ += other->num_total_features_;
   } else {
     std::vector<std::vector<int>> features_in_group;
     for (int i = 0; i < num_groups_; ++i) {
@@ -1431,7 +1430,6 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
     // regenerate other fields
     num_groups_ += other->num_groups_ - 1;
     CHECK(num_groups_ == static_cast<int>(features_in_group.size()));
-    num_total_features_ += other->num_total_features_;
     num_features_ += other->num_features_;
 
     int cur_fidx = 0;
@@ -1486,6 +1484,7 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
                    other->feature_penalty_, other->num_total_features_, 1.0);
   PushClearIfEmpty(&max_bin_by_feature_, num_total_features_,
                    other->max_bin_by_feature_, other->num_total_features_, -1);
+  num_total_features_ += other->num_total_features_;
 }
 
 }  // namespace LightGBM
