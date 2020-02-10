@@ -720,15 +720,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   num_groups_ = dataset->num_groups_;
   // copy feature bin mapper data
   for (int i = 0; i < num_groups_; ++i) {
-    std::vector<std::unique_ptr<BinMapper>> bin_mappers;
-    for (int j = 0; j < dataset->feature_groups_[i]->num_feature_; ++j) {
-      bin_mappers.emplace_back(new BinMapper(*(dataset->feature_groups_[i]->bin_mappers_[j])));
-    }
-    feature_groups_.emplace_back(new FeatureGroup(
-      dataset->feature_groups_[i]->num_feature_,
-      dataset->feature_groups_[i]->is_multi_val_,
-      &bin_mappers,
-      num_data_));
+    feature_groups_.emplace_back(new FeatureGroup(*dataset->feature_groups_[i], num_data_));
   }
   feature_groups_.shrink_to_fit();
   used_feature_map_ = dataset->used_feature_map_;
@@ -806,7 +798,7 @@ void Dataset::ReSize(data_size_t num_data) {
     #pragma omp parallel for schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
       OMP_LOOP_EX_BEGIN();
-      feature_groups_[group]->bin_data_->ReSize(num_data_);
+      feature_groups_[group]->ReSize(num_data_);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1399,6 +1391,8 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   PushVector(&group_feature_cnt_, other->group_feature_cnt_);
   PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
   feature_groups_.reserve(other->feature_groups_.size());
+  // FIXME: fix the multiple multi-val feature groups, they need to be merged
+  // into one multi-val group
   for (auto& fg : other->feature_groups_) {
     feature_groups_.emplace_back(new FeatureGroup(*fg));
   }
