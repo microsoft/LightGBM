@@ -40,7 +40,7 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
           << Common::Join(monotone_constraints_, ",") << "]," << '\n';
 
   str_buf << "\"feature_infos\":" << "{";
-  auto feature_infos_json_objs = train_data_->feature_infos_json();
+  auto feature_infos_json_objs = train_data_->feature_infos<true>();
   bool first_obj = true;
   for (size_t i = 0; i < feature_infos_json_objs.size(); ++i) {
     if (feature_infos_json_objs[i] != "{}") {
