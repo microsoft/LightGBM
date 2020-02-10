@@ -602,13 +602,11 @@ class Dataset {
           bufs.push_back("none");
         }
       } else {
-        int gid = feature2group_[fidx];
-        int sub_fid = feature2subfeature_[fidx];
-        const auto mapper = feature_groups_[gid]->bin_mappers_[sub_fid].get();
+        const auto bin_mapper = FeatureBinMapper(fidx);
         if (is_json) {
-          bufs.push_back(mapper->bin_info_json());
+          bufs.push_back(bin_mapper->bin_info_json());
         } else {
-          bufs.push_back(mapper->bin_info_string());
+          bufs.push_back(bin_mapper->bin_info_string());
         }
       }
     }
