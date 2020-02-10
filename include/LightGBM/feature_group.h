@@ -186,6 +186,7 @@ class FeatureGroup {
   inline void CopySubset(const FeatureGroup* full_feature,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices) {
+  inline void CopySubset(const FeatureGroup* full_feature, const data_size_t* used_indices, data_size_t num_used_indices) {
     if (!is_multi_val_) {
       bin_data_->CopySubset(full_feature->bin_data_.get(), used_indices,
                             num_used_indices);
@@ -232,7 +233,7 @@ class FeatureGroup {
   inline void FinishLoad() {
     if (is_multi_val_) {
       OMP_INIT_EX();
-#pragma omp parallel for schedule(guided)
+      #pragma omp parallel for schedule(guided)
       for (int i = 0; i < num_feature_; ++i) {
         OMP_LOOP_EX_BEGIN();
         multi_bin_data_[i]->FinishLoad();
