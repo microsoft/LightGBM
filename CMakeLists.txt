@@ -130,7 +130,7 @@ int main() {
 " MM_PREFETCH)
 
 if(${MM_PREFETCH})
-  message(STATUS "Use _mm_prefetch")
+  message(STATUS "Using _mm_prefetch")
   ADD_DEFINITIONS(-DMM_PREFETCH)
 endif()
 
@@ -145,7 +145,7 @@ int main() {
 " MM_MALLOC)
 
 if(${MM_MALLOC})
-  message(STATUS "Use _mm_malloc")
+  message(STATUS "Using _mm_malloc")
   ADD_DEFINITIONS(-DMM_MALLOC)
 endif()
 

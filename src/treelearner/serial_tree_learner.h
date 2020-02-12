@@ -21,6 +21,7 @@
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
 #include "leaf_splits.hpp"
+#include "monotone_constraints.hpp"
 #include "split_info.hpp"
 
 #ifdef USE_GPU
@@ -82,6 +83,11 @@ class SerialTreeLearner: public TreeLearner {
   bool IsHistColWise() const override { return is_hist_colwise_; }
 
  protected:
+  void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
+                                  int feature_index, int real_fidx,
+                                  bool is_feature_used, int num_data,
+                                  const LeafSplits* leaf_splits,
+                                  SplitInfo* best_split);
 
   void GetMultiValBin(const Dataset* dataset, bool is_first_time);
 
@@ -152,6 +158,8 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<SplitInfo> best_split_per_leaf_;
   /*! \brief store best split per feature for all leaves */
   std::vector<SplitInfo> splits_per_leaf_;
+  /*! \brief stores minimum and maximum constraints for each leaf */
+  std::unique_ptr<LeafConstraints<ConstraintEntry>> constraints_;
 
   /*! \brief stores best thresholds for all feature for smaller leaf */
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;

@@ -77,3 +77,5 @@ Deal with Over-fitting
 -  Try ``lambda_l1``, ``lambda_l2`` and ``min_gain_to_split`` for regularization
 
 -  Try ``max_depth`` to avoid growing deep tree
+
+-  Try ``extra_trees``
