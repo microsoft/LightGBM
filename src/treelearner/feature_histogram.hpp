@@ -16,8 +16,8 @@
 #include <utility>
 #include <vector>
 
-#include "split_info.hpp"
 #include "monotone_constraints.hpp"
+#include "split_info.hpp"
 
 namespace LightGBM {
 
@@ -59,11 +59,11 @@ class FeatureHistogram {
     meta_ = meta;
     data_ = data;
     if (meta_->bin_type == BinType::NumericalBin) {
-      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdNumerical, this, std::placeholders::_1
-        , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
+      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdNumerical, this, std::placeholders::_1,
+        std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
     } else {
-      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdCategorical, this, std::placeholders::_1
-        , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
+      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdCategorical, this, std::placeholders::_1,
+        std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
     }
     rand_ = Random(meta_->config->extra_seed);
   }
@@ -495,9 +495,9 @@ class FeatureHistogram {
   * \param sum_hessians
   * \return leaf output
   */
-  static double
-  CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians,
-                              double l1, double l2, double max_delta_step, const ConstraintEntry& constraints) {
+  static double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians,
+                                            double l1, double l2, double max_delta_step,
+                                            const ConstraintEntry& constraints) {
     double ret = CalculateSplittedLeafOutput(sum_gradients, sum_hessians, l1, l2, max_delta_step);
     if (ret < constraints.min) {
       ret = constraints.min;
@@ -680,10 +680,10 @@ class FeatureHistogram {
   /*! \brief random number generator for extremely randomized trees */
   Random rand_;
 
-  std::function<void(double, double, data_size_t, const ConstraintEntry&,
-                     SplitInfo*)>
-      find_best_threshold_fun_;
+  std::function<void(double, double, data_size_t, const ConstraintEntry&, SplitInfo*)>
+    find_best_threshold_fun_;
 };
+
 class HistogramPool {
  public:
   /*!

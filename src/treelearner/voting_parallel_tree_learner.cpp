@@ -399,7 +399,6 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
     }
 
     if (larger_is_feature_aggregated_[feature_index]) {
-
       // restore from buffer
       larger_leaf_histogram_array_global_[feature_index].FromMemory(output_buffer_.data() + larger_buffer_read_start_pos_[feature_index]);
 
@@ -409,7 +408,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
 
       this->ComputeBestSplitForFeature(
           larger_leaf_histogram_array_global_.get(), feature_index,
-          real_feature_index, 
+          real_feature_index,
           larger_node_used_features[feature_index],
           GetGlobalDataCountInLeaf(larger_leaf_splits_global_->leaf_index()),
           larger_leaf_splits_global_.get(),
