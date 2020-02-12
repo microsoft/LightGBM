@@ -1598,7 +1598,7 @@ int LGBM_BoosterGetUpperBoundValue(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   double max_value = ref_booster->UpperBoundValue();
-  out_results[0] = max_value;
+  *out_results = max_value;
   API_END();
 }
 
@@ -1607,7 +1607,7 @@ int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   double min_value = ref_booster->LowerBoundValue();
-  out_results[0] = min_value;
+  *out_results = min_value;
   API_END();
 }
 
