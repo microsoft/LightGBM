@@ -28,7 +28,6 @@ class FeatureGroup {
   * \param bin_mappers Bin mapper for features
   * \param num_data Total number of data
   * \param is_enable_sparse True if enable sparse feature
-  * \param sparse_threshold Threshold for treating a feature as a sparse feature
   */
   FeatureGroup(int num_feature, bool is_multi_val,
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,

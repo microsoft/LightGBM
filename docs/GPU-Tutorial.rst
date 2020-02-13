@@ -118,7 +118,6 @@ Now we create a configuration file for LightGBM by running the following command
     min_data_in_leaf = 1
     min_sum_hessian_in_leaf = 100
     ndcg_eval_at = 1,3,5,10
-    sparse_threshold = 1.0
     device = gpu
     gpu_platform_id = 0
     gpu_device_id = 0
