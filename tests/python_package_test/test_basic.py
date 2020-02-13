@@ -13,48 +13,6 @@ import json
 import operator
 
 
-def find_upper_and_lower_bounds(bst):
-    class _max:
-        def __lt__(self, other):
-            return False
-
-        def __gt__(self, other):
-            return True
-
-    class _min:
-        def __lt__(self, other):
-            return True
-
-        def __gt__(self, other):
-            return False
-
-    MAX, MIN = _max(), _min()
-
-    def find_bound_value_in_tree(tree, bound_value, op):
-        bound_candidate = bound_value
-        if ('left_child' in tree):
-            bound_candidate = find_bound_value_in_tree(tree['left_child'], bound_candidate, op)
-        if ('right_child' in tree):
-            bound_candidate = find_bound_value_in_tree(tree['right_child'], bound_candidate, op)
-        if ('leaf_value' in tree):
-            leaf_value = float(tree['leaf_value'])
-            if (op(leaf_value, bound_candidate)):
-                return leaf_value
-            else:
-                return bound_candidate
-        return bound_candidate
-
-    result_dict = json.loads(json.dumps(bst.dump_model()))
-    expected_upper_bound = 0.0
-    expected_lower_bound = 0.0
-    tree_info = result_dict['tree_info']
-    for item in tree_info:
-        tree = item['tree_structure']
-        expected_upper_bound += find_bound_value_in_tree(tree, MIN, operator.gt)
-        expected_lower_bound += find_bound_value_in_tree(tree, MAX, operator.lt)
-    return (expected_lower_bound, expected_upper_bound)
-
-
 class TestBasic(unittest.TestCase):
 
     def test(self):
@@ -81,14 +39,10 @@ class TestBasic(unittest.TestCase):
             if i % 10 == 0:
                 print(bst.eval_train(), bst.eval_valid())
 
-        (lower_bound, upper_bound) = find_upper_and_lower_bounds(bst)
-
         self.assertEqual(bst.current_iteration(), 20)
         self.assertEqual(bst.num_trees(), 20)
         self.assertEqual(bst.num_model_per_iteration(), 1)
-        self.assertAlmostEqual(bst.lower_bound(), lower_bound)
         self.assertAlmostEqual(bst.lower_bound(), -2.9040190126976606)
-        self.assertAlmostEqual(bst.upper_bound(), upper_bound)
         self.assertAlmostEqual(bst.upper_bound(), 3.3182142872462883)
 
         bst.save_model("model.txt")
