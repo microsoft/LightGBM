@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -249,26 +249,31 @@ class Booster {
     boosting_->RollbackOneIter();
   }
 
-  void PredictSingleRow(int num_iteration, int predict_type, int ncol,
+  void SetSingleRowPredictor(int num_iteration, int predict_type, const Config& config) {
+      //TODO: Try to have a shared_lock and then upgrade to unique_lock, but functionality currently only in boost
+      std::unique_lock<std::shared_mutex> lock(mutex_);
+      if (single_row_predictor_[predict_type].get() == nullptr ||
+          !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, boosting_.get())) {
+        single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, boosting_.get(),
+                                                                         config, num_iteration));
+      }
+  }
+
+  void PredictSingleRow(int predict_type, int ncol,
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
-               double* out_result, int64_t* out_len) {
+               double* out_result, int64_t* out_len) const {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
-    std::unique_lock<std::shared_mutex> lock(mutex_);
-    if (single_row_predictor_[predict_type].get() == nullptr ||
-        !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, boosting_.get())) {
-      single_row_predictor_[predict_type].reset(new SingleRowPredictor(predict_type, boosting_.get(),
-                                                                       config, num_iteration));
-    }
-    //TODO: Degrade here to read lock, or set this predictor in a private with write lock
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    const auto& single_row_predictor = single_row_predictor_[predict_type];
     auto one_row = get_row_fun(0);
     auto pred_wrt_ptr = out_result;
-    single_row_predictor_[predict_type]->predict_function(one_row, pred_wrt_ptr);
+    single_row_predictor->predict_function(one_row, pred_wrt_ptr);
 
-    *out_len = single_row_predictor_[predict_type]->num_pred_in_one_row;
+    *out_len = single_row_predictor->num_pred_in_one_row;
   }
 
 
@@ -369,6 +374,7 @@ class Booster {
   }
 
   double GetLeafValue(int tree_idx, int leaf_idx) const {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     return dynamic_cast<GBDTBase*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
   }
 
@@ -383,6 +389,7 @@ class Booster {
   }
 
   int GetEvalCounts() const {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     int ret = 0;
     for (const auto& metric : train_metric_) {
       ret += static_cast<int>(metric->GetName().size());
@@ -391,6 +398,7 @@ class Booster {
   }
 
   int GetEvalNames(char** out_strs) const {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     int idx = 0;
     for (const auto& metric : train_metric_) {
       for (const auto& name : metric->GetName()) {
@@ -402,6 +410,7 @@ class Booster {
   }
 
   int GetFeatureNames(char** out_strs) const {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     int idx = 0;
     for (const auto& name : boosting_->FeatureNames()) {
       std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
@@ -1390,7 +1399,8 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  ref_booster->PredictSingleRow(num_iteration, predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
+  ref_booster->SetSingleRowPredictor(num_iteration, predict_type, config);
+  ref_booster->PredictSingleRow(predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
   API_END();
 }
 
@@ -1491,7 +1501,8 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, is_row_major);
-  ref_booster->PredictSingleRow(num_iteration, predict_type, ncol, get_row_fun, config, out_result, out_len);
+  ref_booster->SetSingleRowPredictor(num_iteration, predict_type, config);
+  ref_booster->PredictSingleRow(predict_type, ncol, get_row_fun, config, out_result, out_len);
   API_END();
 }
 
