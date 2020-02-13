@@ -5,7 +5,6 @@
 #ifndef LIGHTGBM_IO_MULTI_VAL_SPARSE_BIN_HPP_
 #define LIGHTGBM_IO_MULTI_VAL_SPARSE_BIN_HPP_
 
-
 #include <LightGBM/bin.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
@@ -18,8 +17,7 @@ namespace LightGBM {
 
 template <typename VAL_T>
 class MultiValSparseBin : public MultiValBin {
-public:
-
+ public:
   explicit MultiValSparseBin(data_size_t num_data, int num_bin)
     : num_data_(num_data), num_bin_(num_bin) {
     row_ptr_.resize(num_data_ + 1, 0);
@@ -46,7 +44,6 @@ public:
     return num_bin_;
   }
 
-
   void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t> & values) override {
     row_ptr_[idx + 1] = static_cast<data_size_t>(values.size());
     if (tid == 0) {
@@ -71,7 +68,7 @@ public:
         offsets.push_back(offsets.back() + t_data_[tid].size());
       }
       data_.resize(row_ptr_[num_data_]);
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (int tid = 0; tid < static_cast<int>(t_data_.size()); ++tid) {
         std::copy_n(t_data_[tid].data(), t_data_[tid].size(),
                     data_.data() + offsets[tid]);
@@ -185,7 +182,7 @@ public:
 
   MultiValSparseBin<VAL_T>* Clone() override;
 
-private:
+ private:
   data_size_t num_data_;
   int num_bin_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>> data_;
@@ -201,8 +198,6 @@ template<typename VAL_T>
 MultiValSparseBin<VAL_T>* MultiValSparseBin<VAL_T>::Clone() {
   return new MultiValSparseBin<VAL_T>(*this);
 }
-
-
 
 }  // namespace LightGBM
 #endif   // LIGHTGBM_IO_MULTI_VAL_SPARSE_BIN_HPP_

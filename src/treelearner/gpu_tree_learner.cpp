@@ -167,21 +167,22 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
   // will launch threads for all features
   // the queue should be asynchrounous, and we will can WaitAndGetHistograms() before we start processing dense feature groups
   if (leaf_num_data == num_data_) {
-    kernel_wait_obj_ = boost::compute::wait_list(queue_.enqueue_1d_range_kernel(histogram_fulldata_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
+    kernel_wait_obj_ = boost::compute::wait_list(
+      queue_.enqueue_1d_range_kernel(histogram_fulldata_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
   } else {
     if (use_all_features) {
       kernel_wait_obj_ = boost::compute::wait_list(
-                         queue_.enqueue_1d_range_kernel(histogram_allfeats_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
+        queue_.enqueue_1d_range_kernel(histogram_allfeats_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
     } else {
       kernel_wait_obj_ = boost::compute::wait_list(
-                         queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
+        queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
     }
   }
   // copy the results asynchronously. Size depends on if double precision is used
   size_t output_size = num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
   boost::compute::event histogram_wait_event;
-  host_histogram_outputs_ = reinterpret_cast<void*>(queue_.enqueue_map_buffer_async(device_histogram_outputs_, boost::compute::command_queue::map_read,
-                                                                   0, output_size, histogram_wait_event, kernel_wait_obj_));
+  host_histogram_outputs_ = reinterpret_cast<void*>(queue_.enqueue_map_buffer_async(
+    device_histogram_outputs_, boost::compute::command_queue::map_read, 0, output_size, histogram_wait_event, kernel_wait_obj_));
   // we will wait for this object in WaitAndGetHistograms
   histograms_wait_obj_ = boost::compute::wait_list(histogram_wait_event);
 }
@@ -962,7 +963,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     }
   }
   // construct smaller leaf
-  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - KHistOffset;
+  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
   // ConstructGPUHistogramsAsync will return true if there are availabe feature gourps dispatched to GPU
   bool is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
     nullptr, smaller_leaf_splits_->num_data_in_leaf(),
@@ -994,15 +995,17 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
       continue;
     int dense_feature_group_index = dense_feature_group_map_[i];
     size_t size = train_data_->FeatureGroupNumBin(dense_feature_group_index);
-    hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - KHistOffset;
+    hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
     hist_t* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index) * 2;
     hist_t* gpu_histogram = new hist_t[size * 2];
     data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
     printf("Comparing histogram for feature %d size %d, %lu bins\n", dense_feature_group_index, num_data, size);
     std::copy(current_histogram, current_histogram + size * 2, gpu_histogram);
     std::memset(current_histogram, 0, size * sizeof(hist_t) * 2);
-    if(train_data_->FeatureGroupBin(dense_feature_group_index) == nullptr){continue;}
-    if (num_data != num_data_ ) {
+    if (train_data_->FeatureGroupBin(dense_feature_group_index) == nullptr) {
+      continue;
+    }
+    if (num_data != num_data_) {
       train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
         smaller_leaf_splits_->data_indices(),
         0,
@@ -1026,7 +1029,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
-    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - KHistOffset;
+    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - kHistOffset;
     is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
@@ -1086,14 +1089,8 @@ void GPUTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right
         Log::Fatal("Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
       }
     } else {
-      double smaller_min = smaller_leaf_splits_->min_constraint();
-      double smaller_max = smaller_leaf_splits_->max_constraint();
-      double larger_min = larger_leaf_splits_->min_constraint();
-      double larger_max = larger_leaf_splits_->max_constraint();
       smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
       larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
-      smaller_leaf_splits_->SetValueConstraint(smaller_min, smaller_max);
-      larger_leaf_splits_->SetValueConstraint(larger_min, larger_max);
       if ((best_split_info.left_count != larger_leaf_splits_->num_data_in_leaf()) ||
           (best_split_info.right_count!= smaller_leaf_splits_->num_data_in_leaf())) {
         Log::Fatal("Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());

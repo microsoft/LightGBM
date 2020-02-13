@@ -22,7 +22,6 @@
 
 namespace LightGBM {
 
-
 class GOSS: public GBDT {
  public:
   /*!
@@ -32,7 +31,6 @@ class GOSS: public GBDT {
   }
 
   ~GOSS() {
-
   }
 
   void Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
@@ -191,7 +189,6 @@ class GOSS: public GBDT {
       tmp_subset_->ReSize(bag_data_cnt_);
       tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
       tree_learner_->ResetTrainingData(tmp_subset_.get());
-
     }
   }
 

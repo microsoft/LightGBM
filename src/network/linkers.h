@@ -156,7 +156,8 @@ class Linkers {
   static void MpiAbortIfIsParallel();
 
   #endif
-  private:
+
+ private:
   /*! \brief Rank of local machine */
   int rank_;
   /*! \brief Total number machines */

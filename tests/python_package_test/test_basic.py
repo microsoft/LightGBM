@@ -9,6 +9,8 @@ import numpy as np
 from scipy import sparse
 from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
+import json
+import operator
 
 
 class TestBasic(unittest.TestCase):
@@ -26,7 +28,8 @@ class TestBasic(unittest.TestCase):
             "num_leaves": 15,
             "verbose": -1,
             "num_threads": 1,
-            "max_bin": 255
+            "max_bin": 255,
+            "gpu_use_dp": "True"
         }
         bst = lgb.Booster(params, train_data)
         bst.add_valid(valid_data, "valid_1")
@@ -39,8 +42,8 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(bst.current_iteration(), 20)
         self.assertEqual(bst.num_trees(), 20)
         self.assertEqual(bst.num_model_per_iteration(), 1)
-        self.assertAlmostEqual(bst.upper_bound(), 3.32, places=2)
-        self.assertAlmostEqual(bst.lower_bound(), -3.13, places=2)
+        self.assertAlmostEqual(bst.lower_bound(), -2.9040190126976606)
+        self.assertAlmostEqual(bst.upper_bound(), 3.3182142872462883)
 
         bst.save_model("model.txt")
         pred_from_matr = bst.predict(X_test)

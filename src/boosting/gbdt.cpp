@@ -40,7 +40,6 @@ balanced_bagging_(false) {
 }
 
 GBDT::~GBDT() {
-
 }
 
 void GBDT::Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
@@ -665,7 +664,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
 double GBDT::GetUpperBoundValue() const {
   double max_value = 0.0;
   for (const auto &tree: models_) {
-      max_value += tree->GetUpperBoundValue();
+    max_value += tree->GetUpperBoundValue();
   }
   return max_value;
 }
