@@ -250,7 +250,6 @@ class Booster {
   }
 
   void SetSingleRowPredictor(int num_iteration, int predict_type, const Config& config) {
-      //TODO: Try to have a shared_lock and then upgrade to unique_lock, but functionality currently only in boost
       std::unique_lock<std::shared_mutex> lock(mutex_);
       if (single_row_predictor_[predict_type].get() == nullptr ||
           !single_row_predictor_[predict_type]->IsPredictorEqual(config, num_iteration, boosting_.get())) {
