@@ -679,6 +679,8 @@ struct Config {
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
+  #pragma region Dataset Parameters
+
   // desc = used only in ``prediction`` task
   // desc = control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
   // desc = if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
@@ -692,11 +694,17 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string convert_model_language = "";
 
+  #pragma endregion
+
+  #pragma region Booster Parameters
+
   // alias = convert_model_file
   // desc = used only in ``convert_model`` task
   // desc = output filename of converted model
   // desc = **Note**: can be used only in CLI version
   std::string convert_model = "gbdt_prediction.cpp";
+
+  #pragma endregion
 
   #pragma endregion
 

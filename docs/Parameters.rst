@@ -769,6 +769,9 @@ IO Parameters
 
    -  the threshold of margin in early-stopping prediction
 
+Dataset Parameters
+~~~~~~~~~~~~~~~~~~
+
 -  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  used only in ``prediction`` task
@@ -790,6 +793,9 @@ IO Parameters
    -  if ``convert_model_language`` is set and ``task=train``, the model will be also converted
 
    -  **Note**: can be used only in CLI version
+
+Booster Parameters
+~~~~~~~~~~~~~~~~~~
 
 -  ``convert_model`` :raw-html:`<a id="convert_model" title="Permalink to this parameter" href="#convert_model">&#x1F517;&#xFE0E;</a>`, default = ``gbdt_prediction.cpp``, type = string, aliases: ``convert_model_file``
 
