@@ -25,14 +25,12 @@ class FeatureGroup {
   friend Dataset;
   friend DatasetLoader;
   /*!
-   * \brief Constructor
-   * \param num_feature number of features of this group
-   * \param bin_mappers Bin mapper for features
-   * \param num_data Total number of data
-   * \param is_enable_sparse True if enable sparse feature
-   * \param sparse_threshold Threshold for treating a feature as a sparse
-   * feature
-   */
+  * \brief Constructor
+  * \param num_feature number of features of this group
+  * \param bin_mappers Bin mapper for features
+  * \param num_data Total number of data
+  * \param is_enable_sparse True if enable sparse feature
+  */
   FeatureGroup(int num_feature, bool is_multi_val,
                std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                data_size_t num_data)
@@ -368,8 +366,7 @@ class FeatureGroup {
   }
 
  private:
-  void CreateBinData(int num_data, bool is_multi_val, bool force_dense,
-                     bool force_sparse) {
+  void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
     if (is_multi_val) {
       multi_bin_data_.clear();
       for (int i = 0; i < num_feature_; ++i) {
