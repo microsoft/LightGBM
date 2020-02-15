@@ -188,7 +188,7 @@ class SerialTreeLearner: public TreeLearner {
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
-  std::unique_ptr<MultiValBin> multi_val_bin_;
+  std::unique_ptr<TrainingTempState> temp_state_;
   bool is_hist_colwise_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
