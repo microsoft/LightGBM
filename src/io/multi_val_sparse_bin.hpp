@@ -207,14 +207,27 @@ class MultiValSparseBin : public MultiValBin {
     }
   }
 
-  MultiValBin* CreateLike(int num_bin, int num_features, double fraction) const override {
-    auto ret = new MultiValSparseBin<VAL_T>(
-        num_data_, num_bin, estimate_element_per_row_ * fraction);
-    return ret;
+  MultiValBin* CreateLike(int num_bin, int num_features, double dense_rate) const override {
+    return new MultiValSparseBin<VAL_T>(num_data_, num_bin,
+                                        num_features * dense_rate);
   }
 
-  void ReSizeForSubFeature(int num_bin, int) override {
+  void ReSizeForSubFeature(int num_bin, int num_features,
+                           double dense_rate) override {
     num_bin_ = num_bin;
+    estimate_element_per_row_ = num_features * dense_rate;
+    data_size_t estimate_num_data =
+        static_cast<data_size_t>(num_data_ * estimate_element_per_row_ * 1.1);
+    size_t npart = 1 + t_data_.size();
+    size_t avg_num_data = static_cast<size_t>(estimate_num_data / npart);
+    if (data_.size() < avg_num_data) {
+      data_.resize(avg_num_data, 0);
+    }
+    for (size_t i = 0; i < t_data_.size(); ++i) {
+      if (t_data_[i].size() < avg_num_data) {
+        t_data_[i].resize(avg_num_data, 0);
+      }
+    }
   }
 
   void CopySubFeature(const MultiValBin* full_bin, const std::vector<int>&,
@@ -255,7 +268,7 @@ class MultiValSparseBin : public MultiValBin {
           }
           if (val >= lower[k]) {
             ++cur_cnt;
-            buf[size++] = (val - delta[k]);
+            buf[size++] = static_cast<VAL_T>(val - delta[k]);
           }
         }
         row_ptr_[i + 1] = cur_cnt;

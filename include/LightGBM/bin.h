@@ -458,9 +458,10 @@ class MultiValBin {
 
   virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
 
-  virtual void ReSizeForSubFeature(int num_bin, int num_feature) = 0;
+  virtual void ReSizeForSubFeature(int num_bin, int num_feature,
+                                   double dense_rate) = 0;
 
-  virtual MultiValBin* CreateLike(int num_bin, int num_feature, double fraction) const = 0;
+  virtual MultiValBin* CreateLike(int num_bin, int num_feature, double dense_rate) const = 0;
 
   virtual void CopySubFeature(const MultiValBin* full_bin,
                               const std::vector<int>& used_feature_index,

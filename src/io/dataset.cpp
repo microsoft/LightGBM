@@ -1248,12 +1248,11 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   global_timer.Start("Dataset::InitTrain.Resize");
   if (temp_state->multi_val_bin_subfeature == nullptr) {
     temp_state->multi_val_bin_subfeature.reset(
-        temp_state->multi_val_bin->CreateLike(
-            new_num_total_bin, num_used,
-            static_cast<double>(num_used) / total));
+        temp_state->multi_val_bin->CreateLike(new_num_total_bin, num_used,
+                                              sum_used_dense_ratio));
   } else {
-    temp_state->multi_val_bin_subfeature->ReSizeForSubFeature(new_num_total_bin,
-                                                              num_used);
+    temp_state->multi_val_bin_subfeature->ReSizeForSubFeature(
+        new_num_total_bin, num_used, sum_used_dense_ratio);
   }
   global_timer.Stop("Dataset::InitTrain.Resize");
   global_timer.Start("Dataset::InitTrain.CopySubFeature");

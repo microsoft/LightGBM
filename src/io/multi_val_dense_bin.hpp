@@ -141,7 +141,7 @@ class MultiValDenseBin : public MultiValBin {
     return new MultiValDenseBin<VAL_T>(num_data_, num_bin, num_feature);
   }
 
-  void ReSizeForSubFeature(int num_bin, int num_feature) override {
+  void ReSizeForSubFeature(int num_bin, int num_feature, double) override {
     num_bin_ = num_bin;
     num_feature_ = num_feature;
     size_t new_size = static_cast<size_t>(num_feature_) * num_data_;
