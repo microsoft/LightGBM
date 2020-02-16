@@ -85,6 +85,8 @@ class MultiValSparseBin : public MultiValBin {
         std::copy_n(t_data_[tid].data(), sizes[tid + 1],
                     data_.data() + offsets[tid]);
       }
+    } else {
+      data_.resize(row_ptr_[num_data_]);
     }
   }
 
