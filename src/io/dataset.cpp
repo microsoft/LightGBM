@@ -528,68 +528,60 @@ void Dataset::FinishLoad() {
 }
 
 void PushDataToMultiValBin(
-    int num_threads, data_size_t num_data,
+    data_size_t num_data,
     const std::vector<uint32_t> most_freq_bins,
     const std::vector<uint32_t> offsets,
     std::vector<std::vector<std::unique_ptr<BinIterator>>>& iters,
     MultiValBin* ret) {
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
-  const data_size_t min_block_size = 4096;
-  const int n_block =
-      std::min(num_threads, (num_data + min_block_size - 1) / min_block_size);
-  const data_size_t block_size = (num_data + n_block - 1) / n_block;
   if (ret->IsSparse()) {
-#pragma omp parallel for schedule(static)
-    for (int tid = 0; tid < n_block; ++tid) {
-      std::vector<uint32_t> cur_data;
-      cur_data.reserve(most_freq_bins.size());
-      data_size_t start = tid * block_size;
-      data_size_t end = std::min(num_data, start + block_size);
-      for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-        iters[tid][j]->Reset(start);
-      }
-      for (data_size_t i = start; i < end; ++i) {
-        cur_data.clear();
-        for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-          auto cur_bin = iters[tid][j]->Get(i);
-          if (cur_bin == most_freq_bins[j]) {
-            continue;
+    Threading::For<data_size_t>(
+        0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
+          std::vector<uint32_t> cur_data;
+          cur_data.reserve(most_freq_bins.size());
+          for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+            iters[tid][j]->Reset(start);
           }
-          cur_bin += offsets[j];
-          if (most_freq_bins[j] == 0) {
-            cur_bin -= 1;
-          }
-          cur_data.push_back(cur_bin);
-        }
-        ret->PushOneRow(tid, i, cur_data);
-      }
-    }
-  } else {
-#pragma omp parallel for schedule(static)
-    for (int tid = 0; tid < n_block; ++tid) {
-      std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
-      data_size_t start = tid * block_size;
-      data_size_t end = std::min(num_data, start + block_size);
-      for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-        iters[tid][j]->Reset(start);
-      }
-      for (data_size_t i = start; i < end; ++i) {
-        for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-          auto cur_bin = iters[tid][j]->Get(i);
-          if (cur_bin == most_freq_bins[j]) {
-            cur_bin = 0;
-          } else {
-            cur_bin += offsets[j];
-            if (most_freq_bins[j] == 0) {
-              cur_bin -= 1;
+          for (data_size_t i = start; i < end; ++i) {
+            cur_data.clear();
+            for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+              auto cur_bin = iters[tid][j]->Get(i);
+              if (cur_bin == most_freq_bins[j]) {
+                continue;
+              }
+              cur_bin += offsets[j];
+              if (most_freq_bins[j] == 0) {
+                cur_bin -= 1;
+              }
+              cur_data.push_back(cur_bin);
             }
+            ret->PushOneRow(tid, i, cur_data);
           }
-          cur_data[j] = cur_bin;
-        }
-        ret->PushOneRow(tid, i, cur_data);
-      }
-    }
+        });
+  } else {
+    Threading::For<data_size_t>(
+        0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
+          std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
+          for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+            iters[tid][j]->Reset(start);
+          }
+          for (data_size_t i = start; i < end; ++i) {
+            for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+              auto cur_bin = iters[tid][j]->Get(i);
+              if (cur_bin == most_freq_bins[j]) {
+                cur_bin = 0;
+              } else {
+                cur_bin += offsets[j];
+                if (most_freq_bins[j] == 0) {
+                  cur_bin -= 1;
+                }
+              }
+              cur_data[j] = cur_bin;
+            }
+            ret->PushOneRow(tid, i, cur_data);
+          }
+        });
   }
 }
 
@@ -635,7 +627,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   std::unique_ptr<MultiValBin> ret;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
                                            num_feature, sum_sparse_rate));
-  PushDataToMultiValBin(num_threads, num_data_, most_freq_bins, offsets, iters,
+  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, iters,
                         ret.get());
   ret->FinishLoad();
   return ret.release();
@@ -691,7 +683,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   ret.reset(MultiValBin::CreateMultiValBin(
       num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()),
       1.0 - sum_dense_ratio));
-  PushDataToMultiValBin(num_threads, num_data_, most_freq_bins, offsets, iters,
+  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, iters,
                         ret.get());
   ret->FinishLoad();
   return ret.release();
@@ -1319,13 +1311,13 @@ void Dataset::ConstructHistograms(
     auto ptr_ordered_hess = hessians;
     if (data_indices != nullptr && num_data < num_data_) {
       if (!is_constant_hessian) {
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
         for (data_size_t i = 0; i < num_data; ++i) {
           ordered_gradients[i] = gradients[data_indices[i]];
           ordered_hessians[i] = hessians[data_indices[i]];
         }
       } else {
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
         for (data_size_t i = 0; i < num_data; ++i) {
           ordered_gradients[i] = gradients[data_indices[i]];
         }
