@@ -1134,6 +1134,7 @@ void Dataset::DumpTextFile(const char* text_filename) {
 void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
                         bool is_colwise, TrainingTempState* temp_state) const {
   Common::FunctionTimer fun_time("Dataset::InitTrain", global_timer);
+  temp_state->use_subfeature = false;
   if (temp_state->multi_val_bin == nullptr) {
     return;
   }
@@ -1178,7 +1179,6 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   global_timer.Stop("Dataset::InitTrain.Prep");
   const double k_subfeature_threshold = 0.6;
   if (sum_used_dense_ratio >= sum_dense_ratio * k_subfeature_threshold) {
-    temp_state->use_subfeature = false;
     return;
   }
   temp_state->use_subfeature = true;
