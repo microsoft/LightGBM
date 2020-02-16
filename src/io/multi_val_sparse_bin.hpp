@@ -68,13 +68,13 @@ class MultiValSparseBin : public MultiValBin {
     }
   }
 
-  void MoveData(const size_t* sizes) {
-    Common::FunctionTimer fun_time("MultiValSparseBin::MoveData", global_timer);
+  void MergeData(const data_size_t* sizes) {
+    Common::FunctionTimer fun_time("MultiValSparseBin::MergeData", global_timer);
     for (data_size_t i = 0; i < num_data_; ++i) {
       row_ptr_[i + 1] += row_ptr_[i];
     }
     if (t_data_.size() > 0) {
-      std::vector<size_t> offsets(1 + t_data_.size());
+      std::vector<data_size_t> offsets(1 + t_data_.size());
       offsets[0] = sizes[0];
       for (size_t tid = 0; tid < t_data_.size() - 1; ++tid) {
         offsets[tid + 1] = offsets[tid] + sizes[tid + 1];
@@ -89,7 +89,7 @@ class MultiValSparseBin : public MultiValBin {
   }
 
   void FinishLoad() override {
-    MoveData(t_size_.data());
+    MergeData(t_size_.data());
     t_size_.clear();
     row_ptr_.shrink_to_fit();
     data_.shrink_to_fit();
@@ -207,19 +207,21 @@ class MultiValSparseBin : public MultiValBin {
     }
   }
 
-  MultiValBin* CreateLike(int num_bin, int num_features, double dense_rate) const override {
+  MultiValBin* CreateLike(int num_bin, int,
+                          double estimate_element_per_row) const override {
     return new MultiValSparseBin<VAL_T>(num_data_, num_bin,
-                                        num_features * dense_rate);
+                                        estimate_element_per_row);
   }
 
-  void ReSizeForSubFeature(int num_bin, int num_features,
-                           double dense_rate) override {
+  void ReSizeForSubFeature(int num_bin, int,
+                           double estimate_element_per_row) override {
     num_bin_ = num_bin;
-    estimate_element_per_row_ = num_features * dense_rate;
+    estimate_element_per_row_ = estimate_element_per_row;
     data_size_t estimate_num_data =
         static_cast<data_size_t>(num_data_ * estimate_element_per_row_ * 1.1);
     size_t npart = 1 + t_data_.size();
-    size_t avg_num_data = static_cast<size_t>(estimate_num_data / npart);
+    data_size_t avg_num_data =
+        static_cast<data_size_t>(estimate_num_data / npart);
     if (data_.size() < avg_num_data) {
       data_.resize(avg_num_data, 0);
     }
@@ -245,14 +247,14 @@ class MultiValSparseBin : public MultiValBin {
     const int n_block = std::min(
         num_threads, (num_data_ + min_block_size - 1) / min_block_size);
     const data_size_t block_size = (num_data_ + n_block - 1) / n_block;
-    std::vector<size_t> sizes(t_data_.size() + 1, 0);
+    std::vector<data_size_t> sizes(t_data_.size() + 1, 0);
     const int pre_alloc_size = 50;
 #pragma omp parallel for schedule(static, 1)
     for (int tid = 0; tid < n_block; ++tid) {
       data_size_t start = tid * block_size;
       data_size_t end = std::min(num_data_, start + block_size);
       auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
-      size_t size = 0;
+      data_size_t size = 0;
       for (data_size_t i = start; i < end; ++i) {
         const auto j_start = other->RowPtr(i);
         const auto j_end = other->RowPtr(i + 1);
@@ -260,22 +262,21 @@ class MultiValSparseBin : public MultiValBin {
           buf.resize(size + (j_end - j_start) * pre_alloc_size);
         }
         int k = 0;
-        int cur_cnt = 0;
+        const data_size_t pre_size = size;
         for (auto j = j_start; j < j_end; ++j) {
           auto val = other->data_[j];
           while (val >= upper[k]) {
             ++k;
           }
           if (val >= lower[k]) {
-            ++cur_cnt;
             buf[size++] = static_cast<VAL_T>(val - delta[k]);
           }
         }
-        row_ptr_[i + 1] = cur_cnt;
+        row_ptr_[i + 1] = size - pre_size;
       }
       sizes[tid] = size;
     }
-    MoveData(sizes.data());
+    MergeData(sizes.data());
   }
 
   inline data_size_t RowPtr(data_size_t idx) const { return row_ptr_[idx]; }
@@ -291,7 +292,7 @@ class MultiValSparseBin : public MultiValBin {
       row_ptr_;
   std::vector<std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>>>
       t_data_;
-  std::vector<size_t> t_size_;
+  std::vector<data_size_t> t_size_;
 
   MultiValSparseBin<VAL_T>(const MultiValSparseBin<VAL_T>& other)
       : num_data_(other.num_data_),
