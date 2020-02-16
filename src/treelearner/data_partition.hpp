@@ -8,6 +8,7 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/threading.h>
 
 #include <algorithm>
 #include <cstring>
@@ -118,34 +119,27 @@ class DataPartition {
     // get leaf boundary
     const data_size_t begin = leaf_begin_[leaf];
     const data_size_t cnt = leaf_count_[leaf];
-
-    const int nblock = std::min(num_threads_, (cnt + min_inner_size - 1) / min_inner_size);
-    data_size_t inner_size = SIZE_ALIGNED((cnt + nblock - 1) / nblock);
     auto left_start = indices_.data() + begin;
-    global_timer.Start("DataPartition::Split.MT");
-    // split data multi-threading
-    OMP_INIT_EX();
-    #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < nblock; ++i) {
-      OMP_LOOP_EX_BEGIN();
-      data_size_t cur_start = i * inner_size;
-      data_size_t cur_cnt = std::min(inner_size, cnt - cur_start);
-      if (cur_cnt <= 0) {
-        left_cnts_buf_[i] = 0;
-        right_cnts_buf_[i] = 0;
-        continue;
-      }
-      // split data inner, reduce the times of function called
-      data_size_t cur_left_count = dataset->Split(feature, threshold, num_threshold, default_left,
-                                                  left_start + cur_start, cur_cnt,
-                                                  temp_left_indices_.data() + cur_start,
-                                                  temp_right_indices_.data() + cur_start);
-      offsets_buf_[i] = cur_start;
-      left_cnts_buf_[i] = cur_left_count;
-      right_cnts_buf_[i] = cur_cnt - cur_left_count;
-      OMP_LOOP_EX_END();
-    }
-    OMP_THROW_EX();
+
+    int nblock = Threading::For<data_size_t>(
+        0, num_data_, 1024,
+        [&](int i, data_size_t cur_start, data_size_t cur_end) {
+
+          data_size_t cur_cnt = cur_end - cur_start;
+          if (cur_cnt <= 0) {
+            left_cnts_buf_[i] = 0;
+            right_cnts_buf_[i] = 0;
+          } else {
+            data_size_t cur_left_count =
+                dataset->Split(feature, threshold, num_threshold, default_left,
+                               left_start + cur_start, cur_cnt,
+                               temp_left_indices_.data() + cur_start,
+                               temp_right_indices_.data() + cur_start);
+            offsets_buf_[i] = cur_start;
+            left_cnts_buf_[i] = cur_left_count;
+            right_cnts_buf_[i] = cur_cnt - cur_left_count;
+          }
+      });
     global_timer.Stop("DataPartition::Split.MT");
     global_timer.Start("DataPartition::Split.Merge");
     left_write_pos_buf_[0] = 0;

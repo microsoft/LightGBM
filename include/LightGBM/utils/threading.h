@@ -15,28 +15,29 @@ namespace LightGBM {
 class Threading {
  public:
   template<typename INDEX_T>
-  static inline void For(INDEX_T start, INDEX_T end, const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
+  static inline INDEX_T For(
+      INDEX_T start, INDEX_T end,
+      INDEX_T min_block_size, const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
     int num_threads = 1;
     #pragma omp parallel
     #pragma omp master
     {
       num_threads = omp_get_num_threads();
     }
-    INDEX_T num_inner = (end - start + num_threads - 1) / num_threads;
-    if (num_inner <= 0) { num_inner = 1; }
+    INDEX_T n_block = std::min<INDEX_T>(
+        num_threads, (end - start + min_block_size - 1) / min_block_size);
+    INDEX_T num_inner = SIZE_ALIGNED((end - start + n_block - 1) / n_block);
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads; ++i) {
+    for (int i = 0; i < n_block; ++i) {
       OMP_LOOP_EX_BEGIN();
       INDEX_T inner_start = start + num_inner * i;
-      INDEX_T inner_end = inner_start + num_inner;
-      if (inner_end > end) { inner_end = end; }
-      if (inner_start < end) {
-        inner_fun(i, inner_start, inner_end);
-      }
+      INDEX_T inner_end = std::min(end, inner_start + num_inner);
+      inner_fun(i, inner_start, inner_end);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    return n_block;
   }
 };
 

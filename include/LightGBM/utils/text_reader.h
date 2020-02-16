@@ -147,7 +147,7 @@ class TextReader {
   */
   INDEX_T ReadAllLines() {
     return ReadAllAndProcess(
-      [=](INDEX_T, const char* buffer, size_t size) {
+      [&](INDEX_T, const char* buffer, size_t size) {
       lines_.emplace_back(buffer, size);
     });
   }
@@ -230,7 +230,7 @@ class TextReader {
 
   INDEX_T CountLine() {
     return ReadAllAndProcess(
-      [=](INDEX_T, const char*, size_t) {
+      [&](INDEX_T, const char*, size_t) {
     });
   }
 
