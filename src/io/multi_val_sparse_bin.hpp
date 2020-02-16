@@ -51,14 +51,14 @@ class MultiValSparseBin : public MultiValBin {
     const int pre_alloc_size = 50;
     row_ptr_[idx + 1] = static_cast<data_size_t>(values.size());
     if (tid == 0) {
-      if (t_size_[tid] + row_ptr_[idx + 1] > data_.size()) {
+      if (t_size_[tid] + row_ptr_[idx + 1] > static_cast<data_size_t>(data_.size())) {
         data_.resize(t_size_[tid] + row_ptr_[idx + 1] * pre_alloc_size);
       }
       for (auto val : values) {
         data_[t_size_[tid]++] = static_cast<VAL_T>(val);
       }
     } else {
-      if (t_size_[tid] + row_ptr_[idx + 1] > t_data_[tid - 1].size()) {
+      if (t_size_[tid] + row_ptr_[idx + 1] > static_cast<data_size_t>(t_data_[tid - 1].size())) {
         t_data_[tid - 1].resize(t_size_[tid] +
                                 row_ptr_[idx + 1] * pre_alloc_size);
       }
@@ -222,11 +222,11 @@ class MultiValSparseBin : public MultiValBin {
     size_t npart = 1 + t_data_.size();
     data_size_t avg_num_data =
         static_cast<data_size_t>(estimate_num_data / npart);
-    if (data_.size() < avg_num_data) {
+    if (static_cast<data_size_t>(data_.size()) < avg_num_data) {
       data_.resize(avg_num_data, 0);
     }
     for (size_t i = 0; i < t_data_.size(); ++i) {
-      if (t_data_[i].size() < avg_num_data) {
+      if (static_cast<data_size_t>(t_data_[i].size()) < avg_num_data) {
         t_data_[i].resize(avg_num_data, 0);
       }
     }
@@ -258,7 +258,7 @@ class MultiValSparseBin : public MultiValBin {
       for (data_size_t i = start; i < end; ++i) {
         const auto j_start = other->RowPtr(i);
         const auto j_end = other->RowPtr(i + 1);
-        if (size + (j_end - j_start) > buf.size()) {
+        if (size + (j_end - j_start) > static_cast<data_size_t>(buf.size())) {
           buf.resize(size + (j_end - j_start) * pre_alloc_size);
         }
         int k = 0;
