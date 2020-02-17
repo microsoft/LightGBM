@@ -24,7 +24,7 @@ class Threading {
     {
       num_threads = omp_get_num_threads();
     }
-    INDEX_T n_block = std::min<INDEX_T>(
+    int n_block = std::min<int>(
         num_threads, (end - start + min_block_size - 1) / min_block_size);
     INDEX_T num_inner = SIZE_ALIGNED((end - start + n_block - 1) / n_block);
     OMP_INIT_EX();

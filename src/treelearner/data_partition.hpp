@@ -115,7 +115,6 @@ class DataPartition {
              const uint32_t* threshold, int num_threshold, bool default_left,
              int right_leaf) {
     Common::FunctionTimer fun_timer("DataPartition::Split", global_timer);
-    const data_size_t min_inner_size = 512;
     // get leaf boundary
     const data_size_t begin = leaf_begin_[leaf];
     const data_size_t cnt = leaf_count_[leaf];
