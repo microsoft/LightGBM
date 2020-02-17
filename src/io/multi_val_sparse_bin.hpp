@@ -240,44 +240,36 @@ class MultiValSparseBin : public MultiValBin {
                       const std::vector<uint32_t>& delta) override {
     const auto other =
         reinterpret_cast<const MultiValSparseBin<VAL_T>*>(full_bin);
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    { num_threads = omp_get_num_threads(); }
 
-    const int min_block_size = 1024;
-    const int n_block = std::min(
-        num_threads, (num_data_ + min_block_size - 1) / min_block_size);
-    const data_size_t block_size = (num_data_ + n_block - 1) / n_block;
     std::vector<data_size_t> sizes(t_data_.size() + 1, 0);
     const int pre_alloc_size = 50;
-#pragma omp parallel for schedule(static, 1)
-    for (int tid = 0; tid < n_block; ++tid) {
-      data_size_t start = tid * block_size;
-      data_size_t end = std::min(num_data_, start + block_size);
-      auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
-      data_size_t size = 0;
-      for (data_size_t i = start; i < end; ++i) {
-        const auto j_start = other->RowPtr(i);
-        const auto j_end = other->RowPtr(i + 1);
-        if (size + (j_end - j_start) > static_cast<data_size_t>(buf.size())) {
-          buf.resize(size + (j_end - j_start) * pre_alloc_size);
-        }
-        int k = 0;
-        const data_size_t pre_size = size;
-        for (auto j = j_start; j < j_end; ++j) {
-          auto val = other->data_[j];
-          while (val >= upper[k]) {
-            ++k;
+
+    Threading::For<data_size_t>(
+        0, num_data_, 1024, [&](int tid, data_size_t start, data_size_t end) {
+          auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
+          data_size_t size = 0;
+          for (data_size_t i = start; i < end; ++i) {
+            const auto j_start = other->RowPtr(i);
+            const auto j_end = other->RowPtr(i + 1);
+            if (size + (j_end - j_start) >
+                static_cast<data_size_t>(buf.size())) {
+              buf.resize(size + (j_end - j_start) * pre_alloc_size);
+            }
+            int k = 0;
+            const data_size_t pre_size = size;
+            for (auto j = j_start; j < j_end; ++j) {
+              auto val = other->data_[j];
+              while (val >= upper[k]) {
+                ++k;
+              }
+              if (val >= lower[k]) {
+                buf[size++] = static_cast<VAL_T>(val - delta[k]);
+              }
+            }
+            row_ptr_[i + 1] = size - pre_size;
           }
-          if (val >= lower[k]) {
-            buf[size++] = static_cast<VAL_T>(val - delta[k]);
-          }
-        }
-        row_ptr_[i + 1] = size - pre_size;
-      }
-      sizes[tid] = size;
-    }
+          sizes[tid] = size;
+        });
     MergeData(sizes.data());
   }
 
