@@ -218,7 +218,7 @@ double Tree::GetUpperBoundValue() const {
 
 double Tree::GetLowerBoundValue() const {
   double lower_bound = leaf_value_[0];
-  for (auto i = 1; i < num_leaves_; i++) {
+  for (int i = 1; i < num_leaves_; ++i) {
     if (leaf_value_[i] < lower_bound) {
       lower_bound = leaf_value_[i];
     }
