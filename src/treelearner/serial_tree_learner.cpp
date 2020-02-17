@@ -80,15 +80,18 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 void SerialTreeLearner::GetMultiValBin(const Dataset* dataset, bool is_first_time) {
   if (is_first_time) {
     auto used_feature = GetUsedFeatures(true);
-    multi_val_bin_.reset(dataset->TestMultiThreadingMethod(ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
+    temp_state_.reset(dataset->TestMultiThreadingMethod(
+        ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
       is_constant_hessian_, config_->force_col_wise, config_->force_row_wise, &is_hist_colwise_));
   } else {
     // cannot change is_hist_col_wise during training
-    multi_val_bin_.reset(dataset->TestMultiThreadingMethod(ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
+    temp_state_.reset(dataset->TestMultiThreadingMethod(
+        ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
       is_constant_hessian_, is_hist_colwise_, !is_hist_colwise_, &is_hist_colwise_));
   }
 }
 
+// Todo: optimized bagging for multi-val bin
 void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
@@ -288,7 +291,7 @@ void SerialTreeLearner::BeforeTrain() {
       is_feature_used_[i] = 1;
     }
   }
-
+  train_data_->InitTrain(is_feature_used_, is_hist_colwise_, temp_state_.get());
   // initialize data partition
   data_partition_->Init();
 
@@ -375,22 +378,21 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
   Common::FunctionTimer fun_timer("SerialTreeLearner::ConstructHistograms", global_timer);
   // construct smaller leaf
   hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
-  train_data_->ConstructHistograms(is_feature_used,
-                                   smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
-                                   gradients_, hessians_,
-                                   ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-                                   multi_val_bin_.get(), is_hist_colwise_,
-                                   ptr_smaller_leaf_hist_data);
+  train_data_->ConstructHistograms(
+      is_feature_used, smaller_leaf_splits_->data_indices(),
+      smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
+      ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
+      is_hist_colwise_, temp_state_.get(), ptr_smaller_leaf_hist_data);
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
     hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - kHistOffset;
-    train_data_->ConstructHistograms(is_feature_used,
-                                     larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
-                                     gradients_, hessians_,
-                                     ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-                                     multi_val_bin_.get(), is_hist_colwise_,
-                                     ptr_larger_leaf_hist_data);
+    train_data_->ConstructHistograms(
+        is_feature_used, larger_leaf_splits_->data_indices(),
+        larger_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
+        ordered_gradients_.data(), ordered_hessians_.data(),
+        is_constant_hessian_, is_hist_colwise_, temp_state_.get(),
+        ptr_larger_leaf_hist_data);
   }
 }
 
