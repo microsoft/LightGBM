@@ -219,7 +219,6 @@ struct Config {
   // desc = enabling this is recommended when:
   // descl2 = the number of columns is large, or the total number of bins is large
   // descl2 = ``num_threads`` is large, e.g. ``>20``
-  // descl2 = you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
   // descl2 = you want to reduce memory cost
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
