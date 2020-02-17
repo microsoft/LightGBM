@@ -119,7 +119,7 @@ class DataPartition {
     const data_size_t begin = leaf_begin_[leaf];
     const data_size_t cnt = leaf_count_[leaf];
     auto left_start = indices_.data() + begin;
-
+    global_timer.Start("DataPartition::Split.MT");
     int nblock = Threading::For<data_size_t>(
         0, cnt, 1024,
         [&](int i, data_size_t cur_start, data_size_t cur_end) {
