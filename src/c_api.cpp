@@ -1420,17 +1420,18 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     }
   }
   std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun =
-    [&iterators, ncol] (int i) {
-    std::vector<std::pair<int, double>> one_row;
-    const int tid = omp_get_thread_num();
-    for (int j = 0; j < ncol; ++j) {
-      auto val = iterators[tid][j].Get(i);
-      if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        one_row.emplace_back(j, val);
-      }
-    }
-    return one_row;
-  };
+      [&iterators, ncol](int i) {
+        std::vector<std::pair<int, double>> one_row;
+        one_row.reserve(ncol);
+        const int tid = omp_get_thread_num();
+        for (int j = 0; j < ncol; ++j) {
+          auto val = iterators[tid][j].Get(i);
+          if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
+            one_row.emplace_back(j, val);
+          }
+        }
+        return one_row;
+      };
   ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
                        out_result, out_len);
   API_END();
@@ -1628,7 +1629,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(tmp_ptr + i));
         }
-        return ret;
+        return std::move(ret);
       };
     } else {
       return [&] (int row_idx) {
@@ -1636,7 +1637,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
         }
-        return ret;
+        return std::move(ret);
       };
     }
   } else if (data_type == C_API_DTYPE_FLOAT64) {
@@ -1648,7 +1649,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(tmp_ptr + i));
         }
-        return ret;
+        return std::move(ret);
       };
     } else {
       return [&] (int row_idx) {
@@ -1656,7 +1657,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
         }
-        return ret;
+        return std::move(ret);
       };
     }
   }
@@ -1670,12 +1671,13 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
     return [inner_function] (int row_idx) {
       auto raw_values = inner_function(row_idx);
       std::vector<std::pair<int, double>> ret;
+      ret.reserve(raw_values.size());
       for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
         if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
           ret.emplace_back(i, raw_values[i]);
         }
       }
-      return ret;
+      return std::move(ret);
     };
   }
   return nullptr;
@@ -1688,12 +1690,13 @@ RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
     auto inner_function = RowFunctionFromDenseMatric(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
     auto raw_values = inner_function(0);
     std::vector<std::pair<int, double>> ret;
+    ret.reserve(raw_values.size());
     for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
       if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
         ret.emplace_back(i, raw_values[i]);
       }
     }
-    return ret;
+    return std::move(ret);
   };
 }
 
@@ -1713,7 +1716,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         for (int64_t i = start; i < end; ++i) {
           ret.emplace_back(indices[i], data_ptr[i]);
         }
-        return ret;
+        return std::move(ret);
       };
     } else if (indptr_type == C_API_DTYPE_INT64) {
       const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
@@ -1727,7 +1730,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         for (int64_t i = start; i < end; ++i) {
           ret.emplace_back(indices[i], data_ptr[i]);
         }
-        return ret;
+        return std::move(ret);
       };
     }
   } else if (data_type == C_API_DTYPE_FLOAT64) {
@@ -1744,7 +1747,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         for (int64_t i = start; i < end; ++i) {
           ret.emplace_back(indices[i], data_ptr[i]);
         }
-        return ret;
+        return std::move(ret);
       };
     } else if (indptr_type == C_API_DTYPE_INT64) {
       const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
@@ -1758,7 +1761,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         for (int64_t i = start; i < end; ++i) {
           ret.emplace_back(indices[i], data_ptr[i]);
         }
-        return ret;
+        return std::move(ret);
       };
     }
   }
