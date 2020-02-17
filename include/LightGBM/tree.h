@@ -60,7 +60,7 @@ class Tree {
   int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
             double threshold_double, double left_value, double right_value,
             int left_cnt, int right_cnt, double left_weight, double right_weight,
-            float gain, MissingType missing_type, bool default_left);
+            float gain, MissingType missing_type, bool default_left, bool feature_is_monotone);
 
   /*!
   * \brief Performing a split on tree leaves, with categorical feature
@@ -134,6 +134,28 @@ class Tree {
   inline int PredictLeafIndex(const double* feature_values) const;
   inline int PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const;
 
+<<<<<<< HEAD
+=======
+  // Get node parent
+  inline int node_parent(int node_idx) const;
+  // Get leaf parent
+  inline int leaf_parent(int node_idx) const;
+
+  // Get children
+  inline int left_child(int node_idx) const;
+  inline int right_child(int node_idx) const;
+
+  // Get if the feature is in a monotone subtree
+  inline bool leaf_is_in_monotone_subtree(int leaf_idx) const;
+
+  inline double internal_value(int node_idx) const;
+
+  inline uint32_t threshold_in_bin(int node_idx) const;
+
+  // Get the feature corresponding to the split
+  inline int split_feature_inner(int node_idx) const;
+
+>>>>>>> Add util functions.
   inline void PredictContrib(const double* feature_values, int num_features, double* output);
 
   /*! \brief Get Number of leaves*/
@@ -326,7 +348,7 @@ class Tree {
   }
 
   inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value, int left_cnt, int right_cnt,
-                    double left_weight, double right_weight, float gain);
+                    double left_weight, double right_weight, float gain, bool feature_is_monotone);
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -425,12 +447,22 @@ class Tree {
   std::vector<int> leaf_depth_;
   double shrinkage_;
   int max_depth_;
+  // add parent node information
+  std::vector<int> node_parent_;
+  // Keeps track of the monotone splits above the leaf
+  std::vector<bool> leaf_is_in_monotone_subtree_;
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
                         double left_value, double right_value, int left_cnt, int right_cnt,
-                        double left_weight, double right_weight, float gain) {
+                        double left_weight, double right_weight, float gain, bool feature_is_monotone) {
   int new_node_idx = num_leaves_ - 1;
+
+  // Update if there is a monotone split above the leaf
+  if (feature_is_monotone || leaf_is_in_monotone_subtree_[leaf]) {
+    leaf_is_in_monotone_subtree_[leaf] = true;
+    leaf_is_in_monotone_subtree_[num_leaves_] = true;
+  }
   // update parent info
   int parent = leaf_parent_[leaf];
   if (parent >= 0) {
@@ -444,6 +476,7 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   // add new node
   split_feature_inner_[new_node_idx] = feature;
   split_feature_[new_node_idx] = real_feature;
+  node_parent_[new_node_idx] = parent;
 
   split_gain_[new_node_idx] = gain;
   // add two new leaves
@@ -550,6 +583,41 @@ inline int Tree::GetLeafByMap(const std::unordered_map<int, double>& feature_val
     }
   }
   return ~node;
+}
+
+inline int Tree::node_parent(int node_idx) const{
+    return node_parent_[node_idx];
+}
+
+inline int Tree::left_child(int node_idx) const{
+    return left_child_[node_idx];
+}
+
+inline int Tree::right_child(int node_idx) const{
+    return right_child_[node_idx];
+}
+
+inline int Tree::split_feature_inner(int node_idx) const{
+    return split_feature_inner_[node_idx];
+}
+
+inline int Tree::leaf_parent(int node_idx) const{
+    return leaf_parent_[node_idx];
+}
+
+inline uint32_t Tree::threshold_in_bin(int node_idx) const{
+    #ifdef DEBUG
+    CHECK(node_idx >= 0);
+    #endif
+    return threshold_in_bin_[node_idx];
+}
+
+inline bool Tree::leaf_is_in_monotone_subtree(int leaf_idx) const {
+    return leaf_is_in_monotone_subtree_[leaf_idx];
+}
+
+inline double Tree::internal_value(int node_idx) const {
+    return internal_value_[node_idx];
 }
 
 
