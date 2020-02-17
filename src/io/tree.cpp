@@ -208,7 +208,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
 
 double Tree::GetUpperBoundValue() const {
   double upper_bound = leaf_value_[0];
-  for (auto i = 1; i < num_leaves_; i++) {
+  for (int i = 1; i < num_leaves_; ++i) {
     if (leaf_value_[i] > upper_bound) {
       upper_bound = leaf_value_[i];
     }
