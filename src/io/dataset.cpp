@@ -1335,8 +1335,12 @@ void Dataset::ConstructHistogramsMultiVal(
   const int num_bin = multi_val_bin->num_bin();
   const int num_bin_aligned =
       (num_bin + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+  int n_data_block = 1;
+  int data_block_size = num_data;
+  Threading::BlockInfo<data_size_t>(num_threads, num_data, 1024,
+                                      &n_data_block, &data_block_size);
   const size_t buf_size =
-      static_cast<size_t>(num_threads - 1) * num_bin_aligned * 2;
+      static_cast<size_t>(n_data_block - 1) * num_bin_aligned * 2;
   if (temp_state->hist_buf.size() < buf_size) {
     temp_state->hist_buf.resize(buf_size);
   }
@@ -1344,59 +1348,69 @@ void Dataset::ConstructHistogramsMultiVal(
   if (temp_state->use_subfeature) {
     hist_data = temp_state->TempBuf();
   }
-  int n_data_block = Threading::For<data_size_t>(
-      0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
-        auto data_ptr = hist_data;
-        if (tid > 0) {
-          data_ptr = temp_state->hist_buf.data() +
-                     static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
-        }
-        std::memset(reinterpret_cast<void*>(data_ptr), 0,
-                    num_bin * kHistEntrySize);
-        if (data_indices != nullptr && num_data < num_data_) {
-          if (!is_constant_hessian) {
-            multi_val_bin->ConstructHistogram(data_indices, start, end,
-                                              gradients, hessians, data_ptr);
-          } else {
-            multi_val_bin->ConstructHistogram(data_indices, start, end,
-                                              gradients, data_ptr);
-          }
-        } else {
-          if (!is_constant_hessian) {
-            multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
-                                              data_ptr);
-          } else {
-            multi_val_bin->ConstructHistogram(start, end, gradients, data_ptr);
-          }
-        }
-      });
+#pragma omp parallel for schedule(static)
+  for (int tid = 0; tid < n_data_block; ++tid) {
+    data_size_t start = tid * data_block_size;
+    data_size_t end = std::min(start + data_block_size, num_data);
+    auto data_ptr = hist_data;
+    if (tid > 0) {
+      data_ptr = temp_state->hist_buf.data() +
+                 static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
+    }
+    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistEntrySize);
+    if (data_indices != nullptr && num_data < num_data_) {
+      if (!is_constant_hessian) {
+        multi_val_bin->ConstructHistogram(data_indices, start, end, gradients,
+                                          hessians, data_ptr);
+      } else {
+        multi_val_bin->ConstructHistogram(data_indices, start, end, gradients,
+                                          data_ptr);
+      }
+    } else {
+      if (!is_constant_hessian) {
+        multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
+                                          data_ptr);
+      } else {
+        multi_val_bin->ConstructHistogram(start, end, gradients, data_ptr);
+      }
+    }
+  }
   global_timer.Stop("Dataset::sparse_bin_histogram");
+
   global_timer.Start("Dataset::sparse_bin_histogram_merge");
+  int n_bin_block = 1;
+  int bin_block_size = num_bin;
+  Threading::BlockInfo<data_size_t>(num_threads, num_bin, 512, &n_bin_block,
+                                      &bin_block_size);
   if (!is_constant_hessian) {
-    Threading::For<data_size_t>(
-        0, num_bin, 512, [&](int, data_size_t start, data_size_t end) {
-          for (int tid = 1; tid < n_data_block; ++tid) {
-            auto src_ptr = temp_state->hist_buf.data() +
-                           static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
-            for (int i = start * 2; i < end * 2; ++i) {
-              hist_data[i] += src_ptr[i];
-            }
-          }
-        });
+#pragma omp parallel for schedule(static)
+    for (int t = 0; t < n_bin_block; ++t) {
+      const int start = t * bin_block_size;
+      const int end = std::min(start + bin_block_size, num_bin);
+      for (int tid = 1; tid < n_data_block; ++tid) {
+        auto src_ptr = temp_state->hist_buf.data() +
+                       static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
+        for (int i = start * 2; i < end * 2; ++i) {
+          hist_data[i] += src_ptr[i];
+        }
+      }
+    }
   } else {
-    Threading::For<data_size_t>(
-        0, num_bin, 512, [&](int, data_size_t start, data_size_t end) {
-          for (int tid = 1; tid < n_data_block; ++tid) {
-            auto src_ptr = temp_state->hist_buf.data() +
-                           static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
-            for (int i = start * 2; i < end * 2; ++i) {
-              hist_data[i] += src_ptr[i];
-            }
-          }
-          for (int i = start; i < end; ++i) {
-            GET_HESS(hist_data, i) = GET_HESS(hist_data, i) * hessians[0];
-          }
-        });
+#pragma omp parallel for schedule(static)
+    for (int t = 0; t < n_bin_block; ++t) {
+      const int start = t * bin_block_size;
+      const int end = std::min(start + bin_block_size, num_bin);
+      for (int tid = 1; tid < n_data_block; ++tid) {
+        auto src_ptr = temp_state->hist_buf.data() +
+                       static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
+        for (int i = start * 2; i < end * 2; ++i) {
+          hist_data[i] += src_ptr[i];
+        }
+      }
+      for (int i = start; i < end; ++i) {
+        GET_HESS(hist_data, i) = GET_HESS(hist_data, i) * hessians[0];
+      }
+    }
   }
   global_timer.Stop("Dataset::sparse_bin_histogram_merge");
   global_timer.Start("Dataset::sparse_bin_histogram_move");

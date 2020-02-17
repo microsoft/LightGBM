@@ -14,19 +14,43 @@ namespace LightGBM {
 
 class Threading {
  public:
-  template<typename INDEX_T>
+  template <typename INDEX_T>
+  static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block,
+                                 int* out_nblock, INDEX_T* block_size) {
+    int num_threads = 1;
+#pragma omp parallel
+#pragma omp master
+    { num_threads = omp_get_num_threads(); }
+    *out_nblock = std::min<int>(
+        num_threads,
+        static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
+    if (*out_nblock > 1) {
+      *block_size =
+          SIZE_ALIGNED((cnt + (*out_nblock) - 1) / (*out_nblock));
+    } else {
+      *block_size = cnt;
+    }
+  }
+  template <typename INDEX_T>
+  static inline void BlockInfo(int num_threads, INDEX_T cnt,
+                                 INDEX_T min_cnt_per_block, int* out_nblock,
+                                 INDEX_T* block_size) {
+    *out_nblock = std::min<int>(
+        num_threads,
+        static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
+    if (*out_nblock > 1) {
+      *block_size = SIZE_ALIGNED((cnt + (*out_nblock) - 1) / (*out_nblock));
+    } else {
+      *block_size = cnt;
+    }
+  }
+  template <typename INDEX_T>
   static inline INDEX_T For(
       INDEX_T start, INDEX_T end,
       INDEX_T min_block_size, const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
-    int num_threads = 1;
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads = omp_get_num_threads();
-    }
-    int n_block = std::min<int>(
-        num_threads, (end - start + min_block_size - 1) / min_block_size);
-    INDEX_T num_inner = SIZE_ALIGNED((end - start + n_block - 1) / n_block);
+    int n_block = 1;
+    INDEX_T num_inner = end - start;
+    BlockInfo<INDEX_T>(end - start, min_block_size, &n_block, &num_inner);
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < n_block; ++i) {
