@@ -1348,8 +1348,10 @@ void Dataset::ConstructHistogramsMultiVal(
   if (temp_state->use_subfeature) {
     hist_data = temp_state->TempBuf();
   }
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int tid = 0; tid < n_data_block; ++tid) {
+    OMP_LOOP_EX_BEGIN();
     data_size_t start = tid * data_block_size;
     data_size_t end = std::min(start + data_block_size, num_data);
     auto data_ptr = hist_data;
@@ -1374,7 +1376,9 @@ void Dataset::ConstructHistogramsMultiVal(
         multi_val_bin->ConstructHistogram(start, end, gradients, data_ptr);
       }
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   global_timer.Stop("Dataset::sparse_bin_histogram");
 
   global_timer.Start("Dataset::sparse_bin_histogram_merge");
