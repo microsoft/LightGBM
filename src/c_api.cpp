@@ -357,7 +357,7 @@ class Booster {
     return boosting_->FeatureImportance(num_iteration, importance_type);
   }
 
-  double UpperBoundValue() const  {
+  double UpperBoundValue() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return boosting_->GetUpperBoundValue();
   }
