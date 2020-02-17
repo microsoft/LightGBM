@@ -202,8 +202,6 @@ Learning Control Parameters
 
       -  ``num_threads`` is large, e.g. ``>20``
 
-      -  you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
-
       -  you want to reduce memory cost
 
    -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
