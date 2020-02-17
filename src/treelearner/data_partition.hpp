@@ -121,7 +121,7 @@ class DataPartition {
     auto left_start = indices_.data() + begin;
 
     int nblock = Threading::For<data_size_t>(
-        0, num_data_, 1024,
+        0, cnt, 1024,
         [&](int i, data_size_t cur_start, data_size_t cur_end) {
 
           data_size_t cur_cnt = cur_end - cur_start;
