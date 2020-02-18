@@ -157,22 +157,26 @@ class MultiValDenseBin : public MultiValBin {
                       const std::vector<uint32_t>& delta) override {
     const auto other =
         reinterpret_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
-    Threading::For<data_size_t>(
-        0, num_data_, 1024, [&](int, data_size_t start, data_size_t end) {
-          for (data_size_t i = start; i < end; ++i) {
-            const auto j_start = RowPtr(i);
-            const auto other_j_start = other->RowPtr(i);
-            for (int j = 0; j < num_feature_; ++j) {
-              if (other->data_[other_j_start + used_feature_index[j]] > 0) {
-                data_[j_start + j] = static_cast<VAL_T>(
-                    other->data_[other_j_start + used_feature_index[j]] -
-                    delta[j]);
-              } else {
-                data_[j_start + j] = 0;
-              }
-            }
+    int n_block = 1;
+    data_size_t block_size = num_data_;
+    Threading::BlockInfo<data_size_t>(num_data_, 1024, &n_block, &block_size);
+#pragma omp parallel for schedule(static, 1)
+    for (int tid = 0; tid < n_block; ++tid) {
+      data_size_t start = tid * block_size;
+      data_size_t end = std::min(num_data_, start + block_size);
+      for (data_size_t i = start; i < end; ++i) {
+        const auto j_start = RowPtr(i);
+        const auto other_j_start = other->RowPtr(i);
+        for (int j = 0; j < num_feature_; ++j) {
+          if (other->data_[other_j_start + used_feature_index[j]] > 0) {
+            data_[j_start + j] = static_cast<VAL_T>(
+                other->data_[other_j_start + used_feature_index[j]] - delta[j]);
+          } else {
+            data_[j_start + j] = 0;
           }
-        });
+        }
+      }
+    }
   }
 
   inline int64_t RowPtr(data_size_t idx) const {

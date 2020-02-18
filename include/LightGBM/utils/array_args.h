@@ -28,9 +28,9 @@ class ArrayArgs {
       num_threads = omp_get_num_threads();
     }
     std::vector<size_t> arg_maxs(num_threads, 0);
-    size_t n_blocks = Threading::For<size_t>(
+    int n_blocks = Threading::For<size_t>(
         0, array.size(), 1024,
-        [&](int i, size_t start, size_t end) {
+        [&array, &arg_maxs](int i, size_t start, size_t end) {
           size_t arg_max = start;
           for (size_t j = start + 1; j < end; ++j) {
             if (array[j] > array[arg_max]) {
@@ -40,7 +40,7 @@ class ArrayArgs {
           arg_maxs[i] = arg_max;
         });
     size_t ret = arg_maxs[0];
-    for (size_t i = 1; i < n_blocks; ++i) {
+    for (int i = 1; i < n_blocks; ++i) {
       if (array[arg_maxs[i]] > array[ret]) {
         ret = arg_maxs[i];
       }

@@ -1420,17 +1420,18 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     }
   }
   std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun =
-    [&iterators, ncol] (int i) {
-    std::vector<std::pair<int, double>> one_row;
-    const int tid = omp_get_thread_num();
-    for (int j = 0; j < ncol; ++j) {
-      auto val = iterators[tid][j].Get(i);
-      if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        one_row.emplace_back(j, val);
-      }
-    }
-    return one_row;
-  };
+      [&iterators, ncol](int i) {
+        std::vector<std::pair<int, double>> one_row;
+        one_row.reserve(ncol);
+        const int tid = omp_get_thread_num();
+        for (int j = 0; j < ncol; ++j) {
+          auto val = iterators[tid][j].Get(i);
+          if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
+            one_row.emplace_back(j, val);
+          }
+        }
+        return one_row;
+      };
   ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
                        out_result, out_len);
   API_END();
@@ -1622,7 +1623,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
   if (data_type == C_API_DTYPE_FLOAT32) {
     const float* data_ptr = reinterpret_cast<const float*>(data);
     if (is_row_major) {
-      return [&] (int row_idx) {
+      return [=] (int row_idx) {
         std::vector<double> ret(num_col);
         auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
         for (int i = 0; i < num_col; ++i) {
@@ -1631,7 +1632,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         return ret;
       };
     } else {
-      return [&] (int row_idx) {
+      return [=] (int row_idx) {
         std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
@@ -1642,7 +1643,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
   } else if (data_type == C_API_DTYPE_FLOAT64) {
     const double* data_ptr = reinterpret_cast<const double*>(data);
     if (is_row_major) {
-      return [&] (int row_idx) {
+      return [=] (int row_idx) {
         std::vector<double> ret(num_col);
         auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
         for (int i = 0; i < num_col; ++i) {
@@ -1651,7 +1652,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         return ret;
       };
     } else {
-      return [&] (int row_idx) {
+      return [=] (int row_idx) {
         std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
@@ -1670,6 +1671,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
     return [inner_function] (int row_idx) {
       auto raw_values = inner_function(row_idx);
       std::vector<std::pair<int, double>> ret;
+      ret.reserve(raw_values.size());
       for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
         if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
           ret.emplace_back(i, raw_values[i]);
@@ -1684,10 +1686,11 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 // data is array of pointers to individual rows
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
-  return [&](int row_idx) {
+  return [=](int row_idx) {
     auto inner_function = RowFunctionFromDenseMatric(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
     auto raw_values = inner_function(0);
     std::vector<std::pair<int, double>> ret;
+    ret.reserve(raw_values.size());
     for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
       if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
         ret.emplace_back(i, raw_values[i]);
@@ -1703,7 +1706,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
     const float* data_ptr = reinterpret_cast<const float*>(data);
     if (indptr_type == C_API_DTYPE_INT32) {
       const int32_t* ptr_indptr = reinterpret_cast<const int32_t*>(indptr);
-      return [&] (int idx) {
+      return [=] (int idx) {
         std::vector<std::pair<int, double>> ret;
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
@@ -1717,7 +1720,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
       };
     } else if (indptr_type == C_API_DTYPE_INT64) {
       const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
-      return [&] (int idx) {
+      return [=] (int idx) {
         std::vector<std::pair<int, double>> ret;
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
@@ -1734,7 +1737,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
     const double* data_ptr = reinterpret_cast<const double*>(data);
     if (indptr_type == C_API_DTYPE_INT32) {
       const int32_t* ptr_indptr = reinterpret_cast<const int32_t*>(indptr);
-      return [&] (int idx) {
+      return [=] (int idx) {
         std::vector<std::pair<int, double>> ret;
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
@@ -1748,7 +1751,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
       };
     } else if (indptr_type == C_API_DTYPE_INT64) {
       const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
-      return [&] (int idx) {
+      return [=] (int idx) {
         std::vector<std::pair<int, double>> ret;
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
@@ -1774,7 +1777,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
-      return [&] (int offset) {
+      return [=] (int offset) {
         int64_t i = static_cast<int64_t>(start + offset);
         if (i >= end) {
           return std::make_pair(-1, 0.0);
@@ -1787,7 +1790,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
-      return [&] (int offset) {
+      return [=] (int offset) {
         int64_t i = static_cast<int64_t>(start + offset);
         if (i >= end) {
           return std::make_pair(-1, 0.0);
@@ -1803,7 +1806,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
-      return [&] (int offset) {
+      return [=] (int offset) {
         int64_t i = static_cast<int64_t>(start + offset);
         if (i >= end) {
           return std::make_pair(-1, 0.0);
@@ -1816,7 +1819,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
-      return [&] (int offset) {
+      return [=] (int offset) {
         int64_t i = static_cast<int64_t>(start + offset);
         if (i >= end) {
           return std::make_pair(-1, 0.0);

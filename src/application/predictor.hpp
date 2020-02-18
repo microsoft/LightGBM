@@ -66,7 +66,9 @@ class Predictor {
     const int kFeatureThreshold = 100000;
     const size_t KSparseThreshold = static_cast<size_t>(0.01 * num_feature_);
     if (predict_leaf_index) {
-      predict_fun_ = [&](const std::vector<std::pair<int, double>>& features, double* output) {
+      predict_fun_ = [kFeatureThreshold, KSparseThreshold, this](
+                         const std::vector<std::pair<int, double>>& features,
+                         double* output) {
         int tid = omp_get_thread_num();
         if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
           auto buf = CopyToPredictMap(features);
@@ -79,7 +81,8 @@ class Predictor {
         }
       };
     } else if (predict_contrib) {
-        predict_fun_ = [&](const std::vector<std::pair<int, double>>& features, double* output) {
+      predict_fun_ = [this](const std::vector<std::pair<int, double>>& features,
+                            double* output) {
           int tid = omp_get_thread_num();
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
           // get result for leaf index
@@ -88,7 +91,9 @@ class Predictor {
         };
     } else {
       if (is_raw_score) {
-        predict_fun_ = [&](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [kFeatureThreshold, KSparseThreshold, this](
+                           const std::vector<std::pair<int, double>>& features,
+                           double* output) {
           int tid = omp_get_thread_num();
           if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
@@ -100,7 +105,9 @@ class Predictor {
           }
         };
       } else {
-        predict_fun_ = [&](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [kFeatureThreshold, KSparseThreshold, this](
+                           const std::vector<std::pair<int, double>>& features,
+                           double* output) {
           int tid = omp_get_thread_num();
           if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
@@ -176,7 +183,7 @@ class Predictor {
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
     double tmp_label;
-    parser_fun = [&]
+    parser_fun = [&parser, &feature_remapper, &tmp_label, need_adjust]
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
       if (need_adjust) {
@@ -194,8 +201,9 @@ class Predictor {
       }
     };
 
-    std::function<void(data_size_t, const std::vector<std::string>&)> process_fun = [&]
-    (data_size_t, const std::vector<std::string>& lines) {
+    std::function<void(data_size_t, const std::vector<std::string>&)>
+        process_fun = [&parser_fun, &writer, this](
+                          data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> result_to_write(lines.size());
       OMP_INIT_EX();

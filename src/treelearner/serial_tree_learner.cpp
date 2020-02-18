@@ -396,8 +396,10 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
   }
 }
 
-void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
-  Common::FunctionTimer fun_timer("SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
+void SerialTreeLearner::FindBestSplitsFromHistograms(
+    const std::vector<int8_t>& is_feature_used, bool use_subtract) {
+  Common::FunctionTimer fun_timer(
+      "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
   std::vector<int8_t> smaller_node_used_features(num_features_, 1);
@@ -407,15 +409,18 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
     larger_node_used_features = GetUsedFeatures(false);
   }
   OMP_INIT_EX();
-  // find splits
-  #pragma omp parallel for schedule(static)
+// find splits
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
-    if (!is_feature_used[feature_index]) { continue; }
+    if (!is_feature_used[feature_index]) {
+      continue;
+    }
     const int tid = omp_get_thread_num();
-    train_data_->FixHistogram(feature_index,
-                              smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
-                              smaller_leaf_histogram_array_[feature_index].RawData());
+    train_data_->FixHistogram(
+        feature_index, smaller_leaf_splits_->sum_gradients(),
+        smaller_leaf_splits_->sum_hessians(),
+        smaller_leaf_histogram_array_[feature_index].RawData());
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
 
     ComputeBestSplitForFeature(smaller_leaf_histogram_array_, feature_index,
@@ -425,21 +430,26 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
                                smaller_leaf_splits_.get(), &smaller_best[tid]);
 
     // only has root leaf
-    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->leaf_index() < 0) { continue; }
+    if (larger_leaf_splits_ == nullptr ||
+        larger_leaf_splits_->leaf_index() < 0) {
+      continue;
+    }
 
     if (use_subtract) {
-      larger_leaf_histogram_array_[feature_index].Subtract(smaller_leaf_histogram_array_[feature_index]);
+      larger_leaf_histogram_array_[feature_index].Subtract(
+          smaller_leaf_histogram_array_[feature_index]);
     } else {
-      train_data_->FixHistogram(feature_index, larger_leaf_splits_->sum_gradients(), larger_leaf_splits_->sum_hessians(),
-                                larger_leaf_histogram_array_[feature_index].RawData());
+      train_data_->FixHistogram(
+          feature_index, larger_leaf_splits_->sum_gradients(),
+          larger_leaf_splits_->sum_hessians(),
+          larger_leaf_histogram_array_[feature_index].RawData());
     }
 
     ComputeBestSplitForFeature(larger_leaf_histogram_array_, feature_index,
                                real_fidx,
                                larger_node_used_features[feature_index],
                                larger_leaf_splits_->num_data_in_leaf(),
-                               larger_leaf_splits_.get(),
-                               &larger_best[tid]);
+                               larger_leaf_splits_.get(), &larger_best[tid]);
 
     OMP_LOOP_EX_END();
   }
@@ -448,7 +458,8 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
   int leaf = smaller_leaf_splits_->leaf_index();
   best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];
 
-  if (larger_leaf_splits_ != nullptr && larger_leaf_splits_->leaf_index() >= 0) {
+  if (larger_leaf_splits_ != nullptr &&
+      larger_leaf_splits_->leaf_index() >= 0) {
     leaf = larger_leaf_splits_->leaf_index();
     auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best);
     best_split_per_leaf_[leaf] = larger_best[larger_best_idx];
