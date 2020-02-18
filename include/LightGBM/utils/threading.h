@@ -72,12 +72,13 @@ class Threading {
 #pragma omp master
     { num_threads = omp_get_num_threads(); }
     std::vector<std::vector<int>> groups(1);
-    std::vector<INDEX_T> group_sizes(1, 0);
-    INDEX_T rest_size = total_size;
+    groups.back().push_back(0);
+    std::vector<INDEX_T> group_sizes(1, size[0]);
+    INDEX_T avg_size = total_size / n;
+    INDEX_T rest_size = total_size - size[0];
     INDEX_T rest_group = n;
-    INDEX_T avg_size = rest_size / rest_group;
-    for (int i = 0; i < n; ++i) {
-      if (!groups.back().empty() && group_sizes.back() + size[i] > avg_size) {
+    for (int i = 1; i < n; ++i) {
+      if (group_sizes.back() + size[i] > avg_size) {
         groups.emplace_back();
         group_sizes.emplace_back(0);
         --rest_group;
