@@ -16,7 +16,7 @@ class Threading {
  public:
   template <typename INDEX_T>
   static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block,
-                                 int* out_nblock, INDEX_T* block_size) {
+                               int* out_nblock, INDEX_T* block_size) {
     int num_threads = 1;
 #pragma omp parallel
 #pragma omp master
@@ -33,8 +33,8 @@ class Threading {
   }
   template <typename INDEX_T>
   static inline void BlockInfo(int num_threads, INDEX_T cnt,
-                                 INDEX_T min_cnt_per_block, int* out_nblock,
-                                 INDEX_T* block_size) {
+                               INDEX_T min_cnt_per_block, int* out_nblock,
+                               INDEX_T* block_size) {
     *out_nblock = std::min<int>(
         num_threads,
         static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
@@ -45,7 +45,7 @@ class Threading {
     }
   }
   template <typename INDEX_T>
-  static inline INDEX_T For(
+  static inline int For(
       INDEX_T start, INDEX_T end,
       INDEX_T min_block_size, const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
     int n_block = 1;

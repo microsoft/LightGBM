@@ -158,17 +158,23 @@ std::unordered_map<std::string, hdfsFS> HDFSFile::fs_cache_ = std::unordered_map
 #define WITH_HDFS(x) Log::Fatal("HDFS support is not enabled")
 #endif  // USE_HDFS
 
-std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(const std::string& filename) {
+std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(
+    const std::string& filename) {
   if (0 == filename.find(kHdfsProto)) {
-    WITH_HDFS(return std::unique_ptr<VirtualFileReader>(new HDFSFile(filename, O_RDONLY)));
+    WITH_HDFS(return std::unique_ptr<VirtualFileReader>(
+        new HDFSFile(filename, O_RDONLY)));
+    return nullptr;
   } else {
     return std::unique_ptr<VirtualFileReader>(new LocalFile(filename, "rb"));
   }
 }
 
-std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(const std::string& filename) {
+std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(
+    const std::string& filename) {
   if (0 == filename.find(kHdfsProto)) {
-    WITH_HDFS(return std::unique_ptr<VirtualFileWriter>(new HDFSFile(filename, O_WRONLY)));
+    WITH_HDFS(return std::unique_ptr<VirtualFileWriter>(
+        new HDFSFile(filename, O_WRONLY)));
+    return nullptr;
   } else {
     return std::unique_ptr<VirtualFileWriter>(new LocalFile(filename, "wb"));
   }
@@ -177,9 +183,10 @@ std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(const std::string& fi
 bool VirtualFileWriter::Exists(const std::string& filename) {
   if (0 == filename.find(kHdfsProto)) {
     WITH_HDFS(HDFSFile file(filename, O_RDONLY); return file.Exists());
+    return nullptr;
   } else {
-      LocalFile file(filename, "rb");
-      return file.Exists();
+    LocalFile file(filename, "rb");
+    return file.Exists();
   }
 }
 
