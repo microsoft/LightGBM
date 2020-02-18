@@ -618,13 +618,47 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     larger_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                               best_split_info.left_sum_gradient,
                               best_split_info.left_sum_hessian);
+
+  // constraints are updated differently depending on the method used
+  if (!config_->monotone_constraints.empty() &&
+      tree->leaf_is_in_monotone_subtree(*right_leaf)) {
+    if (config_->monotone_constraints_method == "basic") {
+      constraints_->UpdateConstraintsWithMid(
+          is_numerical_split, *left_leaf, *right_leaf,
+          best_split_info.monotone_type, best_split_info.right_output,
+          best_split_info.left_output);
+
+    } else if (config_->monotone_constraints_method == "intermediate") {
+      constraints_->UpdateConstraintsWithOutputs(
+          is_numerical_split, *left_leaf, *right_leaf,
+          best_split_info.monotone_type, best_split_info.right_output,
+          best_split_info.left_output);
+
+      LearnerState learner_state(config_, train_data_, tree, cegb_);
+
+      // if there is a monotone split above, new values should
+      // be checked not to clash with existing constraints in the subtree;
+      // if they do, the existing splits need to be updated
+      constraints_->GoUpToFindLeavesToUpdate(
+          tree->leaf_parent(*right_leaf), inner_feature_index, best_split_info,
+          best_split_info.threshold, best_split_per_leaf_, learner_state);
+
+      // Update splits that just got their constraints updated
+      while (!constraints_->leaves_to_update.empty()) {
+        int leaf_idx = constraints_->leaves_to_update.back();
+        UpdateBestSplitsFromHistograms(
+            &best_split_per_leaf_[leaf_idx], leaf_idx, is_feature_used_,
+            num_features_, histogram_pool_, learner_state);
+        constraints_->leaves_to_update.pop_back();
+      }
+    } else {
+      throw "monotone_constraints_methode has to be one of ('basic', "
+            "'intermediate')"; // FIXME improve how this exception is handled
+    }
   }
-  constraints_->UpdateConstraints(is_numerical_split, *left_leaf, *right_leaf,
-                                  best_split_info.monotone_type,
-                                  best_split_info.right_output,
-                                  best_split_info.left_output);
 }
 
+>>>>>>> Add the intermediate constraining method.
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                                         data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
@@ -685,6 +719,53 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   if (new_split > *best_split) {
     *best_split = new_split;
   }
+}
+
+
+// this function updates the best split for a leaf
+// it is called only when monotone constraints exist
+void SerialTreeLearner::UpdateBestSplitsFromHistograms(
+    SplitInfo *split, int leaf,
+    const std::vector<int8_t> &is_feature_used_,
+    int num_features_, HistogramPool &histogram_pool_,
+    LearnerState &learner_state) {
+  // the feature histogram is retrieved
+  FeatureHistogram *histogram_array_;
+  histogram_pool_.Get(leaf, &histogram_array_);
+  double sum_gradients = split->left_sum_gradient + split->right_sum_gradient;
+  double sum_hessians = split->left_sum_hessian + split->right_sum_hessian;
+  int num_data = split->left_count + split->right_count;
+  split->gain = kMinScore;
+
+  OMP_INIT_EX();
+#pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
+  for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    OMP_LOOP_EX_BEGIN();
+    // splits are computed for the feature that are to be used
+    if (!histogram_array_[feature_index].is_splittable()) {
+      continue;
+    }
+
+    // loop through the features to find the best one just like in the
+    // FindBestSplitsFromHistograms function
+    int real_fidx = learner_state.train_data_->RealFeatureIndex(feature_index);
+    LeafSplits *leaf_splits = new LeafSplits(0);
+    leaf_splits->Init(leaf, sum_gradients,
+                     sum_hessians);
+
+    // best split is updated
+    ComputeBestSplitForFeature(
+        histogram_array_,
+        feature_index,
+        real_fidx,
+        is_feature_used_[feature_index], // FIXME is this the right parameter to pass here?
+        num_data,
+        leaf_splits,
+        split);
+
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
 }
 
 }  // namespace LightGBM

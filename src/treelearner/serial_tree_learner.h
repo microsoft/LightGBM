@@ -122,6 +122,13 @@ class SerialTreeLearner: public TreeLearner {
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
+
+  void UpdateBestSplitsFromHistograms(
+      SplitInfo *split, int leaf, const std::vector<int8_t> &is_feature_used_,
+      int num_features_, HistogramPool &histogram_pool_,
+      LearnerState &learner_state);
+
+
   /*!
   * \brief Some initial works before training
   */

@@ -46,6 +46,19 @@ class LeafSplits {
   }
 
   /*!
+
+  * \brief Init split on current leaf on partial data.
+  * \param leaf Index of current leaf
+  * \param sum_gradients
+  * \param sum_hessians
+  */
+  void Init(int leaf, double sum_gradients, double sum_hessians) {
+    leaf_index_ = leaf;
+    sum_gradients_ = sum_gradients;
+    sum_hessians_ = sum_hessians;
+  }
+
+  /*!
   * \brief Init splits on current leaf, it will traverse all data to sum up the results
   * \param gradients
   * \param hessians
