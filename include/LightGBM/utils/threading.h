@@ -73,7 +73,8 @@ class Threading {
     std::vector<std::vector<int>> groups(num_threads, std::vector<int>());
     std::vector<INDEX_T> group_sizes(num_threads, 0);
     for (int i = 0; i < n; ++i) {
-      int cur_group = static_cast<int>(ArrayArgs<int>::ArgMin(group_sizes));
+      int cur_group =
+          static_cast<INDEX_T>(ArrayArgs<INDEX_T>::ArgMin(group_sizes));
       group_sizes[cur_group] += size[i];
       groups[cur_group].push_back(i);
     }
