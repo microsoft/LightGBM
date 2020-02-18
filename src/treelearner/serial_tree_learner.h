@@ -68,7 +68,7 @@ class SerialTreeLearner: public TreeLearner {
     if (tree->num_leaves() <= 1) { return; }
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
     Threading::BalancedFor<data_size_t>(
-        tree->num_leaves(), data_partition_->leaf_counts(), [&](int i) {
+        tree->num_leaves(), num_data_, data_partition_->leaf_counts(), [&](int i) {
           double output = static_cast<double>(tree->LeafOutput(i));
           data_size_t cnt_leaf_data = 0;
           auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);

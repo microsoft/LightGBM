@@ -64,19 +64,28 @@ class Threading {
     return n_block;
   }
   template <typename INDEX_T>
-  static inline void BalancedFor(int n, const std::vector<INDEX_T>& size,
+  static inline void BalancedFor(int n, INDEX_T total_size,
+                                 const std::vector<INDEX_T>& size,
                                  const std::function<void(int)>& inner_fun) {
     int num_threads = 1;
 #pragma omp parallel
 #pragma omp master
     { num_threads = omp_get_num_threads(); }
-    std::vector<std::vector<int>> groups(num_threads, std::vector<int>());
-    std::vector<INDEX_T> group_sizes(num_threads, 0);
+    std::vector<std::vector<int>> groups(1);
+    std::vector<INDEX_T> group_sizes(1, 0);
+    INDEX_T rest_size = total_size;
+    INDEX_T rest_group = n;
+    INDEX_T avg_size = rest_size / rest_group;
     for (int i = 0; i < n; ++i) {
-      int cur_group =
-          static_cast<INDEX_T>(ArrayArgs<INDEX_T>::ArgMin(group_sizes));
-      group_sizes[cur_group] += size[i];
-      groups[cur_group].push_back(i);
+      if (!groups.back().empty() && group_sizes.back() + size[i] > avg_size) {
+        groups.emplace_back();
+        group_sizes.emplace_back(0);
+        --rest_group;
+        avg_size = rest_size / rest_group;
+      }
+      group_sizes.back() += size[i];
+      groups.back().push_back(i);
+      rest_size -= size[i];
     }
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static, 1)
