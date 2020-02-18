@@ -1038,9 +1038,9 @@ class TestEngine(unittest.TestCase):
                 monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
                 non_monotone_x = np.column_stack((fixed_x, fixed_x, variable_x))
                 non_monotone_y = learner.predict(non_monotone_x)
-                if not (is_increasing(monotonically_increasing_y) and
-                        is_decreasing(monotonically_decreasing_y) and
-                        is_non_monotone(non_monotone_y)):
+                if not (is_increasing(monotonically_increasing_y)
+                        and is_decreasing(monotonically_decreasing_y)
+                        and is_non_monotone(non_monotone_y)):
                     return False
             return True
 
