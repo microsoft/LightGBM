@@ -995,45 +995,68 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(subset_data_3.get_data(), "lgb_train_data.bin")
         self.assertEqual(subset_data_4.get_data(), "lgb_train_data.bin")
 
-    def test_monotone_constraint(self):
+    # test if categorical features and monotone features can both be in a dataset without causing issues
+    def generate_trainset_for_monotone_constraints_tests(self):
+        number_of_dpoints = 3000
+        x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x3_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x = np.column_stack(
+            (x1_positively_correlated_with_y, x2_negatively_correlated_with_y, x3_negatively_correlated_with_y))
+        zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
+        scales = 10. * (np.random.random(6) + 0.5)
+        y = (scales[0] * x1_positively_correlated_with_y
+             + np.sin(scales[1] * np.pi * x1_positively_correlated_with_y)
+             - scales[2] * x2_negatively_correlated_with_y
+             - np.cos(scales[3] * np.pi * x2_negatively_correlated_with_y)
+             - scales[4] * x3_negatively_correlated_with_y
+             - np.cos(scales[5] * np.pi * x3_negatively_correlated_with_y)
+             + zs)
+        trainset = lgb.Dataset(x, label=y)
+        return trainset
+
+    def test_monotone_constraints(self):
         def is_increasing(y):
             return (np.diff(y) >= 0.0).all()
 
         def is_decreasing(y):
             return (np.diff(y) <= 0.0).all()
 
+        def is_non_monotone(y):
+            return (np.diff(y) < 0.0).any() and (np.diff(y) > 0.0).any()
+
         def is_correctly_constrained(learner):
-            n = 200
+            iterations = 10
+            n = 1000
             variable_x = np.linspace(0, 1, n).reshape((n, 1))
             fixed_xs_values = np.linspace(0, 1, n)
-            for i in range(n):
+            for i in range(iterations):
                 fixed_x = fixed_xs_values[i] * np.ones((n, 1))
-                monotonically_increasing_x = np.column_stack((variable_x, fixed_x))
+                monotonically_increasing_x = np.column_stack((variable_x, fixed_x, fixed_x))
                 monotonically_increasing_y = learner.predict(monotonically_increasing_x)
-                monotonically_decreasing_x = np.column_stack((fixed_x, variable_x))
+                monotonically_decreasing_x = np.column_stack((fixed_x, variable_x, fixed_x))
                 monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
-                if not (is_increasing(monotonically_increasing_y) and is_decreasing(monotonically_decreasing_y)):
+                non_monotone_x = np.column_stack((fixed_x, fixed_x, variable_x))
+                non_monotone_y = learner.predict(non_monotone_x)
+                if not (is_increasing(monotonically_increasing_y) and
+                        is_decreasing(monotonically_decreasing_y) and
+                        is_non_monotone(non_monotone_y)):
                     return False
             return True
 
-        number_of_dpoints = 2000
-        x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
-        x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
-        x = np.column_stack((x1_positively_correlated_with_y, x2_negatively_correlated_with_y))
-        zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
-        y = (5 * x1_positively_correlated_with_y
-             + np.sin(10 * np.pi * x1_positively_correlated_with_y)
-             - 5 * x2_negatively_correlated_with_y
-             - np.cos(10 * np.pi * x2_negatively_correlated_with_y)
-             + zs)
-        trainset = lgb.Dataset(x, label=y)
-        params = {
-            'min_data': 20,
-            'num_leaves': 20,
-            'monotone_constraints': '1,-1'
-        }
-        constrained_model = lgb.train(params, trainset)
-        self.assertTrue(is_correctly_constrained(constrained_model))
+        number_of_trials = 10
+        for _ in range(number_of_trials):
+            for monotone_constraints_method in ["basic", "intermediate"]:
+                trainset = self.generate_trainset_for_monotone_constraints_tests()
+                params = {
+                    'min_data': 20,
+                    'num_leaves': 20,
+                    'monotone_constraints': '1,-1,0',
+                    "monotone_constraints_method": monotone_constraints_method,
+                    "use_missing": False,
+                }
+                constrained_model = lgb.train(params, trainset)
+                self.assertTrue(is_correctly_constrained(constrained_model))
 
     def test_max_bin_by_feature(self):
         col1 = np.arange(0, 100)[:, np.newaxis]
