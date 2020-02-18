@@ -147,7 +147,7 @@ class TextReader {
   */
   INDEX_T ReadAllLines() {
     return ReadAllAndProcess(
-      [this](INDEX_T, const char* buffer, size_t size) {
+      [=](INDEX_T, const char* buffer, size_t size) {
       lines_.emplace_back(buffer, size);
     });
   }
@@ -172,9 +172,8 @@ class TextReader {
 
   INDEX_T SampleFromFile(Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
     INDEX_T cur_sample_cnt = 0;
-    return ReadAllAndProcess([&random, &cur_sample_cnt, sample_cnt,
-                              &out_sampled_data,
-                              this]
+    return ReadAllAndProcess([=, &random, &cur_sample_cnt,
+                              &out_sampled_data]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
@@ -210,9 +209,8 @@ class TextReader {
     INDEX_T cur_sample_cnt = 0;
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
-        [&filter_fun, &out_used_data_indices, &random, &cur_sample_cnt,
-         sample_cnt, &out_sampled_data,
-         this]
+        [=, &filter_fun, &out_used_data_indices, &random, &cur_sample_cnt,
+         &out_sampled_data]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx);
       if (is_used) { out_used_data_indices->push_back(line_idx); }
@@ -233,7 +231,7 @@ class TextReader {
 
   INDEX_T CountLine() {
     return ReadAllAndProcess(
-      [this](INDEX_T, const char*, size_t) {
+      [=](INDEX_T, const char*, size_t) {
     });
   }
 
