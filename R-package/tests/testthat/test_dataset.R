@@ -126,3 +126,80 @@ test_that("Dataset$new() should throw an error if 'predictor' is provided but of
     )
   }, regexp = "predictor must be a", fixed = TRUE)
 })
+
+test_that("Dataset$get_params() successfully returns parameters if you passed them", {
+  # note that this list uses one "main" parameter (feature_pre_filter) and one that
+  # is an alias (is_sparse), to check that aliases are handled correctly
+  params <- list(
+    "feature_pre_filter" = TRUE
+    , "is_sparse" = FALSE
+  )
+  ds <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , params = params
+  )
+  returned_params <- ds$get_params()
+  expect_true(methods::is(returned_params, "list"))
+  expect_identical(length(params), length(returned_params))
+  expect_identical(sort(names(params)), sort(names(returned_params)))
+  for (param_name in names(params)) {
+    expect_identical(params[[param_name]], returned_params[[param_name]])
+  }
+})
+
+test_that("Dataset$get_params() ignores irrelevant parameters", {
+  params <- list(
+    "feature_pre_filter" = TRUE
+    , "is_sparse" = FALSE
+    , "nonsense_parameter" = c(1.0, 2.0, 5.0)
+  )
+  ds <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , params = params
+  )
+  returned_params <- ds$get_params()
+  expect_false("nonsense_parameter" %in% names(returned_params))
+})
+
+test_that("Dataset$update_parameters() does nothing for empty inputs", {
+  ds <- lgb.Dataset(
+    test_data
+    , label = test_label
+  )
+  initial_params <- ds$get_params()
+  expect_identical(initial_params, list())
+
+  # update_params() should return "self" so it can be chained
+  res <- ds$update_params(
+    params = list()
+  )
+  expect_true(lgb.is.Dataset(res))
+
+  new_params <- ds$get_params()
+  expect_identical(new_params, initial_params)
+})
+
+test_that("Dataset$update_params() works correctly for recognized Dataset parameters", {
+  ds <- lgb.Dataset(
+    test_data
+    , label = test_label
+  )
+  initial_params <- ds$get_params()
+  expect_identical(initial_params, list())
+
+  new_params <- list(
+    "data_random_seed" = 708L
+    , "enable_bundle" = FALSE
+  )
+  res <- ds$update_params(
+    params = new_params
+  )
+  expect_true(lgb.is.Dataset(res))
+
+  updated_params <- ds$get_params()
+  for (param_name in names(new_params)) {
+    expect_identical(new_params[[param_name]], updated_params[[param_name]])
+  }
+})

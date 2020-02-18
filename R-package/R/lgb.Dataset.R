@@ -562,48 +562,10 @@ Dataset <- R6::R6Class(
     },
 
     get_params = function() {
-      keys <- c("bin_construct_sample_cnt",
-                "blacklist",
-                "bundle",
-                "categorical_column",
-                "categorical_feature",
-                "cat_column",
-                "cat_feature",
-                "data_random_seed",
-                "enable_bundle",
-                "enable_sparse",
-                "feature_pre_filter",
-                "forcedbins_filename",
-                "group",
-                "group_column",
-                "group_id",
-                "has_header",
-                "header",
-                "ignore_column",
-                "ignore_feature",
-                "is_enable_bundle",
-                "is_enable_sparse",
-                "is_pre_partition",
-                "is_sparse",
-                "label",
-                "label_column",
-                "max_bin",
-                "max_bin_by_feature",
-                "pre_partition",
-                "query",
-                "query_column",
-                "query_id",
-                "sparse",
-                "subsample_for_bin",
-                "two_round",
-                "two_round_loading",
-                "use_missing",
-                "weight",
-                "weight_column",
-                "zero_as_missing")
+      dataset_params <- unname(unlist(.DATASET_PARAMETERS()))
       ret <- list()
       for (param_key in names(private$params)) {
-        if (param_key %in% keys) {
+        if (param_key %in% dataset_params) {
           ret[[param_key]] <- private$params[[param_key]]
         }
       }
