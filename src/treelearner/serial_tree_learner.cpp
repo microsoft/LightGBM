@@ -406,44 +406,57 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
     smaller_node_used_features = GetUsedFeatures(false);
     larger_node_used_features = GetUsedFeatures(false);
   }
-  OMP_INIT_EX();
-  // find splits
-  #pragma omp parallel for schedule(static)
+  std::vector<int> used_indices;
+  std::vector<int> num_bins;
+  int num_used_feature = 0;
+  int num_toal_bin = 0;
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    OMP_LOOP_EX_BEGIN();
-    if (!is_feature_used[feature_index]) { continue; }
-    const int tid = omp_get_thread_num();
-    train_data_->FixHistogram(feature_index,
-                              smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
-                              smaller_leaf_histogram_array_[feature_index].RawData());
-    int real_fidx = train_data_->RealFeatureIndex(feature_index);
-
-    ComputeBestSplitForFeature(smaller_leaf_histogram_array_, feature_index,
-                               real_fidx,
-                               smaller_node_used_features[feature_index],
-                               smaller_leaf_splits_->num_data_in_leaf(),
-                               smaller_leaf_splits_.get(), &smaller_best[tid]);
-
-    // only has root leaf
-    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->leaf_index() < 0) { continue; }
-
-    if (use_subtract) {
-      larger_leaf_histogram_array_[feature_index].Subtract(smaller_leaf_histogram_array_[feature_index]);
-    } else {
-      train_data_->FixHistogram(feature_index, larger_leaf_splits_->sum_gradients(), larger_leaf_splits_->sum_hessians(),
-                                larger_leaf_histogram_array_[feature_index].RawData());
+    if (!is_feature_used[feature_index]) {
+      continue;
     }
-
-    ComputeBestSplitForFeature(larger_leaf_histogram_array_, feature_index,
-                               real_fidx,
-                               larger_node_used_features[feature_index],
-                               larger_leaf_splits_->num_data_in_leaf(),
-                               larger_leaf_splits_.get(),
-                               &larger_best[tid]);
-
-    OMP_LOOP_EX_END();
+    int cur_num_bin = train_data_->FeatureBinMapper(feature_index)->num_bin();
+    used_indices.push_back(feature_index);
+    num_bins.push_back(cur_num_bin);
+    num_toal_bin += cur_num_bin;
+    ++num_used_feature;
   }
-  OMP_THROW_EX();
+  Threading::BalancedFor<int, true>(
+      num_used_feature, num_toal_bin, used_indices.data(), num_bins,
+      [&](int tid, int feature_index) {
+        train_data_->FixHistogram(
+            feature_index, smaller_leaf_splits_->sum_gradients(),
+            smaller_leaf_splits_->sum_hessians(),
+            smaller_leaf_histogram_array_[feature_index].RawData());
+        int real_fidx = train_data_->RealFeatureIndex(feature_index);
+
+        ComputeBestSplitForFeature(
+            smaller_leaf_histogram_array_, feature_index, real_fidx,
+            smaller_node_used_features[feature_index],
+            smaller_leaf_splits_->num_data_in_leaf(),
+            smaller_leaf_splits_.get(), &smaller_best[tid]);
+
+        // only has root leaf
+        if (larger_leaf_splits_ == nullptr ||
+            larger_leaf_splits_->leaf_index() < 0) {
+          return;
+        }
+
+        if (use_subtract) {
+          larger_leaf_histogram_array_[feature_index].Subtract(
+              smaller_leaf_histogram_array_[feature_index]);
+        } else {
+          train_data_->FixHistogram(
+              feature_index, larger_leaf_splits_->sum_gradients(),
+              larger_leaf_splits_->sum_hessians(),
+              larger_leaf_histogram_array_[feature_index].RawData());
+        }
+
+        ComputeBestSplitForFeature(
+            larger_leaf_histogram_array_, feature_index, real_fidx,
+            larger_node_used_features[feature_index],
+            larger_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_.get(),
+            &larger_best[tid]);
+      });
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
   int leaf = smaller_leaf_splits_->leaf_index();
   best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];

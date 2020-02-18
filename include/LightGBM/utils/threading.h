@@ -25,8 +25,7 @@ class Threading {
         num_threads,
         static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
     if (*out_nblock > 1) {
-      *block_size =
-          SIZE_ALIGNED((cnt + (*out_nblock) - 1) / (*out_nblock));
+      *block_size = SIZE_ALIGNED((cnt + (*out_nblock) - 1) / (*out_nblock));
     } else {
       *block_size = cnt;
     }
@@ -46,13 +45,13 @@ class Threading {
   }
   template <typename INDEX_T>
   static inline int For(
-      INDEX_T start, INDEX_T end,
-      INDEX_T min_block_size, const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
+      INDEX_T start, INDEX_T end, INDEX_T min_block_size,
+      const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
     int n_block = 1;
     INDEX_T num_inner = end - start;
     BlockInfo<INDEX_T>(end - start, min_block_size, &n_block, &num_inner);
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < n_block; ++i) {
       OMP_LOOP_EX_BEGIN();
       INDEX_T inner_start = start + num_inner * i;
@@ -63,10 +62,10 @@ class Threading {
     OMP_THROW_EX();
     return n_block;
   }
-  template <typename INDEX_T>
-  static inline void BalancedFor(int n, INDEX_T total_size,
+  template <typename INDEX_T, bool use_index>
+  static inline void BalancedFor(int n, INDEX_T total_size, const int* indices,
                                  const std::vector<INDEX_T>& size,
-                                 const std::function<void(int)>& inner_fun) {
+                                 const std::function<void(int, int)>& inner_fun) {
     int num_threads = 1;
 #pragma omp parallel
 #pragma omp master
@@ -74,9 +73,9 @@ class Threading {
     std::vector<std::vector<int>> groups(1);
     groups.back().push_back(0);
     std::vector<INDEX_T> group_sizes(1, size[0]);
-    INDEX_T avg_size = total_size / n;
+    INDEX_T avg_size = total_size / num_threads;
     INDEX_T rest_size = total_size - size[0];
-    INDEX_T rest_group = n;
+    INDEX_T rest_group = num_threads;
     for (int i = 1; i < n; ++i) {
       if (group_sizes.back() + size[i] > avg_size) {
         groups.emplace_back();
@@ -88,12 +87,17 @@ class Threading {
       groups.back().push_back(i);
       rest_size -= size[i];
     }
+    int n_block = static_cast<int>(groups.size());
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads; ++i) {
+    for (int i = 0; i < n_block; ++i) {
       OMP_LOOP_EX_BEGIN();
       for (auto j : groups[i]) {
-        inner_fun(j);
+        if (use_index) {
+          inner_fun(i, indices[j]);
+        } else {
+          inner_fun(i, j);
+        }
       }
       OMP_LOOP_EX_END();
     }

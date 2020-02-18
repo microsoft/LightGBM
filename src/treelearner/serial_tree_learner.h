@@ -67,8 +67,8 @@ class SerialTreeLearner: public TreeLearner {
   void AddPredictionToScore(const Tree* tree, double* out_score) const override {
     if (tree->num_leaves() <= 1) { return; }
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
-    Threading::BalancedFor<data_size_t>(
-        tree->num_leaves(), num_data_, data_partition_->leaf_counts(), [&](int i) {
+    Threading::BalancedFor<data_size_t, false>(
+        tree->num_leaves(), num_data_, nullptr, data_partition_->leaf_counts(), [&](int, int i) {
           double output = static_cast<double>(tree->LeafOutput(i));
           data_size_t cnt_leaf_data = 0;
           auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
