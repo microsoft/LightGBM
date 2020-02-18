@@ -87,7 +87,7 @@ def silent_call(cmd, raise_error=False, error_msg=''):
 
 
 def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
-                use_hdfs=False, boost_root=None, boost_dir=None,
+                use_hdfs=False, use_cpp17=False, boost_root=None, boost_dir=None,
                 boost_include_dir=None, boost_librarydir=None,
                 opencl_include_dir=None, opencl_library=None,
                 nomp=False, bit32=False):
@@ -116,6 +116,8 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
             cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
+    if use_cpp17:
+        cmake_cmd.append("_DUSE_CPP17=ON")
     if nomp:
         cmake_cmd.append("-DUSE_OPENMP=OFF")
     if use_hdfs:
@@ -190,6 +192,7 @@ class CustomInstall(install):
         ('mpi', None, 'Compile MPI version'),
         ('nomp', None, 'Compile version without OpenMP support'),
         ('hdfs', 'h', 'Compile HDFS version'),
+        ('cpp17', None, 'Compile using --std=c++17'),
         ('bit32', None, 'Compile 32-bit version'),
         ('precompile', 'p', 'Use precompiled library'),
         ('boost-root=', None, 'Boost preferred installation prefix'),
@@ -215,6 +218,7 @@ class CustomInstall(install):
         self.precompile = 0
         self.nomp = 0
         self.bit32 = 0
+        self.cpp17 = 0
 
     def run(self):
         if (8 * struct.calcsize("P")) != 64:
@@ -228,7 +232,7 @@ class CustomInstall(install):
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi,
-                        use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
+                        use_hdfs=self.hdfs, use_cpp17=self.cpp17, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
                         nomp=self.nomp, bit32=self.bit32)
