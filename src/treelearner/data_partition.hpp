@@ -194,6 +194,8 @@ class DataPartition {
   */
   data_size_t leaf_count(int leaf) const { return leaf_count_[leaf]; }
 
+  const std::vector<data_size_t>& leaf_counts() const { return leaf_count_; }
+
   /*!
   * \brief Get leaf begin
   * \param leaf index of leaf

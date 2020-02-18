@@ -63,6 +63,31 @@ class Threading {
     OMP_THROW_EX();
     return n_block;
   }
+  template <typename INDEX_T>
+  static inline void BalancedFor(int n, const std::vector<INDEX_T>& size,
+                                 const std::function<void(int)>& inner_fun) {
+    int num_threads = 1;
+#pragma omp parallel
+#pragma omp master
+    { num_threads = omp_get_num_threads(); }
+    std::vector<std::vector<int>> groups(num_threads, std::vector<int>());
+    std::vector<INDEX_T> group_sizes(num_threads, 0);
+    for (int i = 0; i < n; ++i) {
+      int cur_group = static_cast<int>(ArrayArgs<int>::ArgMin(group_sizes));
+      group_sizes[cur_group] += size[i];
+      groups[cur_group].push_back(i);
+    }
+    OMP_INIT_EX();
+#pragma omp parallel for schedule(static, 1)
+    for (int i = 0; i < num_threads; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      for (auto j : groups[i]) {
+        inner_fun(j);
+      }
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+  }
 };
 
 }   // namespace LightGBM
