@@ -126,11 +126,13 @@ class LeafConstraints {
 
       // only branches containing leaves that are contiguous to the original
       // leaf need to be updated
-      for (unsigned int i = 0; i < features.size(); ++i) {
-        if ((features[i] == inner_feature && is_split_numerical) &&
-            (is_in_right_split[i] == is_right_split)) {
-          split_contains_new_information = false;
-          break;
+      if (is_split_numerical) {
+        for (unsigned int i = 0; i < features.size(); ++i) {
+          if (features[i] == inner_feature &&
+              (is_in_right_split[i] == is_right_split)) {
+            split_contains_new_information = false;
+            break;
+          }
         }
       }
 
@@ -191,7 +193,7 @@ class LeafConstraints {
       }
 
       std::pair<double, double> min_max_constraints;
-      bool something_changed;
+      bool something_changed = false;
       if (use_right_leaf && use_left_leaf) {
         min_max_constraints =
             std::minmax(split_info.right_output, split_info.left_output);
@@ -251,16 +253,14 @@ class LeafConstraints {
             learner_state.tree->left_child(node_idx), features, thresholds,
             is_in_right_split, maximum, split_feature, split_info,
             use_left_leaf, use_right_leaf_for_update && use_right_leaf,
-            split_threshold, best_split_per_leaf_,
-            learner_state);
+            split_threshold, best_split_per_leaf_, learner_state);
       }
       if (keep_going_left_right.second) {
         GoDownToFindLeavesToUpdate(
             learner_state.tree->right_child(node_idx), features, thresholds,
             is_in_right_split, maximum, split_feature, split_info,
             use_left_leaf_for_update && use_left_leaf, use_right_leaf,
-            split_threshold, best_split_per_leaf_,
-            learner_state);
+            split_threshold, best_split_per_leaf_, learner_state);
       }
     }
   }
@@ -271,8 +271,7 @@ class LeafConstraints {
                                 std::vector<SplitInfo> &best_split_per_leaf_,
                                 LearnerState &learner_state) {
     int depth = learner_state.tree->leaf_depth(
-                    ~learner_state.tree->left_child(node_idx)) -
-                1;
+                    ~learner_state.tree->left_child(node_idx)) - 1;
 
     std::vector<int> features;
     std::vector<uint32_t> thresholds;
@@ -294,16 +293,16 @@ class LeafConstraints {
       const std::vector<bool> &is_in_right_split, const Dataset *train_data_) {
     int inner_feature = tree->split_feature_inner(node_idx);
     uint32_t threshold = tree->threshold_in_bin(node_idx);
-    bool is_split_numerical = train_data_->FeatureBinMapper(inner_feature)
-                                  ->bin_type() == BinType::NumericalBin;
+    bool is_split_numerical =
+      train_data_->FeatureBinMapper(inner_feature)->bin_type() == BinType::NumericalBin;
 
     bool keep_going_right = true;
     bool keep_going_left = true;
     // left and right nodes are checked to find out if they are contiguous with the original leaf
     // if so the algorithm should keep going down these nodes to update constraints
-    for (unsigned int i = 0; i < features.size(); ++i) {
-      if (features[i] == inner_feature) {
-        if (is_split_numerical) {
+    if (is_split_numerical) {
+      for (unsigned int i = 0; i < features.size(); ++i) {
+        if (features[i] == inner_feature) {
           if (threshold >= thresholds[i] && !is_in_right_split[i]) {
             keep_going_right = false;
           }
