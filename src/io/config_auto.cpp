@@ -92,24 +92,13 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"forced_splits_filename", "forcedsplits_filename"},
   {"forced_splits_file", "forcedsplits_filename"},
   {"forced_splits", "forcedsplits_filename"},
-  {"verbose", "verbosity"},
-  {"is_sparse", "is_enable_sparse"},
-  {"enable_sparse", "is_enable_sparse"},
-  {"sparse", "is_enable_sparse"},
-  {"subsample_for_bin", "bin_construct_sample_cnt"},
-  {"hist_pool_size", "histogram_pool_size"},
-  {"data_seed", "data_random_seed"},
-  {"model_output", "output_model"},
-  {"model_out", "output_model"},
-  {"save_period", "snapshot_freq"},
   {"model_input", "input_model"},
   {"model_in", "input_model"},
-  {"predict_result", "output_result"},
-  {"prediction_result", "output_result"},
-  {"predict_name", "output_result"},
-  {"prediction_name", "output_result"},
-  {"pred_name", "output_result"},
-  {"name_pred", "output_result"},
+  {"model_output", "output_model"},
+  {"model_out", "output_model"},
+  {"is_save_binary", "save_binary"},
+  {"is_save_binary_file", "save_binary"},
+  {"save_period", "snapshot_freq"},
   {"init_score_filename", "initscore_filename"},
   {"init_score_file", "initscore_filename"},
   {"init_score", "initscore_filename"},
@@ -117,13 +106,18 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"valid_data_init_scores", "valid_data_initscores"},
   {"valid_init_score_file", "valid_data_initscores"},
   {"valid_init_score", "valid_data_initscores"},
-  {"is_pre_partition", "pre_partition"},
+  {"verbose", "verbosity"},
+  {"hist_pool_size", "histogram_pool_size"},
+  {"subsample_for_bin", "bin_construct_sample_cnt"},
+  {"data_seed", "data_random_seed"},
+  {"is_sparse", "is_enable_sparse"},
+  {"enable_sparse", "is_enable_sparse"},
+  {"sparse", "is_enable_sparse"},
   {"is_enable_bundle", "enable_bundle"},
   {"bundle", "enable_bundle"},
+  {"is_pre_partition", "pre_partition"},
   {"two_round_loading", "two_round"},
   {"use_two_round_loading", "two_round"},
-  {"is_save_binary", "save_binary"},
-  {"is_save_binary_file", "save_binary"},
   {"has_header", "header"},
   {"label", "label_column"},
   {"weight", "weight_column"},
@@ -137,6 +131,12 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"cat_feature", "categorical_feature"},
   {"categorical_column", "categorical_feature"},
   {"cat_column", "categorical_feature"},
+  {"predict_result", "output_result"},
+  {"prediction_result", "output_result"},
+  {"predict_name", "output_result"},
+  {"prediction_name", "output_result"},
+  {"pred_name", "output_result"},
+  {"name_pred", "output_result"},
   {"is_predict_raw_score", "predict_raw_score"},
   {"predict_rawscore", "predict_raw_score"},
   {"raw_score", "predict_raw_score"},
@@ -223,47 +223,47 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "monotone_constraints",
   "feature_contri",
   "forcedsplits_filename",
-  "forcedbins_filename",
   "refit_decay_rate",
   "cegb_tradeoff",
   "cegb_penalty_split",
   "cegb_penalty_feature_lazy",
   "cegb_penalty_feature_coupled",
-  "verbosity",
-  "max_bin",
-  "is_enable_sparse",
-  "max_bin_by_feature",
-  "min_data_in_bin",
-  "feature_pre_filter",
-  "bin_construct_sample_cnt",
-  "histogram_pool_size",
-  "data_random_seed",
-  "output_model",
-  "snapshot_freq",
   "input_model",
-  "output_result",
+  "output_model",
+  "save_binary",
+  "snapshot_freq",
   "initscore_filename",
   "valid_data_initscores",
-  "pre_partition",
+  "verbosity",
+  "histogram_pool_size",
+  "max_bin",
+  "max_bin_by_feature",
+  "min_data_in_bin",
+  "bin_construct_sample_cnt",
+  "data_random_seed",
+  "is_enable_sparse",
   "enable_bundle",
   "use_missing",
   "zero_as_missing",
+  "feature_pre_filter",
+  "pre_partition",
   "two_round",
-  "save_binary",
   "header",
   "label_column",
   "weight_column",
   "group_column",
   "ignore_column",
   "categorical_feature",
+  "forcedbins_filename",
+  "output_result",
+  "num_iteration_predict",
   "predict_raw_score",
   "predict_leaf_index",
   "predict_contrib",
-  "num_iteration_predict",
+  "predict_disable_shape_check",
   "pred_early_stop",
   "pred_early_stop_freq",
   "pred_early_stop_margin",
-  "predict_disable_shape_check",
   "convert_model_language",
   "convert_model",
   "num_class",
@@ -427,8 +427,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "forcedsplits_filename", &forcedsplits_filename);
 
-  GetString(params, "forcedbins_filename", &forcedbins_filename);
-
   GetDouble(params, "refit_decay_rate", &refit_decay_rate);
   CHECK(refit_decay_rate >=0.0);
   CHECK(refit_decay_rate <=1.0);
@@ -447,12 +445,26 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     cegb_penalty_feature_coupled = Common::StringToArray<double>(tmp_str, ',');
   }
 
+  GetString(params, "input_model", &input_model);
+
+  GetString(params, "output_model", &output_model);
+
+  GetBool(params, "save_binary", &save_binary);
+
+  GetInt(params, "snapshot_freq", &snapshot_freq);
+
+  GetString(params, "initscore_filename", &initscore_filename);
+
+  if (GetString(params, "valid_data_initscores", &tmp_str)) {
+    valid_data_initscores = Common::Split(tmp_str.c_str(), ',');
+  }
+
   GetInt(params, "verbosity", &verbosity);
+
+  GetDouble(params, "histogram_pool_size", &histogram_pool_size);
 
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
-
-  GetBool(params, "is_enable_sparse", &is_enable_sparse);
 
   if (GetString(params, "max_bin_by_feature", &tmp_str)) {
     max_bin_by_feature = Common::StringToArray<int32_t>(tmp_str, ',');
@@ -461,30 +473,12 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "min_data_in_bin", &min_data_in_bin);
   CHECK(min_data_in_bin >0);
 
-  GetBool(params, "feature_pre_filter", &feature_pre_filter);
-
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   CHECK(bin_construct_sample_cnt >0);
 
-  GetDouble(params, "histogram_pool_size", &histogram_pool_size);
-
   GetInt(params, "data_random_seed", &data_random_seed);
 
-  GetString(params, "output_model", &output_model);
-
-  GetInt(params, "snapshot_freq", &snapshot_freq);
-
-  GetString(params, "input_model", &input_model);
-
-  GetString(params, "output_result", &output_result);
-
-  GetString(params, "initscore_filename", &initscore_filename);
-
-  if (GetString(params, "valid_data_initscores", &tmp_str)) {
-    valid_data_initscores = Common::Split(tmp_str.c_str(), ',');
-  }
-
-  GetBool(params, "pre_partition", &pre_partition);
+  GetBool(params, "is_enable_sparse", &is_enable_sparse);
 
   GetBool(params, "enable_bundle", &enable_bundle);
 
@@ -492,9 +486,11 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "zero_as_missing", &zero_as_missing);
 
-  GetBool(params, "two_round", &two_round);
+  GetBool(params, "feature_pre_filter", &feature_pre_filter);
 
-  GetBool(params, "save_binary", &save_binary);
+  GetBool(params, "pre_partition", &pre_partition);
+
+  GetBool(params, "two_round", &two_round);
 
   GetBool(params, "header", &header);
 
@@ -508,21 +504,25 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "categorical_feature", &categorical_feature);
 
+  GetString(params, "forcedbins_filename", &forcedbins_filename);
+
+  GetString(params, "output_result", &output_result);
+
+  GetInt(params, "num_iteration_predict", &num_iteration_predict);
+
   GetBool(params, "predict_raw_score", &predict_raw_score);
 
   GetBool(params, "predict_leaf_index", &predict_leaf_index);
 
   GetBool(params, "predict_contrib", &predict_contrib);
 
-  GetInt(params, "num_iteration_predict", &num_iteration_predict);
+  GetBool(params, "predict_disable_shape_check", &predict_disable_shape_check);
 
   GetBool(params, "pred_early_stop", &pred_early_stop);
 
   GetInt(params, "pred_early_stop_freq", &pred_early_stop_freq);
 
   GetDouble(params, "pred_early_stop_margin", &pred_early_stop_margin);
-
-  GetBool(params, "predict_disable_shape_check", &predict_disable_shape_check);
 
   GetString(params, "convert_model_language", &convert_model_language);
 
@@ -649,47 +649,47 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[monotone_constraints: " << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints), ",") << "]\n";
   str_buf << "[feature_contri: " << Common::Join(feature_contri, ",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
-  str_buf << "[forcedbins_filename: " << forcedbins_filename << "]\n";
   str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";
   str_buf << "[cegb_tradeoff: " << cegb_tradeoff << "]\n";
   str_buf << "[cegb_penalty_split: " << cegb_penalty_split << "]\n";
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
-  str_buf << "[verbosity: " << verbosity << "]\n";
-  str_buf << "[max_bin: " << max_bin << "]\n";
-  str_buf << "[is_enable_sparse: " << is_enable_sparse << "]\n";
-  str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
-  str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
-  str_buf << "[feature_pre_filter: " << feature_pre_filter << "]\n";
-  str_buf << "[bin_construct_sample_cnt: " << bin_construct_sample_cnt << "]\n";
-  str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
-  str_buf << "[data_random_seed: " << data_random_seed << "]\n";
-  str_buf << "[output_model: " << output_model << "]\n";
-  str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
   str_buf << "[input_model: " << input_model << "]\n";
-  str_buf << "[output_result: " << output_result << "]\n";
+  str_buf << "[output_model: " << output_model << "]\n";
+  str_buf << "[save_binary: " << save_binary << "]\n";
+  str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
   str_buf << "[initscore_filename: " << initscore_filename << "]\n";
   str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores, ",") << "]\n";
-  str_buf << "[pre_partition: " << pre_partition << "]\n";
+  str_buf << "[verbosity: " << verbosity << "]\n";
+  str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
+  str_buf << "[max_bin: " << max_bin << "]\n";
+  str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
+  str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
+  str_buf << "[bin_construct_sample_cnt: " << bin_construct_sample_cnt << "]\n";
+  str_buf << "[data_random_seed: " << data_random_seed << "]\n";
+  str_buf << "[is_enable_sparse: " << is_enable_sparse << "]\n";
   str_buf << "[enable_bundle: " << enable_bundle << "]\n";
   str_buf << "[use_missing: " << use_missing << "]\n";
   str_buf << "[zero_as_missing: " << zero_as_missing << "]\n";
+  str_buf << "[feature_pre_filter: " << feature_pre_filter << "]\n";
+  str_buf << "[pre_partition: " << pre_partition << "]\n";
   str_buf << "[two_round: " << two_round << "]\n";
-  str_buf << "[save_binary: " << save_binary << "]\n";
   str_buf << "[header: " << header << "]\n";
   str_buf << "[label_column: " << label_column << "]\n";
   str_buf << "[weight_column: " << weight_column << "]\n";
   str_buf << "[group_column: " << group_column << "]\n";
   str_buf << "[ignore_column: " << ignore_column << "]\n";
   str_buf << "[categorical_feature: " << categorical_feature << "]\n";
+  str_buf << "[forcedbins_filename: " << forcedbins_filename << "]\n";
+  str_buf << "[output_result: " << output_result << "]\n";
+  str_buf << "[num_iteration_predict: " << num_iteration_predict << "]\n";
   str_buf << "[predict_raw_score: " << predict_raw_score << "]\n";
   str_buf << "[predict_leaf_index: " << predict_leaf_index << "]\n";
   str_buf << "[predict_contrib: " << predict_contrib << "]\n";
-  str_buf << "[num_iteration_predict: " << num_iteration_predict << "]\n";
+  str_buf << "[predict_disable_shape_check: " << predict_disable_shape_check << "]\n";
   str_buf << "[pred_early_stop: " << pred_early_stop << "]\n";
   str_buf << "[pred_early_stop_freq: " << pred_early_stop_freq << "]\n";
   str_buf << "[pred_early_stop_margin: " << pred_early_stop_margin << "]\n";
-  str_buf << "[predict_disable_shape_check: " << predict_disable_shape_check << "]\n";
   str_buf << "[convert_model_language: " << convert_model_language << "]\n";
   str_buf << "[convert_model: " << convert_model << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";
