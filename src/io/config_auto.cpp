@@ -110,13 +110,6 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"prediction_name", "output_result"},
   {"pred_name", "output_result"},
   {"name_pred", "output_result"},
-  {"init_score_filename", "initscore_filename"},
-  {"init_score_file", "initscore_filename"},
-  {"init_score", "initscore_filename"},
-  {"input_init_score", "initscore_filename"},
-  {"valid_data_init_scores", "valid_data_initscores"},
-  {"valid_init_score_file", "valid_data_initscores"},
-  {"valid_init_score", "valid_data_initscores"},
   {"is_pre_partition", "pre_partition"},
   {"is_enable_bundle", "enable_bundle"},
   {"bundle", "enable_bundle"},
@@ -242,8 +235,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "snapshot_freq",
   "input_model",
   "output_result",
-  "initscore_filename",
-  "valid_data_initscores",
   "pre_partition",
   "enable_bundle",
   "use_missing",
@@ -478,12 +469,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "output_result", &output_result);
 
-  GetString(params, "initscore_filename", &initscore_filename);
-
-  if (GetString(params, "valid_data_initscores", &tmp_str)) {
-    valid_data_initscores = Common::Split(tmp_str.c_str(), ',');
-  }
-
   GetBool(params, "pre_partition", &pre_partition);
 
   GetBool(params, "enable_bundle", &enable_bundle);
@@ -668,8 +653,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
   str_buf << "[input_model: " << input_model << "]\n";
   str_buf << "[output_result: " << output_result << "]\n";
-  str_buf << "[initscore_filename: " << initscore_filename << "]\n";
-  str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores, ",") << "]\n";
   str_buf << "[pre_partition: " << pre_partition << "]\n";
   str_buf << "[enable_bundle: " << enable_bundle << "]\n";
   str_buf << "[use_missing: " << use_missing << "]\n";
