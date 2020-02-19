@@ -117,7 +117,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if use_cpp17:
-        cmake_cmd.append("_DUSE_CPP17=ON")
+        cmake_cmd.append("-DUSE_CPP17=ON")
     if nomp:
         cmake_cmd.append("-DUSE_OPENMP=OFF")
     if use_hdfs:
