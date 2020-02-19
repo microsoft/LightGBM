@@ -219,7 +219,6 @@ struct Config {
   // desc = enabling this is recommended when:
   // descl2 = the number of columns is large, or the total number of bins is large
   // descl2 = ``num_threads`` is large, e.g. ``>20``
-  // descl2 = you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
   // descl2 = you want to reduce memory cost
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
@@ -505,6 +504,11 @@ struct Config {
   // desc = minimal number of data inside one bin
   // desc = use this to avoid one-data-one-bin (potential over-fitting)
   int min_data_in_bin = 3;
+
+  // desc = set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+  // desc = as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
+  // desc = **Note**: setting this to ``false`` may slow down the training
+  bool feature_pre_filter = true;
 
   // alias = subsample_for_bin
   // check = >0

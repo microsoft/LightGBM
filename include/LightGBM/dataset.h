@@ -277,6 +277,53 @@ class Parser {
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
+struct TrainingTempState {
+  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
+      hist_buf;
+  int num_bin_aligned;
+  bool use_subfeature;
+  std::unique_ptr<MultiValBin> multi_val_bin;
+  std::unique_ptr<MultiValBin> multi_val_bin_subfeature;
+  std::vector<uint32_t> hist_move_src;
+  std::vector<uint32_t> hist_move_dest;
+  std::vector<uint32_t> hist_move_size;
+
+  void SetMultiValBin(MultiValBin* bin) {
+    if (bin == nullptr) {
+      return;
+    }
+    multi_val_bin.reset(bin);
+    int num_threads = 1;
+#pragma omp parallel
+#pragma omp master
+    { num_threads = omp_get_num_threads(); }
+    num_bin_aligned =
+        (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+    size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
+    if (new_size > hist_buf.size()) {
+      hist_buf.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_threads);
+    }
+  }
+
+  hist_t* TempBuf() {
+    if (!use_subfeature) {
+      return nullptr;
+    }
+    return hist_buf.data() + hist_buf.size() - num_bin_aligned * 2;
+  }
+
+  void HistMove(const hist_t* src, hist_t* dest) {
+    if (!use_subfeature) {
+      return;
+    }
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
+      std::copy_n(src + hist_move_src[i], hist_move_size[i],
+                  dest + hist_move_dest[i]);
+    }
+  }
+};
+
 /*! \brief The main class of data set,
 *          which are used to training or validation
 */
@@ -399,7 +446,9 @@ class Dataset {
 
   MultiValBin* GetMultiBinFromAllFeatures() const;
 
-  MultiValBin* TestMultiThreadingMethod(score_t* gradients, score_t* hessians, const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
+  TrainingTempState* TestMultiThreadingMethod(
+    score_t* gradients, score_t* hessians,
+    const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
@@ -416,8 +465,6 @@ class Dataset {
 
   LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
 
-  LIGHTGBM_EXPORT bool GetInt8Field(const char* field_name, data_size_t* out_len, const int8_t** out_ptr);
-
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
   */
@@ -429,17 +476,24 @@ class Dataset {
 
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
 
+  void InitTrain(const std::vector<int8_t>& is_feature_used,
+                 bool is_colwise,
+                 TrainingTempState* temp_state) const;
+
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
-                           const data_size_t* data_indices, data_size_t num_data,
-                           const score_t* gradients, const score_t* hessians,
-                           score_t* ordered_gradients, score_t* ordered_hessians,
-                           bool is_constant_hessian,
-                           const MultiValBin* multi_val_bin, bool is_colwise,
+                           const data_size_t* data_indices,
+                           data_size_t num_data, const score_t* gradients,
+                           const score_t* hessians, score_t* ordered_gradients,
+                           score_t* ordered_hessians, bool is_constant_hessian,
+                           bool is_colwise, TrainingTempState* temp_state,
                            hist_t* histogram_data) const;
 
-  void ConstructHistogramsMultiVal(const MultiValBin* multi_val_bin, const data_size_t* data_indices, data_size_t num_data,
-                                   const score_t* gradients, const score_t* hessians,
+  void ConstructHistogramsMultiVal(const data_size_t* data_indices,
+                                   data_size_t num_data,
+                                   const score_t* gradients,
+                                   const score_t* hessians,
                                    bool is_constant_hessian,
+                                   TrainingTempState* temp_state,
                                    hist_t* histogram_data) const;
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
@@ -466,35 +520,6 @@ class Dataset {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->bin_mappers_[sub_feature]->num_bin();
-  }
-
-  inline int8_t FeatureMonotone(int i) const {
-    if (monotone_types_.empty()) {
-      return 0;
-    } else {
-      return monotone_types_[i];
-    }
-  }
-
-  inline double FeaturePenalte(int i) const {
-    if (feature_penalty_.empty()) {
-      return 1;
-    } else {
-      return feature_penalty_[i];
-    }
-  }
-
-  bool HasMonotone() const {
-    if (monotone_types_.empty()) {
-      return false;
-    } else {
-      for (size_t i = 0; i < monotone_types_.size(); ++i) {
-        if (monotone_types_[i] != 0) {
-          return true;
-        }
-      }
-      return false;
-    }
   }
 
   inline int FeatureGroupNumBin(int group) const {
@@ -604,8 +629,6 @@ class Dataset {
     return bufs;
   }
 
-  void ResetConfig(const char* parameters);
-
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 
@@ -643,8 +666,6 @@ class Dataset {
   std::vector<uint64_t> group_bin_boundaries_;
   std::vector<int> group_feature_start_;
   std::vector<int> group_feature_cnt_;
-  std::vector<int8_t> monotone_types_;
-  std::vector<double> feature_penalty_;
   bool is_finish_load_;
   int max_bin_;
   std::vector<int32_t> max_bin_by_feature_;
@@ -654,7 +675,6 @@ class Dataset {
   bool use_missing_;
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
-  mutable std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
 };
 
 }  // namespace LightGBM
