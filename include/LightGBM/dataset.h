@@ -297,7 +297,7 @@ struct TrainingTempState {
 #pragma omp parallel
 #pragma omp master
     { num_threads = omp_get_num_threads(); }
-   num_bin_aligned =
+    num_bin_aligned =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
     if (new_size > hist_buf.size()) {
@@ -447,8 +447,8 @@ class Dataset {
   MultiValBin* GetMultiBinFromAllFeatures() const;
 
   TrainingTempState* TestMultiThreadingMethod(
-      score_t* gradients, score_t* hessians,
-      const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
+    score_t* gradients, score_t* hessians,
+    const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
@@ -464,8 +464,6 @@ class Dataset {
   LIGHTGBM_EXPORT bool GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr);
 
   LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
-
-  LIGHTGBM_EXPORT bool GetInt8Field(const char* field_name, data_size_t* out_len, const int8_t** out_ptr);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
@@ -522,35 +520,6 @@ class Dataset {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->bin_mappers_[sub_feature]->num_bin();
-  }
-
-  inline int8_t FeatureMonotone(int i) const {
-    if (monotone_types_.empty()) {
-      return 0;
-    } else {
-      return monotone_types_[i];
-    }
-  }
-
-  inline double FeaturePenalte(int i) const {
-    if (feature_penalty_.empty()) {
-      return 1;
-    } else {
-      return feature_penalty_[i];
-    }
-  }
-
-  bool HasMonotone() const {
-    if (monotone_types_.empty()) {
-      return false;
-    } else {
-      for (size_t i = 0; i < monotone_types_.size(); ++i) {
-        if (monotone_types_[i] != 0) {
-          return true;
-        }
-      }
-      return false;
-    }
   }
 
   inline int FeatureGroupNumBin(int group) const {
@@ -660,8 +629,6 @@ class Dataset {
     return bufs;
   }
 
-  void ResetConfig(const char* parameters);
-
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 
@@ -699,8 +666,6 @@ class Dataset {
   std::vector<uint64_t> group_bin_boundaries_;
   std::vector<int> group_feature_start_;
   std::vector<int> group_feature_cnt_;
-  std::vector<int8_t> monotone_types_;
-  std::vector<double> feature_penalty_;
   bool is_finish_load_;
   int max_bin_;
   std::vector<int32_t> max_bin_by_feature_;

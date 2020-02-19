@@ -535,6 +535,14 @@ IO Parameters
 
    -  use this to avoid one-data-one-bin (potential over-fitting)
 
+-  ``feature_pre_filter`` :raw-html:`<a id="feature_pre_filter" title="Permalink to this parameter" href="#feature_pre_filter">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+
+   -  as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
+
+   -  **Note**: setting this to ``false`` may slow down the training
+
 -  ``bin_construct_sample_cnt`` :raw-html:`<a id="bin_construct_sample_cnt" title="Permalink to this parameter" href="#bin_construct_sample_cnt">&#x1F517;&#xFE0E;</a>`, default = ``200000``, type = int, aliases: ``subsample_for_bin``, constraints: ``bin_construct_sample_cnt > 0``
 
    -  number of data that sampled to construct histogram bins

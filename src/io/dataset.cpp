@@ -402,36 +402,6 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       last_group = group;
     }
   }
-
-  if (!io_config.monotone_constraints.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) ==
-          io_config.monotone_constraints.size());
-    monotone_types_.resize(num_features_);
-    for (int i = 0; i < num_total_features_; ++i) {
-      int inner_fidx = InnerFeatureIndex(i);
-      if (inner_fidx >= 0) {
-        monotone_types_[inner_fidx] = io_config.monotone_constraints[i];
-      }
-    }
-    if (ArrayArgs<int8_t>::CheckAllZero(monotone_types_)) {
-      monotone_types_.clear();
-    }
-  }
-  if (!io_config.feature_contri.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) ==
-          io_config.feature_contri.size());
-    feature_penalty_.resize(num_features_);
-    for (int i = 0; i < num_total_features_; ++i) {
-      int inner_fidx = InnerFeatureIndex(i);
-      if (inner_fidx >= 0) {
-        feature_penalty_[inner_fidx] =
-            std::max(0.0, io_config.feature_contri[i]);
-      }
-    }
-    if (ArrayArgs<double>::CheckAll(feature_penalty_, 1.0)) {
-      feature_penalty_.clear();
-    }
-  }
   if (!io_config.max_bin_by_feature.empty()) {
     CHECK(static_cast<size_t>(num_total_features_) ==
           io_config.max_bin_by_feature.size());
@@ -447,72 +417,6 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
   use_missing_ = io_config.use_missing;
   zero_as_missing_ = io_config.zero_as_missing;
-}
-
-void Dataset::ResetConfig(const char* parameters) {
-  auto param = Config::Str2Map(parameters);
-  Config io_config;
-  io_config.Set(param);
-  if (param.count("max_bin") && io_config.max_bin != max_bin_) {
-    Log::Warning("Cannot change max_bin after constructed Dataset handle.");
-  }
-  if (param.count("max_bin_by_feature") &&
-      io_config.max_bin_by_feature != max_bin_by_feature_) {
-    Log::Warning(
-        "Cannot change max_bin_by_feature after constructed Dataset handle.");
-  }
-  if (param.count("bin_construct_sample_cnt") &&
-      io_config.bin_construct_sample_cnt != bin_construct_sample_cnt_) {
-    Log::Warning(
-        "Cannot change bin_construct_sample_cnt after constructed Dataset "
-        "handle.");
-  }
-  if (param.count("min_data_in_bin") &&
-      io_config.min_data_in_bin != min_data_in_bin_) {
-    Log::Warning(
-        "Cannot change min_data_in_bin after constructed Dataset handle.");
-  }
-  if (param.count("use_missing") && io_config.use_missing != use_missing_) {
-    Log::Warning("Cannot change use_missing after constructed Dataset handle.");
-  }
-  if (param.count("zero_as_missing") &&
-      io_config.zero_as_missing != zero_as_missing_) {
-    Log::Warning(
-        "Cannot change zero_as_missing after constructed Dataset handle.");
-  }
-  if (param.count("forcedbins_filename")) {
-    Log::Warning("Cannot change forced bins after constructed Dataset handle.");
-  }
-
-  if (!io_config.monotone_constraints.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) ==
-          io_config.monotone_constraints.size());
-    monotone_types_.resize(num_features_);
-    for (int i = 0; i < num_total_features_; ++i) {
-      int inner_fidx = InnerFeatureIndex(i);
-      if (inner_fidx >= 0) {
-        monotone_types_[inner_fidx] = io_config.monotone_constraints[i];
-      }
-    }
-    if (ArrayArgs<int8_t>::CheckAllZero(monotone_types_)) {
-      monotone_types_.clear();
-    }
-  }
-  if (!io_config.feature_contri.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) ==
-          io_config.feature_contri.size());
-    feature_penalty_.resize(num_features_);
-    for (int i = 0; i < num_total_features_; ++i) {
-      int inner_fidx = InnerFeatureIndex(i);
-      if (inner_fidx >= 0) {
-        feature_penalty_[inner_fidx] =
-            std::max(0.0, io_config.feature_contri[i]);
-      }
-    }
-    if (ArrayArgs<double>::CheckAll(feature_penalty_, 1.0)) {
-      feature_penalty_.clear();
-    }
-  }
 }
 
 void Dataset::FinishLoad() {
@@ -755,9 +659,8 @@ TrainingTempState* Dataset::TestMultiThreadingMethod(
       auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time;
       Log::Warning(
           "Auto-choosing col-wise multi-threading, the overhead of testing was "
-          "%f "
-          "seconds.\nYou can set `force_col_wise=true` to remove the "
-          "overhead.",
+          "%f seconds.\n"
+          "You can set `force_col_wise=true` to remove the overhead.",
           overhead_cost * 1e-3);
       return colwise_state.release();
     } else {
@@ -765,10 +668,9 @@ TrainingTempState* Dataset::TestMultiThreadingMethod(
       auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time;
       Log::Warning(
           "Auto-choosing row-wise multi-threading, the overhead of testing was "
-          "%f "
-          "seconds.\nYou can set `force_row_wise=true` to remove the "
-          "overhead.\nAnd if memory is not enough, you can set "
-          "`force_col_wise=true`.",
+          "%f seconds.\n"
+          "You can set `force_row_wise=true` to remove the overhead.\n"
+          "And if memory is not enough, you can set `force_col_wise=true`.",
           overhead_cost * 1e-3);
       if (rowwise_state->multi_val_bin->IsSparse()) {
         Log::Debug("Using Sparse Multi-Val Bin");
@@ -800,8 +702,6 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   group_bin_boundaries_ = dataset->group_bin_boundaries_;
   group_feature_start_ = dataset->group_feature_start_;
   group_feature_cnt_ = dataset->group_feature_cnt_;
-  monotone_types_ = dataset->monotone_types_;
-  feature_penalty_ = dataset->feature_penalty_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
   feature_need_push_zeros_ = dataset->feature_need_push_zeros_;
 }
@@ -854,8 +754,6 @@ void Dataset::CreateValid(const Dataset* dataset) {
       last_group = group;
     }
   }
-  monotone_types_ = dataset->monotone_types_;
-  feature_penalty_ = dataset->feature_penalty_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
@@ -969,9 +867,6 @@ bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len,
   if (name == std::string("init_score")) {
     *out_ptr = metadata_.init_score();
     *out_len = static_cast<data_size_t>(metadata_.num_init_score());
-  } else if (name == std::string("feature_penalty")) {
-    *out_ptr = feature_penalty_.data();
-    *out_len = static_cast<data_size_t>(feature_penalty_.size());
   } else {
     return false;
   }
@@ -985,19 +880,6 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len,
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
     *out_len = metadata_.num_queries() + 1;
-  } else {
-    return false;
-  }
-  return true;
-}
-
-bool Dataset::GetInt8Field(const char* field_name, data_size_t* out_len,
-                           const int8_t** out_ptr) {
-  std::string name(field_name);
-  name = Common::Trim(name);
-  if (name == std::string("monotone_constraints")) {
-    *out_ptr = monotone_types_.data();
-    *out_len = static_cast<data_size_t>(monotone_types_.size());
   } else {
     return false;
   }
@@ -1031,14 +913,11 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     size_t size_of_token = std::strlen(binary_file_token);
     writer->Write(binary_file_token, size_of_token);
     // get size of header
-    size_t size_of_header =
-        sizeof(num_data_) + sizeof(num_features_) +
-        sizeof(num_total_features_) + sizeof(int) * num_total_features_ +
-        sizeof(label_idx_) + sizeof(num_groups_) +
-        3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) +
-        2 * sizeof(int) * num_groups_ + sizeof(int8_t) * num_features_ +
-        sizeof(double) * num_features_ + sizeof(int32_t) * num_total_features_ +
-        sizeof(int) * 3 + sizeof(bool) * 2;
+    size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
+      + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
+      + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_
+      + sizeof(int32_t) * num_total_features_ + sizeof(int) * 3 + sizeof(bool) * 2;
+
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header += feature_names_[i].size() + sizeof(int);
@@ -1069,20 +948,6 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
                   sizeof(uint64_t) * (num_groups_ + 1));
     writer->Write(group_feature_start_.data(), sizeof(int) * num_groups_);
     writer->Write(group_feature_cnt_.data(), sizeof(int) * num_groups_);
-    if (monotone_types_.empty()) {
-      ArrayArgs<int8_t>::Assign(&monotone_types_, 0, num_features_);
-    }
-    writer->Write(monotone_types_.data(), sizeof(int8_t) * num_features_);
-    if (ArrayArgs<int8_t>::CheckAllZero(monotone_types_)) {
-      monotone_types_.clear();
-    }
-    if (feature_penalty_.empty()) {
-      ArrayArgs<double>::Assign(&feature_penalty_, 1.0, num_features_);
-    }
-    writer->Write(feature_penalty_.data(), sizeof(double) * num_features_);
-    if (ArrayArgs<double>::CheckAll(feature_penalty_, 1.0)) {
-      feature_penalty_.clear();
-    }
     if (max_bin_by_feature_.empty()) {
       ArrayArgs<int32_t>::Assign(&max_bin_by_feature_, -1, num_total_features_);
     }
@@ -1139,14 +1004,6 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fprintf(file, "feature_names: ");
   for (auto n : feature_names_) {
     fprintf(file, "%s, ", n.c_str());
-  }
-  fprintf(file, "\nmonotone_constraints: ");
-  for (auto i : monotone_types_) {
-    fprintf(file, "%d, ", i);
-  }
-  fprintf(file, "\nfeature_penalty: ");
-  for (auto i : feature_penalty_) {
-    fprintf(file, "%lf, ", i);
   }
   fprintf(file, "\nmax_bin_by_feature: ");
   for (auto i : max_bin_by_feature_) {
@@ -1265,8 +1122,8 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
 
           temp_state->hist_move_src.push_back(
               (new_num_total_bin - cur_num_bin) * 2);
-          temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
-                                               2);
+          temp_state->hist_move_dest.push_back(
+              (num_total_bin - cur_num_bin) * 2);
           temp_state->hist_move_size.push_back(cur_num_bin * 2);
           delta.push_back(num_total_bin - new_num_total_bin);
         }
@@ -1287,8 +1144,8 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
         lower_bound.push_back(num_total_bin - cur_num_bin);
         upper_bound.push_back(num_total_bin);
 
-        temp_state->hist_move_src.push_back((new_num_total_bin - cur_num_bin) *
-                                            2);
+        temp_state->hist_move_src.push_back(
+            (new_num_total_bin - cur_num_bin) * 2);
         temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) * 2);
         temp_state->hist_move_size.push_back(cur_num_bin * 2);
         delta.push_back(num_total_bin - new_num_total_bin);
@@ -1660,14 +1517,7 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
     group_bin_boundaries_.push_back(*i + bin_offset);
   }
   PushOffset(&group_feature_start_, other->group_feature_start_, num_features_);
-
-  PushClearIfEmpty(&monotone_types_, num_total_features_,
-                   other->monotone_types_, other->num_total_features_,
-                   (int8_t)0);
-  PushClearIfEmpty(&feature_penalty_, num_total_features_,
-                   other->feature_penalty_, other->num_total_features_, 1.0);
-  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_,
-                   other->max_bin_by_feature_, other->num_total_features_, -1);
+  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_, other->max_bin_by_feature_, other->num_total_features_, -1);
 
   num_features_ += other->num_features_;
   num_total_features_ += other->num_total_features_;

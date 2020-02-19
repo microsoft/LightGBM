@@ -81,12 +81,12 @@ void SerialTreeLearner::GetMultiValBin(const Dataset* dataset, bool is_first_tim
   if (is_first_time) {
     auto used_feature = GetUsedFeatures(true);
     temp_state_.reset(dataset->TestMultiThreadingMethod(
-        ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
+      ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
       is_constant_hessian_, config_->force_col_wise, config_->force_row_wise, &is_hist_colwise_));
   } else {
     // cannot change is_hist_col_wise during training
     temp_state_.reset(dataset->TestMultiThreadingMethod(
-        ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
+      ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
       is_constant_hessian_, is_hist_colwise_, !is_hist_colwise_, &is_hist_colwise_));
   }
 }
@@ -140,7 +140,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   } else {
     config_ = config;
   }
-  histogram_pool_.ResetConfig(config_);
+  histogram_pool_.ResetConfig(train_data_, config_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();

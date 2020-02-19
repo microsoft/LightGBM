@@ -27,8 +27,8 @@ class FeatureMetainfo {
   MissingType missing_type;
   int8_t offset = 0;
   uint32_t default_bin;
-  int8_t monotone_type;
-  double penalty;
+  int8_t monotone_type = 0;
+  double penalty = 1.0;
   /*! \brief pointer of tree config */
   const Config* config;
   BinType bin_type;
@@ -740,25 +740,62 @@ class HistogramPool {
     }
   }
 
+  static void SetFeatureInfo(const Dataset* train_data, const Config* config, std::vector<FeatureMetainfo>* feature_meta) {
+    auto& ref_feature_meta = *feature_meta;
+    const int num_feature = train_data->num_features();
+    ref_feature_meta.resize(num_feature);
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < num_feature; ++i) {
+      ref_feature_meta[i].num_bin = train_data->FeatureNumBin(i);
+      ref_feature_meta[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
+      ref_feature_meta[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
+      const int real_fidx = train_data->RealFeatureIndex(i);
+      if (!config->monotone_constraints.empty()) {
+        ref_feature_meta[i].monotone_type = config->monotone_constraints[real_fidx];
+      } else {
+        ref_feature_meta[i].monotone_type = 0;
+      }
+      if (!config->feature_contri.empty()) {
+        ref_feature_meta[i].penalty = config->feature_contri[real_fidx];
+      } else {
+        ref_feature_meta[i].penalty = 1.0;
+      }
+      if (train_data->FeatureBinMapper(i)->GetMostFreqBin() == 0) {
+        ref_feature_meta[i].offset = 1;
+      } else {
+        ref_feature_meta[i].offset = 0;
+      }
+      ref_feature_meta[i].config = config;
+      ref_feature_meta[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();
+    }
+  }
+
+  static void SetFeatureInfoConfig(const Dataset* train_data, const Config* config, std::vector<FeatureMetainfo>* feature_meta) {
+    auto& ref_feature_meta = *feature_meta;
+    const int num_feature = train_data->num_features();
+    ref_feature_meta.resize(num_feature);
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < num_feature; ++i) {
+      const int real_fidx = train_data->RealFeatureIndex(i);
+      if (!config->monotone_constraints.empty()) {
+        ref_feature_meta[i].monotone_type = config->monotone_constraints[real_fidx];
+      } else {
+        ref_feature_meta[i].monotone_type = 0;
+      }
+      if (!config->feature_contri.empty()) {
+        ref_feature_meta[i].penalty = config->feature_contri[real_fidx];
+      } else {
+        ref_feature_meta[i].penalty = 1.0;
+      }
+      ref_feature_meta[i].config = config;
+    }
+  }
   void DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise, const Config* config, int cache_size, int total_size) {
     if (feature_metas_.empty()) {
+      SetFeatureInfo(train_data, config, &feature_metas_);
       uint64_t bin_cnt_over_features = 0;
-      int num_feature = train_data->num_features();
-      feature_metas_.resize(num_feature);
-      for (int i = 0; i < num_feature; ++i) {
-        feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
+      for (int i = 0; i < train_data->num_features(); ++i) {
         bin_cnt_over_features += static_cast<uint64_t>(feature_metas_[i].num_bin);
-        feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
-        feature_metas_[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
-        feature_metas_[i].monotone_type = train_data->FeatureMonotone(i);
-        feature_metas_[i].penalty = train_data->FeaturePenalte(i);
-        if (train_data->FeatureBinMapper(i)->GetMostFreqBin() == 0) {
-          feature_metas_[i].offset = 1;
-        } else {
-          feature_metas_[i].offset = 0;
-        }
-        feature_metas_[i].config = config;
-        feature_metas_[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();
       }
       Log::Info("Total Bins %d", bin_cnt_over_features);
     }
@@ -805,17 +842,10 @@ class HistogramPool {
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    train_data_ = train_data;
   }
 
-  void ResetConfig(const Config* config) {
-    int size = static_cast<int>(feature_metas_.size());
-    #pragma omp parallel for schedule(static, 512) if (size >= 1024)
-    for (int i = 0; i < size; ++i) {
-      feature_metas_[i].config = config;
-      feature_metas_[i].monotone_type = train_data_->FeatureMonotone(i);
-      feature_metas_[i].penalty = train_data_->FeaturePenalte(i);
-    }
+  void ResetConfig(const Dataset* train_data, const Config* config) {
+    SetFeatureInfoConfig(train_data, config, &feature_metas_);
   }
 
   /*!
@@ -884,7 +914,6 @@ class HistogramPool {
   std::vector<int> inverse_mapper_;
   std::vector<int> last_used_time_;
   int cur_time_ = 0;
-  const Dataset* train_data_;
 };
 
 }  // namespace LightGBM
