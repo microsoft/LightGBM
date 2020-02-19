@@ -60,7 +60,7 @@
         , "max_bin_by_feature" = "max_bin_by_feature"
         , "min_data_in_bin" = "min_data_in_bin"
         , "pre_partition" = c(
-            "pre_parition"
+            "pre_partition"
             , "is_pre_partition"
         )
         , "two_round" = c(
