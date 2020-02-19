@@ -18,25 +18,20 @@
             , "categorical_column"
             , "cat_column"
         )
-        , "seed" = c(
-            "seed"
-            , "data_random_seed"
-            , "feature_fraction_seed"
+        , "data_random_seed" = c(
+            "data_random_seed"
+            , "data_seed"
         )
         , "enable_bundle" = c(
             "enable_bundle"
-            , "is_endable_bundle"
+            , "is_enable_bundle"
             , "bundle"
-        )
-        , "enable_sparse" = c(
-            "enable_sparse"
-            , "is_sparse"
-            , "sparse"
         )
         , "feature_pre_filter" = "feature_pre_filter"
         , "forcedbins_filename" = "forcedbins_filename"
         , "group_column" = c(
             "group_column"
+            , "group"
             , "group_id"
             , "query_column"
             , "query"
@@ -51,14 +46,21 @@
             , "ignore_feature"
             , "blacklist"
         )
+        , "is_enable_sparse" = c(
+            "is_enable_sparse"
+            , "is_sparse"
+            , "enable_sparse"
+            , "sparse"
+        )
         , "label_column" = c(
             "label_column"
             , "label"
         )
         , "max_bin" = "max_bin"
         , "max_bin_by_feature" = "max_bin_by_feature"
+        , "min_data_in_bin" = "min_data_in_bin"
         , "pre_partition" = c(
-            "pre_parition"
+            "pre_partition"
             , "is_pre_partition"
         )
         , "two_round" = c(
