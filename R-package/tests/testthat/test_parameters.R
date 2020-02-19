@@ -53,6 +53,7 @@ test_that(".PARAMETER_ALIASES() returns a named list of character vectors, where
   expect_true(is.character(param_aliases[["boosting"]]))
   expect_true(is.character(param_aliases[["early_stopping_round"]]))
   expect_true(is.character(param_aliases[["num_iterations"]]))
+  expect_true(is.character(param_aliases[["pre_partition"]]))
   expect_true(length(names(param_aliases)) == length(param_aliases))
   expect_true(all(sapply(param_aliases, is.character)))
   expect_true(length(unique(names(param_aliases))) == length(param_aliases))
