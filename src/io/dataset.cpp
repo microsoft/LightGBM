@@ -720,9 +720,8 @@ TrainingTempState* Dataset::TestMultiThreadingMethod(
       auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time;
       Log::Warning(
           "Auto-choosing col-wise multi-threading, the overhead of testing was "
-          "%f "
-          "seconds.\nYou can set `force_col_wise=true` to remove the "
-          "overhead.",
+          "%f seconds.\n"
+          "You can set `force_col_wise=true` to remove the overhead.",
           overhead_cost * 1e-3);
       return colwise_state.release();
     } else {
@@ -730,10 +729,9 @@ TrainingTempState* Dataset::TestMultiThreadingMethod(
       auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time;
       Log::Warning(
           "Auto-choosing row-wise multi-threading, the overhead of testing was "
-          "%f "
-          "seconds.\nYou can set `force_row_wise=true` to remove the "
-          "overhead.\nAnd if memory is not enough, you can set "
-          "`force_col_wise=true`.",
+          "%f seconds.\n"
+          "You can set `force_row_wise=true` to remove the overhead.\n"
+          "And if memory is not enough, you can set `force_col_wise=true`.",
           overhead_cost * 1e-3);
       if (rowwise_state->multi_val_bin->IsSparse()) {
         Log::Debug("Using Sparse Multi-Val Bin");
@@ -1130,7 +1128,6 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fclose(file);
 }
 
-
 void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
                         bool is_colwise, TrainingTempState* temp_state) const {
   Common::FunctionTimer fun_time("Dataset::InitTrain", global_timer);
@@ -1146,7 +1143,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   std::vector<int> used_feature_index;
   for (int i = 0; i < num_groups_; ++i) {
     int f_start = group_feature_start_[i];
-    if (feature_groups_[i]->is_multi_val_ ) {
+    if (feature_groups_[i]->is_multi_val_) {
       for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
         const auto dense_rate =
             1.0 - feature_groups_[i]->bin_mappers_[j]->sparse_rate();
@@ -1208,11 +1205,11 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
 
           lower_bound.push_back(num_total_bin - cur_num_bin);
           upper_bound.push_back(num_total_bin);
-          
+
           temp_state->hist_move_src.push_back(
               (new_num_total_bin - cur_num_bin) * 2);
-          temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
-                                               2);
+          temp_state->hist_move_dest.push_back(
+              (num_total_bin - cur_num_bin) * 2);
           temp_state->hist_move_size.push_back(cur_num_bin * 2);
           delta.push_back(num_total_bin - new_num_total_bin);
         }
@@ -1233,8 +1230,8 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
         lower_bound.push_back(num_total_bin - cur_num_bin);
         upper_bound.push_back(num_total_bin);
 
-        temp_state->hist_move_src.push_back((new_num_total_bin - cur_num_bin) *
-                                            2);
+        temp_state->hist_move_src.push_back(
+            (new_num_total_bin - cur_num_bin) * 2);
         temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) * 2);
         temp_state->hist_move_size.push_back(cur_num_bin * 2);
         delta.push_back(num_total_bin - new_num_total_bin);
