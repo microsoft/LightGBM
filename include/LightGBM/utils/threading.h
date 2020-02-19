@@ -21,14 +21,8 @@ class Threading {
 #pragma omp parallel
 #pragma omp master
     { num_threads = omp_get_num_threads(); }
-    *out_nblock = std::min<int>(
-        num_threads,
-        static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
-    if (*out_nblock > 1) {
-      *block_size = SIZE_ALIGNED((cnt + (*out_nblock) - 1) / (*out_nblock));
-    } else {
-      *block_size = cnt;
-    }
+    BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
+                       block_size);
   }
   template <typename INDEX_T>
   static inline void BlockInfo(int num_threads, INDEX_T cnt,
