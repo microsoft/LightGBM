@@ -822,6 +822,7 @@ struct Config {
   // check = >0
   // alias = output_freq
   // desc = frequency for metric output
+  // desc = **Note**: can be used only in CLI version
   int metric_freq = 1;
 
   // alias = training_metric, is_training_metric, train_metric
