@@ -175,13 +175,13 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
-* \brief Update parameters for a Dataset
-* \param handle an instance of data matrix
-* \param parameters parameters
-* \return 0 when succeed, -1 when failure happens
-*/
-LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParam_R(LGBM_SE handle,
-  LGBM_SE params,
+ * \brief Raise errors for attempts to update dataset parameters
+ * \param old_params Current dataset parameters
+ * \param new_params New dataset parameters
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParamChecking_R(LGBM_SE old_params,
+  LGBM_SE new_params,
   LGBM_SE call_state);
 
 /*!

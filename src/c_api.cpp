@@ -173,6 +173,114 @@ class Booster {
     }
   }
 
+  static void CheckDatasetResetConfig(
+      const Config& old_config,
+      const std::unordered_map<std::string, std::string>& new_param) {
+    Config new_config;
+    new_config.Set(new_param);
+    if (new_param.count("data_random_seed") &&
+        new_config.data_random_seed != old_config.data_random_seed) {
+      Log::Fatal("Cannot change data_random_seed after constructed Dataset handle.");
+    }
+    if (new_param.count("max_bin") &&
+        new_config.max_bin != old_config.max_bin) {
+      Log::Fatal("Cannot change max_bin after constructed Dataset handle.");
+    }
+    if (new_param.count("max_bin_by_feature") &&
+        new_config.max_bin_by_feature != old_config.max_bin_by_feature) {
+      Log::Fatal(
+          "Cannot change max_bin_by_feature after constructed Dataset handle.");
+    }
+    if (new_param.count("bin_construct_sample_cnt") &&
+        new_config.bin_construct_sample_cnt !=
+            old_config.bin_construct_sample_cnt) {
+      Log::Fatal(
+          "Cannot change bin_construct_sample_cnt after constructed Dataset "
+          "handle.");
+    }
+    if (new_param.count("min_data_in_bin") &&
+        new_config.min_data_in_bin != old_config.min_data_in_bin) {
+      Log::Fatal(
+          "Cannot change min_data_in_bin after constructed Dataset handle.");
+    }
+    if (new_param.count("use_missing") &&
+        new_config.use_missing != old_config.use_missing) {
+      Log::Fatal("Cannot change use_missing after constructed Dataset handle.");
+    }
+    if (new_param.count("zero_as_missing") &&
+        new_config.zero_as_missing != old_config.zero_as_missing) {
+      Log::Fatal(
+          "Cannot change zero_as_missing after constructed Dataset handle.");
+    }
+    if (new_param.count("categorical_feature") &&
+        new_config.categorical_feature != old_config.categorical_feature) {
+      Log::Fatal(
+          "Cannot change categorical_feature after constructed Dataset "
+          "handle.");
+    }
+    if (new_param.count("feature_pre_filter") &&
+        new_config.feature_pre_filter != old_config.feature_pre_filter) {
+      Log::Fatal(
+          "Cannot change feature_pre_filter after constructed Dataset handle.");
+    }
+    if (new_param.count("is_enable_sparse") &&
+        new_config.is_enable_sparse != old_config.is_enable_sparse) {
+      Log::Fatal(
+          "Cannot change is_enable_sparse after constructed Dataset handle.");
+    }
+    if (new_param.count("pre_partition") &&
+        new_config.pre_partition != old_config.pre_partition) {
+      Log::Fatal(
+          "Cannot change pre_partition after constructed Dataset handle.");
+    }
+    if (new_param.count("enable_bundle") &&
+        new_config.enable_bundle != old_config.enable_bundle) {
+      Log::Fatal(
+          "Cannot change enable_bundle after constructed Dataset handle.");
+    }
+    if (new_param.count("header") && new_config.header != old_config.header) {
+      Log::Fatal("Cannot change header after constructed Dataset handle.");
+    }
+    if (new_param.count("two_round") &&
+        new_config.two_round != old_config.two_round) {
+      Log::Fatal("Cannot change two_round after constructed Dataset handle.");
+    }
+    if (new_param.count("label_column") &&
+        new_config.label_column != old_config.label_column) {
+      Log::Fatal(
+          "Cannot change label_column after constructed Dataset handle.");
+    }
+    if (new_param.count("weight_column") &&
+        new_config.weight_column != old_config.weight_column) {
+      Log::Fatal(
+          "Cannot change weight_column after constructed Dataset handle.");
+    }
+    if (new_param.count("group_column") &&
+        new_config.group_column != old_config.group_column) {
+      Log::Fatal(
+          "Cannot change group_column after constructed Dataset handle.");
+    }
+    if (new_param.count("ignore_column") &&
+        new_config.ignore_column != old_config.ignore_column) {
+      Log::Fatal(
+          "Cannot change ignore_column after constructed Dataset handle.");
+    }
+    if (new_param.count("forcedbins_filename")) {
+      Log::Fatal("Cannot change forced bins after constructed Dataset handle.");
+    }
+    if (new_param.count("min_data_in_leaf") &&
+        new_config.min_data_in_leaf < old_config.min_data_in_leaf &&
+        old_config.feature_pre_filter) {
+      Log::Fatal(
+          "Reducing `min_data_in_leaf` with `feature_pre_filter=true` may "
+          "cause unexpected behaviour "
+          "for features that were pre-filtered by the larger "
+          "`min_data_in_leaf`.\n"
+          "You need to set `feature_pre_filter=false` to dynamically change "
+          "the `min_data_in_leaf`.");
+    }
+  }
+
   void ResetConfig(const char* parameters) {
     std::lock_guard<std::mutex> lock(mutex_);
     auto param = Config::Str2Map(parameters);
@@ -186,7 +294,10 @@ class Booster {
       Log::Fatal("Cannot change metric during training");
     }
 
+    CheckDatasetResetConfig(config_, param);
+
     config_.Set(param);
+
     if (config_.num_threads > 0) {
       omp_set_num_threads(config_.num_threads);
     }
@@ -1028,19 +1139,19 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   } else if (dataset->GetDoubleField(field_name, out_len, reinterpret_cast<const double**>(out_ptr))) {
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
-  } else if (dataset->GetInt8Field(field_name, out_len, reinterpret_cast<const int8_t**>(out_ptr))) {
-    *out_type = C_API_DTYPE_INT8;
-    is_success = true;
-  }
+  } 
   if (!is_success) { throw std::runtime_error("Field not found"); }
   if (*out_ptr == nullptr) { *out_len = 0; }
   API_END();
 }
 
-int LGBM_DatasetUpdateParam(DatasetHandle handle, const char* parameters) {
+int LGBM_DatasetUpdateParamChecking(const char* old_parameters, const char* new_parameters) {
   API_BEGIN();
-  auto dataset = reinterpret_cast<Dataset*>(handle);
-  dataset->ResetConfig(parameters);
+  auto old_param = Config::Str2Map(old_parameters);
+  Config old_config;
+  old_config.Set(old_param);
+  auto new_param = Config::Str2Map(new_parameters);
+  Booster::CheckDatasetResetConfig(old_config, new_param);
   API_END();
 }
 
