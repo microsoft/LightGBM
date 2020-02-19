@@ -47,7 +47,6 @@ class Metadata {
   /*!
   * \brief Initialization will load query level informations, since it is need for sampling data
   * \param data_filename Filename of data
-  * \param init_score_filename Filename of initial score
   */
   void Init(const char* data_filename);
   /*!
