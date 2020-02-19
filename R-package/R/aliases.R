@@ -24,7 +24,7 @@
         )
         , "enable_bundle" = c(
             "enable_bundle"
-            , "is_endable_bundle"
+            , "is_enable_bundle"
             , "bundle"
         )
         , "feature_pre_filter" = "feature_pre_filter"
