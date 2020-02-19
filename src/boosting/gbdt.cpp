@@ -294,8 +294,6 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
       SaveModelToFile(0, -1, snapshot_out.c_str());
     }
   }
-  auto s = DumpModel(0, config_->num_iterations);
-  Log::Info("%s", s.c_str());
 }
 
 void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {
