@@ -590,24 +590,15 @@ class Dataset {
     }
   }
 
-  template <bool is_json>
   inline std::vector<std::string> feature_infos() const {
     std::vector<std::string> bufs;
     for (int i = 0; i < num_total_features_; ++i) {
       int fidx = used_feature_map_[i];
       if (fidx < 0) {
-        if (is_json) {
-          bufs.push_back("{}");
-        } else {
-          bufs.push_back("none");
-        }
+        bufs.push_back("none");
       } else {
         const auto bin_mapper = FeatureBinMapper(fidx);
-        if (is_json) {
-          bufs.push_back(bin_mapper->bin_info_json());
-        } else {
-          bufs.push_back(bin_mapper->bin_info_string());
-        }
+        bufs.push_back(bin_mapper->bin_info_string());
       }
     }
     return bufs;
