@@ -974,7 +974,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
     gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-    multi_val_bin_.get(), is_hist_colwise_,
+    is_hist_colwise_, temp_state_.get(),
     ptr_smaller_leaf_hist_data);
   // wait for GPU to finish, only if GPU is actually used
   if (is_gpu_used) {
@@ -1039,7 +1039,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-      multi_val_bin_.get(), is_hist_colwise_,
+      is_hist_colwise_, temp_state_.get(),
       ptr_larger_leaf_hist_data);
     // wait for GPU to finish, only if GPU is actually used
     if (is_gpu_used) {
