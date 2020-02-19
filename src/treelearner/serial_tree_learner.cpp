@@ -410,7 +410,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   }
   OMP_INIT_EX();
 // find splits
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) {
