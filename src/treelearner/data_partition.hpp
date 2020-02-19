@@ -122,7 +122,7 @@ class DataPartition {
     int nblock = 1;
     data_size_t inner_size = cnt;
     Threading::BlockInfo<data_size_t>(num_threads_, cnt, 512, &nblock,
-                                        &inner_size);
+                                      &inner_size);
     auto left_start = indices_.data() + begin;
     global_timer.Start("DataPartition::Split.MT");
     // split data multi-threading

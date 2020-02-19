@@ -1197,7 +1197,7 @@ void Dataset::ConstructHistogramsMultiVal(
   int n_data_block = 1;
   int data_block_size = num_data;
   Threading::BlockInfo<data_size_t>(num_threads, num_data, 1024,
-                                      &n_data_block, &data_block_size);
+                                    &n_data_block, &data_block_size);
   const size_t buf_size =
       static_cast<size_t>(n_data_block - 1) * num_bin_aligned * 2;
   if (temp_state->hist_buf.size() < buf_size) {
@@ -1244,7 +1244,7 @@ void Dataset::ConstructHistogramsMultiVal(
   int n_bin_block = 1;
   int bin_block_size = num_bin;
   Threading::BlockInfo<data_size_t>(num_threads, num_bin, 512, &n_bin_block,
-                                      &bin_block_size);
+                                    &bin_block_size);
   if (!is_constant_hessian) {
 #pragma omp parallel for schedule(static)
     for (int t = 0; t < n_bin_block; ++t) {
