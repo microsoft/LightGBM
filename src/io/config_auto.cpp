@@ -622,8 +622,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambda_l1: " << lambda_l1 << "]\n";
   str_buf << "[lambda_l2: " << lambda_l2 << "]\n";
   str_buf << "[min_gain_to_split: " << min_gain_to_split << "]\n";
-  str_buf << "[monotone_constraints_method: " << monotone_constraints_method << "]\n";
   str_buf << "[drop_rate: " << drop_rate << "]\n";
+  str_buf << "[monotone_constraints_method: " << monotone_constraints_method << "]\n";
   str_buf << "[max_drop: " << max_drop << "]\n";
   str_buf << "[skip_drop: " << skip_drop << "]\n";
   str_buf << "[xgboost_dart_mode: " << xgboost_dart_mode << "]\n";

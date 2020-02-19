@@ -376,12 +376,11 @@ Learning Control Parameters
 
    -  dropout rate: a fraction of previous trees to drop during the dropout
 
-- ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = string, aliases: ``monotone_constraining_method``
+-  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = string, aliases: ``monotone_constraining_method``
 
    -  used only if ``monotone_constraints`` is set
 
-   -  monotone constraints method: if set to "basic", the most basic monotone constraints method will be used. It does not slow the library at all, but over-constrains the predictions. If set to "intermediate", a more advanced method will be used, which may very slightly slow the library. However, the intermediate method is much less constraining than the basic method and should significantly improve the results.
-
+   -  monotone constraints method: if set to "basic", the most basic monotone constraints method will be used. It does not slow the library at all, but over-constrains the predictions. If set to "intermediate", a more advanced method will be used, which may slow the library very slightly. However, the intermediate method is much less constraining than the basic method and should significantly improve the results.
 
 -  ``max_drop`` :raw-html:`<a id="max_drop" title="Permalink to this parameter" href="#max_drop">&#x1F517;&#xFE0E;</a>`, default = ``50``, type = int
 
