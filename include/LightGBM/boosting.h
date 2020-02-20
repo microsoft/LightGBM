@@ -229,6 +229,18 @@ class LIGHTGBM_EXPORT Boosting {
   virtual std::vector<double> FeatureImportance(int num_iteration, int importance_type) const = 0;
 
   /*!
+  * \brief Calculate upper bound value
+  * \return max possible value
+  */
+  virtual double GetUpperBoundValue() const = 0;
+
+  /*!
+  * \brief Calculate lower bound value
+  * \return min possible value
+  */
+  virtual double GetLowerBoundValue() const = 0;
+
+  /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */

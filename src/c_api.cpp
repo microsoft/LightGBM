@@ -468,6 +468,16 @@ class Booster {
     return boosting_->FeatureImportance(num_iteration, importance_type);
   }
 
+  double UpperBoundValue() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return boosting_->GetUpperBoundValue();
+  }
+
+  double LowerBoundValue() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return boosting_->GetLowerBoundValue();
+  }
+
   double GetLeafValue(int tree_idx, int leaf_idx) const {
     return dynamic_cast<GBDTBase*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
   }
@@ -526,7 +536,7 @@ class Booster {
   /*! \brief Training objective function */
   std::unique_ptr<ObjectiveFunction> objective_fun_;
   /*! \brief mutex for threading safe call */
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
 };
 
 }  // namespace LightGBM
@@ -587,12 +597,12 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   DatasetLoader loader(config, nullptr, 1, filename);
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
-      *out = loader.LoadFromFile(filename, "");
+      *out = loader.LoadFromFile(filename);
     } else {
-      *out = loader.LoadFromFile(filename, "", Network::rank(), Network::num_machines());
+      *out = loader.LoadFromFile(filename, Network::rank(), Network::num_machines());
     }
   } else {
-    *out = loader.LoadFromFileAlignWithOtherDataset(filename, "",
+    *out = loader.LoadFromFileAlignWithOtherDataset(filename,
                                                     reinterpret_cast<const Dataset*>(reference));
   }
   API_END();
@@ -1691,6 +1701,24 @@ int LGBM_BoosterFeatureImportance(BoosterHandle handle,
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     (out_results)[i] = feature_importances[i];
   }
+  API_END();
+}
+
+int LGBM_BoosterGetUpperBoundValue(BoosterHandle handle,
+                                   double* out_results) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  double max_value = ref_booster->UpperBoundValue();
+  *out_results = max_value;
+  API_END();
+}
+
+int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
+                                   double* out_results) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  double min_value = ref_booster->LowerBoundValue();
+  *out_results = min_value;
   API_END();
 }
 

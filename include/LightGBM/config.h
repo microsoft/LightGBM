@@ -215,6 +215,29 @@ struct Config {
 
   #pragma region Learning Control Parameters
 
+  // alias = model_input, model_in
+  // desc = filename of input model
+  // desc = for ``prediction`` task, this model will be applied to prediction data
+  // desc = for ``train`` task, training will be continued from this model
+  // desc = **Note**: can be used only in CLI version
+  std::string input_model = "";
+
+  // alias = model_output, model_out
+  // desc = filename of output model in training
+  // desc = **Note**: can be used only in CLI version
+  std::string output_model = "LightGBM_model.txt";
+
+  // alias = save_period
+  // desc = frequency of saving model file snapshot
+  // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
+  // desc = **Note**: can be used only in CLI version
+  int snapshot_freq = -1;
+
+  // alias = verbose
+  // desc = controls the level of LightGBM's verbosity
+  // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
+  int verbosity = 1;
+
   // desc = used only with ``cpu`` device type
   // desc = set this to ``true`` to force col-wise histogram building
   // desc = enabling this is recommended when:
@@ -235,6 +258,11 @@ struct Config {
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
   bool force_row_wise = false;
+
+  // alias = hist_pool_size
+  // desc = max cache size in MB for historical histogram
+  // desc = ``< 0`` means no limit
+  double histogram_pool_size = -1.0;
 
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
   // desc = ``<= 0`` means no limit
@@ -474,55 +502,13 @@ struct Config {
 
   #pragma region IO Parameters
 
-  // alias = model_input, model_in
-  // desc = filename of input model
-  // desc = for ``prediction`` task, this model will be applied to prediction data
-  // desc = for ``train`` task, training will be continued from this model
-  // desc = **Note**: can be used only in CLI version
-  std::string input_model = "";
-
-  // alias = model_output, model_out
-  // desc = filename of output model in training
-  // desc = **Note**: can be used only in CLI version
-  std::string output_model = "LightGBM_model.txt";
+  #pragma region Dataset Parameters
 
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
   // desc = **Note**: ``init_score`` is not saved in binary file
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
-
-  // alias = save_period
-  // desc = frequency of saving model file snapshot
-  // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
-  // desc = **Note**: can be used only in CLI version
-  int snapshot_freq = -1;
-
-  // alias = init_score_filename, init_score_file, init_score, input_init_score
-  // desc = path of file with training initial scores
-  // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-  // desc = **Note**: works only in case of loading data directly from file
-  std::string initscore_filename = "";
-
-  // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
-  // default = ""
-  // desc = path(s) of file(s) with validation initial scores
-  // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
-  // desc = separate by ``,`` for multi-validation data
-  // desc = **Note**: works only in case of loading data directly from file
-  std::vector<std::string> valid_data_initscores;
-
-  // alias = verbose
-  // desc = controls the level of LightGBM's verbosity
-  // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
-  int verbosity = 1;
-
-  // alias = hist_pool_size
-  // desc = max cache size in MB for historical histogram
-  // desc = ``< 0`` means no limit
-  double histogram_pool_size = -1.0;
-
-  #pragma region Dataset Parameters
 
   // check = >1
   // desc = max number of bins that feature values will be bucketed in
@@ -835,6 +821,7 @@ struct Config {
   // check = >0
   // alias = output_freq
   // desc = frequency for metric output
+  // desc = **Note**: can be used only in CLI version
   int metric_freq = 1;
 
   // alias = training_metric, is_training_metric, train_metric

@@ -190,6 +190,36 @@ Core Parameters
 Learning Control Parameters
 ---------------------------
 
+-  ``input_model`` :raw-html:`<a id="input_model" title="Permalink to this parameter" href="#input_model">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
+
+   -  filename of input model
+
+   -  for ``prediction`` task, this model will be applied to prediction data
+
+   -  for ``train`` task, training will be continued from this model
+
+   -  **Note**: can be used only in CLI version
+
+-  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
+
+   -  filename of output model in training
+
+   -  **Note**: can be used only in CLI version
+
+-  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
+
+   -  frequency of saving model file snapshot
+
+   -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
+
+   -  **Note**: can be used only in CLI version
+
+-  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
+
+   -  controls the level of LightGBM's verbosity
+
+   -  ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
+
 -  ``force_col_wise`` :raw-html:`<a id="force_col_wise" title="Permalink to this parameter" href="#force_col_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  used only with ``cpu`` device type
@@ -227,6 +257,12 @@ Learning Control Parameters
    -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
 
    -  **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
+
+-  ``histogram_pool_size`` :raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" href="#histogram_pool_size">&#x1F517;&#xFE0E;</a>`, default = ``-1.0``, type = double, aliases: ``hist_pool_size``
+
+   -  max cache size in MB for historical histogram
+
+   -  ``< 0`` means no limit
 
 -  ``max_depth`` :raw-html:`<a id="max_depth" title="Permalink to this parameter" href="#max_depth">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
@@ -497,21 +533,8 @@ Learning Control Parameters
 IO Parameters
 -------------
 
--  ``input_model`` :raw-html:`<a id="input_model" title="Permalink to this parameter" href="#input_model">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
-
-   -  filename of input model
-
-   -  for ``prediction`` task, this model will be applied to prediction data
-
-   -  for ``train`` task, training will be continued from this model
-
-   -  **Note**: can be used only in CLI version
-
--  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
-
-   -  filename of output model in training
-
-   -  **Note**: can be used only in CLI version
+Dataset Parameters
+~~~~~~~~~~~~~~~~~~
 
 -  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
 
@@ -520,47 +543,6 @@ IO Parameters
    -  **Note**: ``init_score`` is not saved in binary file
 
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
-
--  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
-
-   -  frequency of saving model file snapshot
-
-   -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
-
-   -  **Note**: can be used only in CLI version
-
--  ``initscore_filename`` :raw-html:`<a id="initscore_filename" title="Permalink to this parameter" href="#initscore_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``init_score_filename``, ``init_score_file``, ``init_score``, ``input_init_score``
-
-   -  path of file with training initial scores
-
-   -  if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-
-   -  **Note**: works only in case of loading data directly from file
-
--  ``valid_data_initscores`` :raw-html:`<a id="valid_data_initscores" title="Permalink to this parameter" href="#valid_data_initscores">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
-
-   -  path(s) of file(s) with validation initial scores
-
-   -  if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
-
-   -  separate by ``,`` for multi-validation data
-
-   -  **Note**: works only in case of loading data directly from file
-
--  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
-
-   -  controls the level of LightGBM's verbosity
-
-   -  ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
-
--  ``histogram_pool_size`` :raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" href="#histogram_pool_size">&#x1F517;&#xFE0E;</a>`, default = ``-1.0``, type = double, aliases: ``hist_pool_size``
-
-   -  max cache size in MB for historical histogram
-
-   -  ``< 0`` means no limit
-
-Dataset Parameters
-~~~~~~~~~~~~~~~~~~
 
 -  ``max_bin`` :raw-html:`<a id="max_bin" title="Permalink to this parameter" href="#max_bin">&#x1F517;&#xFE0E;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
 
@@ -980,6 +962,8 @@ Metric Parameters
 
    -  frequency for metric output
 
+   -  **Note**: can be used only in CLI version
+
 -  ``is_provide_training_metric`` :raw-html:`<a id="is_provide_training_metric" title="Permalink to this parameter" href="#is_provide_training_metric">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``training_metric``, ``is_training_metric``, ``train_metric``
 
    -  set this to ``true`` to output metric result over training dataset
@@ -1088,10 +1072,8 @@ LightGBM supports continued training with initial scores. It uses an additional 
 It means the initial score of the first data row is ``0.5``, second is ``-0.1``, and so on.
 The initial score file corresponds with data file line by line, and has per score per line.
 
-And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and in the same folder as the data file.
+And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and placed in the same folder as the data file.
 In this case, LightGBM will auto load initial score file if it exists.
-
-Otherwise, you should specify the path to the custom named file with initial scores by the ``initscore_filename`` `parameter <#initscore_filename>`__.
 
 Weight Data
 ~~~~~~~~~~~

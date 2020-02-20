@@ -49,6 +49,13 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"device", "device_type"},
   {"random_seed", "seed"},
   {"random_state", "seed"},
+  {"model_input", "input_model"},
+  {"model_in", "input_model"},
+  {"model_output", "output_model"},
+  {"model_out", "output_model"},
+  {"save_period", "snapshot_freq"},
+  {"verbose", "verbosity"},
+  {"hist_pool_size", "histogram_pool_size"},
   {"min_data_per_leaf", "min_data_in_leaf"},
   {"min_data", "min_data_in_leaf"},
   {"min_child_samples", "min_data_in_leaf"},
@@ -92,22 +99,8 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"forced_splits_filename", "forcedsplits_filename"},
   {"forced_splits_file", "forcedsplits_filename"},
   {"forced_splits", "forcedsplits_filename"},
-  {"model_input", "input_model"},
-  {"model_in", "input_model"},
-  {"model_output", "output_model"},
-  {"model_out", "output_model"},
   {"is_save_binary", "save_binary"},
   {"is_save_binary_file", "save_binary"},
-  {"save_period", "snapshot_freq"},
-  {"init_score_filename", "initscore_filename"},
-  {"init_score_file", "initscore_filename"},
-  {"init_score", "initscore_filename"},
-  {"input_init_score", "initscore_filename"},
-  {"valid_data_init_scores", "valid_data_initscores"},
-  {"valid_init_score_file", "valid_data_initscores"},
-  {"valid_init_score", "valid_data_initscores"},
-  {"verbose", "verbosity"},
-  {"hist_pool_size", "histogram_pool_size"},
   {"subsample_for_bin", "bin_construct_sample_cnt"},
   {"data_seed", "data_random_seed"},
   {"is_sparse", "is_enable_sparse"},
@@ -185,8 +178,13 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "num_threads",
   "device_type",
   "seed",
+  "input_model",
+  "output_model",
+  "snapshot_freq",
+  "verbosity",
   "force_col_wise",
   "force_row_wise",
+  "histogram_pool_size",
   "max_depth",
   "min_data_in_leaf",
   "min_sum_hessian_in_leaf",
@@ -228,14 +226,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "cegb_penalty_split",
   "cegb_penalty_feature_lazy",
   "cegb_penalty_feature_coupled",
-  "input_model",
-  "output_model",
   "save_binary",
-  "snapshot_freq",
-  "initscore_filename",
-  "valid_data_initscores",
-  "verbosity",
-  "histogram_pool_size",
   "max_bin",
   "max_bin_by_feature",
   "min_data_in_bin",
@@ -318,9 +309,19 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "num_threads", &num_threads);
 
+  GetString(params, "input_model", &input_model);
+
+  GetString(params, "output_model", &output_model);
+
+  GetInt(params, "snapshot_freq", &snapshot_freq);
+
+  GetInt(params, "verbosity", &verbosity);
+
   GetBool(params, "force_col_wise", &force_col_wise);
 
   GetBool(params, "force_row_wise", &force_row_wise);
+
+  GetDouble(params, "histogram_pool_size", &histogram_pool_size);
 
   GetInt(params, "max_depth", &max_depth);
 
@@ -445,23 +446,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     cegb_penalty_feature_coupled = Common::StringToArray<double>(tmp_str, ',');
   }
 
-  GetString(params, "input_model", &input_model);
-
-  GetString(params, "output_model", &output_model);
-
   GetBool(params, "save_binary", &save_binary);
-
-  GetInt(params, "snapshot_freq", &snapshot_freq);
-
-  GetString(params, "initscore_filename", &initscore_filename);
-
-  if (GetString(params, "valid_data_initscores", &tmp_str)) {
-    valid_data_initscores = Common::Split(tmp_str.c_str(), ',');
-  }
-
-  GetInt(params, "verbosity", &verbosity);
-
-  GetDouble(params, "histogram_pool_size", &histogram_pool_size);
 
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
@@ -611,8 +596,13 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[input_model: " << input_model << "]\n";
+  str_buf << "[output_model: " << output_model << "]\n";
+  str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
+  str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
   str_buf << "[force_row_wise: " << force_row_wise << "]\n";
+  str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
   str_buf << "[max_depth: " << max_depth << "]\n";
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
@@ -654,14 +644,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_split: " << cegb_penalty_split << "]\n";
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
-  str_buf << "[input_model: " << input_model << "]\n";
-  str_buf << "[output_model: " << output_model << "]\n";
   str_buf << "[save_binary: " << save_binary << "]\n";
-  str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
-  str_buf << "[initscore_filename: " << initscore_filename << "]\n";
-  str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores, ",") << "]\n";
-  str_buf << "[verbosity: " << verbosity << "]\n";
-  str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
