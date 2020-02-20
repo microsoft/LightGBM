@@ -115,8 +115,9 @@ class LeafConstraints {
     int parent_idx = learner_state.tree->node_parent(node_idx);
     if (parent_idx != -1) {
       int inner_feature = learner_state.tree->split_feature_inner(parent_idx);
+      int feature = learner_state.tree->split_feature(parent_idx);
       int8_t monotone_type =
-          learner_state.train_data_->FeatureMonotone(inner_feature);
+          learner_state.config_->monotone_constraints[feature];
       bool is_right_split =
           learner_state.tree->right_child(parent_idx) == node_idx;
       bool split_contains_new_information = true;
