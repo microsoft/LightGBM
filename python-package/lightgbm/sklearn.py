@@ -558,11 +558,14 @@ class LGBMModel(_LGBMModelBase):
 
         self._n_features = _X.shape[1]
 
-        def _construct_dataset(X, y, sample_weight, init_score, group, params):
+        def _construct_dataset(X, y, sample_weight, init_score, group, params,
+                               categorical_feature='auto'):
             return Dataset(X, label=y, weight=sample_weight, group=group,
-                           init_score=init_score, params=params)
+                           init_score=init_score, params=params,
+                           categorical_feature=categorical_feature)
 
-        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params)
+        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params,
+                                       categorical_feature=categorical_feature)
 
         valid_sets = []
         if eval_set is not None:
@@ -608,7 +611,6 @@ class LGBMModel(_LGBMModelBase):
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self._fobj, feval=feval,
                               verbose_eval=verbose, feature_name=feature_name,
-                              categorical_feature=categorical_feature,
                               callbacks=callbacks, init_model=init_model)
 
         if evals_result:

@@ -297,13 +297,13 @@ class GBDT : public GBDTBase {
 
   /*!
   * \brief Calculate upper bound value
-  * \return max possible value
+  * \return upper bound value
   */
   double GetUpperBoundValue() const override;
 
   /*!
   * \brief Calculate lower bound value
-  * \return min possible value
+  * \return lower bound value
   */
   double GetLowerBoundValue() const override;
 

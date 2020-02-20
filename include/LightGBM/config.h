@@ -219,7 +219,6 @@ struct Config {
   // desc = enabling this is recommended when:
   // descl2 = the number of columns is large, or the total number of bins is large
   // descl2 = ``num_threads`` is large, e.g. ``>20``
-  // descl2 = you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
   // descl2 = you want to reduce memory cost
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
@@ -506,6 +505,11 @@ struct Config {
   // desc = use this to avoid one-data-one-bin (potential over-fitting)
   int min_data_in_bin = 3;
 
+  // desc = set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+  // desc = as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
+  // desc = **Note**: setting this to ``false`` may slow down the training
+  bool feature_pre_filter = true;
+
   // alias = subsample_for_bin
   // check = >0
   // desc = number of data that sampled to construct histogram bins
@@ -544,20 +548,6 @@ struct Config {
   // desc = filename of prediction result in ``prediction`` task
   // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
-
-  // alias = init_score_filename, init_score_file, init_score, input_init_score
-  // desc = path of file with training initial scores
-  // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-  // desc = **Note**: works only in case of loading data directly from file
-  std::string initscore_filename = "";
-
-  // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
-  // default = ""
-  // desc = path(s) of file(s) with validation initial scores
-  // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
-  // desc = separate by ``,`` for multi-validation data
-  // desc = **Note**: works only in case of loading data directly from file
-  std::vector<std::string> valid_data_initscores;
 
   // alias = is_pre_partition
   // desc = used for parallel learning (excluding the ``feature_parallel`` mode)
@@ -818,6 +808,7 @@ struct Config {
   // check = >0
   // alias = output_freq
   // desc = frequency for metric output
+  // desc = **Note**: can be used only in CLI version
   int metric_freq = 1;
 
   // alias = training_metric, is_training_metric, train_metric

@@ -46,6 +46,12 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
                 const std::vector<const Metric*>& training_metrics) {
   CHECK(train_data != nullptr);
   train_data_ = train_data;
+  if (!config->monotone_constraints.empty()) {
+    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->monotone_constraints.size());
+  } 
+  if (!config->feature_contri.empty()) {
+    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->feature_contri.size());
+  }
   iter_ = 0;
   num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
@@ -733,6 +739,12 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
 void GBDT::ResetConfig(const Config* config) {
   auto new_config = std::unique_ptr<Config>(new Config(*config));
+  if (!config->monotone_constraints.empty()) {
+    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->monotone_constraints.size());
+  }
+  if (!config->feature_contri.empty()) {
+    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->feature_contri.size());
+  }
   early_stopping_round_ = new_config->early_stopping_round;
   shrinkage_rate_ = new_config->learning_rate;
   if (tree_learner_ != nullptr) {

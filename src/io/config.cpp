@@ -210,23 +210,16 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   // sort eval_at
   std::sort(eval_at.begin(), eval_at.end());
 
-  if (valid_data_initscores.size() == 0 && valid.size() > 0) {
-    valid_data_initscores = std::vector<std::string>(valid.size(), "");
-  }
-  CHECK(valid.size() == valid_data_initscores.size());
-
-  if (valid_data_initscores.empty()) {
-    std::vector<std::string> new_valid;
-    for (size_t i = 0; i < valid.size(); ++i) {
-      if (valid[i] != data) {
-        // Only push the non-training data
-        new_valid.push_back(valid[i]);
-      } else {
-        is_provide_training_metric = true;
-      }
+  std::vector<std::string> new_valid;
+  for (size_t i = 0; i < valid.size(); ++i) {
+    if (valid[i] != data) {
+      // Only push the non-training data
+      new_valid.push_back(valid[i]);
+    } else {
+      is_provide_training_metric = true;
     }
-    valid = new_valid;
   }
+  valid = new_valid;
 
   // check for conflicts
   CheckParamConflict();

@@ -142,12 +142,13 @@ class BinMapper {
   * \param max_bin The maximal number of bin
   * \param min_data_in_bin min number of data in one bin
   * \param min_split_data
+  * \param pre_filter
   * \param bin_type Type of this bin
   * \param use_missing True to enable missing value handle
   * \param zero_as_missing True to use zero as missing value
   * \param forced_upper_bounds Vector of split points that must be used (if this has size less than max_bin, remaining splits are found by the algorithm)
   */
-  void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type,
+  void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
                bool use_missing, bool zero_as_missing, const std::vector<double>& forced_upper_bounds);
 
   /*!
@@ -177,7 +178,7 @@ class BinMapper {
   /*!
   * \brief Get bin info
   */
-  inline std::string bin_info() const {
+  inline std::string bin_info_string() const {
     if (bin_type_ == BinType::CategoricalBin) {
       return Common::Join(bin_2_categorical_, ":");
     } else {
@@ -458,6 +459,18 @@ class MultiValBin {
 
   virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
 
+  virtual void ReSizeForSubFeature(int num_bin, int num_feature,
+                                   double estimate_element_per_row) = 0;
+
+  virtual MultiValBin* CreateLike(int num_bin, int num_feature,
+                                  double estimate_element_per_row) const = 0;
+
+  virtual void CopySubFeature(const MultiValBin* full_bin,
+                              const std::vector<int>& used_feature_index,
+                              const std::vector<uint32_t>& lower,
+                              const std::vector<uint32_t>& upper,
+                              const std::vector<uint32_t>& delta) = 0;
+
   virtual void ConstructHistogram(
     const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* gradients, const score_t* hessians,
@@ -477,7 +490,13 @@ class MultiValBin {
 
   virtual bool IsSparse() = 0;
 
-  static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature, double sparse_rate);
+  static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin,
+                                        int num_feature, double sparse_rate);
+
+  static MultiValBin* CreateMultiValDenseBin(data_size_t num_data, int num_bin,
+                                             int num_feature);
+
+  static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin, double estimate_element_per_row);
 
   virtual MultiValBin* Clone() = 0;
 };

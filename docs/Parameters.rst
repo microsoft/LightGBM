@@ -202,8 +202,6 @@ Learning Control Parameters
 
       -  ``num_threads`` is large, e.g. ``>20``
 
-      -  you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
-
       -  you want to reduce memory cost
 
    -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
@@ -537,6 +535,14 @@ IO Parameters
 
    -  use this to avoid one-data-one-bin (potential over-fitting)
 
+-  ``feature_pre_filter`` :raw-html:`<a id="feature_pre_filter" title="Permalink to this parameter" href="#feature_pre_filter">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+
+   -  as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
+
+   -  **Note**: setting this to ``false`` may slow down the training
+
 -  ``bin_construct_sample_cnt`` :raw-html:`<a id="bin_construct_sample_cnt" title="Permalink to this parameter" href="#bin_construct_sample_cnt">&#x1F517;&#xFE0E;</a>`, default = ``200000``, type = int, aliases: ``subsample_for_bin``, constraints: ``bin_construct_sample_cnt > 0``
 
    -  number of data that sampled to construct histogram bins
@@ -584,24 +590,6 @@ IO Parameters
    -  filename of prediction result in ``prediction`` task
 
    -  **Note**: can be used only in CLI version
-
--  ``initscore_filename`` :raw-html:`<a id="initscore_filename" title="Permalink to this parameter" href="#initscore_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``init_score_filename``, ``init_score_file``, ``init_score``, ``input_init_score``
-
-   -  path of file with training initial scores
-
-   -  if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-
-   -  **Note**: works only in case of loading data directly from file
-
--  ``valid_data_initscores`` :raw-html:`<a id="valid_data_initscores" title="Permalink to this parameter" href="#valid_data_initscores">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
-
-   -  path(s) of file(s) with validation initial scores
-
-   -  if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
-
-   -  separate by ``,`` for multi-validation data
-
-   -  **Note**: works only in case of loading data directly from file
 
 -  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
 
@@ -963,6 +951,8 @@ Metric Parameters
 
    -  frequency for metric output
 
+   -  **Note**: can be used only in CLI version
+
 -  ``is_provide_training_metric`` :raw-html:`<a id="is_provide_training_metric" title="Permalink to this parameter" href="#is_provide_training_metric">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``training_metric``, ``is_training_metric``, ``train_metric``
 
    -  set this to ``true`` to output metric result over training dataset
@@ -1071,10 +1061,8 @@ LightGBM supports continued training with initial scores. It uses an additional 
 It means the initial score of the first data row is ``0.5``, second is ``-0.1``, and so on.
 The initial score file corresponds with data file line by line, and has per score per line.
 
-And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and in the same folder as the data file.
+And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and placed in the same folder as the data file.
 In this case, LightGBM will auto load initial score file if it exists.
-
-Otherwise, you should specify the path to the custom named file with initial scores by the ``initscore_filename`` `parameter <#initscore_filename>`__.
 
 Weight Data
 ~~~~~~~~~~~
