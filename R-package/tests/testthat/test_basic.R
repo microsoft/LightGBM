@@ -71,7 +71,7 @@ test_that("use of multiple eval metrics works", {
 })
 
 test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for binary classification", {
-  set.seed(708)
+  set.seed(708L)
   nrounds <- 10L
   bst <- lightgbm(
     data = train$data
@@ -87,7 +87,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
 })
 
 test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for regression", {
-  set.seed(708)
+  set.seed(708L)
   nrounds <- 10L
   bst <- lightgbm(
     data = train$data
