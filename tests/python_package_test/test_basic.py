@@ -9,8 +9,6 @@ import numpy as np
 from scipy import sparse
 from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
-import json
-import operator
 
 
 class TestBasic(unittest.TestCase):

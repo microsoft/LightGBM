@@ -51,18 +51,18 @@ catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
 
 #ifdef USE_CPP17
-#define SHARED_LOCK(mtx) \
-std::shared_lock<std::shared_mutex> lock(mtx);
-#else
-#define SHARED_LOCK(mtx) \
-std::lock_guard<std::mutex> lock(mtx);
-#endif
-
-#ifdef USE_CPP17
 #define UNIQUE_LOCK(mtx) \
 std::unique_lock<std::shared_mutex> lock(mtx);
 #else
 #define UNIQUE_LOCK(mtx) \
+std::lock_guard<std::mutex> lock(mtx);
+#endif
+
+#ifdef USE_CPP17
+#define SHARED_LOCK(mtx) \
+std::shared_lock<std::shared_mutex> lock(mtx);
+#else
+#define SHARED_LOCK(mtx) \
 std::lock_guard<std::mutex> lock(mtx);
 #endif
 
