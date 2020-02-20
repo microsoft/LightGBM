@@ -178,7 +178,7 @@ class BinMapper {
   /*!
   * \brief Get bin info
   */
-  inline std::string bin_info() const {
+  inline std::string bin_info_string() const {
     if (bin_type_ == BinType::CategoricalBin) {
       return Common::Join(bin_2_categorical_, ":");
     } else {

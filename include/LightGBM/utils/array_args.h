@@ -195,4 +195,3 @@ class ArrayArgs {
 }  // namespace LightGBM
 
 #endif   // LightGBM_UTILS_ARRAY_AGRS_H_
-

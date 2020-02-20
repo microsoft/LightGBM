@@ -616,13 +616,13 @@ class Dataset {
 
   inline std::vector<std::string> feature_infos() const {
     std::vector<std::string> bufs;
-    for (int i = 0; i < num_total_features_; i++) {
+    for (int i = 0; i < num_total_features_; ++i) {
       int fidx = used_feature_map_[i];
-      if (fidx == -1) {
+      if (fidx < 0) {
         bufs.push_back("none");
       } else {
         const auto bin_mapper = FeatureBinMapper(fidx);
-        bufs.push_back(bin_mapper->bin_info());
+        bufs.push_back(bin_mapper->bin_info_string());
       }
     }
     return bufs;
