@@ -70,6 +70,33 @@ test_that("use of multiple eval metrics works", {
   expect_false(is.null(bst$record_evals))
 })
 
+test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for binary classification", {
+  nrounds <- 10L
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , num_leaves = 5L
+    , nrounds = nrounds
+    , objective = "binary"
+    , metric = "binary_error"
+  )
+  expect_true(bst$lower_bound() == 0)
+  expect_true(bst$upper_bound() == 1)
+})
+
+test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for regression", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , num_leaves = 5L
+    , nrounds = nrounds
+    , objective = "regression"
+    , metric = "l2"
+  )
+  expect_true(bst$lower_bound() >= 0.0)
+  expect_true(bst$upper_bound() <= 1.0)
+})
+
 test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")

@@ -337,6 +337,30 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterGetCurrentIteration_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
+* \brief Get model upper bound value.
+* \param handle Handle of booster
+* \param[out] out_results Result pointing to max value
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterGetUpperBoundValue_R(
+    LGBM_SE handle,
+    LGBM_SE out_result,
+    LGBM_SE call_state
+);
+
+/*!
+* \brief Get model lower bound value.
+* \param handle Handle of booster
+* \param[out] out_results Result pointing to min value
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterGetLowerBoundValue_R(
+    LGBM_SE handle,
+    LGBM_SE out_result,
+    LGBM_SE call_state
+);
+
+/*!
 * \brief Get Name of eval
 * \param eval_names eval names
 * \return 0 when succeed, -1 when failure happens
