@@ -667,6 +667,22 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
   }
 }
 
+double GBDT::GetUpperBoundValue() const {
+  double max_value = 0.0;
+  for (const auto &tree: models_) {
+    max_value += tree->GetUpperBoundValue();
+  }
+  return max_value;
+}
+
+double GBDT::GetLowerBoundValue() const {
+  double min_value = 0.0;
+  for (const auto &tree: models_) {
+    min_value += tree->GetLowerBoundValue();
+  }
+  return min_value;
+}
+
 void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
                              const std::vector<const Metric*>& training_metrics) {
   if (train_data != train_data_ && !train_data_->CheckAlign(*train_data)) {
