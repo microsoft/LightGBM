@@ -597,12 +597,12 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   DatasetLoader loader(config, nullptr, 1, filename);
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
-      *out = loader.LoadFromFile(filename, "");
+      *out = loader.LoadFromFile(filename);
     } else {
-      *out = loader.LoadFromFile(filename, "", Network::rank(), Network::num_machines());
+      *out = loader.LoadFromFile(filename, Network::rank(), Network::num_machines());
     }
   } else {
-    *out = loader.LoadFromFileAlignWithOtherDataset(filename, "",
+    *out = loader.LoadFromFileAlignWithOtherDataset(filename,
                                                     reinterpret_cast<const Dataset*>(reference));
   }
   API_END();

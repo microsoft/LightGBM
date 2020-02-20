@@ -47,9 +47,8 @@ class Metadata {
   /*!
   * \brief Initialization will load query level informations, since it is need for sampling data
   * \param data_filename Filename of data
-  * \param init_score_filename Filename of initial score
   */
-  void Init(const char* data_filename, const char* initscore_file);
+  void Init(const char* data_filename);
   /*!
   * \brief init as subset
   * \param metadata Filename of data
@@ -213,7 +212,7 @@ class Metadata {
 
  private:
   /*! \brief Load initial scores from file */
-  void LoadInitialScore(const char* initscore_file);
+  void LoadInitialScore();
   /*! \brief Load wights from file */
   void LoadWeights();
   /*! \brief Load query boundaries from file */
