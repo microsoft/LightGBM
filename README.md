@@ -94,7 +94,7 @@ Support
 How to Contribute
 -----------------
 
-Check [Cortributing](https://github.com/microsoft/LightGBM/blob/master/CONTRIBUTING.md) page.
+Check [CONTRIBUTING](https://github.com/microsoft/LightGBM/blob/master/CONTRIBUTING.md) page.
 
 
 Microsoft Open Source Code of Conduct
