@@ -631,6 +631,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       }
       OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     comm_size_t self_buf_size = 0;
     for (int i = 0; i < len[rank]; ++i) {
       if (ignore_features_.count(start[rank] + i) > 0) {

@@ -44,9 +44,15 @@ class ThreadExceptionHelper {
 
 #define OMP_INIT_EX() ThreadExceptionHelper omp_except_helper
 #define OMP_LOOP_EX_BEGIN() try {
-#define OMP_LOOP_EX_END() } \
-catch(std::exception& ex) { Log::Warning(ex.what()); omp_except_helper.CaptureException(); } \
-catch(...) { omp_except_helper.CaptureException();  }
+#define OMP_LOOP_EX_END()                 \
+  }                                       \
+  catch (std::exception & ex) {           \
+    Log::Warning(ex.what());              \
+    omp_except_helper.CaptureException(); \
+  }                                       \
+  catch (...) {                           \
+    omp_except_helper.CaptureException(); \
+  }
 #define OMP_THROW_EX() omp_except_helper.ReThrow()
 
 #else

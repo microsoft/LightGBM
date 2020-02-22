@@ -929,14 +929,14 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   }
 
   OMP_INIT_EX();
-  std::vector<std::pair<int, double>> threadBuffer;
-  #pragma omp parallel for schedule(static) private(threadBuffer)
+  std::vector<std::pair<int, double>> thread_buffer;
+  #pragma omp parallel for schedule(static) private(thread_buffer)
   for (int i = 0; i < num_rows; ++i) {
     OMP_LOOP_EX_BEGIN();
     {
       const int tid = omp_get_thread_num();
-      get_row_fun(i, threadBuffer);
-      ret->PushOneRow(tid, i, threadBuffer);
+      get_row_fun(i, thread_buffer);
+      ret->PushOneRow(tid, i, thread_buffer);
     }
     OMP_LOOP_EX_END();
   }
@@ -1541,17 +1541,18 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     }
   }
   std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun =
-    [&iterators, ncol] (int i) {
-    std::vector<std::pair<int, double>> one_row;
-    const int tid = omp_get_thread_num();
-    for (int j = 0; j < ncol; ++j) {
-      auto val = iterators[tid][j].Get(i);
-      if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        one_row.emplace_back(j, val);
-      }
-    }
-    return one_row;
-  };
+      [&iterators, ncol](int i) {
+        std::vector<std::pair<int, double>> one_row;
+        one_row.reserve(ncol);
+        const int tid = omp_get_thread_num();
+        for (int j = 0; j < ncol; ++j) {
+          auto val = iterators[tid][j].Get(i);
+          if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
+            one_row.emplace_back(j, val);
+          }
+        }
+        return one_row;
+      };
   ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
                        out_result, out_len);
   API_END();
@@ -1809,6 +1810,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
     return [inner_function] (int row_idx) {
       auto raw_values = inner_function(row_idx);
       std::vector<std::pair<int, double>> ret;
+      ret.reserve(raw_values.size());
       for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
         if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
           ret.emplace_back(i, raw_values[i]);
@@ -1827,6 +1829,7 @@ RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
     auto inner_function = RowFunctionFromDenseMatric(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
     auto raw_values = inner_function(0);
     std::vector<std::pair<int, double>> ret;
+    ret.reserve(raw_values.size());
     for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
       if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
         ret.emplace_back(i, raw_values[i]);

@@ -81,6 +81,18 @@ wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/dockerfi
 docker build -t lightgbm-r -f dockerfile-r .
 ```
 
+This will default to the latest version of R. If you want to try with an older `rocker` container to run a particular version of R, pass in a build arg with [a valid tag](https://hub.docker.com/r/rocker/verse/tags).
+
+For example, to test with R 3.5:
+
+```
+docker build \
+    -t lightgbm-r-35 \
+    -f dockerfile-r \
+    --build-arg R_VERSION=3.5 \
+    .
+```
+
 After the build is finished you have two options to run the container:
 
 1. Start [RStudio](https://www.rstudio.com/products/rstudio/), an interactive development environment, so that you can develop your analysis using LightGBM or simply try out the R package. You can open RStudio in your web browser.

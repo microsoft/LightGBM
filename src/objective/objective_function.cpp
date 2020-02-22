@@ -50,6 +50,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return nullptr;
   }
   Log::Fatal("Unknown objective type name: %s", type.c_str());
+  return nullptr;
 }
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& str) {
@@ -91,6 +92,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return nullptr;
   }
   Log::Fatal("Unknown objective type name: %s", type.c_str());
+  return nullptr;
 }
 
 }  // namespace LightGBM

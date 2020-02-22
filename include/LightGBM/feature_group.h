@@ -36,8 +36,9 @@ class FeatureGroup {
     // use bin at zero to store most_freq_bin
     num_total_bin_ = 1;
     bin_offsets_.emplace_back(num_total_bin_);
+    auto& ref_bin_mappers = *bin_mappers;
     for (int i = 0; i < num_feature_; ++i) {
-      bin_mappers_.emplace_back(bin_mappers->at(i).release());
+      bin_mappers_.emplace_back(ref_bin_mappers[i].release());
       auto num_bin = bin_mappers_[i]->num_bin();
       if (bin_mappers_[i]->GetMostFreqBin() == 0) {
         num_bin -= 1;
@@ -68,8 +69,9 @@ class FeatureGroup {
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
     bin_offsets_.emplace_back(num_total_bin_);
+    auto& ref_bin_mappers = *bin_mappers;
     for (int i = 0; i < num_feature_; ++i) {
-      bin_mappers_.emplace_back(bin_mappers->at(i).release());
+      bin_mappers_.emplace_back(ref_bin_mappers[i].release());
       auto num_bin = bin_mappers_[i]->num_bin();
       if (bin_mappers_[i]->GetMostFreqBin() == 0) {
         num_bin -= 1;

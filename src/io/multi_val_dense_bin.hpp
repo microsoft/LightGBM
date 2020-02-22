@@ -156,16 +156,11 @@ class MultiValDenseBin : public MultiValBin {
                       const std::vector<uint32_t>&,
                       const std::vector<uint32_t>&,
                       const std::vector<uint32_t>& delta) override {
-    const auto other = reinterpret_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    { num_threads = omp_get_num_threads(); }
-
-    const int min_block_size = 1024;
-    const int n_block = std::min(
-        num_threads, (num_data_ + min_block_size - 1) / min_block_size);
-    const data_size_t block_size = (num_data_ + n_block - 1) / n_block;
+    const auto other =
+        reinterpret_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
+    int n_block = 1;
+    data_size_t block_size = num_data_;
+    Threading::BlockInfo<data_size_t>(num_data_, 1024, &n_block, &block_size);
 #pragma omp parallel for schedule(static, 1)
     for (int tid = 0; tid < n_block; ++tid) {
       data_size_t start = tid * block_size;
