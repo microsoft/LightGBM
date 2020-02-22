@@ -41,7 +41,7 @@ build_script:
     python setup.py install)
 
 test_script:
-  - pytest %APPVEYOR_BUILD_FOLDER%\tests\python_package_test
+  - pytest %APPVEYOR_BUILD_FOLDER%\tests
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide
   - ps: >-
       @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
