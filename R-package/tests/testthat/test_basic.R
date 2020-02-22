@@ -7,6 +7,8 @@ test <- agaricus.test
 
 windows_flag <- grepl("Windows", Sys.info()[["sysname"]])
 
+TOLERANCE <- 1e-6
+
 test_that("train and predict binary classification", {
   nrounds <- 10L
   bst <- lightgbm(
@@ -28,7 +30,7 @@ test_that("train and predict binary classification", {
   expect_equal(length(pred1), 6513L)
   err_pred1 <- sum((pred1 > 0.5) != train$label) / length(train$label)
   err_log <- record_results[1L]
-  expect_lt(abs(err_pred1 - err_log), 10e-6)
+  expect_lt(abs(err_pred1 - err_log), TOLERANCE)
 })
 
 
@@ -81,7 +83,6 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
     , objective = "binary"
     , metric = "binary_error"
   )
-  TOLERANCE <- 1e-06
   expect_true(abs(bst$lower_bound() - -1.590853) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 1.871015) <  TOLERANCE)
 })
@@ -97,7 +98,6 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
     , objective = "regression"
     , metric = "l2"
   )
-  TOLERANCE <- 1e-06
   expect_true(abs(bst$lower_bound() - 0.1513859) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 0.9080349) < TOLERANCE)
 })
