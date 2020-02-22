@@ -192,6 +192,8 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
     bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
     drop_seed = static_cast<int>(rand.NextShort(0, int_max));
     feature_fraction_seed = static_cast<int>(rand.NextShort(0, int_max));
+    objective_seed = static_cast<int>(rand.NextShort(0, int_max));
+    extra_seed = static_cast<int>(rand.NextShort(0, int_max));
   }
 
   GetTaskType(params, &task);
@@ -208,23 +210,16 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   // sort eval_at
   std::sort(eval_at.begin(), eval_at.end());
 
-  if (valid_data_initscores.size() == 0 && valid.size() > 0) {
-    valid_data_initscores = std::vector<std::string>(valid.size(), "");
-  }
-  CHECK(valid.size() == valid_data_initscores.size());
-
-  if (valid_data_initscores.empty()) {
-    std::vector<std::string> new_valid;
-    for (size_t i = 0; i < valid.size(); ++i) {
-      if (valid[i] != data) {
-        // Only push the non-training data
-        new_valid.push_back(valid[i]);
-      } else {
-        is_provide_training_metric = true;
-      }
+  std::vector<std::string> new_valid;
+  for (size_t i = 0; i < valid.size(); ++i) {
+    if (valid[i] != data) {
+      // Only push the non-training data
+      new_valid.push_back(valid[i]);
+    } else {
+      is_provide_training_metric = true;
     }
-    valid = new_valid;
   }
+  valid = new_valid;
 
   // check for conflicts
   CheckParamConflict();
@@ -310,6 +305,11 @@ void Config::CheckParamConflict() {
       // Fits in an int, and is more restrictive than the current num_leaves
       num_leaves = static_cast<int>(full_num_leaves);
     }
+  }
+  // force col-wise for gpu
+  if (device_type == std::string("gpu")) {
+    force_col_wise = true;
+    force_row_wise = false;
   }
 }
 

@@ -1,4 +1,4 @@
-context("basic functions")
+context("lightgbm()")
 
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
@@ -70,6 +70,20 @@ test_that("use of multiple eval metrics works", {
   expect_false(is.null(bst$record_evals))
 })
 
+test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", metric = "l2,l1")
+  for (nround_value in c(-10L, 0L)) {
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = nround_value
+      )
+    }, "nrounds should be greater than zero")
+  }
+})
+
 
 test_that("training continuation works", {
   testthat::skip("This test is currently broken. See issue #2468 for details.")
@@ -103,6 +117,7 @@ test_that("training continuation works", {
   expect_lt(abs(err_bst - err_bst2), 0.01)
 })
 
+context("lgb.cv()")
 
 test_that("cv works", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -117,4 +132,166 @@ test_that("cv works", {
     , early_stopping_rounds = 10L
   )
   expect_false(is.null(bst$record_evals))
+})
+
+test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", metric = "l2,l1")
+  for (nround_value in c(-10L, 0L)) {
+    expect_error({
+      bst <- lgb.cv(
+        params
+        , dtrain
+        , nround_value
+        , nfold = 5L
+        , min_data = 1L
+      )
+    }, "nrounds should be greater than zero")
+  }
+})
+
+test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset and labels are not given", {
+  bad_values <- list(
+    4L
+    , "hello"
+    , list(a = TRUE, b = seq_len(10L))
+    , data.frame(x = seq_len(5L), y = seq_len(5L))
+    , data.table::data.table(x = seq_len(5L),  y = seq_len(5L))
+    , matrix(data = seq_len(10L), 2L, 5L)
+  )
+  for (val in bad_values) {
+    expect_error({
+      bst <- lgb.cv(
+        params = list(objective = "regression", metric = "l2,l1")
+        , data = val
+        , 10L
+        , nfold = 5L
+        , min_data = 1L
+      )
+    }, regexp = "'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'", fixed = TRUE)
+  }
+})
+
+context("lgb.train()")
+
+test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", metric = "l2,l1")
+  for (nround_value in c(-10L, 0L)) {
+    expect_error({
+      bst <- lgb.train(
+        params
+        , dtrain
+        , nround_value
+      )
+    }, "nrounds should be greater than zero")
+  }
+})
+
+test_that("lgb.train() throws an informative error if 'data' is not an lgb.Dataset", {
+  bad_values <- list(
+    4L
+    , "hello"
+    , list(a = TRUE, b = seq_len(10L))
+    , data.frame(x = seq_len(5L), y = seq_len(5L))
+    , data.table::data.table(x = seq_len(5L),  y = seq_len(5L))
+    , matrix(data = seq_len(10L), 2L, 5L)
+  )
+  for (val in bad_values) {
+    expect_error({
+      bst <- lgb.train(
+        params = list(objective = "regression", metric = "l2,l1")
+        , data = val
+        , 10L
+      )
+    }, regexp = "data must be an lgb.Dataset instance", fixed = TRUE)
+  }
+})
+
+test_that("lgb.train() throws an informative error if 'valids' is not a list of lgb.Dataset objects", {
+  valids <- list(
+    "valid1" = data.frame(x = rnorm(5L), y = rnorm(5L))
+    , "valid2" = data.frame(x = rnorm(5L), y = rnorm(5L))
+  )
+  expect_error({
+    bst <- lgb.train(
+      params = list(objective = "regression", metric = "l2,l1")
+      , data = lgb.Dataset(train$data, label = train$label)
+      , 10L
+      , valids = valids
+    )
+  }, regexp = "valids must be a list of lgb.Dataset elements")
+})
+
+test_that("lgb.train() errors if 'valids' is a list of lgb.Dataset objects but some do not have names", {
+  valids <- list(
+    "valid1" = lgb.Dataset(matrix(rnorm(10L), 5L, 2L))
+    , lgb.Dataset(matrix(rnorm(10L), 2L, 5L))
+  )
+  expect_error({
+    bst <- lgb.train(
+      params = list(objective = "regression", metric = "l2,l1")
+      , data = lgb.Dataset(train$data, label = train$label)
+      , 10L
+      , valids = valids
+    )
+  }, regexp = "each element of valids must have a name")
+})
+
+test_that("lgb.train() throws an informative error if 'valids' contains lgb.Dataset objects but none have names", {
+  valids <- list(
+    lgb.Dataset(matrix(rnorm(10L), 5L, 2L))
+    , lgb.Dataset(matrix(rnorm(10L), 2L, 5L))
+  )
+  expect_error({
+    bst <- lgb.train(
+      params = list(objective = "regression", metric = "l2,l1")
+      , data = lgb.Dataset(train$data, label = train$label)
+      , 10L
+      , valids = valids
+    )
+  }, regexp = "each element of valids must have a name")
+})
+
+test_that("lgb.train() works with force_col_wise and force_row_wise", {
+  set.seed(1234L)
+  nrounds <- 10L
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+  )
+  params <- list(
+    objective = "binary"
+    , metric = "binary_error"
+    , force_col_wise = TRUE
+  )
+  bst_col_wise <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+  )
+
+  params <- list(
+    objective = "binary"
+    , metric = "binary_error"
+    , force_row_wise = TRUE
+  )
+  bst_row_wise <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+  )
+
+  expected_error <- 0.003070782
+  expect_equal(bst_col_wise$eval_train()[[1L]][["value"]], expected_error)
+  expect_equal(bst_row_wise$eval_train()[[1L]][["value"]], expected_error)
+
+  # check some basic details of the boosters just to be sure force_col_wise
+  # and force_row_wise are not causing any weird side effects
+  for (bst in list(bst_row_wise, bst_col_wise)) {
+    expect_equal(bst$current_iter(), nrounds)
+    parsed_model <- jsonlite::fromJSON(bst$dump_model())
+    expect_equal(parsed_model$objective, "binary sigmoid:1")
+    expect_false(parsed_model$average_output)
+  }
 })

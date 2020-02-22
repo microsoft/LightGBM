@@ -32,6 +32,14 @@ Dataset <- R6::R6Class(
                           info = list(),
                           ...) {
 
+      # validate inputs early to avoid unnecessary computation
+      if (!(is.null(reference) || lgb.check.r6.class(reference, "lgb.Dataset"))) {
+          stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset"))
+      }
+      if (!(is.null(predictor) || lgb.check.r6.class(predictor, "lgb.Predictor"))) {
+          stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
+      }
+
       # Check for additional parameters
       additional_params <- list(...)
 
@@ -54,20 +62,6 @@ Dataset <- R6::R6Class(
 
         }
 
-      }
-
-      # Check for dataset reference
-      if (!is.null(reference)) {
-        if (!lgb.check.r6.class(reference, "lgb.Dataset")) {
-          stop("lgb.Dataset: Can only use ", sQuote("lgb.Dataset"), " as reference")
-        }
-      }
-
-      # Check for predictor reference
-      if (!is.null(predictor)) {
-        if (!lgb.check.r6.class(predictor, "lgb.Predictor")) {
-          stop("lgb.Dataset: Only can use ", sQuote("lgb.Predictor"), " as predictor")
-        }
       }
 
       # Check for matrix format
@@ -536,20 +530,46 @@ Dataset <- R6::R6Class(
 
     # Update parameters
     update_params = function(params) {
-
-      # Parameter updating
-      if (!lgb.is.null.handle(private$handle)) {
-        lgb.call(
-          "LGBM_DatasetUpdateParam_R"
-          , ret = NULL
-          , private$handle
-          , lgb.params2str(params)
-        )
+      if (length(params) == 0L) {
         return(invisible(self))
       }
-      private$params <- modifyList(private$params, params)
+      if (lgb.is.null.handle(private$handle)) {
+        private$params <- modifyList(private$params, params)
+      } else {
+        call_state <- 0L
+        call_state <- .Call(
+          "LGBM_DatasetUpdateParamChecking_R"
+          , lgb.params2str(private$params)
+          , lgb.params2str(params)
+          , call_state
+          , PACKAGE = "lib_lightgbm"
+        )
+        call_state <- as.integer(call_state)
+        if (call_state != 0L) {
+
+          # raise error if raw data is freed
+          if (is.null(private$raw_data)) {
+            lgb.last_error()
+          }
+
+          # Overwrite paramms
+          private$params <- modifyList(private$params, params)
+          self$finalize()
+        }
+      }
       return(invisible(self))
 
+    },
+
+    get_params = function() {
+      dataset_params <- unname(unlist(.DATASET_PARAMETERS()))
+      ret <- list()
+      for (param_key in names(private$params)) {
+        if (param_key %in% dataset_params) {
+          ret[[param_key]] <- private$params[[param_key]]
+        }
+      }
+      return(ret)
     },
 
     # Set categorical feature parameter

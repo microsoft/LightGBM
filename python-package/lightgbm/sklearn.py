@@ -269,6 +269,8 @@ class LGBMModel(_LGBMModelBase):
             The evaluation results if ``early_stopping_rounds`` has been specified.
         feature_importances_ : array of shape = [n_features]
             The feature importances (the higher, the more important the feature).
+        feature_name_ : array of shape = [n_features]
+            The names of features.
 
         Note
         ----
@@ -556,11 +558,14 @@ class LGBMModel(_LGBMModelBase):
 
         self._n_features = _X.shape[1]
 
-        def _construct_dataset(X, y, sample_weight, init_score, group, params):
+        def _construct_dataset(X, y, sample_weight, init_score, group, params,
+                               categorical_feature='auto'):
             return Dataset(X, label=y, weight=sample_weight, group=group,
-                           init_score=init_score, params=params)
+                           init_score=init_score, params=params,
+                           categorical_feature=categorical_feature)
 
-        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params)
+        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params,
+                                       categorical_feature=categorical_feature)
 
         valid_sets = []
         if eval_set is not None:
@@ -606,7 +611,6 @@ class LGBMModel(_LGBMModelBase):
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self._fobj, feval=feval,
                               verbose_eval=verbose, feature_name=feature_name,
-                              categorical_feature=categorical_feature,
                               callbacks=callbacks, init_model=init_model)
 
         if evals_result:
@@ -728,6 +732,13 @@ class LGBMModel(_LGBMModelBase):
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
         return self._Booster.feature_importance(importance_type=self.importance_type)
+
+    @property
+    def feature_name_(self):
+        """Get feature name."""
+        if self._n_features is None:
+            raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
+        return self._Booster.feature_name()
 
 
 class LGBMRegressor(LGBMModel, _LGBMRegressorBase):

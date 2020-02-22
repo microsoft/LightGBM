@@ -587,9 +587,9 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _Boost: https://www.boost.org/users/history/
 
-.. _Prebuilt Boost x86_64: https://dl.fedoraproject.org/pub/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.66.0-2.fc29.noarch.rpm
+.. _Prebuilt Boost x86_64: https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.66.0-2.fc29.noarch.rpm
 
-.. _Prebuilt Boost i686: https://dl.fedoraproject.org/pub/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.66.0-2.fc29.noarch.rpm
+.. _Prebuilt Boost i686: https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.66.0-2.fc29.noarch.rpm
 
 .. _7zip: https://www.7-zip.org/download.html
 

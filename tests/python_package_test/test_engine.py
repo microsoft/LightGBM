@@ -66,7 +66,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.11)
+        self.assertLess(ret, 0.14)
         self.assertEqual(len(evals_result['valid_0']['binary_logloss']), 50)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
@@ -328,7 +328,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = multi_logloss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.15)
+        self.assertLess(ret, 0.16)
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
     def test_multiclass_rf(self):
@@ -518,7 +518,7 @@ class TestEngine(unittest.TestCase):
                         valid_names=valid_set_name,
                         verbose_eval=False,
                         early_stopping_rounds=5)
-        self.assertLessEqual(gbm.best_iteration, 31)
+        self.assertLessEqual(gbm.best_iteration, 39)
         self.assertIn(valid_set_name, gbm.best_score)
         self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
 
@@ -714,7 +714,7 @@ class TestEngine(unittest.TestCase):
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
                                "D": np.random.permutation([True, False] * 30),
-                               "E": pd.Categorical(pd.np.random.permutation(['z', 'y'] * 30),
+                               "E": pd.Categorical(np.random.permutation(['z', 'y'] * 30),
                                                    ordered=True)})
         np.random.seed()  # reset seed
         cat_cols_actual = ["A", "B", "C", "D"]
@@ -1740,7 +1740,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.13)
+        self.assertLess(ret, 0.14)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
         params['feature_fraction'] = 0.5
         gbm2 = lgb.train(params, lgb_train, num_boost_round=25)
@@ -1810,6 +1810,102 @@ class TestEngine(unittest.TestCase):
         predicted = est.predict(new_x)
         self.assertNotAlmostEqual(predicted[0], predicted[1])
         self.assertAlmostEqual(predicted[1], predicted[2])
+
+    def test_dataset_update_params(self):
+        default_params = {"max_bin": 100,
+                          "max_bin_by_feature": [20, 10],
+                          "bin_construct_sample_cnt": 10000,
+                          "min_data_in_bin": 1,
+                          "use_missing": False,
+                          "zero_as_missing": False,
+                          "categorical_feature": [0],
+                          "feature_pre_filter": True,
+                          "pre_partition": False,
+                          "enable_bundle": True,
+                          "data_random_seed": 0,
+                          "is_enable_sparse": True,
+                          "header": True,
+                          "two_round": True,
+                          "label_column": 0,
+                          "weight_column": 0,
+                          "group_column": 0,
+                          "ignore_column": 0,
+                          "min_data_in_leaf": 10,
+                          "verbose": -1}
+        unchangeable_params = {"max_bin": 150,
+                               "max_bin_by_feature": [30, 5],
+                               "bin_construct_sample_cnt": 5000,
+                               "min_data_in_bin": 2,
+                               "use_missing": True,
+                               "zero_as_missing": True,
+                               "categorical_feature": [0, 1],
+                               "feature_pre_filter": False,
+                               "pre_partition": True,
+                               "enable_bundle": False,
+                               "data_random_seed": 1,
+                               "is_enable_sparse": False,
+                               "header": False,
+                               "two_round": False,
+                               "label_column": 1,
+                               "weight_column": 1,
+                               "group_column": 1,
+                               "ignore_column": 1,
+                               "forcedbins_filename": "/some/path/forcedbins.json",
+                               "min_data_in_leaf": 2}
+        X = np.random.random((100, 2))
+        y = np.random.random(100)
+
+        # decreasing without freeing raw data is allowed
+        lgb_data = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
+        default_params["min_data_in_leaf"] -= 1
+        lgb.train(default_params, lgb_data, num_boost_round=3)
+
+        # decreasing before lazy init is allowed
+        lgb_data = lgb.Dataset(X, y, params=default_params)
+        default_params["min_data_in_leaf"] -= 1
+        lgb.train(default_params, lgb_data, num_boost_round=3)
+
+        # increasing is allowed
+        default_params["min_data_in_leaf"] += 2
+        lgb.train(default_params, lgb_data, num_boost_round=3)
+
+        # decreasing with disabled filter is allowed
+        default_params["feature_pre_filter"] = False
+        lgb_data = lgb.Dataset(X, y, params=default_params).construct()
+        default_params["min_data_in_leaf"] -= 4
+        lgb.train(default_params, lgb_data, num_boost_round=3)
+
+        # decreasing with enabled filter is disallowed;
+        # also changes of other params are disallowed
+        default_params["feature_pre_filter"] = True
+        lgb_data = lgb.Dataset(X, y, params=default_params).construct()
+        for key, value in unchangeable_params.items():
+            new_params = default_params.copy()
+            new_params[key] = value
+            err_msg = ("Reducing `min_data_in_leaf` with `feature_pre_filter=true` may cause *"
+                       if key == "min_data_in_leaf"
+                       else "Cannot change {} *".format(key if key != "forcedbins_filename"
+                                                        else "forced bins"))
+            with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
+                lgb.train(new_params, lgb_data, num_boost_round=3)
+
+    def test_extra_trees(self):
+        # check extra trees increases regularization
+        X, y = load_boston(True)
+        lgb_x = lgb.Dataset(X, label=y)
+        params = {'objective': 'regression',
+                  'num_leaves': 32,
+                  'verbose': -1,
+                  'extra_trees': False,
+                  'seed': 0}
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted = est.predict(X)
+        err = mean_squared_error(y, predicted)
+        params['extra_trees'] = True
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted_new = est.predict(X)
+        err_new = mean_squared_error(y, predicted_new)
+        self.assertLess(err, err_new)
 
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_trees_to_dataframe(self):

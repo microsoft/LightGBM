@@ -98,24 +98,26 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   return num_leaves_ - 1;
 }
 
-#define PredictionFun(niter, fidx_in_iter, start_pos, decision_fun, iter_idx, data_idx) \
-std::vector<std::unique_ptr<BinIterator>> iter((niter)); \
-for (int i = 0; i < (niter); ++i) { \
-  iter[i].reset(data->FeatureIterator((fidx_in_iter))); \
-  iter[i]->Reset((start_pos)); \
-}\
-for (data_size_t i = start; i < end; ++i) {\
-  int node = 0;\
-  while (node >= 0) {\
-    node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node, default_bins[node], max_bins[node]);\
+#define PredictionFun(niter, fidx_in_iter, start_pos, decision_fun, iter_idx, \
+                      data_idx)                                               \
+  std::vector<std::unique_ptr<BinIterator>> iter((niter));                    \
+  for (int i = 0; i < (niter); ++i) {                                         \
+    iter[i].reset(data->FeatureIterator((fidx_in_iter)));                     \
+    iter[i]->Reset((start_pos));                                              \
+  }                                                                           \
+  for (data_size_t i = start; i < end; ++i) {                                 \
+    int node = 0;                                                             \
+    while (node >= 0) {                                                       \
+      node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,            \
+                          default_bins[node], max_bins[node]);                \
+    }                                                                         \
+    score[(data_idx)] += static_cast<double>(leaf_value_[~node]);             \
   }\
-  score[(data_idx)] += static_cast<double>(leaf_value_[~node]);\
-}\
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
   if (num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
-      #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
         score[i] += leaf_value_[0];
       }
@@ -132,24 +134,24 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
   }
   if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, DecisionInner, node, i);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
       });
     }
   } else {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, NumericalDecisionInner, node, i);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(data->num_features(), i, start, NumericalDecisionInner, split_feature_inner_[node], i);
       });
@@ -162,7 +164,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
                                 data_size_t num_data, double* score) const {
   if (num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
-      #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
         score[used_data_indices[i]] += leaf_value_[0];
       }
@@ -179,24 +181,24 @@ void Tree::AddPredictionToScore(const Dataset* data,
   }
   if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], DecisionInner, node, used_data_indices[i]);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
       });
     }
   } else {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], NumericalDecisionInner, node, used_data_indices[i]);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(data->num_features(), i, used_data_indices[start], NumericalDecisionInner, split_feature_inner_[node], used_data_indices[i]);
       });
@@ -205,6 +207,26 @@ void Tree::AddPredictionToScore(const Dataset* data,
 }
 
 #undef PredictionFun
+
+double Tree::GetUpperBoundValue() const {
+  double upper_bound = leaf_value_[0];
+  for (int i = 1; i < num_leaves_; ++i) {
+    if (leaf_value_[i] > upper_bound) {
+      upper_bound = leaf_value_[i];
+    }
+  }
+  return upper_bound;
+}
+
+double Tree::GetLowerBoundValue() const {
+  double lower_bound = leaf_value_[0];
+  for (int i = 1; i < num_leaves_; ++i) {
+    if (leaf_value_[i] < lower_bound) {
+      lower_bound = leaf_value_[i];
+    }
+  }
+  return lower_bound;
+}
 
 std::string Tree::ToString() const {
   std::stringstream str_buf;

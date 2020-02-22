@@ -29,26 +29,13 @@ cb.reset.parameters <- function(new_params) {
   # Run some checks in the beginning
   init <- function(env) {
 
+    # Check for model environment
+    if (is.null(env$model)) {
+      stop("Env should have a ", sQuote("model"))
+    }
+
     # Store boosting rounds
     nrounds <<- env$end_iteration - env$begin_iteration + 1L
-
-    # Check for model environment
-    if (is.null(env$model)) { stop("Env should have a ", sQuote("model")) }
-
-    # Some parameters are not allowed to be changed,
-    # since changing them would simply wreck some chaos
-    not_allowed <- c(
-      .PARAMETER_ALIASES()[["num_class"]]
-      , .PARAMETER_ALIASES()[["metric"]]
-      , .PARAMETER_ALIASES()[["boosting"]]
-    )
-    if (any(pnames %in% not_allowed)) {
-      stop(
-        "Parameters "
-        , paste0(pnames[pnames %in% not_allowed], collapse = ", ")
-        , " cannot be changed during boosting"
-      )
-    }
 
     # Check parameter names
     for (n in pnames) {
@@ -285,13 +272,13 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
   # Initialization function
   init <- function(env) {
 
-    # Store evaluation length
-    eval_len <<- length(env$eval_list)
-
     # Early stopping cannot work without metrics
-    if (eval_len == 0L) {
+    if (length(env$eval_list) == 0L) {
       stop("For early stopping, valids must have at least one element")
     }
+
+    # Store evaluation length
+    eval_len <<- length(env$eval_list)
 
     # Check if verbose or not
     if (isTRUE(verbose)) {

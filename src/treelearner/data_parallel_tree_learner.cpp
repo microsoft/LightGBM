@@ -27,7 +27,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
   // allocate buffer for communication
-  size_t buffer_size = this->train_data_->NumTotalBin() * sizeof(HistogramBinEntry);
+  size_t buffer_size = this->train_data_->NumTotalBin() * kHistEntrySize;
 
   input_buffer_.resize(buffer_size);
   output_buffer_.resize(buffer_size);
@@ -82,7 +82,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
       if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
         num_bin -= 1;
       }
-      block_len_[i] += num_bin * sizeof(HistogramBinEntry);
+      block_len_[i] += num_bin * kHistEntrySize;
     }
     reduce_scatter_size_ += block_len_[i];
   }
@@ -101,7 +101,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
       if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
         num_bin -= 1;
       }
-      bin_size += num_bin * sizeof(HistogramBinEntry);
+      bin_size += num_bin * kHistEntrySize;
     }
   }
 
@@ -113,7 +113,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     if (this->train_data_->FeatureBinMapper(fid)->GetMostFreqBin() == 0) {
       num_bin -= 1;
     }
-    bin_size += num_bin * sizeof(HistogramBinEntry);
+    bin_size += num_bin * kHistEntrySize;
   }
 
   // sync global data sumup info
@@ -158,8 +158,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
                 this->smaller_leaf_histogram_array_[feature_index].SizeOfHistgram());
   }
   // Reduce scatter for histogram
-  Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, sizeof(HistogramBinEntry), block_start_.data(),
-                         block_len_.data(), output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramBinEntry::SumReducer);
+  Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, sizeof(hist_t), block_start_.data(),
+                         block_len_.data(), output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramSumReducer);
   this->FindBestSplitsFromHistograms(this->is_feature_used_, true);
 }
 
@@ -186,69 +186,56 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
 
     this->train_data_->FixHistogram(feature_index,
                                     this->smaller_leaf_splits_->sum_gradients(), this->smaller_leaf_splits_->sum_hessians(),
-                                    GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
                                     this->smaller_leaf_histogram_array_[feature_index].RawData());
-    SplitInfo smaller_split;
-    // find best threshold for smaller child
-    this->smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-      this->smaller_leaf_splits_->sum_gradients(),
-      this->smaller_leaf_splits_->sum_hessians(),
-      GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
-      this->smaller_leaf_splits_->min_constraint(),
-      this->smaller_leaf_splits_->max_constraint(),
-      &smaller_split);
-    smaller_split.feature = real_feature_index;
-    if (smaller_split > smaller_bests_per_thread[tid] && smaller_node_used_features[feature_index]) {
-      smaller_bests_per_thread[tid] = smaller_split;
-    }
+
+    this->ComputeBestSplitForFeature(
+        this->smaller_leaf_histogram_array_, feature_index, real_feature_index,
+        smaller_node_used_features[feature_index],
+        GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->leaf_index()),
+        this->smaller_leaf_splits_.get(),
+        &smaller_bests_per_thread[tid]);
 
     // only root leaf
-    if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->LeafIndex() < 0) continue;
+    if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->leaf_index() < 0) continue;
 
     // construct histgroms for large leaf, we init larger leaf as the parent, so we can just subtract the smaller leaf's histograms
     this->larger_leaf_histogram_array_[feature_index].Subtract(
       this->smaller_leaf_histogram_array_[feature_index]);
-    SplitInfo larger_split;
-    // find best threshold for larger child
-    this->larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-      this->larger_leaf_splits_->sum_gradients(),
-      this->larger_leaf_splits_->sum_hessians(),
-      GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
-      this->larger_leaf_splits_->min_constraint(),
-      this->larger_leaf_splits_->max_constraint(),
-      &larger_split);
-    larger_split.feature = real_feature_index;
-    if (larger_split > larger_bests_per_thread[tid] && larger_node_used_features[feature_index]) {
-      larger_bests_per_thread[tid] = larger_split;
-    }
+
+    this->ComputeBestSplitForFeature(
+        this->larger_leaf_histogram_array_, feature_index, real_feature_index,
+        larger_node_used_features[feature_index],
+        GetGlobalDataCountInLeaf(this->larger_leaf_splits_->leaf_index()),
+        this->larger_leaf_splits_.get(),
+        &larger_bests_per_thread[tid]);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
 
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_bests_per_thread);
-  int leaf = this->smaller_leaf_splits_->LeafIndex();
+  int leaf = this->smaller_leaf_splits_->leaf_index();
   this->best_split_per_leaf_[leaf] = smaller_bests_per_thread[smaller_best_idx];
 
-  if (this->larger_leaf_splits_ != nullptr &&  this->larger_leaf_splits_->LeafIndex() >= 0) {
-    leaf = this->larger_leaf_splits_->LeafIndex();
+  if (this->larger_leaf_splits_ != nullptr &&  this->larger_leaf_splits_->leaf_index() >= 0) {
+    leaf = this->larger_leaf_splits_->leaf_index();
     auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_bests_per_thread);
     this->best_split_per_leaf_[leaf] = larger_bests_per_thread[larger_best_idx];
   }
 
   SplitInfo smaller_best_split, larger_best_split;
-  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
+  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->leaf_index()];
   // find local best split for larger leaf
-  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
+  if (this->larger_leaf_splits_->leaf_index() >= 0) {
+    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->leaf_index()];
   }
 
   // sync global best info
   SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->config_->max_cat_threshold);
 
   // set best split
-  this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()] = smaller_best_split;
-  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()] = larger_best_split;
+  this->best_split_per_leaf_[this->smaller_leaf_splits_->leaf_index()] = smaller_best_split;
+  if (this->larger_leaf_splits_->leaf_index() >= 0) {
+    this->best_split_per_leaf_[this->larger_leaf_splits_->leaf_index()] = larger_best_split;
   }
 }
 

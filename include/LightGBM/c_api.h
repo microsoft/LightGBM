@@ -26,7 +26,6 @@ typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
 #define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
 #define C_API_DTYPE_INT32   (2)  /*!< \brief int32. */
 #define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
-#define C_API_DTYPE_INT8    (4)  /*!< \brief int8. */
 
 #define C_API_PREDICT_NORMAL     (0)  /*!< \brief Normal prediction, with transform (if needed). */
 #define C_API_PREDICT_RAW_SCORE  (1)  /*!< \brief Predict raw score. */
@@ -331,7 +330,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
  * \param field_name Field name
  * \param[out] out_len Used to set result length
  * \param[out] out_ptr Pointer to the result
- * \param[out] out_type Type of result pointer, can be ``C_API_DTYPE_INT8``, ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param[out] out_type Type of result pointer, can be ``C_API_DTYPE_INT32``, ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
@@ -341,12 +340,13 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
                                            int* out_type);
 
 /*!
- * \brief Update parameters for a dataset.
- * \param handle Handle of dataset
- * \param parameters Parameters
+ * \brief Raise errors for attempts to update dataset parameters.
+ * \param old_parameters Current dataset parameters
+ * \param new_parameters New dataset parameters
+ * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetUpdateParam(DatasetHandle handle,
-                                              const char* parameters);
+LIGHTGBM_C_EXPORT int LGBM_DatasetUpdateParamChecking(const char* old_parameters,
+                                                      const char* new_parameters);
 
 /*!
  * \brief Get number of data points.
@@ -987,6 +987,24 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
                                                     int num_iteration,
                                                     int importance_type,
                                                     double* out_results);
+
+/*!
+ * \brief Get model upper bound value.
+ * \param handle Handle of booster
+ * \param[out] out_results Result pointing to max value
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetUpperBoundValue(BoosterHandle handle,
+                                                     double* out_results);
+
+/*!
+ * \brief Get model lower bound value.
+ * \param handle Handle of booster
+ * \param[out] out_results Result pointing to min value
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
+                                                     double* out_results);
 
 /*!
  * \brief Initialize the network.
