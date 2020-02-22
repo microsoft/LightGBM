@@ -49,12 +49,6 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"device", "device_type"},
   {"random_seed", "seed"},
   {"random_state", "seed"},
-  {"model_input", "input_model"},
-  {"model_in", "input_model"},
-  {"model_output", "output_model"},
-  {"model_out", "output_model"},
-  {"save_period", "snapshot_freq"},
-  {"verbose", "verbosity"},
   {"hist_pool_size", "histogram_pool_size"},
   {"min_data_per_leaf", "min_data_in_leaf"},
   {"min_data", "min_data_in_leaf"},
@@ -99,8 +93,12 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"forced_splits_filename", "forcedsplits_filename"},
   {"forced_splits_file", "forcedsplits_filename"},
   {"forced_splits", "forcedsplits_filename"},
-  {"is_save_binary", "save_binary"},
-  {"is_save_binary_file", "save_binary"},
+  {"verbose", "verbosity"},
+  {"model_input", "input_model"},
+  {"model_in", "input_model"},
+  {"model_output", "output_model"},
+  {"model_out", "output_model"},
+  {"save_period", "snapshot_freq"},
   {"subsample_for_bin", "bin_construct_sample_cnt"},
   {"data_seed", "data_random_seed"},
   {"is_sparse", "is_enable_sparse"},
@@ -124,12 +122,8 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"cat_feature", "categorical_feature"},
   {"categorical_column", "categorical_feature"},
   {"cat_column", "categorical_feature"},
-  {"predict_result", "output_result"},
-  {"prediction_result", "output_result"},
-  {"predict_name", "output_result"},
-  {"prediction_name", "output_result"},
-  {"pred_name", "output_result"},
-  {"name_pred", "output_result"},
+  {"is_save_binary", "save_binary"},
+  {"is_save_binary_file", "save_binary"},
   {"is_predict_raw_score", "predict_raw_score"},
   {"predict_rawscore", "predict_raw_score"},
   {"raw_score", "predict_raw_score"},
@@ -137,6 +131,12 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"leaf_index", "predict_leaf_index"},
   {"is_predict_contrib", "predict_contrib"},
   {"contrib", "predict_contrib"},
+  {"predict_result", "output_result"},
+  {"prediction_result", "output_result"},
+  {"predict_name", "output_result"},
+  {"prediction_name", "output_result"},
+  {"pred_name", "output_result"},
+  {"name_pred", "output_result"},
   {"convert_model_file", "convert_model"},
   {"num_classes", "num_class"},
   {"unbalance", "is_unbalance"},
@@ -178,10 +178,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "num_threads",
   "device_type",
   "seed",
-  "input_model",
-  "output_model",
-  "snapshot_freq",
-  "verbosity",
   "force_col_wise",
   "force_row_wise",
   "histogram_pool_size",
@@ -226,7 +222,10 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "cegb_penalty_split",
   "cegb_penalty_feature_lazy",
   "cegb_penalty_feature_coupled",
-  "save_binary",
+  "verbosity",
+  "input_model",
+  "output_model",
+  "snapshot_freq",
   "max_bin",
   "max_bin_by_feature",
   "min_data_in_bin",
@@ -246,7 +245,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "ignore_column",
   "categorical_feature",
   "forcedbins_filename",
-  "output_result",
+  "save_binary",
   "num_iteration_predict",
   "predict_raw_score",
   "predict_leaf_index",
@@ -255,6 +254,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "pred_early_stop",
   "pred_early_stop_freq",
   "pred_early_stop_margin",
+  "output_result",
   "convert_model_language",
   "convert_model",
   "num_class",
@@ -308,14 +308,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(num_leaves <=131072);
 
   GetInt(params, "num_threads", &num_threads);
-
-  GetString(params, "input_model", &input_model);
-
-  GetString(params, "output_model", &output_model);
-
-  GetInt(params, "snapshot_freq", &snapshot_freq);
-
-  GetInt(params, "verbosity", &verbosity);
 
   GetBool(params, "force_col_wise", &force_col_wise);
 
@@ -446,7 +438,13 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     cegb_penalty_feature_coupled = Common::StringToArray<double>(tmp_str, ',');
   }
 
-  GetBool(params, "save_binary", &save_binary);
+  GetInt(params, "verbosity", &verbosity);
+
+  GetString(params, "input_model", &input_model);
+
+  GetString(params, "output_model", &output_model);
+
+  GetInt(params, "snapshot_freq", &snapshot_freq);
 
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin >1);
@@ -491,7 +489,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "forcedbins_filename", &forcedbins_filename);
 
-  GetString(params, "output_result", &output_result);
+  GetBool(params, "save_binary", &save_binary);
 
   GetInt(params, "num_iteration_predict", &num_iteration_predict);
 
@@ -508,6 +506,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "pred_early_stop_freq", &pred_early_stop_freq);
 
   GetDouble(params, "pred_early_stop_margin", &pred_early_stop_margin);
+
+  GetString(params, "output_result", &output_result);
 
   GetString(params, "convert_model_language", &convert_model_language);
 
@@ -596,10 +596,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
-  str_buf << "[input_model: " << input_model << "]\n";
-  str_buf << "[output_model: " << output_model << "]\n";
-  str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
-  str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
   str_buf << "[force_row_wise: " << force_row_wise << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
@@ -644,7 +640,10 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_split: " << cegb_penalty_split << "]\n";
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
-  str_buf << "[save_binary: " << save_binary << "]\n";
+  str_buf << "[verbosity: " << verbosity << "]\n";
+  str_buf << "[input_model: " << input_model << "]\n";
+  str_buf << "[output_model: " << output_model << "]\n";
+  str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
@@ -664,7 +663,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[ignore_column: " << ignore_column << "]\n";
   str_buf << "[categorical_feature: " << categorical_feature << "]\n";
   str_buf << "[forcedbins_filename: " << forcedbins_filename << "]\n";
-  str_buf << "[output_result: " << output_result << "]\n";
+  str_buf << "[save_binary: " << save_binary << "]\n";
   str_buf << "[num_iteration_predict: " << num_iteration_predict << "]\n";
   str_buf << "[predict_raw_score: " << predict_raw_score << "]\n";
   str_buf << "[predict_leaf_index: " << predict_leaf_index << "]\n";
@@ -673,6 +672,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[pred_early_stop: " << pred_early_stop << "]\n";
   str_buf << "[pred_early_stop_freq: " << pred_early_stop_freq << "]\n";
   str_buf << "[pred_early_stop_margin: " << pred_early_stop_margin << "]\n";
+  str_buf << "[output_result: " << output_result << "]\n";
   str_buf << "[convert_model_language: " << convert_model_language << "]\n";
   str_buf << "[convert_model: " << convert_model << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";

@@ -190,36 +190,6 @@ Core Parameters
 Learning Control Parameters
 ---------------------------
 
--  ``input_model`` :raw-html:`<a id="input_model" title="Permalink to this parameter" href="#input_model">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
-
-   -  filename of input model
-
-   -  for ``prediction`` task, this model will be applied to prediction data
-
-   -  for ``train`` task, training will be continued from this model
-
-   -  **Note**: can be used only in CLI version
-
--  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
-
-   -  filename of output model in training
-
-   -  **Note**: can be used only in CLI version
-
--  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
-
-   -  frequency of saving model file snapshot
-
-   -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
-
-   -  **Note**: can be used only in CLI version
-
--  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
-
-   -  controls the level of LightGBM's verbosity
-
-   -  ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
-
 -  ``force_col_wise`` :raw-html:`<a id="force_col_wise" title="Permalink to this parameter" href="#force_col_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  used only with ``cpu`` device type
@@ -530,19 +500,41 @@ Learning Control Parameters
 
    -  applied once per forest
 
+-  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
+
+   -  controls the level of LightGBM's verbosity
+
+   -  ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
+
+-  ``input_model`` :raw-html:`<a id="input_model" title="Permalink to this parameter" href="#input_model">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
+
+   -  filename of input model
+
+   -  for ``prediction`` task, this model will be applied to prediction data
+
+   -  for ``train`` task, training will be continued from this model
+
+   -  **Note**: can be used only in CLI version
+
+-  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
+
+   -  filename of output model in training
+
+   -  **Note**: can be used only in CLI version
+
+-  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
+
+   -  frequency of saving model file snapshot
+
+   -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
+
+   -  **Note**: can be used only in CLI version
+
 IO Parameters
 -------------
 
 Dataset Parameters
 ~~~~~~~~~~~~~~~~~~
-
--  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
-
-   -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
-
-   -  **Note**: ``init_score`` is not saved in binary file
-
-   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
 -  ``max_bin`` :raw-html:`<a id="max_bin" title="Permalink to this parameter" href="#max_bin">&#x1F517;&#xFE0E;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
 
@@ -702,16 +694,16 @@ Dataset Parameters
 
    -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
 
+-  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
+
+   -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+
+   -  **Note**: ``init_score`` is not saved in binary file
+
+   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
+
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~
-
--  ``output_result`` :raw-html:`<a id="output_result" title="Permalink to this parameter" href="#output_result">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``, ``predict_name``, ``prediction_name``, ``pred_name``, ``name_pred``
-
-   -  used only in ``prediction`` task
-
-   -  filename of prediction result
-
-   -  **Note**: can be used only in CLI version
 
 -  ``num_iteration_predict`` :raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" href="#num_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
@@ -776,6 +768,14 @@ Predict Parameters
    -  used only in ``prediction`` task
 
    -  the threshold of margin in early-stopping prediction
+
+-  ``output_result`` :raw-html:`<a id="output_result" title="Permalink to this parameter" href="#output_result">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``, ``predict_name``, ``prediction_name``, ``pred_name``, ``name_pred``
+
+   -  used only in ``prediction`` task
+
+   -  filename of prediction result
+
+   -  **Note**: can be used only in CLI version
 
 Convert Parameters
 ~~~~~~~~~~~~~~~~~~

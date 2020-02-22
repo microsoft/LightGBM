@@ -215,29 +215,6 @@ struct Config {
 
   #pragma region Learning Control Parameters
 
-  // alias = model_input, model_in
-  // desc = filename of input model
-  // desc = for ``prediction`` task, this model will be applied to prediction data
-  // desc = for ``train`` task, training will be continued from this model
-  // desc = **Note**: can be used only in CLI version
-  std::string input_model = "";
-
-  // alias = model_output, model_out
-  // desc = filename of output model in training
-  // desc = **Note**: can be used only in CLI version
-  std::string output_model = "LightGBM_model.txt";
-
-  // alias = save_period
-  // desc = frequency of saving model file snapshot
-  // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
-  // desc = **Note**: can be used only in CLI version
-  int snapshot_freq = -1;
-
-  // alias = verbose
-  // desc = controls the level of LightGBM's verbosity
-  // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
-  int verbosity = 1;
-
   // desc = used only with ``cpu`` device type
   // desc = set this to ``true`` to force col-wise histogram building
   // desc = enabling this is recommended when:
@@ -498,17 +475,34 @@ struct Config {
   // desc = applied once per forest
   std::vector<double> cegb_penalty_feature_coupled;
 
+  // alias = verbose
+  // desc = controls the level of LightGBM's verbosity
+  // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
+  int verbosity = 1;
+
+  // alias = model_input, model_in
+  // desc = filename of input model
+  // desc = for ``prediction`` task, this model will be applied to prediction data
+  // desc = for ``train`` task, training will be continued from this model
+  // desc = **Note**: can be used only in CLI version
+  std::string input_model = "";
+
+  // alias = model_output, model_out
+  // desc = filename of output model in training
+  // desc = **Note**: can be used only in CLI version
+  std::string output_model = "LightGBM_model.txt";
+
+  // alias = save_period
+  // desc = frequency of saving model file snapshot
+  // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
+  // desc = **Note**: can be used only in CLI version
+  int snapshot_freq = -1;
+
   #pragma endregion
 
   #pragma region IO Parameters
 
   #pragma region Dataset Parameters
-
-  // alias = is_save_binary, is_save_binary_file
-  // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
-  // desc = **Note**: ``init_score`` is not saved in binary file
-  // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
-  bool save_binary = false;
 
   // check = >1
   // desc = max number of bins that feature values will be bucketed in
@@ -630,15 +624,15 @@ struct Config {
   // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
+  // alias = is_save_binary, is_save_binary_file
+  // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+  // desc = **Note**: ``init_score`` is not saved in binary file
+  // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
+  bool save_binary = false;
+
   #pragma endregion
 
   #pragma region Predict Parameters
-
-  // alias = predict_result, prediction_result, predict_name, prediction_name, pred_name, name_pred
-  // desc = used only in ``prediction`` task
-  // desc = filename of prediction result
-  // desc = **Note**: can be used only in CLI version
-  std::string output_result = "LightGBM_predict_result.txt";
 
   // desc = used only in ``prediction`` task
   // desc = used to specify how many trained iterations will be used in prediction
@@ -682,6 +676,12 @@ struct Config {
   // desc = used only in ``prediction`` task
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
+
+  // alias = predict_result, prediction_result, predict_name, prediction_name, pred_name, name_pred
+  // desc = used only in ``prediction`` task
+  // desc = filename of prediction result
+  // desc = **Note**: can be used only in CLI version
+  std::string output_result = "LightGBM_predict_result.txt";
 
   #pragma endregion
 
