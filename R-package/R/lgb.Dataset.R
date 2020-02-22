@@ -892,7 +892,7 @@ dimnames.lgb.Dataset <- function(x) {
 `dimnames<-.lgb.Dataset` <- function(x, value) {
 
   # Check if invalid element list
-  if (!is.list(value) || length(value) != 2L) {
+  if (!identical(class(value), "list") || length(value) != 2L) {
     stop("invalid ", sQuote("value"), " given: must be a list of two elements")
   }
 

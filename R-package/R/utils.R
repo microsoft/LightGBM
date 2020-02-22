@@ -105,7 +105,7 @@ lgb.call.return.str <- function(fun_name, ...) {
 lgb.params2str <- function(params, ...) {
 
   # Check for a list as input
-  if (!is.list(params)) {
+  if (!identical(class(params), "list")) {
     stop("params must be a list")
   }
 
@@ -254,7 +254,7 @@ lgb.check.eval <- function(params, eval) {
   }
 
   # If 'eval' is a list or character vector, store it in 'metric'
-  if (is.character(eval) || is.list(eval)) {
+  if (is.character(eval) || identical(class(eval), "list")) {
     params$metric <- append(params$metric, eval)
   }
 
