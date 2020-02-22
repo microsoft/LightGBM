@@ -17,12 +17,73 @@
 #include <vector>
 
 namespace LightGBM {
+
+/*!
+ * \brief Objective function for Ranking
+ */
+class RankingObjective : public ObjectiveFunction {
+ public:
+  explicit RankingObjective(const Config&) {
+  }
+
+  explicit RankingObjective(const std::vector<std::string>&) {}
+
+  ~RankingObjective() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    num_data_ = num_data;
+    // get label
+    label_ = metadata.label();
+    DCGCalculator::CheckLabel(label_, num_data_);
+    // get weights
+    weights_ = metadata.weights();
+    // get boundries
+    query_boundaries_ = metadata.query_boundaries();
+    if (query_boundaries_ == nullptr) {
+      Log::Fatal("Ranking tasks require query information");
+    }
+    num_queries_ = metadata.num_queries();
+  }
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+#pragma omp parallel for schedule(guided)
+    for (data_size_t i = 0; i < num_queries_; ++i) {
+      GetGradientsForOneQuery(score, gradients, hessians, i);
+    }
+  }
+
+  virtual void GetGradientsForOneQuery(const double* score, score_t* lambdas,
+                                       score_t* hessians,
+                                       data_size_t query_id) const = 0;
+
+  virtual const char* GetName() const override = 0;
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool NeedAccuratePrediction() const override { return false; }
+
+ protected:
+  data_size_t num_queries_;
+  /*! \brief Number of data */
+  data_size_t num_data_;
+  /*! \brief Pointer of label */
+  const label_t* label_;
+  /*! \brief Pointer of weights */
+  const label_t* weights_;
+  /*! \brief Query boundries */
+  const data_size_t* query_boundaries_;
+};
 /*!
 * \brief Objective function for Lambdrank with NDCG
 */
-class LambdarankNDCG: public ObjectiveFunction {
+class LambdarankNDCG : public RankingObjective {
  public:
-  explicit LambdarankNDCG(const Config& config) {
+  explicit LambdarankNDCG(const Config& config) : RankingObjective(config) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     norm_ = config.lambdamart_norm;
     label_gain_ = config.label_gain;
@@ -38,25 +99,14 @@ class LambdarankNDCG: public ObjectiveFunction {
     }
   }
 
-  explicit LambdarankNDCG(const std::vector<std::string>&) {
-  }
+  explicit LambdarankNDCG(const std::vector<std::string>& strs)
+      : RankingObjective(strs) {}
 
   ~LambdarankNDCG() {
   }
+
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    num_data_ = num_data;
-    // get label
-    label_ = metadata.label();
-    DCGCalculator::CheckLabel(label_, num_data_);
-    // get weights
-    weights_ = metadata.weights();
-    // get boundries
-    query_boundaries_ = metadata.query_boundaries();
-    if (query_boundaries_ == nullptr) {
-      Log::Fatal("Lambdarank tasks require query information");
-    }
-    num_queries_ = metadata.num_queries();
-    // cache inverse max DCG, avoid computation many times
+    RankingObjective::Init(metadata, num_data);
     inverse_max_dcgs_.resize(num_queries_);
 #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
@@ -70,14 +120,6 @@ class LambdarankNDCG: public ObjectiveFunction {
     }
     // construct sigmoid table to speed up sigmoid transform
     ConstructSigmoidTable();
-  }
-
-  void GetGradients(const double* score, score_t* gradients,
-                    score_t* hessians) const override {
-    #pragma omp parallel for schedule(guided)
-    for (data_size_t i = 0; i < num_queries_; ++i) {
-      GetGradientsForOneQuery(score, gradients, hessians, i);
-    }
   }
 
   inline void GetGradientsForOneQuery(const double* score,
@@ -212,14 +254,6 @@ class LambdarankNDCG: public ObjectiveFunction {
     return "lambdarank";
   }
 
-  std::string ToString() const override {
-    std::stringstream str_buf;
-    str_buf << GetName();
-    return str_buf.str();
-  }
-
-  bool NeedAccuratePrediction() const override { return false; }
-
  private:
   /*! \brief Gains for labels */
   std::vector<double> label_gain_;
@@ -231,16 +265,6 @@ class LambdarankNDCG: public ObjectiveFunction {
   bool norm_;
   /*! \brief Optimized NDCG@ */
   int optimize_pos_at_;
-  /*! \brief Number of queries */
-  data_size_t num_queries_;
-  /*! \brief Number of data */
-  data_size_t num_data_;
-  /*! \brief Pointer of label */
-  const label_t* label_;
-  /*! \brief Pointer of weights */
-  const label_t* weights_;
-  /*! \brief Query boundries */
-  const data_size_t* query_boundaries_;
   /*! \brief Cache result for sigmoid transform to speed up */
   std::vector<double> sigmoid_table_;
   /*! \brief Number of bins in simoid table */
@@ -251,6 +275,94 @@ class LambdarankNDCG: public ObjectiveFunction {
   double max_sigmoid_input_ = 50;
   /*! \brief Factor that covert score to bin in sigmoid table */
   double sigmoid_table_idx_factor_;
+};
+
+
+/*!
+ * \brief Implementation of the learning-to-rank objective function, XE_NDCG
+ * [arxiv.org/abs/1911.09798].
+ */
+class RankXENDCG : public RankingObjective {
+ public:
+  explicit RankXENDCG(const Config& config) : RankingObjective(config), rand_(config.objective_seed) {
+  }
+
+  explicit RankXENDCG(const std::vector<std::string>& strs)
+      : RankingObjective(strs), rand_() {}
+
+  ~RankXENDCG() {}
+
+  inline void GetGradientsForOneQuery(const double* score, score_t* lambdas,
+                                      score_t* hessians,
+                                      data_size_t query_id) const {
+    // get doc boundary for current query
+    const data_size_t start = query_boundaries_[query_id];
+    const data_size_t cnt =
+        query_boundaries_[query_id + 1] - query_boundaries_[query_id];
+    // add pointers with offset
+    const label_t* label = label_ + start;
+    score += start;
+    lambdas += start;
+    hessians += start;
+
+    // Turn scores into a probability distribution using Softmax.
+    std::vector<double> rho(cnt);
+    Common::Softmax(score, rho.data(), cnt);
+
+    // Prepare a vector of gammas, a parameter of the loss.
+    std::vector<double> gammas(cnt);
+    for (data_size_t i = 0; i < cnt; ++i) {
+      gammas[i] = rand_.NextFloat();
+    }
+
+    // Skip query if sum of labels is 0.
+    double sum_labels = 0;
+    for (data_size_t i = 0; i < cnt; ++i) {
+      sum_labels += static_cast<double>(phi(label[i], gammas[i]));
+    }
+    if (std::fabs(sum_labels) < kEpsilon) {
+      return;
+    }
+
+    // Approximate gradients and inverse Hessian.
+    // First order terms.
+    std::vector<double> L1s(cnt);
+    for (data_size_t i = 0; i < cnt; ++i) {
+      L1s[i] = -phi(label[i], gammas[i]) / sum_labels + rho[i];
+    }
+    // Second-order terms.
+    std::vector<double> L2s(cnt);
+    for (data_size_t i = 0; i < cnt; ++i) {
+      for (data_size_t j = 0; j < cnt; ++j) {
+        if (i == j) continue;
+        L2s[i] += L1s[j] / (1 - rho[j]);
+      }
+    }
+    // Third-order terms.
+    std::vector<double> L3s(cnt);
+    for (data_size_t i = 0; i < cnt; ++i) {
+      for (data_size_t j = 0; j < cnt; ++j) {
+        if (i == j) continue;
+        L3s[i] += rho[j] * L2s[j] / (1 - rho[j]);
+      }
+    }
+
+    // Finally, prepare lambdas and hessians.
+    for (data_size_t i = 0; i < cnt; ++i) {
+      lambdas[i] =
+          static_cast<score_t>(L1s[i] + rho[i] * L2s[i] + rho[i] * L3s[i]);
+      hessians[i] = static_cast<score_t>(rho[i] * (1.0 - rho[i]));
+    }
+  }
+
+  double phi(const label_t l, double g) const {
+    return Common::Pow(2, static_cast<int>(l)) - g;
+  }
+
+  const char* GetName() const override { return "rank_xendcg"; }
+
+ private:
+  mutable Random rand_;
 };
 
 }  // namespace LightGBM
