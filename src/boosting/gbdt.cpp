@@ -10,6 +10,7 @@
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/threading.h>
 
 #include <chrono>
 #include <ctime>
@@ -216,55 +217,55 @@ data_size_t GBDT::BalancedBaggingHelper(Random* cur_rand, data_size_t start, dat
 void GBDT::Bagging(int iter) {
   Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
   // if need bagging
-  if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0)
-      || need_re_bagging_) {
+  if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0) ||
+      need_re_bagging_) {
     need_re_bagging_ = false;
-    const data_size_t min_inner_size = 1024;
-    const int n_block = std::min(
-        num_threads_, (num_data_ + min_inner_size - 1) / min_inner_size);
-    data_size_t inner_size = SIZE_ALIGNED((num_data_ + n_block - 1) / n_block);
-    OMP_INIT_EX();
-    #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < n_block; ++i) {
-      OMP_LOOP_EX_BEGIN();
-      data_size_t cur_start = i * inner_size;
-      data_size_t cur_cnt = std::min(inner_size, num_data_ - cur_start);
-      if (cur_cnt <= 0) {
-        left_cnts_buf_[i] = 0;
-        right_cnts_buf_[i] = 0;
-        continue;
-      }
-      Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
-      data_size_t cur_left_count = 0;
-      if (balanced_bagging_) {
-        cur_left_count = BalancedBaggingHelper(&cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
-      } else {
-        cur_left_count = BaggingHelper(&cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
-      }
-      offsets_buf_[i] = cur_start;
-      left_cnts_buf_[i] = cur_left_count;
-      right_cnts_buf_[i] = cur_cnt - cur_left_count;
-      OMP_LOOP_EX_END();
-    }
-    OMP_THROW_EX();
+    int n_block = Threading::For<data_size_t>(
+        0, num_data_, 1024,
+        [this, iter](int i, data_size_t cur_start, data_size_t cur_end) {
+          data_size_t cur_cnt = cur_end - cur_start;
+          if (cur_cnt <= 0) {
+            left_cnts_buf_[i] = 0;
+            right_cnts_buf_[i] = 0;
+          } else {
+            Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
+            data_size_t cur_left_count = 0;
+            if (balanced_bagging_) {
+              cur_left_count =
+                  BalancedBaggingHelper(&cur_rand, cur_start, cur_cnt,
+                                        tmp_indices_.data() + cur_start);
+            } else {
+              cur_left_count = BaggingHelper(&cur_rand, cur_start, cur_cnt,
+                                             tmp_indices_.data() + cur_start);
+            }
+            offsets_buf_[i] = cur_start;
+            left_cnts_buf_[i] = cur_left_count;
+            right_cnts_buf_[i] = cur_cnt - cur_left_count;
+          }
+        });
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
     for (int i = 1; i < n_block; ++i) {
-      left_write_pos_buf_[i] = left_write_pos_buf_[i - 1] + left_cnts_buf_[i - 1];
-      right_write_pos_buf_[i] = right_write_pos_buf_[i - 1] + right_cnts_buf_[i - 1];
+      left_write_pos_buf_[i] =
+          left_write_pos_buf_[i - 1] + left_cnts_buf_[i - 1];
+      right_write_pos_buf_[i] =
+          right_write_pos_buf_[i - 1] + right_cnts_buf_[i - 1];
     }
     left_cnt = left_write_pos_buf_[n_block - 1] + left_cnts_buf_[n_block - 1];
 
-    #pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < n_block; ++i) {
       if (left_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_write_pos_buf_[i],
-                    tmp_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
+                    tmp_indices_.data() + offsets_buf_[i],
+                    left_cnts_buf_[i] * sizeof(data_size_t));
       }
       if (right_cnts_buf_[i] > 0) {
-        std::memcpy(bag_data_indices_.data() + left_cnt + right_write_pos_buf_[i],
-                    tmp_indices_.data() + offsets_buf_[i] + left_cnts_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
+        std::memcpy(
+            bag_data_indices_.data() + left_cnt + right_write_pos_buf_[i],
+            tmp_indices_.data() + offsets_buf_[i] + left_cnts_buf_[i],
+            right_cnts_buf_[i] * sizeof(data_size_t));
       }
     }
     bag_data_cnt_ = left_cnt;
@@ -275,7 +276,8 @@ void GBDT::Bagging(int iter) {
     } else {
       // get subset
       tmp_subset_->ReSize(bag_data_cnt_);
-      tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
+      tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(),
+                              bag_data_cnt_, false);
       tree_learner_->ResetTrainingData(tmp_subset_.get());
     }
   }

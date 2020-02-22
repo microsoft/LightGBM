@@ -331,6 +331,8 @@ class SparseBin: public Bin {
   void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs) {
     deltas_.clear();
     vals_.clear();
+    deltas_.reserve(idx_val_pairs.size());
+    vals_.reserve(idx_val_pairs.size());
     // transform to delta array
     data_size_t last_idx = 0;
     for (size_t i = 0; i < idx_val_pairs.size(); ++i) {

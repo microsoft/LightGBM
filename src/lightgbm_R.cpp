@@ -117,7 +117,7 @@ LGBM_SE LGBM_DatasetGetSubset_R(LGBM_SE handle,
   int len = R_AS_INT(len_used_row_indices);
   std::vector<int> idxvec(len);
   // convert from one-based to  zero-based index
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (int i = 0; i < len; ++i) {
     idxvec[i] = R_INT_PTR(used_row_indices)[i] - 1;
   }
@@ -196,7 +196,7 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
   const char* name = R_CHAR_PTR(field_name);
   if (!strcmp("group", name) || !strcmp("query", name)) {
     std::vector<int32_t> vec(len);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (len >= 1024)
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
     }
@@ -205,7 +205,7 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, R_REAL_PTR(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (len >= 1024)
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<float>(R_REAL_PTR(field_data)[i]);
     }
@@ -228,19 +228,19 @@ LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   if (!strcmp("group", name) || !strcmp("query", name)) {
     auto p_data = reinterpret_cast<const int32_t*>(res);
     // convert from boundaries to size
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len - 1; ++i) {
       R_INT_PTR(field_data)[i] = p_data[i + 1] - p_data[i];
     }
   } else if (!strcmp("init_score", name)) {
     auto p_data = reinterpret_cast<const double*>(res);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
       R_REAL_PTR(field_data)[i] = p_data[i];
     }
   } else {
     auto p_data = reinterpret_cast<const float*>(res);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
       R_REAL_PTR(field_data)[i] = p_data[i];
     }
@@ -396,7 +396,7 @@ LGBM_SE LGBM_BoosterUpdateOneIterCustom_R(LGBM_SE handle,
   R_API_BEGIN();
   int int_len = R_AS_INT(len);
   std::vector<float> tgrad(int_len), thess(int_len);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (int_len >= 1024)
   for (int j = 0; j < int_len; ++j) {
     tgrad[j] = static_cast<float>(R_REAL_PTR(grad)[j]);
     thess[j] = static_cast<float>(R_REAL_PTR(hess)[j]);
