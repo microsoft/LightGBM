@@ -1043,18 +1043,17 @@ class Timer {
 
 #ifdef TIMETAG
   void Start(const std::string& name) {
-    auto cur_time = std::chrono::steady_clock::now();
     auto tid = omp_get_thread_num();
-    start_time_[tid][name] = cur_time;
+    start_time_[tid][name] = std::chrono::steady_clock::now();
   }
 
   void Stop(const std::string& name) {
+    auto cur_time = std::chrono::steady_clock::now();
     auto tid = omp_get_thread_num();
     if (stats_[tid].find(name) == stats_[tid].end()) {
       stats_[tid][name] = std::chrono::duration<double, std::milli>(0);
     }
-    stats_[tid][name] +=
-        std::chrono::steady_clock::now() - start_time_[tid][name];
+    stats_[tid][name] += cur_time - start_time_[tid][name];
   }
 
 #else
@@ -1066,7 +1065,7 @@ class Timer {
   void Print() const {
 #ifdef TIMETAG
     std::unordered_map<std::string, std::chrono::duration<double, std::milli>>
-        stats = stats_[0];
+        stats(stats_[0].begin(), stats_[0].end());
     for (size_t i = 1; i < stats_.size(); ++i) {
       for (auto it = stats_[i].begin(); it != stats_[i].end(); ++it) {
         if (stats.find(it->first) == stats.end()) {
