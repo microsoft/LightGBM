@@ -165,7 +165,7 @@ void DatasetLoader::SetHeader(const char* filename) {
   }
 }
 
-Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore_file, int rank, int num_machines) {
+Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines) {
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !config_.pre_partition) {
     if (group_idx_ > 0) {
@@ -184,7 +184,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename, initscore_file);
+    dataset->metadata_.Init(filename);
     if (!config_.two_round) {
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
@@ -227,7 +227,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
 
 
 
-Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const char* initscore_file, const Dataset* train_data) {
+Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
@@ -239,7 +239,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename, initscore_file);
+    dataset->metadata_.Init(filename);
     if (!config_.two_round) {
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
@@ -631,6 +631,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       }
       OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     comm_size_t self_buf_size = 0;
     for (int i = 0; i < len[rank]; ++i) {
       if (ignore_features_.count(start[rank] + i) > 0) {

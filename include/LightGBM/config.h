@@ -549,20 +549,6 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
 
-  // alias = init_score_filename, init_score_file, init_score, input_init_score
-  // desc = path of file with training initial scores
-  // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-  // desc = **Note**: works only in case of loading data directly from file
-  std::string initscore_filename = "";
-
-  // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
-  // default = ""
-  // desc = path(s) of file(s) with validation initial scores
-  // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
-  // desc = separate by ``,`` for multi-validation data
-  // desc = **Note**: works only in case of loading data directly from file
-  std::vector<std::string> valid_data_initscores;
-
   // alias = is_pre_partition
   // desc = used for parallel learning (excluding the ``feature_parallel`` mode)
   // desc = ``true`` if training data are pre-partitioned, and different machines use different partitions
@@ -822,6 +808,7 @@ struct Config {
   // check = >0
   // alias = output_freq
   // desc = frequency for metric output
+  // desc = **Note**: can be used only in CLI version
   int metric_freq = 1;
 
   // alias = training_metric, is_training_metric, train_metric

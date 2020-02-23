@@ -20,13 +20,13 @@ Metadata::Metadata() {
   init_score_load_from_file_ = false;
 }
 
-void Metadata::Init(const char* data_filename, const char* initscore_file) {
+void Metadata::Init(const char* data_filename) {
   data_filename_ = data_filename;
   // for lambdarank, it needs query data for partition data in parallel learning
   LoadQueryBoundaries();
   LoadWeights();
   LoadQueryWeights();
-  LoadInitialScore(initscore_file);
+  LoadInitialScore();
 }
 
 Metadata::~Metadata() {
@@ -59,7 +59,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
   num_data_ = num_used_indices;
 
   label_ = std::vector<label_t>(num_used_indices);
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_used_indices >= 1024)
   for (data_size_t i = 0; i < num_used_indices; ++i) {
     label_[i] = fullset.label_[used_indices[i]];
   }
@@ -67,7 +67,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
   if (!fullset.weights_.empty()) {
     weights_ = std::vector<label_t>(num_used_indices);
     num_weights_ = num_used_indices;
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_used_indices >= 1024)
     for (data_size_t i = 0; i < num_used_indices; ++i) {
       weights_[i] = fullset.weights_[used_indices[i]];
     }
@@ -131,7 +131,7 @@ void Metadata::PartitionLabel(const std::vector<data_size_t>& used_indices) {
   auto old_label = label_;
   num_data_ = static_cast<data_size_t>(used_indices.size());
   label_ = std::vector<label_t>(num_data_);
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data_ >= 1024)
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = old_label[used_indices[i]];
   }
@@ -202,7 +202,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
         auto old_weights = weights_;
         num_weights_ = num_data_;
         weights_ = std::vector<label_t>(num_data_);
-        #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512)
         for (int i = 0; i < static_cast<int>(used_data_indices.size()); ++i) {
           weights_[i] = old_weights[used_data_indices[i]];
         }
@@ -263,7 +263,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
         int num_class = static_cast<int>(num_init_score_ / num_all_data);
         num_init_score_ = static_cast<int64_t>(num_data_) * num_class;
         init_score_ = std::vector<double>(num_init_score_);
-        #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
         for (int k = 0; k < num_class; ++k) {
           const size_t offset_dest = static_cast<size_t>(k) * num_data_;
           const size_t offset_src = static_cast<size_t>(k) * num_all_data;
@@ -293,7 +293,7 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   if (init_score_.empty()) { init_score_.resize(len); }
   num_init_score_ = len;
 
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static, 512) if (num_init_score_ >= 1024)
   for (int64_t i = 0; i < num_init_score_; ++i) {
     init_score_[i] = Common::AvoidInf(init_score[i]);
   }
@@ -310,7 +310,7 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   }
   if (label_.empty()) { label_.resize(num_data_); }
 
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static, 512) if (num_data_ >= 1024)
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = Common::AvoidInf(label[i]);
   }
@@ -330,7 +330,7 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   if (weights_.empty()) { weights_.resize(num_data_); }
   num_weights_ = num_data_;
 
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static, 512) if (num_weights_ >= 1024)
   for (data_size_t i = 0; i < num_weights_; ++i) {
     weights_[i] = Common::AvoidInf(weights[i]);
   }
@@ -386,14 +386,12 @@ void Metadata::LoadWeights() {
   weight_load_from_file_ = true;
 }
 
-void Metadata::LoadInitialScore(const char* initscore_file) {
+void Metadata::LoadInitialScore() {
   num_init_score_ = 0;
-  std::string init_score_filename(initscore_file);
-  if (init_score_filename.size() <= 0) {
-    init_score_filename = std::string(data_filename_);
-    // default weight file name
-    init_score_filename.append(".init");
-  }
+  std::string init_score_filename(data_filename_);
+  init_score_filename = std::string(data_filename_);
+  // default init_score file name
+  init_score_filename.append(".init");
   TextReader<size_t> reader(init_score_filename.c_str(), false);
   reader.ReadAllLines();
   if (reader.Lines().empty()) {

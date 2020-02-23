@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #include <LightGBM/dataset.h>
 
@@ -9,16 +10,16 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
 
-#include <limits>
 #include <chrono>
 #include <cstdio>
+#include <limits>
 #include <sstream>
 #include <unordered_map>
 
-
 namespace LightGBM {
 
-const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
+const char* Dataset::binary_file_token =
+    "______LightGBM_Binary_File_Token______\n";
 
 Dataset::Dataset() {
   data_filename_ = "noname";
@@ -35,11 +36,9 @@ Dataset::Dataset(data_size_t num_data) {
   group_bin_boundaries_.push_back(0);
 }
 
-Dataset::~Dataset() {
-}
+Dataset::~Dataset() {}
 
-std::vector<std::vector<int>> NoGroup(
-  const std::vector<int>& used_features) {
+std::vector<std::vector<int>> NoGroup(const std::vector<int>& used_features) {
   std::vector<std::vector<int>> features_in_group;
   features_in_group.resize(used_features.size());
   for (size_t i = 0; i < used_features.size(); ++i) {
@@ -48,7 +47,8 @@ std::vector<std::vector<int>> NoGroup(
   return features_in_group;
 }
 
-int GetConfilctCount(const std::vector<bool>& mark, const int* indices, int num_indices, data_size_t max_cnt) {
+int GetConfilctCount(const std::vector<bool>& mark, const int* indices,
+                     int num_indices, data_size_t max_cnt) {
   int ret = 0;
   for (int i = 0; i < num_indices; ++i) {
     if (mark[indices[i]]) {
@@ -61,14 +61,18 @@ int GetConfilctCount(const std::vector<bool>& mark, const int* indices, int num_
   return ret;
 }
 
-void MarkUsed(std::vector<bool>* mark, const int* indices, data_size_t num_indices) {
+void MarkUsed(std::vector<bool>* mark, const int* indices,
+              data_size_t num_indices) {
   auto& ref_mark = *mark;
   for (int i = 0; i < num_indices; ++i) {
     ref_mark[indices[i]] = true;
   }
 }
 
-std::vector<int> FixSampleIndices(const BinMapper* bin_mapper, int num_total_samples, int num_indices, const int* sample_indices, const double* sample_values) {
+std::vector<int> FixSampleIndices(const BinMapper* bin_mapper,
+                                  int num_total_samples, int num_indices,
+                                  const int* sample_indices,
+                                  const double* sample_values) {
   std::vector<int> ret;
   if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin()) {
     return ret;
@@ -78,7 +82,8 @@ std::vector<int> FixSampleIndices(const BinMapper* bin_mapper, int num_total_sam
     if (j < num_indices && sample_indices[j] < i) {
       ++j;
     } else if (j < num_indices && sample_indices[j] == i) {
-      if (bin_mapper->ValueToBin(sample_values[j]) != bin_mapper->GetMostFreqBin()) {
+      if (bin_mapper->ValueToBin(sample_values[j]) !=
+          bin_mapper->GetMostFreqBin()) {
         ret.push_back(i);
       }
       ++i;
@@ -89,19 +94,16 @@ std::vector<int> FixSampleIndices(const BinMapper* bin_mapper, int num_total_sam
   return ret;
 }
 
-std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-                                         const std::vector<int>& find_order,
-                                         int** sample_indices,
-                                         const int* num_per_col,
-                                         int num_sample_col,
-                                         data_size_t total_sample_cnt,
-                                         data_size_t num_data,
-                                         bool is_use_gpu,
-                                         bool is_sparse,
-                                         std::vector<int8_t>* multi_val_group) {
+std::vector<std::vector<int>> FindGroups(
+    const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+    const std::vector<int>& find_order, int** sample_indices,
+    const int* num_per_col, int num_sample_col, data_size_t total_sample_cnt,
+    data_size_t num_data, bool is_use_gpu, bool is_sparse,
+    std::vector<int8_t>* multi_val_group) {
   const int max_search_group = 100;
   const int max_bin_per_group = 256;
-  const data_size_t single_val_max_conflict_cnt = static_cast<data_size_t>(total_sample_cnt / 10000);
+  const data_size_t single_val_max_conflict_cnt =
+      static_cast<data_size_t>(total_sample_cnt / 10000);
   multi_val_group->clear();
 
   Random rand(num_data);
@@ -114,11 +116,14 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
   // first round: fill the single val group
   for (auto fidx : find_order) {
     bool is_filtered_feature = fidx >= num_sample_col;
-    const data_size_t cur_non_zero_cnt = is_filtered_feature ? 0 : num_per_col[fidx];
+    const data_size_t cur_non_zero_cnt =
+        is_filtered_feature ? 0 : num_per_col[fidx];
     std::vector<int> available_groups;
     for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
-      auto cur_num_bin = group_num_bin[gid] + bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0);
-      if (group_total_data_cnt[gid] + cur_non_zero_cnt <= total_sample_cnt + single_val_max_conflict_cnt) {
+      auto cur_num_bin = group_num_bin[gid] + bin_mappers[fidx]->num_bin() +
+                         (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0);
+      if (group_total_data_cnt[gid] + cur_non_zero_cnt <=
+          total_sample_cnt + single_val_max_conflict_cnt) {
         if (!is_use_gpu || cur_num_bin <= max_bin_per_group) {
           available_groups.push_back(gid);
         }
@@ -137,8 +142,14 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
     int best_gid = -1;
     int best_conflict_cnt = -1;
     for (auto gid : search_groups) {
-      const data_size_t rest_max_cnt = single_val_max_conflict_cnt - group_total_data_cnt[gid] + group_used_row_cnt[gid];
-      const data_size_t cnt = is_filtered_feature ? 0 : GetConfilctCount(conflict_marks[gid], sample_indices[fidx], num_per_col[fidx], rest_max_cnt);
+      const data_size_t rest_max_cnt = single_val_max_conflict_cnt -
+                                       group_total_data_cnt[gid] +
+                                       group_used_row_cnt[gid];
+      const data_size_t cnt =
+          is_filtered_feature
+              ? 0
+              : GetConfilctCount(conflict_marks[gid], sample_indices[fidx],
+                                 num_per_col[fidx], rest_max_cnt);
       if (cnt >= 0 && cnt <= rest_max_cnt && cnt <= cur_non_zero_cnt / 2) {
         best_gid = gid;
         best_conflict_cnt = cnt;
@@ -150,19 +161,25 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
       group_total_data_cnt[best_gid] += cur_non_zero_cnt;
       group_used_row_cnt[best_gid] += cur_non_zero_cnt - best_conflict_cnt;
       if (!is_filtered_feature) {
-        MarkUsed(&conflict_marks[best_gid], sample_indices[fidx], num_per_col[fidx]);
+        MarkUsed(&conflict_marks[best_gid], sample_indices[fidx],
+                 num_per_col[fidx]);
       }
-      group_num_bin[best_gid] += bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0);
+      group_num_bin[best_gid] +=
+          bin_mappers[fidx]->num_bin() +
+          (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0);
     } else {
       features_in_group.emplace_back();
       features_in_group.back().push_back(fidx);
       conflict_marks.emplace_back(total_sample_cnt, false);
       if (!is_filtered_feature) {
-        MarkUsed(&(conflict_marks.back()), sample_indices[fidx], num_per_col[fidx]);
+        MarkUsed(&(conflict_marks.back()), sample_indices[fidx],
+                 num_per_col[fidx]);
       }
       group_total_data_cnt.emplace_back(cur_non_zero_cnt);
       group_used_row_cnt.emplace_back(cur_non_zero_cnt);
-      group_num_bin.push_back(1 + bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0));
+      group_num_bin.push_back(
+          1 + bin_mappers[fidx]->num_bin() +
+          (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0));
     }
   }
   if (!is_sparse) {
@@ -175,7 +192,8 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
 
   const double dense_threshold = 0.4;
   for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
-    const double dense_rate = static_cast<double>(group_used_row_cnt[gid]) / total_sample_cnt;
+    const double dense_rate =
+        static_cast<double>(group_used_row_cnt[gid]) / total_sample_cnt;
     if (dense_rate >= dense_threshold) {
       features_in_group2.push_back(std::move(features_in_group[gid]));
       conflict_marks2.push_back(std::move(conflict_marks[gid]));
@@ -198,13 +216,16 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
       features_in_group.back().push_back(fidx);
       if (!is_multi_val) {
         const int rest_max_cnt = single_val_max_conflict_cnt - conflict_cnt;
-        const auto cnt = GetConfilctCount(conflict_marks.back(), sample_indices[fidx], num_per_col[fidx], rest_max_cnt);
+        const auto cnt =
+            GetConfilctCount(conflict_marks.back(), sample_indices[fidx],
+                             num_per_col[fidx], rest_max_cnt);
         conflict_cnt += cnt;
         if (cnt < 0 || conflict_cnt > single_val_max_conflict_cnt) {
           is_multi_val = true;
           continue;
         }
-        MarkUsed(&(conflict_marks.back()), sample_indices[fidx], num_per_col[fidx]);
+        MarkUsed(&(conflict_marks.back()), sample_indices[fidx],
+                 num_per_col[fidx]);
       }
     }
     multi_val_group->push_back(is_multi_val);
@@ -212,17 +233,12 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
   return features_in_group;
 }
 
-std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-                                                  int** sample_indices,
-                                                  double** sample_values,
-                                                  const int* num_per_col,
-                                                  int num_sample_col,
-                                                  data_size_t total_sample_cnt,
-                                                  const std::vector<int>& used_features,
-                                                  data_size_t num_data,
-                                                  bool is_use_gpu,
-                                                  bool is_sparse,
-                                                  std::vector<int8_t>* multi_val_group) {
+std::vector<std::vector<int>> FastFeatureBundling(
+    const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+    int** sample_indices, double** sample_values, const int* num_per_col,
+    int num_sample_col, data_size_t total_sample_cnt,
+    const std::vector<int>& used_features, data_size_t num_data,
+    bool is_use_gpu, bool is_sparse, std::vector<int8_t>* multi_val_group) {
   Common::FunctionTimer fun_timer("Dataset::FastFeatureBundling", global_timer);
   std::vector<size_t> feature_non_zero_cnt;
   feature_non_zero_cnt.reserve(used_features.size());
@@ -243,8 +259,8 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
   // sort by non zero cnt, bigger first
   std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
                    [&feature_non_zero_cnt](int a, int b) {
-    return feature_non_zero_cnt[a] > feature_non_zero_cnt[b];
-  });
+                     return feature_non_zero_cnt[a] > feature_non_zero_cnt[b];
+                   });
 
   std::vector<int> feature_order_by_cnt;
   feature_order_by_cnt.reserve(sorted_idx.size());
@@ -258,7 +274,9 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
     if (fidx >= num_sample_col) {
       continue;
     }
-    auto ret = FixSampleIndices(bin_mappers[fidx].get(), static_cast<int>(total_sample_cnt), num_per_col[fidx], sample_indices[fidx], sample_values[fidx]);
+    auto ret = FixSampleIndices(
+        bin_mappers[fidx].get(), static_cast<int>(total_sample_cnt),
+        num_per_col[fidx], sample_indices[fidx], sample_values[fidx]);
     if (!ret.empty()) {
       tmp_indices.push_back(ret);
       tmp_num_per_col[fidx] = static_cast<int>(ret.size());
@@ -268,8 +286,14 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
     }
   }
   std::vector<int8_t> group_is_multi_val, group_is_multi_val2;
-  auto features_in_group = FindGroups(bin_mappers, used_features, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, num_data, is_use_gpu, is_sparse, &group_is_multi_val);
-  auto group2 = FindGroups(bin_mappers, feature_order_by_cnt, sample_indices, tmp_num_per_col.data(), num_sample_col, total_sample_cnt, num_data, is_use_gpu, is_sparse, &group_is_multi_val2);
+  auto features_in_group =
+      FindGroups(bin_mappers, used_features, sample_indices,
+                 tmp_num_per_col.data(), num_sample_col, total_sample_cnt,
+                 num_data, is_use_gpu, is_sparse, &group_is_multi_val);
+  auto group2 =
+      FindGroups(bin_mappers, feature_order_by_cnt, sample_indices,
+                 tmp_num_per_col.data(), num_sample_col, total_sample_cnt,
+                 num_data, is_use_gpu, is_sparse, &group_is_multi_val2);
 
   if (features_in_group.size() > group2.size()) {
     features_in_group = group2;
@@ -288,16 +312,12 @@ std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_
   return features_in_group;
 }
 
-void Dataset::Construct(
-  std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-  int num_total_features,
-  const std::vector<std::vector<double>>& forced_bins,
-  int** sample_non_zero_indices,
-  double** sample_values,
-  const int* num_per_col,
-  int num_sample_col,
-  size_t total_sample_cnt,
-  const Config& io_config) {
+void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+                        int num_total_features,
+                        const std::vector<std::vector<double>>& forced_bins,
+                        int** sample_non_zero_indices, double** sample_values,
+                        const int* num_per_col, int num_sample_col,
+                        size_t total_sample_cnt, const Config& io_config) {
   num_total_features_ = num_total_features;
   CHECK(num_total_features_ == static_cast<int>(bin_mappers->size()));
   // get num_features
@@ -309,14 +329,18 @@ void Dataset::Construct(
     }
   }
   if (used_features.empty()) {
-    Log::Warning("There are no meaningful features, as all feature values are constant.");
+    Log::Warning(
+        "There are no meaningful features, as all feature values are "
+        "constant.");
   }
   auto features_in_group = NoGroup(used_features);
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
-    features_in_group = FastFeatureBundling(*bin_mappers,
-                                            sample_non_zero_indices, sample_values, num_per_col, num_sample_col, static_cast<data_size_t>(total_sample_cnt),
-                                            used_features, num_data_, io_config.device_type == std::string("gpu"), io_config.is_enable_sparse, &group_is_multi_val);
+    features_in_group = FastFeatureBundling(
+        *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
+        num_sample_col, static_cast<data_size_t>(total_sample_cnt),
+        used_features, num_data_, io_config.device_type == std::string("gpu"),
+        io_config.is_enable_sparse, &group_is_multi_val);
   }
 
   num_features_ = 0;
@@ -349,7 +373,8 @@ void Dataset::Construct(
       feature2group_[cur_fidx] = i;
       feature2subfeature_[cur_fidx] = j;
       cur_bin_mappers.emplace_back(ref_bin_mappers[real_fidx].release());
-      if (cur_bin_mappers.back()->GetDefaultBin() != cur_bin_mappers.back()->GetMostFreqBin()) {
+      if (cur_bin_mappers.back()->GetDefaultBin() !=
+          cur_bin_mappers.back()->GetMostFreqBin()) {
         feature_need_push_zeros_.push_back(cur_fidx);
       }
       ++cur_fidx;
@@ -360,10 +385,13 @@ void Dataset::Construct(
     group_bin_boundaries_.push_back(num_total_bin);
   }
   if (!io_config.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) == io_config.max_bin_by_feature.size());
-    CHECK(*(std::min_element(io_config.max_bin_by_feature.begin(), io_config.max_bin_by_feature.end())) > 1);
+    CHECK(static_cast<size_t>(num_total_features_) ==
+          io_config.max_bin_by_feature.size());
+    CHECK(*(std::min_element(io_config.max_bin_by_feature.begin(),
+                             io_config.max_bin_by_feature.end())) > 1);
     max_bin_by_feature_.resize(num_total_features_);
-    max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(), io_config.max_bin_by_feature.end());
+    max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(),
+                               io_config.max_bin_by_feature.end());
   }
   forced_bin_bounds_ = forced_bins;
   max_bin_ = io_config.max_bin;
@@ -374,7 +402,9 @@ void Dataset::Construct(
 }
 
 void Dataset::FinishLoad() {
-  if (is_finish_load_) { return; }
+  if (is_finish_load_) {
+    return;
+  }
   if (num_groups_ > 0) {
     for (int i = 0; i < num_groups_; ++i) {
       feature_groups_[i]->FinishLoad();
@@ -383,70 +413,60 @@ void Dataset::FinishLoad() {
   is_finish_load_ = true;
 }
 
-
 void PushDataToMultiValBin(
-    int num_threads, data_size_t num_data,
-    const std::vector<uint32_t> most_freq_bins,
+    data_size_t num_data, const std::vector<uint32_t> most_freq_bins,
     const std::vector<uint32_t> offsets,
     std::vector<std::vector<std::unique_ptr<BinIterator>>>& iters,
     MultiValBin* ret) {
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
-  const data_size_t min_block_size = 4096;
-  const int n_block =
-      std::min(num_threads, (num_data + min_block_size - 1) / min_block_size);
-  const data_size_t block_size = (num_data + n_block - 1) / n_block;
   if (ret->IsSparse()) {
-#pragma omp parallel for schedule(static)
-    for (int tid = 0; tid < n_block; ++tid) {
-      std::vector<uint32_t> cur_data;
-      cur_data.reserve(most_freq_bins.size());
-      data_size_t start = tid * block_size;
-      data_size_t end = std::min(num_data, start + block_size);
-      for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-        iters[tid][j]->Reset(start);
-      }
-      for (data_size_t i = start; i < end; ++i) {
-        cur_data.clear();
-        for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-          auto cur_bin = iters[tid][j]->Get(i);
-          if (cur_bin == most_freq_bins[j]) {
-            continue;
+    Threading::For<data_size_t>(
+        0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
+          std::vector<uint32_t> cur_data;
+          cur_data.reserve(most_freq_bins.size());
+          for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+            iters[tid][j]->Reset(start);
           }
-          cur_bin += offsets[j];
-          if (most_freq_bins[j] == 0) {
-            cur_bin -= 1;
-          }
-          cur_data.push_back(cur_bin);
-        }
-        ret->PushOneRow(tid, i, cur_data);
-      }
-    }
-  } else {
-#pragma omp parallel for schedule(static)
-    for (int tid = 0; tid < n_block; ++tid) {
-      std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
-      data_size_t start = tid * block_size;
-      data_size_t end = std::min(num_data, start + block_size);
-      for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-        iters[tid][j]->Reset(start);
-      }
-      for (data_size_t i = start; i < end; ++i) {
-        for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-          auto cur_bin = iters[tid][j]->Get(i);
-          if (cur_bin == most_freq_bins[j]) {
-            cur_bin = 0;
-          } else {
-            cur_bin += offsets[j];
-            if (most_freq_bins[j] == 0) {
-              cur_bin -= 1;
+          for (data_size_t i = start; i < end; ++i) {
+            cur_data.clear();
+            for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+              auto cur_bin = iters[tid][j]->Get(i);
+              if (cur_bin == most_freq_bins[j]) {
+                continue;
+              }
+              cur_bin += offsets[j];
+              if (most_freq_bins[j] == 0) {
+                cur_bin -= 1;
+              }
+              cur_data.push_back(cur_bin);
             }
+            ret->PushOneRow(tid, i, cur_data);
           }
-          cur_data[j] = cur_bin;
-        }
-        ret->PushOneRow(tid, i, cur_data);
-      }
-    }
+        });
+  } else {
+    Threading::For<data_size_t>(
+        0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
+          std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
+          for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+            iters[tid][j]->Reset(start);
+          }
+          for (data_size_t i = start; i < end; ++i) {
+            for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+              auto cur_bin = iters[tid][j]->Get(i);
+              if (cur_bin == most_freq_bins[j]) {
+                cur_bin = 0;
+              } else {
+                cur_bin += offsets[j];
+                if (most_freq_bins[j] == 0) {
+                  cur_bin -= 1;
+                }
+              }
+              cur_data[j] = cur_bin;
+            }
+            ret->PushOneRow(tid, i, cur_data);
+          }
+        });
   }
 }
 
@@ -477,6 +497,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   std::vector<uint32_t> most_freq_bins;
   double sum_sparse_rate = 0;
   for (int i = 0; i < num_feature; ++i) {
+#pragma omp parallel for schedule(static)
     for (int tid = 0; tid < num_threads; ++tid) {
       iters[tid].emplace_back(
           feature_groups_[multi_group_id]->SubFeatureIterator(i));
@@ -492,8 +513,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   std::unique_ptr<MultiValBin> ret;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
                                            num_feature, sum_sparse_rate));
-  PushDataToMultiValBin(num_threads, num_data_, most_freq_bins, offsets, iters,
-                        ret.get());
+  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
@@ -524,6 +544,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
           num_total_bin -= 1;
         }
         offsets.push_back(num_total_bin);
+#pragma omp parallel for schedule(static)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
               feature_groups_[gid]->SubFeatureIterator(fid));
@@ -548,8 +569,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   ret.reset(MultiValBin::CreateMultiValBin(
       num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()),
       1.0 - sum_dense_ratio));
-  PushDataToMultiValBin(num_threads, num_data_, most_freq_bins, offsets, iters,
-                        ret.get());
+  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
@@ -650,7 +670,8 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   num_groups_ = dataset->num_groups_;
   // copy feature bin mapper data
   for (int i = 0; i < num_groups_; ++i) {
-    feature_groups_.emplace_back(new FeatureGroup(*dataset->feature_groups_[i], num_data_));
+    feature_groups_.emplace_back(
+        new FeatureGroup(*dataset->feature_groups_[i], num_data_));
   }
   feature_groups_.shrink_to_fit();
   used_feature_map_ = dataset->used_feature_map_;
@@ -683,7 +704,8 @@ void Dataset::CreateValid(const Dataset* dataset) {
   for (int i = 0; i < num_features_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
     bin_mappers.emplace_back(new BinMapper(*(dataset->FeatureBinMapper(i))));
-    if (bin_mappers.back()->GetDefaultBin() != bin_mappers.back()->GetMostFreqBin()) {
+    if (bin_mappers.back()->GetDefaultBin() !=
+        bin_mappers.back()->GetMostFreqBin()) {
       feature_need_push_zeros_.push_back(i);
     }
     feature_groups_.emplace_back(new FeatureGroup(&bin_mappers, num_data_));
@@ -708,7 +730,7 @@ void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
       OMP_LOOP_EX_BEGIN();
       feature_groups_[group]->ReSize(num_data_);
@@ -718,13 +740,16 @@ void Dataset::ReSize(data_size_t num_data) {
   }
 }
 
-void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data) {
+void Dataset::CopySubset(const Dataset* fullset,
+                         const data_size_t* used_indices,
+                         data_size_t num_used_indices, bool need_meta_data) {
   CHECK(num_used_indices == num_data_);
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
     OMP_LOOP_EX_BEGIN();
-    feature_groups_[group]->CopySubset(fullset->feature_groups_[group].get(), used_indices, num_used_indices);
+    feature_groups_[group]->CopySubset(fullset->feature_groups_[group].get(),
+                                       used_indices, num_used_indices);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -734,28 +759,30 @@ void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices
   is_finish_load_ = true;
 }
 
-bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {
+bool Dataset::SetFloatField(const char* field_name, const float* field_data,
+                            data_size_t num_element) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
-    #ifdef LABEL_T_USE_DOUBLE
+#ifdef LABEL_T_USE_DOUBLE
     Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
-    #else
+#else
     metadata_.SetLabel(field_data, num_element);
-    #endif
+#endif
   } else if (name == std::string("weight") || name == std::string("weights")) {
-    #ifdef LABEL_T_USE_DOUBLE
+#ifdef LABEL_T_USE_DOUBLE
     Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
-    #else
+#else
     metadata_.SetWeights(field_data, num_element);
-    #endif
+#endif
   } else {
     return false;
   }
   return true;
 }
 
-bool Dataset::SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element) {
+bool Dataset::SetDoubleField(const char* field_name, const double* field_data,
+                             data_size_t num_element) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("init_score")) {
@@ -766,7 +793,8 @@ bool Dataset::SetDoubleField(const char* field_name, const double* field_data, d
   return true;
 }
 
-bool Dataset::SetIntField(const char* field_name, const int* field_data, data_size_t num_element) {
+bool Dataset::SetIntField(const char* field_name, const int* field_data,
+                          data_size_t num_element) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
@@ -777,30 +805,32 @@ bool Dataset::SetIntField(const char* field_name, const int* field_data, data_si
   return true;
 }
 
-bool Dataset::GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr) {
+bool Dataset::GetFloatField(const char* field_name, data_size_t* out_len,
+                            const float** out_ptr) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
-    #ifdef LABEL_T_USE_DOUBLE
+#ifdef LABEL_T_USE_DOUBLE
     Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
-    #else
+#else
     *out_ptr = metadata_.label();
     *out_len = num_data_;
-    #endif
+#endif
   } else if (name == std::string("weight") || name == std::string("weights")) {
-    #ifdef LABEL_T_USE_DOUBLE
+#ifdef LABEL_T_USE_DOUBLE
     Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
-    #else
+#else
     *out_ptr = metadata_.weights();
     *out_len = num_data_;
-    #endif
+#endif
   } else {
     return false;
   }
   return true;
 }
 
-bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr) {
+bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len,
+                             const double** out_ptr) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("init_score")) {
@@ -812,7 +842,8 @@ bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len, const
   return true;
 }
 
-bool Dataset::GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr) {
+bool Dataset::GetIntField(const char* field_name, data_size_t* out_len,
+                          const int** out_ptr) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
@@ -825,8 +856,7 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len, const in
 }
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
-  if (bin_filename != nullptr
-      && std::string(bin_filename) == data_filename_) {
+  if (bin_filename != nullptr && std::string(bin_filename) == data_filename_) {
     Log::Warning("Bianry file %s already exists", bin_filename);
     return;
   }
@@ -856,13 +886,15 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
       + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_
       + sizeof(int32_t) * num_total_features_ + sizeof(int) * 3 + sizeof(bool) * 2;
+
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header += feature_names_[i].size() + sizeof(int);
     }
     // size of forced bins
     for (int i = 0; i < num_total_features_; ++i) {
-      size_of_header += forced_bin_bounds_[i].size() * sizeof(double) + sizeof(int);
+      size_of_header +=
+          forced_bin_bounds_[i].size() * sizeof(double) + sizeof(int);
     }
     writer->Write(&size_of_header, sizeof(size_of_header));
     // write header
@@ -871,7 +903,8 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(&num_total_features_, sizeof(num_total_features_));
     writer->Write(&label_idx_, sizeof(label_idx_));
     writer->Write(&max_bin_, sizeof(max_bin_));
-    writer->Write(&bin_construct_sample_cnt_, sizeof(bin_construct_sample_cnt_));
+    writer->Write(&bin_construct_sample_cnt_,
+                  sizeof(bin_construct_sample_cnt_));
     writer->Write(&min_data_in_bin_, sizeof(min_data_in_bin_));
     writer->Write(&use_missing_, sizeof(use_missing_));
     writer->Write(&zero_as_missing_, sizeof(zero_as_missing_));
@@ -880,13 +913,15 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(real_feature_idx_.data(), sizeof(int) * num_features_);
     writer->Write(feature2group_.data(), sizeof(int) * num_features_);
     writer->Write(feature2subfeature_.data(), sizeof(int) * num_features_);
-    writer->Write(group_bin_boundaries_.data(), sizeof(uint64_t) * (num_groups_ + 1));
+    writer->Write(group_bin_boundaries_.data(),
+                  sizeof(uint64_t) * (num_groups_ + 1));
     writer->Write(group_feature_start_.data(), sizeof(int) * num_groups_);
     writer->Write(group_feature_cnt_.data(), sizeof(int) * num_groups_);
     if (max_bin_by_feature_.empty()) {
       ArrayArgs<int32_t>::Assign(&max_bin_by_feature_, -1, num_total_features_);
     }
-    writer->Write(max_bin_by_feature_.data(), sizeof(int32_t) * num_total_features_);
+    writer->Write(max_bin_by_feature_.data(),
+                  sizeof(int32_t) * num_total_features_);
     if (ArrayArgs<int32_t>::CheckAll(max_bin_by_feature_, -1)) {
       max_bin_by_feature_.clear();
     }
@@ -959,7 +994,8 @@ void Dataset::DumpTextFile(const char* text_filename) {
   for (int j = 0; j < num_features_; ++j) {
     auto group_idx = feature2group_[j];
     auto sub_idx = feature2subfeature_[j];
-    iterators.emplace_back(feature_groups_[group_idx]->SubFeatureIterator(sub_idx));
+    iterators.emplace_back(
+        feature_groups_[group_idx]->SubFeatureIterator(sub_idx));
   }
   for (data_size_t i = 0; i < num_data_; ++i) {
     fprintf(file, "\n");
@@ -1127,11 +1163,10 @@ void Dataset::ConstructHistogramsMultiVal(
   const int num_bin = multi_val_bin->num_bin();
   const int num_bin_aligned =
       (num_bin + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-  const int min_data_block_size = 1024;
-  const int n_data_block = std::min(
-      num_threads, (num_data + min_data_block_size - 1) / min_data_block_size);
-  const int data_block_size = (num_data + n_data_block - 1) / n_data_block;
-
+  int n_data_block = 1;
+  int data_block_size = num_data;
+  Threading::BlockInfo<data_size_t>(num_threads, num_data, 1024,
+                                    &n_data_block, &data_block_size);
   const size_t buf_size =
       static_cast<size_t>(n_data_block - 1) * num_bin_aligned * 2;
   if (temp_state->hist_buf.size() < buf_size) {
@@ -1141,8 +1176,10 @@ void Dataset::ConstructHistogramsMultiVal(
   if (temp_state->use_subfeature) {
     hist_data = temp_state->TempBuf();
   }
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int tid = 0; tid < n_data_block; ++tid) {
+    OMP_LOOP_EX_BEGIN();
     data_size_t start = tid * data_block_size;
     data_size_t end = std::min(start + data_block_size, num_data);
     auto data_ptr = hist_data;
@@ -1167,14 +1204,16 @@ void Dataset::ConstructHistogramsMultiVal(
         multi_val_bin->ConstructHistogram(start, end, gradients, data_ptr);
       }
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   global_timer.Stop("Dataset::sparse_bin_histogram");
 
   global_timer.Start("Dataset::sparse_bin_histogram_merge");
-  const int min_bin_block_size = 512;
-  const int n_bin_block = std::min(
-      num_threads, (num_bin + min_bin_block_size - 1) / min_bin_block_size);
-  const int bin_block_size = (num_bin + n_bin_block - 1) / n_bin_block;
+  int n_bin_block = 1;
+  int bin_block_size = num_bin;
+  Threading::BlockInfo<data_size_t>(num_threads, num_bin, 512, &n_bin_block,
+                                    &bin_block_size);
   if (!is_constant_hessian) {
 #pragma omp parallel for schedule(static)
     for (int t = 0; t < n_bin_block; ++t) {
@@ -1257,13 +1296,13 @@ void Dataset::ConstructHistograms(
     auto ptr_ordered_hess = hessians;
     if (data_indices != nullptr && num_data < num_data_) {
       if (!is_constant_hessian) {
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
         for (data_size_t i = 0; i < num_data; ++i) {
           ordered_gradients[i] = gradients[data_indices[i]];
           ordered_hessians[i] = hessians[data_indices[i]];
         }
       } else {
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
         for (data_size_t i = 0; i < num_data; ++i) {
           ordered_gradients[i] = gradients[data_indices[i]];
         }
@@ -1361,10 +1400,12 @@ void Dataset::ConstructHistograms(
   }
 }
 
-void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const {
+void Dataset::FixHistogram(int feature_idx, double sum_gradient,
+                           double sum_hessian, hist_t* data) const {
   const int group = feature2group_[feature_idx];
   const int sub_feature = feature2subfeature_[feature_idx];
-  const BinMapper* bin_mapper = feature_groups_[group]->bin_mappers_[sub_feature].get();
+  const BinMapper* bin_mapper =
+      feature_groups_[group]->bin_mappers_[sub_feature].get();
   const int most_freq_bin = bin_mapper->GetMostFreqBin();
   if (most_freq_bin > 0) {
     const int num_bin = bin_mapper->num_bin();
@@ -1379,7 +1420,7 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hess
   }
 }
 
-template<typename T>
+template <typename T>
 void PushVector(std::vector<T>* dest, const std::vector<T>& src) {
   dest->reserve(dest->size() + src.size());
   for (auto i : src) {
@@ -1387,16 +1428,19 @@ void PushVector(std::vector<T>* dest, const std::vector<T>& src) {
   }
 }
 
-template<typename T>
-void PushOffset(std::vector<T>* dest, const std::vector<T>& src, const T& offset) {
+template <typename T>
+void PushOffset(std::vector<T>* dest, const std::vector<T>& src,
+                const T& offset) {
   dest->reserve(dest->size() + src.size());
   for (auto i : src) {
     dest->push_back(i + offset);
   }
 }
 
-template<typename T>
-void PushClearIfEmpty(std::vector<T>* dest, const size_t dest_len, const std::vector<T>& src, const size_t src_len, const T& deflt) {
+template <typename T>
+void PushClearIfEmpty(std::vector<T>* dest, const size_t dest_len,
+                      const std::vector<T>& src, const size_t src_len,
+                      const T& deflt) {
   if (!dest->empty() && !src.empty()) {
     PushVector(dest, src);
   } else if (!dest->empty() && src.empty()) {
@@ -1413,7 +1457,9 @@ void PushClearIfEmpty(std::vector<T>* dest, const size_t dest_len, const std::ve
 
 void Dataset::AddFeaturesFrom(Dataset* other) {
   if (other->num_data_ != num_data_) {
-    throw std::runtime_error("Cannot add features from other Dataset with a different number of rows");
+    throw std::runtime_error(
+        "Cannot add features from other Dataset with a different number of "
+        "rows");
   }
   int mv_gid = -1;
   int other_mv_gid = -1;

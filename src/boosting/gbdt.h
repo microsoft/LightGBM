@@ -296,6 +296,18 @@ class GBDT : public GBDTBase {
   std::vector<double> FeatureImportance(int num_iteration, int importance_type) const override;
 
   /*!
+  * \brief Calculate upper bound value
+  * \return upper bound value
+  */
+  double GetUpperBoundValue() const override;
+
+  /*!
+  * \brief Calculate lower bound value
+  * \return lower bound value
+  */
+  double GetLowerBoundValue() const override;
+
+  /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */

@@ -321,6 +321,30 @@ Booster <- R6::R6Class(
 
     },
 
+    # Get upper bound
+    upper_bound = function() {
+
+      upper_bound <- 0.0
+      lgb.call(
+        "LGBM_BoosterGetUpperBoundValue_R"
+        , ret = upper_bound
+        , private$handle
+      )
+
+    },
+
+    # Get lower bound
+    lower_bound = function() {
+
+      lower_bound <- 0.0
+      lgb.call(
+        "LGBM_BoosterGetLowerBoundValue_R"
+        , ret = lower_bound
+        , private$handle
+      )
+
+    },
+
     # Evaluate data on metrics
     eval = function(data, name, feval = NULL) {
 
