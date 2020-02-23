@@ -1031,12 +1031,14 @@ class AlignmentAllocator {
 class Timer {
  public:
   Timer() {
+#ifdef TIMETAG
     int num_threads = 1;
 #pragma omp parallel
 #pragma omp master
     { num_threads = omp_get_num_threads(); }
     start_time_.resize(num_threads);
     stats_.resize(num_threads);
+#endif  // TIMETAG
   }
 
   ~Timer() { Print(); }
@@ -1082,13 +1084,14 @@ class Timer {
     }
 #endif  // TIMETAG
   }
-
+#ifdef TIMETAG
   std::vector<
       std::unordered_map<std::string, std::chrono::steady_clock::time_point>>
       start_time_;
   std::vector<std::unordered_map<std::string,
                                  std::chrono::duration<double, std::milli>>>
       stats_;
+#endif  // TIMETAG
 };
 
 // Note: this class is not thread-safe, don't use it inside omp blocks
