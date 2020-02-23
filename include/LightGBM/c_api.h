@@ -575,6 +575,24 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
                                                   char** out_strs);
 
 /*!
+ * \brief Get the size of the largest evaluation dataset name.
+ * \param handle Handle of booster
+ * \param[out] out_len Number of characters of the largest name (excluding null-terminator).
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLargestEvalNameSize(BoosterHandle handle,
+                                                         size_t* out_len);
+
+/*!
+ * \brief Get the size of the largest feature name.
+ * \param handle Handle of booster
+ * \param[out] out_len Number of characters in largest name (excluding null-terminator).
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLargestFeatureNameSize(BoosterHandle handle,
+                                                            size_t* out_len);
+
+/*!
  * \brief Get number of features.
  * \param handle Handle of booster
  * \param[out] out_len Total number of features

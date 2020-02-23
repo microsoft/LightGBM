@@ -521,6 +521,24 @@ class Booster {
     return idx;
   }
 
+  size_t GetLargestEvalNameSize() const {
+    size_t max_len = 0;
+    for (const auto& metric : train_metric_) {
+      for (const auto& name : metric->GetName()) {
+        max_len = std::max(name.size(), max_len);
+      }
+    }
+    return max_len;
+  }
+
+  size_t GetLargestFeatureNameSize() const {
+    size_t max_len = 0;
+    for (const auto& name : boosting_->FeatureNames()) {
+      max_len = std::max(name.size(), max_len);
+    }
+    return max_len;
+  }
+
   const Boosting* GetBoosting() const { return boosting_.get(); }
 
  private:
@@ -1367,6 +1385,20 @@ int LGBM_BoosterGetFeatureNames(BoosterHandle handle, int* out_len, char** out_s
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetFeatureNames(out_strs);
+  API_END();
+}
+
+int LGBM_BoosterGetLargestEvalNameSize(BoosterHandle handle, size_t* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetLargestEvalNameSize();
+  API_END();
+}
+
+int LGBM_BoosterGetLargestFeatureNameSize(BoosterHandle handle, size_t* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetLargestFeatureNameSize();
   API_END();
 }
 
