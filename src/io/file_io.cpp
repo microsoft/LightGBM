@@ -170,8 +170,7 @@ std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(
   if (0 == filename.find(kHdfsProto)) {
     WITH_HDFS(return std::unique_ptr<VirtualFileReader>(
         new HDFSFile(filename, O_RDONLY)));
-  }
-  else
+  } else
 #endif
   {
     return std::unique_ptr<VirtualFileReader>(new LocalFile(filename, "rb"));
@@ -184,8 +183,7 @@ std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(
   if (0 == filename.find(kHdfsProto)) {
     WITH_HDFS(return std::unique_ptr<VirtualFileWriter>(
         new HDFSFile(filename, O_WRONLY)));
-  }
-  else
+  } else
 #endif
   {
     return std::unique_ptr<VirtualFileWriter>(new LocalFile(filename, "wb"));
@@ -196,8 +194,7 @@ bool VirtualFileWriter::Exists(const std::string& filename) {
 #ifdef USE_HDFS
   if (0 == filename.find(kHdfsProto)) {
     WITH_HDFS(HDFSFile file(filename, O_RDONLY); return file.Exists());
-  }
-  else
+  } else
 #endif
   {
     LocalFile file(filename, "rb");

@@ -7,7 +7,6 @@
 
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <algorithm>
 #include <functional>
 #include <vector>
 
