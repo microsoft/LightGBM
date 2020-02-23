@@ -5,11 +5,10 @@
 #ifndef LIGHTGBM_BOOSTING_GBDT_H_
 #define LIGHTGBM_BOOSTING_GBDT_H_
 
-#include <LightGBM/utils/threading.h>
-
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/threading.h>
 
 #include <string>
 #include <algorithm>

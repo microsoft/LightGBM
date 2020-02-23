@@ -10,6 +10,7 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <algorithm>
 #include <functional>
 #include <vector>
 
@@ -97,7 +98,8 @@ class ParallelPartitionRunner {
     left_write_pos_.resize(num_threads_);
     right_write_pos_.resize(num_threads_);
   }
-  ~ParallelPartitionRunner(){};
+
+  ~ParallelPartitionRunner() {}
 
   void ReSize(INDEX_T num_data) {
     left_.resize(num_data);
