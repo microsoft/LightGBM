@@ -559,7 +559,7 @@ IO Parameters
 
 -  ``data_random_seed`` :raw-html:`<a id="data_random_seed" title="Permalink to this parameter" href="#data_random_seed">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``data_seed``
 
-   -  random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
+   -  random seed for sampling data to construct histogram bins
 
 -  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
 
