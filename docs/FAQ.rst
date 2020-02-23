@@ -1,3 +1,6 @@
+.. role:: raw-html(raw)
+    :format: html
+
 LightGBM FAQ
 ############
 
@@ -82,8 +85,13 @@ You may also use the CPU version.
 6. Bagging is not reproducible when changing the number of threads.
 -------------------------------------------------------------------
 
+:raw-html:`<strike>`
 LightGBM bagging is multithreaded, so its output depends on the number of threads used.
 There is `no workaround currently <https://github.com/microsoft/LightGBM/issues/632>`__.
+:raw-html:`</strike>`
+
+Starting from `#2804 <https://github.com/microsoft/LightGBM/pull/2804>`__ bagging result doesn't depend on the number of threads.
+So this issue should be solved in the latest version.
 
 7. I tried to use Random Forest mode, and LightGBM crashes!
 -----------------------------------------------------------
