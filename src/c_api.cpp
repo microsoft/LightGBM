@@ -1128,7 +1128,7 @@ int LGBM_DatasetSetField(DatasetHandle handle,
   } else if (type == C_API_DTYPE_FLOAT64) {
     is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
-  if (!is_success) { throw std::runtime_error("Input data type error or field not found"); }
+  if (!is_success) { Log::Fatal("Input data type error or field not found"); }
   API_END();
 }
 
@@ -1150,7 +1150,7 @@ int LGBM_DatasetGetField(DatasetHandle handle,
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
   } 
-  if (!is_success) { throw std::runtime_error("Field not found"); }
+  if (!is_success) { Log::Fatal("Field not found"); }
   if (*out_ptr == nullptr) { *out_len = 0; }
   API_END();
 }
@@ -1800,7 +1800,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
       };
     }
   }
-  throw std::runtime_error("Unknown data type in RowFunctionFromDenseMatric");
+  Log::Fatal("Unknown data type in RowFunctionFromDenseMatric");
 }
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
@@ -1904,7 +1904,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
       };
     }
   }
-  throw std::runtime_error("Unknown data type in RowFunctionFromCSR");
+  Log::Fatal("Unknown data type in RowFunctionFromCSR");
 }
 
 std::function<std::pair<int, double>(int idx)>
@@ -1969,7 +1969,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       };
     }
   }
-  throw std::runtime_error("Unknown data type in CSC matrix");
+  Log::Fatal("Unknown data type in CSC matrix");
 }
 
 CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
