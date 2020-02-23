@@ -134,15 +134,15 @@ class FeatureHistogram {
   }
 
   void FindBestThresholdCategorical(double sum_gradient, double sum_hessian,
-                                  data_size_t num_data,
-                                  const ConstraintEntry& constraints,
-                                  SplitInfo* output) {
+                                    data_size_t num_data,
+                                    const ConstraintEntry& constraints,
+                                    SplitInfo* output) {
     if (meta_->config->extra_trees) {
       FindBestThresholdCategoricalInner<true>(sum_gradient, sum_hessian,
                                               num_data, constraints, output);
     } else {
       FindBestThresholdCategoricalInner<false>(sum_gradient, sum_hessian,
-                                              num_data, constraints, output);
+                                               num_data, constraints, output);
     }
   }
 
