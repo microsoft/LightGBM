@@ -723,6 +723,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   if (max_num_bin_ == 17) {
     Log::Warning("Setting max_bin to 15 is sugguested for best performance");
   }
+  kernel_source_ += 9;
   ctx_ = boost::compute::context(dev_);
   queue_ = boost::compute::command_queue(ctx_, dev_);
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
