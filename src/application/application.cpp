@@ -27,6 +27,8 @@
 
 namespace LightGBM {
 
+Common::Timer global_timer;
+
 Application::Application(int argc, char** argv) {
   LoadParameters(argc, argv);
   // set number of threads for openmp
@@ -36,7 +38,6 @@ Application::Application(int argc, char** argv) {
   if (config_.data.size() == 0 && config_.task != TaskType::kConvertModel) {
     Log::Fatal("No training/prediction data, application quit");
   }
-  omp_set_nested(0);
 }
 
 Application::~Application() {
@@ -103,12 +104,10 @@ void Application::LoadData() {
   if (config_.is_parallel_find_bin) {
     // load data for parallel training
     train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(),
-                                                  config_.initscore_filename.c_str(),
                                                   Network::rank(), Network::num_machines()));
   } else {
     // load data for single machine
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), config_.initscore_filename.c_str(),
-                                                  0, 1));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1));
   }
   // need save binary file
   if (config_.save_binary) {
@@ -135,7 +134,6 @@ void Application::LoadData() {
       auto new_dataset = std::unique_ptr<Dataset>(
         dataset_loader.LoadFromFileAlignWithOtherDataset(
           config_.valid[i].c_str(),
-          config_.valid_data_initscores[i].c_str(),
           train_data_.get()));
       valid_datas_.push_back(std::move(new_dataset));
       // need save binary file
@@ -215,7 +213,7 @@ void Application::Predict() {
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), -1, false, true, false, false, 1, 1);
-    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header);
+    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
     std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
@@ -227,8 +225,7 @@ void Application::Predict() {
     }
     DatasetLoader dataset_loader(config_, nullptr,
                                  config_.num_class, config_.data.c_str());
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), config_.initscore_filename.c_str(),
-                                                  0, 1));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1));
     train_metric_.clear();
     objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                     config_));
@@ -245,7 +242,7 @@ void Application::Predict() {
                         config_.pred_early_stop, config_.pred_early_stop_freq,
                         config_.pred_early_stop_margin);
     predictor.Predict(config_.data.c_str(),
-                      config_.output_result.c_str(), config_.header);
+                      config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
     Log::Info("Finished prediction");
   }
 }

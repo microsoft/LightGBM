@@ -19,6 +19,36 @@ lgb.encode.char <- function(arr, len) {
 
 }
 
+lgb.last_error <- function() {
+  # Perform text error buffering
+  buf_len <- 200L
+  act_len <- 0L
+  err_msg <- raw(buf_len)
+  err_msg <- .Call(
+    "LGBM_GetLastError_R"
+    , buf_len
+    , act_len
+    , err_msg
+    , PACKAGE = "lib_lightgbm"
+  )
+
+  # Check error buffer
+  if (act_len > buf_len) {
+    buf_len <- act_len
+    err_msg <- raw(buf_len)
+    err_msg <- .Call(
+      "LGBM_GetLastError_R"
+      , buf_len
+      , act_len
+      , err_msg
+      , PACKAGE = "lib_lightgbm"
+    )
+  }
+
+  # Return error
+  stop("api error: ", lgb.encode.char(err_msg, act_len))
+}
+
 lgb.call <- function(fun_name, ret, ...) {
   # Set call state to a zero value
   call_state <- 0L
@@ -43,35 +73,7 @@ lgb.call <- function(fun_name, ret, ...) {
   call_state <- as.integer(call_state)
   # Check for call state value post call
   if (call_state != 0L) {
-
-    # Perform text error buffering
-    buf_len <- 200L
-    act_len <- 0L
-    err_msg <- raw(buf_len)
-    err_msg <- .Call(
-      "LGBM_GetLastError_R"
-      , buf_len
-      , act_len
-      , err_msg
-      , PACKAGE = "lib_lightgbm"
-    )
-
-    # Check error buffer
-    if (act_len > buf_len) {
-      buf_len <- act_len
-      err_msg <- raw(buf_len)
-      err_msg <- .Call(
-        "LGBM_GetLastError_R"
-        , buf_len
-        , act_len
-        , err_msg
-        , PACKAGE = "lib_lightgbm"
-      )
-    }
-
-    # Return error
-    stop("api error: ", lgb.encode.char(err_msg, act_len))
-
+    lgb.last_error()
   }
 
   return(ret)
@@ -175,13 +177,6 @@ lgb.check.r6.class <- function(object, name) {
 
 }
 
-lgb.check.params <- function(params) {
-
-  # To-do
-  params # Currently return params because this is not finalized
-
-}
-
 lgb.check.obj <- function(params, obj) {
 
   # List known objectives in a vector
@@ -216,6 +211,11 @@ lgb.check.obj <- function(params, obj) {
     , "mape"
     , "gamma"
     , "tweedie"
+    , "rank_xendcg"
+    , "xendcg"
+    , "xe_ndcg"
+    , "xe_ndcg_mart"
+    , "xendcg_mart"
   )
 
   # Check whether the objective is empty or not, and take it from params if needed
@@ -253,18 +253,10 @@ lgb.check.eval <- function(params, eval) {
     params$metric <- list()
   }
 
-  # Check if evaluation metric is null, if not then append it
-  if (!is.null(eval)) {
-
-    # Append metric if character or list
-    if (is.character(eval) || is.list(eval)) {
-
-      # Append metrics
-      params$metric <- append(params$metric, eval)
-
-    }
-
+  # If 'eval' is a list or character vector, store it in 'metric'
+  if (is.character(eval) || is.list(eval)) {
+    params$metric <- append(params$metric, eval)
   }
-  # Return parameters
+
   return(params)
 }

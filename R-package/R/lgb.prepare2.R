@@ -1,14 +1,12 @@
-#' Data preparator for LightGBM datasets (integer)
-#'
-#' Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-#' Factors and characters are converted to numeric (specifically: integer).
-#' Please use \code{lgb.prepare_rules2} if you want to apply this transformation to other datasets.
-#' This is useful if you have a specific need for integer dataset instead of numeric dataset.
-#' Note that there are programs which do not support integer-only input. Consider this as a half
-#' memory technique which is dangerous, especially for LightGBM.
-#'
+#' @name lgb.prepare2
+#' @title Data preparator for LightGBM datasets (integer)
+#' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+#'              Factors and characters are converted to numeric (specifically: integer).
+#'              Please use \code{\link{lgb.prepare_rules2}} if you want to apply this transformation to
+#'              other datasets. This is useful if you have a specific need for integer dataset instead
+#'              of numeric dataset. Note that there are programs which do not support integer-only
+#'              input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
 #' @param data A data.frame or data.table to prepare.
-#'
 #' @return The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
 #'         for input in \code{lgb.Dataset}.
 #'
@@ -43,13 +41,13 @@ lgb.prepare2 <- function(data) {
     # Get data classes
     list_classes <- vapply(data, class, character(1L))
 
-    # Convert characters to factors only (we can change them to numeric after)
+    # Convert characters to integer
     is_char <- which(list_classes == "character")
     if (length(is_char) > 0L) {
       data[, (is_char) := lapply(.SD, function(x) {as.integer(as.factor(x))}), .SDcols = is_char]
     }
 
-    # Convert factors to numeric (integer is more efficient actually)
+    # Convert factors to integer
     is_fact <- c(which(list_classes == "factor"), is_char)
     if (length(is_fact) > 0L) {
       data[, (is_fact) := lapply(.SD, function(x) {as.integer(x)}), .SDcols = is_fact]
@@ -77,8 +75,11 @@ lgb.prepare2 <- function(data) {
 
     } else {
 
-      # What do you think you are doing here? Throw error.
-      stop("lgb.prepare: you provided ", paste(class(data), collapse = " & "), " but data should have class data.frame")
+      stop(
+        "lgb.prepare2: you provided "
+        , paste(class(data), collapse = " & ")
+        , " but data should have class data.frame or data.table"
+      )
 
     }
 

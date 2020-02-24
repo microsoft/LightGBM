@@ -15,7 +15,7 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 \code{lgb.Booster}.
 }
 \description{
-Attempts to load a model using RDS.
+Attempts to load a model stored in a \code{.rds} file, using \code{\link[base]{readRDS}}
 }
 \examples{
 library(lightgbm)

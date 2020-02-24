@@ -165,7 +165,7 @@ void DatasetLoader::SetHeader(const char* filename) {
   }
 }
 
-Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore_file, int rank, int num_machines) {
+Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines) {
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !config_.pre_partition) {
     if (group_idx_ > 0) {
@@ -184,7 +184,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename, initscore_file);
+    dataset->metadata_.Init(filename);
     if (!config_.two_round) {
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
@@ -227,7 +227,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
 
 
 
-Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const char* initscore_file, const Dataset* train_data) {
+Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
@@ -239,7 +239,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename, initscore_file);
+    dataset->metadata_.Init(filename);
     if (!config_.two_round) {
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
@@ -335,8 +335,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(dataset->use_missing_);
   dataset->zero_as_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
   mem_ptr += sizeof(dataset->zero_as_missing_);
-  dataset->sparse_threshold_ = *(reinterpret_cast<const double*>(mem_ptr));
-  mem_ptr += sizeof(dataset->sparse_threshold_);
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
   for (int i = 0; i < dataset->num_total_features_; ++i) {
@@ -390,50 +388,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->group_feature_cnt_.push_back(tmp_ptr_group_feature_cnt[i]);
   }
   mem_ptr += sizeof(int) * (dataset->num_groups_);
-
-  if (!config_.monotone_constraints.empty()) {
-    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.monotone_constraints.size());
-    dataset->monotone_types_.resize(dataset->num_features_);
-    for (int i = 0; i < dataset->num_total_features_; ++i) {
-      int inner_fidx = dataset->InnerFeatureIndex(i);
-      if (inner_fidx >= 0) {
-        dataset->monotone_types_[inner_fidx] = config_.monotone_constraints[i];
-      }
-    }
-  } else {
-    const int8_t* tmp_ptr_monotone_type = reinterpret_cast<const int8_t*>(mem_ptr);
-    dataset->monotone_types_.clear();
-    for (int i = 0; i < dataset->num_features_; ++i) {
-      dataset->monotone_types_.push_back(tmp_ptr_monotone_type[i]);
-    }
-  }
-  mem_ptr += sizeof(int8_t) * (dataset->num_features_);
-
-  if (ArrayArgs<int8_t>::CheckAllZero(dataset->monotone_types_)) {
-    dataset->monotone_types_.clear();
-  }
-
-  if (!config_.feature_contri.empty()) {
-    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.feature_contri.size());
-    dataset->feature_penalty_.resize(dataset->num_features_);
-    for (int i = 0; i < dataset->num_total_features_; ++i) {
-      int inner_fidx = dataset->InnerFeatureIndex(i);
-      if (inner_fidx >= 0) {
-        dataset->feature_penalty_[inner_fidx] = config_.feature_contri[i];
-      }
-    }
-  } else {
-    const double* tmp_ptr_feature_penalty = reinterpret_cast<const double*>(mem_ptr);
-    dataset->feature_penalty_.clear();
-    for (int i = 0; i < dataset->num_features_; ++i) {
-      dataset->feature_penalty_.push_back(tmp_ptr_feature_penalty[i]);
-    }
-  }
-  mem_ptr += sizeof(double) * (dataset->num_features_);
-
-  if (ArrayArgs<double>::CheckAll(dataset->feature_penalty_, 1)) {
-    dataset->feature_penalty_.clear();
-  }
 
   if (!config_.max_bin_by_feature.empty()) {
     CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.max_bin_by_feature.size());
@@ -619,13 +573,13 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       bin_mappers[i].reset(new BinMapper());
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
-                                config_.max_bin, config_.min_data_in_bin, filter_cnt,
+                                config_.max_bin, config_.min_data_in_bin, filter_cnt, config_.feature_pre_filter,
                                 bin_type, config_.use_missing, config_.zero_as_missing,
                                 forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
                                 config_.max_bin_by_feature[i], config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing,
+                                filter_cnt, config_.feature_pre_filter, bin_type, config_.use_missing,
                                 config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
@@ -667,16 +621,17 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
                                 total_sample_size, config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing,
+                                filter_cnt, config_.feature_pre_filter, bin_type, config_.use_missing, config_.zero_as_missing,
                                 forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i],
                                 total_sample_size, config_.max_bin_by_feature[start[rank] + i],
-                                config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing,
+                                config_.min_data_in_bin, filter_cnt, config_.feature_pre_filter, bin_type, config_.use_missing,
                                 config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     comm_size_t self_buf_size = 0;
     for (int i = 0; i < len[rank]; ++i) {
       if (ignore_features_.count(start[rank] + i) > 0) {
@@ -717,7 +672,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, num_per_col, num_col, total_sample_size, config_);
+  dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
@@ -945,12 +900,12 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       if (config_.max_bin_by_feature.empty()) {
         bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
                                 sample_data.size(), config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing,
+                                filter_cnt, config_.feature_pre_filter, bin_type, config_.use_missing, config_.zero_as_missing,
                                 forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
                                 sample_data.size(), config_.max_bin_by_feature[i],
-                                config_.min_data_in_bin, filter_cnt, bin_type, config_.use_missing,
+                                config_.min_data_in_bin, filter_cnt, config_.feature_pre_filter, bin_type, config_.use_missing,
                                 config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
@@ -989,13 +944,13 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
         bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
                                 sample_data.size(), config_.max_bin, config_.min_data_in_bin,
-                                filter_cnt, bin_type, config_.use_missing, config_.zero_as_missing,
+                                filter_cnt, config_.feature_pre_filter, bin_type, config_.use_missing, config_.zero_as_missing,
                                 forced_bin_bounds[i]);
       } else {
         bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(),
                                 static_cast<int>(sample_values[start[rank] + i].size()),
                                 sample_data.size(), config_.max_bin_by_feature[i],
-                                config_.min_data_in_bin, filter_cnt, bin_type,
+                                config_.min_data_in_bin, filter_cnt, config_.feature_pre_filter, bin_type,
                                 config_.use_missing, config_.zero_as_missing, forced_bin_bounds[i]);
       }
       OMP_LOOP_EX_END();
@@ -1040,8 +995,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
-  sample_values.clear();
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
+                     Common::Vector2Ptr<double>(&sample_values).data(),
                      Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
 }
 
@@ -1066,11 +1021,13 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       ref_text_data[i].clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1083,6 +1040,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1110,10 +1068,12 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1126,6 +1086,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1167,11 +1128,13 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       }
       // set label
       dataset->metadata_.SetLabelAt(start_idx + i, static_cast<label_t>(tmp_label));
+      std::vector<bool> is_feature_added(dataset->num_features_, false);
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
+          is_feature_added[feature_idx] = true;
           // if is used feature
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
@@ -1184,6 +1147,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           }
         }
       }
+      dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();

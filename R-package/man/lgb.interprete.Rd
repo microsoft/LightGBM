@@ -19,8 +19,8 @@ lgb.interprete(model, data, idxset, num_iteration = NULL)
 For regression, binary classification and lambdarank model, a \code{list} of \code{data.table}
         with the following columns:
         \itemize{
-            \item \code{Feature} Feature names in the model.
-            \item \code{Contribution} The total contribution of this feature's splits.
+            \item{\code{Feature}: Feature names in the model.}
+            \item{\code{Contribution}: The total contribution of this feature's splits.}
         }
         For multiclass classification, a \code{list} of \code{data.table} with the Feature column and
         Contribution columns to each class.

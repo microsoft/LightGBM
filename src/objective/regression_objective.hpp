@@ -15,62 +15,77 @@
 
 namespace LightGBM {
 
-#define PercentileFun(T, data_reader, cnt_data, alpha) {\
-  if (cnt_data <= 1) { return  data_reader(0); }\
-  std::vector<T> ref_data(cnt_data);\
-  for (data_size_t i = 0; i < cnt_data; ++i) {\
-    ref_data[i] = data_reader(i);\
+#define PercentileFun(T, data_reader, cnt_data, alpha)                    \
+  {                                                                       \
+    if (cnt_data <= 1) {                                                  \
+      return data_reader(0);                                              \
+    }                                                                     \
+    std::vector<T> ref_data(cnt_data);                                    \
+    for (data_size_t i = 0; i < cnt_data; ++i) {                          \
+      ref_data[i] = data_reader(i);                                       \
+    }                                                                     \
+    const double float_pos = (1.0f - alpha) * cnt_data;                   \
+    const data_size_t pos = static_cast<data_size_t>(float_pos);          \
+    if (pos < 1) {                                                        \
+      return ref_data[ArrayArgs<T>::ArgMax(ref_data)];                    \
+    } else if (pos >= cnt_data) {                                         \
+      return ref_data[ArrayArgs<T>::ArgMin(ref_data)];                    \
+    } else {                                                              \
+      const double bias = float_pos - pos;                                \
+      if (pos > cnt_data / 2) {                                           \
+        ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, cnt_data, pos - 1);         \
+        T v1 = ref_data[pos - 1];                                         \
+        T v2 = ref_data[pos + ArrayArgs<T>::ArgMax(ref_data.data() + pos, \
+                                                   cnt_data - pos)];      \
+        return static_cast<T>(v1 - (v1 - v2) * bias);                     \
+      } else {                                                            \
+        ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, cnt_data, pos);             \
+        T v2 = ref_data[pos];                                             \
+        T v1 = ref_data[ArrayArgs<T>::ArgMin(ref_data.data(), pos)];      \
+        return static_cast<T>(v1 - (v1 - v2) * bias);                     \
+      }                                                                   \
+    }                                                                     \
   }\
-  const double float_pos = (1.0f - alpha) * cnt_data;\
-  const data_size_t pos = static_cast<data_size_t>(float_pos);\
-  if (pos < 1) {\
-    return ref_data[ArrayArgs<T>::ArgMax(ref_data)];\
-  } else if (pos >= cnt_data) {\
-    return ref_data[ArrayArgs<T>::ArgMin(ref_data)];\
-  } else {\
-    const double bias = float_pos - pos;\
-    if (pos > cnt_data / 2) {\
-      ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, cnt_data, pos - 1);\
-      T v1 = ref_data[pos - 1];\
-      T v2 = ref_data[pos + ArrayArgs<T>::ArgMax(ref_data.data() + pos, cnt_data - pos)];\
-      return static_cast<T>(v1 - (v1 - v2) * bias);\
-    } else {\
-      ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, cnt_data, pos);\
-      T v2 = ref_data[pos];\
-      T v1 = ref_data[ArrayArgs<T>::ArgMin(ref_data.data(), pos)];\
-      return static_cast<T>(v1 - (v1 - v2) * bias);\
-    }\
-  }\
-}\
 
-#define WeightedPercentileFun(T, data_reader, weight_reader, cnt_data, alpha) {\
-  if (cnt_data <= 1) { return  data_reader(0); }\
-  std::vector<data_size_t> sorted_idx(cnt_data);\
-  for (data_size_t i = 0; i < cnt_data; ++i) {\
-    sorted_idx[i] = i;\
+#define WeightedPercentileFun(T, data_reader, weight_reader, cnt_data, alpha) \
+  {                                                                           \
+    if (cnt_data <= 1) {                                                      \
+      return data_reader(0);                                                  \
+    }                                                                         \
+    std::vector<data_size_t> sorted_idx(cnt_data);                            \
+    for (data_size_t i = 0; i < cnt_data; ++i) {                              \
+      sorted_idx[i] = i;                                                      \
+    }                                                                         \
+    std::stable_sort(sorted_idx.begin(), sorted_idx.end(),                    \
+                     [&](data_size_t a, data_size_t b) {                      \
+                       return data_reader(a) < data_reader(b);                \
+                     });                                                      \
+    std::vector<double> weighted_cdf(cnt_data);                               \
+    weighted_cdf[0] = weight_reader(sorted_idx[0]);                           \
+    for (data_size_t i = 1; i < cnt_data; ++i) {                              \
+      weighted_cdf[i] = weighted_cdf[i - 1] + weight_reader(sorted_idx[i]);   \
+    }                                                                         \
+    double threshold = weighted_cdf[cnt_data - 1] * alpha;                    \
+    size_t pos = std::upper_bound(weighted_cdf.begin(), weighted_cdf.end(),   \
+                                  threshold) -                                \
+                 weighted_cdf.begin();                                        \
+    pos = std::min(pos, static_cast<size_t>(cnt_data - 1));                   \
+    if (pos == 0 || pos == static_cast<size_t>(cnt_data - 1)) {               \
+      return data_reader(sorted_idx[pos]);                                    \
+    }                                                                         \
+    CHECK(threshold >= weighted_cdf[pos - 1]);                                \
+    CHECK(threshold < weighted_cdf[pos]);                                     \
+    T v1 = data_reader(sorted_idx[pos - 1]);                                  \
+    T v2 = data_reader(sorted_idx[pos]);                                      \
+    if (weighted_cdf[pos + 1] - weighted_cdf[pos] >= 1.0f) {                  \
+      return static_cast<T>((threshold - weighted_cdf[pos]) /                 \
+                                (weighted_cdf[pos + 1] - weighted_cdf[pos]) * \
+                                (v2 - v1) +                                   \
+                            v1);                                              \
+    } else {                                                                  \
+      return static_cast<T>(v2);                                              \
+    }                                                                         \
   }\
-  std::stable_sort(sorted_idx.begin(), sorted_idx.end(), [=](data_size_t a, data_size_t b) {return data_reader(a) < data_reader(b); });\
-  std::vector<double> weighted_cdf(cnt_data);\
-  weighted_cdf[0] = weight_reader(sorted_idx[0]);\
-  for (data_size_t i = 1; i < cnt_data; ++i) {\
-    weighted_cdf[i] = weighted_cdf[i - 1] + weight_reader(sorted_idx[i]);\
-  }\
-  double threshold = weighted_cdf[cnt_data - 1] * alpha;\
-  size_t pos = std::upper_bound(weighted_cdf.begin(), weighted_cdf.end(), threshold) - weighted_cdf.begin();\
-  pos = std::min(pos, static_cast<size_t>(cnt_data -1));\
-  if (pos == 0 || pos ==  static_cast<size_t>(cnt_data - 1)) {\
-    return data_reader(sorted_idx[pos]);\
-  }\
-  CHECK(threshold >= weighted_cdf[pos - 1]);\
-  CHECK(threshold < weighted_cdf[pos]);\
-  T v1 = data_reader(sorted_idx[pos - 1]);\
-  T v2 = data_reader(sorted_idx[pos]);\
-  if (weighted_cdf[pos + 1] - weighted_cdf[pos] >= 1.0f) {\
-    return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1); \
-  } else {\
-    return static_cast<T>(v2);\
-  }\
-}\
 
 /*!
 * \brief Objective function for regression

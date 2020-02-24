@@ -157,7 +157,7 @@ R""()
 void within_kernel_reduction64x4(uchar4 feature_mask,
                            __global const acc_type* restrict feature4_sub_hist, 
                            const uint skip_id,
-                           acc_type g_val, acc_type h_val, uint cnt_val,
+                           acc_type g_val, acc_type h_val,
                            const ushort num_sub_hist,
                            __global acc_type* restrict output_buf,
                            __local acc_type * restrict local_hist) {
@@ -173,38 +173,35 @@ void within_kernel_reduction64x4(uchar4 feature_mask,
     for (i = 0; i < skip_id; ++i) {
             g_val += *p;            p += NUM_BINS * 4; // 256 threads working on 4 features' 64 bins
             h_val += *p;            p += NUM_BINS * 4;
-            cnt_val += as_acc_int_type(*p); p += NUM_BINS * 4;
     }
     // skip the counters we already have
-    p += 3 * 4 * NUM_BINS;
+    p += 2 * 4 * NUM_BINS;
     for (i = i + 1; i < num_sub_hist; ++i) {
             g_val += *p;            p += NUM_BINS * 4;
             h_val += *p;            p += NUM_BINS * 4;
-            cnt_val += as_acc_int_type(*p); p += NUM_BINS * 4;
     }
     #endif
     // printf("thread %d: g_val=%f, h_val=%f cnt=%d", ltid, g_val, h_val, cnt_val);
     // now overwrite the local_hist for final reduction and output
     // reverse the f3...f0 order to match the real order
     feature_id = 3 - feature_id;
-    local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 0] = g_val;
-    local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 1] = h_val;
-    local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 2] = as_acc_type((acc_int_type)cnt_val);
+    local_hist[feature_id * 2 * NUM_BINS + bin_id * 2 + 0] = g_val;
+    local_hist[feature_id * 2 * NUM_BINS + bin_id * 2 + 1] = h_val;
     barrier(CLK_LOCAL_MEM_FENCE);
     i = ltid;
-    if (feature_mask.s0 && i < 1 * 3 * NUM_BINS) {
+    if (feature_mask.s0 && i < 1 * 2 * NUM_BINS) {
         output_buf[i] = local_hist[i];
     }
-    i += 1 * 3 * NUM_BINS;
-    if (feature_mask.s1 && i < 2 * 3 * NUM_BINS) {
+    i += 1 * 2 * NUM_BINS;
+    if (feature_mask.s1 && i < 2 * 2 * NUM_BINS) {
         output_buf[i] = local_hist[i];
     }
-    i += 1 * 3 * NUM_BINS;
-    if (feature_mask.s2 && i < 3 * 3 * NUM_BINS) {
+    i += 1 * 2 * NUM_BINS;
+    if (feature_mask.s2 && i < 3 * 2 * NUM_BINS) {
         output_buf[i] = local_hist[i];
     }
-    i += 1 * 3 * NUM_BINS;
-    if (feature_mask.s3 && i < 4 * 3 * NUM_BINS) {
+    i += 1 * 2 * NUM_BINS;
+    if (feature_mask.s3 && i < 4 * 2 * NUM_BINS) {
         output_buf[i] = local_hist[i];
     }
 }
@@ -306,7 +303,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
        bk3_c_f0_bin64 bk3_c_f1_bin64 bk3_c_f2_bin64 bk3_c_f3_bin64
        -----------------------------------------------
     */
+    #if CONST_HESSIAN == 1
     __local uint * cnt_hist = (__local uint *)(gh_hist + 2 * 4 * NUM_BINS * NUM_BANKS);
+    #endif
 
     // thread 0, 1, 2, 3 compute histograms for gradients first
     // thread 4, 5, 6, 7 compute histograms for hessians  first
@@ -509,7 +508,7 @@ R""()
             s0_stat1 += stat1;
             s0_stat2 += stat2;
         }
-
+        #if CONST_HESSIAN == 1
         // STAGE 3: accumulate counter
         // there are 4 counters for 4 features
         // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's counts for example 0, 1, 2, 3
@@ -540,6 +539,7 @@ R""()
             addr = bin * CNT_BIN_MULT + bank * 4 + offset;
             atom_inc(cnt_hist + addr);
         }
+        #endif
         stat1 = stat1_next;
         stat2 = stat2_next;
         feature4 = feature4_next;
@@ -639,7 +639,9 @@ R""()
         ushort bank_id = (i + offset) & BANK_MASK;
         g_val += gh_hist[bin_id * HG_BIN_MULT + bank_id * 8 + feature_id];
         h_val += gh_hist[bin_id * HG_BIN_MULT + bank_id * 8 + feature_id + 4];
+        #if CONST_HESSIAN == 1
         cnt_val += cnt_hist[bin_id * CNT_BIN_MULT + bank_id * 4 + feature_id];
+        #endif
     }
     // now thread 0 - 3 holds feature 0, 1, 2, 3's gradient, hessian and count bin 0
     // now thread 4 - 7 holds feature 0, 1, 2, 3's gradient, hessian and count bin 1
@@ -670,14 +672,12 @@ R""()
     // if there is only one workgroup processing this feature4, don't even need to write
     uint feature4_id = (group_id >> POWER_FEATURE_WORKGROUPS);
     #if POWER_FEATURE_WORKGROUPS != 0
-    __global acc_type * restrict output = (__global acc_type * restrict)output_buf + group_id * 4 * 3 * NUM_BINS;
+    __global acc_type * restrict output = (__global acc_type * restrict)output_buf + group_id * 4 * 2 * NUM_BINS;
     // if g_val and h_val are double, they are converted to float here
     // write gradients for 4 features
     output[0 * 4 * NUM_BINS + ltid] = g_val;
     // write hessians for 4 features
     output[1 * 4 * NUM_BINS + ltid] = h_val;
-    // write counts for 4 features
-    output[2 * 4 * NUM_BINS + ltid] = as_acc_type((acc_int_type)cnt_val);
     barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
     mem_fence(CLK_GLOBAL_MEM_FENCE);
     // To avoid the cost of an extra reducting kernel, we have to deal with some 
@@ -703,7 +703,7 @@ R""()
     // The is done by using an global atomic counter.
     // On AMD GPUs ideally this should be done in GDS,
     // but currently there is no easy way to access it via OpenCL.
-    __local uint * counter_val = cnt_hist;
+    __local uint * counter_val = (__local uint *)(gh_hist + 2 * 4 * NUM_BINS * NUM_BANKS);;
     if (ltid == 0) {
         // all workgroups processing the same feature add this counter
         *counter_val = atom_inc(sync_counters + feature4_id);
@@ -727,18 +727,16 @@ R""()
         // locate our feature4's block in output memory
         uint output_offset = (feature4_id << POWER_FEATURE_WORKGROUPS);
         __global acc_type const * restrict feature4_subhists = 
-                 (__global acc_type *)output_buf + output_offset * 4 * 3 * NUM_BINS;
+                 (__global acc_type *)output_buf + output_offset * 4 * 2 * NUM_BINS;
         // skip reading the data already in local memory
         uint skip_id = group_id ^ output_offset;
         // locate output histogram location for this feature4
-        __global acc_type* restrict hist_buf = hist_buf_base + feature4_id * 4 * 3 * NUM_BINS;
-        within_kernel_reduction64x4(feature_mask, feature4_subhists, skip_id, g_val, h_val, cnt_val, 
+        __global acc_type* restrict hist_buf = hist_buf_base + feature4_id * 4 * 2 * NUM_BINS;
+        within_kernel_reduction64x4(feature_mask, feature4_subhists, skip_id, g_val, h_val, 
                                     1 << POWER_FEATURE_WORKGROUPS, hist_buf, (__local acc_type *)shared_array);
     }
 }
 
 // The following line ends the string literal, adds an extra #endif at the end
-// the +9 skips extra characters ")", newline, "#endif" and newline at the beginning
-// )"" "\n#endif" + 9
+// )"" "\n#endif"
 #endif
-

@@ -90,7 +90,6 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
                 use_hdfs=False, boost_root=None, boost_dir=None,
                 boost_include_dir=None, boost_librarydir=None,
                 opencl_include_dir=None, opencl_library=None,
-                openmp_include_dir=None, openmp_library=None,
                 nomp=False, bit32=False):
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
@@ -166,41 +165,9 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
                             error_msg='Please install CMake first')
     else:  # Linux, Darwin (macOS), etc.
         logger.info("Starting to compile with CMake.")
-        # Apple Clang with OpenMP
-        if system() == 'Darwin' and not nomp and not (os.environ.get('CC', '').split('/')[-1].split('\\')[-1].startswith('gcc')
-                                                      and os.environ.get('CXX', '').split('/')[-1].split('\\')[-1].startswith('g++')):
-            def get_cmake_opts(openmp_include_dir, openmp_library):
-                if openmp_include_dir and openmp_library:
-                    return ['-DOpenMP_C_FLAGS=-Xpreprocessor -fopenmp -I{0}'.format(openmp_include_dir),
-                            '-DOpenMP_C_LIB_NAMES=omp',
-                            '-DOpenMP_CXX_FLAGS=-Xpreprocessor -fopenmp -I{0}'.format(openmp_include_dir),
-                            '-DOpenMP_CXX_LIB_NAMES=omp',
-                            '-DOpenMP_omp_LIBRARY={0}'.format(openmp_library)]
-                else:
-                    return []
-
-            status = silent_call(cmake_cmd + get_cmake_opts(openmp_include_dir, openmp_library))
-            status += silent_call(["make", "_lightgbm", "-j4"])
-            if status != 0:
-                logger.warning("Compilation failed.")
-                logger.info("Starting to compile with Homebrew OpenMP paths guesses.")
-                clear_path(os.path.join(CURRENT_DIR, "build_cpp"))
-                status = silent_call(cmake_cmd + get_cmake_opts('/usr/local/opt/libomp/include',
-                                                                '/usr/local/opt/libomp/lib/libomp.dylib'))
-                status += silent_call(["make", "_lightgbm", "-j4"])
-            if status != 0:
-                logger.warning("Compilation failed.")
-                logger.info("Starting to compile with MacPorts OpenMP paths guesses.")
-                clear_path(os.path.join(CURRENT_DIR, "build_cpp"))
-                silent_call(cmake_cmd + get_cmake_opts('/opt/local/include/libomp',
-                                                       '/opt/local/lib/libomp/libomp.dylib'),
-                            raise_error=True, error_msg='Please install CMake and all required dependencies first')
-                silent_call(["make", "_lightgbm", "-j4"], raise_error=True,
-                            error_msg='An error has occurred while building lightgbm library file')
-        else:
-            silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
-            silent_call(["make", "_lightgbm", "-j4"], raise_error=True,
-                        error_msg='An error has occurred while building lightgbm library file')
+        silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
+        silent_call(["make", "_lightgbm", "-j4"], raise_error=True,
+                    error_msg='An error has occurred while building lightgbm library file')
     os.chdir(CURRENT_DIR)
 
 
@@ -230,9 +197,7 @@ class CustomInstall(install):
         ('boost-include-dir=', None, 'Directory containing Boost headers'),
         ('boost-librarydir=', None, 'Preferred Boost library directory'),
         ('opencl-include-dir=', None, 'OpenCL include directory'),
-        ('opencl-library=', None, 'Path to OpenCL library'),
-        ('openmp-include-dir=', None, 'OpenMP include directory'),
-        ('openmp-library=', None, 'Path to OpenMP library')
+        ('opencl-library=', None, 'Path to OpenCL library')
     ]
 
     def initialize_options(self):
@@ -245,8 +210,6 @@ class CustomInstall(install):
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
-        self.openmp_include_dir = None
-        self.openmp_library = None
         self.mpi = 0
         self.hdfs = 0
         self.precompile = 0
@@ -268,7 +231,6 @@ class CustomInstall(install):
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
-                        openmp_include_dir=self.openmp_include_dir, openmp_library=self.openmp_library,
                         nomp=self.nomp, bit32=self.bit32)
         install.run(self)
         if os.path.isfile(LOG_PATH):

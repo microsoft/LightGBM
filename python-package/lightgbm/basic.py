@@ -7,6 +7,7 @@ import ctypes
 import os
 import warnings
 from tempfile import NamedTemporaryFile
+from collections import OrderedDict
 
 import numpy as np
 import scipy.sparse
@@ -108,14 +109,6 @@ def cint32_array_to_numpy(cptr, length):
         raise RuntimeError('Expected int pointer')
 
 
-def cint8_array_to_numpy(cptr, length):
-    """Convert a ctypes int pointer array to a numpy array."""
-    if isinstance(cptr, ctypes.POINTER(ctypes.c_int8)):
-        return np.fromiter(cptr, dtype=np.int8, count=length)
-    else:
-        raise RuntimeError('Expected int pointer')
-
-
 def c_str(string):
     """Convert a Python string to C string."""
     return ctypes.c_char_p(string.encode('utf-8'))
@@ -169,24 +162,46 @@ class LightGBMError(Exception):
 
 
 class _ConfigAliases(object):
-    aliases = {"boosting": {"boosting",
+    aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
+                                            "subsample_for_bin"},
+               "boosting": {"boosting",
                             "boosting_type",
                             "boost"},
                "categorical_feature": {"categorical_feature",
                                        "cat_feature",
                                        "categorical_column",
                                        "cat_column"},
+               "data_random_seed": {"data_random_seed",
+                                    "data_seed"},
                "early_stopping_round": {"early_stopping_round",
                                         "early_stopping_rounds",
                                         "early_stopping",
                                         "n_iter_no_change"},
+               "enable_bundle": {"enable_bundle",
+                                 "is_enable_bundle",
+                                 "bundle"},
                "eval_at": {"eval_at",
                            "ndcg_eval_at",
                            "ndcg_at",
                            "map_eval_at",
                            "map_at"},
+               "group_column": {"group_column",
+                                "group",
+                                "group_id",
+                                "query_column",
+                                "query",
+                                "query_id"},
                "header": {"header",
                           "has_header"},
+               "ignore_column": {"ignore_column",
+                                 "ignore_feature",
+                                 "blacklist"},
+               "is_enable_sparse": {"is_enable_sparse",
+                                    "is_sparse",
+                                    "enable_sparse",
+                                    "sparse"},
+               "label_column": {"label_column",
+                                "label"},
                "machines": {"machines",
                             "workers",
                             "nodes"},
@@ -208,14 +223,21 @@ class _ConfigAliases(object):
                              "objective_type",
                              "app",
                              "application"},
+               "pre_partition": {"pre_partition",
+                                 "is_pre_partition"},
+               "two_round": {"two_round",
+                             "two_round_loading",
+                             "use_two_round_loading"},
                "verbosity": {"verbosity",
-                             "verbose"}}
+                             "verbose"},
+               "weight_column": {"weight_column",
+                                 "weight"}}
 
     @classmethod
     def get(cls, *args):
         ret = set()
         for i in args:
-            ret |= cls.aliases.get(i, set())
+            ret |= cls.aliases.get(i, {i})
         return ret
 
 
@@ -226,7 +248,6 @@ C_API_DTYPE_FLOAT32 = 0
 C_API_DTYPE_FLOAT64 = 1
 C_API_DTYPE_INT32 = 2
 C_API_DTYPE_INT64 = 3
-C_API_DTYPE_INT8 = 4
 
 """Matrix is row major in Python"""
 C_API_IS_ROW_MAJOR = 1
@@ -241,9 +262,7 @@ C_API_PREDICT_CONTRIB = 3
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
-                     "group": C_API_DTYPE_INT32,
-                     "feature_penalty": C_API_DTYPE_FLOAT64,
-                     "monotone_constraints": C_API_DTYPE_INT8}
+                     "group": C_API_DTYPE_INT32}
 
 
 def convert_from_sliced_object(data):
@@ -770,12 +789,44 @@ class Dataset(object):
         self.params_back_up = None
         self.feature_penalty = None
         self.monotone_constraints = None
+        self.version = 0
 
     def __del__(self):
         try:
             self._free_handle()
         except AttributeError:
             pass
+
+    def get_params(self):
+        """Get the used parameters in the Dataset.
+
+        Returns
+        -------
+        params : dict or None
+            The used parameters in this Dataset object.
+        """
+        if self.params is not None:
+            # no min_data, nthreads and verbose in this function
+            dataset_params = _ConfigAliases.get("bin_construct_sample_cnt",
+                                                "categorical_feature",
+                                                "data_random_seed",
+                                                "enable_bundle",
+                                                "feature_pre_filter",
+                                                "forcedbins_filename",
+                                                "group_column",
+                                                "header",
+                                                "ignore_column",
+                                                "is_enable_sparse",
+                                                "label_column",
+                                                "max_bin",
+                                                "max_bin_by_feature",
+                                                "min_data_in_bin",
+                                                "pre_partition",
+                                                "two_round",
+                                                "use_missing",
+                                                "weight_column",
+                                                "zero_as_missing")
+            return {k: v for k, v in self.params.items() if k in dataset_params}
 
     def _free_handle(self):
         if self.handle is not None:
@@ -865,6 +916,7 @@ class Dataset(object):
                 params['categorical_column'] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
+        self.params = params
         # process for reference dataset
         ref_dataset = None
         if isinstance(reference, Dataset):
@@ -1149,6 +1201,11 @@ class Dataset(object):
     def save_binary(self, filename):
         """Save Dataset to a binary file.
 
+        .. note::
+
+            Please note that `init_score` is not saved in binary file.
+            If you need it, please set it again after loading Dataset.
+
         Parameters
         ----------
         filename : string
@@ -1165,20 +1222,34 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
-        if self.handle is not None and params is not None:
-            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(params))))
-        if not self.params:
-            self.params = copy.deepcopy(params)
-        else:
-            self.params_back_up = copy.deepcopy(self.params)
-            self.params.update(params)
+        params = copy.deepcopy(params)
+
+        def update():
+            if not self.params:
+                self.params = params
+            else:
+                self.params_back_up = copy.deepcopy(self.params)
+                self.params.update(params)
+
+        if self.handle is None:
+            update()
+        elif params is not None:
+            ret = _LIB.LGBM_DatasetUpdateParamChecking(
+                c_str(param_dict_to_str(self.params)),
+                c_str(param_dict_to_str(params)))
+            if ret != 0:
+                # could be updated if data is not freed
+                if self.data is not None:
+                    update()
+                    self._free_handle()
+                else:
+                    raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
         return self
 
     def _reverse_update_params(self):
-        self.params = copy.deepcopy(self.params_back_up)
-        self.params_back_up = None
-        if self.handle is not None and self.params is not None:
-            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(self.params))))
+        if self.handle is None:
+            self.params = copy.deepcopy(self.params_back_up)
+            self.params_back_up = None
         return self
 
     def set_field(self, field_name, data):
@@ -1227,6 +1298,7 @@ class Dataset(object):
             ptr_data,
             ctypes.c_int(len(data)),
             ctypes.c_int(type_data)))
+        self.version += 1
         return self
 
     def get_field(self, field_name):
@@ -1263,8 +1335,6 @@ class Dataset(object):
             return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
             return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
-        elif out_type.value == C_API_DTYPE_INT8:
-            return cint8_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int8)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
 
@@ -1473,30 +1543,6 @@ class Dataset(object):
             self.weight = self.get_field('weight')
         return self.weight
 
-    def get_feature_penalty(self):
-        """Get the feature penalty of the Dataset.
-
-        Returns
-        -------
-        feature_penalty : numpy array or None
-            Feature penalty for each feature in the Dataset.
-        """
-        if self.feature_penalty is None:
-            self.feature_penalty = self.get_field('feature_penalty')
-        return self.feature_penalty
-
-    def get_monotone_constraints(self):
-        """Get the monotone constraints of the Dataset.
-
-        Returns
-        -------
-        monotone_constraints : numpy array or None
-            Monotone constraints: -1, 0 or 1, for each feature in the Dataset.
-        """
-        if self.monotone_constraints is None:
-            self.monotone_constraints = self.get_field('monotone_constraints')
-        return self.monotone_constraints
-
     def get_init_score(self):
         """Get the initial score of the Dataset.
 
@@ -1691,7 +1737,6 @@ class Booster(object):
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
-            params_str = param_dict_to_str(params)
             # set network if necessary
             for alias in _ConfigAliases.get("machines"):
                 if alias in params:
@@ -1709,9 +1754,13 @@ class Booster(object):
                                      num_machines=params.setdefault("num_machines", num_machines))
                     break
             # construct booster object
+            train_set.construct()
+            # copy the parameters from train_set
+            params.update(train_set.get_params())
+            params_str = param_dict_to_str(params)
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreate(
-                train_set.construct().handle,
+                train_set.handle,
                 c_str(params_str),
                 ctypes.byref(self.handle)))
             # save reference to data
@@ -1734,6 +1783,7 @@ class Booster(object):
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
+            self.train_set_version = train_set.version
         elif model_file is not None:
             # Prediction task
             out_num_iterations = ctypes.c_int(0)
@@ -1853,6 +1903,121 @@ class Booster(object):
         self.network = False
         return self
 
+    def trees_to_dataframe(self):
+        """Parse the fitted model and return in an easy-to-read pandas DataFrame.
+
+        Returns
+        -------
+        result : pandas DataFrame
+            Returns a pandas DataFrame of the parsed model.
+        """
+        if not PANDAS_INSTALLED:
+            raise LightGBMError('This method cannot be run without pandas installed')
+
+        if self.num_trees() == 0:
+            raise LightGBMError('There are no trees in this Booster and thus nothing to parse')
+
+        def _is_split_node(tree):
+            return 'split_index' in tree.keys()
+
+        def create_node_record(tree, node_depth=1, tree_index=None,
+                               feature_names=None, parent_node=None):
+
+            def _get_node_index(tree, tree_index):
+                tree_num = str(tree_index) + '-' if tree_index is not None else ''
+                is_split = _is_split_node(tree)
+                node_type = 'S' if is_split else 'L'
+                # if a single node tree it won't have `leaf_index` so return 0
+                node_num = str(tree.get('split_index' if is_split else 'leaf_index', 0))
+                return tree_num + node_type + node_num
+
+            def _get_split_feature(tree, feature_names):
+                if _is_split_node(tree):
+                    if feature_names is not None:
+                        feature_name = feature_names[tree['split_feature']]
+                    else:
+                        feature_name = tree['split_feature']
+                else:
+                    feature_name = None
+                return feature_name
+
+            def _is_single_node_tree(tree):
+                return set(tree.keys()) == {'leaf_value'}
+
+            # Create the node record, and populate universal data members
+            node = OrderedDict()
+            node['tree_index'] = tree_index
+            node['node_depth'] = node_depth
+            node['node_index'] = _get_node_index(tree, tree_index)
+            node['left_child'] = None
+            node['right_child'] = None
+            node['parent_index'] = parent_node
+            node['split_feature'] = _get_split_feature(tree, feature_names)
+            node['split_gain'] = None
+            node['threshold'] = None
+            node['decision_type'] = None
+            node['missing_direction'] = None
+            node['missing_type'] = None
+            node['value'] = None
+            node['weight'] = None
+            node['count'] = None
+
+            # Update values to reflect node type (leaf or split)
+            if _is_split_node(tree):
+                node['left_child'] = _get_node_index(tree['left_child'], tree_index)
+                node['right_child'] = _get_node_index(tree['right_child'], tree_index)
+                node['split_gain'] = tree['split_gain']
+                node['threshold'] = tree['threshold']
+                node['decision_type'] = tree['decision_type']
+                node['missing_direction'] = 'left' if tree['default_left'] else 'right'
+                node['missing_type'] = tree['missing_type']
+                node['value'] = tree['internal_value']
+                node['weight'] = tree['internal_weight']
+                node['count'] = tree['internal_count']
+            else:
+                node['value'] = tree['leaf_value']
+                if not _is_single_node_tree(tree):
+                    node['weight'] = tree['leaf_weight']
+                    node['count'] = tree['leaf_count']
+
+            return node
+
+        def tree_dict_to_node_list(tree, node_depth=1, tree_index=None,
+                                   feature_names=None, parent_node=None):
+
+            node = create_node_record(tree,
+                                      node_depth=node_depth,
+                                      tree_index=tree_index,
+                                      feature_names=feature_names,
+                                      parent_node=parent_node)
+
+            res = [node]
+
+            if _is_split_node(tree):
+                # traverse the next level of the tree
+                children = ['left_child', 'right_child']
+                for child in children:
+                    subtree_list = tree_dict_to_node_list(
+                        tree[child],
+                        node_depth=node_depth + 1,
+                        tree_index=tree_index,
+                        feature_names=feature_names,
+                        parent_node=node['node_index'])
+                    # In tree format, "subtree_list" is a list of node records (dicts),
+                    # and we add node to the list.
+                    res.extend(subtree_list)
+            return res
+
+        model_dict = self.dump_model()
+        feature_names = model_dict['feature_names']
+        model_list = []
+        for tree in model_dict['tree_info']:
+            model_list.extend(tree_dict_to_node_list(tree['tree_structure'],
+                                                     tree_index=tree['tree_index'],
+                                                     feature_names=feature_names))
+
+        return DataFrame(model_list, columns=model_list[0].keys())
+
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.
 
@@ -1913,8 +2078,6 @@ class Booster(object):
         self : Booster
             Booster with new parameters.
         """
-        if any(metric_alias in params for metric_alias in _ConfigAliases.get("metric")):
-            self.__need_reload_eval_info = True
         params_str = param_dict_to_str(params)
         if params_str:
             _safe_call(_LIB.LGBM_BoosterResetParameter(
@@ -1955,7 +2118,12 @@ class Booster(object):
             Whether the update was successfully finished.
         """
         # need reset training data
-        if train_set is not None and train_set is not self.train_set:
+        if train_set is None and self.train_set_version != self.train_set.version:
+            train_set = self.train_set
+            is_the_same_train_set = False
+        else:
+            is_the_same_train_set = train_set is self.train_set and self.train_set_version == train_set.version
+        if train_set is not None and not is_the_same_train_set:
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
@@ -1967,6 +2135,7 @@ class Booster(object):
                 self.handle,
                 self.train_set.construct().handle))
             self.__inner_predict_buffer[0] = None
+            self.train_set_version = self.train_set.version
         is_finished = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
@@ -2073,6 +2242,34 @@ class Booster(object):
             self.handle,
             ctypes.byref(num_trees)))
         return num_trees.value
+
+    def upper_bound(self):
+        """Get upper bound value of a model.
+
+        Returns
+        -------
+        upper_bound : double
+            Upper bound value of the model.
+        """
+        ret = ctypes.c_double(0)
+        _safe_call(_LIB.LGBM_BoosterGetUpperBoundValue(
+            self.handle,
+            ctypes.byref(ret)))
+        return ret.value
+
+    def lower_bound(self):
+        """Get lower bound value of a model.
+
+        Returns
+        -------
+        lower_bound : double
+            Lower bound value of the model.
+        """
+        ret = ctypes.c_double(0)
+        _safe_call(_LIB.LGBM_BoosterGetLowerBoundValue(
+            self.handle,
+            ctypes.byref(ret)))
+        return ret.value
 
     def eval(self, data, name, feval=None):
         """Evaluate for data.

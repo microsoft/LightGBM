@@ -21,6 +21,7 @@
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
 #include "leaf_splits.hpp"
+#include "monotone_constraints.hpp"
 #include "split_info.hpp"
 
 #ifdef USE_GPU
@@ -62,10 +63,13 @@ class SerialTreeLearner: public TreeLearner {
     data_partition_->SetUsedDataIndices(used_indices, num_data);
   }
 
-  void AddPredictionToScore(const Tree* tree, double* out_score) const override {
-    if (tree->num_leaves() <= 1) { return; }
+  void AddPredictionToScore(const Tree* tree,
+                            double* out_score) const override {
+    if (tree->num_leaves() <= 1) {
+      return;
+    }
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
@@ -79,7 +83,17 @@ class SerialTreeLearner: public TreeLearner {
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
+  bool IsHistColWise() const override { return is_hist_colwise_; }
+
  protected:
+  void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
+                                  int feature_index, int real_fidx,
+                                  bool is_feature_used, int num_data,
+                                  const LeafSplits* leaf_splits,
+                                  SplitInfo* best_split);
+
+  void GetMultiValBin(const Dataset* dataset, bool is_first_time);
+
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
   * \brief Some initial works before training
@@ -147,6 +161,8 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<SplitInfo> best_split_per_leaf_;
   /*! \brief store best split per feature for all leaves */
   std::vector<SplitInfo> splits_per_leaf_;
+  /*! \brief stores minimum and maximum constraints for each leaf */
+  std::unique_ptr<LeafConstraints<ConstraintEntry>> constraints_;
 
   /*! \brief stores best thresholds for all feature for smaller leaf */
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
@@ -161,17 +177,13 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_gradients_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_hessians_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_hessians_;
 #endif
 
-  /*! \brief Store ordered bin */
-  std::vector<std::unique_ptr<OrderedBin>> ordered_bins_;
-  /*! \brief True if has ordered bin */
-  bool has_ordered_bin_ = false;
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
-  std::vector<char> is_data_in_leaf_;
+  std::vector<char, Common::AlignmentAllocator<char, kAlignedSize>> is_data_in_leaf_;
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
@@ -179,6 +191,8 @@ class SerialTreeLearner: public TreeLearner {
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
+  std::unique_ptr<TrainingTempState> temp_state_;
+  bool is_hist_colwise_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
 

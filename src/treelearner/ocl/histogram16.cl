@@ -163,7 +163,7 @@ R""()
 void within_kernel_reduction16x8(uchar8 feature_mask,
                            __global const acc_type* restrict feature4_sub_hist, 
                            const uint skip_id,
-                           acc_type stat_val, uint cnt_val,
+                           acc_type stat_val,
                            const ushort num_sub_hist,
                            __global acc_type* restrict output_buf,
                            __local acc_type * restrict local_hist) {
@@ -181,33 +181,21 @@ void within_kernel_reduction16x8(uchar8 feature_mask,
             // 256 threads working on 8 features' 16 bins, gradient and hessian
             stat_val += *p;
             p += NUM_BINS * DWORD_FEATURES * 2;
-            if (ltid < LOCAL_SIZE_0 / 2) {
-                cnt_val += as_acc_int_type(*p); 
-            }
-            p += NUM_BINS * DWORD_FEATURES;
     }
     // skip the counters we already have
-    p += 3 * DWORD_FEATURES * NUM_BINS;
+    p += 2 * DWORD_FEATURES * NUM_BINS;
     for (i = i + 1; i < num_sub_hist; ++i) {
             stat_val += *p; 
             p += NUM_BINS * DWORD_FEATURES * 2;
-            if (ltid < LOCAL_SIZE_0 / 2) {
-                cnt_val += as_acc_int_type(*p); 
-            }
-            p += NUM_BINS * DWORD_FEATURES;
     }
     #endif
     // printf("thread %d:feature=%d, bin_id=%d, hessian=%d, stat_val=%f, cnt=%d", ltid, feature_id, bin_id, is_hessian_first, stat_val, cnt_val);
     // now overwrite the local_hist for final reduction and output
     // reverse the f7...f0 order to match the real order
     feature_id = DWORD_FEATURES_MASK - feature_id;
-    local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + is_hessian_first] = stat_val;
-    bin_id = ltid >> (LOG2_DWORD_FEATURES); // range 0 - 16, for counter
-    if (ltid < LOCAL_SIZE_0 / 2) {
-        local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 2] = as_acc_type((acc_int_type)cnt_val);
-    }
+    local_hist[feature_id * 2 * NUM_BINS + bin_id * 2 + is_hessian_first] = stat_val;
     barrier(CLK_LOCAL_MEM_FENCE);
-    for (i = ltid; i < DWORD_FEATURES * 3 * NUM_BINS; i += lsize) {
+    for (i = ltid; i < DWORD_FEATURES * 2 * NUM_BINS; i += lsize) {
         output_buf[i] = local_hist[i];
     }
 }
@@ -335,7 +323,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
        bk7_c_f0_bin16  bk7_c_f1_bin16  bk7_c_f2_bin16  bk7_c_f3_bin16  bk7_c_f4_bin16  bk7_c_f5_bin16  bk7_c_f6_bin16  bk7_c_f7_bin0
        -----------------------------------------------
     */
+    #if CONST_HESSIAN == 1
     __local uint * cnt_hist = (__local uint *)(gh_hist + 2 * DWORD_FEATURES * NUM_BINS * NUM_BANKS);
+    #endif
 
     // thread 0, 1, 2, 3, 4, 5, 6, 7 compute histograms for gradients first
     // thread 8, 9, 10, 11, 12, 13, 14, 15 compute histograms for hessians first
@@ -547,7 +537,7 @@ R""()
             atomic_local_add_f(gh_hist + addr2, stat2);
             #endif
         }
-
+        #if CONST_HESSIAN == 1
         // STAGE 3: accumulate counter
         // there are 8 counters for 8 features
         // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 0, 1, 2, 3, 4, 5, 6, 7's counts for example 0, 1, 2, 3, 4, 5, 6, 7
@@ -614,6 +604,7 @@ R""()
             // printf("thread %x add counter %d feature %d (7)\n", ltid, bin, offset);
             atom_inc(cnt_hist + addr);
         }
+        #endif
         stat1 = stat1_next;
         stat2 = stat2_next;
         feature4 = feature4_next;
@@ -642,6 +633,7 @@ R""()
         ushort bank_id = (i + offset) & BANK_MASK;
         stat_val += gh_hist[bin_id * HG_BIN_MULT + bank_id * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + feature_id];
     }
+    #if CONST_HESSIAN == 1
     if (ltid < LOCAL_SIZE_0 / 2) {
         // first 128 threads accumulate the 8 * 16 = 128 counter values
         bin_id = ltid >> LOG2_DWORD_FEATURES; // bits 3 - 6 range 0 - 16 is bin ID
@@ -651,6 +643,7 @@ R""()
             cnt_val += cnt_hist[bin_id * CNT_BIN_MULT + bank_id * DWORD_FEATURES + feature_id];
         }
     }
+    #endif
     
     // now thread 0 - 7  holds feature 0 - 7's gradient for bin 0 and counter bin 0
     // now thread 8 - 15 holds feature 0 - 7's hessian  for bin 0 and counter bin 1
@@ -687,7 +680,7 @@ R""()
     // write to output
     // write gradients and hessians histogram for all 4 features
     // output data in linear order for further reduction
-    // output size = 4 (features) * 3 (counters) * 64 (bins) * sizeof(float)
+    // output size = 4 (features) * 2 (counters) * 64 (bins) * sizeof(float)
     /* memory layout of output:
        g_f0_bin0   g_f1_bin0   g_f2_bin0   g_f3_bin0   g_f4_bin0   g_f5_bin0   g_f6_bin0   g_f7_bin0
        h_f0_bin0   h_f1_bin0   h_f2_bin0   h_f3_bin0   h_f4_bin0   h_f5_bin0   h_f6_bin0   h_f7_bin0
@@ -705,14 +698,10 @@ R""()
     // if there is only one workgroup processing this feature4, don't even need to write
     uint feature4_id = (group_id >> POWER_FEATURE_WORKGROUPS);
     #if POWER_FEATURE_WORKGROUPS != 0
-    __global acc_type * restrict output = (__global acc_type * restrict)output_buf + group_id * DWORD_FEATURES * 3 * NUM_BINS;
+    __global acc_type * restrict output = (__global acc_type * restrict)output_buf + group_id * DWORD_FEATURES * 2 * NUM_BINS;
     // if g_val and h_val are double, they are converted to float here
     // write gradients and hessians for 8 features
     output[0 * DWORD_FEATURES * NUM_BINS + ltid] = stat_val;
-    // write counts for 8 features
-    if (ltid < LOCAL_SIZE_0 / 2) {
-        output[2 * DWORD_FEATURES * NUM_BINS + ltid] = as_acc_type((acc_int_type)cnt_val);
-    }
     barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
     mem_fence(CLK_GLOBAL_MEM_FENCE);
     // To avoid the cost of an extra reducting kernel, we have to deal with some 
@@ -738,7 +727,7 @@ R""()
     // The is done by using an global atomic counter.
     // On AMD GPUs ideally this should be done in GDS,
     // but currently there is no easy way to access it via OpenCL.
-    __local uint * counter_val = cnt_hist;
+    __local uint * counter_val = (__local uint *)(gh_hist + 2 * DWORD_FEATURES * NUM_BINS * NUM_BANKS);
     if (ltid == 0) {
         // all workgroups processing the same feature add this counter
         *counter_val = atom_inc(sync_counters + feature4_id);
@@ -762,18 +751,16 @@ R""()
         // locate our feature4's block in output memory
         uint output_offset = (feature4_id << POWER_FEATURE_WORKGROUPS);
         __global acc_type const * restrict feature4_subhists = 
-                 (__global acc_type *)output_buf + output_offset * DWORD_FEATURES * 3 * NUM_BINS;
+                 (__global acc_type *)output_buf + output_offset * DWORD_FEATURES * 2 * NUM_BINS;
         // skip reading the data already in local memory
         uint skip_id = group_id ^ output_offset;
         // locate output histogram location for this feature4
-        __global acc_type* restrict hist_buf = hist_buf_base + feature4_id * DWORD_FEATURES * 3 * NUM_BINS;
-        within_kernel_reduction16x8(feature_mask, feature4_subhists, skip_id, stat_val, cnt_val, 
+        __global acc_type* restrict hist_buf = hist_buf_base + feature4_id * DWORD_FEATURES * 2 * NUM_BINS;
+        within_kernel_reduction16x8(feature_mask, feature4_subhists, skip_id, stat_val, 
                                     1 << POWER_FEATURE_WORKGROUPS, hist_buf, (__local acc_type *)shared_array);
     }
 }
 
 // The following line ends the string literal, adds an extra #endif at the end
-// the +9 skips extra characters ")", newline, "#endif" and newline at the beginning
-// )"" "\n#endif" + 9
+// )"" "\n#endif"
 #endif
-

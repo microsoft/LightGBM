@@ -175,13 +175,13 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
-* \brief Update parameters for a Dataset
-* \param handle an instance of data matrix
-* \param parameters parameters
-* \return 0 when succeed, -1 when failure happens
-*/
-LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParam_R(LGBM_SE handle,
-  LGBM_SE params,
+ * \brief Raise errors for attempts to update dataset parameters
+ * \param old_params Current dataset parameters
+ * \param new_params New dataset parameters
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParamChecking_R(LGBM_SE old_params,
+  LGBM_SE new_params,
   LGBM_SE call_state);
 
 /*!
@@ -335,6 +335,30 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterRollbackOneIter_R(LGBM_SE handle,
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterGetCurrentIteration_R(LGBM_SE handle,
   LGBM_SE out,
   LGBM_SE call_state);
+
+/*!
+* \brief Get model upper bound value.
+* \param handle Handle of booster
+* \param[out] out_results Result pointing to max value
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterGetUpperBoundValue_R(
+    LGBM_SE handle,
+    LGBM_SE out_result,
+    LGBM_SE call_state
+);
+
+/*!
+* \brief Get model lower bound value.
+* \param handle Handle of booster
+* \param[out] out_results Result pointing to min value
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterGetLowerBoundValue_R(
+    LGBM_SE handle,
+    LGBM_SE out_result,
+    LGBM_SE call_state
+);
 
 /*!
 * \brief Get Name of eval

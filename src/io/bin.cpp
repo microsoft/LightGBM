@@ -4,6 +4,7 @@
  */
 #include <LightGBM/bin.h>
 
+#include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
 
@@ -14,7 +15,8 @@
 
 #include "dense_bin.hpp"
 #include "dense_nbits_bin.hpp"
-#include "ordered_sparse_bin.hpp"
+#include "multi_val_dense_bin.hpp"
+#include "multi_val_sparse_bin.hpp"
 #include "sparse_bin.hpp"
 
 namespace LightGBM {
@@ -40,6 +42,7 @@ namespace LightGBM {
     min_val_ = other.min_val_;
     max_val_ = other.max_val_;
     default_bin_ = other.default_bin_;
+    most_freq_bin_ = other.most_freq_bin_;
   }
 
   BinMapper::BinMapper(const void* memory) {
@@ -321,7 +324,7 @@ namespace LightGBM {
   }
 
   void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
-                          int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type,
+                          int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
                           bool use_missing, bool zero_as_missing,
                           const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
@@ -501,7 +504,7 @@ namespace LightGBM {
       is_trivial_ = false;
     }
     // check useless bin
-    if (!is_trivial_ && NeedFilter(cnt_in_bin, static_cast<int>(total_sample_cnt), min_split_data, bin_type_)) {
+    if (!is_trivial_ && pre_filter && NeedFilter(cnt_in_bin, static_cast<int>(total_sample_cnt), min_split_data, bin_type_)) {
       is_trivial_ = true;
     }
 
@@ -512,8 +515,15 @@ namespace LightGBM {
       }
     }
     if (!is_trivial_) {
+      most_freq_bin_ = static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
       // calculate sparse rate
-      sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / static_cast<double>(total_sample_cnt);
+      sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / total_sample_cnt;
+      const double max_sparse_rate = static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
+      if (most_freq_bin_ != default_bin_ && max_sparse_rate > 0.7f) {
+        sparse_rate_ = max_sparse_rate;
+      } else {
+        most_freq_bin_ = default_bin_;
+      }
     } else {
       sparse_rate_ = 1.0f;
     }
@@ -529,7 +539,7 @@ namespace LightGBM {
     size += sizeof(BinType);
     size += 2 * sizeof(double);
     size += bin * sizeof(double);
-    size += sizeof(uint32_t);
+    size += sizeof(uint32_t) * 2;
     return size;
   }
 
@@ -550,6 +560,8 @@ namespace LightGBM {
     buffer += sizeof(max_val_);
     std::memcpy(buffer, &default_bin_, sizeof(default_bin_));
     buffer += sizeof(default_bin_);
+    std::memcpy(buffer, &most_freq_bin_, sizeof(most_freq_bin_));
+    buffer += sizeof(most_freq_bin_);
     if (bin_type_ == BinType::NumericalBin) {
       std::memcpy(buffer, bin_upper_bound_.data(), num_bin_ * sizeof(double));
     } else {
@@ -574,6 +586,8 @@ namespace LightGBM {
     buffer += sizeof(max_val_);
     std::memcpy(&default_bin_, buffer, sizeof(default_bin_));
     buffer += sizeof(default_bin_);
+    std::memcpy(&most_freq_bin_, buffer, sizeof(most_freq_bin_));
+    buffer += sizeof(most_freq_bin_);
     if (bin_type_ == BinType::NumericalBin) {
       bin_upper_bound_ = std::vector<double>(num_bin_);
       std::memcpy(bin_upper_bound_.data(), buffer, num_bin_ * sizeof(double));
@@ -596,6 +610,7 @@ namespace LightGBM {
     writer->Write(&min_val_, sizeof(min_val_));
     writer->Write(&max_val_, sizeof(max_val_));
     writer->Write(&default_bin_, sizeof(default_bin_));
+    writer->Write(&most_freq_bin_, sizeof(most_freq_bin_));
     if (bin_type_ == BinType::NumericalBin) {
       writer->Write(bin_upper_bound_.data(), sizeof(double) * num_bin_);
     } else {
@@ -605,7 +620,7 @@ namespace LightGBM {
 
   size_t BinMapper::SizesInByte() const {
     size_t ret = sizeof(num_bin_) + sizeof(missing_type_) + sizeof(is_trivial_) + sizeof(sparse_rate_)
-      + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_);
+      + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_) + sizeof(most_freq_bin_);
     if (bin_type_ == BinType::NumericalBin) {
       ret += sizeof(double) *  num_bin_;
     } else {
@@ -622,21 +637,9 @@ namespace LightGBM {
   template class SparseBin<uint16_t>;
   template class SparseBin<uint32_t>;
 
-  template class OrderedSparseBin<uint8_t>;
-  template class OrderedSparseBin<uint16_t>;
-  template class OrderedSparseBin<uint32_t>;
-
-  Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate,
-    bool is_enable_sparse, double sparse_threshold, bool* is_sparse) {
-    // sparse threshold
-    if (sparse_rate >= sparse_threshold && is_enable_sparse) {
-      *is_sparse = true;
-      return CreateSparseBin(num_data, num_bin);
-    } else {
-      *is_sparse = false;
-      return CreateDenseBin(num_data, num_bin);
-    }
-  }
+  template class MultiValDenseBin<uint8_t>;
+  template class MultiValDenseBin<uint16_t>;
+  template class MultiValDenseBin<uint32_t>;
 
   Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin) {
     if (num_bin <= 16) {
@@ -657,6 +660,44 @@ namespace LightGBM {
       return new SparseBin<uint16_t>(num_data);
     } else {
       return new SparseBin<uint32_t>(num_data);
+    }
+  }
+
+  MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature, double sparse_rate) {
+    const double multi_val_bin_sparse_threshold = 0.25f;
+    if (sparse_rate >= multi_val_bin_sparse_threshold) {
+      const double average_element_per_row = (1.0 - sparse_rate) * num_feature;
+      return CreateMultiValSparseBin(num_data, num_bin,
+                                     average_element_per_row);
+    } else {
+      return CreateMultiValDenseBin(num_data, num_bin, num_feature);
+    }
+  }
+
+  MultiValBin* MultiValBin::CreateMultiValDenseBin(data_size_t num_data,
+                                                   int num_bin,
+                                                   int num_feature) {
+    if (num_bin <= 256) {
+      return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature);
+    } else if (num_bin <= 65536) {
+      return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature);
+    } else {
+      return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature);
+    }
+  }
+
+  MultiValBin* MultiValBin::CreateMultiValSparseBin(data_size_t num_data,
+                                                    int num_bin,
+                                                    double estimate_element_per_row) {
+    if (num_bin <= 256) {
+      return new MultiValSparseBin<uint8_t>(num_data, num_bin,
+                                            estimate_element_per_row);
+    } else if (num_bin <= 65536) {
+      return new MultiValSparseBin<uint16_t>(num_data, num_bin,
+                                             estimate_element_per_row);
+    } else {
+      return new MultiValSparseBin<uint32_t>(num_data, num_bin,
+                                             estimate_element_per_row);
     }
   }
 

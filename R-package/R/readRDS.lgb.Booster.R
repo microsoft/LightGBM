@@ -1,7 +1,6 @@
-#' readRDS for \code{lgb.Booster} models
-#'
-#' Attempts to load a model using RDS.
-#'
+#' @name readRDS.lgb.Booster
+#' @title readRDS for \code{lgb.Booster} models
+#' @description Attempts to load a model stored in a \code{.rds} file, using \code{\link[base]{readRDS}}
 #' @param file a connection or the name of the file where the R object is saved to or read from.
 #' @param refhook a hook function for handling reference objects.
 #'

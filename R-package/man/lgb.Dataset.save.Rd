@@ -15,7 +15,8 @@ lgb.Dataset.save(dataset, fname)
 passed dataset
 }
 \description{
-Save \code{lgb.Dataset} to a binary file
+Please note that \code{init_score} is not saved in binary file.
+             If you need it, please set it again after loading Dataset.
 }
 \examples{
 library(lightgbm)
@@ -23,5 +24,4 @@ data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.save(dtrain, "data.bin")
-
 }

@@ -70,8 +70,11 @@ class CostEfficientGradientBoosting {
         if (i == best_leaf) continue;
         auto split = &splits_per_leaf_[static_cast<size_t>(i) * train_data->num_features() + inner_feature_index];
         split->gain += config->cegb_tradeoff * config->cegb_penalty_feature_coupled[best_split_info->feature];
-        if (*split > ref_best_split_per_leaf[i])
+        // Avoid to update the leaf that cannot split
+        if (ref_best_split_per_leaf[i].gain > kMinScore &&
+            *split > ref_best_split_per_leaf[i]) {
           ref_best_split_per_leaf[i] = *split;
+        }
       }
     }
     if (!config->cegb_penalty_feature_lazy.empty()) {

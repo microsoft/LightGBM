@@ -10,11 +10,10 @@ data(bank)
 }
 \description{
 This data set is originally from the Bank Marketing data set,
-UCI Machine Learning Repository.
-}
-\details{
-It contains only the following: bank.csv with 10% of the examples and 17 inputs,
-randomly selected from 3 (older version of this dataset with less inputs).
+             UCI Machine Learning Repository.
+
+             It contains only the following: bank.csv with 10% of the examples and 17 inputs,
+             randomly selected from 3 (older version of this dataset with less inputs).
 }
 \references{
 http://archive.ics.uci.edu/ml/datasets/Bank+Marketing

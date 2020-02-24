@@ -90,7 +90,7 @@ class TextReader {
     INDEX_T total_cnt = 0;
     size_t bytes_read = 0;
     PipelineReader::Read(filename_, skip_bytes_,
-      [&]
+        [&process_fun, &bytes_read, &total_cnt, this]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
@@ -172,8 +172,8 @@ class TextReader {
 
   INDEX_T SampleFromFile(Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
     INDEX_T cur_sample_cnt = 0;
-    return ReadAllAndProcess(
-      [&]
+    return ReadAllAndProcess([=, &random, &cur_sample_cnt,
+                              &out_sampled_data]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
@@ -195,7 +195,7 @@ class TextReader {
   INDEX_T ReadAndFilterLines(const std::function<bool(INDEX_T)>& filter_fun, std::vector<INDEX_T>* out_used_data_indices) {
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
-      [&]
+        [&filter_fun, &out_used_data_indices, this]
     (INDEX_T line_idx , const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx);
       if (is_used) { out_used_data_indices->push_back(line_idx); }
@@ -209,7 +209,8 @@ class TextReader {
     INDEX_T cur_sample_cnt = 0;
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
-      [&]
+        [=, &filter_fun, &out_used_data_indices, &random, &cur_sample_cnt,
+         &out_sampled_data]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx);
       if (is_used) { out_used_data_indices->push_back(line_idx); }
@@ -240,7 +241,7 @@ class TextReader {
     size_t bytes_read = 0;
     INDEX_T used_cnt = 0;
     PipelineReader::Read(filename_, skip_bytes_,
-      [&]
+        [&process_fun, &filter_fun, &total_cnt, &bytes_read, &used_cnt, this]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
