@@ -163,7 +163,7 @@ class DenseBin: public Bin {
         for (data_size_t i = 0; i < num_data; ++i) {
           const data_size_t idx = data_indices[i];
           const VAL_T bin = data_[idx];
-          if (t_most_freq_bin == bin) {
+          if (t_most_freq_bin == bin || bin < minb || bin > maxb) {
             missing_default_indices[(*missing_default_count)++] = idx;
           } else if (bin > th) {
             gt_indices[gt_count++] = idx;

@@ -168,7 +168,7 @@ class Dense4bitsBin : public Bin {
         for (data_size_t i = 0; i < num_data; ++i) {
           const data_size_t idx = data_indices[i];
           const uint8_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-          if (t_most_freq_bin == bin) {
+          if (t_most_freq_bin == bin || bin < minb || bin > maxb) {
             missing_default_indices[(*missing_default_count)++] = idx;
           } else if (bin > th) {
             gt_indices[gt_count++] = idx;
