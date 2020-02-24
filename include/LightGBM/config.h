@@ -3,7 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  *
  * \note
- * desc and descl2 fields must be written in reStructuredText format
+ * desc and descl2 fields must be written in reStructuredText format;
+ * nested sections can be placed only at the bottom of parent's section
  */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
@@ -235,6 +236,11 @@ struct Config {
   // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
   bool force_row_wise = false;
 
+  // alias = hist_pool_size
+  // desc = max cache size in MB for historical histogram
+  // desc = ``< 0`` means no limit
+  double histogram_pool_size = -1.0;
+
   // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
   // desc = ``<= 0`` means no limit
   int max_depth = -1;
@@ -443,11 +449,6 @@ struct Config {
   // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
-  // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
-  // desc = ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
-  std::string forcedbins_filename = "";
-
   // check = >=0.0
   // check = <=1.0
   // desc = decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees
@@ -474,57 +475,17 @@ struct Config {
   // desc = applied once per forest
   std::vector<double> cegb_penalty_feature_coupled;
 
-  #pragma endregion
-
-  #pragma region IO Parameters
-
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
   int verbosity = 1;
 
-  // check = >1
-  // desc = max number of bins that feature values will be bucketed in
-  // desc = small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
-  // desc = LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
-  int max_bin = 255;
-
-
-  // alias = is_sparse, enable_sparse, sparse
-  // desc = used to enable/disable sparse optimization
-  bool is_enable_sparse = true;
-
-  // type = multi-int
-  // default = None
-  // desc = max number of bins for each feature
-  // desc = if not specified, will use ``max_bin`` for all features
-  std::vector<int32_t> max_bin_by_feature;
-
-  // check = >0
-  // desc = minimal number of data inside one bin
-  // desc = use this to avoid one-data-one-bin (potential over-fitting)
-  int min_data_in_bin = 3;
-
-  // desc = set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
-  // desc = as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
-  // desc = **Note**: setting this to ``false`` may slow down the training
-  bool feature_pre_filter = true;
-
-  // alias = subsample_for_bin
-  // check = >0
-  // desc = number of data that sampled to construct histogram bins
-  // desc = setting this to larger value will give better training result, but will increase data loading time
-  // desc = set this to larger value if data is very sparse
-  int bin_construct_sample_cnt = 200000;
-
-  // alias = hist_pool_size
-  // desc = max cache size in MB for historical histogram
-  // desc = ``< 0`` means no limit
-  double histogram_pool_size = -1.0;
-
-  // alias = data_seed
-  // desc = random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
-  int data_random_seed = 1;
+  // alias = model_input, model_in
+  // desc = filename of input model
+  // desc = for ``prediction`` task, this model will be applied to prediction data
+  // desc = for ``train`` task, training will be continued from this model
+  // desc = **Note**: can be used only in CLI version
+  std::string input_model = "";
 
   // alias = model_output, model_out
   // desc = filename of output model in training
@@ -537,22 +498,43 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
-  // alias = model_input, model_in
-  // desc = filename of input model
-  // desc = for ``prediction`` task, this model will be applied to prediction data
-  // desc = for ``train`` task, training will be continued from this model
-  // desc = **Note**: can be used only in CLI version
-  std::string input_model = "";
+  #pragma endregion
 
-  // alias = predict_result, prediction_result, predict_name, prediction_name, pred_name, name_pred
-  // desc = filename of prediction result in ``prediction`` task
-  // desc = **Note**: can be used only in CLI version
-  std::string output_result = "LightGBM_predict_result.txt";
+  #pragma region IO Parameters
 
-  // alias = is_pre_partition
-  // desc = used for parallel learning (excluding the ``feature_parallel`` mode)
-  // desc = ``true`` if training data are pre-partitioned, and different machines use different partitions
-  bool pre_partition = false;
+  #pragma region Dataset Parameters
+
+  // check = >1
+  // desc = max number of bins that feature values will be bucketed in
+  // desc = small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
+  // desc = LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
+  int max_bin = 255;
+
+  // type = multi-int
+  // default = None
+  // desc = max number of bins for each feature
+  // desc = if not specified, will use ``max_bin`` for all features
+  std::vector<int32_t> max_bin_by_feature;
+
+  // check = >0
+  // desc = minimal number of data inside one bin
+  // desc = use this to avoid one-data-one-bin (potential over-fitting)
+  int min_data_in_bin = 3;
+
+  // alias = subsample_for_bin
+  // check = >0
+  // desc = number of data that sampled to construct histogram bins
+  // desc = setting this to larger value will give better training result, but will increase data loading time
+  // desc = set this to larger value if data is very sparse
+  int bin_construct_sample_cnt = 200000;
+
+  // alias = data_seed
+  // desc = random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
+  int data_random_seed = 1;
+
+  // alias = is_sparse, enable_sparse, sparse
+  // desc = used to enable/disable sparse optimization
+  bool is_enable_sparse = true;
 
   // alias = is_enable_bundle, bundle
   // desc = set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree>`__
@@ -566,17 +548,21 @@ struct Config {
   // desc = set this to ``false`` to use ``na`` for representing missing values
   bool zero_as_missing = false;
 
+  // desc = set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+  // desc = as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
+  // desc = **Note**: setting this to ``false`` may slow down the training
+  bool feature_pre_filter = true;
+
+  // alias = is_pre_partition
+  // desc = used for parallel learning (excluding the ``feature_parallel`` mode)
+  // desc = ``true`` if training data are pre-partitioned, and different machines use different partitions
+  bool pre_partition = false;
+
   // alias = two_round_loading, use_two_round_loading
   // desc = set this to ``true`` if data file is too big to fit in memory
   // desc = by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
   // desc = **Note**: works only in case of loading data directly from file
   bool two_round = false;
-
-  // alias = is_save_binary, is_save_binary_file
-  // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
-  // desc = **Note**: ``init_score`` is not saved in binary file
-  // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
-  bool save_binary = false;
 
   // alias = has_header
   // desc = set this to ``true`` if input data has header
@@ -633,6 +619,26 @@ struct Config {
   // desc = **Note**: the output cannot be monotonically constrained with respect to a categorical feature
   std::string categorical_feature = "";
 
+  // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
+  // desc = ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
+  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
+  std::string forcedbins_filename = "";
+
+  // alias = is_save_binary, is_save_binary_file
+  // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+  // desc = **Note**: ``init_score`` is not saved in binary file
+  // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
+  bool save_binary = false;
+
+  #pragma endregion
+
+  #pragma region Predict Parameters
+
+  // desc = used only in ``prediction`` task
+  // desc = used to specify how many trained iterations will be used in prediction
+  // desc = ``<= 0`` means no limit
+  int num_iteration_predict = -1;
+
   // alias = is_predict_raw_score, predict_rawscore, raw_score
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to predict only the raw scores
@@ -653,9 +659,11 @@ struct Config {
   bool predict_contrib = false;
 
   // desc = used only in ``prediction`` task
-  // desc = used to specify how many trained iterations will be used in prediction
-  // desc = ``<= 0`` means no limit
-  int num_iteration_predict = -1;
+  // desc = control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
+  // desc = if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
+  // desc = if ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model
+  // desc = **Note**: be very careful setting this parameter to ``true``
+  bool predict_disable_shape_check = false;
 
   // desc = used only in ``prediction`` task
   // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
@@ -669,12 +677,15 @@ struct Config {
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
+  // alias = predict_result, prediction_result, predict_name, prediction_name, pred_name, name_pred
   // desc = used only in ``prediction`` task
-  // desc = control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
-  // desc = if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
-  // desc = if ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model
-  // desc = **Note**: be very careful setting this parameter to ``true``
-  bool predict_disable_shape_check = false;
+  // desc = filename of prediction result
+  // desc = **Note**: can be used only in CLI version
+  std::string output_result = "LightGBM_predict_result.txt";
+
+  #pragma endregion
+
+  #pragma region Convert Parameters
 
   // desc = used only in ``convert_model`` task
   // desc = only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
@@ -687,6 +698,8 @@ struct Config {
   // desc = output filename of converted model
   // desc = **Note**: can be used only in CLI version
   std::string convert_model = "gbdt_prediction.cpp";
+
+  #pragma endregion
 
   #pragma endregion
 

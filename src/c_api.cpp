@@ -77,13 +77,15 @@ class SingleRowPredictor {
     predict_function = predictor_->GetPredictFunction();
     num_total_model_ = boosting->NumberOfTotalModel();
   }
+
   ~SingleRowPredictor() {}
+
   bool IsPredictorEqual(const Config& config, int iter, Boosting* boosting) {
-    return early_stop_ != config.pred_early_stop ||
-      early_stop_freq_ != config.pred_early_stop_freq ||
-      early_stop_margin_ != config.pred_early_stop_margin ||
-      iter_ != iter ||
-      num_total_model_ != boosting->NumberOfTotalModel();
+    return early_stop_ == config.pred_early_stop &&
+      early_stop_freq_ == config.pred_early_stop_freq &&
+      early_stop_margin_ == config.pred_early_stop_margin &&
+      iter_ == iter &&
+      num_total_model_ == boosting->NumberOfTotalModel();
   }
 
  private:
@@ -1149,7 +1151,7 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   } else if (dataset->GetDoubleField(field_name, out_len, reinterpret_cast<const double**>(out_ptr))) {
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
-  } 
+  }
   if (!is_success) { throw std::runtime_error("Field not found"); }
   if (*out_ptr == nullptr) { *out_len = 0; }
   API_END();
