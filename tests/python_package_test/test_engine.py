@@ -141,11 +141,11 @@ class TestEngine(unittest.TestCase):
 
     def test_missing_value_handle_more_na(self):
         X_train = np.ones((100, 1))
-        y_train = np.zeros(100)
+        y_train = np.ones(100)
         trues = random.sample(range(100), 80)
         for idx in trues:
             X_train[idx, 0] = np.nan
-            y_train[idx] = 1
+            y_train[idx] = 0
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_train, y_train)
 
