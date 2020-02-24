@@ -5,6 +5,7 @@
 #include <LightGBM/config.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
+#include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
 
 #include <string>
@@ -39,6 +40,36 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   str_buf << "\"monotone_constraints\":["
           << Common::Join(monotone_constraints_, ",") << "]," << '\n';
 
+  str_buf << "\"feature_infos\":" << "{";
+  bool first_obj = true;
+  for (size_t i = 0; i < feature_infos_.size(); ++i) {
+    std::stringstream json_str_buf;
+    auto strs = Common::Split(feature_infos_[i].c_str(), ":");
+    if (strs[0][0] == '[') {
+      strs[0].erase(0, 1);  // remove '['
+      strs[1].erase(strs[1].size() - 1);  // remove ']'
+      json_str_buf << "{\"min_value\":" << strs[0] << ",";
+      json_str_buf << "\"max_value\":" << strs[1] << ",";
+      json_str_buf << "\"values\":[]}";
+    } else if (strs[0] != "none") {  // categorical feature
+      auto vals = Common::StringToArray<int>(feature_infos_[i], ':');
+      auto max_idx = ArrayArgs<int>::ArgMax(vals);
+      auto min_idx = ArrayArgs<int>::ArgMin(vals);
+      json_str_buf << "{\"min_value\":" << vals[min_idx] << ",";
+      json_str_buf << "\"max_value\":" << vals[max_idx] << ",";
+      json_str_buf << "\"values\":[" << Common::Join(vals, ",") << "]}";
+    } else {  // unused feature
+      continue;
+    }
+    if (!first_obj) {
+      str_buf << ",";
+    }
+    str_buf << "\"" << feature_names_[i] << "\":";
+    str_buf << json_str_buf.str();
+    first_obj = false;
+  }
+  str_buf << "}," << '\n';
+
   str_buf << "\"tree_info\":[";
   int num_used_model = static_cast<int>(models_.size());
   int total_iteration = num_used_model / num_tree_per_iteration_;
@@ -70,12 +101,11 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
     }
   }
   str_buf << '\n' << "\"feature_importances\":" << "{";
-  if (!pairs.empty()) {
-    str_buf << "\"" << pairs[0].second << "\":" << std::to_string(pairs[0].first);
-    for (size_t i = 1; i < pairs.size(); ++i) {
+  for (size_t i = 0; i < pairs.size(); ++i) {
+    if (i > 0) {
       str_buf << ",";
-      str_buf << "\"" << pairs[i].second << "\":" << std::to_string(pairs[i].first);
     }
+    str_buf << "\"" << pairs[i].second << "\":" << std::to_string(pairs[i].first);
   }
   str_buf << "}" << '\n';
 
@@ -562,6 +592,9 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
     for (int iter = 0; iter < num_used_model; ++iter) {
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
+#ifdef DEBUG
+          CHECK(models_[iter]->split_feature(split_idx) >= 0);
+#endif
           feature_importances[models_[iter]->split_feature(split_idx)] += 1.0;
         }
       }
@@ -570,6 +603,9 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
     for (int iter = 0; iter < num_used_model; ++iter) {
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
+#ifdef DEBUG
+          CHECK(models_[iter]->split_feature(split_idx) >= 0);
+#endif
           feature_importances[models_[iter]->split_feature(split_idx)] += models_[iter]->split_gain(split_idx);
         }
       }

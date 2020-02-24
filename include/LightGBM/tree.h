@@ -119,6 +119,16 @@ class Tree {
                             data_size_t num_data, double* score) const;
 
   /*!
+  * \brief Get upper bound leaf value of this tree model
+  */
+  double GetUpperBoundValue() const;
+
+  /*!
+  * \brief Get lower bound leaf value of this tree model
+  */
+  double GetLowerBoundValue() const;
+
+  /*!
   * \brief Prediction on one record
   * \param feature_values Feature value of this record
   * \return Prediction result

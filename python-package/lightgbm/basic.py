@@ -109,14 +109,6 @@ def cint32_array_to_numpy(cptr, length):
         raise RuntimeError('Expected int pointer')
 
 
-def cint8_array_to_numpy(cptr, length):
-    """Convert a ctypes int pointer array to a numpy array."""
-    if isinstance(cptr, ctypes.POINTER(ctypes.c_int8)):
-        return np.fromiter(cptr, dtype=np.int8, count=length)
-    else:
-        raise RuntimeError('Expected int pointer')
-
-
 def c_str(string):
     """Convert a Python string to C string."""
     return ctypes.c_char_p(string.encode('utf-8'))
@@ -170,24 +162,46 @@ class LightGBMError(Exception):
 
 
 class _ConfigAliases(object):
-    aliases = {"boosting": {"boosting",
+    aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
+                                            "subsample_for_bin"},
+               "boosting": {"boosting",
                             "boosting_type",
                             "boost"},
                "categorical_feature": {"categorical_feature",
                                        "cat_feature",
                                        "categorical_column",
                                        "cat_column"},
+               "data_random_seed": {"data_random_seed",
+                                    "data_seed"},
                "early_stopping_round": {"early_stopping_round",
                                         "early_stopping_rounds",
                                         "early_stopping",
                                         "n_iter_no_change"},
+               "enable_bundle": {"enable_bundle",
+                                 "is_enable_bundle",
+                                 "bundle"},
                "eval_at": {"eval_at",
                            "ndcg_eval_at",
                            "ndcg_at",
                            "map_eval_at",
                            "map_at"},
+               "group_column": {"group_column",
+                                "group",
+                                "group_id",
+                                "query_column",
+                                "query",
+                                "query_id"},
                "header": {"header",
                           "has_header"},
+               "ignore_column": {"ignore_column",
+                                 "ignore_feature",
+                                 "blacklist"},
+               "is_enable_sparse": {"is_enable_sparse",
+                                    "is_sparse",
+                                    "enable_sparse",
+                                    "sparse"},
+               "label_column": {"label_column",
+                                "label"},
                "machines": {"machines",
                             "workers",
                             "nodes"},
@@ -209,14 +223,21 @@ class _ConfigAliases(object):
                              "objective_type",
                              "app",
                              "application"},
+               "pre_partition": {"pre_partition",
+                                 "is_pre_partition"},
+               "two_round": {"two_round",
+                             "two_round_loading",
+                             "use_two_round_loading"},
                "verbosity": {"verbosity",
-                             "verbose"}}
+                             "verbose"},
+               "weight_column": {"weight_column",
+                                 "weight"}}
 
     @classmethod
     def get(cls, *args):
         ret = set()
         for i in args:
-            ret |= cls.aliases.get(i, set())
+            ret |= cls.aliases.get(i, {i})
         return ret
 
 
@@ -227,7 +248,6 @@ C_API_DTYPE_FLOAT32 = 0
 C_API_DTYPE_FLOAT64 = 1
 C_API_DTYPE_INT32 = 2
 C_API_DTYPE_INT64 = 3
-C_API_DTYPE_INT8 = 4
 
 """Matrix is row major in Python"""
 C_API_IS_ROW_MAJOR = 1
@@ -242,9 +262,7 @@ C_API_PREDICT_CONTRIB = 3
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
-                     "group": C_API_DTYPE_INT32,
-                     "feature_penalty": C_API_DTYPE_FLOAT64,
-                     "monotone_constraints": C_API_DTYPE_INT8}
+                     "group": C_API_DTYPE_INT32}
 
 
 def convert_from_sliced_object(data):
@@ -779,6 +797,37 @@ class Dataset(object):
         except AttributeError:
             pass
 
+    def get_params(self):
+        """Get the used parameters in the Dataset.
+
+        Returns
+        -------
+        params : dict or None
+            The used parameters in this Dataset object.
+        """
+        if self.params is not None:
+            # no min_data, nthreads and verbose in this function
+            dataset_params = _ConfigAliases.get("bin_construct_sample_cnt",
+                                                "categorical_feature",
+                                                "data_random_seed",
+                                                "enable_bundle",
+                                                "feature_pre_filter",
+                                                "forcedbins_filename",
+                                                "group_column",
+                                                "header",
+                                                "ignore_column",
+                                                "is_enable_sparse",
+                                                "label_column",
+                                                "max_bin",
+                                                "max_bin_by_feature",
+                                                "min_data_in_bin",
+                                                "pre_partition",
+                                                "two_round",
+                                                "use_missing",
+                                                "weight_column",
+                                                "zero_as_missing")
+            return {k: v for k, v in self.params.items() if k in dataset_params}
+
     def _free_handle(self):
         if self.handle is not None:
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
@@ -867,6 +916,7 @@ class Dataset(object):
                 params['categorical_column'] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
+        self.params = params
         # process for reference dataset
         ref_dataset = None
         if isinstance(reference, Dataset):
@@ -1172,20 +1222,34 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
-        if self.handle is not None and params is not None:
-            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(params))))
-        if not self.params:
-            self.params = copy.deepcopy(params)
-        else:
-            self.params_back_up = copy.deepcopy(self.params)
-            self.params.update(params)
+        params = copy.deepcopy(params)
+
+        def update():
+            if not self.params:
+                self.params = params
+            else:
+                self.params_back_up = copy.deepcopy(self.params)
+                self.params.update(params)
+
+        if self.handle is None:
+            update()
+        elif params is not None:
+            ret = _LIB.LGBM_DatasetUpdateParamChecking(
+                c_str(param_dict_to_str(self.params)),
+                c_str(param_dict_to_str(params)))
+            if ret != 0:
+                # could be updated if data is not freed
+                if self.data is not None:
+                    update()
+                    self._free_handle()
+                else:
+                    raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
         return self
 
     def _reverse_update_params(self):
-        self.params = copy.deepcopy(self.params_back_up)
-        self.params_back_up = None
-        if self.handle is not None and self.params is not None:
-            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(self.params))))
+        if self.handle is None:
+            self.params = copy.deepcopy(self.params_back_up)
+            self.params_back_up = None
         return self
 
     def set_field(self, field_name, data):
@@ -1271,8 +1335,6 @@ class Dataset(object):
             return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
             return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
-        elif out_type.value == C_API_DTYPE_INT8:
-            return cint8_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int8)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
 
@@ -1481,30 +1543,6 @@ class Dataset(object):
             self.weight = self.get_field('weight')
         return self.weight
 
-    def get_feature_penalty(self):
-        """Get the feature penalty of the Dataset.
-
-        Returns
-        -------
-        feature_penalty : numpy array or None
-            Feature penalty for each feature in the Dataset.
-        """
-        if self.feature_penalty is None:
-            self.feature_penalty = self.get_field('feature_penalty')
-        return self.feature_penalty
-
-    def get_monotone_constraints(self):
-        """Get the monotone constraints of the Dataset.
-
-        Returns
-        -------
-        monotone_constraints : numpy array or None
-            Monotone constraints: -1, 0 or 1, for each feature in the Dataset.
-        """
-        if self.monotone_constraints is None:
-            self.monotone_constraints = self.get_field('monotone_constraints')
-        return self.monotone_constraints
-
     def get_init_score(self):
         """Get the initial score of the Dataset.
 
@@ -1699,7 +1737,6 @@ class Booster(object):
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
-            params_str = param_dict_to_str(params)
             # set network if necessary
             for alias in _ConfigAliases.get("machines"):
                 if alias in params:
@@ -1717,9 +1754,13 @@ class Booster(object):
                                      num_machines=params.get("num_machines", num_machines))
                     break
             # construct booster object
+            train_set.construct()
+            # copy the parameters from train_set
+            params.update(train_set.get_params())
+            params_str = param_dict_to_str(params)
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreate(
-                train_set.construct().handle,
+                train_set.handle,
                 c_str(params_str),
                 ctypes.byref(self.handle)))
             # save reference to data
@@ -2201,6 +2242,34 @@ class Booster(object):
             self.handle,
             ctypes.byref(num_trees)))
         return num_trees.value
+
+    def upper_bound(self):
+        """Get upper bound value of a model.
+
+        Returns
+        -------
+        upper_bound : double
+            Upper bound value of the model.
+        """
+        ret = ctypes.c_double(0)
+        _safe_call(_LIB.LGBM_BoosterGetUpperBoundValue(
+            self.handle,
+            ctypes.byref(ret)))
+        return ret.value
+
+    def lower_bound(self):
+        """Get lower bound value of a model.
+
+        Returns
+        -------
+        lower_bound : double
+            Lower bound value of the model.
+        """
+        ret = ctypes.c_double(0)
+        _safe_call(_LIB.LGBM_BoosterGetLowerBoundValue(
+            self.handle,
+            ctypes.byref(ret)))
+        return ret.value
 
     def eval(self, data, name, feval=None):
         """Evaluate for data.

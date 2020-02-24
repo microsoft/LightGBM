@@ -139,6 +139,31 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.005)
         self.assertAlmostEqual(evals_result['valid_0']['l2'][-1], ret, places=5)
 
+    def test_missing_value_handle_more_na(self):
+        X_train = np.ones((100, 1))
+        y_train = np.ones(100)
+        trues = random.sample(range(100), 80)
+        for idx in trues:
+            X_train[idx, 0] = np.nan
+            y_train[idx] = 0
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_train, y_train)
+
+        params = {
+            'metric': 'l2',
+            'verbose': -1,
+            'boost_from_average': False
+        }
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=20,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        ret = mean_squared_error(y_train, gbm.predict(X_train))
+        self.assertLess(ret, 0.005)
+        self.assertAlmostEqual(evals_result['valid_0']['l2'][-1], ret, places=5)
+
     def test_missing_value_handle_na(self):
         x = [0, 1, 2, 3, 4, 5, 6, 7, np.nan]
         y = [1, 1, 1, 1, 0, 0, 0, 0, 1]
@@ -1810,6 +1835,84 @@ class TestEngine(unittest.TestCase):
         predicted = est.predict(new_x)
         self.assertNotAlmostEqual(predicted[0], predicted[1])
         self.assertAlmostEqual(predicted[1], predicted[2])
+
+    def test_dataset_update_params(self):
+        default_params = {"max_bin": 100,
+                          "max_bin_by_feature": [20, 10],
+                          "bin_construct_sample_cnt": 10000,
+                          "min_data_in_bin": 1,
+                          "use_missing": False,
+                          "zero_as_missing": False,
+                          "categorical_feature": [0],
+                          "feature_pre_filter": True,
+                          "pre_partition": False,
+                          "enable_bundle": True,
+                          "data_random_seed": 0,
+                          "is_enable_sparse": True,
+                          "header": True,
+                          "two_round": True,
+                          "label_column": 0,
+                          "weight_column": 0,
+                          "group_column": 0,
+                          "ignore_column": 0,
+                          "min_data_in_leaf": 10,
+                          "verbose": -1}
+        unchangeable_params = {"max_bin": 150,
+                               "max_bin_by_feature": [30, 5],
+                               "bin_construct_sample_cnt": 5000,
+                               "min_data_in_bin": 2,
+                               "use_missing": True,
+                               "zero_as_missing": True,
+                               "categorical_feature": [0, 1],
+                               "feature_pre_filter": False,
+                               "pre_partition": True,
+                               "enable_bundle": False,
+                               "data_random_seed": 1,
+                               "is_enable_sparse": False,
+                               "header": False,
+                               "two_round": False,
+                               "label_column": 1,
+                               "weight_column": 1,
+                               "group_column": 1,
+                               "ignore_column": 1,
+                               "forcedbins_filename": "/some/path/forcedbins.json",
+                               "min_data_in_leaf": 2}
+        X = np.random.random((100, 2))
+        y = np.random.random(100)
+
+        # decreasing without freeing raw data is allowed
+        lgb_data = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
+        default_params["min_data_in_leaf"] -= 1
+        lgb.train(default_params, lgb_data, num_boost_round=3)
+
+        # decreasing before lazy init is allowed
+        lgb_data = lgb.Dataset(X, y, params=default_params)
+        default_params["min_data_in_leaf"] -= 1
+        lgb.train(default_params, lgb_data, num_boost_round=3)
+
+        # increasing is allowed
+        default_params["min_data_in_leaf"] += 2
+        lgb.train(default_params, lgb_data, num_boost_round=3)
+
+        # decreasing with disabled filter is allowed
+        default_params["feature_pre_filter"] = False
+        lgb_data = lgb.Dataset(X, y, params=default_params).construct()
+        default_params["min_data_in_leaf"] -= 4
+        lgb.train(default_params, lgb_data, num_boost_round=3)
+
+        # decreasing with enabled filter is disallowed;
+        # also changes of other params are disallowed
+        default_params["feature_pre_filter"] = True
+        lgb_data = lgb.Dataset(X, y, params=default_params).construct()
+        for key, value in unchangeable_params.items():
+            new_params = default_params.copy()
+            new_params[key] = value
+            err_msg = ("Reducing `min_data_in_leaf` with `feature_pre_filter=true` may cause *"
+                       if key == "min_data_in_leaf"
+                       else "Cannot change {} *".format(key if key != "forcedbins_filename"
+                                                        else "forced bins"))
+            with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
+                lgb.train(new_params, lgb_data, num_boost_round=3)
 
     def test_extra_trees(self):
         # check extra trees increases regularization

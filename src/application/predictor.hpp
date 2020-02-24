@@ -36,10 +36,11 @@ class Predictor {
   * \param predict_leaf_index True to output leaf index instead of prediction score
   * \param predict_contrib True to output feature contributions instead of prediction score
   */
-  Predictor(Boosting* boosting, int num_iteration,
-            bool is_raw_score, bool predict_leaf_index, bool predict_contrib,
-            bool early_stop, int early_stop_freq, double early_stop_margin) {
-    early_stop_ = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
+  Predictor(Boosting* boosting, int num_iteration, bool is_raw_score,
+            bool predict_leaf_index, bool predict_contrib, bool early_stop,
+            int early_stop_freq, double early_stop_margin) {
+    early_stop_ = CreatePredictionEarlyStopInstance(
+        "none", LightGBM::PredictionEarlyStopConfig());
     if (early_stop && !boosting->NeedAccuratePrediction()) {
       PredictionEarlyStopConfig pred_early_stop_config;
       CHECK(early_stop_freq > 0);
@@ -47,68 +48,85 @@ class Predictor {
       pred_early_stop_config.margin_threshold = early_stop_margin;
       pred_early_stop_config.round_period = early_stop_freq;
       if (boosting->NumberOfClasses() == 1) {
-        early_stop_ = CreatePredictionEarlyStopInstance("binary", pred_early_stop_config);
+        early_stop_ =
+            CreatePredictionEarlyStopInstance("binary", pred_early_stop_config);
       } else {
-        early_stop_ = CreatePredictionEarlyStopInstance("multiclass", pred_early_stop_config);
+        early_stop_ = CreatePredictionEarlyStopInstance("multiclass",
+                                                        pred_early_stop_config);
       }
     }
 
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
+#pragma omp parallel
+#pragma omp master
+    { num_threads_ = omp_get_num_threads(); }
     boosting->InitPredict(num_iteration, predict_contrib);
     boosting_ = boosting;
-    num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, predict_leaf_index, predict_contrib);
+    num_pred_one_row_ = boosting_->NumPredictOneRow(
+        num_iteration, predict_leaf_index, predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
-    predict_buf_.resize(num_threads_, std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(num_feature_, 0.0f));
+    predict_buf_.resize(
+        num_threads_,
+        std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(
+            num_feature_, 0.0f));
     const int kFeatureThreshold = 100000;
     const size_t KSparseThreshold = static_cast<size_t>(0.01 * num_feature_);
     if (predict_leaf_index) {
-      predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
+      predict_fun_ = [=](const std::vector<std::pair<int, double>>& features,
+                         double* output) {
         int tid = omp_get_thread_num();
-        if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
+        if (num_feature_ > kFeatureThreshold &&
+            features.size() < KSparseThreshold) {
           auto buf = CopyToPredictMap(features);
           boosting_->PredictLeafIndexByMap(buf, output);
         } else {
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
           // get result for leaf index
           boosting_->PredictLeafIndex(predict_buf_[tid].data(), output);
-          ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+          ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(),
+                             features);
         }
       };
     } else if (predict_contrib) {
-        predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
-          int tid = omp_get_thread_num();
-          CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          // get result for leaf index
-          boosting_->PredictContrib(predict_buf_[tid].data(), output, &early_stop_);
-          ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
-        };
+      predict_fun_ = [=](const std::vector<std::pair<int, double>>& features,
+                         double* output) {
+        int tid = omp_get_thread_num();
+        CopyToPredictBuffer(predict_buf_[tid].data(), features);
+        // get result for leaf index
+        boosting_->PredictContrib(predict_buf_[tid].data(), output,
+                                  &early_stop_);
+        ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(),
+                           features);
+      };
     } else {
       if (is_raw_score) {
-        predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [=](const std::vector<std::pair<int, double>>& features,
+                           double* output) {
           int tid = omp_get_thread_num();
-          if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
+          if (num_feature_ > kFeatureThreshold &&
+              features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
             boosting_->PredictRawByMap(buf, output, &early_stop_);
           } else {
             CopyToPredictBuffer(predict_buf_[tid].data(), features);
-            boosting_->PredictRaw(predict_buf_[tid].data(), output, &early_stop_);
-            ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+            boosting_->PredictRaw(predict_buf_[tid].data(), output,
+                                  &early_stop_);
+            ClearPredictBuffer(predict_buf_[tid].data(),
+                               predict_buf_[tid].size(), features);
           }
         };
       } else {
-        predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [=](const std::vector<std::pair<int, double>>& features,
+                           double* output) {
           int tid = omp_get_thread_num();
-          if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
+          if (num_feature_ > kFeatureThreshold &&
+              features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
             boosting_->PredictByMap(buf, output, &early_stop_);
           } else {
             CopyToPredictBuffer(predict_buf_[tid].data(), features);
             boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_);
-            ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+            ClearPredictBuffer(predict_buf_[tid].data(),
+                               predict_buf_[tid].size(), features);
           }
         };
       }
@@ -176,7 +194,7 @@ class Predictor {
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
     double tmp_label;
-    parser_fun = [&]
+    parser_fun = [&parser, &feature_remapper, &tmp_label, need_adjust]
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
       if (need_adjust) {
@@ -194,8 +212,9 @@ class Predictor {
       }
     };
 
-    std::function<void(data_size_t, const std::vector<std::string>&)> process_fun = [&]
-    (data_size_t, const std::vector<std::string>& lines) {
+    std::function<void(data_size_t, const std::vector<std::string>&)>
+        process_fun = [&parser_fun, &writer, this](
+                          data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> result_to_write(lines.size());
       OMP_INIT_EX();

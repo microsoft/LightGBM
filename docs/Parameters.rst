@@ -202,8 +202,6 @@ Learning Control Parameters
 
       -  ``num_threads`` is large, e.g. ``>20``
 
-      -  you want to use small ``feature_fraction`` (e.g. ``0.5``) to speed up
-
       -  you want to reduce memory cost
 
    -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
@@ -229,6 +227,12 @@ Learning Control Parameters
    -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
 
    -  **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
+
+-  ``histogram_pool_size`` :raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" href="#histogram_pool_size">&#x1F517;&#xFE0E;</a>`, default = ``-1.0``, type = double, aliases: ``hist_pool_size``
+
+   -  max cache size in MB for historical histogram
+
+   -  ``< 0`` means no limit
 
 -  ``max_depth`` :raw-html:`<a id="max_depth" title="Permalink to this parameter" href="#max_depth">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
@@ -470,14 +474,6 @@ Learning Control Parameters
 
    -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
 
--  ``forcedbins_filename`` :raw-html:`<a id="forcedbins_filename" title="Permalink to this parameter" href="#forcedbins_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
-
-   -  path to a ``.json`` file that specifies bin upper bounds for some or all features
-
-   -  ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
-
-   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
-
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
 
    -  decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees
@@ -504,14 +500,41 @@ Learning Control Parameters
 
    -  applied once per forest
 
-IO Parameters
--------------
-
 -  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
 
    -  controls the level of LightGBM's verbosity
 
    -  ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
+
+-  ``input_model`` :raw-html:`<a id="input_model" title="Permalink to this parameter" href="#input_model">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
+
+   -  filename of input model
+
+   -  for ``prediction`` task, this model will be applied to prediction data
+
+   -  for ``train`` task, training will be continued from this model
+
+   -  **Note**: can be used only in CLI version
+
+-  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
+
+   -  filename of output model in training
+
+   -  **Note**: can be used only in CLI version
+
+-  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
+
+   -  frequency of saving model file snapshot
+
+   -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
+
+   -  **Note**: can be used only in CLI version
+
+IO Parameters
+-------------
+
+Dataset Parameters
+~~~~~~~~~~~~~~~~~~
 
 -  ``max_bin`` :raw-html:`<a id="max_bin" title="Permalink to this parameter" href="#max_bin">&#x1F517;&#xFE0E;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
 
@@ -520,10 +543,6 @@ IO Parameters
    -  small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
 
    -  LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
-
--  ``is_enable_sparse`` :raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" href="#is_enable_sparse">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
-
-   -  used to enable/disable sparse optimization
 
 -  ``max_bin_by_feature`` :raw-html:`<a id="max_bin_by_feature" title="Permalink to this parameter" href="#max_bin_by_feature">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-int
 
@@ -545,69 +564,13 @@ IO Parameters
 
    -  set this to larger value if data is very sparse
 
--  ``histogram_pool_size`` :raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" href="#histogram_pool_size">&#x1F517;&#xFE0E;</a>`, default = ``-1.0``, type = double, aliases: ``hist_pool_size``
-
-   -  max cache size in MB for historical histogram
-
-   -  ``< 0`` means no limit
-
 -  ``data_random_seed`` :raw-html:`<a id="data_random_seed" title="Permalink to this parameter" href="#data_random_seed">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``data_seed``
 
    -  random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
 
--  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
+-  ``is_enable_sparse`` :raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" href="#is_enable_sparse">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
 
-   -  filename of output model in training
-
-   -  **Note**: can be used only in CLI version
-
--  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
-
-   -  frequency of saving model file snapshot
-
-   -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
-
-   -  **Note**: can be used only in CLI version
-
--  ``input_model`` :raw-html:`<a id="input_model" title="Permalink to this parameter" href="#input_model">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
-
-   -  filename of input model
-
-   -  for ``prediction`` task, this model will be applied to prediction data
-
-   -  for ``train`` task, training will be continued from this model
-
-   -  **Note**: can be used only in CLI version
-
--  ``output_result`` :raw-html:`<a id="output_result" title="Permalink to this parameter" href="#output_result">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``, ``predict_name``, ``prediction_name``, ``pred_name``, ``name_pred``
-
-   -  filename of prediction result in ``prediction`` task
-
-   -  **Note**: can be used only in CLI version
-
--  ``initscore_filename`` :raw-html:`<a id="initscore_filename" title="Permalink to this parameter" href="#initscore_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``init_score_filename``, ``init_score_file``, ``init_score``, ``input_init_score``
-
-   -  path of file with training initial scores
-
-   -  if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
-
-   -  **Note**: works only in case of loading data directly from file
-
--  ``valid_data_initscores`` :raw-html:`<a id="valid_data_initscores" title="Permalink to this parameter" href="#valid_data_initscores">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
-
-   -  path(s) of file(s) with validation initial scores
-
-   -  if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
-
-   -  separate by ``,`` for multi-validation data
-
-   -  **Note**: works only in case of loading data directly from file
-
--  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
-
-   -  used for parallel learning (excluding the ``feature_parallel`` mode)
-
-   -  ``true`` if training data are pre-partitioned, and different machines use different partitions
+   -  used to enable/disable sparse optimization
 
 -  ``enable_bundle`` :raw-html:`<a id="enable_bundle" title="Permalink to this parameter" href="#enable_bundle">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_enable_bundle``, ``bundle``
 
@@ -625,6 +588,20 @@ IO Parameters
 
    -  set this to ``false`` to use ``na`` for representing missing values
 
+-  ``feature_pre_filter`` :raw-html:`<a id="feature_pre_filter" title="Permalink to this parameter" href="#feature_pre_filter">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+
+   -  as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
+
+   -  **Note**: setting this to ``false`` may slow down the training
+
+-  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
+
+   -  used for parallel learning (excluding the ``feature_parallel`` mode)
+
+   -  ``true`` if training data are pre-partitioned, and different machines use different partitions
+
 -  ``two_round`` :raw-html:`<a id="two_round" title="Permalink to this parameter" href="#two_round">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``two_round_loading``, ``use_two_round_loading``
 
    -  set this to ``true`` if data file is too big to fit in memory
@@ -632,14 +609,6 @@ IO Parameters
    -  by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
 
    -  **Note**: works only in case of loading data directly from file
-
--  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
-
-   -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
-
-   -  **Note**: ``init_score`` is not saved in binary file
-
-   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
 -  ``header`` :raw-html:`<a id="header" title="Permalink to this parameter" href="#header">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``has_header``
 
@@ -717,6 +686,33 @@ IO Parameters
 
    -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
 
+-  ``forcedbins_filename`` :raw-html:`<a id="forcedbins_filename" title="Permalink to this parameter" href="#forcedbins_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  path to a ``.json`` file that specifies bin upper bounds for some or all features
+
+   -  ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
+
+   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
+
+-  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
+
+   -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+
+   -  **Note**: ``init_score`` is not saved in binary file
+
+   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
+
+Predict Parameters
+~~~~~~~~~~~~~~~~~~
+
+-  ``num_iteration_predict`` :raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" href="#num_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
+
+   -  used only in ``prediction`` task
+
+   -  used to specify how many trained iterations will be used in prediction
+
+   -  ``<= 0`` means no limit
+
 -  ``predict_raw_score`` :raw-html:`<a id="predict_raw_score" title="Permalink to this parameter" href="#predict_raw_score">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
 
    -  used only in ``prediction`` task
@@ -743,13 +739,17 @@ IO Parameters
 
    -  **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
 
--  ``num_iteration_predict`` :raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" href="#num_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
+-  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  used only in ``prediction`` task
 
-   -  used to specify how many trained iterations will be used in prediction
+   -  control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
 
-   -  ``<= 0`` means no limit
+   -  if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
+
+   -  if ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model
+
+   -  **Note**: be very careful setting this parameter to ``true``
 
 -  ``pred_early_stop`` :raw-html:`<a id="pred_early_stop" title="Permalink to this parameter" href="#pred_early_stop">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -769,17 +769,16 @@ IO Parameters
 
    -  the threshold of margin in early-stopping prediction
 
--  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+-  ``output_result`` :raw-html:`<a id="output_result" title="Permalink to this parameter" href="#output_result">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``, ``predict_name``, ``prediction_name``, ``pred_name``, ``name_pred``
 
    -  used only in ``prediction`` task
 
-   -  control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
+   -  filename of prediction result
 
-   -  if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
+   -  **Note**: can be used only in CLI version
 
-   -  if ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model
-
-   -  **Note**: be very careful setting this parameter to ``true``
+Convert Parameters
+~~~~~~~~~~~~~~~~~~
 
 -  ``convert_model_language`` :raw-html:`<a id="convert_model_language" title="Permalink to this parameter" href="#convert_model_language">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
@@ -963,6 +962,8 @@ Metric Parameters
 
    -  frequency for metric output
 
+   -  **Note**: can be used only in CLI version
+
 -  ``is_provide_training_metric`` :raw-html:`<a id="is_provide_training_metric" title="Permalink to this parameter" href="#is_provide_training_metric">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``training_metric``, ``is_training_metric``, ``train_metric``
 
    -  set this to ``true`` to output metric result over training dataset
@@ -1071,10 +1072,8 @@ LightGBM supports continued training with initial scores. It uses an additional 
 It means the initial score of the first data row is ``0.5``, second is ``-0.1``, and so on.
 The initial score file corresponds with data file line by line, and has per score per line.
 
-And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and in the same folder as the data file.
+And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and placed in the same folder as the data file.
 In this case, LightGBM will auto load initial score file if it exists.
-
-Otherwise, you should specify the path to the custom named file with initial scores by the ``initscore_filename`` `parameter <#initscore_filename>`__.
 
 Weight Data
 ~~~~~~~~~~~

@@ -21,6 +21,7 @@
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
 #include "leaf_splits.hpp"
+#include "monotone_constraints.hpp"
 #include "split_info.hpp"
 
 #ifdef USE_GPU
@@ -62,10 +63,13 @@ class SerialTreeLearner: public TreeLearner {
     data_partition_->SetUsedDataIndices(used_indices, num_data);
   }
 
-  void AddPredictionToScore(const Tree* tree, double* out_score) const override {
-    if (tree->num_leaves() <= 1) { return; }
+  void AddPredictionToScore(const Tree* tree,
+                            double* out_score) const override {
+    if (tree->num_leaves() <= 1) {
+      return;
+    }
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
-    #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
@@ -82,6 +86,12 @@ class SerialTreeLearner: public TreeLearner {
   bool IsHistColWise() const override { return is_hist_colwise_; }
 
  protected:
+  void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
+                                  int feature_index, int real_fidx,
+                                  bool is_feature_used, int num_data,
+                                  const LeafSplits* leaf_splits,
+                                  SplitInfo* best_split);
+
   void GetMultiValBin(const Dataset* dataset, bool is_first_time);
 
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
@@ -151,6 +161,8 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<SplitInfo> best_split_per_leaf_;
   /*! \brief store best split per feature for all leaves */
   std::vector<SplitInfo> splits_per_leaf_;
+  /*! \brief stores minimum and maximum constraints for each leaf */
+  std::unique_ptr<LeafConstraints<ConstraintEntry>> constraints_;
 
   /*! \brief stores best thresholds for all feature for smaller leaf */
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
@@ -179,7 +191,7 @@ class SerialTreeLearner: public TreeLearner {
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
-  std::unique_ptr<MultiValBin> multi_val_bin_;
+  std::unique_ptr<TrainingTempState> temp_state_;
   bool is_hist_colwise_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };

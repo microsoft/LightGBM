@@ -7,6 +7,8 @@ test <- agaricus.test
 
 windows_flag <- grepl("Windows", Sys.info()[["sysname"]])
 
+TOLERANCE <- 1e-6
+
 test_that("train and predict binary classification", {
   nrounds <- 10L
   bst <- lightgbm(
@@ -28,7 +30,7 @@ test_that("train and predict binary classification", {
   expect_equal(length(pred1), 6513L)
   err_pred1 <- sum((pred1 > 0.5) != train$label) / length(train$label)
   err_log <- record_results[1L]
-  expect_lt(abs(err_pred1 - err_log), 10e-6)
+  expect_lt(abs(err_pred1 - err_log), TOLERANCE)
 })
 
 
@@ -68,6 +70,36 @@ test_that("use of multiple eval metrics works", {
     , metric = list("binary_error", "auc", "binary_logloss")
   )
   expect_false(is.null(bst$record_evals))
+})
+
+test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for binary classification", {
+  set.seed(708L)
+  nrounds <- 10L
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , num_leaves = 5L
+    , nrounds = nrounds
+    , objective = "binary"
+    , metric = "binary_error"
+  )
+  expect_true(abs(bst$lower_bound() - -1.590853) < TOLERANCE)
+  expect_true(abs(bst$upper_bound() - 1.871015) <  TOLERANCE)
+})
+
+test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for regression", {
+  set.seed(708L)
+  nrounds <- 10L
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , num_leaves = 5L
+    , nrounds = nrounds
+    , objective = "regression"
+    , metric = "l2"
+  )
+  expect_true(abs(bst$lower_bound() - 0.1513859) < TOLERANCE)
+  expect_true(abs(bst$upper_bound() - 0.9080349) < TOLERANCE)
 })
 
 test_that("lightgbm() rejects negative or 0 value passed to nrounds", {

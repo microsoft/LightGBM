@@ -31,7 +31,6 @@ Booster <- R6::R6Class(
 
       # Create parameters and handle
       params <- append(params, list(...))
-      params_str <- lgb.params2str(params)
       handle <- 0.0
 
       # Attempts to create a handle for the dataset
@@ -39,17 +38,18 @@ Booster <- R6::R6Class(
 
         # Check if training dataset is not null
         if (!is.null(train_set)) {
-
           # Check if training dataset is lgb.Dataset or not
           if (!lgb.check.r6.class(train_set, "lgb.Dataset")) {
             stop("lgb.Booster: Can only use lgb.Dataset as training data")
           }
-
+          train_set_handle <- train_set$.__enclos_env__$private$get_handle()
+          params <- modifyList(params, train_set$get_params())
+          params_str <- lgb.params2str(params)
           # Store booster handle
           handle <- lgb.call(
             "LGBM_BoosterCreate_R"
             , ret = handle
-            , train_set$.__enclos_env__$private$get_handle()
+            , train_set_handle
             , params_str
           )
 
@@ -316,6 +316,30 @@ Booster <- R6::R6Class(
       lgb.call(
         "LGBM_BoosterGetCurrentIteration_R"
         , ret = cur_iter
+        , private$handle
+      )
+
+    },
+
+    # Get upper bound
+    upper_bound = function() {
+
+      upper_bound <- 0.0
+      lgb.call(
+        "LGBM_BoosterGetUpperBoundValue_R"
+        , ret = upper_bound
+        , private$handle
+      )
+
+    },
+
+    # Get lower bound
+    lower_bound = function() {
+
+      lower_bound <- 0.0
+      lgb.call(
+        "LGBM_BoosterGetLowerBoundValue_R"
+        , ret = lower_bound
         , private$handle
       )
 

@@ -6,7 +6,9 @@
 #define LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -34,9 +36,6 @@ class MultiValDenseBin : public MultiValBin {
 
   void PushOneRow(int , data_size_t idx, const std::vector<uint32_t>& values) override {
     auto start = RowPtr(idx);
-#ifdef DEBUG
-    CHECK(num_feature_ == static_cast<int>(values.size()));
-#endif  // DEBUG
     for (auto i = 0; i < num_feature_; ++i) {
       data_[start + i] = static_cast<VAL_T>(values[i]);
     }
@@ -128,10 +127,55 @@ class MultiValDenseBin : public MultiValBin {
 
   void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
-    data_.clear();
+    data_.resize(num_feature_ * num_used_indices);
     for (data_size_t i = 0; i < num_used_indices; ++i) {
-      for (int64_t j = other_bin->RowPtr(used_indices[i]); j < other_bin->RowPtr(used_indices[i] + 1); ++j) {
-        data_.push_back(other_bin->data_[j]);
+      auto j_start = RowPtr(i);
+      auto other_j_start = other_bin->RowPtr(used_indices[i]);
+      for (int64_t j = other_j_start;
+           j < other_bin->RowPtr(used_indices[i] + 1); ++j) {
+        data_[j - other_j_start + j_start] = other_bin->data_[j];
+      }
+    }
+  }
+
+  MultiValBin* CreateLike(int num_bin, int num_feature, double) const override {
+    return new MultiValDenseBin<VAL_T>(num_data_, num_bin, num_feature);
+  }
+
+  void ReSizeForSubFeature(int num_bin, int num_feature, double) override {
+    num_bin_ = num_bin;
+    num_feature_ = num_feature;
+    size_t new_size = static_cast<size_t>(num_feature_) * num_data_;
+    if (data_.size() < new_size) {
+      data_.resize(new_size, 0);
+    }
+  }
+
+  void CopySubFeature(const MultiValBin* full_bin,
+                      const std::vector<int>& used_feature_index,
+                      const std::vector<uint32_t>&,
+                      const std::vector<uint32_t>&,
+                      const std::vector<uint32_t>& delta) override {
+    const auto other =
+        reinterpret_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
+    int n_block = 1;
+    data_size_t block_size = num_data_;
+    Threading::BlockInfo<data_size_t>(num_data_, 1024, &n_block, &block_size);
+#pragma omp parallel for schedule(static, 1)
+    for (int tid = 0; tid < n_block; ++tid) {
+      data_size_t start = tid * block_size;
+      data_size_t end = std::min(num_data_, start + block_size);
+      for (data_size_t i = start; i < end; ++i) {
+        const auto j_start = RowPtr(i);
+        const auto other_j_start = other->RowPtr(i);
+        for (int j = 0; j < num_feature_; ++j) {
+          if (other->data_[other_j_start + used_feature_index[j]] > 0) {
+            data_[j_start + j] = static_cast<VAL_T>(
+                other->data_[other_j_start + used_feature_index[j]] - delta[j]);
+          } else {
+            data_[j_start + j] = 0;
+          }
+        }
       }
     }
   }

@@ -520,15 +520,16 @@ def cv(params, train_set, num_boost_round=100,
         predictor = init_model._to_predictor(dict(init_model.params, **params))
     else:
         predictor = None
-    train_set._update_params(params) \
-             ._set_predictor(predictor) \
-             .set_feature_name(feature_name) \
-             .set_categorical_feature(categorical_feature)
 
     if metrics is not None:
         for metric_alias in _ConfigAliases.get("metric"):
             params.pop(metric_alias, None)
         params['metric'] = metrics
+
+    train_set._update_params(params) \
+             ._set_predictor(predictor) \
+             .set_feature_name(feature_name) \
+             .set_categorical_feature(categorical_feature)
 
     results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,
