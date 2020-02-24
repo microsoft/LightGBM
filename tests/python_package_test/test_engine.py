@@ -813,13 +813,13 @@ class TestEngine(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_sparse(self):
         import pandas as pd
-        X = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 1, 2] * 100)),
-                          "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-                          "C": pd.SparseArray(np.random.permutation([True, False] * 150))})
-        y = pd.Series(pd.SparseArray(np.random.permutation([0, 1] * 150)))
-        X_test = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 2] * 30)),
-                               "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-                               "C": pd.SparseArray(np.random.permutation([True, False] * 30))})
+        X = pd.DataFrame({"A": pd.arrays.SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                          "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                          "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 150))})
+        y = pd.Series(pd.arrays.SparseArray(np.random.permutation([0, 1] * 150)))
+        X_test = pd.DataFrame({"A": pd.arrays.SparseArray(np.random.permutation([0, 2] * 30)),
+                               "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                               "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 30))})
         if pd.__version__ >= '0.24.0':
             for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
                 self.assertTrue(pd.api.types.is_sparse(dtype))
