@@ -24,6 +24,7 @@ def get_parameter_infos(config_hpp):
     """
     is_inparameter = False
     cur_key = None
+    key_lvl = 0
     cur_info = {}
     keys = []
     member_infos = []
@@ -32,10 +33,12 @@ def get_parameter_infos(config_hpp):
             if "#pragma region Parameters" in line:
                 is_inparameter = True
             elif "#pragma region" in line and "Parameters" in line:
+                key_lvl += 1
                 cur_key = line.split("region")[1].strip()
-                keys.append(cur_key)
+                keys.append((cur_key, key_lvl))
                 member_infos.append([])
             elif '#pragma endregion' in line:
+                key_lvl -= 1
                 if cur_key is not None:
                     cur_key = None
                 elif is_inparameter:
@@ -196,8 +199,10 @@ def gen_parameter_description(sections, descriptions, params_rst):
             return check[idx:], check[:idx]
 
     params_to_write = []
-    for section_name, section_params in zip(sections, descriptions):
-        params_to_write.append('{0}\n{1}'.format(section_name, '-' * len(section_name)))
+    lvl_mapper = {1: '-', 2: '~'}
+    for (section_name, section_lvl), section_params in zip(sections, descriptions):
+        heading_sign = lvl_mapper[section_lvl]
+        params_to_write.append('{0}\n{1}'.format(section_name, heading_sign * len(section_name)))
         for param_desc in section_params:
             name = param_desc['name'][0]
             default_raw = param_desc['default'][0]

@@ -49,7 +49,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   train_data_ = train_data;
   if (!config->monotone_constraints.empty()) {
     CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->monotone_constraints.size());
-  } 
+  }
   if (!config->feature_contri.empty()) {
     CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->feature_contri.size());
   }
@@ -671,7 +671,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
 
 double GBDT::GetUpperBoundValue() const {
   double max_value = 0.0;
-  for (const auto &tree: models_) {
+  for (const auto &tree : models_) {
     max_value += tree->GetUpperBoundValue();
   }
   return max_value;
@@ -679,7 +679,7 @@ double GBDT::GetUpperBoundValue() const {
 
 double GBDT::GetLowerBoundValue() const {
   double min_value = 0.0;
-  for (const auto &tree: models_) {
+  for (const auto &tree : models_) {
     min_value += tree->GetLowerBoundValue();
   }
   return min_value;
