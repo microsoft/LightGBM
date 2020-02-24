@@ -15,7 +15,7 @@
 
 namespace LightGBM {
 
-template <typename VAL_T>
+template <typename INDEX_T, typename VAL_T>
 class MultiValSparseBin : public MultiValBin {
  public:
   explicit MultiValSparseBin(data_size_t num_data, int num_bin,
@@ -24,8 +24,9 @@ class MultiValSparseBin : public MultiValBin {
         num_bin_(num_bin),
         estimate_element_per_row_(estimate_element_per_row) {
     row_ptr_.resize(num_data_ + 1, 0);
-    data_size_t estimate_num_data =
-        static_cast<data_size_t>(num_data_ * estimate_element_per_row_ * 1.1);
+    INDEX_T estimate_num_data =
+        static_cast<INDEX_T>(estimate_element_per_row_ * 1.1) *
+        static_cast<INDEX_T>(num_data_);
     int num_threads = 1;
 #pragma omp parallel
 #pragma omp master
@@ -49,16 +50,18 @@ class MultiValSparseBin : public MultiValBin {
   void PushOneRow(int tid, data_size_t idx,
                   const std::vector<uint32_t>& values) override {
     const int pre_alloc_size = 50;
-    row_ptr_[idx + 1] = static_cast<data_size_t>(values.size());
+    row_ptr_[idx + 1] = static_cast<INDEX_T>(values.size());
     if (tid == 0) {
-      if (t_size_[tid] + row_ptr_[idx + 1] > static_cast<data_size_t>(data_.size())) {
+      if (t_size_[tid] + row_ptr_[idx + 1] >
+          static_cast<INDEX_T>(data_.size())) {
         data_.resize(t_size_[tid] + row_ptr_[idx + 1] * pre_alloc_size);
       }
       for (auto val : values) {
         data_[t_size_[tid]++] = static_cast<VAL_T>(val);
       }
     } else {
-      if (t_size_[tid] + row_ptr_[idx + 1] > static_cast<data_size_t>(t_data_[tid - 1].size())) {
+      if (t_size_[tid] + row_ptr_[idx + 1] >
+          static_cast<INDEX_T>(t_data_[tid - 1].size())) {
         t_data_[tid - 1].resize(t_size_[tid] +
                                 row_ptr_[idx + 1] * pre_alloc_size);
       }
@@ -68,13 +71,13 @@ class MultiValSparseBin : public MultiValBin {
     }
   }
 
-  void MergeData(const data_size_t* sizes) {
+  void MergeData(const INDEX_T* sizes) {
     Common::FunctionTimer fun_time("MultiValSparseBin::MergeData", global_timer);
-    for (data_size_t i = 0; i < num_data_; ++i) {
+    for (INDEX_T i = 0; i < static_cast<INDEX_T>(num_data_); ++i) {
       row_ptr_[i + 1] += row_ptr_[i];
     }
     if (t_data_.size() > 0) {
-      std::vector<data_size_t> offsets(1 + t_data_.size());
+      std::vector<INDEX_T> offsets(1 + t_data_.size());
       offsets[0] = sizes[0];
       for (size_t tid = 0; tid < t_data_.size() - 1; ++tid) {
         offsets[tid + 1] = offsets[tid] + sizes[tid + 1];
@@ -193,14 +196,15 @@ class MultiValSparseBin : public MultiValBin {
 
   void CopySubset(const Bin* full_bin, const data_size_t* used_indices,
                   data_size_t num_used_indices) override {
-    auto other_bin = dynamic_cast<const MultiValSparseBin<VAL_T>*>(full_bin);
+    auto other_bin = dynamic_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
     row_ptr_.resize(num_data_ + 1, 0);
-    data_size_t estimate_num_data =
-        static_cast<data_size_t>(num_data_ * estimate_element_per_row_ * 1.5);
+    INDEX_T estimate_num_data =
+        static_cast<INDEX_T>(estimate_element_per_row_ * 1.1) *
+        static_cast<INDEX_T>(num_data_);
     data_.clear();
     data_.reserve(estimate_num_data);
     for (data_size_t i = 0; i < num_used_indices; ++i) {
-      for (data_size_t j = other_bin->row_ptr_[used_indices[i]];
+      for (auto j = other_bin->row_ptr_[used_indices[i]];
            j < other_bin->row_ptr_[used_indices[i] + 1]; ++j) {
         data_.push_back(other_bin->data_[j]);
       }
@@ -211,7 +215,7 @@ class MultiValSparseBin : public MultiValBin {
 
   MultiValBin* CreateLike(int num_bin, int,
                           double estimate_element_per_row) const override {
-    return new MultiValSparseBin<VAL_T>(num_data_, num_bin,
+    return new MultiValSparseBin<INDEX_T, VAL_T>(num_data_, num_bin,
                                         estimate_element_per_row);
   }
 
@@ -219,16 +223,16 @@ class MultiValSparseBin : public MultiValBin {
                            double estimate_element_per_row) override {
     num_bin_ = num_bin;
     estimate_element_per_row_ = estimate_element_per_row;
-    data_size_t estimate_num_data =
-        static_cast<data_size_t>(num_data_ * estimate_element_per_row_ * 1.1);
+    INDEX_T estimate_num_data =
+        static_cast<INDEX_T>(estimate_element_per_row_ * 1.1) *
+        static_cast<INDEX_T>(num_data_);
     size_t npart = 1 + t_data_.size();
-    data_size_t avg_num_data =
-        static_cast<data_size_t>(estimate_num_data / npart);
-    if (static_cast<data_size_t>(data_.size()) < avg_num_data) {
+    INDEX_T avg_num_data = static_cast<INDEX_T>(estimate_num_data / npart);
+    if (static_cast<INDEX_T>(data_.size()) < avg_num_data) {
       data_.resize(avg_num_data, 0);
     }
     for (size_t i = 0; i < t_data_.size(); ++i) {
-      if (static_cast<data_size_t>(t_data_[i].size()) < avg_num_data) {
+      if (static_cast<INDEX_T>(t_data_[i].size()) < avg_num_data) {
         t_data_[i].resize(avg_num_data, 0);
       }
     }
@@ -239,27 +243,27 @@ class MultiValSparseBin : public MultiValBin {
                       const std::vector<uint32_t>& upper,
                       const std::vector<uint32_t>& delta) override {
     const auto other =
-        reinterpret_cast<const MultiValSparseBin<VAL_T>*>(full_bin);
+        reinterpret_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
     int n_block = 1;
     data_size_t block_size = num_data_;
     Threading::BlockInfo<data_size_t>(static_cast<int>(t_data_.size() + 1),
                                       num_data_, 1024, &n_block, &block_size);
-    std::vector<data_size_t> sizes(t_data_.size() + 1, 0);
+    std::vector<INDEX_T> sizes(t_data_.size() + 1, 0);
     const int pre_alloc_size = 50;
 #pragma omp parallel for schedule(static, 1)
     for (int tid = 0; tid < n_block; ++tid) {
       data_size_t start = tid * block_size;
       data_size_t end = std::min(num_data_, start + block_size);
       auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
-      data_size_t size = 0;
+      INDEX_T size = 0;
       for (data_size_t i = start; i < end; ++i) {
         const auto j_start = other->RowPtr(i);
         const auto j_end = other->RowPtr(i + 1);
-        if (size + (j_end - j_start) > static_cast<data_size_t>(buf.size())) {
+        if (size + (j_end - j_start) > static_cast<INDEX_T>(buf.size())) {
           buf.resize(size + (j_end - j_start) * pre_alloc_size);
         }
         int k = 0;
-        const data_size_t pre_size = size;
+        const auto pre_size = size;
         for (auto j = j_start; j < j_end; ++j) {
           auto val = other->data_[j];
           while (val >= upper[k]) {
@@ -276,22 +280,23 @@ class MultiValSparseBin : public MultiValBin {
     MergeData(sizes.data());
   }
 
-  inline data_size_t RowPtr(data_size_t idx) const { return row_ptr_[idx]; }
+  inline INDEX_T RowPtr(data_size_t idx) const { return row_ptr_[idx]; }
 
-  MultiValSparseBin<VAL_T>* Clone() override;
+  MultiValSparseBin<INDEX_T, VAL_T>* Clone() override;
 
  private:
   data_size_t num_data_;
   int num_bin_;
   double estimate_element_per_row_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>> data_;
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, 32>>
+  std::vector<INDEX_T, Common::AlignmentAllocator<INDEX_T, 32>>
       row_ptr_;
   std::vector<std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>>>
       t_data_;
-  std::vector<data_size_t> t_size_;
+  std::vector<INDEX_T> t_size_;
 
-  MultiValSparseBin<VAL_T>(const MultiValSparseBin<VAL_T>& other)
+  MultiValSparseBin<INDEX_T, VAL_T>(
+      const MultiValSparseBin<INDEX_T, VAL_T>& other)
       : num_data_(other.num_data_),
         num_bin_(other.num_bin_),
         estimate_element_per_row_(other.estimate_element_per_row_),
@@ -299,9 +304,9 @@ class MultiValSparseBin : public MultiValBin {
         row_ptr_(other.row_ptr_) {}
 };
 
-template <typename VAL_T>
-MultiValSparseBin<VAL_T>* MultiValSparseBin<VAL_T>::Clone() {
-  return new MultiValSparseBin<VAL_T>(*this);
+template <typename INDEX_T, typename VAL_T>
+MultiValSparseBin<INDEX_T, VAL_T>* MultiValSparseBin<INDEX_T, VAL_T>::Clone() {
+  return new MultiValSparseBin<INDEX_T, VAL_T>(*this);
 }
 
 }  // namespace LightGBM

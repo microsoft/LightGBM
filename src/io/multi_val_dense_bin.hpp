@@ -131,7 +131,7 @@ class MultiValDenseBin : public MultiValBin {
     for (data_size_t i = 0; i < num_used_indices; ++i) {
       auto j_start = RowPtr(i);
       auto other_j_start = other_bin->RowPtr(used_indices[i]);
-      for (int64_t j = other_j_start;
+      for (auto j = other_j_start;
            j < other_bin->RowPtr(used_indices[i] + 1); ++j) {
         data_[j - other_j_start + j_start] = other_bin->data_[j];
       }
@@ -180,8 +180,8 @@ class MultiValDenseBin : public MultiValBin {
     }
   }
 
-  inline int64_t RowPtr(data_size_t idx) const {
-    return static_cast<int64_t>(idx) * num_feature_;
+  inline size_t RowPtr(data_size_t idx) const {
+    return static_cast<size_t>(idx) * num_feature_;
   }
 
   MultiValDenseBin<VAL_T>* Clone() override;
