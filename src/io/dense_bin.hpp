@@ -137,11 +137,11 @@ class DenseBin: public Bin {
     VAL_T th = static_cast<VAL_T>(threshold + min_bin);
     const VAL_T minb = static_cast<VAL_T>(min_bin);
     const VAL_T maxb = static_cast<VAL_T>(max_bin);
-    VAL_T t_default_bin = static_cast<VAL_T>(min_bin + default_bin);
+    VAL_T t_zero_bin = static_cast<VAL_T>(min_bin + default_bin);
     VAL_T t_most_freq_bin = static_cast<VAL_T>(min_bin + most_freq_bin);
     if (most_freq_bin == 0) {
       th -= 1;
-      t_default_bin -= 1;
+      t_zero_bin -= 1;
       t_most_freq_bin -= 1;
     }
     data_size_t lte_count = 0;
@@ -159,17 +159,31 @@ class DenseBin: public Bin {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
       }
-      for (data_size_t i = 0; i < num_data; ++i) {
-        const data_size_t idx = data_indices[i];
-        const VAL_T bin = data_[idx];
-        if (bin == maxb) {
-          missing_default_indices[(*missing_default_count)++] = idx;
-        } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
-          default_indices[(*default_count)++] = idx;
-        } else if (bin > th) {
-          gt_indices[gt_count++] = idx;
-        } else {
-          lte_indices[lte_count++] = idx;
+      if (t_most_freq_bin == maxb) {
+        for (data_size_t i = 0; i < num_data; ++i) {
+          const data_size_t idx = data_indices[i];
+          const VAL_T bin = data_[idx];
+          if (t_most_freq_bin == bin || bin < minb || bin > maxb) {
+            missing_default_indices[(*missing_default_count)++] = idx;
+          } else if (bin > th) {
+            gt_indices[gt_count++] = idx;
+          } else {
+            lte_indices[lte_count++] = idx;
+          }
+        }
+      } else {
+        for (data_size_t i = 0; i < num_data; ++i) {
+          const data_size_t idx = data_indices[i];
+          const VAL_T bin = data_[idx];
+          if (bin == maxb) {
+            missing_default_indices[(*missing_default_count)++] = idx;
+          } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
+            default_indices[(*default_count)++] = idx;
+          } else if (bin > th) {
+            gt_indices[gt_count++] = idx;
+          } else {
+            lte_indices[lte_count++] = idx;
+          }
         }
       }
     } else {
@@ -194,7 +208,7 @@ class DenseBin: public Bin {
         for (data_size_t i = 0; i < num_data; ++i) {
           const data_size_t idx = data_indices[i];
           const VAL_T bin = data_[idx];
-          if (bin == t_default_bin) {
+          if (bin == t_zero_bin) {
             missing_default_indices[(*missing_default_count)++] = idx;
           } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
             default_indices[(*default_count)++] = idx;
