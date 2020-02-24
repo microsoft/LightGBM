@@ -77,13 +77,15 @@ class SingleRowPredictor {
     predict_function = predictor_->GetPredictFunction();
     num_total_model_ = boosting->NumberOfTotalModel();
   }
+
   ~SingleRowPredictor() {}
+
   bool IsPredictorEqual(const Config& config, int iter, Boosting* boosting) {
-    return early_stop_ != config.pred_early_stop ||
-      early_stop_freq_ != config.pred_early_stop_freq ||
-      early_stop_margin_ != config.pred_early_stop_margin ||
-      iter_ != iter ||
-      num_total_model_ != boosting->NumberOfTotalModel();
+    return early_stop_ == config.pred_early_stop &&
+      early_stop_freq_ == config.pred_early_stop_freq &&
+      early_stop_margin_ == config.pred_early_stop_margin &&
+      iter_ == iter &&
+      num_total_model_ == boosting->NumberOfTotalModel();
   }
 
  private:
