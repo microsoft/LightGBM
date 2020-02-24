@@ -762,6 +762,5 @@ R""()
 }
 
 // The following line ends the string literal, adds an extra #endif at the end
-// the +9 skips extra characters ")", newline, "#endif" and newline at the beginning
-// )"" "\n#endif" + 9
+// )"" "\n#endif"
 #endif
