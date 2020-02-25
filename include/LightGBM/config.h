@@ -85,12 +85,14 @@ struct Config {
 
   #pragma region Core Parameters
 
+  // [no-save]
   // [doc-only]
   // alias = config_file
   // desc = path of config file
   // desc = **Note**: can be used only in CLI version
   std::string config = "";
 
+  // [no-save]
   // [doc-only]
   // type = enum
   // default = train
@@ -482,6 +484,7 @@ struct Config {
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
   int verbosity = 1;
 
+  // [no-save]
   // alias = model_input, model_in
   // desc = filename of input model
   // desc = for ``prediction`` task, this model will be applied to prediction data
@@ -489,11 +492,13 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string input_model = "";
 
+  // [no-save]
   // alias = model_output, model_out
   // desc = filename of output model in training
   // desc = **Note**: can be used only in CLI version
   std::string output_model = "LightGBM_model.txt";
 
+  // [no-save]
   // alias = save_period
   // desc = frequency of saving model file snapshot
   // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
@@ -626,6 +631,7 @@ struct Config {
   // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
+  // [no-save]
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
   // desc = **Note**: ``init_score`` is not saved in binary file
@@ -831,12 +837,14 @@ struct Config {
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 
+  // [no-save]
   // check = >0
   // alias = output_freq
   // desc = frequency for metric output
   // desc = **Note**: can be used only in CLI version
   int metric_freq = 1;
 
+  // [no-save]
   // alias = training_metric, is_training_metric, train_metric
   // desc = set this to ``true`` to output metric result over training dataset
   // desc = **Note**: can be used only in CLI version
