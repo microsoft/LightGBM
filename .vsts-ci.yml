@@ -115,7 +115,7 @@ jobs:
 - job: Windows
 ###########################################
   pool:
-    vmImage: 'windows-latest'
+    vmImage: 'vs2017-win2016'
   strategy:
     maxParallel: 3
     matrix:
@@ -151,7 +151,7 @@ jobs:
   - Windows
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
   pool:
-    vmImage: 'windows-latest'
+    vmImage: 'vs2017-win2016'
   steps:
   # Download all agent packages from all previous phases
   - task: DownloadBuildArtifacts@0
