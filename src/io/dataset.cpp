@@ -1487,7 +1487,7 @@ void PushClearIfEmpty(std::vector<T>* dest, const size_t dest_len,
 
 void Dataset::AddFeaturesFrom(Dataset* other) {
   if (other->num_data_ != num_data_) {
-    throw std::runtime_error(
+    Log::Fatal(
         "Cannot add features from other Dataset with a different number of "
         "rows");
   }
