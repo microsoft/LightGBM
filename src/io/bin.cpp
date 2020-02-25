@@ -689,16 +689,43 @@ namespace LightGBM {
   MultiValBin* MultiValBin::CreateMultiValSparseBin(data_size_t num_data,
                                                     int num_bin,
                                                     double estimate_element_per_row) {
-    if (num_bin <= 256) {
-      return new MultiValSparseBin<uint8_t>(num_data, num_bin,
-                                            estimate_element_per_row);
-    } else if (num_bin <= 65536) {
-      return new MultiValSparseBin<uint16_t>(num_data, num_bin,
-                                             estimate_element_per_row);
-    } else {
-      return new MultiValSparseBin<uint32_t>(num_data, num_bin,
-                                             estimate_element_per_row);
-    }
+    size_t estimate_total_entries =
+        static_cast<size_t>(estimate_element_per_row * 1.1) *
+        static_cast<size_t>(num_data);
+    if (estimate_total_entries <= std::numeric_limits<uint16_t>::max()) {
+      if (num_bin <= 256) {
+        return new MultiValSparseBin<uint16_t, uint8_t>(
+            num_data, num_bin, estimate_element_per_row);
+      } else if (num_bin <= 65536) {
+        return new MultiValSparseBin<uint16_t, uint16_t>(
+            num_data, num_bin, estimate_element_per_row);
+      } else {
+        return new MultiValSparseBin<uint16_t, uint32_t>(
+            num_data, num_bin, estimate_element_per_row);
+      }
+    } else if (estimate_total_entries <= std::numeric_limits<uint32_t>::max()) {
+      if (num_bin <= 256) {
+        return new MultiValSparseBin<uint32_t, uint8_t>(
+            num_data, num_bin, estimate_element_per_row);
+      } else if (num_bin <= 65536) {
+        return new MultiValSparseBin<uint32_t, uint16_t>(
+            num_data, num_bin, estimate_element_per_row);
+      } else {
+        return new MultiValSparseBin<uint32_t, uint32_t>(
+            num_data, num_bin, estimate_element_per_row);
+      }
+    } else  {
+      if (num_bin <= 256) {
+        return new MultiValSparseBin<size_t, uint8_t>(
+            num_data, num_bin, estimate_element_per_row);
+      } else if (num_bin <= 65536) {
+        return new MultiValSparseBin<size_t, uint16_t>(
+            num_data, num_bin, estimate_element_per_row);
+      } else {
+        return new MultiValSparseBin<size_t, uint32_t>(
+            num_data, num_bin, estimate_element_per_row);
+      }
+    } 
   }
 
 }  // namespace LightGBM
