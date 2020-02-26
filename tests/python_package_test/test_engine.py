@@ -350,7 +350,7 @@ class TestEngine(unittest.TestCase):
             'verbose': -1,
             'boost_from_average': False,
             'min_data': 1,
-            'num_leaves': 4,
+            'num_leaves': 2,
             'learning_rate': 1,
             'min_data_in_bin': 1,
             'min_data_per_group': 1,
