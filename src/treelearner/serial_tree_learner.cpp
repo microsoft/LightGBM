@@ -69,7 +69,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 
   GetMultiValBin(train_data_, true);
 
-  histogram_pool_.DynamicChangeSize(train_data_, is_hist_colwise_, config_, max_cache_size, config_->num_leaves);
+  histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_hist_colwise, config_, max_cache_size, config_->num_leaves);
   Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
@@ -77,23 +77,27 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   }
 }
 
-void SerialTreeLearner::GetMultiValBin(const Dataset* dataset, bool is_first_time) {
+void SerialTreeLearner::GetMultiValBin(const Dataset* dataset,
+                                       bool is_first_time) {
   if (is_first_time) {
     auto used_feature = GetUsedFeatures(true);
-    temp_state_.reset(dataset->TestMultiThreadingMethod(
-      ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
-      is_constant_hessian_, config_->force_col_wise, config_->force_row_wise, &is_hist_colwise_));
+    share_state_.reset(dataset->TestMultiThreadingMethod(
+        ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
+        is_constant_hessian_, config_->force_col_wise,
+        config_->force_row_wise));
   } else {
     // cannot change is_hist_col_wise during training
-    temp_state_.reset(dataset->TestMultiThreadingMethod(
-      ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
-      is_constant_hessian_, is_hist_colwise_, !is_hist_colwise_, &is_hist_colwise_));
+    share_state_.reset(dataset->TestMultiThreadingMethod(
+        ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
+        is_constant_hessian_, share_state_->is_hist_colwise,
+        !share_state_->is_hist_colwise));
   }
 }
 
-void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool reset_multi_val_bin) {
+void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
+  is_constant_hessian_ = is_constant_hessian;
   CHECK(num_features_ == train_data_->num_features());
 
   // initialize splits for leaf
@@ -133,7 +137,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     // at least need 2 leaves
     max_cache_size = std::max(2, max_cache_size);
     max_cache_size = std::min(max_cache_size, config_->num_leaves);
-    histogram_pool_.DynamicChangeSize(train_data_, is_hist_colwise_, config_, max_cache_size, config_->num_leaves);
+    histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_hist_colwise, config_, max_cache_size, config_->num_leaves);
 
     // push split information for all leaves
     best_split_per_leaf_.resize(config_->num_leaves);
@@ -148,11 +152,10 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   }
 }
 
-Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, const Json& forced_split_json) {
+Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, const Json& forced_split_json) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
-  is_constant_hessian_ = is_constant_hessian;
 
   // some initial works before training
   BeforeTrain();
@@ -292,7 +295,7 @@ void SerialTreeLearner::BeforeTrain() {
       is_feature_used_[i] = 1;
     }
   }
-  train_data_->InitTrain(is_feature_used_, is_hist_colwise_, temp_state_.get());
+  train_data_->InitTrain(is_feature_used_, share_state_.get());
   // initialize data partition
   data_partition_->Init();
 
@@ -383,7 +386,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
       is_feature_used, smaller_leaf_splits_->data_indices(),
       smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-      is_hist_colwise_, temp_state_.get(), ptr_smaller_leaf_hist_data);
+      share_state_.get(), ptr_smaller_leaf_hist_data);
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
@@ -392,7 +395,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
         is_feature_used, larger_leaf_splits_->data_indices(),
         larger_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
         ordered_gradients_.data(), ordered_hessians_.data(),
-        is_constant_hessian_, is_hist_colwise_, temp_state_.get(),
+        is_constant_hessian_, share_state_.get(),
         ptr_larger_leaf_hist_data);
   }
 }

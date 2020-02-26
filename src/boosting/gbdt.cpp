@@ -367,7 +367,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         grad = gradients_.data() + offset;
         hess = hessians_.data() + offset;
       }
-      new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
+      new_tree.reset(tree_learner_->Train(grad, hess, forced_splits_json_));
     }
 
     if (new_tree->num_leaves() > 1) {
@@ -695,7 +695,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     feature_names_ = train_data_->feature_names();
     feature_infos_ = train_data_->feature_infos();
 
-    tree_learner_->ResetTrainingData(train_data);
+    tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
     ResetBaggingConfig(config_.get(), true);
   }
 }

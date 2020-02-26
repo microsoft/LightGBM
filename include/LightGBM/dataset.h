@@ -276,20 +276,21 @@ class Parser {
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
-struct TrainingTempState {
-  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
-      hist_buf;
-  int num_bin_aligned;
+struct TrainingShareStates {
+  bool is_hist_colwise = true;
   bool is_use_subcol = false;
   bool is_use_subrow = false;
   bool is_subrow_copied = false;
   const data_size_t* bagging_use_indices;
   data_size_t bagging_indices_cnt;
+  int num_bin_aligned;
   std::unique_ptr<MultiValBin> multi_val_bin;
   std::unique_ptr<MultiValBin> multi_val_bin_subset;
   std::vector<uint32_t> hist_move_src;
   std::vector<uint32_t> hist_move_dest;
   std::vector<uint32_t> hist_move_size;
+  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
+      hist_buf;
 
   void SetMultiValBin(MultiValBin* bin) {
     if (bin == nullptr) {
@@ -449,10 +450,10 @@ class Dataset {
 
   MultiValBin* GetMultiBinFromAllFeatures() const;
 
-  TrainingTempState* TestMultiThreadingMethod(
+  TrainingShareStates* TestMultiThreadingMethod(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-    bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const;
+    bool force_colwise, bool force_rowwise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
@@ -480,15 +481,14 @@ class Dataset {
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
 
   void InitTrain(const std::vector<int8_t>& is_feature_used,
-                 bool is_colwise,
-                 TrainingTempState* temp_state) const;
+                 TrainingShareStates* share_state) const;
 
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                            const data_size_t* data_indices,
                            data_size_t num_data, const score_t* gradients,
                            const score_t* hessians, score_t* ordered_gradients,
                            score_t* ordered_hessians, bool is_constant_hessian,
-                           bool is_colwise, TrainingTempState* temp_state,
+                           TrainingShareStates* share_state,
                            hist_t* histogram_data) const;
 
   void ConstructHistogramsMultiVal(const data_size_t* data_indices,
@@ -496,7 +496,7 @@ class Dataset {
                                    const score_t* gradients,
                                    const score_t* hessians,
                                    bool is_constant_hessian,
-                                   TrainingTempState* temp_state,
+                                   TrainingShareStates* share_state,
                                    hist_t* histogram_data) const;
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;

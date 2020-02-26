@@ -736,20 +736,12 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
 }
 
 Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            bool is_constant_hessian, const Json& forced_split_json) {
-  // check if we need to recompile the GPU kernel (is_constant_hessian changed)
-  // this should rarely occur
-  if (is_constant_hessian != is_constant_hessian_) {
-    Log::Info("Recompiling GPU kernel because hessian is %sa constant now", is_constant_hessian ? "" : "not ");
-    is_constant_hessian_ = is_constant_hessian;
-    BuildGPUKernels();
-    SetupKernelArguments();
-  }
-  return SerialTreeLearner::Train(gradients, hessians, is_constant_hessian, forced_split_json);
+                            const Json& forced_split_json) {
+  return SerialTreeLearner::Train(gradients, hessians, forced_split_json);
 }
 
-void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {
-  SerialTreeLearner::ResetTrainingData(train_data);
+void GPUTreeLearner::ResetTrainingData(const Dataset* train_data, bool is_constant_hessian) {
+  SerialTreeLearner::ResetTrainingData(train_data, is_constant_hessian);
   num_feature_groups_ = train_data_->num_feature_groups();
   // GPU memory has to been reallocated because data may have been changed
   AllocateGPUMemory();
@@ -977,7 +969,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
     gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-    is_hist_colwise_, temp_state_.get(),
+    share_state_.get(),
     ptr_smaller_leaf_hist_data);
   // wait for GPU to finish, only if GPU is actually used
   if (is_gpu_used) {
@@ -1042,7 +1034,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-      is_hist_colwise_, temp_state_.get(),
+      share_state_.get(),
       ptr_larger_leaf_hist_data);
     // wait for GPU to finish, only if GPU is actually used
     if (is_gpu_used) {

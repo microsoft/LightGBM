@@ -47,15 +47,17 @@ class SerialTreeLearner: public TreeLearner {
 
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
-  void ResetTrainingData(const Dataset* train_data) override {
-    ResetTrainingDataInner(train_data, true);
+  void ResetTrainingData(const Dataset* train_data,
+                         bool is_constant_hessian) override {
+    ResetTrainingDataInner(train_data, is_constant_hessian, true);
   }
 
-  void ResetTrainingDataInner(const Dataset* train_data, bool reset_multi_val_bin) ;
+  void ResetTrainingDataInner(const Dataset* train_data,
+                              bool is_constant_hessian, bool reset_multi_val_bin);
 
   void ResetConfig(const Config* config) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
+  Tree* Train(const score_t* gradients, const score_t *hessians,
               const Json& forced_split_json) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
@@ -66,13 +68,13 @@ class SerialTreeLearner: public TreeLearner {
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
     if (subset == nullptr) {
       data_partition_->SetUsedDataIndices(used_indices, num_data);
-      temp_state_->is_use_subrow = false;
+      share_state_->is_use_subrow = false;
     } else {
-      ResetTrainingDataInner(subset, false);
-      temp_state_->is_use_subrow = true;
-      temp_state_->is_subrow_copied = false;
-      temp_state_->bagging_use_indices = used_indices;
-      temp_state_->bagging_indices_cnt = num_data;
+      ResetTrainingDataInner(subset, is_constant_hessian_, false);
+      share_state_->is_use_subrow = true;
+      share_state_->is_subrow_copied = false;
+      share_state_->bagging_use_indices = used_indices;
+      share_state_->bagging_indices_cnt = num_data;
     }
   }
 
@@ -198,8 +200,7 @@ class SerialTreeLearner: public TreeLearner {
   const Config* config_;
   int num_threads_;
   bool is_constant_hessian_;
-  std::unique_ptr<TrainingTempState> temp_state_;
-  bool is_hist_colwise_;
+  std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
 

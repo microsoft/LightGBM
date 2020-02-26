@@ -592,10 +592,10 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   return ret.release();
 }
 
-TrainingTempState* Dataset::TestMultiThreadingMethod(
+TrainingShareStates* Dataset::TestMultiThreadingMethod(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-    bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const {
+    bool force_colwise, bool force_rowwise) const {
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
                                   global_timer);
   if (force_colwise && force_rowwise) {
@@ -607,22 +607,22 @@ TrainingTempState* Dataset::TestMultiThreadingMethod(
     return nullptr;
   }
   if (force_colwise) {
-    *is_hist_col_wise = true;
-    TrainingTempState* temp_state = new TrainingTempState();
-    temp_state->SetMultiValBin(GetMultiBinFromSparseFeatures());
-    return temp_state;
+    TrainingShareStates* share_state = new TrainingShareStates();
+    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures());
+    share_state->is_hist_colwise = true;
+    return share_state;
   } else if (force_rowwise) {
-    *is_hist_col_wise = false;
-    TrainingTempState* temp_state = new TrainingTempState();
-    temp_state->SetMultiValBin(GetMultiBinFromAllFeatures());
-    return temp_state;
+    TrainingShareStates* share_state = new TrainingShareStates();
+    share_state->SetMultiValBin(GetMultiBinFromAllFeatures());
+    share_state->is_hist_colwise = false;
+    return share_state;
   } else {
     std::unique_ptr<MultiValBin> sparse_bin;
     std::unique_ptr<MultiValBin> all_bin;
-    std::unique_ptr<TrainingTempState> colwise_state;
-    std::unique_ptr<TrainingTempState> rowwise_state;
-    colwise_state.reset(new TrainingTempState());
-    rowwise_state.reset(new TrainingTempState());
+    std::unique_ptr<TrainingShareStates> colwise_state;
+    std::unique_ptr<TrainingShareStates> rowwise_state;
+    colwise_state.reset(new TrainingShareStates());
+    rowwise_state.reset(new TrainingShareStates());
 
     std::chrono::duration<double, std::milli> col_wise_init_time,
         row_wise_init_time;
@@ -639,13 +639,15 @@ TrainingTempState* Dataset::TestMultiThreadingMethod(
     Log::Debug(
         "init for col-wise cost %f seconds, init for row-wise cost %f seconds",
         col_wise_init_time * 1e-3, row_wise_init_time * 1e-3);
-    InitTrain(is_feature_used, true, colwise_state.get());
-    InitTrain(is_feature_used, false, rowwise_state.get());
+    colwise_state->is_hist_colwise = true;
+    InitTrain(is_feature_used, colwise_state.get());
+    rowwise_state->is_hist_colwise = false;
+    InitTrain(is_feature_used, rowwise_state.get());
     std::chrono::duration<double, std::milli> col_wise_time, row_wise_time;
     start_time = std::chrono::steady_clock::now();
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
                         hessians, gradients, hessians, is_constant_hessian,
-                        true, colwise_state.get(), hist_data.data());
+                        colwise_state.get(), hist_data.data());
     col_wise_time = std::chrono::steady_clock::now() - start_time;
     start_time = std::chrono::steady_clock::now();
     ConstructHistogramsMultiVal(nullptr, num_data_, gradients, hessians,
@@ -655,7 +657,6 @@ TrainingTempState* Dataset::TestMultiThreadingMethod(
     Log::Debug("col-wise cost %f seconds, row-wise cost %f seconds",
                col_wise_time * 1e-3, row_wise_time * 1e-3);
     if (col_wise_time < row_wise_time) {
-      *is_hist_col_wise = true;
       auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time;
       Log::Warning(
           "Auto-choosing col-wise multi-threading, the overhead of testing was "
@@ -664,7 +665,6 @@ TrainingTempState* Dataset::TestMultiThreadingMethod(
           overhead_cost * 1e-3);
       return colwise_state.release();
     } else {
-      *is_hist_col_wise = false;
       auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time;
       Log::Warning(
           "Auto-choosing row-wise multi-threading, the overhead of testing was "
@@ -1043,13 +1043,13 @@ void Dataset::DumpTextFile(const char* text_filename) {
 }
 
 void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
-                        bool is_colwise, TrainingTempState* temp_state) const {
+                        TrainingShareStates* share_state) const {
   Common::FunctionTimer fun_time("Dataset::InitTrain", global_timer);
-  temp_state->is_use_subcol = false;
-  if (temp_state->multi_val_bin == nullptr) {
+  share_state->is_use_subcol = false;
+  if (share_state->multi_val_bin == nullptr) {
     return;
   }
-  const auto multi_val_bin = temp_state->multi_val_bin.get();
+  const auto multi_val_bin = share_state->multi_val_bin.get();
   double sum_used_dense_ratio = 0.0;
   double sum_dense_ratio = 0.0;
   int num_used = 0;
@@ -1069,7 +1069,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
         sum_dense_ratio += dense_rate;
         ++total;
       }
-    } else if (!is_colwise) {
+    } else if (!share_state->is_hist_colwise) {
       bool is_group_used = false;
       double dense_rate = 0;
       for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
@@ -1090,30 +1090,30 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   const double k_subfeature_threshold = 0.6;
   if (sum_used_dense_ratio >= sum_dense_ratio * k_subfeature_threshold) {
     // only need to copy subset
-    if (temp_state->is_use_subrow && !temp_state->is_subrow_copied) {
-      if (temp_state->multi_val_bin_subset == nullptr) {
-        temp_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
-            temp_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
+    if (share_state->is_use_subrow && !share_state->is_subrow_copied) {
+      if (share_state->multi_val_bin_subset == nullptr) {
+        share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
+            share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
             multi_val_bin->num_element_per_row()));
       } else {
-        temp_state->multi_val_bin_subset->ReSize(
-            temp_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
+        share_state->multi_val_bin_subset->ReSize(
+            share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
             multi_val_bin->num_element_per_row());
       }
-      temp_state->multi_val_bin_subset->CopySubrow(
-          multi_val_bin, temp_state->bagging_use_indices,
-          temp_state->bagging_indices_cnt);
+      share_state->multi_val_bin_subset->CopySubrow(
+          multi_val_bin, share_state->bagging_use_indices,
+          share_state->bagging_indices_cnt);
       // avoid to copy subset many times
-      temp_state->is_subrow_copied = true;
+      share_state->is_subrow_copied = true;
     }
   } else {
-    temp_state->is_use_subcol = true;
+    share_state->is_use_subcol = true;
     std::vector<uint32_t> upper_bound;
     std::vector<uint32_t> lower_bound;
     std::vector<uint32_t> delta;
-    temp_state->hist_move_src.clear();
-    temp_state->hist_move_dest.clear();
-    temp_state->hist_move_size.clear();
+    share_state->hist_move_src.clear();
+    share_state->hist_move_dest.clear();
+    share_state->hist_move_size.clear();
 
     int num_total_bin = 1;
     int new_num_total_bin = 1;
@@ -1134,15 +1134,15 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
             lower_bound.push_back(num_total_bin - cur_num_bin);
             upper_bound.push_back(num_total_bin);
 
-            temp_state->hist_move_src.push_back(
+            share_state->hist_move_src.push_back(
                 (new_num_total_bin - cur_num_bin) * 2);
-            temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
+            share_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
                                                  2);
-            temp_state->hist_move_size.push_back(cur_num_bin * 2);
+            share_state->hist_move_size.push_back(cur_num_bin * 2);
             delta.push_back(num_total_bin - new_num_total_bin);
           }
         }
-      } else if (!is_colwise) {
+      } else if (!share_state->is_hist_colwise) {
         bool is_group_used = false;
         for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
           if (is_feature_used[f_start + j]) {
@@ -1158,11 +1158,11 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
           lower_bound.push_back(num_total_bin - cur_num_bin);
           upper_bound.push_back(num_total_bin);
 
-          temp_state->hist_move_src.push_back(
+          share_state->hist_move_src.push_back(
               (new_num_total_bin - cur_num_bin) * 2);
-          temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
+          share_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
                                                2);
-          temp_state->hist_move_size.push_back(cur_num_bin * 2);
+          share_state->hist_move_size.push_back(cur_num_bin * 2);
           delta.push_back(num_total_bin - new_num_total_bin);
         }
       }
@@ -1171,23 +1171,23 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     lower_bound.push_back(num_total_bin);
     upper_bound.push_back(num_total_bin);
     data_size_t num_data =
-        temp_state->is_use_subrow ? temp_state->bagging_indices_cnt : num_data_;
-    if (temp_state->multi_val_bin_subset == nullptr) {
-      temp_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
+        share_state->is_use_subrow ? share_state->bagging_indices_cnt : num_data_;
+    if (share_state->multi_val_bin_subset == nullptr) {
+      share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
           num_data, new_num_total_bin, num_used, sum_used_dense_ratio));
     } else {
-      temp_state->multi_val_bin_subset->ReSize(num_data, new_num_total_bin,
+      share_state->multi_val_bin_subset->ReSize(num_data, new_num_total_bin,
                                                num_used, sum_used_dense_ratio);
     }
-    if (temp_state->is_use_subrow) {
-      temp_state->multi_val_bin_subset->CopySubrowAndSubcol(
-          multi_val_bin, temp_state->bagging_use_indices,
-          temp_state->bagging_indices_cnt, used_feature_index, lower_bound,
+    if (share_state->is_use_subrow) {
+      share_state->multi_val_bin_subset->CopySubrowAndSubcol(
+          multi_val_bin, share_state->bagging_use_indices,
+          share_state->bagging_indices_cnt, used_feature_index, lower_bound,
           upper_bound, delta);
       // may need to recopy subset
-      temp_state->is_subrow_copied = false;
+      share_state->is_subrow_copied = false;
     } else {
-      temp_state->multi_val_bin_subset->CopySubcol(
+      share_state->multi_val_bin_subset->CopySubcol(
           multi_val_bin, used_feature_index, lower_bound, upper_bound, delta);
     }
   }
@@ -1196,13 +1196,13 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
 void Dataset::ConstructHistogramsMultiVal(
     const data_size_t* data_indices, data_size_t num_data,
     const score_t* gradients, const score_t* hessians, bool is_constant_hessian,
-    TrainingTempState* temp_state, hist_t* hist_data) const {
+    TrainingShareStates* share_state, hist_t* hist_data) const {
   Common::FunctionTimer fun_time("Dataset::ConstructHistogramsMultiVal",
                                  global_timer);
   const auto multi_val_bin =
-      (temp_state->is_use_subcol || temp_state->is_use_subrow)
-          ? temp_state->multi_val_bin_subset.get()
-          : temp_state->multi_val_bin.get();
+      (share_state->is_use_subcol || share_state->is_use_subrow)
+          ? share_state->multi_val_bin_subset.get()
+          : share_state->multi_val_bin.get();
   if (multi_val_bin == nullptr) {
     return;
   }
@@ -1221,12 +1221,12 @@ void Dataset::ConstructHistogramsMultiVal(
                                     &n_data_block, &data_block_size);
   const size_t buf_size =
       static_cast<size_t>(n_data_block - 1) * num_bin_aligned * 2;
-  if (temp_state->hist_buf.size() < buf_size) {
-    temp_state->hist_buf.resize(buf_size);
+  if (share_state->hist_buf.size() < buf_size) {
+    share_state->hist_buf.resize(buf_size);
   }
   auto origin_hist_data = hist_data;
-  if (temp_state->is_use_subcol) {
-    hist_data = temp_state->TempBuf();
+  if (share_state->is_use_subcol) {
+    hist_data = share_state->TempBuf();
   }
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
@@ -1236,7 +1236,7 @@ void Dataset::ConstructHistogramsMultiVal(
     data_size_t end = std::min(start + data_block_size, num_data);
     auto data_ptr = hist_data;
     if (tid > 0) {
-      data_ptr = temp_state->hist_buf.data() +
+      data_ptr = share_state->hist_buf.data() +
                  static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
     }
     std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistEntrySize);
@@ -1272,7 +1272,7 @@ void Dataset::ConstructHistogramsMultiVal(
       const int start = t * bin_block_size;
       const int end = std::min(start + bin_block_size, num_bin);
       for (int tid = 1; tid < n_data_block; ++tid) {
-        auto src_ptr = temp_state->hist_buf.data() +
+        auto src_ptr = share_state->hist_buf.data() +
                        static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
         for (int i = start * 2; i < end * 2; ++i) {
           hist_data[i] += src_ptr[i];
@@ -1285,7 +1285,7 @@ void Dataset::ConstructHistogramsMultiVal(
       const int start = t * bin_block_size;
       const int end = std::min(start + bin_block_size, num_bin);
       for (int tid = 1; tid < n_data_block; ++tid) {
-        auto src_ptr = temp_state->hist_buf.data() +
+        auto src_ptr = share_state->hist_buf.data() +
                        static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
         for (int i = start * 2; i < end * 2; ++i) {
           hist_data[i] += src_ptr[i];
@@ -1298,7 +1298,7 @@ void Dataset::ConstructHistogramsMultiVal(
   }
   global_timer.Stop("Dataset::sparse_bin_histogram_merge");
   global_timer.Start("Dataset::sparse_bin_histogram_move");
-  temp_state->HistMove(hist_data, origin_hist_data);
+  share_state->HistMove(hist_data, origin_hist_data);
   global_timer.Stop("Dataset::sparse_bin_histogram_move");
 }
 
@@ -1306,16 +1306,16 @@ void Dataset::ConstructHistograms(
     const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
     data_size_t num_data, const score_t* gradients, const score_t* hessians,
     score_t* ordered_gradients, score_t* ordered_hessians,
-    bool is_constant_hessian, bool is_colwise, TrainingTempState* temp_state,
+    bool is_constant_hessian, TrainingShareStates* share_state,
     hist_t* hist_data) const {
   Common::FunctionTimer fun_timer("Dataset::ConstructHistograms", global_timer);
   if (num_data < 0 || hist_data == nullptr) {
     return;
   }
-  if (!is_colwise) {
+  if (!share_state->is_hist_colwise) {
     return ConstructHistogramsMultiVal(data_indices, num_data, gradients,
                                        hessians, is_constant_hessian,
-                                       temp_state, hist_data);
+                                       share_state, hist_data);
   }
   global_timer.Start("Dataset::Get used group");
   std::vector<int> used_dense_group;
@@ -1447,7 +1447,7 @@ void Dataset::ConstructHistograms(
   if (multi_val_groud_id >= 0) {
     ConstructHistogramsMultiVal(
         data_indices, num_data, gradients, hessians, is_constant_hessian,
-        temp_state, hist_data + group_bin_boundaries_[multi_val_groud_id] * 2);
+        share_state, hist_data + group_bin_boundaries_[multi_val_groud_id] * 2);
   }
 }
 

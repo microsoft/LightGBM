@@ -37,7 +37,8 @@ class TreeLearner {
   */
   virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
-  virtual void ResetTrainingData(const Dataset* train_data) = 0;
+  virtual void ResetTrainingData(const Dataset* train_data,
+                                 bool is_constant_hessian) = 0;
 
   /*!
   * \brief Reset tree configs
@@ -52,7 +53,7 @@ class TreeLearner {
   * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian,
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians,
                       const Json& forced_split_json) = 0;
 
   /*!
