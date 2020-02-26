@@ -345,7 +345,7 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
-            'objective': 'binary',
+            'objective': 'regression',
             'metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
