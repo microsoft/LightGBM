@@ -529,7 +529,7 @@ struct Config {
   int bin_construct_sample_cnt = 200000;
 
   // alias = data_seed
-  // desc = random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
+  // desc = random seed for sampling data to construct histogram bins
   int data_random_seed = 1;
 
   // alias = is_sparse, enable_sparse, sparse
