@@ -335,6 +335,43 @@ class TestEngine(unittest.TestCase):
         self.assertGreater(ret, 0.999)
         self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
 
+    def test_categorical_non_zero_inputs(self):
+        x = [1, 1, 1, 1, 1, 1, 2, 2]
+        y = [1, 1, 1, 1, 1, 1, 0, 0]
+
+        X_train = np.array(x).reshape(len(x), 1)
+        y_train = np.array(y)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_train, y_train)
+
+        params = {
+            'objective': 'binary',
+            'metric': 'auc',
+            'verbose': -1,
+            'boost_from_average': False,
+            'min_data': 1,
+            'num_leaves': 4,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'min_data_per_group': 1,
+            'cat_smooth': 1,
+            'cat_l2': 0,
+            'max_cat_to_onehot': 1,
+            'zero_as_missing': False,
+            'categorical_column': 0
+        }
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=1,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        pred = gbm.predict(X_train)
+        np.testing.assert_allclose(pred, y)
+        ret = roc_auc_score(y_train, pred)
+        self.assertGreater(ret, 0.999)
+        self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
+
     def test_multiclass(self):
         X, y = load_digits(10, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
