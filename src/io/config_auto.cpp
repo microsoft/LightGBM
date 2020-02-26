@@ -257,6 +257,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "output_result",
   "convert_model_language",
   "convert_model",
+  "objective_seed",
   "num_class",
   "is_unbalance",
   "scale_pos_weight",
@@ -267,10 +268,9 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "fair_c",
   "poisson_max_delta_step",
   "tweedie_variance_power",
-  "max_position",
-  "lambdamart_norm",
+  "lambdarank_truncation_level",
+  "lambdarank_norm",
   "label_gain",
-  "objective_seed",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -513,6 +513,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "convert_model", &convert_model);
 
+  GetInt(params, "objective_seed", &objective_seed);
+
   GetInt(params, "num_class", &num_class);
   CHECK(num_class >0);
 
@@ -541,16 +543,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(tweedie_variance_power >=1.0);
   CHECK(tweedie_variance_power <2.0);
 
-  GetInt(params, "max_position", &max_position);
-  CHECK(max_position >0);
+  GetInt(params, "lambdarank_truncation_level", &lambdarank_truncation_level);
+  CHECK(lambdarank_truncation_level >0);
 
-  GetBool(params, "lambdamart_norm", &lambdamart_norm);
+  GetBool(params, "lambdarank_norm", &lambdarank_norm);
 
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
-
-  GetInt(params, "objective_seed", &objective_seed);
 
   GetInt(params, "metric_freq", &metric_freq);
   CHECK(metric_freq >0);
@@ -675,6 +675,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[output_result: " << output_result << "]\n";
   str_buf << "[convert_model_language: " << convert_model_language << "]\n";
   str_buf << "[convert_model: " << convert_model << "]\n";
+  str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[is_unbalance: " << is_unbalance << "]\n";
   str_buf << "[scale_pos_weight: " << scale_pos_weight << "]\n";
@@ -685,10 +686,9 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[fair_c: " << fair_c << "]\n";
   str_buf << "[poisson_max_delta_step: " << poisson_max_delta_step << "]\n";
   str_buf << "[tweedie_variance_power: " << tweedie_variance_power << "]\n";
-  str_buf << "[max_position: " << max_position << "]\n";
-  str_buf << "[lambdamart_norm: " << lambdamart_norm << "]\n";
+  str_buf << "[lambdarank_truncation_level: " << lambdarank_truncation_level << "]\n";
+  str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
-  str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
