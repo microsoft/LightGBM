@@ -1049,6 +1049,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   if (temp_state->multi_val_bin == nullptr) {
     return;
   }
+  const auto multi_val_bin = temp_state->multi_val_bin.get();
   double sum_used_dense_ratio = 0.0;
   double sum_dense_ratio = 0.0;
   int num_used = 0;
@@ -1091,19 +1092,16 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     // only need to copy subset
     if (temp_state->is_use_subrow && !temp_state->is_subrow_copied) {
       if (temp_state->multi_val_bin_subset == nullptr) {
-        temp_state->multi_val_bin_subset.reset(
-            temp_state->multi_val_bin->CreateLike(
-                temp_state->bagging_indices_cnt,
-                temp_state->multi_val_bin->num_bin(), total,
-                temp_state->multi_val_bin->num_element_per_row()));
+        temp_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
+            temp_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
+            multi_val_bin->num_element_per_row()));
       } else {
         temp_state->multi_val_bin_subset->ReSize(
-            temp_state->bagging_indices_cnt,
-            temp_state->multi_val_bin->num_bin(), total,
-            temp_state->multi_val_bin->num_element_per_row());
+            temp_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
+            multi_val_bin->num_element_per_row());
       }
       temp_state->multi_val_bin_subset->CopySubrow(
-          temp_state->multi_val_bin.get(), temp_state->bagging_use_indices,
+          multi_val_bin, temp_state->bagging_use_indices,
           temp_state->bagging_indices_cnt);
       // avoid to copy subset many times
       temp_state->is_subrow_copied = true;
@@ -1138,8 +1136,8 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
 
             temp_state->hist_move_src.push_back(
                 (new_num_total_bin - cur_num_bin) * 2);
-            temp_state->hist_move_dest.push_back(
-                (num_total_bin - cur_num_bin) * 2);
+            temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
+                                                 2);
             temp_state->hist_move_size.push_back(cur_num_bin * 2);
             delta.push_back(num_total_bin - new_num_total_bin);
           }
@@ -1162,7 +1160,8 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
 
           temp_state->hist_move_src.push_back(
               (new_num_total_bin - cur_num_bin) * 2);
-          temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) * 2);
+          temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
+                                               2);
           temp_state->hist_move_size.push_back(cur_num_bin * 2);
           delta.push_back(num_total_bin - new_num_total_bin);
         }
@@ -1171,41 +1170,27 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     // avoid out of range
     lower_bound.push_back(num_total_bin);
     upper_bound.push_back(num_total_bin);
+    data_size_t num_data =
+        temp_state->is_use_subrow ? temp_state->bagging_indices_cnt : num_data_;
     if (temp_state->multi_val_bin_subset == nullptr) {
-      if (temp_state->is_use_subrow) {
-        temp_state->multi_val_bin_subset.reset(
-            temp_state->multi_val_bin->CreateLike(
-                temp_state->bagging_indices_cnt, new_num_total_bin, num_used,
-                sum_used_dense_ratio));
-      } else {
-        temp_state->multi_val_bin_subset.reset(
-            temp_state->multi_val_bin->CreateLike(
-                num_data_, new_num_total_bin, num_used, sum_used_dense_ratio));
-      }
+      temp_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
+          num_data, new_num_total_bin, num_used, sum_used_dense_ratio));
     } else {
-      if (temp_state->is_use_subrow) {
-        temp_state->multi_val_bin_subset->ReSize(
-            temp_state->bagging_indices_cnt, new_num_total_bin, num_used,
-            sum_used_dense_ratio);
-      } else {
-        temp_state->multi_val_bin_subset->ReSize(
-            num_data_, new_num_total_bin, num_used, sum_used_dense_ratio);
-      }
+      temp_state->multi_val_bin_subset->ReSize(num_data, new_num_total_bin,
+                                               num_used, sum_used_dense_ratio);
     }
     if (temp_state->is_use_subrow) {
       temp_state->multi_val_bin_subset->CopySubrowAndSubcol(
-          temp_state->multi_val_bin.get(), temp_state->bagging_use_indices,
+          multi_val_bin, temp_state->bagging_use_indices,
           temp_state->bagging_indices_cnt, used_feature_index, lower_bound,
           upper_bound, delta);
       // may need to recopy subset
       temp_state->is_subrow_copied = false;
     } else {
       temp_state->multi_val_bin_subset->CopySubcol(
-          temp_state->multi_val_bin.get(), used_feature_index, lower_bound,
-          upper_bound, delta);
+          multi_val_bin, used_feature_index, lower_bound, upper_bound, delta);
     }
   }
-  temp_state->is_use_subrow = false;
 }
 
 void Dataset::ConstructHistogramsMultiVal(
