@@ -595,7 +595,7 @@ class FeatureHistogram {
 
         double sum_left_gradient = sum_gradient - sum_right_gradient;
         if (IS_RAND) {
-          if (t + offset != rand_threshold) {
+          if (t - 1 + offset != rand_threshold) {
             continue;
           }
         }
