@@ -66,11 +66,11 @@ class SerialTreeLearner: public TreeLearner {
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
     if (subset == nullptr) {
       data_partition_->SetUsedDataIndices(used_indices, num_data);
-      temp_state_->bagging_use_subset = false;
+      temp_state_->is_use_subrow = false;
     } else {
       ResetTrainingDataInner(subset, false);
-      temp_state_->bagging_use_subset = true;
-      temp_state_->is_subset_copied = false;
+      temp_state_->is_use_subrow = true;
+      temp_state_->is_subrow_copied = false;
       temp_state_->bagging_use_indices = used_indices;
       temp_state_->bagging_indices_cnt = num_data;
     }

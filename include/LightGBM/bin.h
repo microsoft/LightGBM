@@ -303,7 +303,7 @@ class Bin {
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
 
 
-  virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
+  virtual void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
   /*!
   * \brief Get bin iterator of this bin for specific feature
   * \param min_bin min_bin of current used feature
@@ -458,7 +458,7 @@ class MultiValBin {
 
   virtual void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t>& values) = 0;
 
-  virtual void CopySubset(const MultiValBin* full_bin,
+  virtual void CopySubrow(const MultiValBin* full_bin,
                           const data_size_t* used_indices,
                           data_size_t num_used_indices) = 0;
 
@@ -467,16 +467,16 @@ class MultiValBin {
                                   double estimate_element_per_row) const = 0;
 
 
-  virtual void CopySubFeature(const MultiValBin* full_bin,
-                              const std::vector<int>& used_feature_index,
-                              const std::vector<uint32_t>& lower,
-                              const std::vector<uint32_t>& upper,
-                              const std::vector<uint32_t>& delta) = 0;
+  virtual void CopySubcol(const MultiValBin* full_bin,
+                          const std::vector<int>& used_feature_index,
+                          const std::vector<uint32_t>& lower,
+                          const std::vector<uint32_t>& upper,
+                          const std::vector<uint32_t>& delta) = 0;
 
   virtual void ReSize(data_size_t num_data, int num_bin, int num_feature,
                       double estimate_element_per_row) = 0;
 
-  virtual void CopySubsetAndSubFeature(
+  virtual void CopySubrowAndSubcol(
       const MultiValBin* full_bin, const data_size_t* used_indices,
       data_size_t num_used_indices, const std::vector<int>& used_feature_index,
       const std::vector<uint32_t>& lower, const std::vector<uint32_t>& upper,

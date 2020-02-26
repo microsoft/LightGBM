@@ -236,7 +236,7 @@ void GBDT::Bagging(int iter) {
     } else {
       // get subset
       tmp_subset_->ReSize(bag_data_cnt_);
-      tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(),
+      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                               bag_data_cnt_, false);
       tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                     bag_data_cnt_);

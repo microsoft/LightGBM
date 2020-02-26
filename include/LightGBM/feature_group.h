@@ -174,12 +174,12 @@ class FeatureGroup {
     }
   }
 
-  inline void CopySubset(const FeatureGroup* full_feature, const data_size_t* used_indices, data_size_t num_used_indices) {
+  inline void CopySubrow(const FeatureGroup* full_feature, const data_size_t* used_indices, data_size_t num_used_indices) {
     if (!is_multi_val_) {
-      bin_data_->CopySubset(full_feature->bin_data_.get(), used_indices, num_used_indices);
+      bin_data_->CopySubrow(full_feature->bin_data_.get(), used_indices, num_used_indices);
     } else {
       for (int i = 0; i < num_feature_; ++i) {
-        multi_bin_data_[i]->CopySubset(full_feature->multi_bin_data_[i].get(), used_indices, num_used_indices);
+        multi_bin_data_[i]->CopySubrow(full_feature->multi_bin_data_[i].get(), used_indices, num_used_indices);
       }
     }
   }

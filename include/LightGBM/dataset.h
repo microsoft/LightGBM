@@ -280,16 +280,16 @@ struct TrainingTempState {
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
       hist_buf;
   int num_bin_aligned;
-  bool use_subfeature;
+  bool is_use_subcol = false;
+  bool is_use_subrow = false;
+  bool is_subrow_copied = false;
+  const data_size_t* bagging_use_indices;
+  data_size_t bagging_indices_cnt;
   std::unique_ptr<MultiValBin> multi_val_bin;
-  std::unique_ptr<MultiValBin> multi_val_bin_subfeature;
+  std::unique_ptr<MultiValBin> multi_val_bin_subset;
   std::vector<uint32_t> hist_move_src;
   std::vector<uint32_t> hist_move_dest;
   std::vector<uint32_t> hist_move_size;
-  bool bagging_use_subset = false;
-  bool is_subset_copied = false;
-  const data_size_t* bagging_use_indices;
-  data_size_t bagging_indices_cnt;
 
   void SetMultiValBin(MultiValBin* bin) {
     if (bin == nullptr) {
@@ -309,14 +309,14 @@ struct TrainingTempState {
   }
 
   hist_t* TempBuf() {
-    if (!use_subfeature) {
+    if (!is_use_subcol) {
       return nullptr;
     }
     return hist_buf.data() + hist_buf.size() - num_bin_aligned * 2;
   }
 
   void HistMove(const hist_t* src, hist_t* dest) {
-    if (!use_subfeature) {
+    if (!is_use_subcol) {
       return;
     }
 #pragma omp parallel for schedule(static)
@@ -443,7 +443,7 @@ class Dataset {
   }
   void ReSize(data_size_t num_data);
 
-  void CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
+  void CopySubrow(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
   MultiValBin* GetMultiBinFromSparseFeatures() const;
 

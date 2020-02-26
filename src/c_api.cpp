@@ -1059,7 +1059,7 @@ int LGBM_DatasetGetSubset(
   }
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
   ret->CopyFeatureMapperFrom(full_dataset);
-  ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
+  ret->CopySubrow(full_dataset, used_row_indices, num_used_row_indices, true);
   *out = ret.release();
   API_END();
 }

@@ -771,7 +771,7 @@ void Dataset::ReSize(data_size_t num_data) {
   }
 }
 
-void Dataset::CopySubset(const Dataset* fullset,
+void Dataset::CopySubrow(const Dataset* fullset,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices, bool need_meta_data) {
   CHECK(num_used_indices == num_data_);
@@ -779,7 +779,7 @@ void Dataset::CopySubset(const Dataset* fullset,
 #pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
     OMP_LOOP_EX_BEGIN();
-    feature_groups_[group]->CopySubset(fullset->feature_groups_[group].get(),
+    feature_groups_[group]->CopySubrow(fullset->feature_groups_[group].get(),
                                        used_indices, num_used_indices);
     OMP_LOOP_EX_END();
   }
@@ -1045,7 +1045,7 @@ void Dataset::DumpTextFile(const char* text_filename) {
 void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
                         bool is_colwise, TrainingTempState* temp_state) const {
   Common::FunctionTimer fun_time("Dataset::InitTrain", global_timer);
-  temp_state->use_subfeature = false;
+  temp_state->is_use_subcol = false;
   if (temp_state->multi_val_bin == nullptr) {
     return;
   }
@@ -1089,27 +1089,27 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   const double k_subfeature_threshold = 0.6;
   if (sum_used_dense_ratio >= sum_dense_ratio * k_subfeature_threshold) {
     // only need to copy subset
-    if (temp_state->bagging_use_subset && !temp_state->is_subset_copied) {
-      if (temp_state->multi_val_bin_subfeature == nullptr) {
-        temp_state->multi_val_bin_subfeature.reset(
+    if (temp_state->is_use_subrow && !temp_state->is_subrow_copied) {
+      if (temp_state->multi_val_bin_subset == nullptr) {
+        temp_state->multi_val_bin_subset.reset(
             temp_state->multi_val_bin->CreateLike(
                 temp_state->bagging_indices_cnt,
                 temp_state->multi_val_bin->num_bin(), total,
                 temp_state->multi_val_bin->num_element_per_row()));
       } else {
-        temp_state->multi_val_bin_subfeature->ReSize(
+        temp_state->multi_val_bin_subset->ReSize(
             temp_state->bagging_indices_cnt,
             temp_state->multi_val_bin->num_bin(), total,
             temp_state->multi_val_bin->num_element_per_row());
       }
-      temp_state->multi_val_bin_subfeature->CopySubset(
+      temp_state->multi_val_bin_subset->CopySubrow(
           temp_state->multi_val_bin.get(), temp_state->bagging_use_indices,
           temp_state->bagging_indices_cnt);
       // avoid to copy subset many times
-      temp_state->is_subset_copied = true;
+      temp_state->is_subrow_copied = true;
     }
   } else {
-    temp_state->use_subfeature = true;
+    temp_state->is_use_subcol = true;
     std::vector<uint32_t> upper_bound;
     std::vector<uint32_t> lower_bound;
     std::vector<uint32_t> delta;
@@ -1171,41 +1171,41 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     // avoid out of range
     lower_bound.push_back(num_total_bin);
     upper_bound.push_back(num_total_bin);
-    if (temp_state->multi_val_bin_subfeature == nullptr) {
-      if (temp_state->bagging_use_subset) {
-        temp_state->multi_val_bin_subfeature.reset(
+    if (temp_state->multi_val_bin_subset == nullptr) {
+      if (temp_state->is_use_subrow) {
+        temp_state->multi_val_bin_subset.reset(
             temp_state->multi_val_bin->CreateLike(
                 temp_state->bagging_indices_cnt, new_num_total_bin, num_used,
                 sum_used_dense_ratio));
       } else {
-        temp_state->multi_val_bin_subfeature.reset(
+        temp_state->multi_val_bin_subset.reset(
             temp_state->multi_val_bin->CreateLike(
                 num_data_, new_num_total_bin, num_used, sum_used_dense_ratio));
       }
     } else {
-      if (temp_state->bagging_use_subset) {
-        temp_state->multi_val_bin_subfeature->ReSize(
+      if (temp_state->is_use_subrow) {
+        temp_state->multi_val_bin_subset->ReSize(
             temp_state->bagging_indices_cnt, new_num_total_bin, num_used,
             sum_used_dense_ratio);
       } else {
-        temp_state->multi_val_bin_subfeature->ReSize(
+        temp_state->multi_val_bin_subset->ReSize(
             num_data_, new_num_total_bin, num_used, sum_used_dense_ratio);
       }
     }
-    if (temp_state->bagging_use_subset) {
-      temp_state->multi_val_bin_subfeature->CopySubsetAndSubFeature(
+    if (temp_state->is_use_subrow) {
+      temp_state->multi_val_bin_subset->CopySubrowAndSubcol(
           temp_state->multi_val_bin.get(), temp_state->bagging_use_indices,
           temp_state->bagging_indices_cnt, used_feature_index, lower_bound,
           upper_bound, delta);
       // may need to recopy subset
-      temp_state->is_subset_copied = false;
+      temp_state->is_subrow_copied = false;
     } else {
-      temp_state->multi_val_bin_subfeature->CopySubFeature(
+      temp_state->multi_val_bin_subset->CopySubcol(
           temp_state->multi_val_bin.get(), used_feature_index, lower_bound,
           upper_bound, delta);
     }
   }
-  temp_state->bagging_use_subset = false;
+  temp_state->is_use_subrow = false;
 }
 
 void Dataset::ConstructHistogramsMultiVal(
@@ -1214,9 +1214,10 @@ void Dataset::ConstructHistogramsMultiVal(
     TrainingTempState* temp_state, hist_t* hist_data) const {
   Common::FunctionTimer fun_time("Dataset::ConstructHistogramsMultiVal",
                                  global_timer);
-  const auto multi_val_bin = temp_state->use_subfeature
-                                 ? temp_state->multi_val_bin_subfeature.get()
-                                 : temp_state->multi_val_bin.get();
+  const auto multi_val_bin =
+      (temp_state->is_use_subcol || temp_state->is_use_subrow)
+          ? temp_state->multi_val_bin_subset.get()
+          : temp_state->multi_val_bin.get();
   if (multi_val_bin == nullptr) {
     return;
   }
@@ -1239,7 +1240,7 @@ void Dataset::ConstructHistogramsMultiVal(
     temp_state->hist_buf.resize(buf_size);
   }
   auto origin_hist_data = hist_data;
-  if (temp_state->use_subfeature) {
+  if (temp_state->is_use_subcol) {
     hist_data = temp_state->TempBuf();
   }
   OMP_INIT_EX();

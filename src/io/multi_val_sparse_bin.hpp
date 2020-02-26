@@ -192,40 +192,6 @@ class MultiValSparseBin : public MultiValBin {
                                                  nullptr, out);
   }
 
-  void CopySubset(const MultiValBin* full_bin, const data_size_t* used_indices,
-                  data_size_t num_used_indices) override {
-    const auto other =
-        reinterpret_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
-    int n_block = 1;
-    data_size_t block_size = num_used_indices;
-    Threading::BlockInfo<data_size_t>(static_cast<int>(t_data_.size() + 1),
-                                      num_used_indices, 1024, &n_block,
-                                      &block_size);
-    std::vector<INDEX_T> sizes(t_data_.size() + 1, 0);
-    const int pre_alloc_size = 50;
-#pragma omp parallel for schedule(static, 1)
-    for (int tid = 0; tid < n_block; ++tid) {
-      data_size_t start = tid * block_size;
-      data_size_t end = std::min(num_used_indices, start + block_size);
-      auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
-      INDEX_T size = 0;
-      for (data_size_t i = start; i < end; ++i) {
-        const auto j_start = other->RowPtr(used_indices[i]);
-        const auto j_end = other->RowPtr(used_indices[i] + 1);
-        if (size + (j_end - j_start) > static_cast<INDEX_T>(buf.size())) {
-          buf.resize(size + (j_end - j_start) * pre_alloc_size);
-        }
-        const auto pre_size = size;
-        for (auto j = j_start; j < j_end; ++j) {
-          buf[size++] = other->data_[j];
-        }
-        row_ptr_[i + 1] = size - pre_size;
-      }
-      sizes[tid] = size;
-    }
-    MergeData(sizes.data());
-  }
-
   MultiValBin* CreateLike(data_size_t num_data, int num_bin, int,
                           double estimate_element_per_row) const override {
     return new MultiValSparseBin<INDEX_T, VAL_T>(num_data, num_bin,
@@ -255,12 +221,17 @@ class MultiValSparseBin : public MultiValBin {
     }
   }
 
-  void CopySubFeature(const MultiValBin* full_bin, const std::vector<int>&,
-                      const std::vector<uint32_t>& lower,
-                      const std::vector<uint32_t>& upper,
-                      const std::vector<uint32_t>& delta) override {
+  template <bool SUBROW, bool SUBCOL>
+  void CopyInner(const MultiValBin* full_bin, const data_size_t* used_indices,
+                 data_size_t num_used_indices,
+                 const std::vector<uint32_t>& lower,
+                 const std::vector<uint32_t>& upper,
+                 const std::vector<uint32_t>& delta) {
     const auto other =
         reinterpret_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
+    if (SUBROW) {
+      CHECK(num_data_ == num_used_indices);
+    }
     int n_block = 1;
     data_size_t block_size = num_data_;
     Threading::BlockInfo<data_size_t>(static_cast<int>(t_data_.size() + 1),
@@ -274,20 +245,26 @@ class MultiValSparseBin : public MultiValBin {
       auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
       INDEX_T size = 0;
       for (data_size_t i = start; i < end; ++i) {
-        const auto j_start = other->RowPtr(i);
-        const auto j_end = other->RowPtr(i + 1);
+        const auto j_start =
+            SUBROW ? other->RowPtr(used_indices[i]) : other->RowPtr(i);
+        const auto j_end =
+            SUBROW ? other->RowPtr(used_indices[i] + 1) : other->RowPtr(i + 1);
         if (size + (j_end - j_start) > static_cast<INDEX_T>(buf.size())) {
           buf.resize(size + (j_end - j_start) * pre_alloc_size);
         }
         int k = 0;
         const auto pre_size = size;
         for (auto j = j_start; j < j_end; ++j) {
-          auto val = other->data_[j];
-          while (val >= upper[k]) {
-            ++k;
-          }
-          if (val >= lower[k]) {
-            buf[size++] = static_cast<VAL_T>(val - delta[k]);
+          const auto val = other->data_[j];
+          if (SUBCOL) {
+            while (val >= upper[k]) {
+              ++k;
+            }
+            if (val >= lower[k]) {
+              buf[size++] = static_cast<VAL_T>(val - delta[k]);
+            }
+          } else {
+            buf[size++] = val;
           }
         }
         row_ptr_[i + 1] = size - pre_size;
@@ -297,50 +274,29 @@ class MultiValSparseBin : public MultiValBin {
     MergeData(sizes.data());
   }
 
-  void CopySubsetAndSubFeature(const MultiValBin* full_bin,
-                               const data_size_t* used_indices,
-                               data_size_t num_used_indices,
-                               const std::vector<int>&,
-                               const std::vector<uint32_t>& lower,
-                               const std::vector<uint32_t>& upper,
-                               const std::vector<uint32_t>& delta) override {
-    const auto other =
-        reinterpret_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
-    int n_block = 1;
-    data_size_t block_size = num_used_indices;
-    Threading::BlockInfo<data_size_t>(static_cast<int>(t_data_.size() + 1),
-                                      num_used_indices, 1024, &n_block,
-                                      &block_size);
-    std::vector<INDEX_T> sizes(t_data_.size() + 1, 0);
-    const int pre_alloc_size = 50;
-#pragma omp parallel for schedule(static, 1)
-    for (int tid = 0; tid < n_block; ++tid) {
-      data_size_t start = tid * block_size;
-      data_size_t end = std::min(num_used_indices, start + block_size);
-      auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
-      INDEX_T size = 0;
-      for (data_size_t i = start; i < end; ++i) {
-        const auto j_start = other->RowPtr(used_indices[i]);
-        const auto j_end = other->RowPtr(used_indices[i] + 1);
-        if (size + (j_end - j_start) > static_cast<INDEX_T>(buf.size())) {
-          buf.resize(size + (j_end - j_start) * pre_alloc_size);
-        }
-        int k = 0;
-        const auto pre_size = size;
-        for (auto j = j_start; j < j_end; ++j) {
-          auto val = other->data_[j];
-          while (val >= upper[k]) {
-            ++k;
-          }
-          if (val >= lower[k]) {
-            buf[size++] = static_cast<VAL_T>(val - delta[k]);
-          }
-        }
-        row_ptr_[i + 1] = size - pre_size;
-      }
-      sizes[tid] = size;
-    }
-    MergeData(sizes.data());
+  void CopySubrow(const MultiValBin* full_bin, const data_size_t* used_indices,
+                  data_size_t num_used_indices) override {
+    CopyInner<true, false>(full_bin, used_indices, num_used_indices,
+                           std::vector<uint32_t>(), std::vector<uint32_t>(),
+                           std::vector<uint32_t>());
+  }
+
+  void CopySubcol(const MultiValBin* full_bin, const std::vector<int>&,
+                  const std::vector<uint32_t>& lower,
+                  const std::vector<uint32_t>& upper,
+                  const std::vector<uint32_t>& delta) override {
+    CopyInner<true, false>(full_bin, nullptr, num_data_, lower, upper, delta);
+  }
+
+  void CopySubrowAndSubcol(const MultiValBin* full_bin,
+                           const data_size_t* used_indices,
+                           data_size_t num_used_indices,
+                           const std::vector<int>&,
+                           const std::vector<uint32_t>& lower,
+                           const std::vector<uint32_t>& upper,
+                           const std::vector<uint32_t>& delta) override {
+    CopyInner<true, true>(full_bin, used_indices, num_used_indices, lower,
+                          upper, delta);
   }
 
   inline INDEX_T RowPtr(data_size_t idx) const { return row_ptr_[idx]; }
