@@ -136,7 +136,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -161,7 +161,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <OmitFramePointers>true</OmitFramePointers>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -181,7 +181,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <OmitFramePointers>true</OmitFramePointers>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -243,7 +243,6 @@
     <ClInclude Include="..\src\network\socket_wrapper.hpp" />
     <ClInclude Include="..\src\objective\binary_objective.hpp" />
     <ClInclude Include="..\src\objective\rank_objective.hpp" />
-    <ClInclude Include="..\src\objective\rank_xendcg_objective.hpp" />
     <ClInclude Include="..\src\objective\regression_objective.hpp" />
     <ClInclude Include="..\src\objective\multiclass_objective.hpp" />
     <ClInclude Include="..\src\objective\xentropy_objective.hpp" />
