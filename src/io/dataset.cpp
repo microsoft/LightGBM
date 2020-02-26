@@ -604,7 +604,10 @@ TrainingShareStates* Dataset::GetShareStates(
         "the same time");
   }
   if (num_groups_ <= 0) {
-    return nullptr;
+    TrainingShareStates* share_state = new TrainingShareStates();
+    share_state->is_colwise = true;
+    share_state->is_constant_hessian = is_constant_hessian;
+    return share_state;
   }
   if (force_colwise) {
     TrainingShareStates* share_state = new TrainingShareStates();
