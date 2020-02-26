@@ -1049,7 +1049,6 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   if (temp_state->multi_val_bin == nullptr) {
     return;
   }
-  global_timer.Start("Dataset::InitTrain.Prep");
   double sum_used_dense_ratio = 0.0;
   double sum_dense_ratio = 0.0;
   int num_used = 0;
@@ -1087,34 +1086,75 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
       ++total;
     }
   }
-  global_timer.Stop("Dataset::InitTrain.Prep");
   const double k_subfeature_threshold = 0.6;
   if (sum_used_dense_ratio >= sum_dense_ratio * k_subfeature_threshold) {
-    return;
-  }
-  temp_state->use_subfeature = true;
-  global_timer.Start("Dataset::InitTrain.Prep");
-  std::vector<uint32_t> upper_bound;
-  std::vector<uint32_t> lower_bound;
-  std::vector<uint32_t> delta;
-  temp_state->hist_move_src.clear();
-  temp_state->hist_move_dest.clear();
-  temp_state->hist_move_size.clear();
+    // only need to copy subset
+    if (temp_state->bagging_use_subset && !temp_state->is_subset_copied) {
+      if (temp_state->multi_val_bin_subfeature == nullptr) {
+        temp_state->multi_val_bin_subfeature.reset(
+            temp_state->multi_val_bin->CreateLike(
+                temp_state->bagging_indices_cnt,
+                temp_state->multi_val_bin->num_bin(), total,
+                temp_state->multi_val_bin->num_element_per_row()));
+      } else {
+        temp_state->multi_val_bin_subfeature->ReSize(
+            temp_state->bagging_indices_cnt,
+            temp_state->multi_val_bin->num_bin(), total,
+            temp_state->multi_val_bin->num_element_per_row());
+      }
+      temp_state->multi_val_bin_subfeature->CopySubset(
+          temp_state->multi_val_bin.get(), temp_state->bagging_use_indices,
+          temp_state->bagging_indices_cnt);
+      // avoid to copy subset many times
+      temp_state->is_subset_copied = true;
+    }
+  } else {
+    temp_state->use_subfeature = true;
+    std::vector<uint32_t> upper_bound;
+    std::vector<uint32_t> lower_bound;
+    std::vector<uint32_t> delta;
+    temp_state->hist_move_src.clear();
+    temp_state->hist_move_dest.clear();
+    temp_state->hist_move_size.clear();
 
-  int num_total_bin = 1;
-  int new_num_total_bin = 1;
+    int num_total_bin = 1;
+    int new_num_total_bin = 1;
 
-  for (int i = 0; i < num_groups_; ++i) {
-    int f_start = group_feature_start_[i];
-    if (feature_groups_[i]->is_multi_val_) {
-      for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
-        const auto& bin_mapper = feature_groups_[i]->bin_mappers_[j];
-        int cur_num_bin = bin_mapper->num_bin();
-        if (bin_mapper->GetMostFreqBin() == 0) {
-          cur_num_bin -= 1;
+    for (int i = 0; i < num_groups_; ++i) {
+      int f_start = group_feature_start_[i];
+      if (feature_groups_[i]->is_multi_val_) {
+        for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
+          const auto& bin_mapper = feature_groups_[i]->bin_mappers_[j];
+          int cur_num_bin = bin_mapper->num_bin();
+          if (bin_mapper->GetMostFreqBin() == 0) {
+            cur_num_bin -= 1;
+          }
+          num_total_bin += cur_num_bin;
+          if (is_feature_used[f_start + j]) {
+            new_num_total_bin += cur_num_bin;
+
+            lower_bound.push_back(num_total_bin - cur_num_bin);
+            upper_bound.push_back(num_total_bin);
+
+            temp_state->hist_move_src.push_back(
+                (new_num_total_bin - cur_num_bin) * 2);
+            temp_state->hist_move_dest.push_back(
+                (num_total_bin - cur_num_bin) * 2);
+            temp_state->hist_move_size.push_back(cur_num_bin * 2);
+            delta.push_back(num_total_bin - new_num_total_bin);
+          }
         }
+      } else if (!is_colwise) {
+        bool is_group_used = false;
+        for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
+          if (is_feature_used[f_start + j]) {
+            is_group_used = true;
+            break;
+          }
+        }
+        int cur_num_bin = feature_groups_[i]->bin_offsets_.back() - 1;
         num_total_bin += cur_num_bin;
-        if (is_feature_used[f_start + j]) {
+        if (is_group_used) {
           new_num_total_bin += cur_num_bin;
 
           lower_bound.push_back(num_total_bin - cur_num_bin);
@@ -1122,55 +1162,50 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
 
           temp_state->hist_move_src.push_back(
               (new_num_total_bin - cur_num_bin) * 2);
-          temp_state->hist_move_dest.push_back(
-              (num_total_bin - cur_num_bin) * 2);
+          temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) * 2);
           temp_state->hist_move_size.push_back(cur_num_bin * 2);
           delta.push_back(num_total_bin - new_num_total_bin);
         }
       }
-    } else if (!is_colwise) {
-      bool is_group_used = false;
-      for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
-        if (is_feature_used[f_start + j]) {
-          is_group_used = true;
-          break;
-        }
+    }
+    // avoid out of range
+    lower_bound.push_back(num_total_bin);
+    upper_bound.push_back(num_total_bin);
+    if (temp_state->multi_val_bin_subfeature == nullptr) {
+      if (temp_state->bagging_use_subset) {
+        temp_state->multi_val_bin_subfeature.reset(
+            temp_state->multi_val_bin->CreateLike(
+                temp_state->bagging_indices_cnt, new_num_total_bin, num_used,
+                sum_used_dense_ratio));
+      } else {
+        temp_state->multi_val_bin_subfeature.reset(
+            temp_state->multi_val_bin->CreateLike(
+                num_data_, new_num_total_bin, num_used, sum_used_dense_ratio));
       }
-      int cur_num_bin = feature_groups_[i]->bin_offsets_.back() - 1;
-      num_total_bin += cur_num_bin;
-      if (is_group_used) {
-        new_num_total_bin += cur_num_bin;
-
-        lower_bound.push_back(num_total_bin - cur_num_bin);
-        upper_bound.push_back(num_total_bin);
-
-        temp_state->hist_move_src.push_back(
-            (new_num_total_bin - cur_num_bin) * 2);
-        temp_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) * 2);
-        temp_state->hist_move_size.push_back(cur_num_bin * 2);
-        delta.push_back(num_total_bin - new_num_total_bin);
+    } else {
+      if (temp_state->bagging_use_subset) {
+        temp_state->multi_val_bin_subfeature->ReSize(
+            temp_state->bagging_indices_cnt, new_num_total_bin, num_used,
+            sum_used_dense_ratio);
+      } else {
+        temp_state->multi_val_bin_subfeature->ReSize(
+            num_data_, new_num_total_bin, num_used, sum_used_dense_ratio);
       }
     }
+    if (temp_state->bagging_use_subset) {
+      temp_state->multi_val_bin_subfeature->CopySubsetAndSubFeature(
+          temp_state->multi_val_bin.get(), temp_state->bagging_use_indices,
+          temp_state->bagging_indices_cnt, used_feature_index, lower_bound,
+          upper_bound, delta);
+      // may need to recopy subset
+      temp_state->is_subset_copied = false;
+    } else {
+      temp_state->multi_val_bin_subfeature->CopySubFeature(
+          temp_state->multi_val_bin.get(), used_feature_index, lower_bound,
+          upper_bound, delta);
+    }
   }
-  // avoid out of range
-  lower_bound.push_back(num_total_bin);
-  upper_bound.push_back(num_total_bin);
-  global_timer.Stop("Dataset::InitTrain.Prep");
-  global_timer.Start("Dataset::InitTrain.Resize");
-  if (temp_state->multi_val_bin_subfeature == nullptr) {
-    temp_state->multi_val_bin_subfeature.reset(
-        temp_state->multi_val_bin->CreateLike(new_num_total_bin, num_used,
-                                              sum_used_dense_ratio));
-  } else {
-    temp_state->multi_val_bin_subfeature->ReSizeForSubFeature(
-        new_num_total_bin, num_used, sum_used_dense_ratio);
-  }
-  global_timer.Stop("Dataset::InitTrain.Resize");
-  global_timer.Start("Dataset::InitTrain.CopySubFeature");
-  temp_state->multi_val_bin_subfeature->CopySubFeature(
-      temp_state->multi_val_bin.get(), used_feature_index, lower_bound,
-      upper_bound, delta);
-  global_timer.Stop("Dataset::InitTrain.CopySubFeature");
+  temp_state->bagging_use_subset = false;
 }
 
 void Dataset::ConstructHistogramsMultiVal(

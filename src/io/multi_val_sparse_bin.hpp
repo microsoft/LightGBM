@@ -47,6 +47,10 @@ class MultiValSparseBin : public MultiValBin {
 
   int num_bin() const override { return num_bin_; }
 
+  double num_element_per_row() const override {
+    return estimate_element_per_row_;
+  }
+
   void PushOneRow(int tid, data_size_t idx,
                   const std::vector<uint32_t>& values) override {
     const int pre_alloc_size = 50;
@@ -106,12 +110,6 @@ class MultiValSparseBin : public MultiValBin {
   }
 
   bool IsSparse() override { return true; }
-
-  void ReSize(data_size_t num_data) override {
-    if (num_data_ != num_data) {
-      num_data_ = num_data;
-    }
-  }
 
 #define ACC_GH(hist, i, g, h)               \
   const auto ti = static_cast<int>(i) << 1; \
@@ -194,33 +192,49 @@ class MultiValSparseBin : public MultiValBin {
                                                  nullptr, out);
   }
 
-  void CopySubset(const Bin* full_bin, const data_size_t* used_indices,
+  void CopySubset(const MultiValBin* full_bin, const data_size_t* used_indices,
                   data_size_t num_used_indices) override {
-    auto other_bin = dynamic_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
-    row_ptr_.resize(num_data_ + 1, 0);
-    INDEX_T estimate_num_data =
-        static_cast<INDEX_T>(estimate_element_per_row_ * 1.1) *
-        static_cast<INDEX_T>(num_data_);
-    data_.clear();
-    data_.reserve(estimate_num_data);
-    for (data_size_t i = 0; i < num_used_indices; ++i) {
-      for (auto j = other_bin->row_ptr_[used_indices[i]];
-           j < other_bin->row_ptr_[used_indices[i] + 1]; ++j) {
-        data_.push_back(other_bin->data_[j]);
+    const auto other =
+        reinterpret_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
+    int n_block = 1;
+    data_size_t block_size = num_used_indices;
+    Threading::BlockInfo<data_size_t>(static_cast<int>(t_data_.size() + 1),
+                                      num_used_indices, 1024, &n_block,
+                                      &block_size);
+    std::vector<INDEX_T> sizes(t_data_.size() + 1, 0);
+    const int pre_alloc_size = 50;
+#pragma omp parallel for schedule(static, 1)
+    for (int tid = 0; tid < n_block; ++tid) {
+      data_size_t start = tid * block_size;
+      data_size_t end = std::min(num_used_indices, start + block_size);
+      auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
+      INDEX_T size = 0;
+      for (data_size_t i = start; i < end; ++i) {
+        const auto j_start = other->RowPtr(used_indices[i]);
+        const auto j_end = other->RowPtr(used_indices[i] + 1);
+        if (size + (j_end - j_start) > static_cast<INDEX_T>(buf.size())) {
+          buf.resize(size + (j_end - j_start) * pre_alloc_size);
+        }
+        const auto pre_size = size;
+        for (auto j = j_start; j < j_end; ++j) {
+          buf[size++] = other->data_[j];
+        }
+        row_ptr_[i + 1] = size - pre_size;
       }
-      row_ptr_[i + 1] = row_ptr_[i] + other_bin->row_ptr_[used_indices[i] + 1] -
-                        other_bin->row_ptr_[used_indices[i]];
+      sizes[tid] = size;
     }
+    MergeData(sizes.data());
   }
 
-  MultiValBin* CreateLike(int num_bin, int,
+  MultiValBin* CreateLike(data_size_t num_data, int num_bin, int,
                           double estimate_element_per_row) const override {
-    return new MultiValSparseBin<INDEX_T, VAL_T>(num_data_, num_bin,
-                                        estimate_element_per_row);
+    return new MultiValSparseBin<INDEX_T, VAL_T>(num_data, num_bin,
+                                                 estimate_element_per_row);
   }
 
-  void ReSizeForSubFeature(int num_bin, int,
-                           double estimate_element_per_row) override {
+  void ReSize(data_size_t num_data, int num_bin, int,
+              double estimate_element_per_row) override {
+    num_data_ = num_data;
     num_bin_ = num_bin;
     estimate_element_per_row_ = estimate_element_per_row;
     INDEX_T estimate_num_data =
@@ -235,6 +249,9 @@ class MultiValSparseBin : public MultiValBin {
       if (static_cast<INDEX_T>(t_data_[i].size()) < avg_num_data) {
         t_data_[i].resize(avg_num_data, 0);
       }
+    }
+    if (num_data_ + 1 > static_cast<data_size_t>(row_ptr_.size())) {
+      row_ptr_.resize(num_data_ + 1);
     }
   }
 
@@ -259,6 +276,52 @@ class MultiValSparseBin : public MultiValBin {
       for (data_size_t i = start; i < end; ++i) {
         const auto j_start = other->RowPtr(i);
         const auto j_end = other->RowPtr(i + 1);
+        if (size + (j_end - j_start) > static_cast<INDEX_T>(buf.size())) {
+          buf.resize(size + (j_end - j_start) * pre_alloc_size);
+        }
+        int k = 0;
+        const auto pre_size = size;
+        for (auto j = j_start; j < j_end; ++j) {
+          auto val = other->data_[j];
+          while (val >= upper[k]) {
+            ++k;
+          }
+          if (val >= lower[k]) {
+            buf[size++] = static_cast<VAL_T>(val - delta[k]);
+          }
+        }
+        row_ptr_[i + 1] = size - pre_size;
+      }
+      sizes[tid] = size;
+    }
+    MergeData(sizes.data());
+  }
+
+  void CopySubsetAndSubFeature(const MultiValBin* full_bin,
+                               const data_size_t* used_indices,
+                               data_size_t num_used_indices,
+                               const std::vector<int>&,
+                               const std::vector<uint32_t>& lower,
+                               const std::vector<uint32_t>& upper,
+                               const std::vector<uint32_t>& delta) override {
+    const auto other =
+        reinterpret_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
+    int n_block = 1;
+    data_size_t block_size = num_used_indices;
+    Threading::BlockInfo<data_size_t>(static_cast<int>(t_data_.size() + 1),
+                                      num_used_indices, 1024, &n_block,
+                                      &block_size);
+    std::vector<INDEX_T> sizes(t_data_.size() + 1, 0);
+    const int pre_alloc_size = 50;
+#pragma omp parallel for schedule(static, 1)
+    for (int tid = 0; tid < n_block; ++tid) {
+      data_size_t start = tid * block_size;
+      data_size_t end = std::min(num_used_indices, start + block_size);
+      auto& buf = (tid == 0) ? data_ : t_data_[tid - 1];
+      INDEX_T size = 0;
+      for (data_size_t i = start; i < end; ++i) {
+        const auto j_start = other->RowPtr(used_indices[i]);
+        const auto j_end = other->RowPtr(used_indices[i] + 1);
         if (size + (j_end - j_start) > static_cast<INDEX_T>(buf.size())) {
           buf.resize(size + (j_end - j_start) * pre_alloc_size);
         }

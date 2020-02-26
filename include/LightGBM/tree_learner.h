@@ -65,13 +65,13 @@ class TreeLearner {
 
   /*!
   * \brief Set bagging data
+  * \param subset subset of bagging
   * \param used_indices Used data indices
   * \param num_data Number of used data
   */
-  virtual void SetBaggingData(const data_size_t* used_indices,
-    data_size_t num_data) = 0;
-
-  virtual bool IsHistColWise() const = 0;
+  virtual void SetBaggingData(const Dataset* subset,
+                              const data_size_t* used_indices,
+                              data_size_t num_data) = 0;
 
   /*!
   * \brief Using last trained tree to predict score then adding to out_score;

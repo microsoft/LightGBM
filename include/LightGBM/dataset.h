@@ -286,6 +286,10 @@ struct TrainingTempState {
   std::vector<uint32_t> hist_move_src;
   std::vector<uint32_t> hist_move_dest;
   std::vector<uint32_t> hist_move_size;
+  bool bagging_use_subset = false;
+  bool is_subset_copied = false;
+  const data_size_t* bagging_use_indices;
+  data_size_t bagging_indices_cnt;
 
   void SetMultiValBin(MultiValBin* bin) {
     if (bin == nullptr) {

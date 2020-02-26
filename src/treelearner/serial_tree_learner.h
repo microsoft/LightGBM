@@ -47,7 +47,11 @@ class SerialTreeLearner: public TreeLearner {
 
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
-  void ResetTrainingData(const Dataset* train_data) override;
+  void ResetTrainingData(const Dataset* train_data) override {
+    ResetTrainingDataInner(train_data, true);
+  }
+
+  void ResetTrainingDataInner(const Dataset* train_data, bool reset_multi_val_bin) ;
 
   void ResetConfig(const Config* config) override;
 
@@ -59,8 +63,17 @@ class SerialTreeLearner: public TreeLearner {
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                           const score_t* gradients, const score_t* hessians) override;
 
-  void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
-    data_partition_->SetUsedDataIndices(used_indices, num_data);
+  void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
+    if (subset == nullptr) {
+      data_partition_->SetUsedDataIndices(used_indices, num_data);
+      temp_state_->bagging_use_subset = false;
+    } else {
+      ResetTrainingDataInner(subset, false);
+      temp_state_->bagging_use_subset = true;
+      temp_state_->is_subset_copied = false;
+      temp_state_->bagging_use_indices = used_indices;
+      temp_state_->bagging_indices_cnt = num_data;
+    }
   }
 
   void AddPredictionToScore(const Tree* tree,
@@ -82,8 +95,6 @@ class SerialTreeLearner: public TreeLearner {
 
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
-
-  bool IsHistColWise() const override { return is_hist_colwise_; }
 
  protected:
   void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
@@ -181,15 +192,11 @@ class SerialTreeLearner: public TreeLearner {
   /*! \brief hessians of current iteration, ordered for cache optimized */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_hessians_;
 #endif
-
-  /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
-  std::vector<char, Common::AlignmentAllocator<char, kAlignedSize>> is_data_in_leaf_;
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
   const Config* config_;
   int num_threads_;
-  std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
   std::unique_ptr<TrainingTempState> temp_state_;
   bool is_hist_colwise_;

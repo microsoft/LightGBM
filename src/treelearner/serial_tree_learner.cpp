@@ -91,8 +91,7 @@ void SerialTreeLearner::GetMultiValBin(const Dataset* dataset, bool is_first_tim
   }
 }
 
-// Todo: optimized bagging for multi-val bin
-void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
+void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool reset_multi_val_bin) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   CHECK(num_features_ == train_data_->num_features());
@@ -104,7 +103,9 @@ void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
   // initialize data partition
   data_partition_->ResetNumData(num_data_);
 
-  GetMultiValBin(train_data_, false);
+  if (reset_multi_val_bin) {
+    GetMultiValBin(train_data_, false);
+  }
 
   // initialize ordered gradients and hessians
   ordered_gradients_.resize(num_data_);

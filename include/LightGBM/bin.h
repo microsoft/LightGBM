@@ -453,23 +453,34 @@ class MultiValBin {
 
   virtual int32_t num_bin() const = 0;
 
-  virtual void ReSize(data_size_t num_data) = 0;
+  virtual double num_element_per_row() const = 0;
+
 
   virtual void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t>& values) = 0;
 
-  virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
+  virtual void CopySubset(const MultiValBin* full_bin,
+                          const data_size_t* used_indices,
+                          data_size_t num_used_indices) = 0;
 
-  virtual void ReSizeForSubFeature(int num_bin, int num_feature,
-                                   double estimate_element_per_row) = 0;
-
-  virtual MultiValBin* CreateLike(int num_bin, int num_feature,
+  virtual MultiValBin* CreateLike(data_size_t num_data, int num_bin,
+                                  int num_feature,
                                   double estimate_element_per_row) const = 0;
+
 
   virtual void CopySubFeature(const MultiValBin* full_bin,
                               const std::vector<int>& used_feature_index,
                               const std::vector<uint32_t>& lower,
                               const std::vector<uint32_t>& upper,
                               const std::vector<uint32_t>& delta) = 0;
+
+  virtual void ReSize(data_size_t num_data, int num_bin, int num_feature,
+                      double estimate_element_per_row) = 0;
+
+  virtual void CopySubsetAndSubFeature(
+      const MultiValBin* full_bin, const data_size_t* used_indices,
+      data_size_t num_used_indices, const std::vector<int>& used_feature_index,
+      const std::vector<uint32_t>& lower, const std::vector<uint32_t>& upper,
+      const std::vector<uint32_t>& delta) = 0;
 
   virtual void ConstructHistogram(
     const data_size_t* data_indices, data_size_t start, data_size_t end,
