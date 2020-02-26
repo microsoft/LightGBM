@@ -725,7 +725,7 @@ namespace LightGBM {
         return new MultiValSparseBin<size_t, uint32_t>(
             num_data, num_bin, estimate_element_per_row);
       }
-    } 
+    }
   }
 
 }  // namespace LightGBM
