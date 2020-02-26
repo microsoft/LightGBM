@@ -277,10 +277,11 @@ class Parser {
 };
 
 struct TrainingShareStates {
-  bool is_hist_colwise = true;
+  bool is_colwise = true;
   bool is_use_subcol = false;
   bool is_use_subrow = false;
   bool is_subrow_copied = false;
+  bool is_constant_hessian = true;
   const data_size_t* bagging_use_indices;
   data_size_t bagging_indices_cnt;
   int num_bin_aligned;
@@ -450,10 +451,10 @@ class Dataset {
 
   MultiValBin* GetMultiBinFromAllFeatures() const;
 
-  TrainingShareStates* TestMultiThreadingMethod(
-    score_t* gradients, score_t* hessians,
-    const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-    bool force_colwise, bool force_rowwise) const;
+  TrainingShareStates* GetShareStates(
+      score_t* gradients, score_t* hessians,
+      const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
+      bool force_colwise, bool force_rowwise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
@@ -487,7 +488,7 @@ class Dataset {
                            const data_size_t* data_indices,
                            data_size_t num_data, const score_t* gradients,
                            const score_t* hessians, score_t* ordered_gradients,
-                           score_t* ordered_hessians, bool is_constant_hessian,
+                           score_t* ordered_hessians,
                            TrainingShareStates* share_state,
                            hist_t* histogram_data) const;
 
@@ -495,7 +496,6 @@ class Dataset {
                                    data_size_t num_data,
                                    const score_t* gradients,
                                    const score_t* hessians,
-                                   bool is_constant_hessian,
                                    TrainingShareStates* share_state,
                                    hist_t* histogram_data) const;
 

@@ -70,7 +70,7 @@ class SerialTreeLearner: public TreeLearner {
       data_partition_->SetUsedDataIndices(used_indices, num_data);
       share_state_->is_use_subrow = false;
     } else {
-      ResetTrainingDataInner(subset, is_constant_hessian_, false);
+      ResetTrainingDataInner(subset, share_state_->is_constant_hessian, false);
       share_state_->is_use_subrow = true;
       share_state_->is_subrow_copied = false;
       share_state_->bagging_use_indices = used_indices;
@@ -105,7 +105,7 @@ class SerialTreeLearner: public TreeLearner {
                                   const LeafSplits* leaf_splits,
                                   SplitInfo* best_split);
 
-  void GetMultiValBin(const Dataset* dataset, bool is_first_time);
+  void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
@@ -199,7 +199,6 @@ class SerialTreeLearner: public TreeLearner {
   /*! \brief config of tree learner*/
   const Config* config_;
   int num_threads_;
-  bool is_constant_hessian_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
