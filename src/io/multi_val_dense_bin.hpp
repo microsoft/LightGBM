@@ -188,7 +188,7 @@ class MultiValDenseBin : public MultiValBin {
                       const std::vector<uint32_t>&,
                       const std::vector<uint32_t>&,
                       const std::vector<uint32_t>& delta) override {
-    CopyInner<true, false>(full_bin, nullptr, num_data_, used_feature_index,
+    CopyInner<false, true>(full_bin, nullptr, num_data_, used_feature_index,
                            delta);
   }
 

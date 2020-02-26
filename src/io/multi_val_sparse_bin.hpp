@@ -285,7 +285,7 @@ class MultiValSparseBin : public MultiValBin {
                   const std::vector<uint32_t>& lower,
                   const std::vector<uint32_t>& upper,
                   const std::vector<uint32_t>& delta) override {
-    CopyInner<true, false>(full_bin, nullptr, num_data_, lower, upper, delta);
+    CopyInner<false, true>(full_bin, nullptr, num_data_, lower, upper, delta);
   }
 
   void CopySubrowAndSubcol(const MultiValBin* full_bin,
