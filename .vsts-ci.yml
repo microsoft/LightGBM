@@ -19,7 +19,7 @@ jobs:
   variables:
     COMPILER: gcc
   pool:
-    vmImage: 'ubuntu-16.04'
+    vmImage: 'ubuntu-latest'
   container: ubuntu1404
   strategy:
     maxParallel: 6
@@ -74,7 +74,7 @@ jobs:
   variables:
     COMPILER: clang
   pool:
-    vmImage: 'macOS-10.13'
+    vmImage: 'macOS-10.14'
   strategy:
     maxParallel: 3
     matrix:
