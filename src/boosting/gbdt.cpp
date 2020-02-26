@@ -697,6 +697,8 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
     tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
     ResetBaggingConfig(config_.get(), true);
+  } else {
+    tree_learner_->ResetIsConstantHessian(is_constant_hessian_);
   }
 }
 

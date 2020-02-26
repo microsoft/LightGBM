@@ -52,8 +52,13 @@ class SerialTreeLearner: public TreeLearner {
     ResetTrainingDataInner(train_data, is_constant_hessian, true);
   }
 
+  void ResetIsConstantHessian(bool is_constant_hessian) override {
+    share_state_->is_constant_hessian = is_constant_hessian;
+  }
+
   void ResetTrainingDataInner(const Dataset* train_data,
-                              bool is_constant_hessian, bool reset_multi_val_bin);
+                              bool is_constant_hessian,
+                              bool reset_multi_val_bin);
 
   void ResetConfig(const Config* config) override;
 

@@ -37,6 +37,8 @@ class TreeLearner {
   */
   virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
+  virtual void ResetIsConstantHessian(bool is_constant_hessian) = 0;
+
   virtual void ResetTrainingData(const Dataset* train_data,
                                  bool is_constant_hessian) = 0;
 

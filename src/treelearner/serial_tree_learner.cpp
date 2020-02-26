@@ -93,7 +93,9 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
   }
 }
 
-void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
+void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
+                                               bool is_constant_hessian,
+                                               bool reset_multi_val_bin) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   CHECK(num_features_ == train_data_->num_features());

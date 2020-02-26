@@ -749,6 +749,14 @@ void GPUTreeLearner::ResetTrainingData(const Dataset* train_data, bool is_consta
   SetupKernelArguments();
 }
 
+void GPUTreeLearner::ResetIsConstantHessian(bool is_constant_hessian) {
+  if (is_constant_hessian != share_state_->is_constant_hessian) {	
+    SerialTreeLearner::ResetIsConstantHessian(is_constant_hessian);
+    BuildGPUKernels();	
+    SetupKernelArguments();	
+  }
+}
+
 void GPUTreeLearner::BeforeTrain() {
   #if GPU_DEBUG >= 2
   printf("Copying intial full gradients and hessians to device\n");
