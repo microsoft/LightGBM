@@ -46,7 +46,7 @@ class GPUTreeLearner: public SerialTreeLearner {
   explicit GPUTreeLearner(const Config* tree_config);
   ~GPUTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
-  void ResetTrainingData(const Dataset* train_data, bool is_constant_hessian) override;
+  void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
   void ResetIsConstantHessian(bool is_constant_hessian);
   Tree* Train(const score_t* gradients, const score_t *hessians,
               const Json& forced_split_json) override;
