@@ -510,20 +510,24 @@ namespace LightGBM {
 
     if (!is_trivial_) {
       default_bin_ = ValueToBin(0);
+      most_freq_bin_ =
+          static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
       if (bin_type_ == BinType::CategoricalBin) {
-        CHECK(default_bin_ > 0);
+        if (most_freq_bin_ == 0) {
+          CHECK(num_bin_ > 1);
+          // FIXME: how to enable `most_freq_bin_ = 0` for categorical features
+          most_freq_bin_ = 1;
+        }
       }
-    }
-    if (!is_trivial_) {
-      most_freq_bin_ = static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
-      // calculate sparse rate
-      sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / total_sample_cnt;
-      const double max_sparse_rate = static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
-      if (most_freq_bin_ != default_bin_ && max_sparse_rate > 0.7f) {
-        sparse_rate_ = max_sparse_rate;
-      } else {
+      const double max_sparse_rate =
+          static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
+      // When most_freq_bin_ != default_bin_, there are some additional data loading costs.
+      // so use most_freq_bin_  = default_bin_ when there is not so sparse
+      if (most_freq_bin_ != default_bin_ && max_sparse_rate < kSparseThreshold) {
         most_freq_bin_ = default_bin_;
       }
+      sparse_rate_ =
+          static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
     } else {
       sparse_rate_ = 1.0f;
     }
