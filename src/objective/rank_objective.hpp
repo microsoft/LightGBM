@@ -69,7 +69,7 @@ class RankingObjective : public ObjectiveFunction {
                                        const double* score, score_t* lambdas,
                                        score_t* hessians) const = 0;
 
-  virtual const char* GetName() const override = 0;
+  const char* GetName() const override = 0;
 
   std::string ToString() const override {
     std::stringstream str_buf;
@@ -91,6 +91,7 @@ class RankingObjective : public ObjectiveFunction {
   /*! \brief Query boundries */
   const data_size_t* query_boundaries_;
 };
+
 /*!
  * \brief Objective function for Lambdrank with NDCG
  */
@@ -262,12 +263,13 @@ class LambdarankNDCG : public RankingObjective {
   double sigmoid_;
   /*! \brief Normalize the lambdas or not */
   bool norm_;
-  /*! \brief truncation position for max ndcg */
+  /*! \brief Truncation position for max DCG */
   int truncation_level_;
   /*! \brief Cache inverse max DCG, speed up calculation */
   std::vector<double> inverse_max_dcgs_;
   /*! \brief Cache result for sigmoid transform to speed up */
   std::vector<double> sigmoid_table_;
+  /*! \brief Gains for labels */
   std::vector<double> label_gain_;
   /*! \brief Number of bins in simoid table */
   size_t _sigmoid_bins = 1024 * 1024;
