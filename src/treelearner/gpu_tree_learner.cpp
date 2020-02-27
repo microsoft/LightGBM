@@ -740,8 +740,8 @@ Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
   return SerialTreeLearner::Train(gradients, hessians, forced_split_json);
 }
 
-void GPUTreeLearner::ResetTrainingData(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
-  SerialTreeLearner::ResetTrainingData(train_data, is_constant_hessian, reset_multi_val_bin);
+void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
+  SerialTreeLearner::ResetTrainingDataInner(train_data, is_constant_hessian, reset_multi_val_bin);
   num_feature_groups_ = train_data_->num_feature_groups();
   // GPU memory has to been reallocated because data may have been changed
   AllocateGPUMemory();
