@@ -523,7 +523,7 @@ namespace LightGBM {
           static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
       // When most_freq_bin_ != default_bin_, there are some additional data loading costs.
       // so use most_freq_bin_  = default_bin_ when there is not so sparse
-      if (most_freq_bin_ != default_bin_ && max_sparse_rate <= 0.7f) {
+      if (most_freq_bin_ != default_bin_ && max_sparse_rate < kSparseThreshold) {
         most_freq_bin_ = default_bin_;
       }
       sparse_rate_ =
