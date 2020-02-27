@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LightGBM", "LightGBM.vcxpro
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-    Debug_DLL|x64 = Debug_DLL|x64
+   Debug_DLL|x64 = Debug_DLL|x64
 		Debug_mpi|x64 = Debug_mpi|x64
 		Debug|x64 = Debug|x64
 		DLL|x64 = DLL|x64
