@@ -53,9 +53,9 @@ class GPUTreeLearner: public SerialTreeLearner {
 
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
     SerialTreeLearner::SetBaggingData(subset, used_indices, num_data);
-    // determine if we are using bagging before we construct the data partition
-    // thus we can start data movement to GPU earlier
-    if (used_indices != nullptr) {
+    if (subset == nullptr && used_indices != nullptr) {
+      // determine if we are using bagging before we construct the data partition
+      // thus we can start data movement to GPU earlier
       if (num_data != num_data_) {
         use_bagging_ = true;
         return;
