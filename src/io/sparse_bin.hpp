@@ -73,12 +73,7 @@ class SparseBin: public Bin {
 
   explicit SparseBin(data_size_t num_data)
     : num_data_(num_data) {
-    int num_threads = 1;
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads = omp_get_num_threads();
-    }
+    int num_threads = omp_get_num_threads();
     push_buffers_.resize(num_threads);
   }
 

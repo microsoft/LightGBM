@@ -21,10 +21,7 @@ class Threading {
   template <typename INDEX_T>
   static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block,
                                int* out_nblock, INDEX_T* block_size) {
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    { num_threads = omp_get_num_threads(); }
+    int num_threads = omp_num_threads();
     BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
                        block_size);
   }
@@ -84,10 +81,7 @@ class ParallelPartitionRunner {
  public:
   ParallelPartitionRunner(INDEX_T num_data, INDEX_T min_block_size)
       : min_block_size_(min_block_size) {
-    num_threads_ = 1;
-#pragma omp parallel
-#pragma omp master
-    { num_threads_ = omp_get_num_threads(); }
+    num_threads_ = omp_get_num_threads();
     left_.resize(num_data);
     if (TWO_BUFFER) {
       right_.resize(num_data);

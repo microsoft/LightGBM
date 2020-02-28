@@ -21,11 +21,6 @@ namespace LightGBM {
 SerialTreeLearner::SerialTreeLearner(const Config* config)
   :config_(config) {
   random_ = Random(config_->feature_fraction_seed);
-  #pragma omp parallel
-  #pragma omp master
-  {
-    num_threads_ = omp_get_num_threads();
-  }
 }
 
 SerialTreeLearner::~SerialTreeLearner() {
@@ -400,8 +395,9 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   Common::FunctionTimer fun_timer(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
-  std::vector<SplitInfo> smaller_best(num_threads_);
-  std::vector<SplitInfo> larger_best(num_threads_);
+  int num_threads = omp_num_threads();
+  std::vector<SplitInfo> smaller_best(num_threads);
+  std::vector<SplitInfo> larger_best(num_threads);
   std::vector<int8_t> smaller_node_used_features(num_features_, 1);
   std::vector<int8_t> larger_node_used_features(num_features_, 1);
   if (config_->feature_fraction_bynode < 1.0f) {
