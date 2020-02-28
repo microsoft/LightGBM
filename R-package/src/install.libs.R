@@ -77,7 +77,7 @@ if (!use_precompile) {
     }
   }
 
-  # Add R CPPFLAGS. Do this in one command with ';' since R
+  # Add R CXXFLAGS. Do this in one command with ';' since R
   # system() call isn't guaranteed to preserve environment from call to call
   cmake_cmd <- paste0(
     "export CXXFLAGS=\"${CXXFLAGS} -DLGB_R_BUILD\";"
