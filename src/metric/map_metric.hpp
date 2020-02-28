@@ -104,7 +104,7 @@ class MapMetric:public Metric {
   }
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // some buffers for multi-threading sum up
-    int num_thread = omp_get_num_threads();
+    int num_thread = OMP_NUM_THREADS();
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_thread; ++i) {
       result_buffer_.emplace_back(eval_at_.size(), 0.0f);

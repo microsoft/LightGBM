@@ -62,7 +62,7 @@ class Predictor {
         num_iteration, predict_leaf_index, predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_.resize(
-        omp_get_num_threads(),
+        OMP_NUM_THREADS(),
         std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(
             num_feature_, 0.0f));
     const int kFeatureThreshold = 100000;

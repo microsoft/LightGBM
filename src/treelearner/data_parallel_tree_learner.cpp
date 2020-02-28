@@ -165,7 +165,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
-  int num_threads = omp_num_threads();
+  int num_threads = OMP_NUM_THREADS();
   std::vector<SplitInfo> smaller_bests_per_thread(num_threads, SplitInfo());
   std::vector<SplitInfo> larger_bests_per_thread(num_threads, SplitInfo());
   std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);

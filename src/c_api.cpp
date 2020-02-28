@@ -1529,7 +1529,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  int num_threads = omp_get_num_threads();
+  int num_threads = OMP_NUM_THREADS();
   int ncol = static_cast<int>(ncol_ptr - 1);
   std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
   for (int i = 0; i < num_threads; ++i) {
