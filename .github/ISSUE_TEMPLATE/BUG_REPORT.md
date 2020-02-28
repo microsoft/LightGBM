@@ -19,7 +19,8 @@ CPU/GPU model:
 
 C++/Python/R version:
 
-LightGBM version or commit hash <!-- please check the latest master branch first -->: 
+<!-- Please check the latest master branch first -->
+LightGBM version or commit hash:
 
 ## Error message
 
