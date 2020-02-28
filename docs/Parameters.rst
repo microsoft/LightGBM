@@ -171,7 +171,7 @@ Core Parameters
 
    -  for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
 
-   -  **Note**: Please **don't** change this during training, especifically when running multiple jobs simultaneously by external packages, otherwise may cause undesible errors.
+   -  **Note**: Please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors.
 
 -  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, aliases: ``device``
 
