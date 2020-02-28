@@ -14,6 +14,7 @@ OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not earlier than 3.5" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
+OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
@@ -69,6 +70,10 @@ endif(USE_SWIG)
 if(USE_R35)
     ADD_DEFINITIONS(-DR_VER_ABOVE_35)
 endif(USE_R35)
+
+if(BUILD_FOR_R)
+    ADD_DEFINITIONS(-DLGB_BUILD_R)
+endif(BUILD_FOR_R)
 
 if(USE_TIMETAG)
     ADD_DEFINITIONS(-DTIMETAG)

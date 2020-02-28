@@ -43,6 +43,7 @@ if (!use_precompile) {
   if (R_ver >= 3.5) {
     cmake_cmd <- paste0(cmake_cmd, " -DUSE_R35=ON ")
   }
+  cmake_cmd <- paste0(cmake_cmd, " -DBUILD_FOR_R=ON ")
 
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
@@ -77,15 +78,8 @@ if (!use_precompile) {
     }
   }
 
-  # Add R CXXFLAGS. Do this in one command with ';' since R
-  # system() call isn't guaranteed to preserve environment from call to call
-  cmake_cmd <- paste0(
-    "export CXXFLAGS=\"${CXXFLAGS} -DLGB_R_BUILD\";"
-    , paste0(cmake_cmd, " ..")
-  )
-
   # Install
-  system(cmake_cmd)
+  system(paste0(cmake_cmd, " .."))
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
   # Makefile. We don't need it here anyway since targets are built serially, so trying
