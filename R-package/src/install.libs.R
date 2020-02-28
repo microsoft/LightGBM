@@ -71,14 +71,21 @@ if (!use_precompile) {
         build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
         cmake_cmd <- paste0(cmake_cmd, local_vs_def)
-        build_cmd <- "cmake --build . --target _lightgbm  --config Release"
+        build_cmd <- "cmake --build . --target _lightgbm --config Release"
         lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
       }
     }
   }
 
+  # Add R CPPFLAGS. Do this in one command with ';' since R
+  # system() call isn't guaranteed to preserve environment from call to call
+  cmake_cmd <- paste0(
+    "export CXXFLAGS=\"${CXXFLAGS} -DLGB_R_BUILD\";"
+    , paste0(cmake_cmd, " ..")
+  )
+
   # Install
-  system(paste0(cmake_cmd, " .."))
+  system(cmake_cmd)
 
   # R CMD check complains about the .NOTPARALLEL directive created in the cmake
   # Makefile. We don't need it here anyway since targets are built serially, so trying
