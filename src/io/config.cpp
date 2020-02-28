@@ -317,6 +317,11 @@ void Config::CheckParamConflict() {
     force_col_wise = true;
     force_row_wise = false;
   }
+  if (is_parallel && monotone_constraints_method == std::string("intermediate")) {
+    // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
+    Log::Warning("cannot use \"intermediate\" monotone constraints in parallel learning, auto set to \"basic\" method.");
+    monotone_constraints_method == "basic";
+  }
 }
 
 std::string Config::ToString() const {

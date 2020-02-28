@@ -24,9 +24,7 @@ Tree::Tree(int max_leaves)
   threshold_.resize(max_leaves_ - 1);
   decision_type_.resize(max_leaves_ - 1, 0);
   split_gain_.resize(max_leaves_ - 1);
-  node_parent_.resize(max_leaves_ - 1);
   leaf_parent_.resize(max_leaves_);
-  leaf_is_in_monotone_subtree_.resize(max_leaves_);
   leaf_value_.resize(max_leaves_);
   leaf_weight_.resize(max_leaves_);
   leaf_count_.resize(max_leaves_);
@@ -40,7 +38,6 @@ Tree::Tree(int max_leaves)
   leaf_value_[0] = 0.0f;
   leaf_weight_[0] = 0.0f;
   leaf_parent_[0] = -1;
-  node_parent_.resize(max_leaves_ - 1);
   shrinkage_ = 1.0f;
   num_cat_ = 0;
   cat_boundaries_.push_back(0);
@@ -54,8 +51,8 @@ Tree::~Tree() {
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
                 int left_cnt, int right_cnt, double left_weight, double right_weight, float gain,
-                MissingType missing_type, bool default_left, bool feature_was_monotone) {
-  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain, feature_was_monotone);
+                MissingType missing_type, bool default_left) {
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
@@ -76,7 +73,7 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
 int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                            const uint32_t* threshold, int num_threshold, double left_value, double right_value,
                            data_size_t left_cnt, data_size_t right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type) {
-  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain, false);
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);

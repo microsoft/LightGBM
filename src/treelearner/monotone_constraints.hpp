@@ -1,31 +1,18 @@
 /*!
  * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_TREELEARNER_MONOTONE_CONSTRAINTS_HPP_
 #define LIGHTGBM_TREELEARNER_MONOTONE_CONSTRAINTS_HPP_
 
-#include <limits>
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <vector>
 #include "split_info.hpp"
 
 namespace LightGBM {
-
-struct CostEfficientGradientBoosting;
-
-struct LearnerState {
-  const Config *config_;
-  const Dataset *train_data_;
-  const Tree *tree;
-  std::unique_ptr<CostEfficientGradientBoosting> &cegb_;
-
-  LearnerState(const Config *config_, const Dataset *train_data_,
-               const Tree *tree,
-               std::unique_ptr<CostEfficientGradientBoosting> &cegb_)
-      : config_(config_), train_data_(train_data_), tree(tree), cegb_(cegb_) {};
-};
 
 struct ConstraintEntry {
   double min = -std::numeric_limits<double>::max();
@@ -59,23 +46,41 @@ struct ConstraintEntry {
   }
 };
 
-template <typename ConstraintEntry>
-class LeafConstraints {
+class LeafConstraintsBase {
  public:
-  explicit LeafConstraints(int num_leaves) : num_leaves_(num_leaves) {
+  virtual ~LeafConstraintsBase(){};
+  virtual const ConstraintEntry &Get(int leaf_idx) const = 0;
+  virtual void Reset() = 0;
+  virtual void BeforeSplit(const Tree *tree, int leaf, int new_leaf,
+                           int8_t monotone_type) = 0;
+  virtual std::vector<int> Update(
+      const Tree *tree, bool is_numerical_split,
+      int leaf, int new_leaf, int8_t monotone_type, double right_output,
+      double left_output, int split_feature, const SplitInfo &split_info,
+      const std::vector<SplitInfo> &best_split_per_leaf) = 0;
+
+  inline static LeafConstraintsBase *Create(const Config *config, int num_leaves);
+};
+
+class BasicLeafConstraints : public LeafConstraintsBase {
+ public:
+  explicit BasicLeafConstraints(int num_leaves) : num_leaves_(num_leaves) {
     entries_.resize(num_leaves_);
-    leaves_to_update.reserve(num_leaves_);
   }
 
-  void Reset() {
-    for (auto& entry : entries_) {
+  void Reset() override {
+    for (auto &entry : entries_) {
       entry.Reset();
     }
   }
 
-  void UpdateConstraintsWithMid(bool is_numerical_split, int leaf, int new_leaf,
-                         int8_t monotone_type, double right_output,
-                         double left_output) {
+  void BeforeSplit(const Tree *, int, int, int8_t) override {}
+
+  std::vector<int> Update(const Tree *,
+                          bool is_numerical_split, int leaf, int new_leaf,
+                          int8_t monotone_type, double right_output,
+                          double left_output, int, const SplitInfo &,
+                          const std::vector<SplitInfo> &) override {
     entries_[new_leaf] = entries_[leaf];
     if (is_numerical_split) {
       double mid = (left_output + right_output) / 2.0f;
@@ -87,6 +92,39 @@ class LeafConstraints {
         entries_[new_leaf].UpdateMin(mid);
       }
     }
+    return std::vector<int>();
+  }
+
+  const ConstraintEntry &Get(int leaf_idx) const { return entries_[leaf_idx]; }
+
+ private:
+  int num_leaves_;
+  std::vector<ConstraintEntry> entries_;
+};
+
+class FastLeafConstraints : public BasicLeafConstraints {
+ public:
+  explicit FastLeafConstraints(const Config *config, int num_leaves)
+      : BasicLeafConstraints(num_leaves), config_(config) {
+    leaf_is_in_monotone_subtree_.resize(num_leaves_, false);
+    node_parent_.resize(num_leaves_, 0);
+    leaves_to_update_.reserve(num_leaves_);
+  }
+
+  void Reset() override {
+    BasicLeafConstraints::Reset();
+    std::fill_n(leaf_is_in_monotone_subtree_.begin(), num_leaves_, false);
+    std::fill_n(node_parent_.begin(), num_leaves_, 0);
+    leaves_to_update_.clear();
+  }
+
+  void BeforeSplit(const Tree *tree, int leaf, int new_leaf,
+                   int8_t monotone_type) override {
+    if (monotone_type != 0 || leaf_is_in_monotone_subtree_[leaf]) {
+      leaf_is_in_monotone_subtree_[leaf] = true;
+      leaf_is_in_monotone_subtree_[new_leaf] = true;
+    }
+    node_parent_[new_leaf - 1] = tree->leaf_parent(leaf);
   }
 
   void UpdateConstraintsWithOutputs(bool is_numerical_split, int leaf,
@@ -104,26 +142,34 @@ class LeafConstraints {
     }
   }
 
-  void GoUpToFindLeavesToUpdate(int node_idx, std::vector<int> &features,
-                                std::vector<uint32_t> &thresholds,
-                                std::vector<bool> &is_in_right_split,
-                                int split_feature, const SplitInfo &split_info,
-                                uint32_t split_threshold,
-                                std::vector<SplitInfo> &best_split_per_leaf_,
-                                LearnerState &learner_state) {
+  std::vector<int> Update(const Tree *tree, bool is_numerical_split, int leaf,
+                          int new_leaf, int8_t monotone_type,
+                          double right_output, double left_output,
+                          int split_feature, const SplitInfo &split_info,
+                          const std::vector<SplitInfo> &best_split_per_leaf) {
+    leaves_to_update_.clear();
+    UpdateConstraintsWithOutputs(is_numerical_split, leaf, new_leaf,
+                                 monotone_type, right_output, left_output);
 
-    int parent_idx = learner_state.tree->node_parent(node_idx);
+    GoUpToFindLeavesToUpdate(tree, tree->leaf_parent(new_leaf), split_feature,
+                             split_info, split_info.threshold,
+                             best_split_per_leaf);
+    return leaves_to_update_;
+  }
+
+  void GoUpToFindLeavesToUpdate(
+      const Tree *tree, int node_idx, std::vector<int> &features,
+      std::vector<uint32_t> &thresholds, std::vector<bool> &is_in_right_split,
+      int split_feature, const SplitInfo &split_info, uint32_t split_threshold,
+      const std::vector<SplitInfo> &best_split_per_leaf) {
+    int parent_idx = node_parent_[node_idx];
     if (parent_idx != -1) {
-      int inner_feature = learner_state.tree->split_feature_inner(parent_idx);
-      int feature = learner_state.tree->split_feature(parent_idx);
-      int8_t monotone_type =
-          learner_state.config_->monotone_constraints[feature];
-      bool is_right_split =
-          learner_state.tree->right_child(parent_idx) == node_idx;
+      int inner_feature = tree->split_feature_inner(parent_idx);
+      int feature = tree->split_feature(parent_idx);
+      int8_t monotone_type = config_->monotone_constraints[feature];
+      bool is_right_split = tree->right_child(parent_idx) == node_idx;
       bool split_contains_new_information = true;
-      bool is_split_numerical =
-          learner_state.train_data_->FeatureBinMapper(inner_feature)
-              ->bin_type() == BinType::NumericalBin;
+      bool is_split_numerical = tree->IsNumericalSplit(node_idx);
 
       // only branches containing leaves that are contiguous to the original
       // leaf need to be updated
@@ -139,57 +185,46 @@ class LeafConstraints {
 
       if (split_contains_new_information) {
         if (monotone_type != 0) {
-          int left_child_idx = learner_state.tree->left_child(parent_idx);
-          int right_child_idx = learner_state.tree->right_child(parent_idx);
+          int left_child_idx = tree->left_child(parent_idx);
+          int right_child_idx = tree->right_child(parent_idx);
           bool left_child_is_curr_idx = (left_child_idx == node_idx);
           int node_idx_to_pass =
               (left_child_is_curr_idx) ? right_child_idx : left_child_idx;
           bool take_min = (monotone_type < 0) ? left_child_is_curr_idx
                                               : !left_child_is_curr_idx;
 
-          GoDownToFindLeavesToUpdate(
-              node_idx_to_pass, features, thresholds, is_in_right_split,
-              take_min, split_feature, split_info, true, true, split_threshold,
-              best_split_per_leaf_,
-              learner_state);
+          GoDownToFindLeavesToUpdate(tree, node_idx_to_pass, features,
+                                     thresholds, is_in_right_split, take_min,
+                                     split_feature, split_info, true, true,
+                                     split_threshold, best_split_per_leaf);
         }
 
-        is_in_right_split.push_back(
-            learner_state.tree->right_child(parent_idx) == node_idx);
-        thresholds.push_back(learner_state.tree->threshold_in_bin(parent_idx));
-        features.push_back(learner_state.tree->split_feature_inner(parent_idx));
+        is_in_right_split.push_back(tree->right_child(parent_idx) == node_idx);
+        thresholds.push_back(tree->threshold_in_bin(parent_idx));
+        features.push_back(tree->split_feature_inner(parent_idx));
       }
 
       if (parent_idx != 0) {
-        LeafConstraints::GoUpToFindLeavesToUpdate(
-            parent_idx, features, thresholds, is_in_right_split, split_feature,
-            split_info, split_threshold, best_split_per_leaf_,
-            learner_state);
+        GoUpToFindLeavesToUpdate(tree, parent_idx, features, thresholds,
+                                 is_in_right_split, split_feature, split_info,
+                                 split_threshold, best_split_per_leaf);
       }
     }
   }
 
   void GoDownToFindLeavesToUpdate(
-      int node_idx, const std::vector<int> &features,
+      const Tree *tree, int node_idx, const std::vector<int> &features,
       const std::vector<uint32_t> &thresholds,
       const std::vector<bool> &is_in_right_split, int maximum,
       int split_feature, const SplitInfo &split_info, bool use_left_leaf,
       bool use_right_leaf, uint32_t split_threshold,
-      std::vector<SplitInfo> &best_split_per_leaf_,
-      LearnerState &learner_state) {
-
+      const std::vector<SplitInfo> &best_split_per_leaf) {
     if (node_idx < 0) {
       int leaf_idx = ~node_idx;
 
-      // if a leaf is at max depth then there is no need to update it
-      int max_depth = learner_state.config_->max_depth;
-      if (learner_state.tree->leaf_depth(leaf_idx) >= max_depth &&
-          max_depth > 0) {
-        return;
-      }
-
-      // splits that are not to be used shall not be updated
-      if (best_split_per_leaf_[leaf_idx].gain == kMinScore) {
+      // splits that are not to be used shall not be updated, included leaf at
+      // max depth
+      if (best_split_per_leaf[leaf_idx].gain == kMinScore) {
         return;
       }
 
@@ -226,18 +261,15 @@ class LeafConstraints {
       if (!something_changed) {
         return;
       }
-      leaves_to_update.push_back(leaf_idx);
+      leaves_to_update_.push_back(leaf_idx);
 
     } else {
       // check if the children are contiguous with the original leaf
       std::pair<bool, bool> keep_going_left_right = ShouldKeepGoingLeftRight(
-          learner_state.tree, node_idx, features, thresholds, is_in_right_split,
-          learner_state.train_data_);
-      int inner_feature = learner_state.tree->split_feature_inner(node_idx);
-      uint32_t threshold = learner_state.tree->threshold_in_bin(node_idx);
-      bool is_split_numerical =
-          learner_state.train_data_->FeatureBinMapper(inner_feature)
-              ->bin_type() == BinType::NumericalBin;
+          tree, node_idx, features, thresholds, is_in_right_split);
+      int inner_feature = tree->split_feature_inner(node_idx);
+      uint32_t threshold = tree->threshold_in_bin(node_idx);
+      bool is_split_numerical = tree->IsNumericalSplit(node_idx);
       bool use_left_leaf_for_update = true;
       bool use_right_leaf_for_update = true;
       if (is_split_numerical && inner_feature == split_feature) {
@@ -250,29 +282,27 @@ class LeafConstraints {
       }
 
       if (keep_going_left_right.first) {
-        GoDownToFindLeavesToUpdate(
-            learner_state.tree->left_child(node_idx), features, thresholds,
-            is_in_right_split, maximum, split_feature, split_info,
-            use_left_leaf, use_right_leaf_for_update && use_right_leaf,
-            split_threshold, best_split_per_leaf_, learner_state);
+        GoDownToFindLeavesToUpdate(tree, tree->left_child(node_idx), features,
+                                   thresholds, is_in_right_split, maximum,
+                                   split_feature, split_info, use_left_leaf,
+                                   use_right_leaf_for_update && use_right_leaf,
+                                   split_threshold, best_split_per_leaf);
       }
       if (keep_going_left_right.second) {
         GoDownToFindLeavesToUpdate(
-            learner_state.tree->right_child(node_idx), features, thresholds,
+            tree, tree->right_child(node_idx), features, thresholds,
             is_in_right_split, maximum, split_feature, split_info,
             use_left_leaf_for_update && use_left_leaf, use_right_leaf,
-            split_threshold, best_split_per_leaf_, learner_state);
+            split_threshold, best_split_per_leaf);
       }
     }
   }
 
-  void GoUpToFindLeavesToUpdate(int node_idx, int split_feature,
-                                const SplitInfo &split_info,
-                                uint32_t split_threshold,
-                                std::vector<SplitInfo> &best_split_per_leaf_,
-                                LearnerState &learner_state) {
-    int depth = learner_state.tree->leaf_depth(
-                    ~learner_state.tree->left_child(node_idx)) - 1;
+  void GoUpToFindLeavesToUpdate(
+      const Tree *tree, int node_idx, int split_feature,
+      const SplitInfo &split_info, uint32_t split_threshold,
+      const std::vector<SplitInfo> &best_split_per_leaf) {
+    int depth = tree->leaf_depth(~tree->left_child(node_idx)) - 1;
 
     std::vector<int> features;
     std::vector<uint32_t> thresholds;
@@ -282,25 +312,24 @@ class LeafConstraints {
     thresholds.reserve(depth);
     is_in_right_split.reserve(depth);
 
-    GoUpToFindLeavesToUpdate(
-        node_idx, features, thresholds, is_in_right_split, split_feature,
-        split_info, split_threshold, best_split_per_leaf_,
-        learner_state);
+    GoUpToFindLeavesToUpdate(tree, node_idx, features, thresholds,
+                             is_in_right_split, split_feature, split_info,
+                             split_threshold, best_split_per_leaf);
   }
 
   std::pair<bool, bool> ShouldKeepGoingLeftRight(
       const Tree *tree, int node_idx, const std::vector<int> &features,
       const std::vector<uint32_t> &thresholds,
-      const std::vector<bool> &is_in_right_split, const Dataset *train_data_) {
+      const std::vector<bool> &is_in_right_split) {
     int inner_feature = tree->split_feature_inner(node_idx);
     uint32_t threshold = tree->threshold_in_bin(node_idx);
-    bool is_split_numerical =
-      train_data_->FeatureBinMapper(inner_feature)->bin_type() == BinType::NumericalBin;
+    bool is_split_numerical = tree->IsNumericalSplit(node_idx);
 
     bool keep_going_right = true;
     bool keep_going_left = true;
-    // left and right nodes are checked to find out if they are contiguous with the original leaf
-    // if so the algorithm should keep going down these nodes to update constraints
+    // left and right nodes are checked to find out if they are contiguous with
+    // the original leaf if so the algorithm should keep going down these nodes
+    // to update constraints
     if (is_split_numerical) {
       for (unsigned int i = 0; i < features.size(); ++i) {
         if (features[i] == inner_feature) {
@@ -316,14 +345,26 @@ class LeafConstraints {
     return std::pair<bool, bool>(keep_going_left, keep_going_right);
   }
 
-  const ConstraintEntry& Get(int leaf_idx) const { return entries_[leaf_idx]; }
-
-  std::vector<int> leaves_to_update;
+  const ConstraintEntry &Get(int leaf_idx) const { return entries_[leaf_idx]; }
 
  private:
+  const Config *config_;
   int num_leaves_;
   std::vector<ConstraintEntry> entries_;
+  std::vector<int> leaves_to_update_;
+  // add parent node information
+  std::vector<int> node_parent_;
+  // Keeps track of the monotone splits above the leaf
+  std::vector<bool> leaf_is_in_monotone_subtree_;
 };
+
+LeafConstraintsBase *LeafConstraintsBase::Create(const Config *config,
+                                                 int num_leaves) {
+  if (config->monotone_constraints_method == "intermediate") {
+    return new FastLeafConstraints(config, num_leaves);
+  }
+  return new BasicLeafConstraints(num_leaves);
+}
 
 }  // namespace LightGBM
 #endif  // LIGHTGBM_TREELEARNER_MONOTONE_CONSTRAINTS_HPP_
