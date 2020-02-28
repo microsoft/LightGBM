@@ -24,9 +24,9 @@
 #include <LightGBM/json11.hpp>
 #include "score_updater.hpp"
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 /*!
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
