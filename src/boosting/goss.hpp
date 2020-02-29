@@ -8,7 +8,6 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/log.h>
-#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <string>
 #include <algorithm>
@@ -57,15 +56,9 @@ class GOSS: public GBDT {
       Log::Fatal("Cannot use bagging in GOSS");
     }
     Log::Info("Using GOSS");
-
+    balanced_bagging_ = false;
     bag_data_indices_.resize(num_data_);
-    tmp_indices_.resize(num_data_);
-    tmp_indice_right_.resize(num_data_);
-    offsets_buf_.resize(num_threads_);
-    left_cnts_buf_.resize(num_threads_);
-    right_cnts_buf_.resize(num_threads_);
-    left_write_pos_buf_.resize(num_threads_);
-    right_write_pos_buf_.resize(num_threads_);
+    bagging_runner_.ReSize(num_data_);
 
     is_use_subset_ = false;
     if (config_->top_rate + config_->other_rate <= 0.5) {
@@ -79,7 +72,7 @@ class GOSS: public GBDT {
     bag_data_cnt_ = num_data_;
   }
 
-  data_size_t BaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer, data_size_t* buffer_right) {
+  data_size_t BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer) override {
     if (cnt <= 0) {
       return 0;
     }
@@ -98,31 +91,32 @@ class GOSS: public GBDT {
 
     score_t multiply = static_cast<score_t>(cnt - top_k) / other_k;
     data_size_t cur_left_cnt = 0;
-    data_size_t cur_right_cnt = 0;
+    data_size_t cur_right_pos = cnt;
     data_size_t big_weight_cnt = 0;
     for (data_size_t i = 0; i < cnt; ++i) {
+      auto cur_idx = start + i;
       score_t grad = 0.0f;
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-        size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
+        size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + cur_idx;
         grad += std::fabs(gradients_[idx] * hessians_[idx]);
       }
       if (grad >= threshold) {
-        buffer[cur_left_cnt++] = start + i;
+        buffer[cur_left_cnt++] = cur_idx;
         ++big_weight_cnt;
       } else {
         data_size_t sampled = cur_left_cnt - big_weight_cnt;
         data_size_t rest_need = other_k - sampled;
         data_size_t rest_all = (cnt - i) - (top_k - big_weight_cnt);
         double prob = (rest_need) / static_cast<double>(rest_all);
-        if (cur_rand->NextFloat() < prob) {
-          buffer[cur_left_cnt++] = start + i;
+        if (bagging_rands_[cur_idx / bagging_rand_block_].NextFloat() < prob) {
+          buffer[cur_left_cnt++] = cur_idx;
           for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-            size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
+            size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + cur_idx;
             gradients_[idx] *= multiply;
             hessians_[idx] *= multiply;
           }
         } else {
-          buffer_right[cur_right_cnt++] = start + i;
+          buffer[--cur_right_pos] = cur_idx;
         }
       }
     }
@@ -135,9 +129,6 @@ class GOSS: public GBDT {
     if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
     GBDT::Bagging(iter);
   }
-
- private:
-  std::vector<data_size_t> tmp_indice_right_;
 };
 
 }  // namespace LightGBM

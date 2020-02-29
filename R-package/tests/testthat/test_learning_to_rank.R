@@ -20,7 +20,7 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         objective = "lambdarank"
         , metric = "ndcg"
         , ndcg_at = ndcg_at
-        , max_position = 3L
+        , lambdarank_truncation_level = 3L
         , learning_rate = 0.001
     )
     model <- lgb.train(
@@ -67,7 +67,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         objective = "lambdarank"
         , metric = "ndcg"
         , ndcg_at = ndcg_at
-        , max_position = 3L
+        , lambdarank_truncation_level = 3L
         , label_gain = "0,1,3"
     )
     nfold <- 4L

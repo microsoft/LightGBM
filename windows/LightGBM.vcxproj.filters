@@ -84,9 +84,6 @@
     <ClInclude Include="..\src\objective\rank_objective.hpp">
       <Filter>src\objective</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\objective\rank_xendcg_objective.hpp">
-      <Filter>src\objective</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\objective\regression_objective.hpp">
       <Filter>src\objective</Filter>
     </ClInclude>
