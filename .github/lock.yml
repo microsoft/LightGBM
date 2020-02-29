@@ -11,7 +11,7 @@ skipCreatedBefore: false
 exemptLabels: ['effectiveness', 'efficiency', 'feature request', 'help wanted']
 
 # Label to add before locking, such as `outdated`. Set to `false` to disable
-lockLabel: true
+lockLabel: false
 
 # Comment to post before locking. Set to `false` to disable
 lockComment: >
