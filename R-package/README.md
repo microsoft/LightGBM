@@ -7,6 +7,7 @@ LightGBM R-package
 * [Examples](#examples)
 * [Testing](#testing)
 * [External Repositories](#external-unofficial-repositories)
+* [Known Issues](#known-issues)
 
 Installation
 ------------
@@ -167,6 +168,6 @@ Projects listed here are not maintained or endorsed by the `LightGBM` developmen
 Known Issues
 ------------
 
-## `error in data.table::data.table()...argument 2 is NULL`
+### `error in data.table::data.table()...argument 2 is NULL`
 
 If you experiencing this error when running `lightgbm`, you may be facing the same issue reported in [#2715](https://github.com/microsoft/LightGBM/issues/2715). If you use `lgb.dl()` to build from source  (i.e. not using pre-compiled dll), you need to upgrade your version of `data.table` to at least  version 1.12.0.
