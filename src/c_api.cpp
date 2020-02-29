@@ -1050,7 +1050,7 @@ int LGBM_DatasetGetSubset(
     omp_set_num_threads(config.num_threads);
   }
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
-  CHECK(num_used_row_indices > 0);
+  CHECK_GT(num_used_row_indices, 0);
   const int32_t lower = 0;
   const int32_t upper = full_dataset->num_data() - 1;
   Common::CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");

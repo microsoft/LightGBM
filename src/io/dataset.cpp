@@ -28,7 +28,7 @@ Dataset::Dataset() {
 }
 
 Dataset::Dataset(data_size_t num_data) {
-  CHECK(num_data > 0);
+  CHECK_GT(num_data, 0);
   data_filename_ = "noname";
   num_data_ = num_data;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
@@ -403,10 +403,10 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     }
   }
   if (!io_config.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) ==
-          io_config.max_bin_by_feature.size());
-    CHECK(*(std::min_element(io_config.max_bin_by_feature.begin(),
-                             io_config.max_bin_by_feature.end())) > 1);
+    CHECK_EQ(static_cast<size_t>(num_total_features_),
+             io_config.max_bin_by_feature.size());
+    CHECK_GT(*(std::min_element(io_config.max_bin_by_feature.begin(),
+                                io_config.max_bin_by_feature.end())), 1);
     max_bin_by_feature_.resize(num_total_features_);
     max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(),
                                io_config.max_bin_by_feature.end());

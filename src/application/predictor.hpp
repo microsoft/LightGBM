@@ -43,8 +43,8 @@ class Predictor {
         "none", LightGBM::PredictionEarlyStopConfig());
     if (early_stop && !boosting->NeedAccuratePrediction()) {
       PredictionEarlyStopConfig pred_early_stop_config;
-      CHECK(early_stop_freq > 0);
-      CHECK(early_stop_margin >= 0);
+      CHECK_GT(early_stop_freq, 0);
+      CHECK_GE(early_stop_margin, 0);
       pred_early_stop_config.margin_threshold = early_stop_margin;
       pred_early_stop_config.round_period = early_stop_freq;
       if (boosting->NumberOfClasses() == 1) {
