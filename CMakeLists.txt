@@ -89,6 +89,8 @@ if(USE_DEBUG)
     ADD_DEFINITIONS(-DDEBUG)
 endif(USE_DEBUG)
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/Library/Frameworks/R.framework/Versions/3.6/Resources/include")
+
 if(USE_MPI)
     find_package(MPI REQUIRED)
     ADD_DEFINITIONS(-DUSE_MPI)
