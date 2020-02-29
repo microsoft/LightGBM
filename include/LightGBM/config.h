@@ -192,7 +192,7 @@ struct Config {
   // desc = do not set it too large if your dataset is small (for instance, do not use 64 threads for a dataset with 10,000 rows)
   // desc = be aware a task manager or any similar CPU monitoring tool might report that cores not being fully utilized. **This is normal**
   // desc = for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
-  // desc = **Note**: Please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors.
+  // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
   // [doc-only]
