@@ -10,7 +10,6 @@
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/threading.h>
 
 #include <chrono>
 #include <ctime>

@@ -30,9 +30,10 @@
 #include <boost/align/aligned_allocator.hpp>
 #endif
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
+
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
 /*!

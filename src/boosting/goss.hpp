@@ -8,7 +8,6 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/log.h>
-#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <string>
 #include <algorithm>
