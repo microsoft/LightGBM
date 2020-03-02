@@ -412,8 +412,8 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   Common::FunctionTimer fun_timer(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
-  std::vector<SplitInfo> smaller_best(temp_state_->num_threads);
-  std::vector<SplitInfo> larger_best(temp_state_->num_threads);
+  std::vector<SplitInfo> smaller_best(share_state_->num_threads);
+  std::vector<SplitInfo> larger_best(share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features(num_features_, 1);
   std::vector<int8_t> larger_node_used_features(num_features_, 1);
   if (config_->feature_fraction_bynode < 1.0f) {
