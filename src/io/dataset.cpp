@@ -1179,15 +1179,13 @@ void Dataset::ConstructHistogramsMultiVal(
   if (multi_val_bin == nullptr) {
     return;
   }
-  int num_threads = OMP_NUM_THREADS();
-
   global_timer.Start("Dataset::sparse_bin_histogram");
   const int num_bin = multi_val_bin->num_bin();
   const int num_bin_aligned =
       (num_bin + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
   int n_data_block = 1;
   int data_block_size = num_data;
-  Threading::BlockInfo<data_size_t>(num_threads, num_data, 1024,
+  Threading::BlockInfo<data_size_t>(temp_state->num_threads, num_data, 1024,
                                     &n_data_block, &data_block_size);
   const size_t buf_size =
       static_cast<size_t>(n_data_block - 1) * num_bin_aligned * 2;
@@ -1234,7 +1232,7 @@ void Dataset::ConstructHistogramsMultiVal(
   global_timer.Start("Dataset::sparse_bin_histogram_merge");
   int n_bin_block = 1;
   int bin_block_size = num_bin;
-  Threading::BlockInfo<data_size_t>(num_threads, num_bin, 512, &n_bin_block,
+  Threading::BlockInfo<data_size_t>(temp_state->num_threads, num_bin, 512, &n_bin_block,
                                     &bin_block_size);
   if (!is_constant_hessian) {
 #pragma omp parallel for schedule(static)

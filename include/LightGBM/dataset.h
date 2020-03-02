@@ -277,6 +277,7 @@ class Parser {
 };
 
 struct TrainingTempState {
+  int num_threads;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
       hist_buf;
   int num_bin_aligned;
@@ -292,7 +293,7 @@ struct TrainingTempState {
       return;
     }
     multi_val_bin.reset(bin);
-    int num_threads = OMP_NUM_THREADS();
+    num_threads = OMP_NUM_THREADS();
     num_bin_aligned =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
