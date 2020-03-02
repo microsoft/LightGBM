@@ -152,7 +152,15 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
-
+  int num_threads = OMP_NUM_THREADS();
+  if (share_state_->num_threads != num_threads && share_state_->num_threads > 0){
+    Log::Warning(
+        "Detect num_threads changed durning traing (from %d to %d), may cause "
+        "unexpected errors.",
+        share_state_->num_threads, num_threads);
+  }
+  share_state_->num_threads = num_threads;
+  
   // some initial works before training
   BeforeTrain();
 
@@ -403,9 +411,8 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   Common::FunctionTimer fun_timer(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
-  int num_threads = OMP_NUM_THREADS();
-  std::vector<SplitInfo> smaller_best(num_threads);
-  std::vector<SplitInfo> larger_best(num_threads);
+  std::vector<SplitInfo> smaller_best(share_state_->num_threads);
+  std::vector<SplitInfo> larger_best(share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features(num_features_, 1);
   std::vector<int8_t> larger_node_used_features(num_features_, 1);
   if (config_->feature_fraction_bynode < 1.0f) {

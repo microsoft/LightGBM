@@ -277,6 +277,7 @@ class Parser {
 };
 
 struct TrainingShareStates {
+  int num_threads = 0;
   bool is_colwise = true;
   bool is_use_subcol = false;
   bool is_use_subrow = false;
@@ -298,7 +299,7 @@ struct TrainingShareStates {
       return;
     }
     multi_val_bin.reset(bin);
-    int num_threads = OMP_NUM_THREADS();
+    num_threads = OMP_NUM_THREADS();
     num_bin_aligned =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
