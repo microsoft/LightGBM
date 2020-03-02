@@ -152,7 +152,6 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
-  is_constant_hessian_ = is_constant_hessian;
   int num_threads = OMP_NUM_THREADS();
   if (share_state_->num_threads != num_threads && share_state_->num_threads > 0){
     Log::Warning(
