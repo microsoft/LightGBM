@@ -159,7 +159,7 @@ class Tree {
 
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
-  inline double Tree::internal_value(int node_idx) const {
+  inline double internal_value(int node_idx) const {
     return internal_value_[node_idx];
   }
 

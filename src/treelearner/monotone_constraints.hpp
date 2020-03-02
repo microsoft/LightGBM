@@ -97,7 +97,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
 
   const ConstraintEntry &Get(int leaf_idx) const { return entries_[leaf_idx]; }
 
- private:
+ protected:
   int num_leaves_;
   std::vector<ConstraintEntry> entries_;
 };
@@ -107,14 +107,14 @@ class FastLeafConstraints : public BasicLeafConstraints {
   explicit FastLeafConstraints(const Config *config, int num_leaves)
       : BasicLeafConstraints(num_leaves), config_(config) {
     leaf_is_in_monotone_subtree_.resize(num_leaves_, false);
-    node_parent_.resize(num_leaves_, 0);
+    node_parent_.resize(num_leaves_ - 1, -1);
     leaves_to_update_.reserve(num_leaves_);
   }
 
   void Reset() override {
     BasicLeafConstraints::Reset();
     std::fill_n(leaf_is_in_monotone_subtree_.begin(), num_leaves_, false);
-    std::fill_n(node_parent_.begin(), num_leaves_, 0);
+    std::fill_n(node_parent_.begin(), num_leaves_ - 1, -1);
     leaves_to_update_.clear();
   }
 
@@ -349,8 +349,6 @@ class FastLeafConstraints : public BasicLeafConstraints {
 
  private:
   const Config *config_;
-  int num_leaves_;
-  std::vector<ConstraintEntry> entries_;
   std::vector<int> leaves_to_update_;
   // add parent node information
   std::vector<int> node_parent_;
