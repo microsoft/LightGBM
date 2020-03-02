@@ -21,11 +21,6 @@ namespace LightGBM {
 SerialTreeLearner::SerialTreeLearner(const Config* config)
   :config_(config) {
   random_ = Random(config_->feature_fraction_seed);
-  #pragma omp parallel
-  #pragma omp master
-  {
-    num_threads_ = omp_get_num_threads();
-  }
 }
 
 SerialTreeLearner::~SerialTreeLearner() {
@@ -99,7 +94,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
                                                bool reset_multi_val_bin) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
-  CHECK(num_features_ == train_data_->num_features());
+  CHECK_EQ(num_features_, train_data_->num_features());
 
   // initialize splits for leaf
   smaller_leaf_splits_->ResetNumData(num_data_);
@@ -252,7 +247,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[used_feature_indices_[i]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK(inner_feature_index >= 0);
+      CHECK_GE(inner_feature_index, 0);
       ret[inner_feature_index] = 1;
     }
   } else if (used_feature_indices_.size() <= 0) {
@@ -264,7 +259,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[sampled_indices[i]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK(inner_feature_index >= 0);
+      CHECK_GE(inner_feature_index, 0);
       ret[inner_feature_index] = 1;
     }
   } else {
@@ -276,7 +271,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[used_feature_indices_[sampled_indices[i]]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK(inner_feature_index >= 0);
+      CHECK_GE(inner_feature_index, 0);
       ret[inner_feature_index] = 1;
     }
   }
@@ -408,8 +403,9 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   Common::FunctionTimer fun_timer(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
-  std::vector<SplitInfo> smaller_best(num_threads_);
-  std::vector<SplitInfo> larger_best(num_threads_);
+  int num_threads = OMP_NUM_THREADS();
+  std::vector<SplitInfo> smaller_best(num_threads);
+  std::vector<SplitInfo> larger_best(num_threads);
   std::vector<int8_t> smaller_node_used_features(num_features_, 1);
   std::vector<int8_t> larger_node_used_features(num_features_, 1);
   if (config_->feature_fraction_bynode < 1.0f) {
@@ -554,7 +550,13 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
 
     // split tree, will return right leaf
     *left_leaf = current_leaf;
+    auto next_leaf_id = tree->NextLeafId();
     if (train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin) {
+      data_partition_->Split(current_leaf, train_data_, inner_feature_index,
+                             &current_split_info.threshold, 1,
+                             current_split_info.default_left, next_leaf_id);
+      current_split_info.left_count = data_partition_->leaf_count(*left_leaf);
+      current_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
       *right_leaf = tree->Split(current_leaf,
                                 inner_feature_index,
                                 current_split_info.feature,
@@ -569,9 +571,6 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
                                 static_cast<float>(current_split_info.gain),
                                 train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                                 current_split_info.default_left);
-      data_partition_->Split(current_leaf, train_data_, inner_feature_index,
-                             &current_split_info.threshold, 1,
-                             current_split_info.default_left, *right_leaf);
     } else {
       std::vector<uint32_t> cat_bitset_inner = Common::ConstructBitset(
               current_split_info.cat_threshold.data(), current_split_info.num_cat_threshold);
@@ -582,6 +581,11 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
       }
       std::vector<uint32_t> cat_bitset = Common::ConstructBitset(
               threshold_int.data(), current_split_info.num_cat_threshold);
+      data_partition_->Split(current_leaf, train_data_, inner_feature_index,
+                             cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()),
+                             current_split_info.default_left, next_leaf_id);
+      current_split_info.left_count = data_partition_->leaf_count(*left_leaf);
+      current_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
       *right_leaf = tree->SplitCategorical(current_leaf,
                                            inner_feature_index,
                                            current_split_info.feature,
@@ -597,11 +601,10 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
                                            static_cast<double>(current_split_info.right_sum_hessian),
                                            static_cast<float>(current_split_info.gain),
                                            train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
-      data_partition_->Split(current_leaf, train_data_, inner_feature_index,
-                             cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()),
-                             current_split_info.default_left, *right_leaf);
     }
-
+    #ifdef DEBUG
+    CHECK(*right_leaf == next_leaf_id);
+    #endif
     if (current_split_info.left_count < current_split_info.right_count) {
       left_smaller = true;
       smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
@@ -707,11 +710,11 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
 
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
-    CHECK(best_split_info.left_count > 0);
+    CHECK_GT(best_split_info.left_count, 0);
     smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
     larger_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
   } else {
-    CHECK(best_split_info.right_count > 0);
+    CHECK_GT(best_split_info.right_count, 0);
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
     larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
   }
@@ -728,7 +731,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
     const data_size_t* bag_mapper = nullptr;
     if (total_num_data != num_data_) {
-      CHECK(bag_cnt == num_data_);
+      CHECK_EQ(bag_cnt, num_data_);
       bag_mapper = bag_indices;
     }
     std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
@@ -743,7 +746,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
         const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
       } else {
-        CHECK(num_machines > 1);
+        CHECK_GT(num_machines, 1);
         tree->SetLeafOutput(i, 0.0);
         n_nozeroworker_perleaf[i] = 0;
       }

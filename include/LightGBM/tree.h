@@ -513,7 +513,7 @@ inline void Tree::PredictContrib(const double* feature_values, int num_features,
   output[num_features] += ExpectedValue();
   // Run the recursion with preallocated space for the unique path data
   if (num_leaves_ > 1) {
-    CHECK(max_depth_ >= 0);
+    CHECK_GE(max_depth_, 0);
     const int max_path_len = max_depth_ + 1;
     std::vector<PathElement> unique_path_data(max_path_len*(max_path_len + 1) / 2);
     TreeSHAP(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);

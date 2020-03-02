@@ -24,13 +24,8 @@ class MultiValSparseBin : public MultiValBin {
         num_bin_(num_bin),
         estimate_element_per_row_(estimate_element_per_row) {
     row_ptr_.resize(num_data_ + 1, 0);
-    INDEX_T estimate_num_data =
-        static_cast<INDEX_T>(estimate_element_per_row_ * 1.1) *
-        static_cast<INDEX_T>(num_data_);
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    { num_threads = omp_get_num_threads(); }
+    INDEX_T estimate_num_data = static_cast<INDEX_T>(estimate_element_per_row_ * 1.1 * num_data_);
+    int num_threads = OMP_NUM_THREADS();
     if (num_threads > 1) {
       t_data_.resize(num_threads - 1);
       for (size_t i = 0; i < t_data_.size(); ++i) {
@@ -77,7 +72,7 @@ class MultiValSparseBin : public MultiValBin {
 
   void MergeData(const INDEX_T* sizes) {
     Common::FunctionTimer fun_time("MultiValSparseBin::MergeData", global_timer);
-    for (INDEX_T i = 0; i < static_cast<INDEX_T>(num_data_); ++i) {
+    for (data_size_t i = 0; i < num_data_; ++i) {
       row_ptr_[i + 1] += row_ptr_[i];
     }
     if (t_data_.size() > 0) {
@@ -87,7 +82,7 @@ class MultiValSparseBin : public MultiValBin {
         offsets[tid + 1] = offsets[tid] + sizes[tid + 1];
       }
       data_.resize(row_ptr_[num_data_]);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 1)
       for (int tid = 0; tid < static_cast<int>(t_data_.size()); ++tid) {
         std::copy_n(t_data_[tid].data(), sizes[tid + 1],
                     data_.data() + offsets[tid]);
@@ -204,8 +199,7 @@ class MultiValSparseBin : public MultiValBin {
     num_bin_ = num_bin;
     estimate_element_per_row_ = estimate_element_per_row;
     INDEX_T estimate_num_data =
-        static_cast<INDEX_T>(estimate_element_per_row_ * 1.1) *
-        static_cast<INDEX_T>(num_data_);
+        static_cast<INDEX_T>(estimate_element_per_row_ * 1.1 * num_data_);
     size_t npart = 1 + t_data_.size();
     INDEX_T avg_num_data = static_cast<INDEX_T>(estimate_num_data / npart);
     if (static_cast<INDEX_T>(data_.size()) < avg_num_data) {

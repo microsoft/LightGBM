@@ -595,7 +595,7 @@ class FeatureHistogram {
 
         double sum_left_gradient = sum_gradient - sum_right_gradient;
         if (IS_RAND) {
-          if (t + offset != rand_threshold) {
+          if (t - 1 + offset != rand_threshold) {
             continue;
           }
         }
@@ -743,7 +743,7 @@ class HistogramPool {
   void Reset(int cache_size, int total_size) {
     cache_size_ = cache_size;
     // at least need 2 bucket to store smaller leaf and larger leaf
-    CHECK(cache_size_ >= 2);
+    CHECK_GE(cache_size_, 2);
     total_size_ = total_size;
     if (cache_size_ > total_size_) {
       cache_size_ = total_size_;

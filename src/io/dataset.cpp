@@ -28,7 +28,7 @@ Dataset::Dataset() {
 }
 
 Dataset::Dataset(data_size_t num_data) {
-  CHECK(num_data > 0);
+  CHECK_GT(num_data, 0);
   data_filename_ = "noname";
   num_data_ = num_data;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
@@ -403,10 +403,10 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     }
   }
   if (!io_config.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(num_total_features_) ==
-          io_config.max_bin_by_feature.size());
-    CHECK(*(std::min_element(io_config.max_bin_by_feature.begin(),
-                             io_config.max_bin_by_feature.end())) > 1);
+    CHECK_EQ(static_cast<size_t>(num_total_features_),
+             io_config.max_bin_by_feature.size());
+    CHECK_GT(*(std::min_element(io_config.max_bin_by_feature.begin(),
+                                io_config.max_bin_by_feature.end())), 1);
     max_bin_by_feature_.resize(num_total_features_);
     max_bin_by_feature_.assign(io_config.max_bin_by_feature.begin(),
                                io_config.max_bin_by_feature.end());
@@ -506,10 +506,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   }
   const auto& offsets = feature_groups_[multi_group_id]->bin_offsets_;
   const int num_feature = feature_groups_[multi_group_id]->num_feature_;
-  int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-  { num_threads = omp_get_num_threads(); }
+  int num_threads = OMP_NUM_THREADS();
 
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
@@ -539,10 +536,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
 MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromAllFeatures",
                                  global_timer);
-  int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-  { num_threads = omp_get_num_threads(); }
+  int num_threads = OMP_NUM_THREADS();
   double sum_dense_ratio = 0;
 
   std::unique_ptr<MultiValBin> ret;
@@ -1214,10 +1208,7 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
   if (multi_val_bin == nullptr) {
     return;
   }
-  int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-  { num_threads = omp_get_num_threads(); }
+  int num_threads = OMP_NUM_THREADS();
 
   global_timer.Start("Dataset::sparse_bin_histogram");
   const int num_bin = multi_val_bin->num_bin();

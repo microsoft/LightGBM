@@ -13,9 +13,9 @@
 
 #include <LightGBM/json11.hpp>
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 /*! \brief forward declaration */
 class Tree;

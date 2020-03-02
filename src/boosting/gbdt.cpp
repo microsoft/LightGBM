@@ -10,7 +10,6 @@
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/threading.h>
 
 #include <chrono>
 #include <ctime>
@@ -266,9 +265,9 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
 }
 
 void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {
-  CHECK(tree_leaf_prediction.size() > 0);
-  CHECK(static_cast<size_t>(num_data_) == tree_leaf_prediction.size());
-  CHECK(static_cast<size_t>(models_.size()) == tree_leaf_prediction[0].size());
+  CHECK_GT(tree_leaf_prediction.size(), 0);
+  CHECK_EQ(static_cast<size_t>(num_data_), tree_leaf_prediction.size());
+  CHECK_EQ(static_cast<size_t>(models_.size()), tree_leaf_prediction[0].size());
   int num_iterations = static_cast<int>(models_.size() / num_tree_per_iteration_);
   std::vector<int> leaf_pred(num_data_);
   for (int iter = 0; iter < num_iterations; ++iter) {

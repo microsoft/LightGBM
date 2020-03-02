@@ -34,9 +34,9 @@
 #include <boost/compute/container/vector.hpp>
 #include <boost/align/aligned_allocator.hpp>
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 /*!
 * \brief GPU-based parallel learning algorithm.

@@ -138,7 +138,7 @@ elif [[ $TASK == "mpi" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-    cmake -DUSE_MPI=ON ..
+    cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
 else
     cmake ..
 fi
