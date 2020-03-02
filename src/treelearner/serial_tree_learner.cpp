@@ -637,9 +637,9 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
   return result_count;
 }
 
-void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf,
-                              int* right_leaf) {
-  Common::FunctionTimer fun_timer("SerialTreeLearner::Split", global_timer);
+void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
+                                   int* right_leaf, bool update_cnt) {
+  Common::FunctionTimer fun_timer("SerialTreeLearner::SplitInner", global_timer);
   SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index =
       train_data_->InnerFeatureIndex(best_split_info.feature);
@@ -659,7 +659,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf,
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
                            &best_split_info.threshold, 1,
                            best_split_info.default_left, next_leaf_id);
-    if (!config_->is_data_based_parallel) {
+    if (update_cnt) {
       // don't need to update this in data-based parallel model
       best_split_info.left_count = data_partition_->leaf_count(*left_leaf);
       best_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
@@ -694,7 +694,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf,
                            static_cast<int>(cat_bitset_inner.size()),
                            best_split_info.default_left, next_leaf_id);
 
-    if (!config_->is_data_based_parallel) {
+    if (update_cnt) {
       // don't need to update this in data-based parallel model
       best_split_info.left_count = data_partition_->leaf_count(*left_leaf);
       best_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
@@ -740,6 +740,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf,
                                   best_split_info.monotone_type,
                                   best_split_info.right_output,
                                   best_split_info.left_output);
+
 }
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
