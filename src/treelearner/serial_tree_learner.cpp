@@ -147,7 +147,15 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   gradients_ = gradients;
   hessians_ = hessians;
   is_constant_hessian_ = is_constant_hessian;
-  temp_state_->num_threads = OMP_NUM_THREADS();
+  int num_threads = OMP_NUM_THREADS();
+  if (temp_state_->num_threads != num_threads){
+    Log::Warning(
+        "Detect num_threads changed durning traing (from %d to %d), may cause "
+        "unexpected errors.",
+        temp_state_->num_threads, num_threads);
+    temp_state_->num_threads = num_threads;
+  }
+
   // some initial works before training
   BeforeTrain();
 
