@@ -204,7 +204,6 @@ class SerialTreeLearner: public TreeLearner {
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
   const Config* config_;
-  int num_threads_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
