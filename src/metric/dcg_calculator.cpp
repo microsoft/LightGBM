@@ -25,7 +25,7 @@ void DCGCalculator::DefaultEvalAt(std::vector<int>* eval_at) {
     }
   } else {
     for (size_t i = 0; i < eval_at->size(); ++i) {
-      CHECK(ref_eval_at[i] > 0);
+      CHECK_GT(ref_eval_at[i], 0);
     }
   }
 }

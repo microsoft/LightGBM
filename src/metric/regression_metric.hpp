@@ -271,7 +271,7 @@ class GammaMetric : public RegressionMetric<GammaMetric> {
   }
 
   inline static void CheckLabel(label_t label) {
-    CHECK(label > 0);
+    CHECK_GT(label, 0);
   }
 };
 
@@ -293,7 +293,7 @@ class GammaDevianceMetric : public RegressionMetric<GammaDevianceMetric> {
     return sum_loss * 2;
   }
   inline static void CheckLabel(label_t label) {
-    CHECK(label > 0);
+    CHECK_GT(label, 0);
   }
 };
 

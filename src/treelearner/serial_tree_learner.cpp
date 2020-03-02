@@ -95,7 +95,7 @@ void SerialTreeLearner::GetMultiValBin(const Dataset* dataset, bool is_first_tim
 void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
-  CHECK(num_features_ == train_data_->num_features());
+  CHECK_EQ(num_features_, train_data_->num_features());
 
   // initialize splits for leaf
   smaller_leaf_splits_->ResetNumData(num_data_);
@@ -247,7 +247,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[used_feature_indices_[i]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK(inner_feature_index >= 0);
+      CHECK_GE(inner_feature_index, 0);
       ret[inner_feature_index] = 1;
     }
   } else if (used_feature_indices_.size() <= 0) {
@@ -259,7 +259,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[sampled_indices[i]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK(inner_feature_index >= 0);
+      CHECK_GE(inner_feature_index, 0);
       ret[inner_feature_index] = 1;
     }
   } else {
@@ -271,7 +271,7 @@ std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[used_feature_indices_[sampled_indices[i]]];
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK(inner_feature_index >= 0);
+      CHECK_GE(inner_feature_index, 0);
       ret[inner_feature_index] = 1;
     }
   }
@@ -706,11 +706,11 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
 
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
-    CHECK(best_split_info.left_count > 0);
+    CHECK_GT(best_split_info.left_count, 0);
     smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
     larger_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
   } else {
-    CHECK(best_split_info.right_count > 0);
+    CHECK_GT(best_split_info.right_count, 0);
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
     larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
   }
@@ -727,7 +727,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
     CHECK(tree->num_leaves() <= data_partition_->num_leaves());
     const data_size_t* bag_mapper = nullptr;
     if (total_num_data != num_data_) {
-      CHECK(bag_cnt == num_data_);
+      CHECK_EQ(bag_cnt, num_data_);
       bag_mapper = bag_indices;
     }
     std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
@@ -742,7 +742,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
         const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
       } else {
-        CHECK(num_machines > 1);
+        CHECK_GT(num_machines, 1);
         tree->SetLeafOutput(i, 0.0);
         n_nozeroworker_perleaf[i] = 0;
       }
