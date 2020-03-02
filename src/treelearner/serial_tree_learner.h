@@ -189,7 +189,6 @@ class SerialTreeLearner: public TreeLearner {
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
   const Config* config_;
-  int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;
   std::unique_ptr<TrainingTempState> temp_state_;

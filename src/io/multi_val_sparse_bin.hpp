@@ -25,10 +25,7 @@ class MultiValSparseBin : public MultiValBin {
         estimate_element_per_row_(estimate_element_per_row) {
     row_ptr_.resize(num_data_ + 1, 0);
     INDEX_T estimate_num_data = static_cast<INDEX_T>(estimate_element_per_row_ * 1.1 * num_data_);
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    { num_threads = omp_get_num_threads(); }
+    int num_threads = OMP_NUM_THREADS();
     if (num_threads > 1) {
       t_data_.resize(num_threads - 1);
       for (size_t i = 0; i < t_data_.size(); ++i) {
