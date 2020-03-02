@@ -34,6 +34,8 @@ class MultiValDenseBin : public MultiValBin {
     return num_bin_;
   }
 
+  double num_element_per_row() const override { return num_feature_; }
+
   void PushOneRow(int , data_size_t idx, const std::vector<uint32_t>& values) override {
     auto start = RowPtr(idx);
     for (auto i = 0; i < num_feature_; ++i) {
@@ -46,12 +48,6 @@ class MultiValDenseBin : public MultiValBin {
 
   bool IsSparse() override {
     return false;
-  }
-
-  void ReSize(data_size_t num_data) override {
-    if (num_data_ != num_data) {
-      num_data_ = num_data;
-    }
   }
 
   #define ACC_GH(hist, i, g, h) \
@@ -125,24 +121,13 @@ class MultiValDenseBin : public MultiValBin {
     ConstructHistogramInner<false, false, false>(nullptr, start, end, gradients, nullptr, out);
   }
 
-  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
-    auto other_bin = dynamic_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
-    data_.resize(num_feature_ * num_used_indices);
-    for (data_size_t i = 0; i < num_used_indices; ++i) {
-      auto j_start = RowPtr(i);
-      auto other_j_start = other_bin->RowPtr(used_indices[i]);
-      for (auto j = other_j_start;
-           j < other_bin->RowPtr(used_indices[i] + 1); ++j) {
-        data_[j - other_j_start + j_start] = other_bin->data_[j];
-      }
-    }
+  MultiValBin* CreateLike(data_size_t num_data, int num_bin, int num_feature, double) const override {
+    return new MultiValDenseBin<VAL_T>(num_data, num_bin, num_feature);
   }
 
-  MultiValBin* CreateLike(int num_bin, int num_feature, double) const override {
-    return new MultiValDenseBin<VAL_T>(num_data_, num_bin, num_feature);
-  }
-
-  void ReSizeForSubFeature(int num_bin, int num_feature, double) override {
+  void ReSize(data_size_t num_data, int num_bin, int num_feature,
+              double) override {
+    num_data_ = num_data;
     num_bin_ = num_bin;
     num_feature_ = num_feature;
     size_t new_size = static_cast<size_t>(num_feature_) * num_data_;
@@ -151,33 +136,71 @@ class MultiValDenseBin : public MultiValBin {
     }
   }
 
-  void CopySubFeature(const MultiValBin* full_bin,
-                      const std::vector<int>& used_feature_index,
-                      const std::vector<uint32_t>&,
-                      const std::vector<uint32_t>&,
-                      const std::vector<uint32_t>& delta) override {
-    const auto other =
+  template <bool SUBROW, bool SUBCOL>
+  void CopyInner(const MultiValBin* full_bin, const data_size_t* used_indices,
+                 data_size_t num_used_indices,
+                 const std::vector<int>& used_feature_index,
+                 const std::vector<uint32_t>& delta) {
+    const auto other_bin =
         reinterpret_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
+    if (SUBROW) {
+      CHECK(num_data_ == num_used_indices);
+    }
     int n_block = 1;
     data_size_t block_size = num_data_;
-    Threading::BlockInfo<data_size_t>(num_data_, 1024, &n_block, &block_size);
+    Threading::BlockInfo<data_size_t>(num_data_, 1024, &n_block,
+                                      &block_size);
 #pragma omp parallel for schedule(static, 1)
     for (int tid = 0; tid < n_block; ++tid) {
       data_size_t start = tid * block_size;
       data_size_t end = std::min(num_data_, start + block_size);
       for (data_size_t i = start; i < end; ++i) {
         const auto j_start = RowPtr(i);
-        const auto other_j_start = other->RowPtr(i);
+        const auto other_j_start =
+            SUBROW ? other_bin->RowPtr(used_indices[i]) : other_bin->RowPtr(i);
         for (int j = 0; j < num_feature_; ++j) {
-          if (other->data_[other_j_start + used_feature_index[j]] > 0) {
-            data_[j_start + j] = static_cast<VAL_T>(
-                other->data_[other_j_start + used_feature_index[j]] - delta[j]);
+          if (SUBCOL) {
+            if (other_bin->data_[other_j_start + used_feature_index[j]] > 0) {
+              data_[j_start + j] = static_cast<VAL_T>(
+                  other_bin->data_[other_j_start + used_feature_index[j]] -
+                  delta[j]);
+            } else {
+              data_[j_start + j] = 0;
+            }
           } else {
-            data_[j_start + j] = 0;
+            data_[j_start + j] =
+                static_cast<VAL_T>(other_bin->data_[other_j_start + j]);
           }
         }
       }
     }
+  }
+
+
+  void CopySubrow(const MultiValBin* full_bin, const data_size_t* used_indices,
+                  data_size_t num_used_indices) override {
+    CopyInner<true, false>(full_bin, used_indices, num_used_indices,
+                           std::vector<int>(), std::vector<uint32_t>());
+  }
+
+  void CopySubcol(const MultiValBin* full_bin,
+                      const std::vector<int>& used_feature_index,
+                      const std::vector<uint32_t>&,
+                      const std::vector<uint32_t>&,
+                      const std::vector<uint32_t>& delta) override {
+    CopyInner<false, true>(full_bin, nullptr, num_data_, used_feature_index,
+                           delta);
+  }
+
+  void CopySubrowAndSubcol(const MultiValBin* full_bin,
+                               const data_size_t* used_indices,
+                               data_size_t num_used_indices,
+                               const std::vector<int>& used_feature_index,
+                               const std::vector<uint32_t>&,
+                               const std::vector<uint32_t>&,
+                               const std::vector<uint32_t>& delta) override {
+    CopyInner<true, true>(full_bin, used_indices, num_used_indices,
+                          used_feature_index, delta);
   }
 
   inline size_t RowPtr(data_size_t idx) const {
