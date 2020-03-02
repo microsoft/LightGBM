@@ -158,7 +158,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
     indices_future_.wait();
   }
   // for constant hessian, hessians are not copied except for the root node
-  if (!is_constant_hessian_) {
+  if (!share_state_->is_constant_hessian) {
     hessians_future_.wait();
   }
   gradients_future_.wait();
@@ -581,7 +581,7 @@ void GPUTreeLearner::BuildGPUKernels() {
     // compile the GPU kernel depending if double precision is used, constant hessian is used, etc.
     opts << " -D POWER_FEATURE_WORKGROUPS=" << i
          << " -D USE_CONSTANT_BUF=" << use_constants << " -D USE_DP_FLOAT=" << int(config_->gpu_use_dp)
-         << " -D CONST_HESSIAN=" << int(is_constant_hessian_)
+         << " -D CONST_HESSIAN=" << int(share_state_->is_constant_hessian)
          << " -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
     #if GPU_DEBUG >= 1
     std::cout << "Building GPU kernels with options: " << opts.str() << std::endl;
@@ -642,7 +642,7 @@ void GPUTreeLearner::SetupKernelArguments() {
   }
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
     // The only argument that needs to be changed later is num_data_
-    if (is_constant_hessian_) {
+    if (share_state_->is_constant_hessian) {
       // hessian is passed as a parameter, but it is not available now.
       // hessian will be set in BeforeTrain()
       histogram_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
@@ -736,25 +736,25 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
 }
 
 Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            bool is_constant_hessian, const Json& forced_split_json) {
-  // check if we need to recompile the GPU kernel (is_constant_hessian changed)
-  // this should rarely occur
-  if (is_constant_hessian != is_constant_hessian_) {
-    Log::Info("Recompiling GPU kernel because hessian is %sa constant now", is_constant_hessian ? "" : "not ");
-    is_constant_hessian_ = is_constant_hessian;
-    BuildGPUKernels();
-    SetupKernelArguments();
-  }
-  return SerialTreeLearner::Train(gradients, hessians, is_constant_hessian, forced_split_json);
+                            const Json& forced_split_json) {
+  return SerialTreeLearner::Train(gradients, hessians, forced_split_json);
 }
 
-void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {
-  SerialTreeLearner::ResetTrainingData(train_data);
+void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
+  SerialTreeLearner::ResetTrainingDataInner(train_data, is_constant_hessian, reset_multi_val_bin);
   num_feature_groups_ = train_data_->num_feature_groups();
   // GPU memory has to been reallocated because data may have been changed
   AllocateGPUMemory();
   // setup GPU kernel arguments after we allocating all the buffers
   SetupKernelArguments();
+}
+
+void GPUTreeLearner::ResetIsConstantHessian(bool is_constant_hessian) {
+  if (is_constant_hessian != share_state_->is_constant_hessian) {	
+    SerialTreeLearner::ResetIsConstantHessian(is_constant_hessian);
+    BuildGPUKernels();	
+    SetupKernelArguments();	
+  }
 }
 
 void GPUTreeLearner::BeforeTrain() {
@@ -764,7 +764,7 @@ void GPUTreeLearner::BeforeTrain() {
   // Copy initial full hessians and gradients to GPU.
   // We start copying as early as possible, instead of at ConstructHistogram().
   if (!use_bagging_ && num_dense_feature_groups_) {
-    if (!is_constant_hessian_) {
+    if (!share_state_->is_constant_hessian) {
       hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data_ * sizeof(score_t), hessians_);
     } else {
       // setup hessian parameters only
@@ -792,7 +792,7 @@ void GPUTreeLearner::BeforeTrain() {
     #endif
     // transfer the indices to GPU
     indices_future_ = boost::compute::copy_async(indices, indices + cnt, device_data_indices_->begin(), queue_);
-    if (!is_constant_hessian_) {
+    if (!share_state_->is_constant_hessian) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < cnt; ++i) {
         ordered_hessians_[i] = hessians_[indices[i]];
@@ -846,7 +846,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
     #endif
     indices_future_ = boost::compute::copy_async(indices + begin, indices + end, device_data_indices_->begin(), queue_);
 
-    if (!is_constant_hessian_) {
+    if (!share_state_->is_constant_hessian) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = begin; i < end; ++i) {
         ordered_hessians_[i - begin] = hessians_[indices[i]];
@@ -899,7 +899,7 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
     }
   }
   // generate and copy ordered_hessians if hessians is not null
-  if (hessians != nullptr && !is_constant_hessian_) {
+  if (hessians != nullptr && !share_state_->is_constant_hessian) {
     if (num_data != num_data_) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -976,8 +976,8 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   train_data_->ConstructHistograms(is_sparse_feature_used,
     smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
     gradients_, hessians_,
-    ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-    is_hist_colwise_, temp_state_.get(),
+    ordered_gradients_.data(), ordered_hessians_.data(),
+    share_state_.get(),
     ptr_smaller_leaf_hist_data);
   // wait for GPU to finish, only if GPU is actually used
   if (is_gpu_used) {
@@ -1041,8 +1041,8 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     train_data_->ConstructHistograms(is_sparse_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
-      ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-      is_hist_colwise_, temp_state_.get(),
+      ordered_gradients_.data(), ordered_hessians_.data(),
+      share_state_.get(),
       ptr_larger_leaf_hist_data);
     // wait for GPU to finish, only if GPU is actually used
     if (is_gpu_used) {

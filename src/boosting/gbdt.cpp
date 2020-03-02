@@ -231,13 +231,14 @@ void GBDT::Bagging(int iter) {
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
     if (!is_use_subset_) {
-      tree_learner_->SetBaggingData(bag_data_indices_.data(), bag_data_cnt_);
+      tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
     } else {
       // get subset
       tmp_subset_->ReSize(bag_data_cnt_);
-      tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(),
+      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                               bag_data_cnt_, false);
-      tree_learner_->ResetTrainingData(tmp_subset_.get());
+      tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
+                                    bag_data_cnt_);
     }
   }
 }
@@ -365,7 +366,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         grad = gradients_.data() + offset;
         hess = hessians_.data() + offset;
       }
-      new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
+      new_tree.reset(tree_learner_->Train(grad, hess, forced_splits_json_));
     }
 
     if (new_tree->num_leaves() > 1) {
@@ -693,8 +694,10 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     feature_names_ = train_data_->feature_names();
     feature_infos_ = train_data_->feature_infos();
 
-    tree_learner_->ResetTrainingData(train_data);
+    tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
     ResetBaggingConfig(config_.get(), true);
+  } else {
+    tree_learner_->ResetIsConstantHessian(is_constant_hessian_);
   }
 }
 
@@ -750,7 +753,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
         (static_cast<double>(bag_data_cnt_) / num_data_) / config->bagging_freq;
     is_use_subset_ = false;
     const int group_threshold_usesubset = 100;
-    if (tree_learner_->IsHistColWise() && average_bag_rate <= 0.5
+    if (average_bag_rate <= 0.5
         && (train_data_->num_feature_groups() < group_threshold_usesubset)) {
       if (tmp_subset_ == nullptr || is_change_dataset) {
         tmp_subset_.reset(new Dataset(bag_data_cnt_));
