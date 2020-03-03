@@ -345,8 +345,6 @@ class FastLeafConstraints : public BasicLeafConstraints {
     return std::pair<bool, bool>(keep_going_left, keep_going_right);
   }
 
-  const ConstraintEntry &Get(int leaf_idx) const { return entries_[leaf_idx]; }
-
  private:
   const Config *config_;
   std::vector<int> leaves_to_update_;
