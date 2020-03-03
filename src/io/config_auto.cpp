@@ -83,6 +83,7 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"min_split_gain", "min_gain_to_split"},
   {"rate_drop", "drop_rate"},
   {"monotone_constraining_method", "monotone_constraints_method"},
+  {"mc_method", "monotone_constraints_method"},
   {"topk", "top_k"},
   {"mc", "monotone_constraints"},
   {"monotone_constraint", "monotone_constraints"},

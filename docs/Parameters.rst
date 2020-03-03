@@ -376,7 +376,7 @@ Learning Control Parameters
 
    -  dropout rate: a fraction of previous trees to drop during the dropout
 
--  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = string, aliases: ``monotone_constraining_method``
+-  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = string, aliases: ``monotone_constraining_method``, ``mc_method``
 
    -  used only if ``monotone_constraints`` is set
 

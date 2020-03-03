@@ -364,7 +364,7 @@ struct Config {
   // desc = dropout rate: a fraction of previous trees to drop during the dropout
   double drop_rate = 0.1;
 
-  // alias = monotone_constraining_method
+  // alias = monotone_constraining_method, mc_method
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method: if set to "basic", the most basic monotone constraints method will be used. It does not slow the library at all, but over-constrains the predictions. If set to "intermediate", a more advanced method will be used, which may slow the library very slightly. However, the intermediate method is much less constraining than the basic method and should significantly improve the results.
   std::string monotone_constraints_method = "basic";
