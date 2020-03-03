@@ -95,7 +95,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
     return std::vector<int>();
   }
 
-  const ConstraintEntry &Get(int leaf_idx) const { return entries_[leaf_idx]; }
+  const ConstraintEntry &Get(int leaf_idx) const override { return entries_[leaf_idx]; }
 
  protected:
   int num_leaves_;
@@ -150,7 +150,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
                           int new_leaf, int8_t monotone_type,
                           double right_output, double left_output,
                           int split_feature, const SplitInfo &split_info,
-                          const std::vector<SplitInfo> &best_split_per_leaf) {
+                          const std::vector<SplitInfo> &best_split_per_leaf) override{
     leaves_to_update_.clear();
     UpdateConstraintsWithOutputs(is_numerical_split, leaf, new_leaf,
                                  monotone_type, right_output, left_output);
