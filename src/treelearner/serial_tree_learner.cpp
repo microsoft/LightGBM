@@ -722,6 +722,9 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
     if (!is_feature_used_[feature_index]) {
       continue;
     }
+    if (!histogram_array_[feature_index].is_splittable()) {
+      continue;
+    }
     const int tid = omp_get_thread_num();
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
     ComputeBestSplitForFeature(
