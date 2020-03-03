@@ -744,7 +744,7 @@ Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 .. _RDMA: https://en.wikipedia.org/wiki/Remote_direct_memory_access
 
-.. _MS MPI: https://www.microsoft.com/en-us/download/details.aspx?id=100305
+.. _MS MPI: https://www.microsoft.com/en-us/download/details.aspx?id=100593
 
 .. _Open MPI: https://www.open-mpi.org/
 
