@@ -30,6 +30,9 @@ enum MissingType {
 };
 
 typedef double hist_t;
+typedef uint64_t hist_cnt_t;
+// check at compile time
+static_assert(sizeof(hist_t) == sizeof(hist_cnt_t), "Histogram entry size is not correct");
 
 const size_t kHistEntrySize = 2 * sizeof(hist_t);
 const int kHistOffset = 2;
@@ -482,20 +485,24 @@ class MultiValBin {
       const std::vector<uint32_t>& lower, const std::vector<uint32_t>& upper,
       const std::vector<uint32_t>& delta) = 0;
 
-  virtual void ConstructHistogram(
-    const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* gradients, const score_t* hessians,
-    hist_t* out) const = 0;
+  virtual void ConstructHistogram(const data_size_t* data_indices,
+                                  data_size_t start, data_size_t end,
+                                  const score_t* gradients,
+                                  const score_t* hessians,
+                                  hist_t* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* gradients, const score_t* hessians,
-    hist_t* out) const = 0;
+                                  const score_t* gradients,
+                                  const score_t* hessians,
+                                  hist_t* out) const = 0;
 
-  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, hist_t* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, hist_t* out) const = 0;
+  virtual void ConstructHistogramOrdered(const data_size_t* data_indices,
+                                         data_size_t start, data_size_t end,
+                                         const score_t* ordered_gradients,
+                                         const score_t* ordered_hessians,
+                                         hist_t* out) const = 0;
+
 
   virtual void FinishLoad() = 0;
 

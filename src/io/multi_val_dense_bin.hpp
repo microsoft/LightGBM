@@ -50,75 +50,75 @@ class MultiValDenseBin : public MultiValBin {
     return false;
   }
 
-  #define ACC_GH(hist, i, g, h) \
-  const auto ti = static_cast<int>(i) << 1; \
-  hist[ti] += g; \
-  hist[ti + 1] += h; \
 
-  template<bool use_indices, bool use_prefetch, bool use_hessians>
+  template<bool USE_INDICES, bool USE_PREFETCH, bool ORDERED>
   void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* gradients, const score_t* hessians, hist_t* out) const {
     data_size_t i = start;
-    if (use_prefetch) {
+    hist_t* grad = out;
+    hist_t* hess = out + 1;
+    if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
       const data_size_t pf_end = end - pf_offset;
 
       for (; i < pf_end; ++i) {
-        const auto idx = use_indices ? data_indices[i] : i;
-        const auto pf_idx = use_indices ? data_indices[i + pf_offset] : i + pf_offset;
-        PREFETCH_T0(gradients + pf_idx);
-        if (use_hessians) {
+        const auto idx = USE_INDICES ? data_indices[i] : i;
+        const auto pf_idx = USE_INDICES ? data_indices[i + pf_offset] : i + pf_offset;
+        if (!ORDERED) {
+          PREFETCH_T0(gradients + pf_idx);
           PREFETCH_T0(hessians + pf_idx);
         }
         PREFETCH_T0(data_.data() + RowPtr(pf_idx));
         const auto j_start = RowPtr(idx);
         for (auto j = j_start; j < j_start + num_feature_; ++j) {
-          const VAL_T bin = data_[j];
-          if (use_hessians) {
-            ACC_GH(out, bin, gradients[idx], hessians[idx]);
+          const auto ti = static_cast<uint32_t>(data_[j]) << 1;
+          if (ORDERED) {
+            grad[ti] += gradients[i];
+            hess[ti] += hessians[i];
           } else {
-            ACC_GH(out, bin, gradients[idx], 1.0f);
+            grad[ti] += gradients[idx];
+            hess[ti] += hessians[idx];
           }
         }
       }
     }
     for (; i < end; ++i) {
-      const auto idx = use_indices ? data_indices[i] : i;
+      const auto idx = USE_INDICES ? data_indices[i] : i;
       const auto j_start = RowPtr(idx);
       for (auto j = j_start; j < j_start + num_feature_; ++j) {
-        const VAL_T bin = data_[j];
-        if (use_hessians) {
-          ACC_GH(out, bin, gradients[idx], hessians[idx]);
+        const auto ti = static_cast<uint32_t>(data_[j]) << 1;
+        if (ORDERED) {
+          grad[ti] += gradients[i];
+          hess[ti] += hessians[i];
         } else {
-          ACC_GH(out, bin, gradients[idx], 1.0f);
+          grad[ti] += gradients[idx];
+          hess[ti] += hessians[idx];
         }
       }
     }
   }
-  #undef ACC_GH
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* gradients, const score_t* hessians,
-    hist_t* out) const override {
-    ConstructHistogramInner<true, true, true>(data_indices, start, end, gradients, hessians, out);
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
+                          data_size_t end, const score_t* gradients,
+                          const score_t* hessians, hist_t* out) const override {
+    ConstructHistogramInner<true, true, false>(data_indices, start, end,
+                                                     gradients, hessians, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* gradients, const score_t* hessians,
-    hist_t* out) const override {
-    ConstructHistogramInner<false, false, true>(nullptr, start, end, gradients, hessians, out);
+                          const score_t* gradients, const score_t* hessians,
+                          hist_t* out) const override {
+    ConstructHistogramInner<false, false, false>(
+        nullptr, start, end, gradients, hessians, out);
   }
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* gradients,
-    hist_t* out) const override {
-    ConstructHistogramInner<true, true, false>(data_indices, start, end, gradients, nullptr, out);
-  }
-
-  void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* gradients,
-    hist_t* out) const override {
-    ConstructHistogramInner<false, false, false>(nullptr, start, end, gradients, nullptr, out);
+  void ConstructHistogramOrdered(const data_size_t* data_indices,
+                                 data_size_t start, data_size_t end,
+                                 const score_t* gradients,
+                                 const score_t* hessians,
+                                 hist_t* out) const override {
+    ConstructHistogramInner<true, true, true>(data_indices, start, end,
+                                                    gradients, hessians, out);
   }
 
   MultiValBin* CreateLike(data_size_t num_data, int num_bin, int num_feature, double) const override {
