@@ -516,7 +516,7 @@ class Dataset {
     }
   }
 
-  template <bool use_indices, bool use_hessian>
+  template <bool USE_INDICES, bool USE_HESSIAN>
   void ConstructHistogramsInner(const std::vector<int8_t>& is_feature_used,
                                 const data_size_t* data_indices,
                                 data_size_t num_data, const score_t* gradients,
@@ -526,7 +526,7 @@ class Dataset {
                                 TrainingShareStates* share_state,
                                 hist_t* hist_data) const;
 
-  template <bool use_indices, bool ordered>
+  template <bool USE_INDICES, bool ORDERED>
   void ConstructHistogramsMultiVal(const data_size_t* data_indices,
                                    data_size_t num_data,
                                    const score_t* gradients,
