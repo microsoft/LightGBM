@@ -41,13 +41,13 @@ GBDT::~GBDT() {
 
 void GBDT::Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
                 const std::vector<const Metric*>& training_metrics) {
-  CHECK(train_data != nullptr);
+  CHECK_NOTNULL(train_data, nullptr);
   train_data_ = train_data;
   if (!config->monotone_constraints.empty()) {
-    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->monotone_constraints.size());
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->monotone_constraints.size());
   }
   if (!config->feature_contri.empty()) {
-    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->feature_contri.size());
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->feature_contri.size());
   }
   iter_ = 0;
   num_iteration_for_pred_ = 0;
@@ -112,7 +112,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
-    CHECK(num_tree_per_iteration_ == num_class_);
+    CHECK_EQ(num_tree_per_iteration_, num_class_);
     for (int i = 0; i < num_class_; ++i) {
       class_need_train_[i] = objective_function_->ClassNeedTrain(i);
     }
@@ -277,7 +277,7 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
       #pragma omp parallel for schedule(static)
       for (int i = 0; i < num_data_; ++i) {
         leaf_pred[i] = tree_leaf_prediction[i][model_index];
-        CHECK(leaf_pred[i] < models_[model_index]->num_leaves());
+        CHECK_LT(leaf_pred[i], models_[model_index]->num_leaves());
       }
       size_t offset = static_cast<size_t>(tree_id) * num_data_;
       auto grad = gradients_.data() + offset;
@@ -654,7 +654,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   objective_function_ = objective_function;
   if (objective_function_ != nullptr) {
     is_constant_hessian_ = objective_function_->IsConstantHessian();
-    CHECK(num_tree_per_iteration_ == objective_function_->NumModelPerIteration());
+    CHECK_EQ(num_tree_per_iteration_, objective_function_->NumModelPerIteration());
   } else {
     is_constant_hessian_ = false;
   }
@@ -704,10 +704,10 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 void GBDT::ResetConfig(const Config* config) {
   auto new_config = std::unique_ptr<Config>(new Config(*config));
   if (!config->monotone_constraints.empty()) {
-    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->monotone_constraints.size());
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->monotone_constraints.size());
   }
   if (!config->feature_contri.empty()) {
-    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->feature_contri.size());
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->feature_contri.size());
   }
   early_stopping_round_ = new_config->early_stopping_round;
   shrinkage_rate_ = new_config->learning_rate;

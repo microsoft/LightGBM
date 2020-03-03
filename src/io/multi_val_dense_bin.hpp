@@ -144,7 +144,7 @@ class MultiValDenseBin : public MultiValBin {
     const auto other_bin =
         reinterpret_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
     if (SUBROW) {
-      CHECK(num_data_ == num_used_indices);
+      CHECK_EQ(num_data_, num_used_indices);
     }
     int n_block = 1;
     data_size_t block_size = num_data_;
@@ -184,21 +184,21 @@ class MultiValDenseBin : public MultiValBin {
   }
 
   void CopySubcol(const MultiValBin* full_bin,
-                      const std::vector<int>& used_feature_index,
-                      const std::vector<uint32_t>&,
-                      const std::vector<uint32_t>&,
-                      const std::vector<uint32_t>& delta) override {
+                  const std::vector<int>& used_feature_index,
+                  const std::vector<uint32_t>&,
+                  const std::vector<uint32_t>&,
+                  const std::vector<uint32_t>& delta) override {
     CopyInner<false, true>(full_bin, nullptr, num_data_, used_feature_index,
                            delta);
   }
 
   void CopySubrowAndSubcol(const MultiValBin* full_bin,
-                               const data_size_t* used_indices,
-                               data_size_t num_used_indices,
-                               const std::vector<int>& used_feature_index,
-                               const std::vector<uint32_t>&,
-                               const std::vector<uint32_t>&,
-                               const std::vector<uint32_t>& delta) override {
+                           const data_size_t* used_indices,
+                           data_size_t num_used_indices,
+                           const std::vector<int>& used_feature_index,
+                           const std::vector<uint32_t>&,
+                           const std::vector<uint32_t>&,
+                           const std::vector<uint32_t>& delta) override {
     CopyInner<true, true>(full_bin, used_indices, num_used_indices,
                           used_feature_index, delta);
   }

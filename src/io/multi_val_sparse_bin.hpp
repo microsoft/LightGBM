@@ -224,7 +224,7 @@ class MultiValSparseBin : public MultiValBin {
     const auto other =
         reinterpret_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
     if (SUBROW) {
-      CHECK(num_data_ == num_used_indices);
+      CHECK_EQ(num_data_, num_used_indices);
     }
     int n_block = 1;
     data_size_t block_size = num_data_;

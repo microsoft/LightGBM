@@ -333,7 +333,7 @@ test_that("lgb.train() works as expected with sparse features", {
   num_obs <- 70000L
   trainDF <- data.frame(
     y = sample(c(0L, 1L), size = num_obs, replace = TRUE)
-    , x = sample(c(1.0:10.0, rep(NA_real_, 50L)), size = num_obs , replace = TRUE)
+    , x = sample(c(1.0:10.0, rep(NA_real_, 50L)), size = num_obs, replace = TRUE)
   )
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["x"]], drop = FALSE)

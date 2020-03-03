@@ -41,9 +41,9 @@ class RF : public GBDT {
         MultiplyScore(cur_tree_id, 1.0f / num_init_iteration_);
       }
     } else {
-      CHECK(train_data->metadata().init_score() == nullptr);
+      CHECK_EQ(train_data->metadata().init_score(), nullptr);
     }
-    CHECK(num_tree_per_iteration_ == num_class_);
+    CHECK_EQ(num_tree_per_iteration_, num_class_);
     // not shrinkage rate for the RF
     shrinkage_rate_ = 1.0f;
     // only boosting one time
@@ -70,7 +70,7 @@ class RF : public GBDT {
         train_score_updater_->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
       }
     }
-    CHECK(num_tree_per_iteration_ == num_class_);
+    CHECK_EQ(num_tree_per_iteration_, num_class_);
     // only boosting one time
     Boosting();
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
@@ -103,8 +103,8 @@ class RF : public GBDT {
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
     // bagging logic
     Bagging(iter_);
-    CHECK(gradients == nullptr);
-    CHECK(hessians == nullptr);
+    CHECK_EQ(gradients, nullptr);
+    CHECK_EQ(hessians, nullptr);
 
     gradients = gradients_.data();
     hessians = hessians_.data();
