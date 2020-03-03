@@ -41,7 +41,7 @@ GBDT::~GBDT() {
 
 void GBDT::Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
                 const std::vector<const Metric*>& training_metrics) {
-  CHECK_NOTNULL(train_data, nullptr);
+  CHECK_NOTNULL(train_data);
   train_data_ = train_data;
   if (!config->monotone_constraints.empty()) {
     CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->monotone_constraints.size());
