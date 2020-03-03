@@ -482,12 +482,29 @@ class Dataset {
   void InitTrain(const std::vector<int8_t>& is_feature_used,
                  TrainingShareStates* share_state) const;
 
-  
-  inline void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
-    const data_size_t* data_indices,
-    data_size_t num_data, const score_t* gradients,
-    const score_t* hessians, score_t* ordered_gradients,
-    score_t* ordered_hessians,
+  template <bool USE_INDICES, bool USE_HESSIAN>
+  void ConstructHistogramsInner(const std::vector<int8_t>& is_feature_used,
+                                const data_size_t* data_indices,
+                                data_size_t num_data, const score_t* gradients,
+                                const score_t* hessians,
+                                score_t* ordered_gradients,
+                                score_t* ordered_hessians,
+                                TrainingShareStates* share_state,
+                                hist_t* hist_data) const;
+
+  template <bool USE_INDICES, bool ORDERED>
+  void ConstructHistogramsMultiVal(const data_size_t* data_indices,
+                                   data_size_t num_data,
+                                   const score_t* gradients,
+                                   const score_t* hessians,
+                                   TrainingShareStates* share_state,
+                                   hist_t* hist_data) const;
+
+  inline void ConstructHistograms(
+      const std::vector<int8_t>& is_feature_used,
+      const data_size_t* data_indices, data_size_t num_data,
+      const score_t* gradients, const score_t* hessians,
+      score_t* ordered_gradients, score_t* ordered_hessians,
       TrainingShareStates* share_state, hist_t* hist_data) const {
     if (num_data <= 0) {
       return;
@@ -515,24 +532,6 @@ class Dataset {
       }
     }
   }
-
-  template <bool USE_INDICES, bool USE_HESSIAN>
-  void ConstructHistogramsInner(const std::vector<int8_t>& is_feature_used,
-                                const data_size_t* data_indices,
-                                data_size_t num_data, const score_t* gradients,
-                                const score_t* hessians,
-                                score_t* ordered_gradients,
-                                score_t* ordered_hessians,
-                                TrainingShareStates* share_state,
-                                hist_t* hist_data) const;
-
-  template <bool USE_INDICES, bool ORDERED>
-  void ConstructHistogramsMultiVal(const data_size_t* data_indices,
-                                   data_size_t num_data,
-                                   const score_t* gradients,
-                                   const score_t* hessians,
-                                   TrainingShareStates* share_state,
-                                   hist_t* hist_data) const;
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
