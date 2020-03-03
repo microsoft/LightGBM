@@ -5,7 +5,6 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
             sudo xcode-select -s /Applications/Xcode_9.4.1.app/Contents/Developer
-            sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
         fi
     else  # gcc
         if [[ $TASK != "mpi" ]]; then
