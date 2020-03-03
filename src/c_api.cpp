@@ -1050,7 +1050,7 @@ int LGBM_DatasetGetSubset(
     omp_set_num_threads(config.num_threads);
   }
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
-  CHECK(num_used_row_indices > 0);
+  CHECK_GT(num_used_row_indices, 0);
   const int32_t lower = 0;
   const int32_t upper = full_dataset->num_data() - 1;
   Common::CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
@@ -1059,7 +1059,7 @@ int LGBM_DatasetGetSubset(
   }
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
   ret->CopyFeatureMapperFrom(full_dataset);
-  ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
+  ret->CopySubrow(full_dataset, used_row_indices, num_used_row_indices, true);
   *out = ret.release();
   API_END();
 }
@@ -1529,12 +1529,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  int num_threads = 1;
-  #pragma omp parallel
-  #pragma omp master
-  {
-    num_threads = omp_get_num_threads();
-  }
+  int num_threads = OMP_NUM_THREADS();
   int ncol = static_cast<int>(ncol_ptr - 1);
   std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
   for (int i = 0; i < num_threads; ++i) {

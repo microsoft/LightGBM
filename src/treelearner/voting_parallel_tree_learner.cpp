@@ -349,8 +349,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
 
 template <typename TREELEARNER_T>
 void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
-  std::vector<SplitInfo> smaller_bests_per_thread(this->num_threads_);
-  std::vector<SplitInfo> larger_best_per_thread(this->num_threads_);
+  std::vector<SplitInfo> smaller_bests_per_thread(this->share_state_->num_threads);
+  std::vector<SplitInfo> larger_bests_per_thread(this->share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
   std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
   if (this->config_->feature_fraction_bynode < 1.0f) {
@@ -394,8 +394,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
           real_feature_index,
           larger_node_used_features[feature_index],
           GetGlobalDataCountInLeaf(larger_leaf_splits_global_->leaf_index()),
-          larger_leaf_splits_global_.get(),
-          &larger_best_per_thread[tid]);
+          larger_leaf_splits_global_.get(), &larger_bests_per_thread[tid]);
     }
     OMP_LOOP_EX_END();
   }
@@ -407,8 +406,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
 
   if (this->larger_leaf_splits_ != nullptr && this->larger_leaf_splits_->leaf_index() >= 0) {
     leaf = this->larger_leaf_splits_->leaf_index();
-    auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best_per_thread);
-    this->best_split_per_leaf_[leaf] = larger_best_per_thread[larger_best_idx];
+    auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_bests_per_thread);
+    this->best_split_per_leaf_[leaf] = larger_bests_per_thread[larger_best_idx];
   }
 
   // find local best
@@ -430,7 +429,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
 
 template <typename TREELEARNER_T>
 void VotingParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) {
-  TREELEARNER_T::Split(tree, best_Leaf, left_leaf, right_leaf);
+  this->SplitInner(tree, best_Leaf, left_leaf, right_leaf, false);
   const SplitInfo& best_split_info = this->best_split_per_leaf_[best_Leaf];
   // set the global number of data for leaves
   global_data_count_in_leaf_[*left_leaf] = best_split_info.left_count;

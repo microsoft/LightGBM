@@ -80,7 +80,7 @@ namespace LightGBM {
                                     int num_distinct_values, int max_bin,
                                     size_t total_cnt, int min_data_in_bin) {
     std::vector<double> bin_upper_bound;
-    CHECK(max_bin > 0);
+    CHECK_GT(max_bin, 0);
     if (num_distinct_values <= max_bin) {
       bin_upper_bound.clear();
       int cur_cnt_inbin = 0;
@@ -514,7 +514,7 @@ namespace LightGBM {
           static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
       if (bin_type_ == BinType::CategoricalBin) {
         if (most_freq_bin_ == 0) {
-          CHECK(num_bin_ > 1);
+          CHECK_GT(num_bin_, 1);
           // FIXME: how to enable `most_freq_bin_ = 0` for categorical features
           most_freq_bin_ = 1;
         }

@@ -196,6 +196,7 @@ struct Config {
   // desc = do not set it too large if your dataset is small (for instance, do not use 64 threads for a dataset with 10,000 rows)
   // desc = be aware a task manager or any similar CPU monitoring tool might report that cores not being fully utilized. **This is normal**
   // desc = for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
+  // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
   // [doc-only]
@@ -928,7 +929,7 @@ struct Config {
   size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
 
   bool is_parallel = false;
-  bool is_parallel_find_bin = false;
+  bool is_data_based_parallel = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static const std::unordered_map<std::string, std::string>& alias_table();
   static const std::unordered_set<std::string>& parameter_set();

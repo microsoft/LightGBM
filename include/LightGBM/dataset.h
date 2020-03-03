@@ -276,26 +276,30 @@ class Parser {
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
-struct TrainingTempState {
-  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
-      hist_buf;
+struct TrainingShareStates {
+  int num_threads = 0;
+  bool is_colwise = true;
+  bool is_use_subcol = false;
+  bool is_use_subrow = false;
+  bool is_subrow_copied = false;
+  bool is_constant_hessian = true;
+  const data_size_t* bagging_use_indices;
+  data_size_t bagging_indices_cnt;
   int num_bin_aligned;
-  bool use_subfeature;
   std::unique_ptr<MultiValBin> multi_val_bin;
-  std::unique_ptr<MultiValBin> multi_val_bin_subfeature;
+  std::unique_ptr<MultiValBin> multi_val_bin_subset;
   std::vector<uint32_t> hist_move_src;
   std::vector<uint32_t> hist_move_dest;
   std::vector<uint32_t> hist_move_size;
+  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
+      hist_buf;
 
   void SetMultiValBin(MultiValBin* bin) {
     if (bin == nullptr) {
       return;
     }
     multi_val_bin.reset(bin);
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    { num_threads = omp_get_num_threads(); }
+    num_threads = OMP_NUM_THREADS();
     num_bin_aligned =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
@@ -305,14 +309,14 @@ struct TrainingTempState {
   }
 
   hist_t* TempBuf() {
-    if (!use_subfeature) {
+    if (!is_use_subcol) {
       return nullptr;
     }
     return hist_buf.data() + hist_buf.size() - num_bin_aligned * 2;
   }
 
   void HistMove(const hist_t* src, hist_t* dest) {
-    if (!use_subfeature) {
+    if (!is_use_subcol) {
       return;
     }
 #pragma omp parallel for schedule(static)
@@ -439,16 +443,16 @@ class Dataset {
   }
   void ReSize(data_size_t num_data);
 
-  void CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
+  void CopySubrow(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
   MultiValBin* GetMultiBinFromSparseFeatures() const;
 
   MultiValBin* GetMultiBinFromAllFeatures() const;
 
-  TrainingTempState* TestMultiThreadingMethod(
-    score_t* gradients, score_t* hessians,
-    const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-    bool force_colwise, bool force_rowwise, bool* is_hist_col_wise) const;
+  TrainingShareStates* GetShareStates(
+      score_t* gradients, score_t* hessians,
+      const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
+      bool force_colwise, bool force_rowwise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
@@ -476,24 +480,58 @@ class Dataset {
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
 
   void InitTrain(const std::vector<int8_t>& is_feature_used,
-                 bool is_colwise,
-                 TrainingTempState* temp_state) const;
+                 TrainingShareStates* share_state) const;
 
-  void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
-                           const data_size_t* data_indices,
-                           data_size_t num_data, const score_t* gradients,
-                           const score_t* hessians, score_t* ordered_gradients,
-                           score_t* ordered_hessians, bool is_constant_hessian,
-                           bool is_colwise, TrainingTempState* temp_state,
-                           hist_t* histogram_data) const;
+  template <bool USE_INDICES, bool USE_HESSIAN>
+  void ConstructHistogramsInner(const std::vector<int8_t>& is_feature_used,
+                                const data_size_t* data_indices,
+                                data_size_t num_data, const score_t* gradients,
+                                const score_t* hessians,
+                                score_t* ordered_gradients,
+                                score_t* ordered_hessians,
+                                TrainingShareStates* share_state,
+                                hist_t* hist_data) const;
 
+  template <bool USE_INDICES, bool ORDERED>
   void ConstructHistogramsMultiVal(const data_size_t* data_indices,
                                    data_size_t num_data,
                                    const score_t* gradients,
                                    const score_t* hessians,
-                                   bool is_constant_hessian,
-                                   TrainingTempState* temp_state,
-                                   hist_t* histogram_data) const;
+                                   TrainingShareStates* share_state,
+                                   hist_t* hist_data) const;
+
+  inline void ConstructHistograms(
+      const std::vector<int8_t>& is_feature_used,
+      const data_size_t* data_indices, data_size_t num_data,
+      const score_t* gradients, const score_t* hessians,
+      score_t* ordered_gradients, score_t* ordered_hessians,
+      TrainingShareStates* share_state, hist_t* hist_data) const {
+    if (num_data <= 0) {
+      return;
+    }
+    bool use_indices = data_indices != nullptr && (num_data < num_data_);
+    if (share_state->is_constant_hessian) {
+      if (use_indices) {
+        ConstructHistogramsInner<true, false>(
+            is_feature_used, data_indices, num_data, gradients, hessians,
+            ordered_gradients, ordered_hessians, share_state, hist_data);
+      } else {
+        ConstructHistogramsInner<false, false>(
+            is_feature_used, data_indices, num_data, gradients, hessians,
+            ordered_gradients, ordered_hessians, share_state, hist_data);
+      }
+    } else {
+      if (use_indices) {
+        ConstructHistogramsInner<true, true>(
+            is_feature_used, data_indices, num_data, gradients, hessians,
+            ordered_gradients, ordered_hessians, share_state, hist_data);
+      } else {
+        ConstructHistogramsInner<false, true>(
+            is_feature_used, data_indices, num_data, gradients, hessians,
+            ordered_gradients, ordered_hessians, share_state, hist_data);
+      }
+    }
+  }
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
