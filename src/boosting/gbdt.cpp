@@ -60,7 +60,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   std::string forced_splits_path = config->forcedsplits_filename;
   // load forced_splits file
-  if (forced_splits_path != "") {
+  if (!forced_splits_path.empty()) {
       std::ifstream forced_splits_file(forced_splits_path.c_str());
       std::stringstream buffer;
       buffer << forced_splits_file.rdbuf();

@@ -18,6 +18,7 @@
 #include <random>
 #include <vector>
 
+#include "col_sampler.hpp"
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
 #include "leaf_splits.hpp"
@@ -113,7 +114,6 @@ class SerialTreeLearner: public TreeLearner {
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
-  virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
   * \brief Some initial works before training
   */
@@ -139,10 +139,11 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual void Split(Tree* tree, int best_leaf, int* left_leaf,
     int* right_leaf) {
-    SplitInner(tree, best_leaf, left_leaf, right_leaf, true);
+    SplitInner<true>(tree, best_leaf, left_leaf, right_leaf);
   }
 
-  void SplitInner(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf, bool update_cnt);
+  template <bool UPDATE_CNT>
+  void SplitInner(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
   virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
@@ -168,12 +169,6 @@ class SerialTreeLearner: public TreeLearner {
   const score_t* hessians_;
   /*! \brief training data partition on leaves */
   std::unique_ptr<DataPartition> data_partition_;
-  /*! \brief used for generate used features */
-  Random random_;
-  /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
-  std::vector<int8_t> is_feature_used_;
-  /*! \brief used feature indices in current tree */
-  std::vector<int> used_feature_indices_;
   /*! \brief pointer to histograms array of parent of current leaves */
   FeatureHistogram* parent_leaf_histogram_array_;
   /*! \brief pointer to histograms array of smaller leaf */
@@ -192,7 +187,6 @@ class SerialTreeLearner: public TreeLearner {
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
   /*! \brief stores best thresholds for all feature for larger leaf */
   std::unique_ptr<LeafSplits> larger_leaf_splits_;
-  std::vector<int> valid_feature_indices_;
 
 #ifdef USE_GPU
   /*! \brief gradients of current iteration, ordered for cache optimized, aligned to 4K page */
@@ -209,6 +203,7 @@ class SerialTreeLearner: public TreeLearner {
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
   const Config* config_;
+  ColSampler col_sampler_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };

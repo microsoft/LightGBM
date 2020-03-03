@@ -19,8 +19,7 @@
 namespace LightGBM {
 
 SerialTreeLearner::SerialTreeLearner(const Config* config)
-  :config_(config) {
-  random_ = Random(config_->feature_fraction_seed);
+    : config_(config), col_sampler_(config) {
 }
 
 SerialTreeLearner::~SerialTreeLearner() {
@@ -55,8 +54,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 
   // initialize data partition
   data_partition_.reset(new DataPartition(num_data_, config_->num_leaves));
-  is_feature_used_.resize(num_features_);
-  valid_feature_indices_ = train_data_->ValidFeatureIndices();
+  col_sampler_.SetTrainingData(train_data_);
   // initialize ordered gradients and hessians
   ordered_gradients_.resize(num_data_);
   ordered_hessians_.resize(num_data_);
@@ -74,15 +72,15 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
                                        bool is_constant_hessian,
                                        bool is_first_time) {
   if (is_first_time) {
-    auto used_feature = GetUsedFeatures(true);
     share_state_.reset(dataset->GetShareStates(
-        ordered_gradients_.data(), ordered_hessians_.data(), used_feature,
-        is_constant_hessian, config_->force_col_wise, config_->force_row_wise));
+        ordered_gradients_.data(), ordered_hessians_.data(),
+        col_sampler_.is_feature_used_bytree(), is_constant_hessian,
+        config_->force_col_wise, config_->force_row_wise));
   } else {
     CHECK(share_state_ != nullptr);
     // cannot change is_hist_col_wise during training
     share_state_.reset(dataset->GetShareStates(
-        ordered_gradients_.data(), ordered_hessians_.data(), is_feature_used_,
+        ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
         is_constant_hessian, share_state_->is_colwise,
         !share_state_->is_colwise));
   }
@@ -102,15 +100,14 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
 
   // initialize data partition
   data_partition_->ResetNumData(num_data_);
-
   if (reset_multi_val_bin) {
+    col_sampler_.SetTrainingData(train_data_);
     GetShareStates(train_data_, is_constant_hessian, false);
   }
 
   // initialize ordered gradients and hessians
   ordered_gradients_.resize(num_data_);
   ordered_hessians_.resize(num_data_);
-
   if (cegb_ != nullptr) {
     cegb_->Init();
   }
@@ -141,6 +138,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   } else {
     config_ = config;
   }
+  col_sampler_.SetConfig(config_);
   histogram_pool_.ResetConfig(train_data_, config_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
@@ -236,70 +234,13 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vect
   return FitByExistingTree(old_tree, gradients, hessians);
 }
 
-std::vector<int8_t> SerialTreeLearner::GetUsedFeatures(bool is_tree_level) {
-  std::vector<int8_t> ret(num_features_, 1);
-  if (config_->feature_fraction >= 1.0f && is_tree_level) {
-    return ret;
-  }
-  if (config_->feature_fraction_bynode >= 1.0f && !is_tree_level) {
-    return ret;
-  }
-  std::memset(ret.data(), 0, sizeof(int8_t) * num_features_);
-  const int min_used_features = std::min(2, static_cast<int>(valid_feature_indices_.size()));
-  if (is_tree_level) {
-    int used_feature_cnt = static_cast<int>(std::round(valid_feature_indices_.size() * config_->feature_fraction));
-    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
-    used_feature_indices_ = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
-    int omp_loop_size = static_cast<int>(used_feature_indices_.size());
-    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
-    for (int i = 0; i < omp_loop_size; ++i) {
-      int used_feature = valid_feature_indices_[used_feature_indices_[i]];
-      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK_GE(inner_feature_index, 0);
-      ret[inner_feature_index] = 1;
-    }
-  } else if (used_feature_indices_.size() <= 0) {
-    int used_feature_cnt = static_cast<int>(std::round(valid_feature_indices_.size() * config_->feature_fraction_bynode));
-    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
-    auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
-    int omp_loop_size = static_cast<int>(sampled_indices.size());
-    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
-    for (int i = 0; i < omp_loop_size; ++i) {
-      int used_feature = valid_feature_indices_[sampled_indices[i]];
-      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK_GE(inner_feature_index, 0);
-      ret[inner_feature_index] = 1;
-    }
-  } else {
-    int used_feature_cnt = static_cast<int>(std::round(used_feature_indices_.size() * config_->feature_fraction_bynode));
-    used_feature_cnt = std::max(used_feature_cnt, min_used_features);
-    auto sampled_indices = random_.Sample(static_cast<int>(used_feature_indices_.size()), used_feature_cnt);
-    int omp_loop_size = static_cast<int>(sampled_indices.size());
-    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
-    for (int i = 0; i < omp_loop_size; ++i) {
-      int used_feature = valid_feature_indices_[used_feature_indices_[sampled_indices[i]]];
-      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
-      CHECK_GE(inner_feature_index, 0);
-      ret[inner_feature_index] = 1;
-    }
-  }
-  return ret;
-}
-
 void SerialTreeLearner::BeforeTrain() {
   Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeTrain", global_timer);
   // reset histogram pool
   histogram_pool_.ResetMap();
 
-  if (config_->feature_fraction < 1.0f) {
-    is_feature_used_ = GetUsedFeatures(true);
-  } else {
-    #pragma omp parallel for schedule(static, 512) if (num_features_ >= 1024)
-    for (int i = 0; i < num_features_; ++i) {
-      is_feature_used_[i] = 1;
-    }
-  }
-  train_data_->InitTrain(is_feature_used_, share_state_.get());
+  col_sampler_.ResetByTree();
+  train_data_->InitTrain(col_sampler_.is_feature_used_bytree(), share_state_.get());
   // initialize data partition
   data_partition_->Init();
 
@@ -369,7 +310,7 @@ void SerialTreeLearner::FindBestSplits() {
   std::vector<int8_t> is_feature_used(num_features_, 0);
   #pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!is_feature_used_[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
         && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
@@ -413,12 +354,8 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
   std::vector<SplitInfo> smaller_best(share_state_->num_threads);
   std::vector<SplitInfo> larger_best(share_state_->num_threads);
-  std::vector<int8_t> smaller_node_used_features(num_features_, 1);
-  std::vector<int8_t> larger_node_used_features(num_features_, 1);
-  if (config_->feature_fraction_bynode < 1.0f) {
-    smaller_node_used_features = GetUsedFeatures(false);
-    larger_node_used_features = GetUsedFeatures(false);
-  }
+  std::vector<int8_t> smaller_node_used_features = col_sampler_.GetByNode();
+  std::vector<int8_t> larger_node_used_features = col_sampler_.GetByNode();
   OMP_INIT_EX();
 // find splits
 #pragma omp parallel for schedule(static)
@@ -648,8 +585,9 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
   return result_count;
 }
 
+template <bool UPDATE_CNT>
 void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
-                                   int* right_leaf, bool update_cnt) {
+                                   int* right_leaf) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::SplitInner", global_timer);
   SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index =
@@ -670,7 +608,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
                            &best_split_info.threshold, 1,
                            best_split_info.default_left, next_leaf_id);
-    if (update_cnt) {
+    if (UPDATE_CNT) {
       // don't need to update this in data-based parallel model
       best_split_info.left_count = data_partition_->leaf_count(*left_leaf);
       best_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
@@ -705,7 +643,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                            static_cast<int>(cat_bitset_inner.size()),
                            best_split_info.default_left, next_leaf_id);
 
-    if (update_cnt) {
+    if (UPDATE_CNT) {
       // don't need to update this in data-based parallel model
       best_split_info.left_count = data_partition_->leaf_count(*left_leaf);
       best_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
@@ -753,6 +691,14 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                                   best_split_info.left_output);
 
 }
+
+template void SerialTreeLearner::SplitInner<true>(Tree* tree, int best_leaf,
+                                                  int* left_leaf,
+                                                  int* right_leaf);
+
+template void SerialTreeLearner::SplitInner<false>(Tree* tree, int best_leaf,
+                                                   int* left_leaf,
+                                                   int* right_leaf);
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                                         data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
