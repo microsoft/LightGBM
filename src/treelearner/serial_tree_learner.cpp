@@ -710,7 +710,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
   double sum_hessians = split->left_sum_hessian + split->right_sum_hessian;
   int num_data = split->left_count + split->right_count;
 
-  std::vector<SplitInfo> bests(num_threads_);
+  std::vector<SplitInfo> bests(share_state_->num_threads);
   LeafSplits leaf_splits(num_data);
   leaf_splits.Init(leaf, sum_gradients, sum_hessians);
 
