@@ -126,7 +126,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
     }
 #ifdef DEBUG
     CHECK(new_leaf - 1 >= 0);
-    CHECK(new_leaf - 1 < node_parent_.size());
+    CHECK((unsigned int)(new_leaf - 1) < node_parent_.size());
 #endif
     node_parent_[new_leaf - 1] = tree->leaf_parent(leaf);
   }
@@ -168,7 +168,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
       const std::vector<SplitInfo> &best_split_per_leaf) {
 #ifdef DEBUG
     CHECK(node_idx >= 0);
-    CHECK(node_idx < node_parent_.size());
+    CHECK((unsigned int) node_idx < node_parent_.size());
 #endif
     int parent_idx = node_parent_[node_idx];
     if (parent_idx != -1) {
@@ -252,10 +252,10 @@ class FastLeafConstraints : public BasicLeafConstraints {
 #ifdef DEBUG
       if (maximum) {
         CHECK(min_max_constraints.first >=
-              learner_state.tree->LeafOutput(leaf_idx));
+              tree->LeafOutput(leaf_idx));
       } else {
         CHECK(min_max_constraints.second <=
-              learner_state.tree->LeafOutput(leaf_idx));
+              tree->LeafOutput(leaf_idx));
       }
 #endif
 
