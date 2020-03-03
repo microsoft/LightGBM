@@ -152,12 +152,14 @@ class FastLeafConstraints : public BasicLeafConstraints {
                           int split_feature, const SplitInfo &split_info,
                           const std::vector<SplitInfo> &best_split_per_leaf) override{
     leaves_to_update_.clear();
-    UpdateConstraintsWithOutputs(is_numerical_split, leaf, new_leaf,
-                                 monotone_type, right_output, left_output);
+    if (leaf_is_in_monotone_subtree_[leaf]) {
+      UpdateConstraintsWithOutputs(is_numerical_split, leaf, new_leaf,
+                                   monotone_type, right_output, left_output);
 
-    GoUpToFindLeavesToUpdate(tree, tree->leaf_parent(new_leaf), split_feature,
-                             split_info, split_info.threshold,
-                             best_split_per_leaf);
+      GoUpToFindLeavesToUpdate(tree, tree->leaf_parent(new_leaf), split_feature,
+                               split_info, split_info.threshold,
+                               best_split_per_leaf);
+    }
     return leaves_to_update_;
   }
 
