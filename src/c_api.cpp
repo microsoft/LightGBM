@@ -1798,6 +1798,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     }
   }
   Log::Fatal("Unknown data type in RowFunctionFromDenseMatric");
+  return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
@@ -1902,6 +1903,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
     }
   }
   Log::Fatal("Unknown data type in RowFunctionFromCSR");
+  return nullptr;
 }
 
 std::function<std::pair<int, double>(int idx)>
@@ -1967,6 +1969,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
     }
   }
   Log::Fatal("Unknown data type in CSC matrix");
+  return nullptr;
 }
 
 CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
