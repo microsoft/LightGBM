@@ -358,3 +358,141 @@ test_that("lgb.train() works as expected with sparse features", {
   expected_error <- 0.6931268
   expect_true(abs(bst$eval_train()[[1L]][["value"]] - expected_error) < TOLERANCE)
 })
+
+test_that("lgb.train() works with early stopping for classification", {
+  trainDF <- data.frame(
+    "feat1" = rep(c(5.0, 10.0), 500L)
+    , "target" = rep(c(0L, 1L), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = rep(c(5.0, 10.0), 50L)
+    , "target" = rep(c(0L, 1L), 50L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid <- lgb.Dataset(
+    data = as.matrix(validDF[["feat1"]], drop = FALSE)
+    , label = validDF[["target"]]
+  )
+  nrounds <- 10L
+
+  ################################
+  # train with no early stopping #
+  ################################
+  bst <- lgb.train(
+    params = list(
+      objective = "binary"
+      , metric = "binary_error"
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # a perfect model should be trivial to obtain, but all 10 rounds
+  # should happen
+  expect_equal(bst$best_score, 0.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(length(bst$record_evals[["valid1"]][["binary_error"]][["eval"]]), nrounds)
+
+  #############################
+  # train with early stopping #
+  #############################
+  early_stopping_rounds <- 5L
+  bst  <- lgb.train(
+    params = list(
+      objective = "binary"
+      , metric = "binary_error"
+      , early_stopping_rounds = early_stopping_rounds
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # a perfect model should be trivial to obtain, and only 6 rounds
+  # should have happen (1 with improvement, 5 consecutive with no improvement)
+  expect_equal(bst$best_score, 0.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(
+    length(bst$record_evals[["valid1"]][["binary_error"]][["eval"]])
+    , early_stopping_rounds + 1L
+  )
+
+})
+
+test_that("lgb.train() works with early stopping for regression", {
+  set.seed(708L)
+  trainDF <- data.frame(
+    "feat1" = rep(c(10.0, 100.0), 500L)
+    , "target" = rep(c(-50.0, 50.0), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = rep(50.0, 4L)
+    , "target" = rep(50.0, 4L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid <- lgb.Dataset(
+    data = as.matrix(validDF[["feat1"]], drop = FALSE)
+    , label = validDF[["target"]]
+  )
+  nrounds <- 10L
+
+  ################################
+  # train with no early stopping #
+  ################################
+  bst <- lgb.train(
+    params = list(
+      objective = "regression"
+      , metric = "rmse"
+      , min_data_in_bin = 5L
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # the best possible model should come from the first iteration, but
+  # all 10 training iterations should happen
+  expect_equal(bst$best_score, 55.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(length(bst$record_evals[["valid1"]][["rmse"]][["eval"]]), nrounds)
+
+  #############################
+  # train with early stopping #
+  #############################
+  early_stopping_rounds <- 5L
+  bst  <- lgb.train(
+    params = list(
+      objective = "regression"
+      , metric = "rmse"
+      , min_data_in_bin = 5L
+      , early_stopping_rounds = early_stopping_rounds
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # the best model should be from the first iteration, and only 6 rounds
+  # should have happen (1 with improvement, 5 consecutive with no improvement)
+  expect_equal(bst$best_score, 55.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(
+    length(bst$record_evals[["valid1"]][["rmse"]][["eval"]])
+    , early_stopping_rounds + 1L
+  )
+})
