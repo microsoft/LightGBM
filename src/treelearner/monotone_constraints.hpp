@@ -124,6 +124,10 @@ class FastLeafConstraints : public BasicLeafConstraints {
       leaf_is_in_monotone_subtree_[leaf] = true;
       leaf_is_in_monotone_subtree_[new_leaf] = true;
     }
+#ifdef DEBUG
+    CHECK(new_leaf - 1 >= 0);
+    CHECK(new_leaf - 1 < node_parent_.size());
+#endif
     node_parent_[new_leaf - 1] = tree->leaf_parent(leaf);
   }
 
@@ -162,6 +166,10 @@ class FastLeafConstraints : public BasicLeafConstraints {
       std::vector<uint32_t> &thresholds, std::vector<bool> &is_in_right_split,
       int split_feature, const SplitInfo &split_info, uint32_t split_threshold,
       const std::vector<SplitInfo> &best_split_per_leaf) {
+#ifdef DEBUG
+    CHECK(node_idx >= 0);
+    CHECK(node_idx < node_parent_.size());
+#endif
     int parent_idx = node_parent_[node_idx];
     if (parent_idx != -1) {
       int inner_feature = tree->split_feature_inner(parent_idx);
