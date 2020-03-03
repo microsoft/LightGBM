@@ -1381,6 +1381,29 @@ void Dataset::ConstructHistogramsInner(
     }
   }
 }
+template void Dataset::ConstructHistogramsInner<true, true>(
+    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+    data_size_t num_data, const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    TrainingShareStates* share_state, hist_t* hist_data) const;
+
+template void Dataset::ConstructHistogramsInner<true, false>(
+    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+    data_size_t num_data, const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    TrainingShareStates* share_state, hist_t* hist_data) const;
+
+template void Dataset::ConstructHistogramsInner<false, true>(
+    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+    data_size_t num_data, const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    TrainingShareStates* share_state, hist_t* hist_data) const;
+
+template void Dataset::ConstructHistogramsInner<false, false>(
+    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+    data_size_t num_data, const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    TrainingShareStates* share_state, hist_t* hist_data) const;
 
 void Dataset::FixHistogram(int feature_idx, double sum_gradient,
                            double sum_hessian, hist_t* data) const {
