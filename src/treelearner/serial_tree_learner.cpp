@@ -725,7 +725,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
     const int tid = omp_get_thread_num();
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
     ComputeBestSplitForFeature(
-        smaller_leaf_histogram_array_, feature_index, real_fidx,
+        histogram_array_, feature_index, real_fidx,
         true,  // fixme: this cannot work with colsample_bynode, but do we really need to compute all features? why not just the used features of `split->feature`?
         num_data, &leaf_splits, &bests[tid]);
 
