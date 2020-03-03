@@ -727,12 +727,7 @@ template<typename _RanIt, typename _Pr, typename _VTRanIt> inline
 static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
-  int num_threads = 1;
-  #pragma omp parallel
-  #pragma omp master
-  {
-    num_threads = omp_get_num_threads();
-  }
+  int num_threads = OMP_NUM_THREADS();
   if (len <= kMinInnerLen || num_threads <= 1) {
     std::sort(_First, _Last, _Pred);
     return;
@@ -1028,60 +1023,80 @@ class AlignmentAllocator {
   }
 };
 
-// Note: this class is not thread-safe, don't use it inside omp blocks
 class Timer {
  public:
-  Timer() {}
-
-  ~Timer() {
-    Print();
+  Timer() {
+#ifdef TIMETAG
+    int num_threads = OMP_NUM_THREADS();
+    start_time_.resize(num_threads);
+    stats_.resize(num_threads);
+#endif  // TIMETAG
   }
 
-  #ifdef TIMETAG
+  ~Timer() { Print(); }
+
+#ifdef TIMETAG
   void Start(const std::string& name) {
-    auto cur_time = std::chrono::steady_clock::now();
-    start_time_[name] = cur_time;
+    auto tid = omp_get_thread_num();
+    start_time_[tid][name] = std::chrono::steady_clock::now();
   }
 
   void Stop(const std::string& name) {
-    if (stats_.find(name) == stats_.end()) {
-      stats_[name] = std::chrono::duration<double, std::milli>(0);
+    auto cur_time = std::chrono::steady_clock::now();
+    auto tid = omp_get_thread_num();
+    if (stats_[tid].find(name) == stats_[tid].end()) {
+      stats_[tid][name] = std::chrono::duration<double, std::milli>(0);
     }
-    stats_[name] += std::chrono::steady_clock::now() - start_time_[name];
+    stats_[tid][name] += cur_time - start_time_[tid][name];
   }
 
-  #else
-  void Start(const std::string&) { }
+#else
+  void Start(const std::string&) {}
 
-  void Stop(const std::string&) { }
-  #endif  // TIMETAG
+  void Stop(const std::string&) {}
+#endif  // TIMETAG
 
   void Print() const {
-    #ifdef TIMETAG
-    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(stats_.begin(), stats_.end());
+#ifdef TIMETAG
+    std::unordered_map<std::string, std::chrono::duration<double, std::milli>>
+        stats(stats_[0].begin(), stats_[0].end());
+    for (size_t i = 1; i < stats_.size(); ++i) {
+      for (auto it = stats_[i].begin(); it != stats_[i].end(); ++it) {
+        if (stats.find(it->first) == stats.end()) {
+          stats[it->first] = it->second;
+        } else {
+          stats[it->first] += it->second;
+        }
+      }
+    }
+    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(
+        stats.begin(), stats.end());
     for (auto it = ordered.begin(); it != ordered.end(); ++it) {
       Log::Info("%s costs:\t %f", it->first.c_str(), it->second * 1e-3);
     }
-    #endif  // TIMETAG
+#endif  // TIMETAG
   }
-
-  std::unordered_map<std::string, std::chrono::steady_clock::time_point> start_time_;
-  std::unordered_map<std::string, std::chrono::duration<double, std::milli>> stats_;
+#ifdef TIMETAG
+  std::vector<
+      std::unordered_map<std::string, std::chrono::steady_clock::time_point>>
+      start_time_;
+  std::vector<std::unordered_map<std::string,
+                                 std::chrono::duration<double, std::milli>>>
+      stats_;
+#endif  // TIMETAG
 };
 
 // Note: this class is not thread-safe, don't use it inside omp blocks
 class FunctionTimer {
  public:
-  FunctionTimer(const std::string& name, Timer& timer): timer_(timer) {
+  FunctionTimer(const std::string& name, Timer& timer) : timer_(timer) {
     timer.Start(name);
-    #ifdef TIMETAG
+#ifdef TIMETAG
     name_ = name;
-    #endif  // TIMETAG
+#endif  // TIMETAG
   }
 
-  ~FunctionTimer() {
-    timer_.Stop(name_);
-  }
+  ~FunctionTimer() { timer_.Stop(name_); }
 
  private:
   std::string name_;

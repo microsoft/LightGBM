@@ -30,9 +30,10 @@
 #include <boost/align/aligned_allocator.hpp>
 #endif
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
+
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
 /*!
@@ -47,11 +48,22 @@ class SerialTreeLearner: public TreeLearner {
 
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
-  void ResetTrainingData(const Dataset* train_data) override;
+  void ResetTrainingData(const Dataset* train_data,
+                         bool is_constant_hessian) override {
+    ResetTrainingDataInner(train_data, is_constant_hessian, true);
+  }
+
+  void ResetIsConstantHessian(bool is_constant_hessian) override {
+    share_state_->is_constant_hessian = is_constant_hessian;
+  }
+
+  virtual void ResetTrainingDataInner(const Dataset* train_data,
+                                      bool is_constant_hessian,
+                                      bool reset_multi_val_bin);
 
   void ResetConfig(const Config* config) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
+  Tree* Train(const score_t* gradients, const score_t *hessians,
               const Json& forced_split_json) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
@@ -59,8 +71,17 @@ class SerialTreeLearner: public TreeLearner {
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                           const score_t* gradients, const score_t* hessians) override;
 
-  void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
-    data_partition_->SetUsedDataIndices(used_indices, num_data);
+  void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
+    if (subset == nullptr) {
+      data_partition_->SetUsedDataIndices(used_indices, num_data);
+      share_state_->is_use_subrow = false;
+    } else {
+      ResetTrainingDataInner(subset, share_state_->is_constant_hessian, false);
+      share_state_->is_use_subrow = true;
+      share_state_->is_subrow_copied = false;
+      share_state_->bagging_use_indices = used_indices;
+      share_state_->bagging_indices_cnt = num_data;
+    }
   }
 
   void AddPredictionToScore(const Tree* tree,
@@ -83,8 +104,6 @@ class SerialTreeLearner: public TreeLearner {
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
-  bool IsHistColWise() const override { return is_hist_colwise_; }
-
  protected:
   void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
                                   int feature_index, int real_fidx,
@@ -92,7 +111,7 @@ class SerialTreeLearner: public TreeLearner {
                                   const LeafSplits* leaf_splits,
                                   SplitInfo* best_split);
 
-  void GetMultiValBin(const Dataset* dataset, bool is_first_time);
+  void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
   virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
   /*!
@@ -118,7 +137,12 @@ class SerialTreeLearner: public TreeLearner {
   * \param left_leaf The index of left leaf after splitted.
   * \param right_leaf The index of right leaf after splitted.
   */
-  virtual void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
+  inline virtual void Split(Tree* tree, int best_leaf, int* left_leaf,
+    int* right_leaf) {
+    SplitInner(tree, best_leaf, left_leaf, right_leaf, true);
+  }
+
+  void SplitInner(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf, bool update_cnt);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
   virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
@@ -181,18 +205,11 @@ class SerialTreeLearner: public TreeLearner {
   /*! \brief hessians of current iteration, ordered for cache optimized */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_hessians_;
 #endif
-
-  /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
-  std::vector<char, Common::AlignmentAllocator<char, kAlignedSize>> is_data_in_leaf_;
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
   const Config* config_;
-  int num_threads_;
-  std::vector<int> ordered_bin_indices_;
-  bool is_constant_hessian_;
-  std::unique_ptr<TrainingTempState> temp_state_;
-  bool is_hist_colwise_;
+  std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
 

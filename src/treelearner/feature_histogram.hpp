@@ -99,7 +99,7 @@ class FeatureHistogram {
     if (meta_->num_bin - 2 > 0) {
       rand_threshold = rand_.NextInt(0, meta_->num_bin - 2);
     }
-    bool is_rand = meta_->config->extra_trees;
+    const bool is_rand = meta_->config->extra_trees;
     if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
       if (meta_->missing_type == MissingType::Zero) {
         if (is_rand) {
@@ -133,7 +133,21 @@ class FeatureHistogram {
     output->monotone_type = meta_->monotone_type;
   }
 
-  void FindBestThresholdCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
+  void FindBestThresholdCategorical(double sum_gradient, double sum_hessian,
+                                    data_size_t num_data,
+                                    const ConstraintEntry& constraints,
+                                    SplitInfo* output) {
+    if (meta_->config->extra_trees) {
+      FindBestThresholdCategoricalInner<true>(sum_gradient, sum_hessian,
+                                              num_data, constraints, output);
+    } else {
+      FindBestThresholdCategoricalInner<false>(sum_gradient, sum_hessian,
+                                               num_data, constraints, output);
+    }
+  }
+
+  template<bool IS_RAND>
+  void FindBestThresholdCategoricalInner(double sum_gradient, double sum_hessian, data_size_t num_data,
     const ConstraintEntry& constraints, SplitInfo* output) {
     output->default_left = false;
     double best_gain = kMinScore;
@@ -153,7 +167,13 @@ class FeatureHistogram {
     int best_threshold = -1;
     int best_dir = 1;
     const double cnt_factor = num_data / sum_hessian;
+    int rand_threshold = 0;
     if (use_onehot) {
+      if (IS_RAND) {
+        if (used_bin > 0) {
+          rand_threshold = rand_.NextInt(0, used_bin);
+        }
+      }
       for (int t = 0; t < used_bin; ++t) {
         const auto grad = GET_GRAD(data_, t);
         const auto hess = GET_HESS(data_, t);
@@ -170,6 +190,11 @@ class FeatureHistogram {
         if (sum_other_hessian < meta_->config->min_sum_hessian_in_leaf) continue;
 
         double sum_other_gradient = sum_gradient - grad;
+        if (IS_RAND) {
+          if (t != rand_threshold) {
+            continue;
+          }
+        }
         // current split gain
         double current_gain = GetSplitGains(sum_other_gradient, sum_other_hessian, grad, hess + kEpsilon,
           meta_->config->lambda_l1, l2, meta_->config->max_delta_step, constraints, 0);
@@ -211,9 +236,10 @@ class FeatureHistogram {
       start_position.push_back(used_bin - 1);
       const int max_num_cat = std::min(meta_->config->max_cat_threshold, (used_bin + 1) / 2);
       int max_threshold = std::max(std::min(max_num_cat, used_bin) - 1, 0);
-      int rand_threshold = 0;
-      if (max_threshold > 0) {
-        rand_threshold = rand_.NextInt(0, max_threshold);
+      if (IS_RAND) {
+        if (max_threshold > 0) {
+          rand_threshold = rand_.NextInt(0, max_threshold);
+        }
       }
 
       is_splittable_ = false;
@@ -250,19 +276,22 @@ class FeatureHistogram {
           cnt_cur_group = 0;
 
           double sum_right_gradient = sum_gradient - sum_left_gradient;
-          if (!meta_->config->extra_trees || i == rand_threshold) {
-            double current_gain = GetSplitGains(sum_left_gradient, sum_left_hessian, sum_right_gradient, sum_right_hessian,
-              meta_->config->lambda_l1, l2, meta_->config->max_delta_step, constraints, 0);
-            if (current_gain <= min_gain_shift) continue;
-            is_splittable_ = true;
-            if (current_gain > best_gain) {
-              best_left_count = left_count;
-              best_sum_left_gradient = sum_left_gradient;
-              best_sum_left_hessian = sum_left_hessian;
-              best_threshold = i;
-              best_gain = current_gain;
-              best_dir = dir;
+          if (IS_RAND) {
+            if (i != rand_threshold) {
+              continue;
             }
+          }
+          double current_gain = GetSplitGains(sum_left_gradient, sum_left_hessian, sum_right_gradient, sum_right_hessian,
+            meta_->config->lambda_l1, l2, meta_->config->max_delta_step, constraints, 0);
+          if (current_gain <= min_gain_shift) continue;
+          is_splittable_ = true;
+          if (current_gain > best_gain) {
+            best_left_count = left_count;
+            best_sum_left_gradient = sum_left_gradient;
+            best_sum_left_hessian = sum_left_hessian;
+            best_threshold = i;
+            best_gain = current_gain;
+            best_dir = dir;
           }
         }
       }
@@ -523,7 +552,7 @@ class FeatureHistogram {
     return -(2.0 * sg_l1 * output + (sum_hessians + l2) * output * output);
   }
 
-  template<bool is_rand>
+  template<bool IS_RAND>
   void FindBestThresholdSequence(double sum_gradient, double sum_hessian, data_size_t num_data, const ConstraintEntry& constraints,
                                  double min_gain_shift, SplitInfo* output, int dir, bool skip_default_bin, bool use_na_as_missing, int rand_threshold) {
     const int8_t offset = meta_->offset;
@@ -565,8 +594,8 @@ class FeatureHistogram {
         if (sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) break;
 
         double sum_left_gradient = sum_gradient - sum_right_gradient;
-        if (is_rand) {
-          if (t + offset != rand_threshold) {
+        if (IS_RAND) {
+          if (t - 1 + offset != rand_threshold) {
             continue;
           }
         }
@@ -632,7 +661,7 @@ class FeatureHistogram {
         if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) break;
 
         double sum_right_gradient = sum_gradient - sum_left_gradient;
-        if (is_rand) {
+        if (IS_RAND) {
           if (t + offset != rand_threshold) {
             continue;
           }
@@ -714,7 +743,7 @@ class HistogramPool {
   void Reset(int cache_size, int total_size) {
     cache_size_ = cache_size;
     // at least need 2 bucket to store smaller leaf and larger leaf
-    CHECK(cache_size_ >= 2);
+    CHECK_GE(cache_size_, 2);
     total_size_ = total_size;
     if (cache_size_ > total_size_) {
       cache_size_ = total_size_;

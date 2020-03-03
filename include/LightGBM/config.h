@@ -128,7 +128,8 @@ struct Config {
   // descl2 = label is anything in interval [0, 1]
   // desc = ranking application
   // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
-  // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function. To obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+  // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+  // descl2 = ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   std::string objective = "regression";
 
@@ -191,6 +192,7 @@ struct Config {
   // desc = do not set it too large if your dataset is small (for instance, do not use 64 threads for a dataset with 10,000 rows)
   // desc = be aware a task manager or any similar CPU monitoring tool might report that cores not being fully utilized. **This is normal**
   // desc = for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
+  // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
   // [doc-only]
@@ -529,7 +531,7 @@ struct Config {
   int bin_construct_sample_cnt = 200000;
 
   // alias = data_seed
-  // desc = random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
+  // desc = random seed for sampling data to construct histogram bins
   int data_random_seed = 1;
 
   // alias = is_sparse, enable_sparse, sparse
@@ -705,6 +707,10 @@ struct Config {
 
   #pragma region Objective Parameters
 
+  // desc = used only in ``rank_xendcg`` objective
+  // desc = random seed for objectives, if random process is needed
+  int objective_seed = 5;
+
   // check = >0
   // alias = num_classes
   // desc = used only in ``multi-class`` classification application
@@ -763,13 +769,13 @@ struct Config {
 
   // check = >0
   // desc = used only in ``lambdarank`` application
-  // desc = optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
-  int max_position = 20;
+  // desc = used for truncating the max DCG, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
+  int lambdarank_truncation_level = 20;
 
   // desc = used only in ``lambdarank`` application
   // desc = set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data
-  // desc = set this to ``false`` to enforce the original lambdamart algorithm
-  bool lambdamart_norm = true;
+  // desc = set this to ``false`` to enforce the original lambdarank algorithm
+  bool lambdarank_norm = true;
 
   // type = multi-double
   // default = 0,1,3,7,15,31,63,...,2^30-1
@@ -777,10 +783,6 @@ struct Config {
   // desc = relevant gain for labels. For example, the gain of label ``2`` is ``3`` in case of default label gains
   // desc = separate by ``,``
   std::vector<double> label_gain;
-
-  // desc = used only in the ``rank_xendcg`` objective
-  // desc = random seed for objectives
-  int objective_seed = 5;
 
   #pragma endregion
 
@@ -906,7 +908,7 @@ struct Config {
   size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
 
   bool is_parallel = false;
-  bool is_parallel_find_bin = false;
+  bool is_data_based_parallel = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static const std::unordered_map<std::string, std::string>& alias_table();
   static const std::unordered_set<std::string>& parameter_set();

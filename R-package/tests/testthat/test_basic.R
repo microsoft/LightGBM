@@ -327,3 +327,34 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
     expect_false(parsed_model$average_output)
   }
 })
+
+test_that("lgb.train() works as expected with sparse features", {
+  set.seed(708L)
+  num_obs <- 70000L
+  trainDF <- data.frame(
+    y = sample(c(0L, 1L), size = num_obs, replace = TRUE)
+    , x = sample(c(1.0:10.0, rep(NA_real_, 50L)), size = num_obs , replace = TRUE)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["x"]], drop = FALSE)
+    , label = trainDF[["y"]]
+  )
+  nrounds <- 1L
+  bst <- lgb.train(
+    params = list(
+      objective = "binary"
+      , min_data = 1L
+      , min_data_in_bin = 1L
+    )
+    , data = dtrain
+    , nrounds = nrounds
+  )
+
+  expect_true(lgb.is.Booster(bst))
+  expect_equal(bst$current_iter(), nrounds)
+  parsed_model <- jsonlite::fromJSON(bst$dump_model())
+  expect_equal(parsed_model$objective, "binary sigmoid:1")
+  expect_false(parsed_model$average_output)
+  expected_error <- 0.6931268
+  expect_true(abs(bst$eval_train()[[1L]][["value"]] - expected_error) < TOLERANCE)
+})

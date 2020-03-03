@@ -13,9 +13,9 @@
 
 #include <LightGBM/json11.hpp>
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 /*! \brief forward declaration */
 class Tree;
@@ -37,7 +37,10 @@ class TreeLearner {
   */
   virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
-  virtual void ResetTrainingData(const Dataset* train_data) = 0;
+  virtual void ResetIsConstantHessian(bool is_constant_hessian) = 0;
+
+  virtual void ResetTrainingData(const Dataset* train_data,
+                                 bool is_constant_hessian) = 0;
 
   /*!
   * \brief Reset tree configs
@@ -52,7 +55,7 @@ class TreeLearner {
   * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian,
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians,
                       const Json& forced_split_json) = 0;
 
   /*!
@@ -65,13 +68,13 @@ class TreeLearner {
 
   /*!
   * \brief Set bagging data
+  * \param subset subset of bagging
   * \param used_indices Used data indices
   * \param num_data Number of used data
   */
-  virtual void SetBaggingData(const data_size_t* used_indices,
-    data_size_t num_data) = 0;
-
-  virtual bool IsHistColWise() const = 0;
+  virtual void SetBaggingData(const Dataset* subset,
+                              const data_size_t* used_indices,
+                              data_size_t num_data) = 0;
 
   /*!
   * \brief Using last trained tree to predict score then adding to out_score;

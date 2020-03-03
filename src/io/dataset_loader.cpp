@@ -13,9 +13,9 @@
 
 #include <LightGBM/json11.hpp>
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
   :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
@@ -390,8 +390,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(int) * (dataset->num_groups_);
 
   if (!config_.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.max_bin_by_feature.size());
-    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+    CHECK_EQ(static_cast<size_t>(dataset->num_total_features_), config_.max_bin_by_feature.size());
+    CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
     dataset->max_bin_by_feature_.resize(dataset->num_total_features_);
     dataset->max_bin_by_feature_.assign(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end());
   } else {
@@ -542,8 +542,8 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   if (!config_.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(num_col) == config_.max_bin_by_feature.size());
-    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+    CHECK_EQ(static_cast<size_t>(num_col), config_.max_bin_by_feature.size());
+    CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
   }
 
   // get forced split
@@ -850,12 +850,12 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
     dataset->num_total_features_ = Network::GlobalSyncUpByMax(dataset->num_total_features_);
   }
   if (!feature_names_.empty()) {
-    CHECK(dataset->num_total_features_ == static_cast<int>(feature_names_.size()));
+    CHECK_EQ(dataset->num_total_features_, static_cast<int>(feature_names_.size()));
   }
 
   if (!config_.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.max_bin_by_feature.size());
-    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+    CHECK_EQ(static_cast<size_t>(dataset->num_total_features_), config_.max_bin_by_feature.size());
+    CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
   }
 
   // get forced split

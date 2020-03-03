@@ -73,42 +73,44 @@ class Dense4bitsBin : public Bin {
 
   inline BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
 
-  #define ACC_GH(hist, i, g, h) \
-  const auto ti = (i) << 1; \
-  hist[ti] += g; \
-  hist[ti + 1] += h; \
-
-  template<bool use_indices, bool use_prefetch, bool use_hessians>
+  template<bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
   void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const {
     data_size_t i = start;
-
-    if (use_prefetch) {
+    hist_t* grad = out;
+    hist_t* hess = out + 1;
+    hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(hess);
+    if (USE_PREFETCH) {
       const data_size_t pf_offset = 64;
       const data_size_t pf_end = end - pf_offset;
       for (; i < pf_end; ++i) {
-        const auto idx = use_indices ? data_indices[i] : i;
-        const auto pf_idx = use_indices ? data_indices[i + pf_offset] : i + pf_offset;
+        const auto idx = USE_INDICES ? data_indices[i] : i;
+        const auto pf_idx = USE_INDICES ? data_indices[i + pf_offset] : i + pf_offset;
         PREFETCH_T0(data_.data() + (pf_idx >> 1));
-        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-        if (use_hessians) {
-          ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+        const uint8_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        const uint8_t ti = static_cast<uint8_t>(bin) << 1;
+        if (USE_HESSIAN) {
+          grad[ti] += ordered_gradients[i];
+          hess[ti] += ordered_hessians[i];
         } else {
-          ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+          grad[ti] += ordered_gradients[i];
+          ++cnt[ti];
         }
       }
     }
     for (; i < end; ++i) {
-      const auto idx = use_indices ? data_indices[i] : i;
-      const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      if (use_hessians) {
-        ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+      const auto idx = USE_INDICES ? data_indices[i] : i;
+      const uint8_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const uint8_t ti = static_cast<uint8_t>(bin) << 1;
+      if (USE_HESSIAN) {
+        grad[ti] += ordered_gradients[i];
+        hess[ti] += ordered_hessians[i];
       } else {
-        ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+        grad[ti] += ordered_gradients[i];
+        ++cnt[ti];
       }
     }
   }
-  #undef ACC_GH
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
@@ -292,7 +294,7 @@ class Dense4bitsBin : public Bin {
     }
   }
 
-  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+  void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const Dense4bitsBin*>(full_bin);
     const data_size_t rest = num_used_indices & 1;
     for (int i = 0; i < num_used_indices - rest; i += 2) {

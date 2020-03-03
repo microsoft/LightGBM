@@ -43,8 +43,8 @@ class Predictor {
         "none", LightGBM::PredictionEarlyStopConfig());
     if (early_stop && !boosting->NeedAccuratePrediction()) {
       PredictionEarlyStopConfig pred_early_stop_config;
-      CHECK(early_stop_freq > 0);
-      CHECK(early_stop_margin >= 0);
+      CHECK_GT(early_stop_freq, 0);
+      CHECK_GE(early_stop_margin, 0);
       pred_early_stop_config.margin_threshold = early_stop_margin;
       pred_early_stop_config.round_period = early_stop_freq;
       if (boosting->NumberOfClasses() == 1) {
@@ -56,16 +56,13 @@ class Predictor {
       }
     }
 
-#pragma omp parallel
-#pragma omp master
-    { num_threads_ = omp_get_num_threads(); }
     boosting->InitPredict(num_iteration, predict_contrib);
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(
         num_iteration, predict_leaf_index, predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_.resize(
-        num_threads_,
+        OMP_NUM_THREADS(),
         std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(
             num_feature_, 0.0f));
     const int kFeatureThreshold = 100000;
@@ -281,7 +278,6 @@ class Predictor {
   PredictionEarlyStopInstance early_stop_;
   int num_feature_;
   int num_pred_one_row_;
-  int num_threads_;
   std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> predict_buf_;
 };
 

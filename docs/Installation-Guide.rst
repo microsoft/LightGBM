@@ -7,6 +7,10 @@ All instructions below are aimed to compile 64-bit version of LightGBM.
 It is worth to compile 32-bit version only in very rare special cases of environmental limitations.
 32-bit version is slow and untested, so use it on your own risk and don't forget to adjust some commands in this guide.
 
+Users who want to perform benchmarking can make LightGBM output time costs for different internal routines via adding ``-DUSE_TIMETAG=ON`` to CMake flags.
+
+It is possible to build LightGBM in a debug mode. In this mode all compiler optimizations are disabled and LightGBM performs more checks internally. To enable debug mode you can add ``-DUSE_DEBUG=ON`` to CMake flags or choose ``Debug_*`` configuration (e.g. ``Debug_DLL``, ``Debug_mpi``) in Visual Studio depending on how you are building LightGBM.
+
 For the build of Python-package and R-package, please refer to `Python-package`_ and `R-package`_ folders respectively.
 
 Also you can download artifacts of the latest successful build in master branch (nightly builds): |download artifacts|.
