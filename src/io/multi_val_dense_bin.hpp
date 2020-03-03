@@ -102,7 +102,7 @@ class MultiValDenseBin : public MultiValBin {
                           data_size_t end, const score_t* gradients,
                           const score_t* hessians, hist_t* out) const override {
     ConstructHistogramInner<true, true, false>(data_indices, start, end,
-                                                     gradients, hessians, out);
+                                               gradients, hessians, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
@@ -118,7 +118,7 @@ class MultiValDenseBin : public MultiValBin {
                                  const score_t* hessians,
                                  hist_t* out) const override {
     ConstructHistogramInner<true, true, true>(data_indices, start, end,
-                                                    gradients, hessians, out);
+                                              radients, hessians, out);
   }
 
   MultiValBin* CreateLike(data_size_t num_data, int num_bin, int num_feature, double) const override {

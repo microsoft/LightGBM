@@ -160,7 +160,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
         share_state_->num_threads, num_threads);
   }
   share_state_->num_threads = num_threads;
-  
+
   // some initial works before training
   BeforeTrain();
 
@@ -751,7 +751,6 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                                   best_split_info.monotone_type,
                                   best_split_info.right_output,
                                   best_split_info.left_output);
-
 }
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
