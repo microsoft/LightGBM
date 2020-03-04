@@ -33,6 +33,9 @@ class FeatureMetainfo {
   /*! \brief pointer of tree config */
   const Config* config;
   BinType bin_type;
+  /*! \brief random number generator for extremely randomized trees */
+  mutable Random rand;
+  ;
 };
 /*!
  * \brief FeatureHistogram is used to construct and store a histogram for a
@@ -68,7 +71,6 @@ class FeatureHistogram {
           std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
           std::placeholders::_4, std::placeholders::_5);
     }
-    rand_ = Random(meta_->config->extra_seed);
   }
 
   hist_t* RawData() { return data_; }
@@ -107,7 +109,7 @@ class FeatureHistogram {
     int rand_threshold = 0;
     if (meta_->config->extra_trees) {
       if (meta_->num_bin - 2 > 0) {
-        rand_threshold = rand_.NextInt(0, meta_->num_bin - 2);
+        rand_threshold = meta_->rand.NextInt(0, meta_->num_bin - 2);
       }
       if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
         if (meta_->missing_type == MissingType::Zero) {
@@ -207,7 +209,7 @@ class FeatureHistogram {
     if (use_onehot) {
       if (IS_RAND) {
         if (used_bin > 0) {
-          rand_threshold = rand_.NextInt(0, used_bin);
+          rand_threshold = meta_->rand.NextInt(0, used_bin);
         }
       }
       for (int t = 0; t < used_bin; ++t) {
@@ -282,7 +284,7 @@ class FeatureHistogram {
       int max_threshold = std::max(std::min(max_num_cat, used_bin) - 1, 0);
       if (IS_RAND) {
         if (max_threshold > 0) {
-          rand_threshold = rand_.NextInt(0, max_threshold);
+          rand_threshold = meta_->rand.NextInt(0, max_threshold);
         }
       }
 
@@ -821,8 +823,6 @@ class FeatureHistogram {
   /*! \brief sum of gradient of each bin */
   hist_t* data_;
   bool is_splittable_ = true;
-  /*! \brief random number generator for extremely randomized trees */
-  Random rand_;
 
   std::function<void(double, double, data_size_t, const ConstraintEntry&,
                      SplitInfo*)>
@@ -934,6 +934,7 @@ class HistogramPool {
         ref_feature_meta[i].penalty = 1.0;
       }
       ref_feature_meta[i].config = config;
+      ref_feature_meta[i].rand = Random(config->extra_seed + i);
     }
   }
   void DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise,
