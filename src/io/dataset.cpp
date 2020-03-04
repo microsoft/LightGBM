@@ -319,7 +319,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                         const int* num_per_col, int num_sample_col,
                         size_t total_sample_cnt, const Config& io_config) {
   num_total_features_ = num_total_features;
-  CHECK(num_total_features_ == static_cast<int>(bin_mappers->size()));
+  CHECK_EQ(num_total_features_, static_cast<int>(bin_mappers->size()));
   // get num_features
   std::vector<int> used_features;
   auto& ref_bin_mappers = *bin_mappers;
@@ -775,7 +775,7 @@ void Dataset::ReSize(data_size_t num_data) {
 void Dataset::CopySubrow(const Dataset* fullset,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices, bool need_meta_data) {
-  CHECK(num_used_indices == num_data_);
+  CHECK_EQ(num_used_indices, num_data_);
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {

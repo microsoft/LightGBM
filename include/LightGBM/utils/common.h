@@ -509,7 +509,7 @@ inline static std::vector<T> StringToArray(const std::string& str, int n) {
     return std::vector<T>();
   }
   std::vector<std::string> strs = Split(str.c_str(), ' ');
-  CHECK(strs.size() == static_cast<size_t>(n));
+  CHECK_EQ(strs.size(), static_cast<size_t>(n));
   std::vector<T> ret;
   ret.reserve(strs.size());
   __StringToTHelper<T, std::is_floating_point<T>::value> helper;
