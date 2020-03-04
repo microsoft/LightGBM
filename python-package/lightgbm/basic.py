@@ -1678,11 +1678,71 @@ class Dataset(object):
         if self.handle is None or other.handle is None:
             raise ValueError('Both source and target Datasets must be constructed before adding features')
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        was_none = self.data is None
+        old_self_data_type = type(self.data).__name__
         if other.data is None:
             self.data = None
-        if self.data is not None:
-            # FIXME: concat two dataset
-            self.data = [self.data, other.data]
+        elif self.data is not None:
+            if isinstance(self.data, np.ndarray):
+                if isinstance(other.data, np.ndarray):
+                    self.data = np.hstack((self.data, other.data))
+                elif scipy.sparse.issparse(other.data):
+                    self.data = np.hstack((self.data, other.data.toarray()))
+                elif isinstance(other.data, DataFrame):
+                    self.data = np.hstack((self.data, other.data.values))
+                elif isinstance(other.data, DataTable):
+                    self.data = np.hstack((self.data, other.data.to_numpy()))
+                else:
+                    self.data = None
+            elif scipy.sparse.issparse(self.data):
+                sparse_format = self.data.getformat()
+                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
+                    self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
+                elif isinstance(other.data, DataFrame):
+                    self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
+                elif isinstance(other.data, DataTable):
+                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
+                else:
+                    self.data = None
+            elif isinstance(self.data, DataFrame):
+                if not PANDAS_INSTALLED:
+                    raise LightGBMError("Cannot add features to DataFrame type of raw data "
+                                        "without pandas installed")
+                from pandas import concat
+                if isinstance(other.data, np.ndarray):
+                    self.data = concat((self.data, DataFrame(other.data)),
+                                       axis=1, ignore_index=True)
+                elif scipy.sparse.issparse(other.data):
+                    self.data = concat((self.data, DataFrame(other.data.toarray())),
+                                       axis=1, ignore_index=True)
+                elif isinstance(other.data, DataFrame):
+                    self.data = concat((self.data, other.data),
+                                       axis=1, ignore_index=True)
+                elif isinstance(other.data, DataTable):
+                    self.data = concat((self.data, DataFrame(other.data.to_numpy())),
+                                       axis=1, ignore_index=True)
+                else:
+                    self.data = None
+            elif isinstance(self.data, DataTable):
+                if isinstance(other.data, np.ndarray):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data)))
+                elif scipy.sparse.issparse(other.data):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
+                elif isinstance(other.data, DataFrame):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
+                elif isinstance(other.data, DataTable):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                else:
+                    self.data = None
+            else:
+                self.data = None
+        if self.data is None:
+            err_msg = ("Cannot add features from {} type of raw data to "
+                       "{} type of raw data.\n").format(type(other.data).__name__,
+                                                        old_self_data_type)
+            err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
+                        if was_none else "Freeing raw data")
+            warnings.warn(err_msg)
         return self
 
     def _dump_text(self, filename):
