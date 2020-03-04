@@ -82,8 +82,6 @@ class FeatureHistogram {
                          data_size_t num_data,
                          const ConstraintEntry& constraints,
                          SplitInfo* output) {
-    Common::FunctionTimer fun_time("FeatureHistogram::FindBestThreshold",
-                                   global_timer);
     output->default_left = true;
     output->gain = kMinScore;
     find_best_threshold_fun_(sum_gradient, sum_hessian + 2 * kEpsilon, num_data,
