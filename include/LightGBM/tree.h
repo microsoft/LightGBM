@@ -89,12 +89,7 @@ class Tree {
 
   /*! \brief Set the output of one leaf */
   inline void SetLeafOutput(int leaf, double output) {
-    // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
-    if (IsZero(output)) {
-      leaf_value_[leaf] = 0;
-    } else {
-      leaf_value_[leaf] = output;
-    }
+    leaf_value_[leaf] = MaybeRoundToZero(output);
   }
 
   /*!
@@ -156,40 +151,33 @@ class Tree {
   /*! \brief Get the number of data points that fall at or below this node*/
   inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
 
+  
   /*!
   * \brief Shrinkage for the tree's output
   *        shrinkage rate (a.k.a learning rate) is used to tune the training process
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
-    #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
-    for (int i = 0; i < num_leaves_; ++i) {
-      double new_leaf_value = leaf_value_[i] * rate;
-      // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
-      if (IsZero(new_leaf_value)) {
-        leaf_value_[i] = 0;
-      } else {
-        leaf_value_[i] = new_leaf_value;
-      }
+#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+    for (int i = 0; i < num_leaves_ - 1; ++i) {
+      leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] * rate);
+      internal_value_[i] = MaybeRoundToZero(internal_value_[i] * rate);
     }
+    leaf_value_[num_leaves_ - 1] =
+        MaybeRoundToZero(leaf_value_[num_leaves_ - 1] * rate);
     shrinkage_ *= rate;
   }
 
-  inline double shrinkage() const {
-    return shrinkage_;
-  }
+  inline double shrinkage() const { return shrinkage_; }
 
   inline void AddBias(double val) {
-    #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
-    for (int i = 0; i < num_leaves_; ++i) {
-      double new_leaf_value = val + leaf_value_[i];
-      // Prevent denormal values because they can cause std::out_of_range exception when converting strings to doubles
-      if (IsZero(new_leaf_value)) {
-        leaf_value_[i] = 0;
-      } else {
-        leaf_value_[i] = new_leaf_value;
-      }
+#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+    for (int i = 0; i < num_leaves_ - 1; ++i) {
+      leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] + val);
+      internal_value_[i] = MaybeRoundToZero(internal_value_[i] + val);
     }
+    leaf_value_[num_leaves_ - 1] =
+        MaybeRoundToZero(leaf_value_[num_leaves_ - 1] + val);
     // force to 1.0
     shrinkage_ = 1.0f;
   }
@@ -214,6 +202,14 @@ class Tree {
       return true;
     } else {
       return false;
+    }
+  }
+
+  inline static double MaybeRoundToZero(double fval) {
+    if (fval > -kZeroThreshold && fval <= kZeroThreshold) {
+      return 0;
+    } else {
+      return fval;
     }
   }
 
