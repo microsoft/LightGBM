@@ -59,7 +59,7 @@
   };
 
   typedef int R_xlen_t;
-#endif // R_VER_ABOVE_35
+#endif  // R_VER_ABOVE_35
 
 struct lgbm_primsxp {
   int offset;
@@ -188,6 +188,6 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
     }
   }
 
-#endif // INTPTR_MAX == INT64_MAX
+#endif  // INTPTR_MAX == INT64_MAX
 
 #endif  // R_OBJECT_HELPER_H_
