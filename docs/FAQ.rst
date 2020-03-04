@@ -207,7 +207,8 @@ This is a known issue: `Microsoft/LightGBM#698 <https://github.com/microsoft/Lig
 Avoid printing the ``lgb.Dataset`` after using ``setinfo``.
 This is a known bug: `Microsoft/LightGBM#539 <https://github.com/microsoft/LightGBM/issues/539>`__.
 
-3. `error in data.table::data.table()...argument 2 is NULL`
+3. ``error in data.table::data.table()...argument 2 is NULL``
+-------------------------------------------------------------
 
 If you experiencing this error when running `lightgbm`, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_. If you use ``lgb.dl()`` to build from source (i.e. not using pre-compiled dll), you need to upgrade your version of ``data.table`` to at least version 1.12.0.
 
