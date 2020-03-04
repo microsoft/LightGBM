@@ -146,7 +146,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   }
 }
 
-Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, const Json& forced_split_json) {
+Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
@@ -169,22 +169,14 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   // only root leaf can be splitted on first time
   int right_leaf = -1;
 
-  int init_splits = 0;
-  bool aborted_last_force_split = false;
-  if (!forced_split_json.is_null()) {
-    init_splits = ForceSplits(tree.get(), forced_split_json, &left_leaf,
-                              &right_leaf, &cur_depth, &aborted_last_force_split);
-  }
+  int init_splits = ForceSplits(tree.get(), &left_leaf, &right_leaf, &cur_depth);
 
   for (int split = init_splits; split < config_->num_leaves - 1; ++split) {
     // some initial works before finding best split
-    if (!aborted_last_force_split && BeforeFindBestSplit(tree.get(), left_leaf, right_leaf)) {
+    if (BeforeFindBestSplit(tree.get(), left_leaf, right_leaf)) {
       // find best threshold for every feature
       FindBestSplits();
-    } else if (aborted_last_force_split) {
-      aborted_last_force_split = false;
-    }
-
+    } 
     // Get a leaf with max split gain
     int best_leaf = static_cast<int>(ArrayArgs<SplitInfo>::ArgMax(best_split_per_leaf_));
     // Get split information for best leaf
@@ -308,7 +300,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
 
 void SerialTreeLearner::FindBestSplits() {
   std::vector<int8_t> is_feature_used(num_features_, 0);
-  #pragma omp parallel for schedule(static, 1024) if (num_features_ >= 2048)
+  #pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
@@ -414,18 +406,21 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   }
 }
 
-int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
-                                       int* right_leaf, int *cur_depth,
-                                       bool *aborted_last_force_split) {
+int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
+                                       int* right_leaf, int *cur_depth) {
+  bool abort_last_forced_split = false;
+  if (forced_split_json_ == nullptr) {
+    return 0;
+  }
   int32_t result_count = 0;
   // start at root leaf
   *left_leaf = 0;
   std::queue<std::pair<Json, int>> q;
-  Json left = forced_split_json;
+  Json left = *forced_split_json_;
   Json right;
   bool left_smaller = true;
   std::unordered_map<int, SplitInfo> forceSplitMap;
-  q.push(std::make_pair(forced_split_json, *left_leaf));
+  q.push(std::make_pair(left, *left_leaf));
   while (!q.empty()) {
     // before processing next node from queue, store info for current left/right leaf
     // store "best split" for left and right, even if they might be overwritten by forced split
@@ -483,7 +478,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
     int current_leaf = pair.second;
     // split info should exist because searching in bfs fashion - should have added from parent
     if (forceSplitMap.find(current_leaf) == forceSplitMap.end()) {
-        *aborted_last_force_split = true;
+        abort_last_forced_split = true;
         break;
     }
     SplitInfo current_split_info = forceSplitMap[current_leaf];
@@ -581,6 +576,19 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
     }
     result_count++;
     *(cur_depth) = std::max(*(cur_depth), tree->leaf_depth(*left_leaf));
+  }
+  if (abort_last_forced_split) {
+    int best_leaf =
+        static_cast<int>(ArrayArgs<SplitInfo>::ArgMax(best_split_per_leaf_));
+    const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
+    if (best_leaf_SplitInfo.gain <= 0.0) {
+      Log::Warning("No further splits with positive gain, best gain: %f",
+                   best_leaf_SplitInfo.gain);
+      return config_->num_leaves;
+    }
+    Split(tree, best_leaf, left_leaf, right_leaf);
+    *(cur_depth) = std::max(*(cur_depth), tree->leaf_depth(*left_leaf));
+    result_count++;
   }
   return result_count;
 }

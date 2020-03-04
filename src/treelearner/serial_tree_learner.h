@@ -9,6 +9,7 @@
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
 #include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/random.h>
 
 #include <string>
@@ -64,8 +65,15 @@ class SerialTreeLearner: public TreeLearner {
 
   void ResetConfig(const Config* config) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians,
-              const Json& forced_split_json) override;
+  inline void SetForcedSplit(const Json* forced_split_json) override {
+    if (forced_split_json != nullptr && !forced_split_json->is_null()) {
+      forced_split_json_ = forced_split_json;
+    } else {
+      forced_split_json_ = nullptr;
+    }
+  }
+
+  Tree* Train(const score_t* gradients, const score_t *hessians) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
@@ -146,9 +154,8 @@ class SerialTreeLearner: public TreeLearner {
   void SplitInner(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
-  virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
-                              int* right_leaf, int* cur_depth,
-                              bool *aborted_last_force_split);
+  int32_t ForceSplits(Tree* tree, int* left_leaf, int* right_leaf,
+                      int* cur_depth);
 
   /*!
   * \brief Get the number of data in a leaf
@@ -204,6 +211,7 @@ class SerialTreeLearner: public TreeLearner {
   /*! \brief config of tree learner*/
   const Config* config_;
   ColSampler col_sampler_;
+  const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };

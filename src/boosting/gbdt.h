@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-#include <LightGBM/json11.hpp>
+#include <LightGBM/utils/json11.h>
 #include "score_updater.hpp"
 
 namespace LightGBM {

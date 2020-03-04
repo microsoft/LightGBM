@@ -58,14 +58,13 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-  std::string forced_splits_path = config->forcedsplits_filename;
   // load forced_splits file
-  if (!forced_splits_path.empty()) {
-      std::ifstream forced_splits_file(forced_splits_path.c_str());
-      std::stringstream buffer;
-      buffer << forced_splits_file.rdbuf();
-      std::string err;
-      forced_splits_json_ = Json::parse(buffer.str(), err);
+  if (!config->forcedsplits_filename.empty()) {
+    std::ifstream forced_splits_file(config->forcedsplits_filename.c_str());
+    std::stringstream buffer;
+    buffer << forced_splits_file.rdbuf();
+    std::string err;
+    forced_splits_json_ = Json::parse(buffer.str(), err);
   }
 
   objective_function_ = objective_function;
@@ -81,6 +80,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   // init tree learner
   tree_learner_->Init(train_data_, is_constant_hessian_);
+  tree_learner_->SetForcedSplit(&forced_splits_json_);
 
   // push training metrics
   training_metrics_.clear();
@@ -366,7 +366,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         grad = gradients_.data() + offset;
         hess = hessians_.data() + offset;
       }
-      new_tree.reset(tree_learner_->Train(grad, hess, forced_splits_json_));
+      new_tree.reset(tree_learner_->Train(grad, hess));
     }
 
     if (new_tree->num_leaves() > 1) {
@@ -716,6 +716,21 @@ void GBDT::ResetConfig(const Config* config) {
   }
   if (train_data_ != nullptr) {
     ResetBaggingConfig(new_config.get(), false);
+  }
+  if (config_->forcedsplits_filename != new_config->forcedbins_filename) {
+    // load forced_splits file
+    if (!new_config->forcedsplits_filename.empty()) {
+      std::ifstream forced_splits_file(
+          new_config->forcedsplits_filename.c_str());
+      std::stringstream buffer;
+      buffer << forced_splits_file.rdbuf();
+      std::string err;
+      forced_splits_json_ = Json::parse(buffer.str(), err);
+      tree_learner_->SetForcedSplit(&forced_splits_json_);
+    } else {
+      forced_splits_json_ = Json();
+      tree_learner_->SetForcedSplit(nullptr);
+    }
   }
   config_.reset(new_config.release());
 }
