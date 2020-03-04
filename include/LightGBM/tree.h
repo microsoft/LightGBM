@@ -134,7 +134,6 @@ class Tree {
   inline int PredictLeafIndex(const double* feature_values) const;
   inline int PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const;
 
-
   inline void PredictContrib(const double* feature_values, int num_features, double* output);
 
   /*! \brief Get Number of leaves*/
@@ -150,7 +149,6 @@ class Tree {
 
   /*! \brief Get the number of data points that fall at or below this node*/
   inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
-
 
   /*!
   * \brief Shrinkage for the tree's output
