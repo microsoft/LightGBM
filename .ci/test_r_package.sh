@@ -65,7 +65,11 @@ conda install \
 
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-Rscript -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'))" || exit -1
+packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+if [[ $OS_NAME == "macos" ]]; then
+    packages+=", type = 'binary'"
+fi
+Rscript -e "install.packages(${packages})" || exit -1
 
 cd ${BUILD_DIRECTORY}
 Rscript build_r.R || exit -1

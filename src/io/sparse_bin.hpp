@@ -73,12 +73,7 @@ class SparseBin: public Bin {
 
   explicit SparseBin(data_size_t num_data)
     : num_data_(num_data) {
-    int num_threads = 1;
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads = omp_get_num_threads();
-    }
+    int num_threads = OMP_NUM_THREADS();
     push_buffers_.resize(num_threads);
   }
 
@@ -143,6 +138,8 @@ class SparseBin: public Bin {
     data_size_t i_delta, cur_pos;
     InitIndex(data_indices[start], &i_delta, &cur_pos);
     data_size_t i = start;
+    hist_t* grad = out;
+    hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(out + 1);
     for (;;) {
       if (cur_pos < data_indices[i]) {
         cur_pos += deltas_[++i_delta];
@@ -150,8 +147,9 @@ class SparseBin: public Bin {
       } else if (cur_pos > data_indices[i]) {
         if (++i >= end) { break; }
       } else {
-        const VAL_T bin = vals_[i_delta];
-        ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+        const uint32_t ti = static_cast<uint32_t>(vals_[i_delta]) << 1;
+        grad[ti] += ordered_gradients[i];
+        ++cnt[ti];
         if (++i >= end) { break; }
         cur_pos += deltas_[++i_delta];
         if (i_delta >= num_vals_) { break; }
@@ -163,12 +161,15 @@ class SparseBin: public Bin {
     const score_t* ordered_gradients, hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(start, &i_delta, &cur_pos);
+    hist_t* grad = out;
+    hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(out + 1);
     while (cur_pos < start && i_delta < num_vals_) {
       cur_pos += deltas_[++i_delta];
     }
     while (cur_pos < end && i_delta < num_vals_) {
-      const VAL_T bin = vals_[i_delta];
-      ACC_GH(out, bin, ordered_gradients[cur_pos], 1.0f);
+      const uint32_t ti = static_cast<uint32_t>(vals_[i_delta]) << 1;
+      grad[ti] += ordered_gradients[cur_pos];
+      ++cnt[ti];
       cur_pos += deltas_[++i_delta];
     }
   }
@@ -202,11 +203,11 @@ class SparseBin: public Bin {
     VAL_T th = static_cast<VAL_T>(threshold + min_bin);
     const VAL_T minb = static_cast<VAL_T>(min_bin);
     const VAL_T maxb = static_cast<VAL_T>(max_bin);
-    VAL_T t_default_bin = static_cast<VAL_T>(min_bin + default_bin);
+    VAL_T t_zero_bin = static_cast<VAL_T>(min_bin + default_bin);
     VAL_T t_most_freq_bin = static_cast<VAL_T>(min_bin + most_freq_bin);
     if (most_freq_bin == 0) {
       th -= 1;
-      t_default_bin -= 1;
+      t_zero_bin -= 1;
       t_most_freq_bin -= 1;
     }
     data_size_t lte_count = 0;
@@ -225,17 +226,31 @@ class SparseBin: public Bin {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
       }
-      for (data_size_t i = 0; i < num_data; ++i) {
-        const data_size_t idx = data_indices[i];
-        const VAL_T bin = iterator.InnerRawGet(idx);
-        if (bin == maxb) {
-          missing_default_indices[(*missing_default_count)++] = idx;
-        } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
-          default_indices[(*default_count)++] = idx;
-        } else if (bin > th) {
-          gt_indices[gt_count++] = idx;
-        } else {
-          lte_indices[lte_count++] = idx;
+      if (t_most_freq_bin == maxb) {
+        for (data_size_t i = 0; i < num_data; ++i) {
+          const data_size_t idx = data_indices[i];
+          const VAL_T bin = iterator.InnerRawGet(idx);
+          if (t_most_freq_bin == bin || bin < minb || bin > maxb) {
+            missing_default_indices[(*missing_default_count)++] = idx;
+          } else if (bin > th) {
+            gt_indices[gt_count++] = idx;
+          } else {
+            lte_indices[lte_count++] = idx;
+          }
+        }
+      } else {
+        for (data_size_t i = 0; i < num_data; ++i) {
+          const data_size_t idx = data_indices[i];
+          const VAL_T bin = iterator.InnerRawGet(idx);
+          if (bin == maxb) {
+            missing_default_indices[(*missing_default_count)++] = idx;
+          } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
+            default_indices[(*default_count)++] = idx;
+          } else if (bin > th) {
+            gt_indices[gt_count++] = idx;
+          } else {
+            lte_indices[lte_count++] = idx;
+          }
         }
       }
     } else {
@@ -260,7 +275,7 @@ class SparseBin: public Bin {
         for (data_size_t i = 0; i < num_data; ++i) {
           const data_size_t idx = data_indices[i];
           const VAL_T bin = iterator.InnerRawGet(idx);
-          if (bin == t_default_bin) {
+          if (bin == t_zero_bin) {
             missing_default_indices[(*missing_default_count)++] = idx;
           } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
             default_indices[(*default_count)++] = idx;
@@ -442,7 +457,7 @@ class SparseBin: public Bin {
     }
   }
 
-  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+  void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const SparseBin<VAL_T>*>(full_bin);
     deltas_.clear();
     vals_.clear();

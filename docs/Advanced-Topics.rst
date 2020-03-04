@@ -39,7 +39,7 @@ LambdaRank
 
 -  Use ``label_gain`` to set the gain(weight) of ``int`` label.
 
--  Use ``max_position`` to set the NDCG optimization position.
+-  Use ``lambdarank_truncation_level`` to truncate the max DCG.
 
 Cost Efficient Gradient Boosting
 --------------------------------

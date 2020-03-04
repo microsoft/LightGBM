@@ -165,8 +165,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
-  std::vector<SplitInfo> smaller_bests_per_thread(this->num_threads_, SplitInfo());
-  std::vector<SplitInfo> larger_bests_per_thread(this->num_threads_, SplitInfo());
+  std::vector<SplitInfo> smaller_bests_per_thread(this->share_state_->num_threads);
+  std::vector<SplitInfo> larger_bests_per_thread(this->share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
   std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
   if (this->config_->feature_fraction_bynode < 1.0f) {
@@ -241,7 +241,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) {
-  TREELEARNER_T::Split(tree, best_Leaf, left_leaf, right_leaf);
+  this->SplitInner(tree, best_Leaf, left_leaf, right_leaf, false);
   const SplitInfo& best_split_info = this->best_split_per_leaf_[best_Leaf];
   // need update global number of data in leaf
   global_data_count_in_leaf_[*left_leaf] = best_split_info.left_count;

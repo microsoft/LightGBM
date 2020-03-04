@@ -68,42 +68,42 @@ class DenseBin: public Bin {
 
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
 
-  #define ACC_GH(hist, i, g, h) \
-  const auto ti = static_cast<int>(i) << 1; \
-  hist[ti] += g; \
-  hist[ti + 1] += h; \
-
-  template<bool use_indices, bool use_prefetch, bool use_hessians>
+  template<bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
   void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const {
     data_size_t i = start;
-
-    if (use_prefetch) {
+    hist_t* grad = out;
+    hist_t* hess = out + 1;
+    hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(hess);
+    if (USE_PREFETCH) {
       const data_size_t pf_offset = 64 / sizeof(VAL_T);
       const data_size_t pf_end = end - pf_offset;
       for (; i < pf_end; ++i) {
-        const auto idx = use_indices ? data_indices[i] : i;
-        const auto pf_idx = use_indices ? data_indices[i + pf_offset] : i + pf_offset;
+        const auto idx = USE_INDICES ? data_indices[i] : i;
+        const auto pf_idx = USE_INDICES ? data_indices[i + pf_offset] : i + pf_offset;
         PREFETCH_T0(data_.data() + pf_idx);
-        const VAL_T bin = data_[idx];
-        if (use_hessians) {
-          ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+        const auto ti = static_cast<uint32_t>(data_[idx]) << 1;
+        if (USE_HESSIAN) {
+          grad[ti] += ordered_gradients[i];
+          hess[ti] += ordered_hessians[i];
         } else {
-          ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+          grad[ti] += ordered_gradients[i];
+          ++cnt[ti];
         }
       }
     }
     for (; i < end; ++i) {
-      const auto idx = use_indices ? data_indices[i] : i;
-      const VAL_T bin = data_[idx];
-      if (use_hessians) {
-        ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
+      const auto idx = USE_INDICES ? data_indices[i] : i;
+      const auto ti = static_cast<uint32_t>(data_[idx]) << 1;
+      if (USE_HESSIAN) {
+        grad[ti] += ordered_gradients[i];
+        hess[ti] += ordered_hessians[i];
       } else {
-        ACC_GH(out, bin, ordered_gradients[i], 1.0f);
+        grad[ti] += ordered_gradients[i];
+        ++cnt[ti];
       }
     }
   }
-  #undef ACC_GH
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
@@ -137,11 +137,11 @@ class DenseBin: public Bin {
     VAL_T th = static_cast<VAL_T>(threshold + min_bin);
     const VAL_T minb = static_cast<VAL_T>(min_bin);
     const VAL_T maxb = static_cast<VAL_T>(max_bin);
-    VAL_T t_default_bin = static_cast<VAL_T>(min_bin + default_bin);
+    VAL_T t_zero_bin = static_cast<VAL_T>(min_bin + default_bin);
     VAL_T t_most_freq_bin = static_cast<VAL_T>(min_bin + most_freq_bin);
     if (most_freq_bin == 0) {
       th -= 1;
-      t_default_bin -= 1;
+      t_zero_bin -= 1;
       t_most_freq_bin -= 1;
     }
     data_size_t lte_count = 0;
@@ -159,17 +159,31 @@ class DenseBin: public Bin {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
       }
-      for (data_size_t i = 0; i < num_data; ++i) {
-        const data_size_t idx = data_indices[i];
-        const VAL_T bin = data_[idx];
-        if (bin == maxb) {
-          missing_default_indices[(*missing_default_count)++] = idx;
-        } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
-          default_indices[(*default_count)++] = idx;
-        } else if (bin > th) {
-          gt_indices[gt_count++] = idx;
-        } else {
-          lte_indices[lte_count++] = idx;
+      if (t_most_freq_bin == maxb) {
+        for (data_size_t i = 0; i < num_data; ++i) {
+          const data_size_t idx = data_indices[i];
+          const VAL_T bin = data_[idx];
+          if (t_most_freq_bin == bin || bin < minb || bin > maxb) {
+            missing_default_indices[(*missing_default_count)++] = idx;
+          } else if (bin > th) {
+            gt_indices[gt_count++] = idx;
+          } else {
+            lte_indices[lte_count++] = idx;
+          }
+        }
+      } else {
+        for (data_size_t i = 0; i < num_data; ++i) {
+          const data_size_t idx = data_indices[i];
+          const VAL_T bin = data_[idx];
+          if (bin == maxb) {
+            missing_default_indices[(*missing_default_count)++] = idx;
+          } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
+            default_indices[(*default_count)++] = idx;
+          } else if (bin > th) {
+            gt_indices[gt_count++] = idx;
+          } else {
+            lte_indices[lte_count++] = idx;
+          }
         }
       }
     } else {
@@ -194,7 +208,7 @@ class DenseBin: public Bin {
         for (data_size_t i = 0; i < num_data; ++i) {
           const data_size_t idx = data_indices[i];
           const VAL_T bin = data_[idx];
-          if (bin == t_default_bin) {
+          if (bin == t_zero_bin) {
             missing_default_indices[(*missing_default_count)++] = idx;
           } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
             default_indices[(*default_count)++] = idx;
@@ -253,7 +267,7 @@ class DenseBin: public Bin {
     }
   }
 
-  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+  void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const DenseBin<VAL_T>*>(full_bin);
     for (int i = 0; i < num_used_indices; ++i) {
       data_[i] = other_bin->data_[used_indices[i]];

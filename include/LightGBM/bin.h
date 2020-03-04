@@ -30,6 +30,9 @@ enum MissingType {
 };
 
 typedef double hist_t;
+typedef uint64_t hist_cnt_t;
+// check at compile time
+static_assert(sizeof(hist_t) == sizeof(hist_cnt_t), "Histogram entry size is not correct");
 
 const size_t kHistEntrySize = 2 * sizeof(hist_t);
 const int kHistOffset = 2;
@@ -303,7 +306,7 @@ class Bin {
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
 
 
-  virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
+  virtual void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
   /*!
   * \brief Get bin iterator of this bin for specific feature
   * \param min_bin min_bin of current used feature
@@ -453,38 +456,53 @@ class MultiValBin {
 
   virtual int32_t num_bin() const = 0;
 
-  virtual void ReSize(data_size_t num_data) = 0;
+  virtual double num_element_per_row() const = 0;
+
 
   virtual void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t>& values) = 0;
 
-  virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
+  virtual void CopySubrow(const MultiValBin* full_bin,
+                          const data_size_t* used_indices,
+                          data_size_t num_used_indices) = 0;
 
-  virtual void ReSizeForSubFeature(int num_bin, int num_feature,
-                                   double estimate_element_per_row) = 0;
-
-  virtual MultiValBin* CreateLike(int num_bin, int num_feature,
+  virtual MultiValBin* CreateLike(data_size_t num_data, int num_bin,
+                                  int num_feature,
                                   double estimate_element_per_row) const = 0;
 
-  virtual void CopySubFeature(const MultiValBin* full_bin,
-                              const std::vector<int>& used_feature_index,
-                              const std::vector<uint32_t>& lower,
-                              const std::vector<uint32_t>& upper,
-                              const std::vector<uint32_t>& delta) = 0;
 
-  virtual void ConstructHistogram(
-    const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* gradients, const score_t* hessians,
-    hist_t* out) const = 0;
+  virtual void CopySubcol(const MultiValBin* full_bin,
+                          const std::vector<int>& used_feature_index,
+                          const std::vector<uint32_t>& lower,
+                          const std::vector<uint32_t>& upper,
+                          const std::vector<uint32_t>& delta) = 0;
+
+  virtual void ReSize(data_size_t num_data, int num_bin, int num_feature,
+                      double estimate_element_per_row) = 0;
+
+  virtual void CopySubrowAndSubcol(
+      const MultiValBin* full_bin, const data_size_t* used_indices,
+      data_size_t num_used_indices, const std::vector<int>& used_feature_index,
+      const std::vector<uint32_t>& lower, const std::vector<uint32_t>& upper,
+      const std::vector<uint32_t>& delta) = 0;
+
+  virtual void ConstructHistogram(const data_size_t* data_indices,
+                                  data_size_t start, data_size_t end,
+                                  const score_t* gradients,
+                                  const score_t* hessians,
+                                  hist_t* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* gradients, const score_t* hessians,
-    hist_t* out) const = 0;
+                                  const score_t* gradients,
+                                  const score_t* hessians,
+                                  hist_t* out) const = 0;
 
-  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, hist_t* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, hist_t* out) const = 0;
+  virtual void ConstructHistogramOrdered(const data_size_t* data_indices,
+                                         data_size_t start, data_size_t end,
+                                         const score_t* ordered_gradients,
+                                         const score_t* ordered_hessians,
+                                         hist_t* out) const = 0;
+
 
   virtual void FinishLoad() = 0;
 

@@ -32,12 +32,9 @@ class FeatureGroup {
   * \param is_enable_sparse True if enable sparse feature
   */
   FeatureGroup(int num_feature, bool is_multi_val,
-               std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-               data_size_t num_data)
-      : num_feature_(num_feature),
-        is_multi_val_(is_multi_val),
-        is_sparse_(false) {
-    CHECK(static_cast<int>(bin_mappers->size()) == num_feature);
+    std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
+    data_size_t num_data) : num_feature_(num_feature), is_multi_val_(is_multi_val), is_sparse_(false) {
+    CHECK_EQ(static_cast<int>(bin_mappers->size()), num_feature);
     // use bin at zero to store most_freq_bin
     num_total_bin_ = 1;
     bin_offsets_.emplace_back(num_total_bin_);
@@ -69,9 +66,8 @@ class FeatureGroup {
   }
 
   FeatureGroup(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-               data_size_t num_data)
-      : num_feature_(1), is_multi_val_(false) {
-    CHECK(static_cast<int>(bin_mappers->size()) == 1);
+    data_size_t num_data) : num_feature_(1), is_multi_val_(false) {
+    CHECK_EQ(static_cast<int>(bin_mappers->size()), 1);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
     bin_offsets_.emplace_back(num_total_bin_);
@@ -184,16 +180,12 @@ class FeatureGroup {
     }
   }
 
-  inline void CopySubset(const FeatureGroup* full_feature,
-                         const data_size_t* used_indices,
-                         data_size_t num_used_indices) {
+  inline void CopySubrow(const FeatureGroup* full_feature, const data_size_t* used_indices, data_size_t num_used_indices) {
     if (!is_multi_val_) {
-      bin_data_->CopySubset(full_feature->bin_data_.get(), used_indices,
-                            num_used_indices);
+      bin_data_->CopySubrow(full_feature->bin_data_.get(), used_indices, num_used_indices);
     } else {
       for (int i = 0; i < num_feature_; ++i) {
-        multi_bin_data_[i]->CopySubset(full_feature->multi_bin_data_[i].get(),
-                                       used_indices, num_used_indices);
+        multi_bin_data_[i]->CopySubrow(full_feature->multi_bin_data_[i].get(), used_indices, num_used_indices);
       }
     }
   }

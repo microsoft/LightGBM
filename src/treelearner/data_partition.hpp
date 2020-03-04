@@ -21,23 +21,11 @@ namespace LightGBM {
 class DataPartition {
  public:
   DataPartition(data_size_t num_data, int num_leaves)
-    :num_data_(num_data), num_leaves_(num_leaves) {
+      : num_data_(num_data), num_leaves_(num_leaves), runner_(num_data, 512) {
     leaf_begin_.resize(num_leaves_);
     leaf_count_.resize(num_leaves_);
     indices_.resize(num_data_);
-    temp_left_indices_.resize(num_data_);
-    temp_right_indices_.resize(num_data_);
     used_data_indices_ = nullptr;
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
-    offsets_buf_.resize(num_threads_);
-    left_cnts_buf_.resize(num_threads_);
-    right_cnts_buf_.resize(num_threads_);
-    left_write_pos_buf_.resize(num_threads_);
-    right_write_pos_buf_.resize(num_threads_);
   }
 
   void ResetLeaves(int num_leaves) {
@@ -49,8 +37,7 @@ class DataPartition {
   void ResetNumData(int num_data) {
     num_data_ = num_data;
     indices_.resize(num_data_);
-    temp_left_indices_.resize(num_data_);
-    temp_right_indices_.resize(num_data_);
+    runner_.ReSize(num_data_);
   }
 
   ~DataPartition() {
@@ -118,63 +105,18 @@ class DataPartition {
     // get leaf boundary
     const data_size_t begin = leaf_begin_[leaf];
     const data_size_t cnt = leaf_count_[leaf];
-
-    int nblock = 1;
-    data_size_t inner_size = cnt;
-    Threading::BlockInfo<data_size_t>(num_threads_, cnt, 512, &nblock,
-                                      &inner_size);
     auto left_start = indices_.data() + begin;
-    global_timer.Start("DataPartition::Split.MT");
-    // split data multi-threading
-    OMP_INIT_EX();
-#pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < nblock; ++i) {
-      OMP_LOOP_EX_BEGIN();
-      data_size_t cur_start = i * inner_size;
-      data_size_t cur_cnt = std::min(inner_size, cnt - cur_start);
-      if (cur_cnt <= 0) {
-        left_cnts_buf_[i] = 0;
-        right_cnts_buf_[i] = 0;
-        continue;
-      }
-      // split data inner, reduce the times of function called
-      data_size_t cur_left_count =
-          dataset->Split(feature, threshold, num_threshold, default_left,
-                         left_start + cur_start, cur_cnt,
-                         temp_left_indices_.data() + cur_start,
-                         temp_right_indices_.data() + cur_start);
-      offsets_buf_[i] = cur_start;
-      left_cnts_buf_[i] = cur_left_count;
-      right_cnts_buf_[i] = cur_cnt - cur_left_count;
-      OMP_LOOP_EX_END();
-    }
-    OMP_THROW_EX();
-    global_timer.Stop("DataPartition::Split.MT");
-    global_timer.Start("DataPartition::Split.Merge");
-    left_write_pos_buf_[0] = 0;
-    right_write_pos_buf_[0] = 0;
-    for (int i = 1; i < nblock; ++i) {
-      left_write_pos_buf_[i] =
-          left_write_pos_buf_[i - 1] + left_cnts_buf_[i - 1];
-      right_write_pos_buf_[i] =
-          right_write_pos_buf_[i - 1] + right_cnts_buf_[i - 1];
-    }
-    data_size_t left_cnt =
-        left_write_pos_buf_[nblock - 1] + left_cnts_buf_[nblock - 1];
-
-    auto right_start = left_start + left_cnt;
-#pragma omp parallel for schedule(static)
-    for (int i = 0; i < nblock; ++i) {
-      std::copy_n(temp_left_indices_.data() + offsets_buf_[i],
-                  left_cnts_buf_[i], left_start + left_write_pos_buf_[i]);
-      std::copy_n(temp_right_indices_.data() + offsets_buf_[i],
-                  right_cnts_buf_[i], right_start + right_write_pos_buf_[i]);
-    }
-    // update leaf boundary
+    auto left_cnt = runner_.Run<false>(
+        cnt,
+        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
+            data_size_t* right) {
+          return dataset->Split(feature, threshold, num_threshold, default_left,
+                                left_start + cur_start, cur_cnt, left, right);
+        },
+        left_start);
     leaf_count_[leaf] = left_cnt;
     leaf_begin_[right_leaf] = left_cnt + begin;
     leaf_count_[right_leaf] = cnt - left_cnt;
-    global_timer.Stop("DataPartition::Split.Merge");
   }
 
   /*!
@@ -217,26 +159,11 @@ class DataPartition {
   std::vector<data_size_t> leaf_count_;
   /*! \brief Store all data's indices, order by leaf[data_in_leaf0,..,data_leaf1,..] */
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> indices_;
-  /*! \brief team indices buffer for split */
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> temp_left_indices_;
-  /*! \brief team indices buffer for split */
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> temp_right_indices_;
   /*! \brief used data indices, used for bagging */
   const data_size_t* used_data_indices_;
   /*! \brief used data count, used for bagging */
   data_size_t used_data_count_;
-  /*! \brief number of threads */
-  int num_threads_;
-  /*! \brief Buffer for multi-threading data partition, used to store offset for different threads */
-  std::vector<data_size_t> offsets_buf_;
-  /*! \brief Buffer for multi-threading data partition, used to store left count after split for different threads */
-  std::vector<data_size_t> left_cnts_buf_;
-  /*! \brief Buffer for multi-threading data partition, used to store right count after split for different threads */
-  std::vector<data_size_t> right_cnts_buf_;
-  /*! \brief Buffer for multi-threading data partition, used to store write position of left leaf for different threads */
-  std::vector<data_size_t> left_write_pos_buf_;
-  /*! \brief Buffer for multi-threading data partition, used to store write position of right leaf for different threads */
-  std::vector<data_size_t> right_write_pos_buf_;
+  ParallelPartitionRunner<data_size_t, true> runner_;
 };
 
 }  // namespace LightGBM

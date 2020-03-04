@@ -129,8 +129,8 @@ class TestSklearn(unittest.TestCase):
                 eval_metric='ndcg',
                 callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
         self.assertLessEqual(gbm.best_iteration_, 24)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6559)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6421)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6382)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6319)
 
     def test_regression_with_custom_objective(self):
         X, y = load_boston(True)
@@ -330,13 +330,17 @@ class TestSklearn(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_sparse(self):
         import pandas as pd
-        X = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 1, 2] * 100)),
-                          "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-                          "C": pd.SparseArray(np.random.permutation([True, False] * 150))})
-        y = pd.Series(pd.SparseArray(np.random.permutation([0, 1] * 150)))
-        X_test = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 2] * 30)),
-                               "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-                               "C": pd.SparseArray(np.random.permutation([True, False] * 30))})
+        try:
+            from pandas.arrays import SparseArray
+        except ImportError:  # support old versions
+            from pandas import SparseArray
+        X = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                          "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                          "C": SparseArray(np.random.permutation([True, False] * 150))})
+        y = pd.Series(SparseArray(np.random.permutation([0, 1] * 150)))
+        X_test = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 2] * 30)),
+                               "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                               "C": SparseArray(np.random.permutation([True, False] * 30))})
         if pd.__version__ >= '0.24.0':
             for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
                 self.assertTrue(pd.api.types.is_sparse(dtype))

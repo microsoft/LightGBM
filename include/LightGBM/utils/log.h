@@ -28,6 +28,30 @@ namespace LightGBM {
      " at %s, line %d .\n", __FILE__,  __LINE__);
 #endif
 
+#ifndef CHECK_EQ
+#define CHECK_EQ(a, b) CHECK((a) == (b))
+#endif
+
+#ifndef CHECK_NE
+#define CHECK_NE(a, b) CHECK((a) != (b))
+#endif
+
+#ifndef CHECK_GE
+#define CHECK_GE(a, b) CHECK((a) >= (b))
+#endif
+
+#ifndef CHECK_LE
+#define CHECK_LE(a, b) CHECK((a) <= (b))
+#endif
+
+#ifndef CHECK_GT
+#define CHECK_GT(a, b) CHECK((a) > (b))
+#endif
+
+#ifndef CHECK_LT
+#define CHECK_LT(a, b) CHECK((a) < (b))
+#endif
+
 #ifndef CHECK_NOTNULL
 #define CHECK_NOTNULL(pointer)                             \
   if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL at %s, line %d .\n", __FILE__,  __LINE__);

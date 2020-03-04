@@ -280,10 +280,10 @@ void Config::CheckParamConflict() {
   }
 
   if (is_single_tree_learner || tree_learner == std::string("feature")) {
-    is_parallel_find_bin = false;
+    is_data_based_parallel = false;
   } else if (tree_learner == std::string("data")
              || tree_learner == std::string("voting")) {
-    is_parallel_find_bin = true;
+    is_data_based_parallel = true;
     if (histogram_pool_size >= 0
         && tree_learner == std::string("data")) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f).\n"
