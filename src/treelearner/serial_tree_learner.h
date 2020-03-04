@@ -147,11 +147,11 @@ class SerialTreeLearner: public TreeLearner {
   */
   inline virtual void Split(Tree* tree, int best_leaf, int* left_leaf,
     int* right_leaf) {
-    SplitInner<true>(tree, best_leaf, left_leaf, right_leaf);
+    SplitInner(tree, best_leaf, left_leaf, right_leaf, true);
   }
 
-  template <bool UPDATE_CNT>
-  void SplitInner(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
+  void SplitInner(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf,
+                  bool update_cnt);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
   int32_t ForceSplits(Tree* tree, int* left_leaf, int* right_leaf,
