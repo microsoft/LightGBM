@@ -92,8 +92,8 @@ class FeatureHistogram {
   }
 
   template <bool IS_RAND>
-  double BeforeNumercal(double sum_gradient, double sum_hessian, SplitInfo* output,
-                        int* rand_threshold) {
+  double BeforeNumercal(double sum_gradient, double sum_hessian,
+                        SplitInfo* output, int* rand_threshold) {
     is_splittable_ = false;
     output->monotone_type = meta_->monotone_type;
     double gain_shift = GetLeafSplitGain(
@@ -134,10 +134,10 @@ class FeatureHistogram {
               int rand_threshold = 0;
               double min_gain_shift = BeforeNumercal<IS_RAND>(
                   sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequence<IS_RAND, true, true, false, IS_MC>(
+              FindBestThresholdSequence<IS_RAND, IS_MC, true, true, false>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
-              FindBestThresholdSequence<IS_RAND, false, true, false, IS_MC>(
+              FindBestThresholdSequence<IS_RAND, IS_MC, false, true, false>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
             };
@@ -148,10 +148,10 @@ class FeatureHistogram {
               int rand_threshold = 0;
               double min_gain_shift = BeforeNumercal<IS_RAND>(
                   sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequence<IS_RAND, true, false, true, IS_MC>(
+              FindBestThresholdSequence<IS_RAND, IS_MC, true, false, true>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
-              FindBestThresholdSequence<IS_RAND, false, false, true, IS_MC>(
+              FindBestThresholdSequence<IS_RAND, IS_MC, false, false, true>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
             };
@@ -164,7 +164,7 @@ class FeatureHistogram {
               int rand_threshold = 0;
               double min_gain_shift = BeforeNumercal<IS_RAND>(
                   sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequence<IS_RAND, true, false, false, IS_MC>(
+              FindBestThresholdSequence<IS_RAND, IS_MC, true, false, false>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
             };
@@ -175,7 +175,7 @@ class FeatureHistogram {
               int rand_threshold = 0;
               double min_gain_shift = BeforeNumercal<IS_RAND>(
                   sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequence<IS_RAND, true, false, false, IS_MC>(
+              FindBestThresholdSequence<IS_RAND, IS_MC, true, false, false>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
               output->default_left = false;
@@ -194,9 +194,10 @@ class FeatureHistogram {
             std::placeholders::_5);
       } else {
         find_best_threshold_fun_ = std::bind(
-            &FeatureHistogram::FindBestThresholdCategoricalInner<true, true>, this,
-            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-            std::placeholders::_4, std::placeholders::_5);
+            &FeatureHistogram::FindBestThresholdCategoricalInner<true, true>,
+            this, std::placeholders::_1, std::placeholders::_2,
+            std::placeholders::_3, std::placeholders::_4,
+            std::placeholders::_5);
       }
     } else {
       if (meta_->config->monotone_constraints.empty()) {
@@ -683,8 +684,8 @@ class FeatureHistogram {
     return -(2.0 * sg_l1 * output + (sum_hessians + l2) * output * output);
   }
 
-  template <bool IS_RAND, bool REVERSE, bool SKIP_DEFAULT_BIN,
-            bool NA_AS_MISSING, bool IS_MC>
+  template <bool IS_RAND, bool IS_MC, bool REVERSE, bool SKIP_DEFAULT_BIN,
+            bool NA_AS_MISSING>
   void FindBestThresholdSequence(double sum_gradient, double sum_hessian,
                                  data_size_t num_data,
                                  const ConstraintEntry& constraints,
