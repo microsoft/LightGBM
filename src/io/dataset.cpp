@@ -319,7 +319,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                         const int* num_per_col, int num_sample_col,
                         size_t total_sample_cnt, const Config& io_config) {
   num_total_features_ = num_total_features;
-  CHECK(num_total_features_ == static_cast<int>(bin_mappers->size()));
+  CHECK_EQ(num_total_features_, static_cast<int>(bin_mappers->size()));
   // get num_features
   std::vector<int> used_features;
   auto& ref_bin_mappers = *bin_mappers;
@@ -775,7 +775,7 @@ void Dataset::ReSize(data_size_t num_data) {
 void Dataset::CopySubrow(const Dataset* fullset,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices, bool need_meta_data) {
-  CHECK(num_used_indices == num_data_);
+  CHECK_EQ(num_used_indices, num_data_);
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
@@ -1381,6 +1381,31 @@ void Dataset::ConstructHistogramsInner(
     }
   }
 }
+
+// explicitly initilize template methods, for cross module call
+template void Dataset::ConstructHistogramsInner<true, true>(
+    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+    data_size_t num_data, const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    TrainingShareStates* share_state, hist_t* hist_data) const;
+
+template void Dataset::ConstructHistogramsInner<true, false>(
+    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+    data_size_t num_data, const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    TrainingShareStates* share_state, hist_t* hist_data) const;
+
+template void Dataset::ConstructHistogramsInner<false, true>(
+    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+    data_size_t num_data, const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    TrainingShareStates* share_state, hist_t* hist_data) const;
+
+template void Dataset::ConstructHistogramsInner<false, false>(
+    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+    data_size_t num_data, const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    TrainingShareStates* share_state, hist_t* hist_data) const;
 
 void Dataset::FixHistogram(int feature_idx, double sum_gradient,
                            double sum_hessian, hist_t* data) const {

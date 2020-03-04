@@ -77,14 +77,14 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
         col_sampler_.is_feature_used_bytree(), is_constant_hessian,
         config_->force_col_wise, config_->force_row_wise));
   } else {
-    CHECK(share_state_ != nullptr);
+    CHECK_NOTNULL(share_state_);
     // cannot change is_hist_col_wise during training
     share_state_.reset(dataset->GetShareStates(
         ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
         is_constant_hessian, share_state_->is_colwise,
         !share_state_->is_colwise));
   }
-  CHECK(share_state_ != nullptr);
+  CHECK_NOTNULL(share_state_);
 }
 
 void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
@@ -151,14 +151,14 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   gradients_ = gradients;
   hessians_ = hessians;
   int num_threads = OMP_NUM_THREADS();
-  if (share_state_->num_threads != num_threads && share_state_->num_threads > 0){
+  if (share_state_->num_threads != num_threads && share_state_->num_threads > 0) {
     Log::Warning(
-        "Detect num_threads changed durning traing (from %d to %d), may cause "
-        "unexpected errors.",
+        "Detected that num_threads changed during training (from %d to %d), "
+        "it may cause unexpected errors.",
         share_state_->num_threads, num_threads);
   }
   share_state_->num_threads = num_threads;
-  
+
   // some initial works before training
   BeforeTrain();
 
@@ -197,7 +197,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
 Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
   auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
-  CHECK(data_partition_->num_leaves() >= tree->num_leaves());
+  CHECK_GE(data_partition_->num_leaves(), tree->num_leaves());
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < tree->num_leaves(); ++i) {
@@ -623,7 +623,6 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                                   best_split_info.monotone_type,
                                   best_split_info.right_output,
                                   best_split_info.left_output);
-
 }
 
 template void SerialTreeLearner::SplitInner<true>(Tree* tree, int best_leaf,
@@ -637,7 +636,7 @@ template void SerialTreeLearner::SplitInner<false>(Tree* tree, int best_leaf,
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                                         data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
-    CHECK(tree->num_leaves() <= data_partition_->num_leaves());
+    CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     const data_size_t* bag_mapper = nullptr;
     if (total_num_data != num_data_) {
       CHECK_EQ(bag_cnt, num_data_);

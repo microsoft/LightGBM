@@ -13,7 +13,6 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
-#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -161,7 +160,7 @@ LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   int out_len;
   CHECK_CALL(LGBM_DatasetGetFeatureNames(R_GET_PTR(handle),
     ptr_names.data(), &out_len));
-  CHECK(len == out_len);
+  CHECK_EQ(len, out_len);
   auto merge_str = Common::Join<char*>(ptr_names, "\t");
   EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len, merge_str.size() + 1);
   R_API_END();
@@ -456,7 +455,7 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   }
   int out_len;
   CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle), &out_len, ptr_names.data()));
-  CHECK(out_len == len);
+  CHECK_EQ(out_len, len);
   auto merge_names = Common::Join<char*>(ptr_names, "\t");
   EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len, merge_names.size() + 1);
   R_API_END();
@@ -472,7 +471,7 @@ LGBM_SE LGBM_BoosterGetEval_R(LGBM_SE handle,
   double* ptr_ret = R_REAL_PTR(out_result);
   int out_len;
   CHECK_CALL(LGBM_BoosterGetEval(R_GET_PTR(handle), R_AS_INT(data_idx), &out_len, ptr_ret));
-  CHECK(out_len == len);
+  CHECK_EQ(out_len, len);
   R_API_END();
 }
 

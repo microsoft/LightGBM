@@ -842,7 +842,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (std::pair<int, double>& inner_data : row) {
-        CHECK(inner_data.first < num_col);
+        CHECK_LT(inner_data.first, num_col);
         if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
@@ -910,7 +910,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       auto idx = sample_indices[i];
       get_row_fun(static_cast<int>(idx), buffer);
       for (std::pair<int, double>& inner_data : buffer) {
-        CHECK(inner_data.first < num_col);
+        CHECK_LT(inner_data.first, num_col);
         if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
@@ -1797,6 +1797,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     }
   }
   Log::Fatal("Unknown data type in RowFunctionFromDenseMatric");
+  return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
@@ -1901,6 +1902,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
     }
   }
   Log::Fatal("Unknown data type in RowFunctionFromCSR");
+  return nullptr;
 }
 
 std::function<std::pair<int, double>(int idx)>
@@ -1966,6 +1968,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
     }
   }
   Log::Fatal("Unknown data type in CSC matrix");
+  return nullptr;
 }
 
 CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,

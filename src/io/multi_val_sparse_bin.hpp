@@ -163,7 +163,7 @@ class MultiValSparseBin : public MultiValBin {
                           data_size_t end, const score_t* gradients,
                           const score_t* hessians, hist_t* out) const override {
     ConstructHistogramInner<true, true, false>(data_indices, start, end,
-                                                     gradients, hessians, out);
+                                               gradients, hessians, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
@@ -179,7 +179,7 @@ class MultiValSparseBin : public MultiValBin {
                                  const score_t* hessians,
                                  hist_t* out) const override {
     ConstructHistogramInner<true, true, true>(data_indices, start, end,
-                                                    gradients, hessians, out);
+                                              gradients, hessians, out);
   }
 
   MultiValBin* CreateLike(data_size_t num_data, int num_bin, int,
@@ -219,7 +219,7 @@ class MultiValSparseBin : public MultiValBin {
     const auto other =
         reinterpret_cast<const MultiValSparseBin<INDEX_T, VAL_T>*>(full_bin);
     if (SUBROW) {
-      CHECK(num_data_ == num_used_indices);
+      CHECK_EQ(num_data_, num_used_indices);
     }
     int n_block = 1;
     data_size_t block_size = num_data_;

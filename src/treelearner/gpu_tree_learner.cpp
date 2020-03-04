@@ -750,10 +750,10 @@ void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_c
 }
 
 void GPUTreeLearner::ResetIsConstantHessian(bool is_constant_hessian) {
-  if (is_constant_hessian != share_state_->is_constant_hessian) {	
+  if (is_constant_hessian != share_state_->is_constant_hessian) {
     SerialTreeLearner::ResetIsConstantHessian(is_constant_hessian);
-    BuildGPUKernels();	
-    SetupKernelArguments();	
+    BuildGPUKernels();
+    SetupKernelArguments();
   }
 }
 
