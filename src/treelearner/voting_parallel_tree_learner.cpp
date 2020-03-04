@@ -66,7 +66,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   auto num_total_bin = train_data->NumTotalBin();
   smaller_leaf_histogram_data_.resize(num_total_bin);
   larger_leaf_histogram_data_.resize(num_total_bin);
-  HistogramPool::SetFeatureInfo(train_data, this->config_, &feature_metas_);
+  HistogramPool::SetFeatureInfo<true, true>(train_data, this->config_, &feature_metas_);
   uint64_t offset = 0;
   for (int j = 0; j < train_data->num_features(); ++j) {
     offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
@@ -91,7 +91,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::ResetConfig(const Config* config)
   this->histogram_pool_.ResetConfig(this->train_data_, &local_config_);
   global_data_count_in_leaf_.resize(this->config_->num_leaves);
 
-  HistogramPool::SetFeatureInfoConfig(this->train_data_, config, &feature_metas_);
+  HistogramPool::SetFeatureInfo<false, true>(this->train_data_, config, &feature_metas_);
 }
 
 template <typename TREELEARNER_T>
