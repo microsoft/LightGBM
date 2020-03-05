@@ -149,12 +149,12 @@ class FeatureHistogram {
               double min_gain_shift =
                   BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
                       sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequence<USE_RAND, USE_MC, USE_L1,
-                                        USE_MAX_OUTPUT, true, true, false>(
+              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
+                                            USE_MAX_OUTPUT, true, true, false>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
-              FindBestThresholdSequence<USE_RAND, USE_MC, USE_L1,
-                                        USE_MAX_OUTPUT, false, true, false>(
+              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
+                                            USE_MAX_OUTPUT, false, true, false>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
             };
@@ -166,12 +166,12 @@ class FeatureHistogram {
               double min_gain_shift =
                   BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
                       sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequence<USE_RAND, USE_MC, USE_L1,
-                                        USE_MAX_OUTPUT, true, false, true>(
+              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
+                                            USE_MAX_OUTPUT, true, false, true>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
-              FindBestThresholdSequence<USE_RAND, USE_MC, USE_L1,
-                                        USE_MAX_OUTPUT, false, false, true>(
+              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
+                                            USE_MAX_OUTPUT, false, false, true>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
             };
@@ -185,8 +185,8 @@ class FeatureHistogram {
               double min_gain_shift =
                   BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
                       sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequence<USE_RAND, USE_MC, USE_L1,
-                                        USE_MAX_OUTPUT, true, false, false>(
+              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
+                                            USE_MAX_OUTPUT, true, false, false>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
             };
@@ -198,8 +198,8 @@ class FeatureHistogram {
               double min_gain_shift =
                   BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
                       sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequence<USE_RAND, USE_MC, USE_L1,
-                                        USE_MAX_OUTPUT, true, false, false>(
+              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
+                                            USE_MAX_OUTPUT, true, false, false>(
                   sum_gradient, sum_hessian, num_data, constraints,
                   min_gain_shift, output, rand_threshold);
               output->default_left = false;
@@ -769,11 +769,11 @@ class FeatureHistogram {
 
   template <bool USE_RAND, bool USE_MC, bool USE_L1, bool USE_MAX_OUTPUT,
             bool REVERSE, bool SKIP_DEFAULT_BIN, bool NA_AS_MISSING>
-  void FindBestThresholdSequence(double sum_gradient, double sum_hessian,
-                                 data_size_t num_data,
-                                 const ConstraintEntry& constraints,
-                                 double min_gain_shift, SplitInfo* output,
-                                 int rand_threshold) {
+  void FindBestThresholdSequentially(double sum_gradient, double sum_hessian,
+                                     data_size_t num_data,
+                                     const ConstraintEntry& constraints,
+                                     double min_gain_shift, SplitInfo* output,
+                                     int rand_threshold) {
     const int8_t offset = meta_->offset;
     double best_sum_left_gradient = NAN;
     double best_sum_left_hessian = NAN;
