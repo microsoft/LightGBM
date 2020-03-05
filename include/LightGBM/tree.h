@@ -134,18 +134,6 @@ class Tree {
   inline int PredictLeafIndex(const double* feature_values) const;
   inline int PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  // Get node parent
-  inline int node_parent(int node_idx) const;
-  // Get leaf parent
-  inline int leaf_parent(int node_idx) const;
-=======
->>>>>>> more fixes
-
-
->>>>>>> Add util functions.
   inline void PredictContrib(const double* feature_values, int num_features, double* output);
 
   /*! \brief Get Number of leaves*/
