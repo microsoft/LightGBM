@@ -188,4 +188,4 @@ jobs:
       assetUploadMode: 'delete'
       isDraft: true
       isPreRelease: false
-      addChangeLog: true
+      addChangeLog: false
