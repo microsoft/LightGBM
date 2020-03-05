@@ -668,7 +668,7 @@ class FeatureHistogram {
     if (USE_L1) {
       double ret = -ThresholdL1(sum_gradients, l1) / (sum_hessians + l2);
       if (USE_MAX_OUTPUT) {
-        if (std::fabs(ret) > max_delta_step) {
+        if (max_delta_step > 0 && std::fabs(ret) > max_delta_step) {
           return Common::Sign(ret) * max_delta_step;
         }
       }
@@ -676,7 +676,7 @@ class FeatureHistogram {
     } else {
       double ret = -sum_gradients / (sum_hessians + l2);
       if (USE_MAX_OUTPUT) {
-        if (std::fabs(ret) > max_delta_step) {
+        if (max_delta_step > 0 && std::fabs(ret) > max_delta_step) {
           return Common::Sign(ret) * max_delta_step;
         }
       }
