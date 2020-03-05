@@ -11,7 +11,7 @@
 
 #include <fstream>
 
-#include <LightGBM/json11.hpp>
+#include <LightGBM/utils/json11.h>
 
 namespace LightGBM {
 

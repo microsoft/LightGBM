@@ -201,9 +201,6 @@
     <ClInclude Include="..\include\LightGBM\utils\file_io.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\LightGBM\json11.hpp">
-      <Filter>include\LightGBM\utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\treelearner\cost_effective_gradient_boosting.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
@@ -212,6 +209,9 @@
     </ClInclude>
     <ClInclude Include="..\src\io\multi_val_sparse_bin.hpp">
       <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\json11.h">
+      <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

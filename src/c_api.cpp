@@ -295,7 +295,6 @@ class Booster {
     if (param.count("metric")) {
       Log::Fatal("Cannot change metric during training");
     }
-
     CheckDatasetResetConfig(config_, param);
 
     config_.Set(param);
