@@ -406,7 +406,8 @@ class TestEngine(unittest.TestCase):
             'num_class': 10,
             'num_leaves': 50,
             'min_data': 1,
-            'verbose': -1
+            'verbose': -1,
+            'gpu_use_dp': True
         }
         lgb_train = lgb.Dataset(X_train, y_train, params=params)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)

@@ -725,11 +725,9 @@ class FeatureHistogram {
           CalculateSplittedLeafOutput<USE_MC, USE_L1, USE_MAX_OUTPUT>(
               sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step,
               constraints);
-      if (USE_MC) {
-        if (((monotone_constraint > 0) && (left_output > right_output)) ||
-            ((monotone_constraint < 0) && (left_output < right_output))) {
-          return 0;
-        }
+      if (((monotone_constraint > 0) && (left_output > right_output)) ||
+          ((monotone_constraint < 0) && (left_output < right_output))) {
+        return 0;
       }
       return GetLeafGainGivenOutput<USE_L1>(
                  sum_left_gradients, sum_left_hessians, l1, l2, left_output) +
