@@ -735,9 +735,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   SetupKernelArguments();
 }
 
-Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            const Json& forced_split_json) {
-  return SerialTreeLearner::Train(gradients, hessians, forced_split_json);
+Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
+  return SerialTreeLearner::Train(gradients, hessians);
 }
 
 void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
@@ -957,7 +956,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   std::vector<int8_t> is_dense_feature_used(num_features_, 0);
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!is_feature_used_[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (!is_feature_used[feature_index]) continue;
     if (train_data_->IsMultiGroup(train_data_->Feature2Group(feature_index))) {
       is_sparse_feature_used[feature_index] = 1;
@@ -1062,7 +1061,7 @@ void GPUTreeLearner::FindBestSplits() {
 
 #if GPU_DEBUG >= 3
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!is_feature_used_[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
         && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
