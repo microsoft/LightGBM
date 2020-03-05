@@ -66,7 +66,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   auto num_total_bin = train_data->NumTotalBin();
   smaller_leaf_histogram_data_.resize(num_total_bin);
   larger_leaf_histogram_data_.resize(num_total_bin);
-  HistogramPool::SetFeatureInfo(train_data, this->config_, &feature_metas_);
+  HistogramPool::SetFeatureInfo<true, true>(train_data, this->config_, &feature_metas_);
   uint64_t offset = 0;
   for (int j = 0; j < train_data->num_features(); ++j) {
     offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
@@ -91,7 +91,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::ResetConfig(const Config* config)
   this->histogram_pool_.ResetConfig(this->train_data_, &local_config_);
   global_data_count_in_leaf_.resize(this->config_->num_leaves);
 
-  HistogramPool::SetFeatureInfoConfig(this->train_data_, config, &feature_metas_);
+  HistogramPool::SetFeatureInfo<false, true>(this->train_data_, config, &feature_metas_);
 }
 
 template <typename TREELEARNER_T>
@@ -247,7 +247,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
   std::vector<int8_t> is_feature_used(this->num_features_, 0);
 #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
-    if (!this->is_feature_used_[feature_index]) continue;
+    if (!this->col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (this->parent_leaf_histogram_array_ != nullptr
       && !this->parent_leaf_histogram_array_[feature_index].is_splittable()) {
       this->smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
@@ -351,12 +351,10 @@ template <typename TREELEARNER_T>
 void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->share_state_->num_threads);
   std::vector<SplitInfo> larger_bests_per_thread(this->share_state_->num_threads);
-  std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
-  std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
-  if (this->config_->feature_fraction_bynode < 1.0f) {
-    smaller_node_used_features = this->GetUsedFeatures(false);
-    larger_node_used_features = this->GetUsedFeatures(false);
-  }
+  std::vector<int8_t> smaller_node_used_features =
+      this->col_sampler_.GetByNode();
+  std::vector<int8_t> larger_node_used_features =
+      this->col_sampler_.GetByNode();
   // find best split from local aggregated histograms
 
   OMP_INIT_EX();
@@ -429,7 +427,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
 
 template <typename TREELEARNER_T>
 void VotingParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) {
-  this->SplitInner(tree, best_Leaf, left_leaf, right_leaf, false);
+  TREELEARNER_T::SplitInner(tree, best_Leaf, left_leaf, right_leaf, false);
   const SplitInfo& best_split_info = this->best_split_per_leaf_[best_Leaf];
   // set the global number of data for leaves
   global_data_count_in_leaf_[*left_leaf] = best_split_info.left_count;

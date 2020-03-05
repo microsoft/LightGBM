@@ -73,8 +73,8 @@ namespace LightGBM {
     if (pos == 0 || pos == static_cast<size_t>(cnt_data - 1)) {               \
       return data_reader(sorted_idx[pos]);                                    \
     }                                                                         \
-    CHECK(threshold >= weighted_cdf[pos - 1]);                                \
-    CHECK(threshold < weighted_cdf[pos]);                                     \
+    CHECK_GE(threshold, weighted_cdf[pos - 1]);                               \
+    CHECK_LT(threshold, weighted_cdf[pos]);                                   \
     T v1 = data_reader(sorted_idx[pos - 1]);                                  \
     T v2 = data_reader(sorted_idx[pos]);                                      \
     if (weighted_cdf[pos + 1] - weighted_cdf[pos] >= 1.0f) {                  \

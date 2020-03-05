@@ -250,7 +250,7 @@ namespace LightGBM {
     }
     bin_upper_bound.insert(bin_upper_bound.end(), bounds_to_add.begin(), bounds_to_add.end());
     std::stable_sort(bin_upper_bound.begin(), bin_upper_bound.end());
-    CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
+    CHECK_LE(bin_upper_bound.size(), static_cast<size_t>(max_bin));
     return bin_upper_bound;
   }
 
@@ -308,7 +308,7 @@ namespace LightGBM {
     } else {
       bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
     }
-    CHECK(bin_upper_bound.size() <= static_cast<size_t>(max_bin));
+    CHECK_LE(bin_upper_bound.size(), static_cast<size_t>(max_bin));
     return bin_upper_bound;
   }
 
@@ -421,7 +421,7 @@ namespace LightGBM {
           cnt_in_bin[num_bin_ - 1] = na_cnt;
         }
       }
-      CHECK(num_bin_ <= max_bin);
+      CHECK_LE(num_bin_, max_bin);
     } else {
       // convert to int type first
       std::vector<int> distinct_values_int;

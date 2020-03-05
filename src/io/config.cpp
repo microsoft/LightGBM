@@ -293,6 +293,12 @@ void Config::CheckParamConflict() {
       histogram_pool_size = -1;
     }
   }
+  if (is_data_based_parallel) {
+    if (!forcedsplits_filename.empty()) {
+      Log::Fatal("Don't support forcedsplits in %s tree learner",
+                 tree_learner.c_str());
+    }
+  }
   // Check max_depth and num_leaves
   if (max_depth > 0) {
     double full_num_leaves = std::pow(2, max_depth);

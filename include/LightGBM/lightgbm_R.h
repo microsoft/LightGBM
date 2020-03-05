@@ -8,8 +8,6 @@
 #include <LightGBM/c_api.h>
 #include <LightGBM/R_object_helper.h>
 
-#include <cstdint>
-
 /*!
 * \brief get string message of the last error
 *  all functions in this file will return 0 on success

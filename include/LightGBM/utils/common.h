@@ -509,7 +509,7 @@ inline static std::vector<T> StringToArray(const std::string& str, int n) {
     return std::vector<T>();
   }
   std::vector<std::string> strs = Split(str.c_str(), ' ');
-  CHECK(strs.size() == static_cast<size_t>(n));
+  CHECK_EQ(strs.size(), static_cast<size_t>(n));
   std::vector<T> ret;
   ret.reserve(strs.size());
   __StringToTHelper<T, std::is_floating_point<T>::value> helper;
@@ -1089,11 +1089,10 @@ class Timer {
 // Note: this class is not thread-safe, don't use it inside omp blocks
 class FunctionTimer {
  public:
+#ifdef TIMETAG
   FunctionTimer(const std::string& name, Timer& timer) : timer_(timer) {
     timer.Start(name);
-#ifdef TIMETAG
     name_ = name;
-#endif  // TIMETAG
   }
 
   ~FunctionTimer() { timer_.Stop(name_); }
@@ -1101,6 +1100,9 @@ class FunctionTimer {
  private:
   std::string name_;
   Timer& timer_;
+#else
+  FunctionTimer(const std::string&, Timer&) {}
+#endif  // TIMETAG
 };
 
 }  // namespace Common
