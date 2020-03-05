@@ -211,8 +211,9 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
       sum_grad += gradients[idx];
       sum_hess += hessians[idx];
     }
-    double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
-                                                                  config_->lambda_l1, config_->lambda_l2, config_->max_delta_step);
+    double output = FeatureHistogram::CalculateSplittedLeafOutput<true, true>(
+        sum_grad, sum_hess, config_->lambda_l1, config_->lambda_l2,
+        config_->max_delta_step);
     auto old_leaf_output = tree->LeafOutput(i);
     auto new_leaf_output = output * tree->shrinkage();
     tree->SetLeafOutput(i, config_->refit_decay_rate * old_leaf_output + (1.0 - config_->refit_decay_rate) * new_leaf_output);
