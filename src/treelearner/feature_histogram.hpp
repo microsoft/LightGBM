@@ -674,7 +674,7 @@ class FeatureHistogram {
       }
       return ret;
     } else {
-      double ret = sum_gradients / (sum_hessians + l2);
+      double ret = -sum_gradients / (sum_hessians + l2);
       if (USE_MAX_OUTPUT) {
         if (std::fabs(ret) > max_delta_step) {
           return Common::Sign(ret) * max_delta_step;
