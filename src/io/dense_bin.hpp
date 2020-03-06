@@ -142,12 +142,12 @@ class DenseBin : public Bin {
   }
 
   template <bool MISS_IS_ZERO, bool MISS_IS_NA, bool MFB_IS_ZERO,
-            bool MFB_IS_NA>
+            bool MFB_IS_NA, bool USE_INDICES>
   data_size_t SplitInner(uint32_t min_bin, uint32_t max_bin,
                          uint32_t default_bin, uint32_t most_freq_bin,
                          bool default_left, uint32_t threshold,
-                         const data_size_t* data_indices, data_size_t num_data,
-                         data_size_t* lte_indices,
+                         const data_size_t* data_indices, data_size_t start,
+                         data_size_t cnt, data_size_t* lte_indices,
                          data_size_t* gt_indices) const {
     auto th = static_cast<VAL_T>(threshold + min_bin);
     auto t_zero_bin = static_cast<VAL_T>(min_bin + default_bin);
@@ -173,8 +173,8 @@ class DenseBin : public Bin {
         missing_default_count = &lte_count;
       }
     }
-    for (data_size_t i = 0; i < num_data; ++i) {
-      const data_size_t idx = data_indices[i];
+    for (data_size_t i = 0; i < cnt; ++i) {
+      const data_size_t idx = USE_INDICES ? data_indices[start + i] : start + i;
       const auto bin = data_[idx];
       if (MISS_IS_ZERO && !MFB_IS_ZERO) {
         if (bin == t_zero_bin) {
@@ -208,35 +208,63 @@ class DenseBin : public Bin {
   data_size_t Split(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
                     uint32_t most_freq_bin, MissingType missing_type,
                     bool default_left, uint32_t threshold,
-                    const data_size_t* data_indices, data_size_t num_data,
-                    data_size_t* lte_indices,
+                    const data_size_t* data_indices, data_size_t start,
+                    data_size_t cnt, data_size_t* lte_indices,
                     data_size_t* gt_indices) const override {
-    if (num_data <= 0) {
+    if (cnt <= 0) {
       return 0;
     }
-    if (missing_type == MissingType::None) {
-      return SplitInner<false, false, false, false>(
-          min_bin, max_bin, default_bin, most_freq_bin, default_left, threshold,
-          data_indices, num_data, lte_indices, gt_indices);
-    } else if (missing_type == MissingType::Zero) {
-      if (default_bin == most_freq_bin) {
-        return SplitInner<true, false, true, false>(
+    if (data_indices == nullptr) {
+      if (missing_type == MissingType::None) {
+        return SplitInner<false, false, false, false, false>(
             min_bin, max_bin, default_bin, most_freq_bin, default_left,
-            threshold, data_indices, num_data, lte_indices, gt_indices);
+            threshold, data_indices, start, cnt, lte_indices, gt_indices);
+      } else if (missing_type == MissingType::Zero) {
+        if (default_bin == most_freq_bin) {
+          return SplitInner<true, false, true, false, false>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        } else {
+          return SplitInner<true, false, false, false, false>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        }
       } else {
-        return SplitInner<true, false, false, false>(
-            min_bin, max_bin, default_bin, most_freq_bin, default_left,
-            threshold, data_indices, num_data, lte_indices, gt_indices);
+        if (max_bin == most_freq_bin + min_bin && most_freq_bin > 0) {
+          return SplitInner<false, true, false, true, false>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        } else {
+          return SplitInner<false, true, false, false, false>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        }
       }
     } else {
-      if (max_bin == most_freq_bin + min_bin && most_freq_bin > 0) {
-        return SplitInner<false, true, false, true>(
+      if (missing_type == MissingType::None) {
+        return SplitInner<false, false, false, false, true>(
             min_bin, max_bin, default_bin, most_freq_bin, default_left,
-            threshold, data_indices, num_data, lte_indices, gt_indices);
+            threshold, data_indices, start, cnt, lte_indices, gt_indices);
+      } else if (missing_type == MissingType::Zero) {
+        if (default_bin == most_freq_bin) {
+          return SplitInner<true, false, true, false, true>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        } else {
+          return SplitInner<true, false, false, false, true>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        }
       } else {
-        return SplitInner<false, true, false, false>(
-            min_bin, max_bin, default_bin, most_freq_bin, default_left,
-            threshold, data_indices, num_data, lte_indices, gt_indices);
+        if (max_bin == most_freq_bin + min_bin && most_freq_bin > 0) {
+          return SplitInner<false, true, false, true, true>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        } else {
+          return SplitInner<false, true, false, false, true>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        }
       }
     }
   }
@@ -245,9 +273,10 @@ class DenseBin : public Bin {
                                uint32_t most_freq_bin,
                                const uint32_t* threshold, int num_threahold,
                                const data_size_t* data_indices,
-                               data_size_t num_data, data_size_t* lte_indices,
+                               data_size_t start, data_size_t cnt,
+                               data_size_t* lte_indices,
                                data_size_t* gt_indices) const override {
-    if (num_data <= 0) {
+    if (cnt <= 0) {
       return 0;
     }
     data_size_t lte_count = 0;
@@ -258,8 +287,9 @@ class DenseBin : public Bin {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
-    for (data_size_t i = 0; i < num_data; ++i) {
-      const data_size_t idx = data_indices[i];
+    for (data_size_t i = 0; i < cnt; ++i) {
+      const data_size_t idx =
+          data_indices == nullptr ? start + i : data_indices[start + i];
       const uint32_t bin = data_[idx];
       if (bin < min_bin || bin > max_bin) {
         default_indices[(*default_count)++] = idx;

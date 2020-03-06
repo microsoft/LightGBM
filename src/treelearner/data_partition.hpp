@@ -106,14 +106,28 @@ class DataPartition {
     const data_size_t begin = leaf_begin_[leaf];
     const data_size_t cnt = leaf_count_[leaf];
     auto left_start = indices_.data() + begin;
-    auto left_cnt = runner_.Run<false>(
-        cnt,
-        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
-            data_size_t* right) {
-          return dataset->Split(feature, threshold, num_threshold, default_left,
-                                left_start + cur_start, cur_cnt, left, right);
-        },
-        left_start);
+    data_size_t left_cnt = 0;
+    if (cnt == num_data_) {
+      left_cnt = runner_.Run<false>(
+          cnt,
+          [=](int, data_size_t cur_start, data_size_t cur_cnt,
+              data_size_t* left, data_size_t* right) {
+            return dataset->Split(feature, threshold, num_threshold,
+                                  default_left, nullptr, cur_start, cur_cnt,
+                                  left, right);
+          },
+          left_start);
+    } else {
+      left_cnt = runner_.Run<false>(
+          cnt,
+          [=](int, data_size_t cur_start, data_size_t cur_cnt,
+              data_size_t* left, data_size_t* right) {
+            return dataset->Split(feature, threshold, num_threshold,
+                                  default_left, left_start, cur_start, cur_cnt,
+                                  left, right);
+          },
+          left_start);
+    }
     leaf_count_[leaf] = left_cnt;
     leaf_begin_[right_leaf] = left_cnt + begin;
     leaf_count_[right_leaf] = cnt - left_cnt;

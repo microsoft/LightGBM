@@ -195,12 +195,12 @@ class SparseBin: public Bin {
 
 
   template <bool MISS_IS_ZERO, bool MISS_IS_NA, bool MFB_IS_ZERO,
-            bool MFB_IS_NA>
+            bool MFB_IS_NA, bool USE_INDICES>
   data_size_t SplitInner(uint32_t min_bin, uint32_t max_bin,
                          uint32_t default_bin, uint32_t most_freq_bin,
                          bool default_left, uint32_t threshold,
-                         const data_size_t* data_indices, data_size_t num_data,
-                         data_size_t* lte_indices,
+                         const data_size_t* data_indices, data_size_t start,
+                         data_size_t cnt, data_size_t* lte_indices,
                          data_size_t* gt_indices) const {
     auto th = static_cast<VAL_T>(threshold + min_bin);
     auto t_zero_bin = static_cast<VAL_T>(min_bin + default_bin);
@@ -226,9 +226,10 @@ class SparseBin: public Bin {
         missing_default_count = &lte_count;
       }
     }
-    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
-    for (data_size_t i = 0; i < num_data; ++i) {
-      const data_size_t idx = data_indices[i];
+    SparseBinIterator<VAL_T> iterator(
+        this, USE_INDICES ? data_indices[start] : start);
+    for (data_size_t i = 0; i < cnt; ++i) {
+      const data_size_t idx = USE_INDICES ? data_indices[start + i] : start + i;
       const auto bin = iterator.InnerRawGet(idx);
       if (MISS_IS_ZERO && !MFB_IS_ZERO) {
         if (bin == t_zero_bin) {
@@ -262,59 +263,95 @@ class SparseBin: public Bin {
   data_size_t Split(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
                     uint32_t most_freq_bin, MissingType missing_type,
                     bool default_left, uint32_t threshold,
-                    const data_size_t* data_indices, data_size_t num_data,
-                    data_size_t* lte_indices,
+                    const data_size_t* data_indices, data_size_t start,
+                    data_size_t cnt, data_size_t* lte_indices,
                     data_size_t* gt_indices) const override {
-    if (num_data <= 0) {
+    if (cnt <= 0) {
       return 0;
     }
-    if (missing_type == MissingType::None) {
-      return SplitInner<false, false, false, false>(
-          min_bin, max_bin, default_bin, most_freq_bin, default_left, threshold,
-          data_indices, num_data, lte_indices, gt_indices);
-    } else if (missing_type == MissingType::Zero) {
-      if (default_bin == most_freq_bin) {
-        return SplitInner<true, false, true, false>(
+    if (data_indices == nullptr) {
+      if (missing_type == MissingType::None) {
+        return SplitInner<false, false, false, false, false>(
             min_bin, max_bin, default_bin, most_freq_bin, default_left,
-            threshold, data_indices, num_data, lte_indices, gt_indices);
+            threshold, data_indices, start, cnt, lte_indices, gt_indices);
+      } else if (missing_type == MissingType::Zero) {
+        if (default_bin == most_freq_bin) {
+          return SplitInner<true, false, true, false, false>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        } else {
+          return SplitInner<true, false, false, false, false>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        }
       } else {
-        return SplitInner<true, false, false, false>(
-            min_bin, max_bin, default_bin, most_freq_bin, default_left,
-            threshold, data_indices, num_data, lte_indices, gt_indices);
+        if (max_bin == most_freq_bin + min_bin && most_freq_bin > 0) {
+          return SplitInner<false, true, false, true, false>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        } else {
+          return SplitInner<false, true, false, false, false>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        }
       }
     } else {
-      if (max_bin == most_freq_bin + min_bin && most_freq_bin > 0) {
-        return SplitInner<false, true, false, true>(
+      if (missing_type == MissingType::None) {
+        return SplitInner<false, false, false, false, true>(
             min_bin, max_bin, default_bin, most_freq_bin, default_left,
-            threshold, data_indices, num_data, lte_indices, gt_indices);
+            threshold, data_indices, start, cnt, lte_indices, gt_indices);
+      } else if (missing_type == MissingType::Zero) {
+        if (default_bin == most_freq_bin) {
+          return SplitInner<true, false, true, false, true>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        } else {
+          return SplitInner<true, false, false, false, true>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        }
       } else {
-        return SplitInner<false, true, false, false>(
-            min_bin, max_bin, default_bin, most_freq_bin, default_left,
-            threshold, data_indices, num_data, lte_indices, gt_indices);
+        if (max_bin == most_freq_bin + min_bin && most_freq_bin > 0) {
+          return SplitInner<false, true, false, true, true>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        } else {
+          return SplitInner<false, true, false, false, true>(
+              min_bin, max_bin, default_bin, most_freq_bin, default_left,
+              threshold, data_indices, start, cnt, lte_indices, gt_indices);
+        }
       }
     }
   }
 
-  data_size_t SplitCategorical(
-    uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
-    const uint32_t* threshold, int num_threahold, const data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const override {
-    if (num_data <= 0) { return 0; }
+  data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
+                               uint32_t most_freq_bin,
+                               const uint32_t* threshold, int num_threahold,
+                               const data_size_t* data_indices,
+                               data_size_t start, data_size_t cnt,
+                               data_size_t* lte_indices,
+                               data_size_t* gt_indices) const override {
+    if (cnt <= 0) {
+      return 0;
+    }
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
-    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
+    SparseBinIterator<VAL_T> iterator(this,
+                                      nullptr ? start : data_indices[start]);
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
     if (Common::FindInBitset(threshold, num_threahold, most_freq_bin)) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
-    for (data_size_t i = 0; i < num_data; ++i) {
-      const data_size_t idx = data_indices[i];
+    for (data_size_t i = 0; i < cnt; ++i) {
+      const data_size_t idx =
+          data_indices == nullptr ? start + i : data_indices[start + i];
       const uint32_t bin = iterator.InnerRawGet(idx);
       if (bin < min_bin || bin > max_bin) {
         default_indices[(*default_count)++] = idx;
-      } else if (Common::FindInBitset(threshold, num_threahold, bin - min_bin)) {
+      } else if (Common::FindInBitset(threshold, num_threahold,
+                                      bin - min_bin)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;
@@ -331,19 +368,22 @@ class SparseBin: public Bin {
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
       pair_cnt += push_buffers_[i].size();
     }
-    std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs = push_buffers_[0];
+    std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs =
+        push_buffers_[0];
     idx_val_pairs.reserve(pair_cnt);
 
     for (size_t i = 1; i < push_buffers_.size(); ++i) {
-      idx_val_pairs.insert(idx_val_pairs.end(), push_buffers_[i].begin(), push_buffers_[i].end());
+      idx_val_pairs.insert(idx_val_pairs.end(), push_buffers_[i].begin(),
+                           push_buffers_[i].end());
       push_buffers_[i].clear();
       push_buffers_[i].shrink_to_fit();
     }
     // sort by data index
     std::sort(idx_val_pairs.begin(), idx_val_pairs.end(),
-      [](const std::pair<data_size_t, VAL_T>& a, const std::pair<data_size_t, VAL_T>& b) {
-        return a.first < b.first;
-      });
+              [](const std::pair<data_size_t, VAL_T>& a,
+                 const std::pair<data_size_t, VAL_T>& b) {
+                return a.first < b.first;
+              });
     // load delta array
     LoadFromPair(idx_val_pairs);
   }
