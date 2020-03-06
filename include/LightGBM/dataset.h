@@ -535,6 +535,7 @@ class Dataset {
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
+  template <bool USE_INDICES>
   inline data_size_t Split(int feature, const uint32_t* threshold,
                            int num_threshold, bool default_left,
                            const data_size_t* data_indices, data_size_t start,
@@ -542,7 +543,7 @@ class Dataset {
                            data_size_t* gt_indices) const {
     const int group = feature2group_[feature];
     const int sub_feature = feature2subfeature_[feature];
-    return feature_groups_[group]->Split(
+    return feature_groups_[group]->Split<USE_INDICES>(
         sub_feature, threshold, num_threshold, default_left, data_indices,
         start, cnt, lte_indices, gt_indices);
   }
