@@ -35,7 +35,6 @@ class FeatureMetainfo {
   BinType bin_type;
   /*! \brief random number generator for extremely randomized trees */
   mutable Random rand;
-  ;
 };
 /*!
  * \brief FeatureHistogram is used to construct and store a histogram for a
@@ -68,6 +67,7 @@ class FeatureHistogram {
   }
 
   hist_t* RawData() { return data_; }
+
   /*!
    * \brief Subtract current histograms with other
    * \param other The histogram that want to subtract
@@ -300,16 +300,20 @@ class FeatureHistogram {
             static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
         // if data not enough, or sum hessian too small
         if (cnt < meta_->config->min_data_in_leaf ||
-            hess < meta_->config->min_sum_hessian_in_leaf)
+            hess < meta_->config->min_sum_hessian_in_leaf) {
           continue;
+        }
         data_size_t other_count = num_data - cnt;
         // if data not enough
-        if (other_count < meta_->config->min_data_in_leaf) continue;
+        if (other_count < meta_->config->min_data_in_leaf) {
+          continue;
+        }
 
         double sum_other_hessian = sum_hessian - hess - kEpsilon;
         // if sum hessian too small
-        if (sum_other_hessian < meta_->config->min_sum_hessian_in_leaf)
+        if (sum_other_hessian < meta_->config->min_sum_hessian_in_leaf) {
           continue;
+        }
 
         double sum_other_gradient = sum_gradient - grad;
         if (USE_RAND) {
@@ -323,7 +327,9 @@ class FeatureHistogram {
             meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
             constraints, 0);
         // gain with split is worse than without split
-        if (current_gain <= min_gain_shift) continue;
+        if (current_gain <= min_gain_shift) {
+          continue;
+        }
 
         // mark to is splittable
         is_splittable_ = true;
@@ -392,17 +398,23 @@ class FeatureHistogram {
           cnt_cur_group += cnt;
 
           if (left_count < meta_->config->min_data_in_leaf ||
-              sum_left_hessian < meta_->config->min_sum_hessian_in_leaf)
+              sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) {
             continue;
+          }
           data_size_t right_count = num_data - left_count;
           if (right_count < meta_->config->min_data_in_leaf ||
-              right_count < min_data_per_group)
+              right_count < min_data_per_group) {
             break;
+          }
 
           double sum_right_hessian = sum_hessian - sum_left_hessian;
-          if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) break;
+          if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) {
+            break;
+          }
 
-          if (cnt_cur_group < min_data_per_group) continue;
+          if (cnt_cur_group < min_data_per_group) {
+            continue;
+          }
 
           cnt_cur_group = 0;
 
@@ -416,7 +428,9 @@ class FeatureHistogram {
               sum_left_gradient, sum_left_hessian, sum_right_gradient,
               sum_right_hessian, meta_->config->lambda_l1, l2,
               meta_->config->max_delta_step, constraints, 0);
-          if (current_gain <= min_gain_shift) continue;
+          if (current_gain <= min_gain_shift) {
+            continue;
+          }
           is_splittable_ = true;
           if (current_gain > best_gain) {
             best_left_count = left_count;
@@ -546,7 +560,7 @@ class FeatureHistogram {
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {
       output->gain = kMinScore;
       Log::Warning(
-          "'Forced Split' will be ignored since the gain getting worse. ");
+          "'Forced Split' will be ignored since the gain getting worse.");
       return;
     }
 
@@ -806,15 +820,20 @@ class FeatureHistogram {
         right_count += cnt;
         // if data not enough, or sum hessian too small
         if (right_count < meta_->config->min_data_in_leaf ||
-            sum_right_hessian < meta_->config->min_sum_hessian_in_leaf)
+            sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) {
           continue;
+        }
         data_size_t left_count = num_data - right_count;
         // if data not enough
-        if (left_count < meta_->config->min_data_in_leaf) break;
+        if (left_count < meta_->config->min_data_in_leaf) {
+          break;
+        }
 
         double sum_left_hessian = sum_hessian - sum_right_hessian;
         // if sum hessian too small
-        if (sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) break;
+        if (sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) {
+          break;
+        }
 
         double sum_left_gradient = sum_gradient - sum_right_gradient;
         if (USE_RAND) {
@@ -829,7 +848,9 @@ class FeatureHistogram {
             meta_->config->lambda_l2, meta_->config->max_delta_step,
             constraints, meta_->monotone_type);
         // gain with split is worse than without split
-        if (current_gain <= min_gain_shift) continue;
+        if (current_gain <= min_gain_shift) {
+          continue;
+        }
 
         // mark to is splittable
         is_splittable_ = true;
@@ -883,15 +904,20 @@ class FeatureHistogram {
         }
         // if data not enough, or sum hessian too small
         if (left_count < meta_->config->min_data_in_leaf ||
-            sum_left_hessian < meta_->config->min_sum_hessian_in_leaf)
+            sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) {
           continue;
+        }
         data_size_t right_count = num_data - left_count;
         // if data not enough
-        if (right_count < meta_->config->min_data_in_leaf) break;
+        if (right_count < meta_->config->min_data_in_leaf) {
+          break;
+        }
 
         double sum_right_hessian = sum_hessian - sum_left_hessian;
         // if sum hessian too small
-        if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) break;
+        if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) {
+          break;
+        }
 
         double sum_right_gradient = sum_gradient - sum_left_gradient;
         if (USE_RAND) {
@@ -906,7 +932,9 @@ class FeatureHistogram {
             meta_->config->lambda_l2, meta_->config->max_delta_step,
             constraints, meta_->monotone_type);
         // gain with split is worse than without split
-        if (current_gain <= min_gain_shift) continue;
+        if (current_gain <= min_gain_shift) {
+          continue;
+        }
 
         // mark to is splittable
         is_splittable_ = true;

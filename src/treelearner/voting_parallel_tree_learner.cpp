@@ -358,7 +358,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
   // find best split from local aggregated histograms
 
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(this->share_state_->num_threads)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();

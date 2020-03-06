@@ -3,8 +3,10 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  *
  * \note
- * desc and descl2 fields must be written in reStructuredText format;
- * nested sections can be placed only at the bottom of parent's section
+ * - desc and descl2 fields must be written in reStructuredText format;
+ * - nested sections can be placed only at the bottom of parent's section;
+ * - [doc-only] tag indicates that only documentation for this param should be generated and all other actions are performed manually;
+ * - [no-save] tag indicates that this param should not be saved into a model text representation.
  */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
@@ -83,12 +85,14 @@ struct Config {
 
   #pragma region Core Parameters
 
+  // [no-save]
   // [doc-only]
   // alias = config_file
   // desc = path of config file
   // desc = **Note**: can be used only in CLI version
   std::string config = "";
 
+  // [no-save]
   // [doc-only]
   // type = enum
   // default = train
@@ -482,6 +486,7 @@ struct Config {
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
   int verbosity = 1;
 
+  // [no-save]
   // alias = model_input, model_in
   // desc = filename of input model
   // desc = for ``prediction`` task, this model will be applied to prediction data
@@ -489,11 +494,13 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string input_model = "";
 
+  // [no-save]
   // alias = model_output, model_out
   // desc = filename of output model in training
   // desc = **Note**: can be used only in CLI version
   std::string output_model = "LightGBM_model.txt";
 
+  // [no-save]
   // alias = save_period
   // desc = frequency of saving model file snapshot
   // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
@@ -626,6 +633,7 @@ struct Config {
   // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
+  // [no-save]
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
   // desc = **Note**: ``init_score`` is not saved in binary file
@@ -636,22 +644,26 @@ struct Config {
 
   #pragma region Predict Parameters
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = used to specify how many trained iterations will be used in prediction
   // desc = ``<= 0`` means no limit
   int num_iteration_predict = -1;
 
+  // [no-save]
   // alias = is_predict_raw_score, predict_rawscore, raw_score
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to predict only the raw scores
   // desc = set this to ``false`` to predict transformed scores
   bool predict_raw_score = false;
 
+  // [no-save]
   // alias = is_predict_leaf_index, leaf_index
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to predict with leaf index of all trees
   bool predict_leaf_index = false;
 
+  // [no-save]
   // alias = is_predict_contrib, contrib
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
@@ -660,6 +672,7 @@ struct Config {
   // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
   bool predict_contrib = false;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
   // desc = if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
@@ -667,18 +680,22 @@ struct Config {
   // desc = **Note**: be very careful setting this parameter to ``true``
   bool predict_disable_shape_check = false;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
   bool pred_early_stop = false;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = the frequency of checking early-stopping prediction
   int pred_early_stop_freq = 10;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
+  // [no-save]
   // alias = predict_result, prediction_result, predict_name, prediction_name, pred_name, name_pred
   // desc = used only in ``prediction`` task
   // desc = filename of prediction result
@@ -689,12 +706,14 @@ struct Config {
 
   #pragma region Convert Parameters
 
+  // [no-save]
   // desc = used only in ``convert_model`` task
   // desc = only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
   // desc = if ``convert_model_language`` is set and ``task=train``, the model will be also converted
   // desc = **Note**: can be used only in CLI version
   std::string convert_model_language = "";
 
+  // [no-save]
   // alias = convert_model_file
   // desc = used only in ``convert_model`` task
   // desc = output filename of converted model
@@ -820,12 +839,14 @@ struct Config {
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 
+  // [no-save]
   // check = >0
   // alias = output_freq
   // desc = frequency for metric output
   // desc = **Note**: can be used only in CLI version
   int metric_freq = 1;
 
+  // [no-save]
   // alias = training_metric, is_training_metric, train_metric
   // desc = set this to ``true`` to output metric result over training dataset
   // desc = **Note**: can be used only in CLI version

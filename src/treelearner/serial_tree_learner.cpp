@@ -177,7 +177,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     if (BeforeFindBestSplit(tree_prt, left_leaf, right_leaf)) {
       // find best threshold for every feature
       FindBestSplits();
-    } 
+    }
     // Get a leaf with max split gain
     int best_leaf = static_cast<int>(ArrayArgs<SplitInfo>::ArgMax(best_split_per_leaf_));
     // Get split information for best leaf
@@ -352,7 +352,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   std::vector<int8_t> larger_node_used_features = col_sampler_.GetByNode();
   OMP_INIT_EX();
 // find splits
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) {
@@ -515,7 +515,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
     }
     Split(tree, best_leaf, left_leaf, right_leaf);
     *(cur_depth) = std::max(*(cur_depth), tree->leaf_depth(*left_leaf));
-    result_count++;
+    ++result_count;
   }
   return result_count;
 }

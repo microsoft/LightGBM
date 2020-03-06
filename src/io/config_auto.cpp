@@ -641,9 +641,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
-  str_buf << "[input_model: " << input_model << "]\n";
-  str_buf << "[output_model: " << output_model << "]\n";
-  str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
@@ -663,18 +660,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[ignore_column: " << ignore_column << "]\n";
   str_buf << "[categorical_feature: " << categorical_feature << "]\n";
   str_buf << "[forcedbins_filename: " << forcedbins_filename << "]\n";
-  str_buf << "[save_binary: " << save_binary << "]\n";
-  str_buf << "[num_iteration_predict: " << num_iteration_predict << "]\n";
-  str_buf << "[predict_raw_score: " << predict_raw_score << "]\n";
-  str_buf << "[predict_leaf_index: " << predict_leaf_index << "]\n";
-  str_buf << "[predict_contrib: " << predict_contrib << "]\n";
-  str_buf << "[predict_disable_shape_check: " << predict_disable_shape_check << "]\n";
-  str_buf << "[pred_early_stop: " << pred_early_stop << "]\n";
-  str_buf << "[pred_early_stop_freq: " << pred_early_stop_freq << "]\n";
-  str_buf << "[pred_early_stop_margin: " << pred_early_stop_margin << "]\n";
-  str_buf << "[output_result: " << output_result << "]\n";
-  str_buf << "[convert_model_language: " << convert_model_language << "]\n";
-  str_buf << "[convert_model: " << convert_model << "]\n";
   str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[is_unbalance: " << is_unbalance << "]\n";
@@ -689,8 +674,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambdarank_truncation_level: " << lambdarank_truncation_level << "]\n";
   str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
-  str_buf << "[metric_freq: " << metric_freq << "]\n";
-  str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";

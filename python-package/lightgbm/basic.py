@@ -1751,7 +1751,7 @@ class Booster(object):
                     self.set_network(machines,
                                      local_listen_port=params.get("local_listen_port", 12400),
                                      listen_time_out=params.get("listen_time_out", 120),
-                                     num_machines=params.get("num_machines", num_machines))
+                                     num_machines=params.setdefault("num_machines", num_machines))
                     break
             # construct booster object
             train_set.construct()
@@ -2641,7 +2641,7 @@ class Booster(object):
         train_set = Dataset(data, label, silent=True)
         new_params = copy.deepcopy(self.params)
         new_params['refit_decay_rate'] = decay_rate
-        new_booster = Booster(new_params, train_set, silent=True)
+        new_booster = Booster(new_params, train_set)
         # Copy models
         _safe_call(_LIB.LGBM_BoosterMerge(
             new_booster.handle,

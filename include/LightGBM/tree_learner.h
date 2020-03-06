@@ -7,11 +7,10 @@
 
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/utils/json11.h>
 
 #include <string>
 #include <vector>
-
-#include <LightGBM/utils/json11.h>
 
 namespace LightGBM {
 
@@ -54,7 +53,6 @@ class TreeLearner {
   * \brief training tree model on dataset
   * \param gradients The first order gradients
   * \param hessians The second order gradients
-  * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
   virtual Tree* Train(const score_t* gradients, const score_t* hessians) = 0;
