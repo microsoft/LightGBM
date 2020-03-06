@@ -233,7 +233,7 @@ class FeatureGroup {
     const uint32_t* threshold,
     int num_threshold,
     bool default_left,
-    data_size_t* data_indices, data_size_t num_data,
+    const data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const {
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
     uint32_t most_freq_bin = bin_mappers_[sub_feature]->GetMostFreqBin();

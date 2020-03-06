@@ -398,9 +398,11 @@ class Bin {
   * \return The number of less than or equal data.
   */
   virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin,
-    uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left, uint32_t threshold,
-    data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+                            uint32_t default_bin, uint32_t most_freq_bin,
+                            MissingType missing_type, bool default_left,
+                            uint32_t threshold, const data_size_t* data_indices,
+                            data_size_t num_data, data_size_t* lte_indices,
+                            data_size_t* gt_indices) const = 0;
 
   /*!
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
@@ -415,10 +417,11 @@ class Bin {
   * \param gt_indices After called this function. The greater data indices will store on this object.
   * \return The number of less than or equal data.
   */
-  virtual data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
-                            uint32_t most_freq_bin, const uint32_t* threshold, int num_threshold,
-                            data_size_t* data_indices, data_size_t num_data,
-                            data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+  virtual data_size_t SplitCategorical(
+      uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
+      const uint32_t* threshold, int num_threshold,
+      const data_size_t* data_indices, data_size_t num_data,
+      data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
   /*!
   * \brief After pushed all feature data, call this could have better refactor for bin data
