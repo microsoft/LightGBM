@@ -170,11 +170,9 @@ std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(
   if (0 == filename.find(kHdfsProto)) {
     WITH_HDFS(return std::unique_ptr<VirtualFileReader>(
         new HDFSFile(filename, O_RDONLY)));
-  } else
-#endif
-  {
-    return std::unique_ptr<VirtualFileReader>(new LocalFile(filename, "rb"));
   }
+#endif
+  return std::unique_ptr<VirtualFileReader>(new LocalFile(filename, "rb"));
 }
 
 std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(
@@ -183,23 +181,19 @@ std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(
   if (0 == filename.find(kHdfsProto)) {
     WITH_HDFS(return std::unique_ptr<VirtualFileWriter>(
         new HDFSFile(filename, O_WRONLY)));
-  } else
-#endif
-  {
-    return std::unique_ptr<VirtualFileWriter>(new LocalFile(filename, "wb"));
   }
+#endif
+  return std::unique_ptr<VirtualFileWriter>(new LocalFile(filename, "wb"));
 }
 
 bool VirtualFileWriter::Exists(const std::string& filename) {
 #ifdef USE_HDFS
   if (0 == filename.find(kHdfsProto)) {
     WITH_HDFS(HDFSFile file(filename, O_RDONLY); return file.Exists());
-  } else
-#endif
-  {
-    LocalFile file(filename, "rb");
-    return file.Exists();
   }
+#endif
+  LocalFile file(filename, "rb");
+  return file.Exists();
 }
 
 }  // namespace LightGBM

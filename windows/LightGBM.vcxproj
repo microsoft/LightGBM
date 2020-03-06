@@ -237,7 +237,6 @@
     <ClInclude Include="..\include\LightGBM\dataset.h" />
     <ClInclude Include="..\include\LightGBM\dataset_loader.h" />
     <ClInclude Include="..\include\LightGBM\feature_group.h" />
-    <ClInclude Include="..\include\LightGBM\json11.hpp" />
     <ClInclude Include="..\include\LightGBM\lightgbm_R.h" />
     <ClInclude Include="..\include\LightGBM\meta.h" />
     <ClInclude Include="..\include\LightGBM\metric.h" />
@@ -250,6 +249,7 @@
     <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
     <ClInclude Include="..\include\LightGBM\utils\common.h" />
     <ClInclude Include="..\include\LightGBM\utils\file_io.h" />
+    <ClInclude Include="..\include\LightGBM\utils\json11.h" />
     <ClInclude Include="..\include\LightGBM\utils\log.h" />
     <ClInclude Include="..\include\LightGBM\utils\openmp_wrapper.h" />
     <ClInclude Include="..\include\LightGBM\utils\pipeline_reader.h" />
@@ -281,6 +281,7 @@
     <ClInclude Include="..\src\objective\regression_objective.hpp" />
     <ClInclude Include="..\src\objective\multiclass_objective.hpp" />
     <ClInclude Include="..\src\objective\xentropy_objective.hpp" />
+    <ClInclude Include="..\src\treelearner\col_sampler.hpp" />
     <ClInclude Include="..\src\treelearner\cost_effective_gradient_boosting.hpp" />
     <ClInclude Include="..\src\treelearner\data_partition.hpp" />
     <ClInclude Include="..\src\treelearner\feature_histogram.hpp" />

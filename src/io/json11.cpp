@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <LightGBM/json11.hpp>
+#include <LightGBM/utils/json11.h>
 
 #include <limits>
 #include <cassert>
