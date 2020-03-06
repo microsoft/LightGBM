@@ -1228,7 +1228,7 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
     hist_data = share_state->TempBuf();
   }
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1) num_threads(share_state->num_threads)
   for (int tid = 0; tid < n_data_block; ++tid) {
     OMP_LOOP_EX_BEGIN();
     data_size_t start = tid * data_block_size;
@@ -1261,7 +1261,7 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
   int bin_block_size = num_bin;
   Threading::BlockInfo<data_size_t>(share_state->num_threads, num_bin, 512, &n_bin_block,
                                     &bin_block_size);
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1) num_threads(share_state->num_threads)
   for (int t = 0; t < n_bin_block; ++t) {
     const int start = t * bin_block_size;
     const int end = std::min(start + bin_block_size, num_bin);
@@ -1333,7 +1333,7 @@ void Dataset::ConstructHistogramsInner(
       }
     }
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
     for (int gi = 0; gi < num_used_dense_group; ++gi) {
       OMP_LOOP_EX_BEGIN();
       int group = used_dense_group[gi];
