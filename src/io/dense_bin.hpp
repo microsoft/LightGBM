@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 #include <vector>
 
 namespace LightGBM {
@@ -55,7 +56,7 @@ class DenseBin : public Bin {
   explicit DenseBin(data_size_t num_data)
       : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {
     if (IS_4BIT) {
-      // TODO: chece VAL_T is uint8_t here
+      CHECK_EQ(sizeof(VAL_T), 1);
       data_.resize((num_data_ + 1) / 2, static_cast<uint8_t>(0));
       buf_.resize((num_data_ + 1) / 2, static_cast<uint8_t>(0));
     } else {
@@ -376,7 +377,7 @@ class DenseBin : public Bin {
         }
       }
     } else {
-      for (int i = 0; i < data_.size(); ++i) {
+      for (size_t i = 0; i < data_.size(); ++i) {
         data_[i] = mem_data[i];
       }
     }

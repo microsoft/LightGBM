@@ -75,6 +75,9 @@ const int kAlignedSize = 32;
 
 #define SIZE_ALIGNED(t) ((t) + kAlignedSize - 1) / kAlignedSize * kAlignedSize
 
+// Refer to https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-4-c4127?view=vs-2019
+#pragma warning(disable : 4127)
+
 }  // namespace LightGBM
 
 #endif   // LightGBM_META_H_
