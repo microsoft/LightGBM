@@ -382,7 +382,7 @@ class DenseBin : public Bin {
     }
   }
 
-  inline VAL_T data(data_size_t idx) {
+  inline VAL_T data(data_size_t idx) const {
     if (IS_4BIT) {
       return (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
     } else {
