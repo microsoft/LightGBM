@@ -315,7 +315,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "  std::stringstream str_buf;\n"
     for x in infos:
         for y in x:
-            if "[doc-only]" in y:
+            if "[doc-only]" in y or "[no-save]" in y:
                 continue
             param_type = y["inner_type"][0]
             name = y["name"][0]
