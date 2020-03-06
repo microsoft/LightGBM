@@ -201,17 +201,8 @@ class DenseBin : public Bin {
         missing_default_count = &lte_count;
       }
     }
-    const data_size_t pf_offset = 64 / sizeof(VAL_T);
     for (data_size_t i = 0; i < cnt; ++i) {
       const data_size_t idx = USE_INDICES ? data_indices[start + i] : start + i;
-      if (USE_INDICES) {
-        const auto pf_idx = data_indices[start + i + pf_offset];
-        if (IS_4BIT) {
-          PREFETCH_T0(data_.data() + (pf_idx >> 1));
-        } else {
-          PREFETCH_T0(data_.data() + pf_idx);
-        }
-      }
       const auto bin = data(idx);
       if (MISS_IS_ZERO && !MFB_IS_ZERO) {
         if (bin == t_zero_bin) {
