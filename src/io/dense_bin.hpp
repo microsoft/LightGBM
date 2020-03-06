@@ -53,7 +53,7 @@ class DenseBin : public Bin {
  public:
   friend DenseBinIterator<VAL_T, IS_4BIT>;
   explicit DenseBin(data_size_t num_data)
-      : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {
+      : num_data_(num_data) {
     if (IS_4BIT) {
       CHECK_EQ(sizeof(VAL_T), 1);
       data_.resize((num_data_ + 1) / 2, static_cast<uint8_t>(0));
