@@ -407,7 +407,7 @@ class SparseBin : public Bin {
     if (cnt <= 0) {
       return 0;
     }
-    return SplitCategoricalInner<true>(min_bin, max_bin, most_freq_bin,
+    return SplitCategoricalInner<false>(min_bin, max_bin, most_freq_bin,
                                        threshold, num_threahold, nullptr, start,
                                        cnt, lte_indices, gt_indices);
   }
