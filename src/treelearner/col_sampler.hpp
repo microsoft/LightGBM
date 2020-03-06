@@ -8,15 +8,17 @@
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
-
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 
+#include <algorithm>
+#include <vector>
+
 namespace LightGBM {
 class ColSampler {
  public:
-  ColSampler(const Config* config)
+  explicit ColSampler(const Config* config)
       : fraction_bytree_(config->feature_fraction),
         fraction_bynode_(config->feature_fraction_bynode),
         seed_(config->feature_fraction_seed),
