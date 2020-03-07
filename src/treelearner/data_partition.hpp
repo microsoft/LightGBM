@@ -110,9 +110,8 @@ class DataPartition {
         cnt,
         [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
             data_size_t* right) {
-          return dataset->Split(feature, threshold, num_threshold,
-                                       default_left, left_start + cur_start,
-                                       cur_cnt, left, right);
+          return dataset->Split(feature, threshold, num_threshold, default_left,
+                                left_start + cur_start, cur_cnt, left, right);
         },
         left_start);
     leaf_count_[leaf] = left_cnt;
