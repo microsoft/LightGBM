@@ -263,7 +263,6 @@
     <ClInclude Include="..\src\boosting\rf.hpp" />
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
-    <ClInclude Include="..\src\io\dense_nbits_bin.hpp" />
     <ClInclude Include="..\src\io\multi_val_dense_bin.hpp" />
     <ClInclude Include="..\src\io\multi_val_sparse_bin.hpp" />
     <ClInclude Include="..\src\io\parser.hpp" />
