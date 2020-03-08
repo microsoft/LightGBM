@@ -144,72 +144,67 @@ class FeatureHistogram {
 
   template <bool USE_RAND, bool USE_MC, bool USE_L1, bool USE_MAX_OUTPUT>
   void FuncForNumricalL2() {
+
+#define TEMPLATE_PREFIX USE_RAND, USE_MC, USE_L1, USE_MAX_OUTPUT
+#define LAMBDA_ARGUMENTS                                         \
+  double sum_gradient, double sum_hessian, data_size_t num_data, \
+      const ConstraintEntry &constraints, SplitInfo *output
+#define BEFORE_ARGUMENTS sum_gradient, sum_hessian, output, &rand_threshold
+#define FUNC_ARGUMENTS                                                      \
+  sum_gradient, sum_hessian, num_data, constraints, min_gain_shift, output, \
+      rand_threshold
+
     if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
       if (meta_->missing_type == MissingType::Zero) {
-        find_best_threshold_fun_ =
-            [=](double sum_gradient, double sum_hessian, data_size_t num_data,
-                const ConstraintEntry& constraints, SplitInfo* output) {
-              int rand_threshold = 0;
-              double min_gain_shift =
-                  BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
-                      sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
-                                            USE_MAX_OUTPUT, true, true, false>(
-                  sum_gradient, sum_hessian, num_data, constraints,
-                  min_gain_shift, output, rand_threshold);
-              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
-                                            USE_MAX_OUTPUT, false, true, false>(
-                  sum_gradient, sum_hessian, num_data, constraints,
-                  min_gain_shift, output, rand_threshold);
-            };
+        find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS) {
+          int rand_threshold = 0;
+          double min_gain_shift =
+              BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
+                  BEFORE_ARGUMENTS);
+          FindBestThresholdSequentially<TEMPLATE_PREFIX, true, true, false>(
+              FUNC_ARGUMENTS);
+          FindBestThresholdSequentially<TEMPLATE_PREFIX, false, true, false>(
+              FUNC_ARGUMENTS);
+        };
       } else {
-        find_best_threshold_fun_ =
-            [=](double sum_gradient, double sum_hessian, data_size_t num_data,
-                const ConstraintEntry& constraints, SplitInfo* output) {
-              int rand_threshold = 0;
-              double min_gain_shift =
-                  BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
-                      sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
-                                            USE_MAX_OUTPUT, true, false, true>(
-                  sum_gradient, sum_hessian, num_data, constraints,
-                  min_gain_shift, output, rand_threshold);
-              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
-                                            USE_MAX_OUTPUT, false, false, true>(
-                  sum_gradient, sum_hessian, num_data, constraints,
-                  min_gain_shift, output, rand_threshold);
-            };
+        find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS) {
+          int rand_threshold = 0;
+          double min_gain_shift =
+              BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
+                  BEFORE_ARGUMENTS);
+          FindBestThresholdSequentially<TEMPLATE_PREFIX, true, false, true>(
+              FUNC_ARGUMENTS);
+          FindBestThresholdSequentially<TEMPLATE_PREFIX, false, false, true>(
+              FUNC_ARGUMENTS);
+        };
       }
     } else {
       if (meta_->missing_type != MissingType::NaN) {
-        find_best_threshold_fun_ =
-            [=](double sum_gradient, double sum_hessian, data_size_t num_data,
-                const ConstraintEntry& constraints, SplitInfo* output) {
-              int rand_threshold = 0;
-              double min_gain_shift =
-                  BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
-                      sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
-                                            USE_MAX_OUTPUT, true, false, false>(
-                  sum_gradient, sum_hessian, num_data, constraints,
-                  min_gain_shift, output, rand_threshold);
-            };
+        find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS) {
+          int rand_threshold = 0;
+          double min_gain_shift =
+              BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
+                  BEFORE_ARGUMENTS);
+          FindBestThresholdSequentially<TEMPLATE_PREFIX, true, false, false>(
+              FUNC_ARGUMENTS);
+        };
       } else {
-        find_best_threshold_fun_ =
-            [=](double sum_gradient, double sum_hessian, data_size_t num_data,
-                const ConstraintEntry& constraints, SplitInfo* output) {
-              int rand_threshold = 0;
-              double min_gain_shift =
-                  BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
-                      sum_gradient, sum_hessian, output, &rand_threshold);
-              FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
-                                            USE_MAX_OUTPUT, true, false, false>(
-                  sum_gradient, sum_hessian, num_data, constraints,
-                  min_gain_shift, output, rand_threshold);
-              output->default_left = false;
-            };
+        find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS) {
+          int rand_threshold = 0;
+          double min_gain_shift =
+              BeforeNumercal<USE_RAND, USE_L1, USE_MAX_OUTPUT>(
+                  BEFORE_ARGUMENTS);
+          FindBestThresholdSequentially<USE_RAND, USE_MC, USE_L1,
+                                        USE_MAX_OUTPUT, true, false, false>(
+              FUNC_ARGUMENTS);
+          output->default_left = false;
+        };
       }
     }
+#undef TEMPLATE_PREFIX
+#undef LAMBDA_ARGUMENTS
+#undef BEFORE_ARGUMENTS
+#undef FUNC_ARGURMENTS
   }
 
   void FuncForCategorical() {
@@ -227,41 +222,38 @@ class FeatureHistogram {
       }
     }
   }
+
   template <bool USE_RAND, bool USE_MC>
   void FuncForCategoricalL1() {
+#define ARGUMENTS                                                      \
+  std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, \
+      std::placeholders::_4, std::placeholders::_5
     if (meta_->config->lambda_l1 > 0) {
       if (meta_->config->max_delta_step > 0) {
         find_best_threshold_fun_ =
             std::bind(&FeatureHistogram::FindBestThresholdCategoricalInner<
                           USE_RAND, USE_MC, true, true>,
-                      this, std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, std::placeholders::_4,
-                      std::placeholders::_5);
+                      this, ARGUMENTS);
       } else {
         find_best_threshold_fun_ =
             std::bind(&FeatureHistogram::FindBestThresholdCategoricalInner<
                           USE_RAND, USE_MC, true, false>,
-                      this, std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, std::placeholders::_4,
-                      std::placeholders::_5);
+                      this, ARGUMENTS);
       }
     } else {
       if (meta_->config->max_delta_step > 0) {
         find_best_threshold_fun_ =
             std::bind(&FeatureHistogram::FindBestThresholdCategoricalInner<
                           USE_RAND, USE_MC, false, true>,
-                      this, std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, std::placeholders::_4,
-                      std::placeholders::_5);
+                      this, ARGUMENTS);
       } else {
         find_best_threshold_fun_ =
             std::bind(&FeatureHistogram::FindBestThresholdCategoricalInner<
                           USE_RAND, USE_MC, false, false>,
-                      this, std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, std::placeholders::_4,
-                      std::placeholders::_5);
+                      this, ARGUMENTS);
       }
     }
+#undef ARGUMENTS
   }
 
   template <bool USE_RAND, bool USE_MC, bool USE_L1, bool USE_MAX_OUTPUT>
