@@ -177,6 +177,10 @@ reduce peak memory usage but not affect training speed or accuracy) in LightGBM 
 Parallel Experiment
 -------------------
 
+History
+^^^^^^^
+27 Feb, 2017: first version
+
 Data
 ^^^^
 
