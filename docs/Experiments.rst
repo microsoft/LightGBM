@@ -8,7 +8,7 @@ For the detailed experiment scripts and output logs, please refer to this `repo`
 
 History
 ^^^^^^^
-08 Mar, 2020: update according to the latest master barnch. (``xgboost_extra`` is not updated for it is too slow.)
+08 Mar, 2020: update according to the latest master branch. (``xgboost_extra`` is not updated for it is too slow.)
 
 27 Feb, 2017: first version
 
