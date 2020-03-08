@@ -59,6 +59,10 @@ class FeatureHistogram {
   void Init(hist_t* data, const FeatureMetainfo* meta) {
     meta_ = meta;
     data_ = data;
+    ResetFunc();
+  }
+
+  void ResetFunc() {
     if (meta_->bin_type == BinType::NumericalBin) {
       FuncForNumrical();
     } else {
@@ -1131,7 +1135,21 @@ class HistogramPool {
   }
 
   void ResetConfig(const Dataset* train_data, const Config* config) {
+    CHECK_GT(train_data->num_features(), 0);
+    const Config* old_config = feature_metas_[0].config;
     SetFeatureInfo<false, true>(train_data, config, &feature_metas_);
+    // if need to reset the function pointers
+    if (old_config->lambda_l1 != config->lambda_l1 ||
+        old_config->monotone_constraints != config->monotone_constraints ||
+        old_config->extra_trees != config->extra_trees ||
+        old_config->max_delta_step != config->max_delta_step) {
+#pragma omp parallel for schedule(static)
+      for (int i = 0; i < cache_size_; ++i) {
+        for (int j = 0; j < train_data->num_features(); ++j) {
+          pool_[i][j].ResetFunc();
+        }
+      }
+    }
   }
 
   /*!
