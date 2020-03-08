@@ -537,7 +537,7 @@ class Dataset {
 
   inline data_size_t Split(int feature, const uint32_t* threshold,
                            int num_threshold, bool default_left,
-                           const data_size_t* data_indices, 
+                           const data_size_t* data_indices,
                            data_size_t cnt, data_size_t* lte_indices,
                            data_size_t* gt_indices) const {
     const int group = feature2group_[feature];
