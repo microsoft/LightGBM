@@ -49,17 +49,17 @@ struct ConstraintEntry {
 class LeafConstraintsBase {
  public:
   virtual ~LeafConstraintsBase(){};
-  virtual const ConstraintEntry &Get(int leaf_idx) const = 0;
+  virtual const ConstraintEntry& Get(int leaf_idx) const = 0;
   virtual void Reset() = 0;
-  virtual void BeforeSplit(const Tree *tree, int leaf, int new_leaf,
+  virtual void BeforeSplit(const Tree* tree, int leaf, int new_leaf,
                            int8_t monotone_type) = 0;
   virtual std::vector<int> Update(
-      const Tree *tree, bool is_numerical_split,
+      const Tree* tree, bool is_numerical_split,
       int leaf, int new_leaf, int8_t monotone_type, double right_output,
-      double left_output, int split_feature, const SplitInfo &split_info,
-      const std::vector<SplitInfo> &best_split_per_leaf) = 0;
+      double left_output, int split_feature, const SplitInfo& split_info,
+      const std::vector<SplitInfo>& best_split_per_leaf) = 0;
 
-  inline static LeafConstraintsBase *Create(const Config *config, int num_leaves);
+  inline static LeafConstraintsBase* Create(const Config* config, int num_leaves);
 };
 
 class BasicLeafConstraints : public LeafConstraintsBase {
@@ -69,18 +69,18 @@ class BasicLeafConstraints : public LeafConstraintsBase {
   }
 
   void Reset() override {
-    for (auto &entry : entries_) {
+    for (auto& entry : entries_) {
       entry.Reset();
     }
   }
 
-  void BeforeSplit(const Tree *, int, int, int8_t) override {}
+  void BeforeSplit(const Tree*, int, int, int8_t) override {}
 
-  std::vector<int> Update(const Tree *,
+  std::vector<int> Update(const Tree*,
                           bool is_numerical_split, int leaf, int new_leaf,
                           int8_t monotone_type, double right_output,
-                          double left_output, int, const SplitInfo &,
-                          const std::vector<SplitInfo> &) override {
+                          double left_output, int, const SplitInfo& ,
+                          const std::vector<SplitInfo>& ) override {
     entries_[new_leaf] = entries_[leaf];
     if (is_numerical_split) {
       double mid = (left_output + right_output) / 2.0f;
@@ -95,7 +95,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
     return std::vector<int>();
   }
 
-  const ConstraintEntry &Get(int leaf_idx) const override { return entries_[leaf_idx]; }
+  const ConstraintEntry& Get(int leaf_idx) const override { return entries_[leaf_idx]; }
 
  protected:
   int num_leaves_;
@@ -104,7 +104,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
 
 class FastLeafConstraints : public BasicLeafConstraints {
  public:
-  explicit FastLeafConstraints(const Config *config, int num_leaves)
+  explicit FastLeafConstraints(const Config* config, int num_leaves)
       : BasicLeafConstraints(num_leaves), config_(config) {
     leaf_is_in_monotone_subtree_.resize(num_leaves_, false);
     node_parent_.resize(num_leaves_ - 1, -1);
@@ -118,7 +118,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
     leaves_to_update_.clear();
   }
 
-  void BeforeSplit(const Tree *tree, int leaf, int new_leaf,
+  void BeforeSplit(const Tree* tree, int leaf, int new_leaf,
                    int8_t monotone_type) override {
     if (monotone_type != 0 || leaf_is_in_monotone_subtree_[leaf]) {
       leaf_is_in_monotone_subtree_[leaf] = true;
@@ -146,11 +146,11 @@ class FastLeafConstraints : public BasicLeafConstraints {
     }
   }
 
-  std::vector<int> Update(const Tree *tree, bool is_numerical_split, int leaf,
+  std::vector<int> Update(const Tree* tree, bool is_numerical_split, int leaf,
                           int new_leaf, int8_t monotone_type,
                           double right_output, double left_output,
-                          int split_feature, const SplitInfo &split_info,
-                          const std::vector<SplitInfo> &best_split_per_leaf) override{
+                          int split_feature, const SplitInfo& split_info,
+                          const std::vector<SplitInfo>& best_split_per_leaf) override{
     leaves_to_update_.clear();
     if (leaf_is_in_monotone_subtree_[leaf]) {
       UpdateConstraintsWithOutputs(is_numerical_split, leaf, new_leaf,
@@ -165,9 +165,9 @@ class FastLeafConstraints : public BasicLeafConstraints {
 
   bool OppositeChildShouldBeUpdated(
       bool is_split_numerical,
-      const std::vector<int> &features_of_splits_going_up_from_original_leaf,
+      const std::vector<int>& features_of_splits_going_up_from_original_leaf,
       int inner_feature,
-      std::vector<bool> &was_original_leaf_right_child_of_split,
+      std::vector<bool>& was_original_leaf_right_child_of_split,
       bool is_in_right_child) {
     bool opposite_child_should_be_updated = true;
 
@@ -198,12 +198,12 @@ class FastLeafConstraints : public BasicLeafConstraints {
   // Recursive function that goes up the tree, and then down to find leaves that
   // have constraints to be updated
   void GoUpToFindLeavesToUpdate(
-      const Tree *tree, int node_idx,
-      std::vector<int> &features_of_splits_going_up_from_original_leaf,
-      std::vector<uint32_t> &thresholds_of_splits_going_up_from_original_leaf,
-      std::vector<bool> &was_original_leaf_right_child_of_split,
-      int split_feature, const SplitInfo &split_info, uint32_t split_threshold,
-      const std::vector<SplitInfo> &best_split_per_leaf) {
+      const Tree* tree, int node_idx,
+      std::vector<int>& features_of_splits_going_up_from_original_leaf,
+      std::vector<uint32_t>& thresholds_of_splits_going_up_from_original_leaf,
+      std::vector<bool>& was_original_leaf_right_child_of_split,
+      int split_feature, const SplitInfo& split_info, uint32_t split_threshold,
+      const std::vector<SplitInfo>& best_split_per_leaf) {
 #ifdef DEBUG
     CHECK(node_idx >= 0);
     CHECK((unsigned int)node_idx < node_parent_.size());
@@ -264,15 +264,15 @@ class FastLeafConstraints : public BasicLeafConstraints {
   }
 
   void GoDownToFindLeavesToUpdate(
-      const Tree *tree, int node_idx,
-      const std::vector<int> &features_of_splits_going_up_from_original_leaf,
-      const std::vector<uint32_t> &
+      const Tree* tree, int node_idx,
+      const std::vector<int>& features_of_splits_going_up_from_original_leaf,
+      const std::vector<uint32_t>&
           thresholds_of_splits_going_up_from_original_leaf,
-      const std::vector<bool> &was_original_leaf_right_child_of_split,
+      const std::vector<bool>& was_original_leaf_right_child_of_split,
       bool update_max_constraints, int split_feature,
-      const SplitInfo &split_info, bool use_left_leaf, bool use_right_leaf,
+      const SplitInfo& split_info, bool use_left_leaf, bool use_right_leaf,
       uint32_t split_threshold,
-      const std::vector<SplitInfo> &best_split_per_leaf) {
+      const std::vector<SplitInfo>& best_split_per_leaf) {
     if (node_idx < 0) {
       int leaf_idx = ~node_idx;
 
@@ -359,10 +359,10 @@ class FastLeafConstraints : public BasicLeafConstraints {
   }
 
   void
-  GoUpToFindLeavesToUpdate(const Tree *tree, int node_idx, int split_feature,
-                           const SplitInfo &split_info,
+  GoUpToFindLeavesToUpdate(const Tree* tree, int node_idx, int split_feature,
+                           const SplitInfo& split_info,
                            uint32_t split_threshold,
-                           const std::vector<SplitInfo> &best_split_per_leaf) {
+                           const std::vector<SplitInfo>& best_split_per_leaf) {
     int depth = tree->leaf_depth(~tree->left_child(node_idx)) - 1;
 
     std::vector<int> features_of_splits_going_up_from_original_leaf;
@@ -381,11 +381,11 @@ class FastLeafConstraints : public BasicLeafConstraints {
   }
 
   std::pair<bool, bool> ShouldKeepGoingLeftRight(
-      const Tree *tree, int node_idx,
-      const std::vector<int> &features_of_splits_going_up_from_original_leaf,
-      const std::vector<uint32_t> &
+      const Tree* tree, int node_idx,
+      const std::vector<int>& features_of_splits_going_up_from_original_leaf,
+      const std::vector<uint32_t>&
           thresholds_of_splits_going_up_from_original_leaf,
-      const std::vector<bool> &was_original_leaf_right_child_of_split) {
+      const std::vector<bool>& was_original_leaf_right_child_of_split) {
     int inner_feature = tree->split_feature_inner(node_idx);
     uint32_t threshold = tree->threshold_in_bin(node_idx);
     bool is_split_numerical = tree->IsNumericalSplit(node_idx);
@@ -417,7 +417,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
   }
 
  private:
-  const Config *config_;
+  const Config* config_;
   std::vector<int> leaves_to_update_;
   // add parent node information
   std::vector<int> node_parent_;
@@ -425,7 +425,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
   std::vector<bool> leaf_is_in_monotone_subtree_;
 };
 
-LeafConstraintsBase *LeafConstraintsBase::Create(const Config *config,
+LeafConstraintsBase* LeafConstraintsBase::Create(const Config* config,
                                                  int num_leaves) {
   if (config->monotone_constraints_method == "intermediate") {
     return new FastLeafConstraints(config, num_leaves);

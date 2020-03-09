@@ -166,9 +166,6 @@ class Tree {
   inline int leaf_parent(int leaf_idx) const { return leaf_parent_[leaf_idx]; }
 
   inline uint32_t threshold_in_bin(int node_idx) const {
-#ifdef DEBUG
-    CHECK(node_idx >= 0);
-#endif
     return threshold_in_bin_[node_idx];
   }
 

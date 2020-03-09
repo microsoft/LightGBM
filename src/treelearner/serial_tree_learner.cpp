@@ -716,13 +716,11 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
 
   OMP_INIT_EX();
 // find splits
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
-    if (!col_sampler_.is_feature_used_bytree()[feature_index]) {
-      continue;
-    }
-    if (!histogram_array_[feature_index].is_splittable()) {
+    if (!col_sampler_.is_feature_used_bytree()[feature_index] |
+        !histogram_array_[feature_index].is_splittable()) {
       continue;
     }
     const int tid = omp_get_thread_num();
