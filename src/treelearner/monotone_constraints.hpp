@@ -209,6 +209,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
     CHECK((unsigned int)node_idx < node_parent_.size());
 #endif
     int parent_idx = node_parent_[node_idx];
+    // if not at the root
     if (parent_idx != -1) {
       int inner_feature = tree->split_feature_inner(parent_idx);
       int feature = tree->split_feature(parent_idx);
@@ -224,6 +225,8 @@ class FastLeafConstraints : public BasicLeafConstraints {
           is_in_right_child);
 
       if (opposite_child_should_be_updated) {
+        // if there is no monotone constraint on a split,
+        // then there is no relationship between its left and right leaves' values
         if (monotone_type != 0) {
           // these variables correspond to the current split we encounter going
           // up the tree
@@ -236,6 +239,9 @@ class FastLeafConstraints : public BasicLeafConstraints {
               (monotone_type < 0) ? left_child_is_curr_idx
                                   : !left_child_is_curr_idx;
 
+          // the opposite child needs to be updated
+          // so the code needs to go down in the the opposite child
+          // to see which leaves' constraints need to be updated
           GoDownToFindLeavesToUpdate(
               tree, opposite_child_idx,
               features_of_splits_going_up_from_original_leaf,
@@ -245,6 +251,10 @@ class FastLeafConstraints : public BasicLeafConstraints {
               split_info, true, true, split_threshold, best_split_per_leaf);
         }
 
+        // if opposite_child_should_be_updated, then it means the path to come up there was relevant,
+        // i.e. that it will be helpful going down to determine which leaf
+        // is actually contiguous to the original 2 leaves and should be updated
+        // so the variables associated with the split need to be recorded
         was_original_leaf_right_child_of_split.push_back(
             tree->right_child(parent_idx) == node_idx);
         thresholds_of_splits_going_up_from_original_leaf.push_back(
@@ -253,13 +263,12 @@ class FastLeafConstraints : public BasicLeafConstraints {
             tree->split_feature_inner(parent_idx));
       }
 
-      if (parent_idx != 0) {
-        GoUpToFindLeavesToUpdate(
-            tree, parent_idx, features_of_splits_going_up_from_original_leaf,
-            thresholds_of_splits_going_up_from_original_leaf,
-            was_original_leaf_right_child_of_split, split_feature, split_info,
-            split_threshold, best_split_per_leaf);
-      }
+      // since current node is not the root, keep going up
+      GoUpToFindLeavesToUpdate(
+          tree, parent_idx, features_of_splits_going_up_from_original_leaf,
+          thresholds_of_splits_going_up_from_original_leaf,
+          was_original_leaf_right_child_of_split, split_feature, split_info,
+          split_threshold, best_split_per_leaf);
     }
   }
 
@@ -273,17 +282,22 @@ class FastLeafConstraints : public BasicLeafConstraints {
       const SplitInfo& split_info, bool use_left_leaf, bool use_right_leaf,
       uint32_t split_threshold,
       const std::vector<SplitInfo>& best_split_per_leaf) {
+    // if leaf
     if (node_idx < 0) {
       int leaf_idx = ~node_idx;
 
-      // splits that are not to be used shall not be updated, included leaf at
-      // max depth
+      // splits that are not to be used shall not be updated,
+      // included leaf at max depth
       if (best_split_per_leaf[leaf_idx].gain == kMinScore) {
         return;
       }
 
       std::pair<double, double> min_max_constraints;
       bool something_changed = false;
+      // if the current leaf is contiguous with both the new right leaf and the new left leaf
+      // then it may need to be greater than the max of the 2 or smaller than the min of the 2
+      // otherwise, if the current leaf is contiguous with only one of the 2 new leaves,
+      // then it may need to be greater or smaller than it
       if (use_right_leaf && use_left_leaf) {
         min_max_constraints =
             std::minmax(split_info.right_output, split_info.left_output);
@@ -302,7 +316,8 @@ class FastLeafConstraints : public BasicLeafConstraints {
         CHECK(min_max_constraints.second <= tree->LeafOutput(leaf_idx));
       }
 #endif
-
+      // depending on which split made the current leaf and the original leaves contiguous,
+      // either the min constraint or the max constraint of the current leaf need to be updated
       if (!update_max_constraints) {
         something_changed = entries_[leaf_idx].UpdateMinAndReturnBoolIfChanged(
             min_max_constraints.second);
@@ -310,12 +325,13 @@ class FastLeafConstraints : public BasicLeafConstraints {
         something_changed = entries_[leaf_idx].UpdateMaxAndReturnBoolIfChanged(
             min_max_constraints.first);
       }
+      // If constraints were not updated, then there is no need to update the leaf
       if (!something_changed) {
         return;
       }
       leaves_to_update_.push_back(leaf_idx);
 
-    } else {
+    } else { // if node
       // check if the children are contiguous with the original leaf
       std::pair<bool, bool> keep_going_left_right = ShouldKeepGoingLeftRight(
           tree, node_idx, features_of_splits_going_up_from_original_leaf,
@@ -324,17 +340,22 @@ class FastLeafConstraints : public BasicLeafConstraints {
       int inner_feature = tree->split_feature_inner(node_idx);
       uint32_t threshold = tree->threshold_in_bin(node_idx);
       bool is_split_numerical = tree->IsNumericalSplit(node_idx);
-      bool use_left_leaf_for_update = true;
-      bool use_right_leaf_for_update = true;
+      bool use_left_leaf_for_update_right = true;
+      bool use_right_leaf_for_update_left = true;
+      // if the split is on the same feature (categorical variables not supported)
+      // then depending on the threshold,
+      // the current left child may not be contiguous with the original right leaf,
+      // or the current right child may not be contiguous with the original left leaf
       if (is_split_numerical && inner_feature == split_feature) {
         if (threshold >= split_threshold) {
-          use_left_leaf_for_update = false;
+          use_left_leaf_for_update_right = false;
         }
         if (threshold <= split_threshold) {
-          use_right_leaf_for_update = false;
+          use_right_leaf_for_update_left = false;
         }
       }
 
+      // go down left
       if (keep_going_left_right.first) {
         GoDownToFindLeavesToUpdate(
             tree, tree->left_child(node_idx),
@@ -342,9 +363,10 @@ class FastLeafConstraints : public BasicLeafConstraints {
             thresholds_of_splits_going_up_from_original_leaf,
             was_original_leaf_right_child_of_split, update_max_constraints,
             split_feature, split_info, use_left_leaf,
-            use_right_leaf_for_update && use_right_leaf, split_threshold,
+            use_right_leaf_for_update_left && use_right_leaf, split_threshold,
             best_split_per_leaf);
       }
+      // go down right
       if (keep_going_left_right.second) {
         GoDownToFindLeavesToUpdate(
             tree, tree->right_child(node_idx),
@@ -352,7 +374,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
             thresholds_of_splits_going_up_from_original_leaf,
             was_original_leaf_right_child_of_split, update_max_constraints,
             split_feature, split_info,
-            use_left_leaf_for_update && use_left_leaf, use_right_leaf,
+            use_left_leaf_for_update_right && use_left_leaf, use_right_leaf,
             split_threshold, best_split_per_leaf);
       }
     }
@@ -393,7 +415,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
     bool keep_going_right = true;
     bool keep_going_left = true;
     // left and right nodes are checked to find out if they are contiguous with
-    // the original leaf if so the algorithm should keep going down these nodes
+    // the original leaves if so the algorithm should keep going down these nodes
     // to update constraints
     if (is_split_numerical) {
       for (unsigned int i = 0;
