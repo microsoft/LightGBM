@@ -43,6 +43,7 @@ if (!use_precompile) {
   if (R_ver >= 3.5) {
     cmake_cmd <- paste0(cmake_cmd, " -DUSE_R35=ON ")
   }
+  cmake_cmd <- paste0(cmake_cmd, " -DBUILD_FOR_R=ON ")
 
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
@@ -71,7 +72,7 @@ if (!use_precompile) {
         build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
         cmake_cmd <- paste0(cmake_cmd, local_vs_def)
-        build_cmd <- "cmake --build . --target _lightgbm  --config Release"
+        build_cmd <- "cmake --build . --target _lightgbm --config Release"
         lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
       }
     }
