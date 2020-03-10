@@ -7,7 +7,7 @@
  * \note
  * We previously did not want to use R's headers because of license concerns. This is no longer a concern:
  * https://github.com/microsoft/LightGBM/issues/629#issuecomment-474995635
- * For now, this wrapper is lightgbm's interface from R to C.
+ * For now, this wrapper is LightGBM's interface from R to C.
  * If R changes the way it defines objects, this file will need to be updated as well.
  */
 #ifndef R_OBJECT_HELPER_H_
