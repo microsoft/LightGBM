@@ -1091,7 +1091,9 @@ int LGBM_DatasetGetFeatureNames(
   API_END();
 }
 
-#pragma warning(disable : 4702)
+#ifdef _MSC_VER
+  #pragma warning(disable : 4702)
+#endif
 int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);
@@ -1226,7 +1228,9 @@ int LGBM_BoosterLoadModelFromString(
   API_END();
 }
 
-#pragma warning(disable : 4702)
+#ifdef _MSC_VER
+  #pragma warning(disable : 4702)
+#endif
 int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);

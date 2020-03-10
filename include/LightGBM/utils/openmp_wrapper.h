@@ -66,7 +66,7 @@ class ThreadExceptionHelper {
 #else
 
 #ifdef _MSC_VER
-  #pragma warning(disable: 4068)  // disable unknown pragma warning
+  #pragma warning(disable : 4068)  // disable unknown pragma warning
 #endif
 
 #ifdef __cplusplus

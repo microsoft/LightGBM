@@ -1050,7 +1050,9 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
  */
 static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everything is fine"; return err_msg; }
 
-#pragma warning(disable : 4996)
+#ifdef _MSC_VER
+  #pragma warning(disable : 4996)
+#endif
 /*!
  * \brief Set string message of the last error.
  * \param msg Error message
