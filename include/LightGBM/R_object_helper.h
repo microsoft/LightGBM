@@ -144,7 +144,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
   #define R_ADDR(x)  (reinterpret_cast<int64_t*> DATAPTR(x))
 
-  inline void R_SET_PTR(LGBM_SE x, void* ptr) {
+  inline void R_SET_PTR(SEXP x, void* ptr) {
     if (ptr == nullptr) {
       R_ADDR(x)[0] = (int64_t)(NULL);
     } else {
@@ -152,7 +152,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
     }
   }
 
-  inline void* R_GET_PTR(LGBM_SE x) {
+  inline void* R_GET_PTR(SEXP x) {
     if (R_IS_NULL(x)) {
       return nullptr;
     } else {
@@ -168,7 +168,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
   #define R_ADDR(x) (reinterpret_cast<int32_t*> DATAPTR(x))
 
-  inline void R_SET_PTR(LGBM_SE x, void* ptr) {
+  inline void R_SET_PTR(SEXP x, void* ptr) {
     if (ptr == nullptr) {
       R_ADDR(x)[0] = (int32_t)(NULL);
     } else {
@@ -176,7 +176,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
     }
   }
 
-  inline void* R_GET_PTR(LGBM_SE x) {
+  inline void* R_GET_PTR(SEXP x) {
     if (R_IS_NULL(x)) {
       return nullptr;
     } else {
