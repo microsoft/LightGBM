@@ -16,10 +16,6 @@ OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 
-list(APPEND CMAKE_MODULE_PATH "${lightgbm_SOURCE_DIR}/cmake/modules")
-find_package(LibR REQUIRED)
-message(STATUS "LIBR_CORE_LIBRARY " ${LIBR_CORE_LIBRARY})
-
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif(APPLE)
