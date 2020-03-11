@@ -90,17 +90,22 @@ class BinMapper {
 
   /*! \brief Get number of bins */
   inline int num_bin() const { return num_bin_; }
+
   /*! \brief Missing Type */
   inline MissingType missing_type() const { return missing_type_; }
+
   /*! \brief True if bin is trivial (contains only one bin) */
   inline bool is_trivial() const { return is_trivial_; }
+
   /*! \brief Sparsity of this bin ( num_zero_bins / num_data ) */
   inline double sparse_rate() const { return sparse_rate_; }
+
   /*!
   * \brief Save binary data to file
   * \param file File want to write
   */
   void SaveBinaryToFile(const VirtualFileWriter* writer) const;
+
   /*!
   * \brief Mapping bin into feature value
   * \param bin
@@ -118,6 +123,7 @@ class BinMapper {
   * \brief Get sizes in byte of this object
   */
   size_t SizesInByte() const;
+
   /*!
   * \brief Mapping feature value into bin
   * \param value
@@ -250,7 +256,6 @@ class Bin {
   */
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
 
-
   virtual void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
   /*!
   * \brief Get bin iterator of this bin for specific feature
@@ -353,8 +358,6 @@ class Bin {
       int num_threshold, const data_size_t* data_indices, data_size_t cnt,
       data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
-
-
   /*!
   * \brief After pushed all feature data, call this could have better refactor for bin data
   */
@@ -404,7 +407,6 @@ class MultiValBin {
                                   int num_feature,
                                   double estimate_element_per_row) const = 0;
 
-
   virtual void CopySubcol(const MultiValBin* full_bin,
                           const std::vector<int>& used_feature_index,
                           const std::vector<uint32_t>& lower,
@@ -431,13 +433,11 @@ class MultiValBin {
                                   const score_t* hessians,
                                   hist_t* out) const = 0;
 
-
   virtual void ConstructHistogramOrdered(const data_size_t* data_indices,
                                          data_size_t start, data_size_t end,
                                          const score_t* ordered_gradients,
                                          const score_t* ordered_hessians,
                                          hist_t* out) const = 0;
-
 
   virtual void FinishLoad() = 0;
 
