@@ -13,11 +13,13 @@
 #ifndef R_OBJECT_HELPER_H_
 #define R_OBJECT_HELPER_H_
 
+#include <cstdio>
+#include <cstdint>
+
 // https://github.com/nimble-dev/nimble/issues/307#issue-224932135
 #define R_NO_REMAP
 #include <Rinternals.h>
-
-#include <cstdint>
+//#include <R_ext/Rdynload.h>
 
 #define TYPE_BITS 5
 // use .Internal(internalsID()) to uuid
@@ -63,6 +65,7 @@
   };
 
   typedef int xlen_t;
+
 #endif  // R_VER_ABOVE_35
 
 struct lgbm_primsxp {
@@ -111,7 +114,7 @@ typedef struct LGBM_SER {
     struct lgbm_closxp closxp;
     struct lgbm_promsxp promsxp;
   } u;
-} LGBM_SER, *LGBM_SE;
+} LGBM_SER;
 
 struct lgbm_vecsxp {
   xlen_t length;
@@ -141,7 +144,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
 #define R_AS_INT64(x)  (*(reinterpret_cast<int64_t*> DATAPTR(x)))
 
-#define R_IS_NULL(x)   ((*reinterpret_cast<LGBM_SE>(x)).sxpinfo.type == 0)
+// #define R_IS_NULL(x)   ((*reinterpret_cast<SEXP>(x)).sxpinfo.type == 0)
 
 // 64bit pointer
 #if INTPTR_MAX == INT64_MAX
@@ -157,7 +160,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
   }
 
   inline void* R_GET_PTR(SEXP x) {
-    if (R_IS_NULL(x)) {
+    if (R_ExternalPtrAddr(x) == NULL) {
       return nullptr;
     } else {
       auto ret = reinterpret_cast<void*>(R_ADDR(x)[0]);
@@ -181,7 +184,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
   }
 
   inline void* R_GET_PTR(SEXP x) {
-    if (R_IS_NULL(x)) {
+    if (R_ExternalPtrAddr(x) == NULL) {
       return nullptr;
     } else {
       auto ret = reinterpret_cast<void*>(R_ADDR(x)[0]);
