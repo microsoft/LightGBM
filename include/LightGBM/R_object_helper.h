@@ -13,6 +13,10 @@
 #ifndef R_OBJECT_HELPER_H_
 #define R_OBJECT_HELPER_H_
 
+// https://github.com/nimble-dev/nimble/issues/307#issue-224932135
+#define R_NO_REMAP
+#include <Rinternals.h>
+
 #include <cstdint>
 
 #define TYPE_BITS 5
