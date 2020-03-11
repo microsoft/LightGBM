@@ -16,10 +16,6 @@ OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 
-list(APPEND CMAKE_MODULE_PATH "${lightgbm_SOURCE_DIR}/cmake/modules")
-find_package(LibR REQUIRED)
-message(STATUS "LIBR_CORE_LIBRARY " ${LIBR_CORE_LIBRARY})
-
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif(APPLE)
@@ -76,6 +72,9 @@ if(USE_R35)
 endif(USE_R35)
 
 if(BUILD_FOR_R)
+    list(APPEND CMAKE_MODULE_PATH "${lightgbm_SOURCE_DIR}/cmake/modules")
+    find_package(LibR REQUIRED)
+    message(STATUS "LIBR_CORE_LIBRARY " ${LIBR_CORE_LIBRARY})
     ADD_DEFINITIONS(-DLGB_R_BUILD)
 endif(BUILD_FOR_R)
 
@@ -307,9 +306,10 @@ if(WIN32 AND (MINGW OR CYGWIN))
     TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
 endif()
 
-# link to R
-TARGET_LINK_LIBRARIES(lightgbm ${LIBR_CORE_LIBRARY})
-TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
+if(BUILD_FOR_R)
+    TARGET_LINK_LIBRARIES(lightgbm ${LIBR_CORE_LIBRARY})
+    TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
+endif(BUILD_FOR_R)
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

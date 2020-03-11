@@ -137,6 +137,11 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
 // #define R_IS_NULL(x)   ((*reinterpret_cast<SEXP>(x)).sxpinfo.type == 0)
 
+// https://stackoverflow.com/questions/26666614/how-do-i-check-if-an-externalptr-is-null-from-within-r
+SEXP R_IS_NULL(SEXP pointer) {
+  return ScalarLogical(!R_ExternalPtrAddr(pointer));
+}
+
 // 64bit pointer
 #if INTPTR_MAX == INT64_MAX
 
@@ -151,7 +156,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
   }
 
   inline void* R_GET_PTR(SEXP x) {
-    if (R_ExternalPtrAddr(x) == NULL) {
+    if (R_IS_NULL(x)) {
       return nullptr;
     } else {
       auto ret = reinterpret_cast<void*>(R_ADDR(x)[0]);
@@ -175,7 +180,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
   }
 
   inline void* R_GET_PTR(SEXP x) {
-    if (R_ExternalPtrAddr(x) == NULL) {
+    if (R_IS_NULL(x)) {
       return nullptr;
     } else {
       auto ret = reinterpret_cast<void*>(R_ADDR(x)[0]);
