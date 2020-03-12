@@ -12,6 +12,7 @@
 
 # Code copied in at build time
 ^src/CMakeLists.txt$
+^Makefile$
 
 # unnecessary files from submodules
 ^src/compute/.appveyor.yml$

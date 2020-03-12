@@ -661,6 +661,7 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
 #include <R_ext/Rdynload.h>
 
 static const R_CallMethodDef CallEntries[] = {
+  {"LGBM_BoosterSaveModelToString_R", (DL_FUNC) &LGBM_BoosterSaveModelToString_R, 6}
   {"LGBM_BoosterDumpModel_R", (DL_FUNC) &LGBM_BoosterDumpModel_R, 6},
   {NULL, NULL, 0}
 };
