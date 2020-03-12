@@ -1,4 +1,4 @@
-# CMake module used to fine the location of R's
+# CMake module used to find the location of R's
 # dll and header files.
 #
 # Borrows heavily from xgboost's R package:
