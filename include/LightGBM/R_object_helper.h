@@ -13,13 +13,7 @@
 #ifndef R_OBJECT_HELPER_H_
 #define R_OBJECT_HELPER_H_
 
-#include <cstdio>
 #include <cstdint>
-
-// https://github.com/nimble-dev/nimble/issues/307#issue-224932135
-#define R_NO_REMAP
-#include <Rinternals.h>
-//#include <R_ext/Rdynload.h>
 
 #define TYPE_BITS 5
 // use .Internal(internalsID()) to uuid
@@ -43,6 +37,13 @@
     unsigned int extra : 32 - NAMED_BITS;
   };
 
+  // 64bit pointer
+  #if INTPTR_MAX == INT64_MAX
+    typedef int64_t xlen_t;
+  #else
+    typedef int xlen_t;
+  #endif
+
 #else
   struct lgbm_sxpinfo {
     unsigned int type : 5;
@@ -57,6 +58,7 @@
     unsigned int gccls : 3;
   };
 
+  typedef int xlen_t;
 #endif  // R_VER_ABOVE_35
 
 struct lgbm_primsxp {
@@ -105,11 +107,11 @@ typedef struct LGBM_SER {
     struct lgbm_closxp closxp;
     struct lgbm_promsxp promsxp;
   } u;
-} LGBM_SER;
+} LGBM_SER, *LGBM_SE;
 
 struct lgbm_vecsxp {
-  R_xlen_t length;
-  R_xlen_t truelength;
+  xlen_t length;
+  xlen_t truelength;
 };
 
 typedef struct VECTOR_SER {
@@ -135,19 +137,14 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
 #define R_AS_INT64(x)  (*(reinterpret_cast<int64_t*> DATAPTR(x)))
 
-// #define R_IS_NULL(x)   ((*reinterpret_cast<SEXP>(x)).sxpinfo.type == 0)
-
-// https://stackoverflow.com/questions/26666614/how-do-i-check-if-an-externalptr-is-null-from-within-r
-SEXP R_IS_NULL(SEXP pointer) {
-  return ScalarLogical(!R_ExternalPtrAddr(pointer));
-}
+#define R_IS_NULL(x)   ((*reinterpret_cast<LGBM_SE>(x)).sxpinfo.type == 0)
 
 // 64bit pointer
 #if INTPTR_MAX == INT64_MAX
 
   #define R_ADDR(x)  (reinterpret_cast<int64_t*> DATAPTR(x))
 
-  inline void R_SET_PTR(SEXP x, void* ptr) {
+  inline void R_SET_PTR(LGBM_SE x, void* ptr) {
     if (ptr == nullptr) {
       R_ADDR(x)[0] = (int64_t)(NULL);
     } else {
@@ -155,7 +152,7 @@ SEXP R_IS_NULL(SEXP pointer) {
     }
   }
 
-  inline void* R_GET_PTR(SEXP x) {
+  inline void* R_GET_PTR(LGBM_SE x) {
     if (R_IS_NULL(x)) {
       return nullptr;
     } else {
@@ -171,7 +168,7 @@ SEXP R_IS_NULL(SEXP pointer) {
 
   #define R_ADDR(x) (reinterpret_cast<int32_t*> DATAPTR(x))
 
-  inline void R_SET_PTR(SEXP x, void* ptr) {
+  inline void R_SET_PTR(LGBM_SE x, void* ptr) {
     if (ptr == nullptr) {
       R_ADDR(x)[0] = (int32_t)(NULL);
     } else {
@@ -179,7 +176,7 @@ SEXP R_IS_NULL(SEXP pointer) {
     }
   }
 
-  inline void* R_GET_PTR(SEXP x) {
+  inline void* R_GET_PTR(LGBM_SE x) {
     if (R_IS_NULL(x)) {
       return nullptr;
     } else {
