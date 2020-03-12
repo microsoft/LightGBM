@@ -127,7 +127,7 @@ class Log {
  private:
   static void Write(LogLevel level, const char* level_str, const char *format, va_list val) {
     if (level <= GetLevel()) {  // omit the message with low level
-      // R code should write back to R's error stream,
+      // R code should write back to R's output stream,
       // otherwise to stdout
       #ifndef LGB_R_BUILD
         printf("[LightGBM] [%s] ", level_str);
