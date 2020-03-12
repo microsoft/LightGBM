@@ -73,6 +73,8 @@ endif(USE_R35)
 
 if(BUILD_FOR_R)
     list(APPEND CMAKE_MODULE_PATH "${lightgbm_SOURCE_DIR}/cmake/modules")
+    set(CMAKE_R_VERSION ${CMAKE_R_VERSION})
+    message(STATUS "passed-in R version: " ${CMAKE_R_VERSION})
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_CORE_LIBRARY " ${LIBR_CORE_LIBRARY})
     message(STATUS "LIBR_INCLUDE_DIRS " ${LIBR_INCLUDE_DIRS})

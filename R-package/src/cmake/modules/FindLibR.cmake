@@ -51,6 +51,16 @@ function(create_rlib_for_msvc)
     "--output-lib" "${CMAKE_CURRENT_BINARY_DIR}/R.lib")
 endfunction(create_rlib_for_msvc)
 
+# R version information is used to search for R's libraries in
+# the registry on Windows. Since this code is orchestrated by
+# an R script (src/install.libs.R), that script uses R's built-ins to
+# find the version of R and pass it through as a cmake variable
+if(CMAKE_R_VERSION)
+  message("R version passed into FindLibR.cmake: ${CMAKE_R_VERSION}")
+else()
+  message(FATAL_ERROR "Expected CMAKE_R_VERSION to be passed in but none was provided. Check src/install.libs.R")
+endif()
+
 # detection for OSX
 if(APPLE)
 
@@ -91,7 +101,7 @@ else()
     )
 
     if(LIBR_EXECUTABLE MATCHES ".*lightgbm\\.Rcheck.*")
-      message(FATAL_ERROR "Hit this block. '${LIBR_EXECUTABLE}'")
+      message(FATAL_ERROR "If you are seeing this error, it means you are running R CMD check and R is using '${LIBR_EXECUTABLE}'. Edit src/cmake/modulesFindLibR.cmake and add your R path to HINTS near this error")
     endif()
   endif()
 
@@ -134,15 +144,21 @@ else()
     # if R executable not available, query R_HOME path from registry
     if(NOT LIBR_HOME)
 
-      # Windows users might want to change this to their R version:
-      if(NOT R_VERSION)
-        set(R_VERSION "3.4.1")
-      endif()
-
-      get_filename_component(LIBR_HOME
-        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\R-core\\R\\${R_VERSION};InstallPath]"
+      # Try to find R's location in the registry
+      # ref: https://cran.r-project.org/bin/windows/base/rw-FAQ.html#Does-R-use-the-Registry_003f
+      get_filename_component(
+        LIBR_HOME
+        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\R-core\\R\\${CMAKE_R_VERSION};InstallPath]"
         ABSOLUTE
       )
+
+      if(NOT LIBR_HOME)
+        get_filename_component(
+          LIBR_HOME
+          "[HKEY_CURRENT_USER\\SOFTWARE\\R-core\\R\\${CMAKE_R_VERSION};InstallPath]"
+          ABSOLUTE
+        )
+      endif()
 
       if(NOT LIBR_HOME)
         message(FATAL_ERROR "\nUnable to locate R executable.\
