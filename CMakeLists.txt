@@ -89,8 +89,6 @@ if(USE_DEBUG)
     ADD_DEFINITIONS(-DDEBUG)
 endif(USE_DEBUG)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/Library/Frameworks/R.framework/Versions/3.6/Resources/include")
-
 if(USE_MPI)
     find_package(MPI REQUIRED)
     ADD_DEFINITIONS(-DUSE_MPI)
@@ -274,9 +272,9 @@ if(USE_SWIG)
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
   else()
     add_custom_command(TARGET _lightgbm_swig POST_BUILD
-	    COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-	    COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
-	    COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+      COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+      COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+      COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
   endif()
 endif(USE_SWIG)
 
