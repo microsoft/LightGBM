@@ -13,13 +13,7 @@
 #ifndef R_OBJECT_HELPER_H_
 #define R_OBJECT_HELPER_H_
 
-#include <cstdio>
 #include <cstdint>
-
-// https://github.com/nimble-dev/nimble/issues/307#issue-224932135
-#define R_NO_REMAP
-#include <Rinternals.h>
-//#include <R_ext/Rdynload.h>
 
 #define TYPE_BITS 5
 // use .Internal(internalsID()) to uuid
@@ -114,7 +108,7 @@ typedef struct LGBM_SER {
     struct lgbm_closxp closxp;
     struct lgbm_promsxp promsxp;
   } u;
-} LGBM_SER;
+} LGBM_SER, *LGBM_SE;
 
 struct lgbm_vecsxp {
   xlen_t length;
@@ -144,19 +138,14 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
 #define R_AS_INT64(x)  (*(reinterpret_cast<int64_t*> DATAPTR(x)))
 
-// #define R_IS_NULL(x)   ((*reinterpret_cast<SEXP>(x)).sxpinfo.type == 0)
-
-// https://stackoverflow.com/questions/26666614/how-do-i-check-if-an-externalptr-is-null-from-within-r
-SEXP R_IS_NULL(SEXP pointer) {
-  return ScalarLogical(!R_ExternalPtrAddr(pointer));
-}
+#define R_IS_NULL(x)   ((*reinterpret_cast<LGBM_SE>(x)).sxpinfo.type == 0)
 
 // 64bit pointer
 #if INTPTR_MAX == INT64_MAX
 
   #define R_ADDR(x)  (reinterpret_cast<int64_t*> DATAPTR(x))
 
-  inline void R_SET_PTR(SEXP x, void* ptr) {
+  inline void R_SET_PTR(LGBM_SE x, void* ptr) {
     if (ptr == nullptr) {
       R_ADDR(x)[0] = (int64_t)(NULL);
     } else {
@@ -164,7 +153,7 @@ SEXP R_IS_NULL(SEXP pointer) {
     }
   }
 
-  inline void* R_GET_PTR(SEXP x) {
+  inline void* R_GET_PTR(LGBM_SE x) {
     if (R_IS_NULL(x)) {
       return nullptr;
     } else {
@@ -180,7 +169,7 @@ SEXP R_IS_NULL(SEXP pointer) {
 
   #define R_ADDR(x) (reinterpret_cast<int32_t*> DATAPTR(x))
 
-  inline void R_SET_PTR(SEXP x, void* ptr) {
+  inline void R_SET_PTR(LGBM_SE x, void* ptr) {
     if (ptr == nullptr) {
       R_ADDR(x)[0] = (int32_t)(NULL);
     } else {
@@ -188,7 +177,7 @@ SEXP R_IS_NULL(SEXP pointer) {
     }
   }
 
-  inline void* R_GET_PTR(SEXP x) {
+  inline void* R_GET_PTR(LGBM_SE x) {
     if (R_IS_NULL(x)) {
       return nullptr;
     } else {
