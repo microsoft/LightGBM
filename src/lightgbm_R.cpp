@@ -656,3 +656,16 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
+
+// .Call() calls
+#include <R_ext/Rdynload.h>
+
+static const R_CallMethodDef CallEntries[] = {
+  {"LGBM_BoosterDumpModel_R", (DL_FUNC) &LGBM_BoosterDumpModel_R, 6},
+  {NULL, NULL, 0}
+};
+
+void R_init_lightgbm(DllInfo *dll) {
+  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
+}
