@@ -84,9 +84,7 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 # R CMD CHECK
 R CMD check ${PKG_TARBALL} \
     --as-cran \
-|| cat /home/travis/build/jameslamb/LightGBM/lightgbm.Rcheck/00install.out
-
-exit -1
+|| exit -1
 
 if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     echo "WARNINGS have been found by R CMD check!"
