@@ -80,6 +80,13 @@ else()
   # attempt to find R executable
   if(NOT LIBR_EXECUTABLE)
     find_program(LIBR_EXECUTABLE NAMES R R.exe)
+    
+    # CRAN may run RD CMD CHECK instead of R CMD CHECK,
+    # which can lead to this infamous error:
+    # 'R' should not be used without a path -- see par. 1.6 of the manual
+    if(LIBR_EXECUTABLE MATCHES ".*lightgbm\\.Rcheck.*")
+      message(FATAL_ERROR "Hit this block. '${LIBR_EXECUTABLE}'")
+    endif()
   endif()
 
   if(UNIX)
