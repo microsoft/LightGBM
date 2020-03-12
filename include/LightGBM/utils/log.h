@@ -113,6 +113,8 @@ class Log {
 #endif
     va_end(val);
 
+    // R code should write back to R's error stream,
+    // otherwise to stderr
     #ifndef LGB_R_BUILD
       fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
       fflush(stderr);
@@ -125,14 +127,14 @@ class Log {
  private:
   static void Write(LogLevel level, const char* level_str, const char *format, va_list val) {
     if (level <= GetLevel()) {  // omit the message with low level
+      // R code should write back to R's error stream,
+      // otherwise to stdout
       #ifndef LGB_R_BUILD
-        // write to STDOUT
         printf("[LightGBM] [%s] ", level_str);
         vprintf(format, val);
         printf("\n");
         fflush(stdout);
       #else
-        // write to STDOUT
         Rprintf("[LightGBM] [%s] ", level_str);
         Rvprintf(format, val);
         Rprintf("\n");

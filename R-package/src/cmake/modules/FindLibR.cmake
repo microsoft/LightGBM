@@ -11,7 +11,6 @@
 #  LIBR_CORE_LIBRARY
 # and a cmake function to create R.lib for MSVC
 
-
 # Windows users might want to change this to their R version:
 if(NOT R_VERSION)
   set(R_VERSION "3.4.1")

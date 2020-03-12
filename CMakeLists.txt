@@ -75,6 +75,8 @@ if(BUILD_FOR_R)
     list(APPEND CMAKE_MODULE_PATH "${lightgbm_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_CORE_LIBRARY " ${LIBR_CORE_LIBRARY})
+    message(STATUS "LIBR_INCLUDE_DIRS " ${LIBR_INCLUDE_DIRS})
+    include_directories(${LIBR_INCLUDE_DIRS})
     ADD_DEFINITIONS(-DLGB_R_BUILD)
 endif(BUILD_FOR_R)
 
@@ -85,8 +87,6 @@ endif(USE_TIMETAG)
 if(USE_DEBUG)
     ADD_DEFINITIONS(-DDEBUG)
 endif(USE_DEBUG)
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/Library/Frameworks/R.framework/Versions/3.6/Resources/include")
 
 if(USE_MPI)
     find_package(MPI REQUIRED)
