@@ -311,7 +311,6 @@ class LGBMModel(_LGBMModelBase):
                 state = random_state
             random_state = state
 
-
         self.boosting_type = boosting_type
         self.objective = objective
         self.num_leaves = num_leaves
