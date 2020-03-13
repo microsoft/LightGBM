@@ -38,7 +38,7 @@ using LightGBM::Common::Join;
 using LightGBM::Common::Split;
 using LightGBM::Log;
 
-SEXP EncodeChar(SEXP dest, const char* src, SEXP buf_len, SEXP actual_len, size_t str_len) {
+LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
   if (str_len > INT32_MAX) {
     Log::Fatal("Don't support large string in R-package");
   }
@@ -51,15 +51,15 @@ SEXP EncodeChar(SEXP dest, const char* src, SEXP buf_len, SEXP actual_len, size_
   return dest;
 }
 
-SEXP LGBM_GetLastError_R(SEXP buf_len, SEXP actual_len, SEXP err_msg) {
+LGBM_SE LGBM_GetLastError_R(LGBM_SE buf_len, LGBM_SE actual_len, LGBM_SE err_msg) {
   return EncodeChar(err_msg, LGBM_GetLastError(), buf_len, actual_len, std::strlen(LGBM_GetLastError()) + 1);
 }
 
-SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
-  SEXP parameters,
-  SEXP reference,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
+  LGBM_SE parameters,
+  LGBM_SE reference,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromFile(R_CHAR_PTR(filename), R_CHAR_PTR(parameters),
@@ -68,16 +68,16 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   R_API_END();
 }
 
-SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
-  SEXP indices,
-  SEXP data,
-  SEXP num_indptr,
-  SEXP nelem,
-  SEXP num_row,
-  SEXP parameters,
-  SEXP reference,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
+  LGBM_SE indices,
+  LGBM_SE data,
+  LGBM_SE num_indptr,
+  LGBM_SE nelem,
+  LGBM_SE num_row,
+  LGBM_SE parameters,
+  LGBM_SE reference,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   const int* p_indptr = R_INT_PTR(indptr);
   const int* p_indices = R_INT_PTR(indices);
@@ -94,13 +94,13 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   R_API_END();
 }
 
-SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
-  SEXP num_row,
-  SEXP num_col,
-  SEXP parameters,
-  SEXP reference,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetCreateFromMat_R(LGBM_SE data,
+  LGBM_SE num_row,
+  LGBM_SE num_col,
+  LGBM_SE parameters,
+  LGBM_SE reference,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int32_t nrow = static_cast<int32_t>(R_AS_INT(num_row));
   int32_t ncol = static_cast<int32_t>(R_AS_INT(num_col));
@@ -112,12 +112,12 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetSubset_R(SEXP handle,
-  SEXP used_row_indices,
-  SEXP len_used_row_indices,
-  SEXP parameters,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetGetSubset_R(LGBM_SE handle,
+  LGBM_SE used_row_indices,
+  LGBM_SE len_used_row_indices,
+  LGBM_SE parameters,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int len = R_AS_INT(len_used_row_indices);
   std::vector<int> idxvec(len);
@@ -134,9 +134,9 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
-  SEXP feature_names,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
+  LGBM_SE feature_names,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   auto vec_names = Split(R_CHAR_PTR(feature_names), '\t');
   std::vector<const char*> vec_sptr;
@@ -149,11 +149,11 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
-  SEXP buf_len,
-  SEXP actual_len,
-  SEXP feature_names,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
+  LGBM_SE buf_len,
+  LGBM_SE actual_len,
+  LGBM_SE feature_names,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int len = 0;
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &len));
@@ -172,17 +172,17 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
-  SEXP filename,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetSaveBinary_R(LGBM_SE handle,
+  LGBM_SE filename,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetSaveBinary(R_GET_PTR(handle),
     R_CHAR_PTR(filename)));
   R_API_END();
 }
 
-SEXP LGBM_DatasetFree_R(SEXP handle,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetFree_R(LGBM_SE handle,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   if (R_GET_PTR(handle) != nullptr) {
     CHECK_CALL(LGBM_DatasetFree(R_GET_PTR(handle)));
@@ -191,11 +191,11 @@ SEXP LGBM_DatasetFree_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetSetField_R(SEXP handle,
-  SEXP field_name,
-  SEXP field_data,
-  SEXP num_element,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
+  LGBM_SE field_name,
+  LGBM_SE field_data,
+  LGBM_SE num_element,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int len = static_cast<int>(R_AS_INT(num_element));
   const char* name = R_CHAR_PTR(field_name);
@@ -219,10 +219,10 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetField_R(SEXP handle,
-  SEXP field_name,
-  SEXP field_data,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
+  LGBM_SE field_name,
+  LGBM_SE field_data,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   const char* name = R_CHAR_PTR(field_name);
   int out_len = 0;
@@ -253,10 +253,10 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
-  SEXP field_name,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetGetFieldSize_R(LGBM_SE handle,
+  LGBM_SE field_name,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   const char* name = R_CHAR_PTR(field_name);
   int out_len = 0;
@@ -270,16 +270,16 @@ SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetUpdateParamChecking_R(SEXP old_params,
-  SEXP new_params,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetUpdateParamChecking_R(LGBM_SE old_params,
+  LGBM_SE new_params,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetUpdateParamChecking(R_CHAR_PTR(old_params), R_CHAR_PTR(new_params)));
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetNumData_R(SEXP handle, SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetGetNumData_R(LGBM_SE handle, LGBM_SE out,
+  LGBM_SE call_state) {
   int nrow;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumData(R_GET_PTR(handle), &nrow));
@@ -287,9 +287,9 @@ SEXP LGBM_DatasetGetNumData_R(SEXP handle, SEXP out,
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetNumFeature_R(SEXP handle,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_DatasetGetNumFeature_R(LGBM_SE handle,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   int nfeature;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &nfeature));
@@ -299,8 +299,8 @@ SEXP LGBM_DatasetGetNumFeature_R(SEXP handle,
 
 // --- start Booster interfaces
 
-SEXP LGBM_BoosterFree_R(SEXP handle,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterFree_R(LGBM_SE handle,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   if (R_GET_PTR(handle) != nullptr) {
     CHECK_CALL(LGBM_BoosterFree(R_GET_PTR(handle)));
@@ -309,10 +309,10 @@ SEXP LGBM_BoosterFree_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterCreate_R(SEXP train_data,
-  SEXP parameters,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterCreate_R(LGBM_SE train_data,
+  LGBM_SE parameters,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   BoosterHandle handle = nullptr;
   CHECK_CALL(LGBM_BoosterCreate(R_GET_PTR(train_data), R_CHAR_PTR(parameters), &handle));
@@ -320,9 +320,9 @@ SEXP LGBM_BoosterCreate_R(SEXP train_data,
   R_API_END();
 }
 
-SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int out_num_iterations = 0;
   BoosterHandle handle = nullptr;
@@ -331,9 +331,9 @@ SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename,
   R_API_END();
 }
 
-SEXP LGBM_BoosterLoadModelFromString_R(SEXP model_str,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int out_num_iterations = 0;
   BoosterHandle handle = nullptr;
@@ -342,41 +342,41 @@ SEXP LGBM_BoosterLoadModelFromString_R(SEXP model_str,
   R_API_END();
 }
 
-SEXP LGBM_BoosterMerge_R(SEXP handle,
-  SEXP other_handle,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterMerge_R(LGBM_SE handle,
+  LGBM_SE other_handle,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterMerge(R_GET_PTR(handle), R_GET_PTR(other_handle)));
   R_API_END();
 }
 
-SEXP LGBM_BoosterAddValidData_R(SEXP handle,
-  SEXP valid_data,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterAddValidData_R(LGBM_SE handle,
+  LGBM_SE valid_data,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterAddValidData(R_GET_PTR(handle), R_GET_PTR(valid_data)));
   R_API_END();
 }
 
-SEXP LGBM_BoosterResetTrainingData_R(SEXP handle,
-  SEXP train_data,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterResetTrainingData_R(LGBM_SE handle,
+  LGBM_SE train_data,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterResetTrainingData(R_GET_PTR(handle), R_GET_PTR(train_data)));
   R_API_END();
 }
 
-SEXP LGBM_BoosterResetParameter_R(SEXP handle,
-  SEXP parameters,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterResetParameter_R(LGBM_SE handle,
+  LGBM_SE parameters,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterResetParameter(R_GET_PTR(handle), R_CHAR_PTR(parameters)));
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetNumClasses_R(SEXP handle,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterGetNumClasses_R(LGBM_SE handle,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   int num_class;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetNumClasses(R_GET_PTR(handle), &num_class));
@@ -384,19 +384,19 @@ SEXP LGBM_BoosterGetNumClasses_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterUpdateOneIter_R(SEXP handle,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterUpdateOneIter_R(LGBM_SE handle,
+  LGBM_SE call_state) {
   int is_finished = 0;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterUpdateOneIter(R_GET_PTR(handle), &is_finished));
   R_API_END();
 }
 
-SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
-  SEXP grad,
-  SEXP hess,
-  SEXP len,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterUpdateOneIterCustom_R(LGBM_SE handle,
+  LGBM_SE grad,
+  LGBM_SE hess,
+  LGBM_SE len,
+  LGBM_SE call_state) {
   int is_finished = 0;
   R_API_BEGIN();
   int int_len = R_AS_INT(len);
@@ -410,16 +410,16 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterRollbackOneIter_R(LGBM_SE handle,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterRollbackOneIter(R_GET_PTR(handle)));
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterGetCurrentIteration_R(LGBM_SE handle,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   int out_iteration;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetCurrentIteration(R_GET_PTR(handle), &out_iteration));
@@ -427,29 +427,29 @@ SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetUpperBoundValue_R(SEXP handle,
-  SEXP out_result,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterGetUpperBoundValue_R(LGBM_SE handle,
+  LGBM_SE out_result,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   double* ptr_ret = R_REAL_PTR(out_result);
   CHECK_CALL(LGBM_BoosterGetUpperBoundValue(R_GET_PTR(handle), ptr_ret));
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetLowerBoundValue_R(SEXP handle,
-  SEXP out_result,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterGetLowerBoundValue_R(LGBM_SE handle,
+  LGBM_SE out_result,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   double* ptr_ret = R_REAL_PTR(out_result);
   CHECK_CALL(LGBM_BoosterGetLowerBoundValue(R_GET_PTR(handle), ptr_ret));
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
-  SEXP buf_len,
-  SEXP actual_len,
-  SEXP eval_names,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
+  LGBM_SE buf_len,
+  LGBM_SE actual_len,
+  LGBM_SE eval_names,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
@@ -477,10 +477,10 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetEval_R(SEXP handle,
-  SEXP data_idx,
-  SEXP out_result,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterGetEval_R(LGBM_SE handle,
+  LGBM_SE data_idx,
+  LGBM_SE out_result,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
@@ -491,10 +491,10 @@ SEXP LGBM_BoosterGetEval_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetNumPredict_R(SEXP handle,
-  SEXP data_idx,
-  SEXP out,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterGetNumPredict_R(LGBM_SE handle,
+  LGBM_SE data_idx,
+  LGBM_SE out,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int64_t len;
   CHECK_CALL(LGBM_BoosterGetNumPredict(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
@@ -502,10 +502,10 @@ SEXP LGBM_BoosterGetNumPredict_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetPredict_R(SEXP handle,
-  SEXP data_idx,
-  SEXP out_result,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterGetPredict_R(LGBM_SE handle,
+  LGBM_SE data_idx,
+  LGBM_SE out_result,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   double* ptr_ret = R_REAL_PTR(out_result);
   int64_t out_len;
@@ -513,7 +513,7 @@ SEXP LGBM_BoosterGetPredict_R(SEXP handle,
   R_API_END();
 }
 
-int GetPredictType(SEXP is_rawscore, SEXP is_leafidx, SEXP is_predcontrib) {
+int GetPredictType(LGBM_SE is_rawscore, LGBM_SE is_leafidx, LGBM_SE is_predcontrib) {
   int pred_type = C_API_PREDICT_NORMAL;
   if (R_AS_INT(is_rawscore)) {
     pred_type = C_API_PREDICT_RAW_SCORE;
@@ -527,16 +527,16 @@ int GetPredictType(SEXP is_rawscore, SEXP is_leafidx, SEXP is_predcontrib) {
   return pred_type;
 }
 
-SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
-  SEXP data_filename,
-  SEXP data_has_header,
-  SEXP is_rawscore,
-  SEXP is_leafidx,
-  SEXP is_predcontrib,
-  SEXP num_iteration,
-  SEXP parameter,
-  SEXP result_filename,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterPredictForFile_R(LGBM_SE handle,
+  LGBM_SE data_filename,
+  LGBM_SE data_has_header,
+  LGBM_SE is_rawscore,
+  LGBM_SE is_leafidx,
+  LGBM_SE is_predcontrib,
+  LGBM_SE num_iteration,
+  LGBM_SE parameter,
+  LGBM_SE result_filename,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   CHECK_CALL(LGBM_BoosterPredictForFile(R_GET_PTR(handle), R_CHAR_PTR(data_filename),
@@ -545,14 +545,14 @@ SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterCalcNumPredict_R(SEXP handle,
-  SEXP num_row,
-  SEXP is_rawscore,
-  SEXP is_leafidx,
-  SEXP is_predcontrib,
-  SEXP num_iteration,
-  SEXP out_len,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterCalcNumPredict_R(LGBM_SE handle,
+  LGBM_SE num_row,
+  LGBM_SE is_rawscore,
+  LGBM_SE is_leafidx,
+  LGBM_SE is_predcontrib,
+  LGBM_SE num_iteration,
+  LGBM_SE out_len,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   int64_t len = 0;
@@ -562,20 +562,20 @@ SEXP LGBM_BoosterCalcNumPredict_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
-  SEXP indptr,
-  SEXP indices,
-  SEXP data,
-  SEXP num_indptr,
-  SEXP nelem,
-  SEXP num_row,
-  SEXP is_rawscore,
-  SEXP is_leafidx,
-  SEXP is_predcontrib,
-  SEXP num_iteration,
-  SEXP parameter,
-  SEXP out_result,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
+  LGBM_SE indptr,
+  LGBM_SE indices,
+  LGBM_SE data,
+  LGBM_SE num_indptr,
+  LGBM_SE nelem,
+  LGBM_SE num_row,
+  LGBM_SE is_rawscore,
+  LGBM_SE is_leafidx,
+  LGBM_SE is_predcontrib,
+  LGBM_SE num_iteration,
+  LGBM_SE parameter,
+  LGBM_SE out_result,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
@@ -595,17 +595,17 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
-  SEXP data,
-  SEXP num_row,
-  SEXP num_col,
-  SEXP is_rawscore,
-  SEXP is_leafidx,
-  SEXP is_predcontrib,
-  SEXP num_iteration,
-  SEXP parameter,
-  SEXP out_result,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
+  LGBM_SE data,
+  LGBM_SE num_row,
+  LGBM_SE num_col,
+  LGBM_SE is_rawscore,
+  LGBM_SE is_leafidx,
+  LGBM_SE is_predcontrib,
+  LGBM_SE num_iteration,
+  LGBM_SE parameter,
+  LGBM_SE out_result,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
@@ -622,21 +622,21 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterSaveModel_R(SEXP handle,
-  SEXP num_iteration,
-  SEXP filename,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterSaveModel_R(LGBM_SE handle,
+  LGBM_SE num_iteration,
+  LGBM_SE filename,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_CHAR_PTR(filename)));
   R_API_END();
 }
 
-SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
-  SEXP num_iteration,
-  SEXP buffer_len,
-  SEXP actual_len,
-  SEXP out_str,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
+  LGBM_SE num_iteration,
+  LGBM_SE buffer_len,
+  LGBM_SE actual_len,
+  LGBM_SE out_str,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
@@ -645,12 +645,12 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterDumpModel_R(SEXP handle,
-  SEXP num_iteration,
-  SEXP buffer_len,
-  SEXP actual_len,
-  SEXP out_str,
-  SEXP call_state) {
+LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
+  LGBM_SE num_iteration,
+  LGBM_SE buffer_len,
+  LGBM_SE actual_len,
+  LGBM_SE out_str,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
