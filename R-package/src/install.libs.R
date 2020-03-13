@@ -177,6 +177,7 @@ if (file.exists(src)) {
   if (file.exists(symbols_file)){
     file.copy(symbols_file, dest, overwrite = TRUE)
   }
+
 } else {
   stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
 }

@@ -13,8 +13,6 @@
 # Code copied in at build time
 ^src/CMakeLists.txt$
 ^Makefile$
-# ^src/build/Makefile$
-# ^src/build/CMakeFiles/.*$
 ^src/build/.*$
 
 # unnecessary files from submodules

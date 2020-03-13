@@ -16,6 +16,8 @@
 #include <utility>
 #include <vector>
 
+#include <R_ext/Rdynload.h>
+
 #define COL_MAJOR (0)
 
 #define R_API_BEGIN() \
@@ -658,8 +660,6 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
 }
 
 // .Call() calls
-#include <R_ext/Rdynload.h>
-
 static const R_CallMethodDef CallEntries[] = {
   {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 3},
   {"LGBM_DatasetCreateFromFile_R"     , (DL_FUNC) &LGBM_DatasetCreateFromFile_R     , 5},
