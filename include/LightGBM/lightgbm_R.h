@@ -8,10 +8,6 @@
 #include <LightGBM/c_api.h>
 #include <LightGBM/R_object_helper.h>
 
-#define R_NO_REMAP
-#define R_USE_C99_IN_CXX
-#include <Rinternals.h>
-
 /*!
 * \brief get string message of the last error
 *  all functions in this file will return 0 on success

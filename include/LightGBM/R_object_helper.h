@@ -15,12 +15,6 @@
 
 #include <cstdint>
 
-#ifdef LGB_R_BUILD
-  #define R_NO_REMAP
-  #define R_USE_C99_IN_CXX
-  #include <Rinternals.h>
-#endif
-
 #define TYPE_BITS 5
 // use .Internal(internalsID()) to uuid
 #define R_INTERNALS_UUID "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327"
