@@ -300,6 +300,17 @@ class LGBMModel(_LGBMModelBase):
             raise RuntimeError("The last supported version of scikit-learn is 0.21.3.\n"
                                "Found version: {0}.".format(SKLEARN_VERSION))
 
+        # Handle possible RandomState object
+        if random_state is not None:
+            try:
+                # Try to get random integer which is used as seed in the low level code
+                state = random_state.randint(1e10)
+            except AttributeError:
+                # If not, consider object as integer
+                state = random_state
+            random_state = state
+
+
         self.boosting_type = boosting_type
         self.objective = objective
         self.num_leaves = num_leaves
