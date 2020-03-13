@@ -15,6 +15,12 @@
 
 #include <cstdint>
 
+#ifdef LGB_R_BUILD
+  #define R_NO_REMAP
+  #define R_USE_C99_IN_CXX
+  #include <Rinternals.h>
+#endif
+
 #define TYPE_BITS 5
 // use .Internal(internalsID()) to uuid
 #define R_INTERNALS_UUID "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327"
@@ -145,7 +151,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
   #define R_ADDR(x)  (reinterpret_cast<int64_t*> DATAPTR(x))
 
-  inline void R_SET_PTR(LGBM_SE x, void* ptr) {
+  inline void R_SET_PTR(SEXP x, void* ptr) {
     if (ptr == nullptr) {
       R_ADDR(x)[0] = (int64_t)(NULL);
     } else {
@@ -153,7 +159,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
     }
   }
 
-  inline void* R_GET_PTR(LGBM_SE x) {
+  inline void* R_GET_PTR(SEXP x) {
     if (R_IS_NULL(x)) {
       return nullptr;
     } else {
@@ -169,7 +175,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
   #define R_ADDR(x) (reinterpret_cast<int32_t*> DATAPTR(x))
 
-  inline void R_SET_PTR(LGBM_SE x, void* ptr) {
+  inline void R_SET_PTR(SEXP x, void* ptr) {
     if (ptr == nullptr) {
       R_ADDR(x)[0] = (int32_t)(NULL);
     } else {
@@ -177,7 +183,7 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
     }
   }
 
-  inline void* R_GET_PTR(LGBM_SE x) {
+  inline void* R_GET_PTR(SEXP x) {
     if (R_IS_NULL(x)) {
       return nullptr;
     } else {

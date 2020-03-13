@@ -163,12 +163,20 @@ if (!use_precompile) {
   }
 }
 
-# Check installation correctness
+# Packages with install.libs.R need to copy some artifacts into the
+# expected places in the package structure.
+# see https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Package-subdirectories,
+# especially the paragraph on install.libs.R
 dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH), fsep = "/")
 dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 if (file.exists(src)) {
   print(paste0("Found library file: ", src, " to move to ", dest))
   file.copy(src, dest, overwrite = TRUE)
+
+  symbols_file <- file.path(R_PACKAGE_SOURCE, "src", "symbols.rds")
+  if (file.exists(symbols_file)){
+    file.copy(symbols_file, dest, overwrite = TRUE)
+  }
 } else {
   stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
 }
