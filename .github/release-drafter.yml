@@ -13,7 +13,7 @@ categories:
     label: 'doc'
   - title: '🧰 Maintenance'
     label: 'maintenance'
-change-template: '- TITLE @AUTHOR (#$NUMBER)'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 template: |
   ## Changes
 
