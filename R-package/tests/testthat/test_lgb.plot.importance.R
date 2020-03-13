@@ -17,21 +17,31 @@ test_that("lgb.plot.importance() should run without error for well-formed inputs
 
     # Check that there are no plots present before plotting
     expect_null(dev.list())
-    resDT <- lgb.plot.importance(
-        tree_imp = tree_imp
+
+    args_no_cex <- list(
+        "tree_imp" = tree_imp
         , top_n = 10L
         , measure = "Gain"
-        , cex = 0.75
     )
+    args_cex <- args_no_cex
+    args_cex[["cex"]] <- 0.75
 
-    # Check that lgb.plot.importance() returns the data.table of the plotted data
-    expect_true(data.table::is.data.table(resDT))
-    expect_named(resDT, c("Feature", "Gain", "Cover", "Frequency"))
+    for (arg_list in list(args_no_cex, args_cex)) {
 
-    # Check that a plot was produced
-    expect_false(is.null(dev.list()))
+        resDT <- do.call(
+            what = lgb.plot.importance
+            , args = arg_list
+        )
 
-    # remove all plots
-    dev.off()
-    expect_null(dev.list())
+        # Check that lgb.plot.importance() returns the data.table of the plotted data
+        expect_true(data.table::is.data.table(resDT))
+        expect_named(resDT, c("Feature", "Gain", "Cover", "Frequency"))
+
+        # Check that a plot was produced
+        expect_false(is.null(dev.list()))
+
+        # remove all plots
+        dev.off()
+        expect_null(dev.list())
+    }
 })
