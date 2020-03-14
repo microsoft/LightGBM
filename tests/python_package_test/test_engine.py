@@ -625,9 +625,6 @@ class TestEngine(unittest.TestCase):
         init_gbm_3 = lgb.train(params, lgb_train, num_boost_round=20,  init_model=init_gbm_2)
         gbm = lgb.train(params, lgb_train, num_boost_round=20,  init_model=init_gbm_3)
         self.assertEqual(gbm.current_iteration(), 80)
-        y1 = init_gbm_3.predict(X)
-        y2 = gbm.predict(X)
-        self.assertNotAlmostEqual(y1, y2)
 
     def test_continue_train_dart(self):
         X, y = load_boston(True)
