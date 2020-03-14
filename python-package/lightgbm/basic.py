@@ -854,9 +854,9 @@ class Dataset(object):
         num_data = self.num_data()
         if predictor is not None:
             init_score = predictor.predict(data,
-                                        raw_score=True,
-                                        data_has_header=data_has_header,
-                                        is_reshape=False)         
+                                           raw_score=True,
+                                           data_has_header=data_has_header,
+                                           is_reshape=False)         
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, string_type):
