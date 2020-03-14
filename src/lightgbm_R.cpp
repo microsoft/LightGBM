@@ -460,10 +460,14 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
 
   int out_len;
   size_t required_string_size;
-  CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle),
-                                      len, &out_len,
-                                      reserved_string_size, &required_string_size,
-                                      ptr_names.data()));
+  CHECK_CALL(
+    LGBM_BoosterGetEvalNames(
+      R_GET_PTR(handle),
+      len, &out_len,
+      reserved_string_size, &required_string_size,
+      ptr_names.data()
+    )
+  );
   CHECK_EQ(out_len, len);
   CHECK_GE(reserved_string_size, required_string_size);
   auto merge_names = Common::Join<char*>(ptr_names, "\t");
