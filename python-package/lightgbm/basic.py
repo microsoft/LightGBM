@@ -852,27 +852,32 @@ class Dataset(object):
         if isinstance(data, string_type):
             # check data has header or not
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
-        init_score = predictor.predict(data,
-                                       raw_score=True,
-                                       data_has_header=data_has_header,
-                                       is_reshape=False)
         num_data = self.num_data()
-        if used_indices is not None:
-            assert not self.need_slice
-            if isinstance(data, string_type):
-                sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
-                assert num_data == len(used_indices)
-                for i in range_(len(used_indices)):
+        if predictor is not None:
+            init_score = predictor.predict(data,
+                                        raw_score=True,
+                                        data_has_header=data_has_header,
+                                        is_reshape=False)         
+            if used_indices is not None:
+                assert not self.need_slice
+                if isinstance(data, string_type):
+                    sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
+                    assert num_data == len(used_indices)
+                    for i in range_(len(used_indices)):
+                        for j in range_(predictor.num_class):
+                            sub_init_score[i * predictor.num_class + j] = init_score[used_indices[i] * predictor.num_class + j]
+                    init_score = sub_init_score
+            if predictor.num_class > 1:
+                # need to regroup init_score
+                new_init_score = np.zeros(init_score.size, dtype=np.float32)
+                for i in range_(num_data):
                     for j in range_(predictor.num_class):
-                        sub_init_score[i * predictor.num_class + j] = init_score[used_indices[i] * predictor.num_class + j]
-                init_score = sub_init_score
-        if predictor.num_class > 1:
-            # need to regroup init_score
-            new_init_score = np.zeros(init_score.size, dtype=np.float32)
-            for i in range_(num_data):
-                for j in range_(predictor.num_class):
-                    new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
-            init_score = new_init_score
+                        new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
+                init_score = new_init_score
+        elif self.init_score is not None:
+            init_score = np.zeros(self.init_score.shape, dtype=np.float32)
+        else:
+            return
         self.set_init_score(init_score)
 
     def _lazy_init(self, data, label=None, reference=None,
