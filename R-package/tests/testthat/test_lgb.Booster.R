@@ -86,5 +86,5 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
             , data_name = "test"
             , eval_name = "l1"
         )
-    }, regexp = "Only the following eval_names exist for dataset 'test': [l2]", fixed = TRUE)
+    }, regexp = "Only the following eval_names exist for dataset.*\\: \\[l2\\]", fixed = FALSE)
 })

@@ -4,7 +4,7 @@ use_gpu <- FALSE
 use_mingw <- FALSE
 
 if (.Machine$sizeof.pointer != 8L) {
-  stop("Only support 64-bit R, please check your the version of your R and Rtools.")
+  stop("LightGBM only supports 64-bit R, please check the version of R and Rtools.")
 }
 
 R_int_UUID <- .Internal(internalsID())
@@ -16,8 +16,13 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 }
 
 # Move in CMakeLists.txt
-if (!file.copy("../inst/bin/CMakeLists.txt", "CMakeLists.txt", overwrite = TRUE)) {
-  stop("Copying CMakeLists failed")
+write_succeeded <- file.copy(
+  "../inst/bin/CMakeLists.txt"
+  , "CMakeLists.txt"
+  , overwrite = TRUE
+)
+if (!write_succeeded) {
+  stop("Copying CMakeLists.txt failed")
 }
 
 # Check for precompilation
@@ -52,22 +57,28 @@ if (!use_precompile) {
       build_cmd <- "mingw32-make.exe _lightgbm"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
-      try_vs <- 0L
       local_vs_def <- ""
-      vs_versions <- c("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
+      vs_versions <- c(
+        "Visual Studio 16 2019"
+        , "Visual Studio 15 2017"
+        , "Visual Studio 14 2015"
+      )
       for (vs in vs_versions) {
+        print(paste0("Trying to build with: '", vs, "'"))
         vs_def <- paste0(" -G \"", vs, "\" -A x64")
         tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)
         try_vs <- system(paste0(tmp_cmake_cmd, " .."))
         if (try_vs == 0L) {
           local_vs_def <- vs_def
+          print(paste0("Building with '", vs, "' succeeded"))
           break
         } else {
           unlink("./*", recursive = TRUE) # Clean up build directory
         }
       }
       if (try_vs == 1L) {
-        cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
+        print("Building with Visual Studio failed. Attempted with MinGW")
+        cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
         build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
