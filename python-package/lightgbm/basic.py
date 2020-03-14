@@ -1097,6 +1097,9 @@ class Dataset(object):
         """
         if self.handle is None:
             if self.reference is not None:
+                if self.params != self.reference.params:
+                    warnings.warn('Override the parameters from Reference Dataset.')
+                    self.params = self.reference.params
                 if self.used_indices is None:
                     # create valid
                     self._lazy_init(self.data, label=self.label, reference=self.reference,
