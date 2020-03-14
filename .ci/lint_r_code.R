@@ -16,7 +16,7 @@ FILES_TO_LINT <- list.files(
     , include.dirs = FALSE
 )
 
-# text to use for pip operators from packages like 'magrittr'
+# text to use for pipe operators from packages like 'magrittr'
 pipe_text <- paste0(
     "For consistency and the sake of being explicit, this project's code "
     , "does not use the pipe operator."
