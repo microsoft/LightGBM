@@ -260,7 +260,7 @@ cb.record.evaluation <- function() {
 
 }
 
-cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
+cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = TRUE) {
 
   # Initialize variables
   factor_to_bigger_better <- NULL
@@ -317,8 +317,16 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
     # Store iteration
     cur_iter <- env$iteration
 
+    # By default, any metric can trigger early stopping. This can be disabled
+    # with 'first_metric_only = TRUE'
+    if (isTRUE(first_metric_only)) {
+      evals_to_check <- 1L
+    } else {
+      evals_to_check <- seq_len(eval_len)
+    }
+
     # Loop through evaluation
-    for (i in seq_len(eval_len)) {
+    for (i in evals_to_check) {
 
       # Store score
       score <- env$eval_list[[i]]$value * factor_to_bigger_better[i]

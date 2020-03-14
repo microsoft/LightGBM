@@ -257,8 +257,8 @@ lgb.check.eval <- function(params, eval) {
     params$metric <- list()
   }
 
-  # If 'eval' is a list or character vector, store it in 'metric'
-  if (is.character(eval) || identical(class(eval), "list")) {
+  # If 'eval' is a list of strings or character vector, store it in 'metric'
+  if (is.character(eval) || (is.list(eval) && all(sapply(eval, is.character)))) {
     params$metric <- append(params$metric, eval)
   }
 

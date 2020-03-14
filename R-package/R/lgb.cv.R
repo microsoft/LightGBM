@@ -257,6 +257,7 @@ lgb.cv <- function(params = list()
       callbacks
       , cb.early.stop(
         stopping_rounds = early_stopping_rounds
+        , first_metric_only = isTRUE(params[["first_metric_only"]])
         , verbose = verbose
       )
     )

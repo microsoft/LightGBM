@@ -6,7 +6,17 @@
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},
 #'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
-#' @param eval evaluation function, can be (a list of) character or custom eval function
+#' @param eval evaluation function(s). This can be a function or list of functions. Each provided function
+#'              should accept the keyword arguments \code{preds} and \code{dtrain} and should return a named
+#'              list with three elements.
+#'              \itemize{
+#'                  \item{\code{name}: A string with the name of the metric, used for printing and storing results.}
+#'                  \item{\code{value}: A single number indicating the value of the metric for the given predictions and true values}
+#'                  \item{
+#'                      \code{higher_better}: A boolean indicating whether higher values indicate a better fit.
+#'                      For example, this would be \code{FALSE} for metrics like MAE or RMSE.
+#'                  }
+#'              }
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
@@ -89,7 +99,7 @@ lgb.train <- function(params = list(),
   params <- lgb.check.obj(params, obj)
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
-  feval <- NULL
+  eval_functions <- NULL
 
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -97,9 +107,14 @@ lgb.train <- function(params = list(),
     params$objective <- "NONE"
   }
 
-  # Check for loss (function or not)
+  # If loss is a single function, store it as a 1-element list
+  # (for backwards compatibility). If it is a list of functions, store
+  # all of them
   if (is.function(eval)) {
-    feval <- eval
+    eval_functions <- list(eval)
+  }
+  if (methods::is(eval, "list") & all(sapply(eval, is.function))){
+    eval_functions <- eval
   }
 
   # Init predictor to empty
@@ -117,6 +132,7 @@ lgb.train <- function(params = list(),
   if (!is.null(predictor)) {
     begin_iteration <- predictor$current_iter() + 1L
   }
+
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
   n_trees <- .PARAMETER_ALIASES()[["num_iterations"]]
   if (any(names(params) %in% n_trees)) {
@@ -225,6 +241,7 @@ lgb.train <- function(params = list(),
       callbacks
       , cb.early.stop(
         stopping_rounds = early_stopping_rounds
+        , first_metric_only = isTRUE(params[["first_metric_only"]])
         , verbose = verbose
       )
     )
@@ -269,13 +286,16 @@ lgb.train <- function(params = list(),
     # Collection: Has validation dataset?
     if (length(valids) > 0L) {
 
-      # Validation has training dataset?
-      if (valid_contain_train) {
-        eval_list <- append(eval_list, booster$eval_train(feval = feval))
-      }
+      for (eval_function in eval_functions){
 
-      # Has no validation dataset
-      eval_list <- append(eval_list, booster$eval_valid(feval = feval))
+        # Validation has training dataset?
+        if (valid_contain_train) {
+          eval_list <- append(eval_list, booster$eval_train(feval = eval_function))
+        }
+
+        # Has no validation dataset
+        eval_list <- append(eval_list, booster$eval_valid(feval = eval_function))
+      }
     }
 
     # Write evaluation result in environment

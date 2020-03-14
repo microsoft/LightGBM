@@ -571,3 +571,96 @@ test_that("lgb.train() works with early stopping for regression", {
     , early_stopping_rounds + 1L
   )
 })
+
+
+test_that("lgb.train() only considers the first metric for early stopping if first_metric_only is provided", {
+  set.seed(708L)
+  trainDF <- data.frame(
+    "feat1" = rnorm(100)
+    , "target" = rnorm(100)
+  )
+  validDF <- data.frame(
+    "feat1" = rnorm(50)
+    , "target" = rnorm(50)
+  )
+
+  .increasing_metric <- function(preds, dtrain){
+    return(list(
+      name = "increasing_metric"
+      , value = as.double(Sys.time())
+      , higher_better = TRUE
+    ))
+  }
+
+  .constant_metric <- function(preds, dtrain){
+    return(list(
+      name = "constant_metric"
+      , value = 0.2
+      , higher_better = FALSE
+    ))
+  }
+
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid <- lgb.Dataset(
+    data = as.matrix(validDF[["feat1"]], drop = FALSE)
+    , label = validDF[["target"]]
+  )
+  nrounds <- 10L
+
+  ################################
+  # train with no early stopping #
+  ################################
+  bst <- lgb.train(
+    params = list(
+      objective = "regression"
+      , metric = "rmse"
+      , min_data_in_bin = 5L
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+    , eval = list(
+      .increasing_metric
+      , .constant_metric
+    )
+    , verbose = TRUE
+  )
+
+  # the best possible model should come from the first iteration, but
+  # all 10 training iterations should happen
+  expect_equal(bst$best_score, 55.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(length(bst$record_evals[["valid1"]][["rmse"]][["eval"]]), nrounds)
+
+  #############################
+  # train with early stopping #
+  #############################
+  early_stopping_rounds <- 5L
+  bst  <- lgb.train(
+    params = list(
+      objective = "regression"
+      , metric = "rmse"
+      , min_data_in_bin = 5L
+      , early_stopping_rounds = early_stopping_rounds
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # the best model should be from the first iteration, and only 6 rounds
+  # should have happen (1 with improvement, 5 consecutive with no improvement)
+  expect_equal(bst$best_score, 55.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(
+    length(bst$record_evals[["valid1"]][["rmse"]][["eval"]])
+    , early_stopping_rounds + 1L
+  )
+})
