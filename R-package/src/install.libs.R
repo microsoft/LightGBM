@@ -149,7 +149,7 @@ if (file.exists(src)) {
 }
 
 # clean up the "build" directory
-if (dir.exists(build_dir)){
+if (dir.exists(build_dir)) {
   print("Removing 'build/' directory")
   unlink(
     x = file.path(R_PACKAGE_SOURCE, "src", "build")
