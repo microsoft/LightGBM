@@ -621,9 +621,9 @@ class TestEngine(unittest.TestCase):
         }
         lgb_train = lgb.Dataset(X, y, free_raw_data=False)
         init_gbm = lgb.train(params, lgb_train, num_boost_round=20)
-        init_gbm_2 = lgb.train(params, lgb_train, num_boost_round=20,  init_model=init_gbm)
-        init_gbm_3 = lgb.train(params, lgb_train, num_boost_round=20,  init_model=init_gbm_2)
-        gbm = lgb.train(params, lgb_train, num_boost_round=20,  init_model=init_gbm_3)
+        init_gbm_2 = lgb.train(params, lgb_train, num_boost_round=20, init_model=init_gbm)
+        init_gbm_3 = lgb.train(params, lgb_train, num_boost_round=20, init_model=init_gbm_2)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20, init_model=init_gbm_3)
         self.assertEqual(gbm.current_iteration(), 80)
 
     def test_continue_train_dart(self):

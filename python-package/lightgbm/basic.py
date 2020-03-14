@@ -721,7 +721,6 @@ class _InnerPredictor(object):
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
-    
     def current_iteration(self):
         """Get the index of the current iteration.
 
