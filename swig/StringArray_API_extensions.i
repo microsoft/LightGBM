@@ -38,25 +38,28 @@
      */
     StringArrayHandle LGBM_BoosterGetEvalNamesSWIG(BoosterHandle handle)
     {
+        int eval_counts;
+        size_t string_size;
         std::unique_ptr<StringArray> strings(nullptr);
 
-        // 1) Figure out the necessary allocation size:
-        int eval_counts;
-        API_OK_OR_NULL(LGBM_BoosterGetEvalCounts(handle, &eval_counts));
+        // Retrieve required allocation space:
+        API_OK_OR_NULL(LGBM_BoosterGetEvalNames(handle,
+                                                0, &eval_counts,
+                                                0, &string_size,
+                                                strings->data()));
 
-        size_t largest_eval_name_size;
-        API_OK_OR_NULL(LGBM_BoosterGetLargestEvalNameSize(handle, &largest_eval_name_size));
-
-        // 2) Allocate the strings container:
         try {
-            strings.reset(new StringArray(eval_counts, largest_eval_name_size));
+            strings.reset(new StringArray(eval_counts, string_size));
         } catch (std::bad_alloc &e) {
             LGBM_SetLastError("Failure to allocate memory.");
             return nullptr;
         }
 
-        // 3) Extract the names:
-        API_OK_OR_NULL(LGBM_BoosterGetEvalNames(handle, &eval_counts, strings->data()));
+        API_OK_OR_NULL(LGBM_BoosterGetEvalNames(handle,
+                                                eval_counts, &eval_counts,
+                                                string_size, &string_size,
+                                                strings->data()));
+
         return strings.release();
     }
 
@@ -73,16 +76,16 @@
      */
     StringArrayHandle LGBM_BoosterGetFeatureNamesSWIG(BoosterHandle handle)
     {
+        int num_features;
+        size_t max_feature_name_size;
         std::unique_ptr<StringArray> strings(nullptr);
 
-        // 1) To preallocate memory extract number of features & required size first:
-        int num_features;
-        API_OK_OR_NULL(LGBM_BoosterGetNumFeature(handle, &num_features));
+        // Retrieve required allocation space:
+        API_OK_OR_NULL(LGBM_BoosterGetFeatureNames(handle,
+                                                   0, &num_features,
+                                                   0, &max_feature_name_size,
+                                                   nullptr));
 
-        size_t max_feature_name_size;
-        API_OK_OR_NULL(LGBM_BoosterGetLargestFeatureNameSize(handle, &max_feature_name_size));
-
-        // 2) Allocate an array of strings:
         try {
             strings.reset(new StringArray(num_features, max_feature_name_size));
         } catch (std::bad_alloc &e) {
@@ -90,8 +93,10 @@
             return nullptr;
         }
 
-        // 3) Extract feature names:
-        API_OK_OR_NULL(LGBM_BoosterGetFeatureNames(handle, &num_features, strings->data()));
+        API_OK_OR_NULL(LGBM_BoosterGetFeatureNames(handle,
+                                                   num_features, &num_features,
+                                                   max_feature_name_size, &max_feature_name_size,
+                                                   strings->data()));
 
         return strings.release();
     }

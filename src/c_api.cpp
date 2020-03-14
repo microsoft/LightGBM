@@ -501,42 +501,34 @@ class Booster {
     return ret;
   }
 
-  int GetEvalNames(char** out_strs) const {
+  int GetEvalNames(char** out_strs, const int len, const size_t buffer_len, size_t *out_buffer_len) const {
+    *out_buffer_len = 0;
     int idx = 0;
     for (const auto& metric : train_metric_) {
       for (const auto& name : metric->GetName()) {
-        std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+        if (idx < len) {
+          std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
+          out_strs[idx][buffer_len-1] = '\0';
+        }
+        *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
         ++idx;
       }
     }
     return idx;
   }
 
-  int GetFeatureNames(char** out_strs) const {
+  int GetFeatureNames(char** out_strs, const int len, const size_t buffer_len, size_t *out_buffer_len) const {
+    *out_buffer_len = 0;
     int idx = 0;
     for (const auto& name : boosting_->FeatureNames()) {
-      std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+      if (idx < len) {
+        std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
+        out_strs[idx][buffer_len-1] = '\0';
+      }
+      *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
       ++idx;
     }
     return idx;
-  }
-
-  size_t GetLargestEvalNameSize() const {
-    size_t max_len = 0;
-    for (const auto& metric : train_metric_) {
-      for (const auto& name : metric->GetName()) {
-        max_len = std::max(name.size(), max_len);
-      }
-    }
-    return max_len;
-  }
-
-  size_t GetLargestFeatureNameSize() const {
-    size_t max_len = 0;
-    for (const auto& name : boosting_->FeatureNames()) {
-      max_len = std::max(name.size(), max_len);
-    }
-    return max_len;
   }
 
   const Boosting* GetBoosting() const { return boosting_.get(); }
@@ -1374,31 +1366,31 @@ int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
   API_END();
 }
 
-int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetEvalNames(
+  BoosterHandle handle,
+  const int len,
+  int* out_len,
+  const size_t buffer_len,
+  size_t* out_buffer_len,
+  char** out_strs)
+{
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetEvalNames(out_strs);
+  *out_len = ref_booster->GetEvalNames(out_strs, len, buffer_len, out_buffer_len);
   API_END();
 }
 
-int LGBM_BoosterGetFeatureNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetFeatureNames(
+  BoosterHandle handle,
+  const int len,
+  int* out_len,
+  const size_t buffer_len,
+  size_t* out_buffer_len,
+  char** out_strs)
+{
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetFeatureNames(out_strs);
-  API_END();
-}
-
-int LGBM_BoosterGetLargestEvalNameSize(BoosterHandle handle, size_t* out_len) {
-  API_BEGIN();
-  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetLargestEvalNameSize();
-  API_END();
-}
-
-int LGBM_BoosterGetLargestFeatureNameSize(BoosterHandle handle, size_t* out_len) {
-  API_BEGIN();
-  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetLargestFeatureNameSize();
+  *out_len = ref_booster->GetFeatureNames(out_strs, len, buffer_len, out_buffer_len);
   API_END();
 }
 

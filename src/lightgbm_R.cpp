@@ -449,15 +449,23 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   R_API_BEGIN();
   int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
+
+  const size_t reserved_string_size = 128;
   std::vector<std::vector<char>> names(len);
   std::vector<char*> ptr_names(len);
   for (int i = 0; i < len; ++i) {
-    names[i].resize(128);
+    names[i].resize(reserved_string_size);
     ptr_names[i] = names[i].data();
   }
+
   int out_len;
-  CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle), &out_len, ptr_names.data()));
+  size_t required_string_size;
+  CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle),
+                                      len, &out_len,
+                                      reserved_string_size, &required_string_size,
+                                      ptr_names.data()));
   CHECK_EQ(out_len, len);
+  CHECK_GE(reserved_string_size, required_string_size);
   auto merge_names = Common::Join<char*>(ptr_names, "\t");
   EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len, merge_names.size() + 1);
   R_API_END();
