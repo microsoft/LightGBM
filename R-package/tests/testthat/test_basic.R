@@ -5,8 +5,6 @@ data(agaricus.test, package = "lightgbm")
 train <- agaricus.train
 test <- agaricus.test
 
-windows_flag <- grepl("Windows", Sys.info()[["sysname"]])
-
 TOLERANCE <- 1e-6
 
 test_that("train and predict binary classification", {
