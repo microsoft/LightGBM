@@ -142,8 +142,18 @@ if (!use_precompile) {
 dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH), fsep = "/")
 dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 if (file.exists(src)) {
-  cat("Found library file: ", src, " to move to ", dest, sep = "")
+  print(paste0("Found library file: ", src, " to move to ", dest))
   file.copy(src, dest, overwrite = TRUE)
 } else {
   stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
+}
+
+# clean up the "build" directory
+if (dir.exists(build_dir)){
+  print("Removing 'build/' directory")
+  unlink(
+    x = file.path(R_PACKAGE_SOURCE, "src", "build")
+    , recursive = TRUE
+    , force = TRUE
+  )
 }
