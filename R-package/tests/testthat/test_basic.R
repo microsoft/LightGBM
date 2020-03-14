@@ -528,8 +528,6 @@ test_that("lgb.train() works with early stopping for regression", {
   bst <- lgb.train(
     params = list(
       objective = "regression"
-      , metric = "rmse"
-      , min_data_in_bin = 5L
     )
     , data = dtrain
     , nrounds = nrounds
@@ -625,10 +623,10 @@ test_that("lgb.train() only considers the first metric for early stopping if fir
       "valid1" = dvalid
     )
     , eval = list(
-      .increasing_metric
-      , .constant_metric
+      .constant_metric
+      , .increasing_metric
     )
-    , verbose = TRUE
+    , verbose = 1
   )
 
   # the best possible model should come from the first iteration, but
