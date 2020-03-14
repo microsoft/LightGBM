@@ -874,7 +874,6 @@ class Dataset(object):
                     new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
             init_score = new_init_score
         self.set_init_score(init_score)
-        return self
 
     def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
@@ -1392,13 +1391,14 @@ class Dataset(object):
             self._predictor = predictor
         elif self.data is not None:
             self._predictor = predictor
-            return self._set_init_score_by_predictor(self._predictor, self.data)
+            self._set_init_score_by_predictor(self._predictor, self.data)
         elif self.used_indices is not None and self.reference is not None and self.reference.data is not None:
             self._predictor = predictor
-            return self._set_init_score_by_predictor(self._predictor, self.reference.data, self.used_indices)
+            self._set_init_score_by_predictor(self._predictor, self.reference.data, self.used_indices)
         else:
             raise LightGBMError("Cannot set predictor after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
+        return self
 
     def set_reference(self, reference):
         """Set reference Dataset.
