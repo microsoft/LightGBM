@@ -20,16 +20,19 @@ if (!file.copy("../inst/bin/CMakeLists.txt", "CMakeLists.txt", overwrite = TRUE)
   stop("Copying CMakeLists failed")
 }
 
+# Get some paths
+source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
+build_dir <- file.path(source_dir, "build", fsep = "/")
+
 # Check for precompilation
 if (!use_precompile) {
 
-  # Check repository content
-  source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
-  setwd(source_dir)
-
   # Prepare building package
-  build_dir <- file.path(source_dir, "build", fsep = "/")
-  dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
+  dir.create(
+    build_dir
+    , recursive = TRUE
+    , showWarnings = FALSE
+  )
   setwd(build_dir)
 
   # Prepare installation steps
@@ -142,8 +145,18 @@ if (!use_precompile) {
 dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH), fsep = "/")
 dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 if (file.exists(src)) {
-  cat("Found library file: ", src, " to move to ", dest, sep = "")
+  print(paste0("Found library file: ", src, " to move to ", dest))
   file.copy(src, dest, overwrite = TRUE)
 } else {
   stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
+}
+
+# clean up the "build" directory
+if (dir.exists(build_dir)) {
+  print("Removing 'build/' directory")
+  unlink(
+    x = file.path(R_PACKAGE_SOURCE, "src", "build")
+    , recursive = TRUE
+    , force = TRUE
+  )
 }
