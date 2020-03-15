@@ -285,7 +285,7 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
       cat("Will train until there is no improvement in ", stopping_rounds, " rounds.\n\n", sep = "")
     }
 
-    # Maximization or minimization task
+    # Internally treat everything as a maximization task
     factor_to_bigger_better <<- rep.int(1.0, eval_len)
     best_iter <<- rep.int(-1L, eval_len)
     best_score <<- rep.int(-Inf, eval_len)

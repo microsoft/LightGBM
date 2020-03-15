@@ -250,6 +250,10 @@ lgb.check.obj <- function(params, obj) {
 
 }
 
+# [description] Take any character values from eval and store them
+#               in params$metric. This has to account for the fact that
+#               `eval` could be a character vector, a function, a list of functions,
+#               or a list with a mix of strings and functions
 lgb.check.eval <- function(params, eval) {
 
   # Check if metric is null, if yes put a list instead
@@ -257,9 +261,27 @@ lgb.check.eval <- function(params, eval) {
     params$metric <- list()
   }
 
-  # If 'eval' is a list of strings or character vector, store it in 'metric'
-  if (is.character(eval) || (is.list(eval) && all(sapply(eval, is.character)))) {
-    params$metric <- append(params$metric, eval)
+  # if 'eval' is a character vector or list, find the character
+  # elements and add them to 'metric'
+  if (!is.function(eval)) {
+    for (i in seq_along(eval)) {
+      element <- eval[[i]]
+      if (is.character(element)) {
+        print(paste0("Adding '", element, "' to list of metrics"))
+        params$metric <- append(params$metric, element)
+      }
+    }
+  }
+
+  # If more than one character metric was given, then "None" should
+  # not be included
+  if (length(params$metric) > 1){
+    params$metric <- Filter(
+        f = function(metric){
+          metric != "None"
+        }
+        , x = params$metric
+    )
   }
 
   return(params)

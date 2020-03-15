@@ -6,17 +6,33 @@
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},
 #'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
-#' @param eval evaluation function(s). This can be a function or list of functions. Each provided function
-#'              should accept the keyword arguments \code{preds} and \code{dtrain} and should return a named
-#'              list with three elements.
-#'              \itemize{
-#'                  \item{\code{name}: A string with the name of the metric, used for printing and storing results.}
-#'                  \item{\code{value}: A single number indicating the value of the metric for the given predictions and true values}
-#'                  \item{
-#'                      \code{higher_better}: A boolean indicating whether higher values indicate a better fit.
-#'                      For example, this would be \code{FALSE} for metrics like MAE or RMSE.
-#'                  }
-#'              }
+#' @param eval evaluation function(s). This can be a character vector, function, or list with a mixture of
+#'             strings and functions.
+#'
+#'             \itemize{
+#'                 \item{\bold{a. character vector}:
+#'                     If you provide a character vector to this argument, it should contain strings with valid
+#'                     evaluation metrics. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#metric}{The "metric" section of the documentation}
+#'                     for a list of valid metrics.
+#'                 }
+#'                 \item{\bold{b. function}:
+#'                      You can provide a custom evaluation function. This
+#'                      should accept the keyword arguments \code{preds} and \code{dtrain} and should return a named
+#'                      list with three elements:
+#'                      \itemize{
+#'                          \item{\code{name}: A string with the name of the metric, used for printing and storing results.}
+#'                          \item{\code{value}: A single number indicating the value of the metric for the given predictions and true values}
+#'                          \item{
+#'                              \code{higher_better}: A boolean indicating whether higher values indicate a better fit.
+#'                              For example, this would be \code{FALSE} for metrics like MAE or RMSE.
+#'                          }
+#'                      }
+#'                 }
+#'                 \item{\bold{c. list}:
+#'                     If a list is given, it should only contain character vectors and functions. These should follow the
+#'                     requirements from the descriptions above.
+#'                 }
+#'             }
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
@@ -36,6 +52,21 @@
 #'                                   the number of real CPU cores, not the number of threads (most
 #'                                   CPU using hyper-threading to generate 2 threads per CPU core).}
 #'            }
+#' @section Early Stopping:
+#'
+#'          "early stopping" refers to stopping the training process if the model's performance on a given
+#'          validation set does not improve for several consecutive iterations.
+#'
+#'          If multiple arguments are given to \code{eval}, their order will be preserved. If you enable
+#'          early stopping by setting \code{early_stopping_rounds} in \code{params}, by default all
+#'          metrics will be considered for early stopping.
+#'
+#'          If you want to only consider the first metric for early stopping, pass
+#'          \code{first_metric_only = TRUE} in \code{params}. Note that if you also specify \code{metric}
+#'          in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
+#'          a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
+#'          or \code{objective} (passed into \code{params}).
+#'
 #' @return a trained booster model \code{lgb.Booster}.
 #'
 #' @examples
@@ -99,7 +130,7 @@ lgb.train <- function(params = list(),
   params <- lgb.check.obj(params, obj)
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
-  eval_functions <- NULL
+  eval_functions <- list(NULL)
 
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -113,8 +144,13 @@ lgb.train <- function(params = list(),
   if (is.function(eval)) {
     eval_functions <- list(eval)
   }
-  if (methods::is(eval, "list") & all(sapply(eval, is.function))){
-    eval_functions <- eval
+  if (methods::is(eval, "list")) {
+    eval_functions <- Filter(
+      f = function(eval_element){
+        is.function(eval_element)
+      }
+      , x = eval
+    )
   }
 
   # Init predictor to empty
@@ -296,6 +332,7 @@ lgb.train <- function(params = list(),
         # Has no validation dataset
         eval_list <- append(eval_list, booster$eval_valid(feval = eval_function))
       }
+
     }
 
     # Write evaluation result in environment
