@@ -12,7 +12,9 @@
 #'             \itemize{
 #'                 \item{\bold{a. character vector}:
 #'                     If you provide a character vector to this argument, it should contain strings with valid
-#'                     evaluation metrics. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#metric}{The "metric" section of the documentation}
+#'                     evaluation metrics.
+#'                     See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#metric}{
+#'                     The "metric" section of the documentation}
 #'                     for a list of valid metrics.
 #'                 }
 #'                 \item{\bold{b. function}:
@@ -20,8 +22,12 @@
 #'                      should accept the keyword arguments \code{preds} and \code{dtrain} and should return a named
 #'                      list with three elements:
 #'                      \itemize{
-#'                          \item{\code{name}: A string with the name of the metric, used for printing and storing results.}
-#'                          \item{\code{value}: A single number indicating the value of the metric for the given predictions and true values}
+#'                          \item{\code{name}: A string with the name of the metric, used for printing
+#'                              and storing results.
+#'                          }
+#'                          \item{\code{value}: A single number indicating the value of the metric for the
+#'                              given predictions and true values
+#'                          }
 #'                          \item{
 #'                              \code{higher_better}: A boolean indicating whether higher values indicate a better fit.
 #'                              For example, this would be \code{FALSE} for metrics like MAE or RMSE.
@@ -29,8 +35,8 @@
 #'                      }
 #'                 }
 #'                 \item{\bold{c. list}:
-#'                     If a list is given, it should only contain character vectors and functions. These should follow the
-#'                     requirements from the descriptions above.
+#'                     If a list is given, it should only contain character vectors and functions.
+#'                     These should follow the requirements from the descriptions above.
 #'                 }
 #'             }
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
@@ -146,9 +152,7 @@ lgb.train <- function(params = list(),
   }
   if (methods::is(eval, "list")) {
     eval_functions <- Filter(
-      f = function(eval_element){
-        is.function(eval_element)
-      }
+      f = is.function
       , x = eval
     )
   }
@@ -322,14 +326,25 @@ lgb.train <- function(params = list(),
     # Collection: Has validation dataset?
     if (length(valids) > 0L) {
 
-      for (eval_function in eval_functions){
+      # Get evaluation results with passed-in functions
+      for (eval_function in eval_functions) {
 
         # Validation has training dataset?
         if (valid_contain_train) {
           eval_list <- append(eval_list, booster$eval_train(feval = eval_function))
         }
 
-        # Has no validation dataset
+        eval_list <- append(eval_list, booster$eval_valid(feval = eval_function))
+      }
+
+      # Calling booster$eval_valid() will get
+      # evaluation results with the metrics in params$metric by calling LGBM_BoosterGetEval_R",
+      # so need to be sure that gets called, which it wouldn't be above if no functions
+      # were passed in
+      if (length(eval_functions) == 0L) {
+        if (valid_contain_train) {
+          eval_list <- append(eval_list, booster$eval_train(feval = eval_function))
+        }
         eval_list <- append(eval_list, booster$eval_valid(feval = eval_function))
       }
 

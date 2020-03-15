@@ -275,9 +275,9 @@ lgb.check.eval <- function(params, eval) {
 
   # If more than one character metric was given, then "None" should
   # not be included
-  if (length(params$metric) > 1){
+  if (length(params$metric) > 1L) {
     params$metric <- Filter(
-        f = function(metric){
+        f = function(metric) {
           metric != "None"
         }
         , x = params$metric

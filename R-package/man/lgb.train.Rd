@@ -39,7 +39,38 @@ may allow you to pass other types of data like \code{matrix} and then separately
 \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 
 \item{eval}{evaluation function(s). This can be a character vector, function, or list with a mixture of
-strings and functions.}
+            strings and functions.
+
+            \itemize{
+                \item{\bold{a. character vector}:
+                    If you provide a character vector to this argument, it should contain strings with valid
+                    evaluation metrics.
+                    See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#metric}{
+                    The "metric" section of the documentation}
+                    for a list of valid metrics.
+                }
+                \item{\bold{b. function}:
+                     You can provide a custom evaluation function. This
+                     should accept the keyword arguments \code{preds} and \code{dtrain} and should return a named
+                     list with three elements:
+                     \itemize{
+                         \item{\code{name}: A string with the name of the metric, used for printing
+                             and storing results.
+                         }
+                         \item{\code{value}: A single number indicating the value of the metric for the
+                             given predictions and true values
+                         }
+                         \item{
+                             \code{higher_better}: A boolean indicating whether higher values indicate a better fit.
+                             For example, this would be \code{FALSE} for metrics like MAE or RMSE.
+                         }
+                     }
+                }
+                \item{\bold{c. list}:
+                    If a list is given, it should only contain character vectors and functions.
+                    These should follow the requirements from the descriptions above.
+                }
+            }}
 
 \item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
 
@@ -86,43 +117,18 @@ Logic to train with LightGBM
 \section{Early Stopping}{
 
 
-         \itemize{
-            \item{\bold{a. character vector}:
-                If you provide a character vector to this argument, it should contain strings with valid
-                evaluation metrics. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#metric}{The "metric" section of the documentation}
-                for a list of valid metrics.
-            }
-            \item{\bold{b. function}:
-                 You can provide a custom evaluation function. This
-                 should accept the keyword arguments \code{preds} and \code{dtrain} and should return a named
-                 list with three elements:
+         "early stopping" refers to stopping the training process if the model's performance on a given
+         validation set does not improve for several consecutive iterations.
 
-                 \itemize{
-                     \item{\code{name}: A string with the name of the metric, used for printing and storing results.}
-                     \item{\code{value}: A single number indicating the value of the metric for the given predictions and true values}
-                     \item{
-                         \code{higher_better}: A boolean indicating whether higher values indicate a better fit.
-                         For example, this would be \code{FALSE} for metrics like MAE or RMSE.
-                     }
-                 }
-            }
-            \item{\bold{c. list}:
-                If a list is given, it should only contain character vectors and functions. These should follow the
-                requirements from the descriptions above.
-            }
-            \item{\bold{Early stopping behavior}:
+         If multiple arguments are given to \code{eval}, their order will be preserved. If you enable
+         early stopping by setting \code{early_stopping_rounds} in \code{params}, by default all
+         metrics will be considered for early stopping.
 
-                If multiple arguments are given, their order will be preserved. If you enable early stopping by
-                setting \code{early_stopping_rounds} in \code{params}, by default all metrics will be
-                considered for early stopping.
-
-                If you want to only consider the first metric for early stopping, pass
-                \code{first_metric_only = TRUE} in \code{params}. Note that if you also specify \code{metric}
-                in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
-                a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
-                or \code{objective} (passed into \code{params}).
-            }
-         }
+         If you want to only consider the first metric for early stopping, pass
+         \code{first_metric_only = TRUE} in \code{params}. Note that if you also specify \code{metric}
+         in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
+         a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
+         or \code{objective} (passed into \code{params}).
 }
 
 \examples{

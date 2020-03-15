@@ -13,8 +13,8 @@ TOLERANCE <- 1e-6
 #               metric increases every iteration
 ACCUMULATOR_NAME <- "INCREASING_METRIC_ACUMULATOR"
 assign(ACCUMULATOR_NAME, 0.0, envir = .GlobalEnv)
-.increasing_metric <- function(preds, dtrain){
-  if (!exists(ACCUMULATOR_NAME, envir = .GlobalEnv)){
+.increasing_metric <- function(preds, dtrain) {
+  if (!exists(ACCUMULATOR_NAME, envir = .GlobalEnv)) {
     assign(ACCUMULATOR_NAME, 0.0, envir = .GlobalEnv)
   }
   assign(
@@ -32,7 +32,7 @@ assign(ACCUMULATOR_NAME, 0.0, envir = .GlobalEnv)
 # [description] Evaluation function that always returns the
 #               same value
 CONSTANT_METRIC_VALUE <- 0.2
-.constant_metric <- function(preds, dtrain){
+.constant_metric <- function(preds, dtrain) {
   return(list(
     name = "constant_metric"
     , value = CONSTANT_METRIC_VALUE
@@ -50,12 +50,12 @@ DVALID_RANDOM_REGRESSION <- lgb.Dataset(
   , label = rnorm(50L)
 )
 DTRAIN_RANDOM_CLASSIFICATION <- lgb.Dataset(
-  data = as.matrix(rnorm(120), ncol = 1L, drop = FALSE)
-  , label = sample(c(0L, 1L), size = 120, replace = TRUE)
+  data = as.matrix(rnorm(120L), ncol = 1L, drop = FALSE)
+  , label = sample(c(0L, 1L), size = 120L, replace = TRUE)
 )
 DVALID_RANDOM_CLASSIFICATION <- lgb.Dataset(
-  data = as.matrix(rnorm(37), ncol = 1L, drop = FALSE)
-  , label = sample(c(0L, 1L), size = 37, replace = TRUE)
+  data = as.matrix(rnorm(37L), ncol = 1L, drop = FALSE)
+  , label = sample(c(0L, 1L), size = 37L, replace = TRUE)
 )
 
 test_that("train and predict binary classification", {
@@ -689,7 +689,7 @@ test_that("If first_metric_only is not given or is FALSE, lgb.train() decides to
     )
   )
 
-  for (params in param_variations){
+  for (params in param_variations) {
 
     nrounds <- 10L
     bst <- lgb.train(
@@ -758,7 +758,6 @@ test_that("If first_metric_only is TRUE, lgb.train() decides to stop early based
       .increasing_metric
       , .constant_metric
     )
-    , verbose = 1
   )
 
   # Only the two functions provided to "eval" should have been evaluated
@@ -850,7 +849,6 @@ test_that("lgb.train() works when a character vector is passed to eval", {
       "binary_error"
       , "binary_logloss"
     )
-    , verbose = 1
   )
 
   # all 4 metrics should have been used
@@ -875,7 +873,55 @@ test_that("lgb.train() works when a character vector is passed to eval", {
 
 })
 
-test_that("lgb.train() works when a list of strings is passed to eval", {
+test_that("lgb.train() works when a list of strings or a character vector is passed to eval", {
+
+  # testing list and character vector, as well as length-1 and length-2
+  eval_variations <- list(
+    c("binary_error", "binary_logloss")
+    , "binary_logloss"
+    , list("binary_error", "binary_logloss")
+    , list("binary_logloss")
+  )
+
+  for (eval_variation in eval_variations) {
+
+    set.seed(708L)
+    nrounds <- 10L
+    early_stopping_rounds <- 3L
+    increasing_metric_starting_value <- get(ACCUMULATOR_NAME, envir = .GlobalEnv)
+    bst <- lgb.train(
+      params = list(
+        objective = "binary"
+        , metric = "None"
+      )
+      , data = DTRAIN_RANDOM_CLASSIFICATION
+      , nrounds = nrounds
+      , valids = list(
+        "valid1" = DVALID_RANDOM_CLASSIFICATION
+      )
+      , eval = eval_variation
+    )
+
+    # both metrics should have been used
+    expect_named(
+      bst$record_evals[["valid1"]]
+      , expected = unlist(eval_variation)
+      , ignore.order = TRUE
+      , ignore.case = FALSE
+    )
+
+    # the difference metrics shouldn't have been mixed up with each other
+    results <- bst$record_evals[["valid1"]]
+    if ("binary_error" %in% unlist(eval_variation)) {
+      expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.5135135) < TOLERANCE)
+    }
+    if ("binary_logloss" %in% unlist(eval_variation)) {
+      expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.6992222) < TOLERANCE)
+    }
+  }
+})
+
+test_that("lgb.train() works when you specify both 'metric' and 'eval' with strings", {
   set.seed(708L)
   nrounds <- 10L
   early_stopping_rounds <- 3L
@@ -883,38 +929,58 @@ test_that("lgb.train() works when a list of strings is passed to eval", {
   bst <- lgb.train(
     params = list(
       objective = "binary"
-      , metric = "None"
+      , metric = "binary_error"
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
     , valids = list(
       "valid1" = DVALID_RANDOM_CLASSIFICATION
     )
-    , eval = list(
-      "binary_error"
-      , "binary_logloss"
-    )
-    , verbose = 1
+    , eval = "binary_logloss"
   )
 
-  # all 4 metrics should have been used
+  # both metrics should have been used
   expect_named(
     bst$record_evals[["valid1"]]
-    , expected = c("rmse", "l2", "increasing_metric", "constant_metric")
+    , expected = c("binary_error", "binary_logloss")
     , ignore.order = TRUE
     , ignore.case = FALSE
   )
 
   # the difference metrics shouldn't have been mixed up with each other
   results <- bst$record_evals[["valid1"]]
-  expect_true(abs(results[["rmse"]][["eval"]][[1L]] - 0.9278173) < TOLERANCE)
-  expect_true(abs(results[["l2"]][["eval"]][[1L]] - 0.8608449) < TOLERANCE)
-  expected_increasing_metric <- increasing_metric_starting_value + 0.1
-  expect_true(
-    abs(
-      results[["increasing_metric"]][["eval"]][[1L]] - expected_increasing_metric
-    ) < TOLERANCE
-  )
-  expect_true(abs(results[["constant_metric"]][["eval"]][[1L]] - CONSTANT_METRIC_VALUE) < TOLERANCE)
+  expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.5135135) < TOLERANCE)
+  expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.6992222) < TOLERANCE)
+})
 
+test_that("lgb.train() works when you specify both 'metric' and 'eval' with strings", {
+  set.seed(708L)
+  nrounds <- 10L
+  early_stopping_rounds <- 3L
+  increasing_metric_starting_value <- get(ACCUMULATOR_NAME, envir = .GlobalEnv)
+  bst <- lgb.train(
+    params = list(
+      objective = "binary"
+      , metric = "binary_error"
+    )
+    , data = DTRAIN_RANDOM_CLASSIFICATION
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = DVALID_RANDOM_CLASSIFICATION
+    )
+    , eval = "binary_logloss"
+  )
+
+  # both metrics should have been used
+  expect_named(
+    bst$record_evals[["valid1"]]
+    , expected = c("binary_error", "binary_logloss")
+    , ignore.order = TRUE
+    , ignore.case = FALSE
+  )
+
+  # the difference metrics shouldn't have been mixed up with each other
+  results <- bst$record_evals[["valid1"]]
+  expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.5135135) < TOLERANCE)
+  expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.6992222) < TOLERANCE)
 })
