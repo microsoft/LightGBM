@@ -1225,6 +1225,8 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
+        if not params:
+            return
         params = copy.deepcopy(params)
 
         def update():
