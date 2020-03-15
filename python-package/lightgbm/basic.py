@@ -721,6 +721,7 @@ class _InnerPredictor(object):
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
+
     def current_iteration(self):
         """Get the index of the current iteration.
 
@@ -856,7 +857,7 @@ class Dataset(object):
             init_score = predictor.predict(data,
                                            raw_score=True,
                                            data_has_header=data_has_header,
-                                           is_reshape=False)         
+                                           is_reshape=False)
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, string_type):
