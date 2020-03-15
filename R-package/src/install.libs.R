@@ -20,16 +20,19 @@ if (!file.copy("../inst/bin/CMakeLists.txt", "CMakeLists.txt", overwrite = TRUE)
   stop("Copying CMakeLists failed")
 }
 
+# Get some paths
+source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
+build_dir <- file.path(source_dir, "build", fsep = "/")
+
 # Check for precompilation
 if (!use_precompile) {
 
-  # Check repository content
-  source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
-  setwd(source_dir)
-
   # Prepare building package
-  build_dir <- file.path(source_dir, "build", fsep = "/")
-  dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
+  dir.create(
+    build_dir
+    , recursive = TRUE
+    , showWarnings = FALSE
+  )
   setwd(build_dir)
 
   # Prepare installation steps
