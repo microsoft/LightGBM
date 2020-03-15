@@ -114,6 +114,47 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
   }
 })
 
+test_that("lightgbm() performs evaluation on validation sets if they are provided", {
+  set.seed(708L)
+  dvalid1 <- lgb.Dataset(
+    data = train$data
+    , labels = train$label
+  )
+  dvalid2 <- lgb.Dataset(
+    data = train$data
+    , labels = train$label
+  )
+  nrounds <- 10L
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , num_leaves = 5L
+    , nrounds = nrounds
+    , objective = "binary"
+    , metric = "binary_error"
+    , valids = list(
+      "valid1" = dvalid1
+      , "valid2" = dvalid2
+    )
+  )
+
+  expect_named(
+    bst$record_evals
+    , c("train", "valid1", "valid2", "start_iter")
+    , ignore.order = TRUE
+    , ignore.case = FALSE
+  )
+  for (valid_name in c("train", "valid1", "valid2")) {
+    eval_results <- bst$record_evals[[valid_name]][["binary_error"]]
+    expect_length(eval_results[["eval"]], nrounds)
+  }
+  expect_true(abs(bst$record_evals[["train"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
+  expect_true(abs(bst$record_evals[["valid1"]][["binary_error"]][["eval"]][[1L]] - 0.4825733) < TOLERANCE)
+  expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.4825733) < TOLERANCE)
+})
+
+
+context("training continuation")
 
 test_that("training continuation works", {
   testthat::skip("This test is currently broken. See issue #2468 for details.")

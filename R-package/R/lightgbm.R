@@ -73,24 +73,31 @@ lightgbm <- function(data,
     dtrain <- lgb.Dataset(data, label = label, weight = weight)
   }
 
+  train_args <- list(
+    "params" = params
+    , "data" = dtrain
+    , "nrounds" = nrounds
+    , "verbose" = verbose
+    , "eval_freq" = eval_freq
+    , "early_stopping_rounds" = early_stopping_rounds
+    , "init_model" = init_model
+    , "callbacks" = callbacks
+  )
+  train_args <- append(train_args, list(...))
+
+  if (! "valids" %in% names(train_args)) {
+    train_args[["valids"]] <- list()
+  }
+
   # Set validation as oneself
-  valids <- list()
   if (verbose > 0L) {
-    valids$train <- dtrain
+    train_args[["valids"]][["train"]] <- dtrain
   }
 
   # Train a model using the regular way
-  bst <- lgb.train(
-    params = params
-    , data = dtrain
-    , nrounds = nrounds
-    , valids = valids
-    , verbose = verbose
-    , eval_freq = eval_freq
-    , early_stopping_rounds = early_stopping_rounds
-    , init_model = init_model
-    , callbacks = callbacks
-    , ...
+  bst <- do.call(
+    what = lgb.train
+    , args = train_args
   )
 
   # Store model under a specific name
