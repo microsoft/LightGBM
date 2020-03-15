@@ -16,10 +16,9 @@
 
 if(NOT R_ARCH)
   if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
-    set(R_ARCH "i386")
-  else()
-    set(R_ARCH "x64")
+    message(FATAL_ERROR "LightGBM's R package currently only supports 64-bit operating systems")
   endif()
+  set(R_ARCH "x64")
 endif()
 
 # Creates R.lib and R.def in the build directory for linking with MSVC
