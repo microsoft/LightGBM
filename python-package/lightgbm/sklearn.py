@@ -344,7 +344,8 @@ class LGBMModel(_LGBMModelBase):
         if value is not None:
             try:
                 # Try to get random integer which is used as seed in the low level code
-                self._random_state = value.randint(1e10)
+                max = np.iinfo(np.int).max
+                self._random_state = value.randint(max)
             except AttributeError:
                 # If not, consider object as integer
                 self._random_state = value
