@@ -167,7 +167,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
       bool is_split_numerical,
       const std::vector<int>& features_of_splits_going_up_from_original_leaf,
       int inner_feature,
-      std::vector<bool>& was_original_leaf_right_child_of_split,
+      const std::vector<bool>& was_original_leaf_right_child_of_split,
       bool is_in_right_child) {
     bool opposite_child_should_be_updated = true;
 
