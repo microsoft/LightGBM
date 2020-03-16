@@ -1966,7 +1966,7 @@ class TestEngine(unittest.TestCase):
         y_val = np.random.random(100)
         lgb_train = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
         lgb_val = lgb.Dataset(X_val, y_val, reference=lgb_train, free_raw_data=False).construct()
-        model = lgb.train(default_params, lgb_train, valid_sets = [lgb_val])
+        model = lgb.train(default_params, lgb_train, valid_sets=[lgb_val])
 
     def test_extra_trees(self):
         # check extra trees increases regularization
