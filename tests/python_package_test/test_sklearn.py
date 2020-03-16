@@ -228,9 +228,11 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_allclose(pred_origin, pred_pickle)
 
     def test_random_state_object(self):
+        data = load_iris()
         state = np.random.RandomState(123)
         clf = lgb.LGBMClassifier(random_state=state)
-        self.assertIsInstance(clf.random_state, int)
+        self.assertIsInstance(clf.random_state, np.random.RandomState)
+        clf.fit(data.data, data.target)
 
     def test_feature_importances_single_leaf(self):
         data = load_iris()
