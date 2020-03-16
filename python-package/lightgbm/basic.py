@@ -1097,6 +1097,10 @@ class Dataset(object):
         """
         if self.handle is None:
             if self.reference is not None:
+                reference_params = self.reference.get_params()
+                if self.get_params() != reference_params:
+                    warnings.warn('Overriding the parameters from Reference Dataset.')
+                    self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid
                     self._lazy_init(self.data, label=self.label, reference=self.reference,
@@ -1222,6 +1226,8 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
+        if not params:
+            return self
         params = copy.deepcopy(params)
 
         def update():

@@ -1958,6 +1958,18 @@ class TestEngine(unittest.TestCase):
             with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
                 lgb.train(new_params, lgb_data, num_boost_round=3)
 
+    def test_dataset_params_with_reference(self):
+        default_params = {"max_bin": 100}
+        X = np.random.random((100, 2))
+        y = np.random.random(100)
+        X_val = np.random.random((100, 2))
+        y_val = np.random.random(100)
+        lgb_train = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
+        lgb_val = lgb.Dataset(X_val, y_val, reference=lgb_train, free_raw_data=False).construct()
+        self.assertDictEqual(lgb_train.get_params(), default_params)
+        self.assertDictEqual(lgb_val.get_params(), default_params)
+        model = lgb.train(default_params, lgb_train, valid_sets=[lgb_val])
+
     def test_extra_trees(self):
         # check extra trees increases regularization
         X, y = load_boston(True)
