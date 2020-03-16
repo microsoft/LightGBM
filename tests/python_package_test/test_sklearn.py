@@ -227,6 +227,11 @@ class TestSklearn(unittest.TestCase):
         pred_pickle = gbm_pickle.predict(X_test)
         np.testing.assert_allclose(pred_origin, pred_pickle)
 
+    def test_random_state_object(self):
+        state = np.random.RandomState(123)
+        clf = lgb.LGBMClassifier(random_state=state)
+        self.assertIsInstance(clf.random_state, int)
+
     def test_feature_importances_single_leaf(self):
         data = load_iris()
         clf = lgb.LGBMClassifier(n_estimators=10)
