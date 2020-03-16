@@ -102,9 +102,9 @@ class BasicLeafConstraints : public LeafConstraintsBase {
   std::vector<ConstraintEntry> entries_;
 };
 
-class FastLeafConstraints : public BasicLeafConstraints {
+class IntermediateLeafConstraints : public BasicLeafConstraints {
  public:
-  explicit FastLeafConstraints(const Config* config, int num_leaves)
+  explicit IntermediateLeafConstraints(const Config* config, int num_leaves)
       : BasicLeafConstraints(num_leaves), config_(config) {
     leaf_is_in_monotone_subtree_.resize(num_leaves_, false);
     node_parent_.resize(num_leaves_ - 1, -1);
@@ -450,7 +450,7 @@ class FastLeafConstraints : public BasicLeafConstraints {
 LeafConstraintsBase* LeafConstraintsBase::Create(const Config* config,
                                                  int num_leaves) {
   if (config->monotone_constraints_method == "intermediate") {
-    return new FastLeafConstraints(config, num_leaves);
+    return new IntermediateLeafConstraints(config, num_leaves);
   }
   return new BasicLeafConstraints(num_leaves);
 }
