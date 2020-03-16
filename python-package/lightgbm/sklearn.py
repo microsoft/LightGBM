@@ -334,24 +334,6 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes = None
         self.set_params(**kwargs)
 
-    @property
-    def random_state(self):
-        """Get and set integer seed for random number generation. Can be set using integer or a RandomState object which is used to derive an integer."""
-        return self._random_state
-
-    @random_state.setter
-    def random_state(self, value):
-        if value is not None:
-            try:
-                # Try to get random integer which is used as seed in the low level code
-                max = np.iinfo(np.int).max
-                self._random_state = value.randint(max)
-            except AttributeError:
-                # If not, consider object as integer
-                self._random_state = value
-        else:
-            self._random_state = None
-
     def _more_tags(self):
         return {'allow_nan': True,
                 'X_types': ['2darray', 'sparse', '1dlabels']}
@@ -522,6 +504,8 @@ class LGBMModel(_LGBMModelBase):
         params.pop('importance_type', None)
         params.pop('n_estimators', None)
         params.pop('class_weight', None)
+        if isinstance(params['random_state'], np.random.RandomState):
+            params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
         for alias in _ConfigAliases.get('objective'):
             params.pop(alias, None)
         if self._n_classes is not None and self._n_classes > 2:
