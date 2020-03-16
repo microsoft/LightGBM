@@ -1098,7 +1098,7 @@ class Dataset(object):
         if self.handle is None:
             if self.reference is not None:
                 if self.get_params() != self.reference.get_params():
-                    warnings.warn('Override the parameters from Reference Dataset.')
+                    warnings.warn('Overriding the parameters from Reference Dataset.')
                     self._update_params(self.reference.get_params())
                 if self.used_indices is None:
                     # create valid
@@ -1226,7 +1226,7 @@ class Dataset(object):
 
     def _update_params(self, params):
         if not params:
-            return
+            return self
         params = copy.deepcopy(params)
 
         def update():
