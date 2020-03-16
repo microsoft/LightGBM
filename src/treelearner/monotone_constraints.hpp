@@ -199,9 +199,9 @@ class FastLeafConstraints : public BasicLeafConstraints {
   // have constraints to be updated
   void GoUpToFindLeavesToUpdate(
       const Tree* tree, int node_idx,
-      std::vector<int>& features_of_splits_going_up_from_original_leaf,
-      std::vector<uint32_t>& thresholds_of_splits_going_up_from_original_leaf,
-      std::vector<bool>& was_original_leaf_right_child_of_split,
+      std::vector<int>* features_of_splits_going_up_from_original_leaf,
+      std::vector<uint32_t>* thresholds_of_splits_going_up_from_original_leaf,
+      std::vector<bool>* was_original_leaf_right_child_of_split,
       int split_feature, const SplitInfo& split_info, uint32_t split_threshold,
       const std::vector<SplitInfo>& best_split_per_leaf) {
 #ifdef DEBUG
@@ -220,8 +220,8 @@ class FastLeafConstraints : public BasicLeafConstraints {
       // this is just an optimisation not to waste time going down in subtrees
       // where there won't be any leaf to update
       bool opposite_child_should_be_updated = OppositeChildShouldBeUpdated(
-          is_split_numerical, features_of_splits_going_up_from_original_leaf,
-          inner_feature, was_original_leaf_right_child_of_split,
+          is_split_numerical, *features_of_splits_going_up_from_original_leaf,
+          inner_feature, *was_original_leaf_right_child_of_split,
           is_in_right_child);
 
       if (opposite_child_should_be_updated) {
@@ -244,9 +244,9 @@ class FastLeafConstraints : public BasicLeafConstraints {
           // to see which leaves' constraints need to be updated
           GoDownToFindLeavesToUpdate(
               tree, opposite_child_idx,
-              features_of_splits_going_up_from_original_leaf,
-              thresholds_of_splits_going_up_from_original_leaf,
-              was_original_leaf_right_child_of_split,
+              *features_of_splits_going_up_from_original_leaf,
+              *thresholds_of_splits_going_up_from_original_leaf,
+              *was_original_leaf_right_child_of_split,
               update_max_constraints_in_opposite_child_leaves, split_feature,
               split_info, true, true, split_threshold, best_split_per_leaf);
         }
@@ -255,11 +255,11 @@ class FastLeafConstraints : public BasicLeafConstraints {
         // i.e. that it will be helpful going down to determine which leaf
         // is actually contiguous to the original 2 leaves and should be updated
         // so the variables associated with the split need to be recorded
-        was_original_leaf_right_child_of_split.push_back(
+        was_original_leaf_right_child_of_split->push_back(
             tree->right_child(parent_idx) == node_idx);
-        thresholds_of_splits_going_up_from_original_leaf.push_back(
+        thresholds_of_splits_going_up_from_original_leaf->push_back(
             tree->threshold_in_bin(parent_idx));
-        features_of_splits_going_up_from_original_leaf.push_back(
+        features_of_splits_going_up_from_original_leaf->push_back(
             tree->split_feature_inner(parent_idx));
       }
 
@@ -387,13 +387,13 @@ class FastLeafConstraints : public BasicLeafConstraints {
                            const std::vector<SplitInfo>& best_split_per_leaf) {
     int depth = tree->leaf_depth(~tree->left_child(node_idx)) - 1;
 
-    std::vector<int> features_of_splits_going_up_from_original_leaf;
-    std::vector<uint32_t> thresholds_of_splits_going_up_from_original_leaf;
-    std::vector<bool> was_original_leaf_right_child_of_split;
+    std::vector<int>* features_of_splits_going_up_from_original_leaf = new std::vector<int>();
+    std::vector<uint32_t>* thresholds_of_splits_going_up_from_original_leaf = new std::vector<uint32_t>();
+    std::vector<bool>* was_original_leaf_right_child_of_split = new std::vector<bool>();
 
-    features_of_splits_going_up_from_original_leaf.reserve(depth);
-    thresholds_of_splits_going_up_from_original_leaf.reserve(depth);
-    was_original_leaf_right_child_of_split.reserve(depth);
+    features_of_splits_going_up_from_original_leaf->reserve(depth);
+    thresholds_of_splits_going_up_from_original_leaf->reserve(depth);
+    was_original_leaf_right_child_of_split->reserve(depth);
 
     GoUpToFindLeavesToUpdate(
         tree, node_idx, features_of_splits_going_up_from_original_leaf,
