@@ -877,7 +877,7 @@ class Dataset(object):
         elif self.init_score is not None:
             init_score = np.zeros(self.init_score.shape, dtype=np.float32)
         else:
-            return
+            return self
         self.set_init_score(init_score)
 
     def _lazy_init(self, data, label=None, reference=None,

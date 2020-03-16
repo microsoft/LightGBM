@@ -620,11 +620,11 @@ class TestEngine(unittest.TestCase):
             'verbose': -1
         }
         lgb_train = lgb.Dataset(X, y, free_raw_data=False)
-        init_gbm = lgb.train(params, lgb_train, num_boost_round=20)
-        init_gbm_2 = lgb.train(params, lgb_train, num_boost_round=20, init_model=init_gbm)
-        init_gbm_3 = lgb.train(params, lgb_train, num_boost_round=20, init_model=init_gbm_2)
-        gbm = lgb.train(params, lgb_train, num_boost_round=20, init_model=init_gbm_3)
-        self.assertEqual(gbm.current_iteration(), 80)
+        init_gbm = lgb.train(params, lgb_train, num_boost_round=5)
+        init_gbm_2 = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm)
+        init_gbm_3 = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm_2)
+        gbm = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm_3)
+        self.assertEqual(gbm.current_iteration(), 20)
 
     def test_continue_train_dart(self):
         X, y = load_boston(True)
