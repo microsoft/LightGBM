@@ -159,21 +159,18 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       // Initialize variables to store information while going up the tree
       int depth = tree->leaf_depth(new_leaf) - 1;
 
-      std::vector<int> *features_of_splits_going_up_from_original_leaf =
-          new std::vector<int>();
-      std::vector<uint32_t> *thresholds_of_splits_going_up_from_original_leaf =
-          new std::vector<uint32_t>();
-      std::vector<bool> *was_original_leaf_right_child_of_split =
-          new std::vector<bool>();
+      std::vector<int> features_of_splits_going_up_from_original_leaf;
+      std::vector<uint32_t> thresholds_of_splits_going_up_from_original_leaf;
+      std::vector<bool> was_original_leaf_right_child_of_split;
 
-      features_of_splits_going_up_from_original_leaf->reserve(depth);
-      thresholds_of_splits_going_up_from_original_leaf->reserve(depth);
-      was_original_leaf_right_child_of_split->reserve(depth);
+      features_of_splits_going_up_from_original_leaf.reserve(depth);
+      thresholds_of_splits_going_up_from_original_leaf.reserve(depth);
+      was_original_leaf_right_child_of_split.reserve(depth);
 
       GoUpToFindLeavesToUpdate(tree, tree->leaf_parent(new_leaf),
-                               features_of_splits_going_up_from_original_leaf,
-                               thresholds_of_splits_going_up_from_original_leaf,
-                               was_original_leaf_right_child_of_split,
+                               &features_of_splits_going_up_from_original_leaf,
+                               &thresholds_of_splits_going_up_from_original_leaf,
+                               &was_original_leaf_right_child_of_split,
                                split_feature, split_info, split_info.threshold,
                                best_split_per_leaf);
     }
