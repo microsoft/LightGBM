@@ -54,7 +54,7 @@ Some old update logs are available at [Key Events](https://github.com/microsoft/
 External (Unofficial) Repositories
 ----------------------------------
 
-Optuna LightGBM Tuner (Automated tuning of LightGBM hyperparameters code): https://github.com/optuna/optuna/blob/master/examples/lightgbm_tuner_simple.py
+Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
 
 Julia-package: https://github.com/Allardvm/LightGBM.jl
 
