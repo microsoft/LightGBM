@@ -232,8 +232,9 @@ class LGBMModel(_LGBMModelBase):
             L2 regularization term on weights.
         random_state : int, RandomState object or None, optional (default=None)
             Random number seed.
-            If None, default seeds in C++ code will be used.
-            If RandomState object (numpy) is passed, we pick a random integer based on its state to seed the C++ code.
+            If int, this number is used to seed the C++ code.
+            If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
+            If None, default seeds in C++ code are used.
         n_jobs : int, optional (default=-1)
             Number of parallel threads.
         silent : bool, optional (default=True)

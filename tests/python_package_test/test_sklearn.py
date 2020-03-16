@@ -228,11 +228,19 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_allclose(pred_origin, pred_pickle)
 
     def test_random_state_object(self):
-        data = load_iris()
+        X, y = load_iris(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         state = np.random.RandomState(123)
-        clf = lgb.LGBMClassifier(random_state=state)
-        self.assertIsInstance(clf.random_state, np.random.RandomState)
-        clf.fit(data.data, data.target)
+        clf = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state)
+        self.assertIs(clf.random_state, state)
+        clf.fit(X_train, y_train)
+        y_pred1 = clf.predict(X_test, raw_score=True)
+        clf.fit(X_train, y_train)
+        y_pred2 = clf.predict(X_test, raw_score=True)
+        self.assertIs(clf.random_state, state)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_allclose,
+                          y_pred1, y_pred2)
 
     def test_feature_importances_single_leaf(self):
         data = load_iris()
