@@ -613,6 +613,19 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_allclose(evals_result['valid_0']['l1'], evals_result['valid_0']['custom_mae'])
         os.remove(model_name)
 
+    def test_continue_train_reused_dataset(self):
+        X, y = load_boston(True)
+        params = {
+            'objective': 'regression',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X, y, free_raw_data=False)
+        init_gbm = lgb.train(params, lgb_train, num_boost_round=5)
+        init_gbm_2 = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm)
+        init_gbm_3 = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm_2)
+        gbm = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm_3)
+        self.assertEqual(gbm.current_iteration(), 20)
+
     def test_continue_train_dart(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
