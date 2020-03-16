@@ -336,10 +336,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def random_state(self):
-        """
-            Optional attribute which stores the integer seed for random number generation.
-            Can be set using integer or a RandomState object which is used to derive an integer.
-        """
+        """Get and set integer seed for random number generation. Can be set using integer or a RandomState object which is used to derive an integer."""
         return self._random_state
 
     @random_state.setter
