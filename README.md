@@ -54,6 +54,8 @@ Some old update logs are available at [Key Events](https://github.com/microsoft/
 External (Unofficial) Repositories
 ----------------------------------
 
+Optuna LightGBM Tuner (Automated tuning of LightGBM hyperparameters code): https://github.com/optuna/optuna/blob/master/examples/lightgbm_tuner_simple.py
+
 Julia-package: https://github.com/Allardvm/LightGBM.jl
 
 JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
