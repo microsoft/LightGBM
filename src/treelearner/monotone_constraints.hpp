@@ -156,8 +156,25 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       UpdateConstraintsWithOutputs(is_numerical_split, leaf, new_leaf,
                                    monotone_type, right_output, left_output);
 
-      GoUpToFindLeavesToUpdate(tree, tree->leaf_parent(new_leaf), split_feature,
-                               split_info, split_info.threshold,
+      // Initialize variables to store information while going up the tree
+      int depth = tree->leaf_depth(new_leaf) - 1;
+
+      std::vector<int> *features_of_splits_going_up_from_original_leaf =
+          new std::vector<int>();
+      std::vector<uint32_t> *thresholds_of_splits_going_up_from_original_leaf =
+          new std::vector<uint32_t>();
+      std::vector<bool> *was_original_leaf_right_child_of_split =
+          new std::vector<bool>();
+
+      features_of_splits_going_up_from_original_leaf->reserve(depth);
+      thresholds_of_splits_going_up_from_original_leaf->reserve(depth);
+      was_original_leaf_right_child_of_split->reserve(depth);
+
+      GoUpToFindLeavesToUpdate(tree, tree->leaf_parent(new_leaf),
+                               features_of_splits_going_up_from_original_leaf,
+                               thresholds_of_splits_going_up_from_original_leaf,
+                               was_original_leaf_right_child_of_split,
+                               split_feature, split_info, split_info.threshold,
                                best_split_per_leaf);
     }
     return leaves_to_update_;
@@ -378,28 +395,6 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
             split_threshold, best_split_per_leaf);
       }
     }
-  }
-
-  void
-  GoUpToFindLeavesToUpdate(const Tree* tree, int node_idx, int split_feature,
-                           const SplitInfo& split_info,
-                           uint32_t split_threshold,
-                           const std::vector<SplitInfo>& best_split_per_leaf) {
-    int depth = tree->leaf_depth(~tree->left_child(node_idx)) - 1;
-
-    std::vector<int>* features_of_splits_going_up_from_original_leaf = new std::vector<int>();
-    std::vector<uint32_t>* thresholds_of_splits_going_up_from_original_leaf = new std::vector<uint32_t>();
-    std::vector<bool>* was_original_leaf_right_child_of_split = new std::vector<bool>();
-
-    features_of_splits_going_up_from_original_leaf->reserve(depth);
-    thresholds_of_splits_going_up_from_original_leaf->reserve(depth);
-    was_original_leaf_right_child_of_split->reserve(depth);
-
-    GoUpToFindLeavesToUpdate(
-        tree, node_idx, features_of_splits_going_up_from_original_leaf,
-        thresholds_of_splits_going_up_from_original_leaf,
-        was_original_leaf_right_child_of_split, split_feature, split_info,
-        split_threshold, best_split_per_leaf);
   }
 
   std::pair<bool, bool> ShouldKeepGoingLeftRight(
