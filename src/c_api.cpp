@@ -13,11 +13,11 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/LocaleContext.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/utils/LocaleContext.h>
 
 #include <string>
 #include <cstdio>
