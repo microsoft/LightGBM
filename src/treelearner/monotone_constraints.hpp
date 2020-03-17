@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <utility>
 #include <vector>
 #include "split_info.hpp"
 
@@ -48,7 +49,7 @@ struct ConstraintEntry {
 
 class LeafConstraintsBase {
  public:
-  virtual ~LeafConstraintsBase(){};
+  virtual ~LeafConstraintsBase(){}
   virtual const ConstraintEntry& Get(int leaf_idx) const = 0;
   virtual void Reset() = 0;
   virtual void BeforeSplit(const Tree* tree, int leaf, int new_leaf,
@@ -80,7 +81,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
                           bool is_numerical_split, int leaf, int new_leaf,
                           int8_t monotone_type, double right_output,
                           double left_output, int, const SplitInfo& ,
-                          const std::vector<SplitInfo>& ) override {
+                          const std::vector<SplitInfo>&) override {
     entries_[new_leaf] = entries_[leaf];
     if (is_numerical_split) {
       double mid = (left_output + right_output) / 2.0f;
@@ -150,7 +151,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
                           int new_leaf, int8_t monotone_type,
                           double right_output, double left_output,
                           int split_feature, const SplitInfo& split_info,
-                          const std::vector<SplitInfo>& best_split_per_leaf) override{
+                          const std::vector<SplitInfo>& best_split_per_leaf) override {
     leaves_to_update_.clear();
     if (leaf_is_in_monotone_subtree_[leaf]) {
       UpdateConstraintsWithOutputs(is_numerical_split, leaf, new_leaf,
@@ -219,8 +220,8 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       int split_feature, const SplitInfo& split_info, uint32_t split_threshold,
       const std::vector<SplitInfo>& best_split_per_leaf) {
 #ifdef DEBUG
-    CHECK(node_idx >= 0);
-    CHECK((unsigned int)node_idx < node_parent_.size());
+    CHECK_GE(node_idx >= 0);
+    CHECK_GE((unsigned int)node_idx < node_parent_.size());
 #endif
     int parent_idx = node_parent_[node_idx];
     // if not at the root
@@ -345,7 +346,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       }
       leaves_to_update_.push_back(leaf_idx);
 
-    } else { // if node
+    } else {  // if node
       // check if the children are contiguous with the original leaf
       std::pair<bool, bool> keep_going_left_right = ShouldKeepGoingLeftRight(
           tree, node_idx, features_of_splits_going_up_from_original_leaf,

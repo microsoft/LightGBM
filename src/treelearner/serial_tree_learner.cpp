@@ -630,7 +630,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
       best_split_info.left_output, inner_feature_index, best_split_info,
       best_split_per_leaf_);
   // update leave outputs if needed
-  for (auto leaf: leaves_need_update) {
+  for (auto leaf : leaves_need_update) {
     RecomputeBestSplitForLeaf(leaf, &best_split_per_leaf_[leaf]);
   }
 }
