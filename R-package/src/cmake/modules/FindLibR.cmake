@@ -105,7 +105,8 @@ else()
     )
 
     if(LIBR_EXECUTABLE MATCHES ".*lightgbm\\.Rcheck.*")
-      message(FATAL_ERROR "If you are seeing this error, it means you are running R CMD check and R is using '${LIBR_EXECUTABLE}'. Edit src/cmake/modulesFindLibR.cmake and add your R path to HINTS near this error")
+      message(FATAL_ERROR "If you are seeing this error, it means you are running R CMD check and R is using '${LIBR_EXECUTABLE}'.\
+        \nEdit src/cmake/modulesFindLibR.cmake and add your R path to HINTS near this error")
     endif()
   endif()
 
