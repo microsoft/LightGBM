@@ -83,9 +83,9 @@ if(APPLE)
       COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(R.home())"
       OUTPUT_VARIABLE LIBR_HOME
     )
-    set(LIBR_HOME ${LIBR_HOME} CACHE PATH "R home directory")
-    set(LIBR_INCLUDE_DIRS "${LIBR_HOME}/include" CACHE PATH "R include directory")
-    set(LIBR_LIB_DIR "${LIBR_HOME}/lib" CACHE PATH "R lib directory")
+    set(LIBR_HOME ${LIBR_HOME})
+    set(LIBR_INCLUDE_DIRS "${LIBR_HOME}/include")
+    set(LIBR_LIB_DIR "${LIBR_HOME}/lib")
   endif()
 
 # detection for UNIX & Win32
@@ -100,7 +100,7 @@ else()
     find_program(
       LIBR_EXECUTABLE
       NO_DEFAULT_PATH
-      HINTS "${CMAKE_CURRENT_BINARY_DIR}" "/usr/bin" "/usr/lib/"
+      HINTS "${CMAKE_CURRENT_BINARY_DIR}" "/usr/bin" "/usr/lib/" "/usr/local/bin/"
       NAMES R R.exe
     )
 
@@ -180,12 +180,6 @@ else()
     set(LIBR_INCLUDE_DIRS "${LIBR_HOME}/include")
     set(LIBR_LIB_DIR "${LIBR_HOME}/bin/${R_ARCH}")
 
-    message(STATUS "LIBR_HOME [${LIBR_HOME}]")
-    message(STATUS "LIBR_EXECUTABLE [${LIBR_EXECUTABLE}]")
-    message(STATUS "LIBR_INCLUDE_DIRS [${LIBR_INCLUDE_DIRS}]")
-    message(STATUS "LIBR_LIB_DIR [${LIBR_LIB_DIR}]")
-    message(STATUS "LIBR_CORE_LIBRARY [${LIBR_CORE_LIBRARY}]")
-
   endif()
 
 endif()
@@ -221,7 +215,6 @@ find_package_handle_standard_args(LibR DEFAULT_MSG
   LIBR_EXECUTABLE
   LIBR_INCLUDE_DIRS
   LIBR_LIB_DIR
-  LIBR_CORE_LIBRARY
 )
 
 if(LIBR_FOUND)
