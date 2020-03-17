@@ -178,7 +178,7 @@ lgb.cv <- function(params = list()
   if (!is.null(folds)) {
 
     # Check for list of folds or for single value
-    if (!is.list(folds) || length(folds) < 2L) {
+    if (!identical(class(folds), "list") || length(folds) < 2L) {
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     }
 

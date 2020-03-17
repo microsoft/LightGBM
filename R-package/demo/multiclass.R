@@ -1,4 +1,4 @@
-require(lightgbm)
+library(lightgbm)
 
 # We load the default iris dataset shipped with R
 data(iris)

@@ -1,4 +1,4 @@
-require(lightgbm)
+library(lightgbm)
 
 # We load the default iris dataset shipped with R
 data(iris)
@@ -43,16 +43,25 @@ probs_builtin <- exp(preds_builtin) / rowSums(exp(preds_builtin))
 custom_multiclass_obj <- function(preds, dtrain) {
     labels <- getinfo(dtrain, "label")
 
-    # preds is a matrix with rows corresponding to samples and colums corresponding to choices
+    # preds is a matrix with rows corresponding to samples and columns corresponding to choices
     preds <- matrix(preds, nrow = length(labels))
 
     # to prevent overflow, normalize preds by row
-    preds <- preds - apply(preds, 1L, max)
+    preds <- preds - apply(preds, MARGIN = 1L, max)
     prob <- exp(preds) / rowSums(exp(preds))
 
     # compute gradient
     grad <- prob
-    grad[cbind(seq_len(length(labels)), labels + 1L)] <- grad[cbind(seq_len(length(labels)), labels + 1L)] - 1L
+    subset_index <- as.matrix(
+        data.frame(
+            seq_len(length(labels))
+            , labels + 1L
+            , fix.empty.names = FALSE
+        )
+        , nrow = length(labels)
+        , dimnames = NULL
+    )
+    grad[subset_index] <- grad[subset_index] - 1L
 
     # compute hessian (approximation)
     hess <- 2.0 * prob * (1.0 - prob)
@@ -67,9 +76,18 @@ custom_multiclass_metric <- function(preds, dtrain) {
     preds <- preds - apply(preds, 1L, max)
     prob <- exp(preds) / rowSums(exp(preds))
 
+    subset_index <- as.matrix(
+        data.frame(
+            seq_len(length(labels))
+            , labels + 1L
+            , fix.empty.names = FALSE
+        )
+        , nrow = length(labels)
+        , dimnames = NULL
+    )
     return(list(
         name = "error"
-        , value = -mean(log(prob[cbind(seq_len(length(labels)), labels + 1L)]))
+        , value = -mean(log(prob[subset_index]))
         , higher_better = FALSE
     ))
 }
