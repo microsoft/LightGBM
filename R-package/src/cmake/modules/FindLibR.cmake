@@ -58,7 +58,7 @@ endfunction(create_rlib_for_msvc)
 # R version information is used to search for R's libraries in
 # the registry on Windows. Since this code is orchestrated by
 # an R script (src/install.libs.R), that script uses R's built-ins to
-# find the version of R and pass it through as a cmake variable
+# find the version of R and pass it through as a CMake variable
 if(CMAKE_R_VERSION)
   message("R version passed into FindLibR.cmake: ${CMAKE_R_VERSION}")
 else()
