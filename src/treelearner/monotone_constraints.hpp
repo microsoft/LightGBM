@@ -49,7 +49,7 @@ struct ConstraintEntry {
 
 class LeafConstraintsBase {
  public:
-  virtual ~LeafConstraintsBase(){}
+  virtual ~LeafConstraintsBase() {}
   virtual const ConstraintEntry& Get(int leaf_idx) const = 0;
   virtual void Reset() = 0;
   virtual void BeforeSplit(const Tree* tree, int leaf, int new_leaf,
@@ -126,8 +126,8 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       leaf_is_in_monotone_subtree_[new_leaf] = true;
     }
 #ifdef DEBUG
-    CHECK(new_leaf - 1 >= 0);
-    CHECK((unsigned int)(new_leaf - 1) < node_parent_.size());
+    CHECK_GE(new_leaf - 1, 0);
+    CHECK_LT((unsigned int)(new_leaf - 1), node_parent_.size());
 #endif
     node_parent_[new_leaf - 1] = tree->leaf_parent(leaf);
   }
@@ -326,9 +326,9 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
 
 #ifdef DEBUG
       if (update_max_constraints) {
-        CHECK(min_max_constraints.first >= tree->LeafOutput(leaf_idx));
+        CHECK_GE(min_max_constraints.first, tree->LeafOutput(leaf_idx));
       } else {
-        CHECK(min_max_constraints.second <= tree->LeafOutput(leaf_idx));
+        CHECK_LE(min_max_constraints.second, tree->LeafOutput(leaf_idx));
       }
 #endif
       // depending on which split made the current leaf and the original leaves contiguous,
