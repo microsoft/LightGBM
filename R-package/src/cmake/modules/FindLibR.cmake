@@ -216,6 +216,7 @@ find_package_handle_standard_args(LibR DEFAULT_MSG
   LIBR_EXECUTABLE
   LIBR_INCLUDE_DIRS
   LIBR_LIB_DIR
+  LIBR_CORE_LIBRARY
 )
 
 if(LIBR_FOUND)
