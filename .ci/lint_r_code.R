@@ -55,7 +55,7 @@ LINTERS_TO_USE <- list(
         fun = c(
             "cbind" = paste0(
                 "cbind is an unsafe way to build up a data frame. merge() or direct "
-                , "column assignment is preferred"
+                , "column assignment is preferred."
             )
             , "dyn.load" = "Directly loading/unloading .dll/.so files in package code should not be necessary."
             , "dyn.unload" = "Directly loading/unloading .dll/.so files in package code should not be necessary."
@@ -69,7 +69,7 @@ LINTERS_TO_USE <- list(
             , "rbind" = "data.table::rbindlist() is faster and safer than rbind(), and is preferred in this project."
             , "require" = paste0(
                 "library() is preferred to require() because it will raise an error immediately "
-                , "if a package is missing"
+                , "if a package is missing."
             )
         )
     )
