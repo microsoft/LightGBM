@@ -220,8 +220,8 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       int split_feature, const SplitInfo& split_info, uint32_t split_threshold,
       const std::vector<SplitInfo>& best_split_per_leaf) {
 #ifdef DEBUG
-    CHECK_GE(node_idx >= 0);
-    CHECK_GE((unsigned int)node_idx < node_parent_.size());
+    CHECK_GE(node_idx, 0);
+    CHECK_LT((unsigned int)node_idx, node_parent_.size());
 #endif
     int parent_idx = node_parent_[node_idx];
     // if not at the root
