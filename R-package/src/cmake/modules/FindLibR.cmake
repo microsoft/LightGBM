@@ -12,7 +12,7 @@
 #  LIBR_INCLUDE_DIRS
 #  LIBR_LIB_DIR
 #  LIBR_CORE_LIBRARY
-# and a cmake function to create R.lib for MSVC
+# and a CMake function to create R.lib for MSVC
 
 if(NOT R_ARCH)
   if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
