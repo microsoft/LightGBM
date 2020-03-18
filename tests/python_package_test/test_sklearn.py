@@ -244,7 +244,7 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_array_equal(clf1.feature_importances_, clf2.feature_importances_)
         df1 = clf1.booster_.model_to_string(num_iteration=0)
         df2 = clf2.booster_.model_to_string(num_iteration=0)
-        self.assertMultiLineEqual(df1,df2)
+        self.assertMultiLineEqual(df1, df2)
 
     def test_feature_importances_single_leaf(self):
         data = load_iris()
