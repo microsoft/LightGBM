@@ -138,6 +138,9 @@
     <ClInclude Include="..\include\LightGBM\utils\common.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\locale_context.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\LightGBM\utils\log.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
