@@ -466,8 +466,7 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
       len, &out_len,
       reserved_string_size, &required_string_size,
       ptr_names.data()
-    )
-  );
+  ));
   CHECK_EQ(out_len, len);
   CHECK_GE(reserved_string_size, required_string_size);
   auto merge_names = Common::Join<char*>(ptr_names, "\t");

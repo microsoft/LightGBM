@@ -508,7 +508,7 @@ class Booster {
       for (const auto& name : metric->GetName()) {
         if (idx < len) {
           std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
-          out_strs[idx][buffer_len-1] = '\0';
+          out_strs[idx][buffer_len - 1] = '\0';
         }
         *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
         ++idx;
@@ -523,7 +523,7 @@ class Booster {
     for (const auto& name : boosting_->FeatureNames()) {
       if (idx < len) {
         std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
-        out_strs[idx][buffer_len-1] = '\0';
+        out_strs[idx][buffer_len - 1] = '\0';
       }
       *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
       ++idx;
@@ -1366,28 +1366,24 @@ int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
   API_END();
 }
 
-int LGBM_BoosterGetEvalNames(
-  BoosterHandle handle,
-  const int len,
-  int* out_len,
-  const size_t buffer_len,
-  size_t* out_buffer_len,
-  char** out_strs)
-{
+int LGBM_BoosterGetEvalNames(BoosterHandle handle,
+                             const int len,
+                             int* out_len,
+                             const size_t buffer_len,
+                             size_t* out_buffer_len,
+                             char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalNames(out_strs, len, buffer_len, out_buffer_len);
   API_END();
 }
 
-int LGBM_BoosterGetFeatureNames(
-  BoosterHandle handle,
-  const int len,
-  int* out_len,
-  const size_t buffer_len,
-  size_t* out_buffer_len,
-  char** out_strs)
-{
+int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
+                                const int len,
+                                int* out_len,
+                                const size_t buffer_len,
+                                size_t* out_buffer_len,
+                                char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetFeatureNames(out_strs, len, buffer_len, out_buffer_len);

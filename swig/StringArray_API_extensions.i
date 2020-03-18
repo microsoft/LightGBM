@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 /**
  * This SWIG interface extension provides support to
  * allocate, return and manage arrays of strings through
