@@ -230,17 +230,19 @@ class TestSklearn(unittest.TestCase):
     def test_random_state_object(self):
         X, y = load_iris(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        state = np.random.RandomState(123)
-        clf = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state)
-        self.assertIs(clf.random_state, state)
-        clf.fit(X_train, y_train)
-        y_pred1 = clf.predict(X_test, raw_score=True)
-        clf.fit(X_train, y_train)
-        y_pred2 = clf.predict(X_test, raw_score=True)
-        self.assertIs(clf.random_state, state)
-        self.assertRaises(AssertionError,
-                          np.testing.assert_allclose,
-                          y_pred1, y_pred2)
+        state1 = np.random.RandomState(123)
+        state2 = np.random.RandomState(123)
+        clf1 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state1)
+        clf2 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state2)
+        self.assertIs(clf1.random_state, state1)
+        clf1.fit(X_train, y_train)
+        clf2.fit(X_train, y_train)
+        y_pred1 = clf1.predict(X_test, raw_score=True)
+        y_pred2 = clf2.predict(X_test, raw_score=True)
+        self.assertEqual(clf1.best_iteration_, clf2.best_iteration_)
+        self.assertEqual(clf1.best_score_, clf2.best_score_)
+        np.testing.assert_array_equal(y_pred1, y_pred2)
+        np.testing.assert_array_equal(clf1.feature_importances_, clf2.feature_importances_)
 
     def test_feature_importances_single_leaf(self):
         data = load_iris()
