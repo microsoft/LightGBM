@@ -29,13 +29,15 @@ endif()
 # Creates R.lib and R.def in the build directory for linking with MSVC
 function(create_rlib_for_msvc)
 
+  message("Creating R.lib and R.def")
+
   # various checks and warnings
   if(NOT WIN32 OR NOT MSVC)
     message(FATAL_ERROR "create_rlib_for_msvc() can only be used with MSVC")
   endif()
 
   if(NOT EXISTS "${LIBR_LIB_DIR}")
-    message(FATAL_ERROR "LIBR_LIB_DIR was not set!")
+    message(FATAL_ERROR "LIBR_LIB_DIR, '${LIBR_LIB_DIR}', not found")
   endif()
 
   find_program(GENDEF_EXE gendef)
@@ -145,30 +147,23 @@ endif()
 
 # ask R for the home path
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(R.home())"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(normalizePath(R.home(), winslash='/'))"
   OUTPUT_VARIABLE LIBR_HOME
 )
 
 # ask R for the include dir
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--no-save" "-e" "cat(R.home('include'))"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--no-save" "-e" "cat(normalizePath(R.home('include'), winslash='/'))"
   OUTPUT_VARIABLE LIBR_INCLUDE_DIRS
 )
 
+# C:/PROGRA~1/R/R-36~1.1/include
+
 # ask R for the lib dir
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--no-save" "-e" "cat(R.home('lib'))"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--no-save" "-e" "cat(normalizePath(R.home('lib'), winslash='/'))"
   OUTPUT_VARIABLE LIBR_LIB_DIR
 )
-
-if(WIN32 AND MSVC)
-
-  # create a local R.lib import library for R.dll if it doesn't exist
-  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/R.lib")
-    create_rlib_for_msvc()
-  endif()
-
-endif()
 
 # look for the core R library
 find_library(
@@ -182,6 +177,15 @@ set(LIBR_EXECUTABLE ${LIBR_EXECUTABLE} CACHE PATH "R executable")
 set(LIBR_INCLUDE_DIRS ${LIBR_INCLUDE_DIRS} CACHE PATH "R include directory")
 set(LIBR_LIB_DIR ${LIBR_LIB_DIR} CACHE PATH "R shared libraries directory")
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
+
+if(WIN32 AND MSVC)
+
+  # create a local R.lib import library for R.dll if it doesn't exist
+  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/R.lib")
+    create_rlib_for_msvc()
+  endif()
+
+endif()
 
 # define find requirements
 include(FindPackageHandleStandardArgs)
