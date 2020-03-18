@@ -72,7 +72,7 @@ if(USE_R35)
 endif(USE_R35)
 
 if(BUILD_FOR_R)
-    list(APPEND CMAKE_MODULE_PATH "${lightgbm_SOURCE_DIR}/cmake/modules")
+    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_HOME [${LIBR_HOME}]")
     message(STATUS "LIBR_EXECUTABLE [${LIBR_EXECUTABLE}]")

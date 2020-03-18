@@ -47,12 +47,14 @@ function(create_rlib_for_msvc)
   endif()
 
   # extract symbols from R.dll into R.def and R.lib import library
-  execute_process(COMMAND gendef
+  execute_process(COMMAND ${GENDEF_EXE}
     "-" "${LIBR_LIB_DIR}/R.dll"
-    OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def")
-  execute_process(COMMAND dlltool
+    OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def"
+  )
+  execute_process(COMMAND ${DLLTOOL_EXE}
     "--input-def" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
-    "--output-lib" "${CMAKE_CURRENT_BINARY_DIR}/R.lib")
+    "--output-lib" "${CMAKE_CURRENT_BINARY_DIR}/R.lib"
+  )
 endfunction(create_rlib_for_msvc)
 
 # R version information is used to search for R's libraries in
@@ -195,12 +197,11 @@ if(WIN32 AND MSVC)
 endif()
 
 # look for the core R library
-find_library(LIBR_CORE_LIBRARY NAMES R
-  HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_LIB_DIR}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}")
-
-if(LIBR_CORE_LIBRARY-NOTFOUND)
-  message(STATUS "Could not find R core shared library.")
-endif()
+find_library(
+  LIBR_CORE_LIBRARY
+  NAMES R
+  HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_LIB_DIR}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
+)
 
 set(LIBR_HOME ${LIBR_HOME} CACHE PATH "R home directory")
 set(LIBR_EXECUTABLE ${LIBR_EXECUTABLE} CACHE PATH "R executable")
