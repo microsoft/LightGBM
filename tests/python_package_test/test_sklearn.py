@@ -239,10 +239,12 @@ class TestSklearn(unittest.TestCase):
         clf2.fit(X_train, y_train)
         y_pred1 = clf1.predict(X_test, raw_score=True)
         y_pred2 = clf2.predict(X_test, raw_score=True)
-        self.assertEqual(clf1.best_iteration_, clf2.best_iteration_)
         self.assertEqual(clf1.best_score_, clf2.best_score_)
         np.testing.assert_array_equal(y_pred1, y_pred2)
         np.testing.assert_array_equal(clf1.feature_importances_, clf2.feature_importances_)
+        df1 = clf1.booster_.model_to_string(num_iteration=0)
+        df2 = clf2.booster_.model_to_string(num_iteration=0)
+        self.assertMultiLineEqual(df1,df2)
 
     def test_feature_importances_single_leaf(self):
         data = load_iris()
