@@ -1044,19 +1044,17 @@ class TestEngine(unittest.TestCase):
                     return False
             return True
 
-        number_of_trials = 1
-        for _ in range(number_of_trials):
-            for monotone_constraints_method in ["basic", "intermediate"]:
-                trainset = self.generate_trainset_for_monotone_constraints_tests()
-                params = {
-                    'min_data': 20,
-                    'num_leaves': 20,
-                    'monotone_constraints': [1, -1, 0],
-                    "monotone_constraints_method": monotone_constraints_method,
-                    "use_missing": False,
-                }
-                constrained_model = lgb.train(params, trainset)
-                self.assertTrue(is_correctly_constrained(constrained_model))
+        for monotone_constraints_method in ["basic", "intermediate"]:
+            trainset = self.generate_trainset_for_monotone_constraints_tests()
+            params = {
+                'min_data': 20,
+                'num_leaves': 20,
+                'monotone_constraints': [1, -1, 0],
+                "monotone_constraints_method": monotone_constraints_method,
+                "use_missing": False,
+            }
+            constrained_model = lgb.train(params, trainset)
+            self.assertTrue(is_correctly_constrained(constrained_model))
 
     def test_max_bin_by_feature(self):
         col1 = np.arange(0, 100)[:, np.newaxis]
