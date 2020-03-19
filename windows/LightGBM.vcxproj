@@ -250,6 +250,7 @@
     <ClInclude Include="..\include\LightGBM\utils\common.h" />
     <ClInclude Include="..\include\LightGBM\utils\file_io.h" />
     <ClInclude Include="..\include\LightGBM\utils\json11.h" />
+    <ClInclude Include="..\include\LightGBM\utils\locale_context.h" />
     <ClInclude Include="..\include\LightGBM\utils\log.h" />
     <ClInclude Include="..\include\LightGBM\utils\openmp_wrapper.h" />
     <ClInclude Include="..\include\LightGBM\utils\pipeline_reader.h" />
