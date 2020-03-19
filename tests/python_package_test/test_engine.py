@@ -46,6 +46,9 @@ def constant_metric(preds, train_data):
 def decreasing_metric(preds, train_data):
     return ('decreasing_metric', next(decreasing_generator), False)
 
+def categorize(continuous_x):
+    return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
+
 
 class TestEngine(unittest.TestCase):
     def test_binary(self):
@@ -995,14 +998,16 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(subset_data_3.get_data(), "lgb_train_data.bin")
         self.assertEqual(subset_data_4.get_data(), "lgb_train_data.bin")
 
-    # test if categorical features and monotone features can both be in a dataset without causing issues
-    def generate_trainset_for_monotone_constraints_tests(self):
+    def generate_trainset_for_monotone_constraints_tests(self, x3_to_category=True):
         number_of_dpoints = 3000
         x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
         x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
         x3_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
         x = np.column_stack(
-            (x1_positively_correlated_with_y, x2_negatively_correlated_with_y, x3_negatively_correlated_with_y))
+            (x1_positively_correlated_with_y,
+             x2_negatively_correlated_with_y,
+             categorize(x3_negatively_correlated_with_y) if x3_to_category else x3_negatively_correlated_with_y))
+
         zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
         scales = 10. * (np.random.random(6) + 0.5)
         y = (scales[0] * x1_positively_correlated_with_y
@@ -1012,7 +1017,10 @@ class TestEngine(unittest.TestCase):
              - scales[4] * x3_negatively_correlated_with_y
              - np.cos(scales[5] * np.pi * x3_negatively_correlated_with_y)
              + zs)
-        trainset = lgb.Dataset(x, label=y)
+        categorical_features = []
+        if x3_to_category:
+            categorical_features = [2]
+        trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features)
         return trainset
 
     def test_monotone_constraints(self):
@@ -1025,7 +1033,7 @@ class TestEngine(unittest.TestCase):
         def is_non_monotone(y):
             return (np.diff(y) < 0.0).any() and (np.diff(y) > 0.0).any()
 
-        def is_correctly_constrained(learner):
+        def is_correctly_constrained(learner, x3_to_category=True):
             iterations = 10
             n = 1000
             variable_x = np.linspace(0, 1, n).reshape((n, 1))
@@ -1036,7 +1044,9 @@ class TestEngine(unittest.TestCase):
                 monotonically_increasing_y = learner.predict(monotonically_increasing_x)
                 monotonically_decreasing_x = np.column_stack((fixed_x, variable_x, fixed_x))
                 monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
-                non_monotone_x = np.column_stack((fixed_x, fixed_x, variable_x))
+                non_monotone_x = np.column_stack((fixed_x,
+                                                  fixed_x,
+                                                  categorize(variable_x) if x3_to_category else variable_x))
                 non_monotone_y = learner.predict(non_monotone_x)
                 if not (is_increasing(monotonically_increasing_y)
                         and is_decreasing(monotonically_decreasing_y)
@@ -1044,17 +1054,18 @@ class TestEngine(unittest.TestCase):
                     return False
             return True
 
-        for monotone_constraints_method in ["basic", "intermediate"]:
-            trainset = self.generate_trainset_for_monotone_constraints_tests()
-            params = {
-                'min_data': 20,
-                'num_leaves': 20,
-                'monotone_constraints': [1, -1, 0],
-                "monotone_constraints_method": monotone_constraints_method,
-                "use_missing": False,
-            }
-            constrained_model = lgb.train(params, trainset)
-            self.assertTrue(is_correctly_constrained(constrained_model))
+        for test_with_categorical_variable in [True, False]:
+            for monotone_constraints_method in ["basic", "intermediate"]:
+                trainset = self.generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
+                params = {
+                    'min_data': 20,
+                    'num_leaves': 20,
+                    'monotone_constraints': [1, -1, 0],
+                    "monotone_constraints_method": monotone_constraints_method,
+                    "use_missing": False,
+                }
+                constrained_model = lgb.train(params, trainset)
+                self.assertTrue(is_correctly_constrained(constrained_model, test_with_categorical_variable))
 
     def test_max_bin_by_feature(self):
         col1 = np.arange(0, 100)[:, np.newaxis]
