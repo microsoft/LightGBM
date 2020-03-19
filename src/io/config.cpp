@@ -319,13 +319,13 @@ void Config::CheckParamConflict() {
   }
   if (is_parallel && monotone_constraints_method == std::string("intermediate")) {
     // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
-    Log::Warning("cannot use \"intermediate\" monotone constraints in parallel learning, auto set to \"basic\" method.");
+    Log::Warning("Cannot use \"intermediate\" monotone constraints in parallel learning, auto set to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
   if (feature_fraction_bynode != 1.0 && monotone_constraints_method == std::string("intermediate")) {
     // "intermediate" monotone constraints need to recompute splits. If the features are sampled when computing the
     // split initially, then the sampling needs to be recorded or done once again, which is currently not supported
-    Log::Warning("cannot use \"intermediate\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
+    Log::Warning("Cannot use \"intermediate\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
 }
