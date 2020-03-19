@@ -236,13 +236,13 @@ class TestSklearn(unittest.TestCase):
         clf2 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state2)
         # Test if random_state is properly stored
         self.assertIs(clf1.random_state, state1)
+        self.assertIs(clf2.random_state, state2)
         # Test if two random states produce identical models
         clf1.fit(X_train, y_train)
         clf2.fit(X_train, y_train)
         y_pred1 = clf1.predict(X_test, raw_score=True)
         y_pred2 = clf2.predict(X_test, raw_score=True)
-        self.assertEqual(clf1.best_score_, clf2.best_score_)
-        np.testing.assert_array_equal(y_pred1, y_pred2)
+        np.testing.assert_allclose(y_pred1, y_pred2)
         np.testing.assert_array_equal(clf1.feature_importances_, clf2.feature_importances_)
         df1 = clf1.booster_.model_to_string(num_iteration=0)
         df2 = clf2.booster_.model_to_string(num_iteration=0)
@@ -251,8 +251,10 @@ class TestSklearn(unittest.TestCase):
         clf1.fit(X_train, y_train)
         y_pred1_refit = clf1.predict(X_test, raw_score=True)
         df3 = clf1.booster_.model_to_string(num_iteration=0)
+        self.assertIs(clf1.random_state, state1)
+        self.assertIs(clf2.random_state, state2)
         self.assertRaises(AssertionError,
-                          np.testing.assert_array_equal,
+                          np.testing.assert_allclose,
                           y_pred1, y_pred1_refit)
         self.assertRaises(AssertionError,
                           self.assertMultiLineEqual,
