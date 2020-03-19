@@ -1051,7 +1051,7 @@ class TestEngine(unittest.TestCase):
                 params = {
                     'min_data': 20,
                     'num_leaves': 20,
-                    'monotone_constraints': '1,-1,0',
+                    'monotone_constraints': [1, -1, 0],
                     "monotone_constraints_method": monotone_constraints_method,
                     "use_missing": False,
                 }
