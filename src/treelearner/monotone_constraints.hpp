@@ -11,6 +11,7 @@
 #include <limits>
 #include <utility>
 #include <vector>
+
 #include "split_info.hpp"
 
 namespace LightGBM {
