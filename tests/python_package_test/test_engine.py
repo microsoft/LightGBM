@@ -1044,7 +1044,7 @@ class TestEngine(unittest.TestCase):
                     return False
             return True
 
-        number_of_trials = 10
+        number_of_trials = 1
         for _ in range(number_of_trials):
             for monotone_constraints_method in ["basic", "intermediate"]:
                 trainset = self.generate_trainset_for_monotone_constraints_tests()
