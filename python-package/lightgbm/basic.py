@@ -2925,7 +2925,7 @@ class Booster(object):
                     raise ValueError("Length of eval names doesn't equal with num_evals")
                 if reserved_string_buffer_size < required_string_buffer_size.value:
                     raise BufferError(
-                        "Allocated eval buffer size ({}) was inferior to the needed size ({})."
+                        "Allocated eval name buffer size ({}) was inferior to the needed size ({})."
                         .format(reserved_string_buffer_size, required_string_buffer_size.value)
                     )
                 self.__name_inner_eval = \
