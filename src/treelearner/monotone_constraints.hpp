@@ -128,7 +128,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
     }
 #ifdef DEBUG
     CHECK_GE(new_leaf - 1, 0);
-    CHECK_LT((unsigned int)(new_leaf - 1), node_parent_.size());
+    CHECK_LT(static_cast<size_t>(new_leaf - 1), node_parent_.size());
 #endif
     node_parent_[new_leaf - 1] = tree->leaf_parent(leaf);
   }
@@ -196,7 +196,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       // leaf need to be updated
       // therefore, for the same feature, there is no use going down from the
       // second time going up on the right (or on the left)
-      for (unsigned int split_idx = 0;
+      for (size_t split_idx = 0;
            split_idx < features_of_splits_going_up_from_original_leaf.size();
            ++split_idx) {
         if (features_of_splits_going_up_from_original_leaf[split_idx] ==
@@ -222,7 +222,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       const std::vector<SplitInfo>& best_split_per_leaf) {
 #ifdef DEBUG
     CHECK_GE(node_idx, 0);
-    CHECK_LT((unsigned int)node_idx, node_parent_.size());
+    CHECK_LT(static_cast<size_t>(node_idx), node_parent_.size());
 #endif
     int parent_idx = node_parent_[node_idx];
     // if not at the root
@@ -412,7 +412,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
     // the original leaves if so the algorithm should keep going down these nodes
     // to update constraints
     if (is_split_numerical) {
-      for (unsigned int i = 0;
+      for (size_t i = 0;
            i < features_of_splits_going_up_from_original_leaf.size(); ++i) {
         if (features_of_splits_going_up_from_original_leaf[i] ==
             inner_feature) {
