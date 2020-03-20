@@ -46,6 +46,7 @@ def constant_metric(preds, train_data):
 def decreasing_metric(preds, train_data):
     return ('decreasing_metric', next(decreasing_generator), False)
 
+
 def categorize(continuous_x):
     return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
 
