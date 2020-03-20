@@ -82,11 +82,11 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"lambda", "lambda_l2"},
   {"min_split_gain", "min_gain_to_split"},
   {"rate_drop", "drop_rate"},
-  {"monotone_constraining_method", "monotone_constraints_method"},
-  {"mc_method", "monotone_constraints_method"},
   {"topk", "top_k"},
   {"mc", "monotone_constraints"},
   {"monotone_constraint", "monotone_constraints"},
+  {"monotone_constraining_method", "monotone_constraints_method"},
+  {"mc_method", "monotone_constraints_method"},
   {"feature_contrib", "feature_contri"},
   {"fc", "feature_contri"},
   {"fp", "feature_contri"},
@@ -203,7 +203,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "lambda_l2",
   "min_gain_to_split",
   "drop_rate",
-  "monotone_constraints_method",
   "max_drop",
   "skip_drop",
   "xgboost_dart_mode",
@@ -218,6 +217,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "max_cat_to_onehot",
   "top_k",
   "monotone_constraints",
+  "monotone_constraints_method",
   "feature_contri",
   "forcedsplits_filename",
   "refit_decay_rate",
@@ -375,8 +375,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK_GE(drop_rate, 0.0);
   CHECK_LE(drop_rate, 1.0);
 
-  GetString(params, "monotone_constraints_method", &monotone_constraints_method);
-
   GetInt(params, "max_drop", &max_drop);
 
   GetDouble(params, "skip_drop", &skip_drop);
@@ -418,6 +416,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   if (GetString(params, "monotone_constraints", &tmp_str)) {
     monotone_constraints = Common::StringToArray<int8_t>(tmp_str, ',');
   }
+
+  GetString(params, "monotone_constraints_method", &monotone_constraints_method);
 
   if (GetString(params, "feature_contri", &tmp_str)) {
     feature_contri = Common::StringToArray<double>(tmp_str, ',');
@@ -624,7 +624,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambda_l2: " << lambda_l2 << "]\n";
   str_buf << "[min_gain_to_split: " << min_gain_to_split << "]\n";
   str_buf << "[drop_rate: " << drop_rate << "]\n";
-  str_buf << "[monotone_constraints_method: " << monotone_constraints_method << "]\n";
   str_buf << "[max_drop: " << max_drop << "]\n";
   str_buf << "[skip_drop: " << skip_drop << "]\n";
   str_buf << "[xgboost_dart_mode: " << xgboost_dart_mode << "]\n";
@@ -639,6 +638,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_cat_to_onehot: " << max_cat_to_onehot << "]\n";
   str_buf << "[top_k: " << top_k << "]\n";
   str_buf << "[monotone_constraints: " << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints), ",") << "]\n";
+  str_buf << "[monotone_constraints_method: " << monotone_constraints_method << "]\n";
   str_buf << "[feature_contri: " << Common::Join(feature_contri, ",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
   str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";

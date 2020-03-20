@@ -376,12 +376,6 @@ Learning Control Parameters
 
    -  dropout rate: a fraction of previous trees to drop during the dropout
 
--  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = string, aliases: ``monotone_constraining_method``, ``mc_method``
-
-   -  used only if ``monotone_constraints`` is set
-
-   -  monotone constraints method: if set to "basic", the most basic monotone constraints method will be used. It does not slow the library at all, but over-constrains the predictions. If set to "intermediate", a more advanced method will be used, which may slow the library very slightly. However, the intermediate method is much less constraining than the basic method and should significantly improve the results.
-
 -  ``max_drop`` :raw-html:`<a id="max_drop" title="Permalink to this parameter" href="#max_drop">&#x1F517;&#xFE0E;</a>`, default = ``50``, type = int
 
    -  used only in ``dart``
@@ -465,6 +459,16 @@ Learning Control Parameters
    -  ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
+
+-  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = string, aliases: ``monotone_constraining_method``, ``mc_method``
+
+   -  used only if ``monotone_constraints`` is set
+
+   -  monotone constraints method
+
+      -  ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
+
+      -  ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
 
 -  ``feature_contri`` :raw-html:`<a id="feature_contri" title="Permalink to this parameter" href="#feature_contri">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double, aliases: ``feature_contrib``, ``fc``, ``fp``, ``feature_penalty``
 
