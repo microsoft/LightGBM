@@ -350,7 +350,7 @@ namespace {
 struct JsonParser final {
     /* State
      */
-    const string &str;
+    const string str;
     size_t i;
     string &err;
     bool failed;
