@@ -2736,14 +2736,24 @@ class Booster(object):
         num_feature = self.num_feature()
         # Get name of features
         tmp_out_len = ctypes.c_int(0)
-        string_buffers = [ctypes.create_string_buffer(255) for i in range_(num_feature)]
+        reserved_string_buffer_size = 255
+        required_string_buffer_size = ctypes.c_size_t(0)
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(num_feature)]
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
             self.handle,
+            num_feature,
             ctypes.byref(tmp_out_len),
+            reserved_string_buffer_size,
+            ctypes.byref(required_string_buffer_size),
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
             raise ValueError("Length of feature names doesn't equal with num_feature")
+        if reserved_string_buffer_size < required_string_buffer_size.value:
+            raise BufferError(
+                "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
+                .format(reserved_string_buffer_size, required_string_buffer_size.value)
+            )
         return [string_buffers[i].value.decode() for i in range_(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
@@ -2923,14 +2933,26 @@ class Booster(object):
             if self.__num_inner_eval > 0:
                 # Get name of evals
                 tmp_out_len = ctypes.c_int(0)
-                string_buffers = [ctypes.create_string_buffer(255) for i in range_(self.__num_inner_eval)]
+                reserved_string_buffer_size = 255
+                required_string_buffer_size = ctypes.c_size_t(0)
+                string_buffers = [
+                    ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(self.__num_inner_eval)
+                ]
                 ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                     self.handle,
+                    self.__num_inner_eval,
                     ctypes.byref(tmp_out_len),
+                    reserved_string_buffer_size,
+                    ctypes.byref(required_string_buffer_size),
                     ptr_string_buffers))
                 if self.__num_inner_eval != tmp_out_len.value:
                     raise ValueError("Length of eval names doesn't equal with num_evals")
+                if reserved_string_buffer_size < required_string_buffer_size.value:
+                    raise BufferError(
+                        "Allocated eval name buffer size ({}) was inferior to the needed size ({})."
+                        .format(reserved_string_buffer_size, required_string_buffer_size.value)
+                    )
                 self.__name_inner_eval = \
                     [string_buffers[i].value.decode() for i in range_(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \

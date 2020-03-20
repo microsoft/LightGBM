@@ -555,23 +555,39 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle,
 /*!
  * \brief Get names of evaluation datasets.
  * \param handle Handle of booster
+ * \param len Number of ``char*`` pointers stored at ``out_strs``.
+ *            If smaller than the max size, only this many strings are copied
  * \param[out] out_len Total number of evaluation datasets
+ * \param buffer_len Size of pre-allocated strings. 
+ *                   Content is copied up to ``buffer_len - 1`` and null-terminated
+ * \param[out] out_buffer_len String sizes required to do the full string copies
  * \param[out] out_strs Names of evaluation datasets, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle,
+                                               const int len,
                                                int* out_len,
+                                               const size_t buffer_len,
+                                               size_t* out_buffer_len,
                                                char** out_strs);
 
 /*!
  * \brief Get names of features.
  * \param handle Handle of booster
+ * \param len Number of ``char*`` pointers stored at ``out_strs``.
+ *            If smaller than the max size, only this many strings are copied
  * \param[out] out_len Total number of features
+ * \param buffer_len Size of pre-allocated strings.
+ *                   Content is copied up to ``buffer_len - 1`` and null-terminated
+ * \param[out] out_buffer_len String sizes required to do the full string copies
  * \param[out] out_strs Names of features, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
+                                                  const int len,
                                                   int* out_len,
+                                                  const size_t buffer_len,
+                                                  size_t* out_buffer_len,
                                                   char** out_strs);
 
 /*!
