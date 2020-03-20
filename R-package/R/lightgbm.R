@@ -182,6 +182,7 @@ globalVariables(c(
     , ".N"
     , ".SD"
     , "abs_contribution"
+    , "bar_color"
     , "Contribution"
     , "Cover"
     , "Feature"
