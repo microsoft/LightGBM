@@ -32,7 +32,9 @@
     return call_state;\
   }
 
-using namespace LightGBM;
+using LightGBM::Common::Join;
+using LightGBM::Common::Split;
+using LightGBM::Log;
 
 LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
   if (str_len > INT32_MAX) {
@@ -134,7 +136,7 @@ LGBM_SE LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
   LGBM_SE feature_names,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  auto vec_names = Common::Split(R_CHAR_PTR(feature_names), '\t');
+  auto vec_names = Split(R_CHAR_PTR(feature_names), '\t');
   std::vector<const char*> vec_sptr;
   int len = static_cast<int>(vec_names.size());
   for (int i = 0; i < len; ++i) {
@@ -163,7 +165,7 @@ LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   CHECK_CALL(LGBM_DatasetGetFeatureNames(R_GET_PTR(handle),
     ptr_names.data(), &out_len));
   CHECK_EQ(len, out_len);
-  auto merge_str = Common::Join<char*>(ptr_names, "\t");
+  auto merge_str = Join<char*>(ptr_names, "\t");
   EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len, merge_str.size() + 1);
   R_API_END();
 }
@@ -468,7 +470,7 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
       ptr_names.data()));
   CHECK_EQ(out_len, len);
   CHECK_GE(reserved_string_size, required_string_size);
-  auto merge_names = Common::Join<char*>(ptr_names, "\t");
+  auto merge_names = Join<char*>(ptr_names, "\t");
   EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len, merge_names.size() + 1);
   R_API_END();
 }
