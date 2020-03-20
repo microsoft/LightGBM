@@ -12,10 +12,10 @@ from sklearn.model_selection import train_test_split
 
 
 class TestBasic(unittest.TestCase):
-
     def test(self):
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True),
-                                                            test_size=0.1, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(
+            *load_breast_cancer(True), test_size=0.1, random_state=2
+        )
         train_data = lgb.Dataset(X_train, label=y_train)
         valid_data = train_data.create_valid(X_test, label=y_test)
 
@@ -27,7 +27,7 @@ class TestBasic(unittest.TestCase):
             "verbose": -1,
             "num_threads": 1,
             "max_bin": 255,
-            "gpu_use_dp": True
+            "gpu_use_dp": True,
         }
         bst = lgb.Booster(params, train_data)
         bst.add_valid(valid_data, "valid_1")
@@ -61,47 +61,84 @@ class TestBasic(unittest.TestCase):
         np.testing.assert_array_equal(pred_from_matr, pred_from_model_file)
 
         # check early stopping is working. Make it stop very early, so the scores should be very close to zero
-        pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
+        pred_parameter = {
+            "pred_early_stop": True,
+            "pred_early_stop_freq": 5,
+            "pred_early_stop_margin": 1.5,
+        }
         pred_early_stopping = bst.predict(X_test, **pred_parameter)
         # scores likely to be different, but prediction should still be the same
-        np.testing.assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping))
+        np.testing.assert_array_equal(
+            np.sign(pred_from_matr), np.sign(pred_early_stopping)
+        )
 
         # test that shape is checked during prediction
         bad_X_test = X_test[:, 1:]
         bad_shape_error_msg = "The number of features in data*"
-        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                       bst.predict, bad_X_test)
-        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                       bst.predict, sparse.csr_matrix(bad_X_test))
-        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                       bst.predict, sparse.csc_matrix(bad_X_test))
+        np.testing.assert_raises_regex(
+            lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, bad_X_test
+        )
+        np.testing.assert_raises_regex(
+            lgb.basic.LightGBMError,
+            bad_shape_error_msg,
+            bst.predict,
+            sparse.csr_matrix(bad_X_test),
+        )
+        np.testing.assert_raises_regex(
+            lgb.basic.LightGBMError,
+            bad_shape_error_msg,
+            bst.predict,
+            sparse.csc_matrix(bad_X_test),
+        )
         with open(tname, "w+b") as f:
             dump_svmlight_file(bad_X_test, y_test, f)
-        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                       bst.predict, tname)
+        np.testing.assert_raises_regex(
+            lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, tname
+        )
         with open(tname, "w+b") as f:
             dump_svmlight_file(X_test, y_test, f, zero_based=False)
-        np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                       bst.predict, tname)
+        np.testing.assert_raises_regex(
+            lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, tname
+        )
         os.remove(tname)
 
     def test_chunked_dataset(self):
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(
+            *load_breast_cancer(True), test_size=0.1, random_state=2
+        )
 
         chunk_size = X_train.shape[0] // 10 + 1
-        X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
-        X_test = [X_test[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_test.shape[0] // chunk_size + 1)]
+        X_train = [
+            X_train[i * chunk_size : (i + 1) * chunk_size, :]
+            for i in range(X_train.shape[0] // chunk_size + 1)
+        ]
+        X_test = [
+            X_test[i * chunk_size : (i + 1) * chunk_size, :]
+            for i in range(X_test.shape[0] // chunk_size + 1)
+        ]
 
-        train_data = lgb.Dataset(X_train, label=y_train, params={"bin_construct_sample_cnt": 100})
-        valid_data = train_data.create_valid(X_test, label=y_test, params={"bin_construct_sample_cnt": 100})
+        train_data = lgb.Dataset(
+            X_train, label=y_train, params={"bin_construct_sample_cnt": 100}
+        )
+        valid_data = train_data.create_valid(
+            X_test, label=y_test, params={"bin_construct_sample_cnt": 100}
+        )
         train_data.construct()
         valid_data.construct()
 
     def test_subset_group(self):
-        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                           '../../examples/lambdarank/rank.train'))
-        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                          '../../examples/lambdarank/rank.train.query'))
+        X_train, y_train = load_svmlight_file(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                "../../examples/lambdarank/rank.train",
+            )
+        )
+        q_train = np.loadtxt(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                "../../examples/lambdarank/rank.train.query",
+            )
+        )
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
         self.assertEqual(len(lgb_train.get_group()), 201)
         subset = lgb_train.subset(list(range(10))).construct()
@@ -138,7 +175,7 @@ class TestBasic(unittest.TestCase):
         self.maxDiff = None
         X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
-        names = ['col_%d' % i for i in range(5)]
+        names = ["col_%d" % i for i in range(5)]
         for j in range(1, 5):
             d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
             d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
@@ -150,9 +187,9 @@ class TestBasic(unittest.TestCase):
             with tempfile.NamedTemporaryFile() as f:
                 dname = f.name
             d._dump_text(dname)
-            with open(d1name, 'rt') as d1f:
+            with open(d1name, "rt") as d1f:
                 d1txt = d1f.read()
-            with open(dname, 'rt') as df:
+            with open(dname, "rt") as df:
                 dtxt = df.read()
             os.remove(dname)
             os.remove(d1name)
@@ -162,7 +199,7 @@ class TestBasic(unittest.TestCase):
         self.maxDiff = None
         X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
-        names = ['col_%d' % i for i in range(5)]
+        names = ["col_%d" % i for i in range(5)]
         for j in range(1, 5):
             d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
             d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
@@ -182,9 +219,9 @@ class TestBasic(unittest.TestCase):
                 d1name = d1f.name
             b1.save_model(d1name)
             b.save_model(dname)
-            with open(dname, 'rt') as df:
+            with open(dname, "rt") as df:
                 dtxt = df.read()
-            with open(d1name, 'rt') as d1f:
+            with open(d1name, "rt") as d1f:
                 d1txt = d1f.read()
             self.assertEqual(dtxt, d1txt)
 
@@ -192,7 +229,7 @@ class TestBasic(unittest.TestCase):
         X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
         y = np.random.random(100)
-        names = ['col_%d' % i for i in range(5)]
+        names = ["col_%d" % i for i in range(5)]
         ds = lgb.Dataset(X, feature_name=names).construct()
         ds.set_label(y)
         base = lgb.Booster(train_set=ds)
@@ -201,12 +238,14 @@ class TestBasic(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as f:
             basename = f.name
         base.save_model(basename)
-        with open(basename, 'rt') as f:
+        with open(basename, "rt") as f:
             basetxt = f.read()
         # Set extremely harsh penalties, so CEGB will block most splits.
-        cases = [{'cegb_penalty_feature_coupled': [50, 100, 10, 25, 30]},
-                 {'cegb_penalty_feature_lazy': [1, 2, 3, 4, 5]},
-                 {'cegb_penalty_split': 1}]
+        cases = [
+            {"cegb_penalty_feature_coupled": [50, 100, 10, 25, 30]},
+            {"cegb_penalty_feature_lazy": [1, 2, 3, 4, 5]},
+            {"cegb_penalty_split": 1},
+        ]
         for case in cases:
             booster = lgb.Booster(train_set=ds, params=case)
             for k in range(10):
@@ -214,7 +253,7 @@ class TestBasic(unittest.TestCase):
             with tempfile.NamedTemporaryFile() as f:
                 casename = f.name
             booster.save_model(casename)
-            with open(casename, 'rt') as f:
+            with open(casename, "rt") as f:
                 casetxt = f.read()
             self.assertNotEqual(basetxt, casetxt)
 
@@ -222,16 +261,30 @@ class TestBasic(unittest.TestCase):
         X = np.random.random((100, 5))
         X[:, [1, 3]] = 0
         y = np.random.random(100)
-        names = ['col_%d' % i for i in range(5)]
+        names = ["col_%d" % i for i in range(5)]
         ds = lgb.Dataset(X, feature_name=names).construct()
         ds.set_label(y)
         # Compare pairs of penalties, to ensure scaling works as intended
-        pairs = [({'cegb_penalty_feature_coupled': [1, 2, 1, 2, 1]},
-                  {'cegb_penalty_feature_coupled': [0.5, 1, 0.5, 1, 0.5], 'cegb_tradeoff': 2}),
-                 ({'cegb_penalty_feature_lazy': [0.01, 0.02, 0.03, 0.04, 0.05]},
-                  {'cegb_penalty_feature_lazy': [0.005, 0.01, 0.015, 0.02, 0.025], 'cegb_tradeoff': 2}),
-                 ({'cegb_penalty_split': 1},
-                  {'cegb_penalty_split': 2, 'cegb_tradeoff': 0.5})]
+        pairs = [
+            (
+                {"cegb_penalty_feature_coupled": [1, 2, 1, 2, 1]},
+                {
+                    "cegb_penalty_feature_coupled": [0.5, 1, 0.5, 1, 0.5],
+                    "cegb_tradeoff": 2,
+                },
+            ),
+            (
+                {"cegb_penalty_feature_lazy": [0.01, 0.02, 0.03, 0.04, 0.05]},
+                {
+                    "cegb_penalty_feature_lazy": [0.005, 0.01, 0.015, 0.02, 0.025],
+                    "cegb_tradeoff": 2,
+                },
+            ),
+            (
+                {"cegb_penalty_split": 1},
+                {"cegb_penalty_split": 2, "cegb_tradeoff": 0.5},
+            ),
+        ]
         for (p1, p2) in pairs:
             booster1 = lgb.Booster(train_set=ds, params=p1)
             booster2 = lgb.Booster(train_set=ds, params=p2)
@@ -243,40 +296,47 @@ class TestBasic(unittest.TestCase):
             # Reset booster1's parameters to p2, so the parameter section of the file matches.
             booster1.reset_parameter(p2)
             booster1.save_model(p1name)
-            with open(p1name, 'rt') as f:
+            with open(p1name, "rt") as f:
                 p1txt = f.read()
             with tempfile.NamedTemporaryFile() as f:
                 p2name = f.name
             booster2.save_model(p2name)
-            with open(p2name, 'rt') as f:
+            with open(p2name, "rt") as f:
                 p2txt = f.read()
             self.maxDiff = None
             self.assertEqual(p1txt, p2txt)
 
     def test_consistent_state_for_dataset_fields(self):
-
         def check_asserts(data):
             np.testing.assert_allclose(data.label, data.get_label())
-            np.testing.assert_allclose(data.label, data.get_field('label'))
+            np.testing.assert_allclose(data.label, data.get_field("label"))
             self.assertFalse(np.isnan(data.label[0]))
             self.assertFalse(np.isinf(data.label[1]))
             np.testing.assert_allclose(data.weight, data.get_weight())
-            np.testing.assert_allclose(data.weight, data.get_field('weight'))
+            np.testing.assert_allclose(data.weight, data.get_field("weight"))
             self.assertFalse(np.isnan(data.weight[0]))
             self.assertFalse(np.isinf(data.weight[1]))
             np.testing.assert_allclose(data.init_score, data.get_init_score())
-            np.testing.assert_allclose(data.init_score, data.get_field('init_score'))
+            np.testing.assert_allclose(data.init_score, data.get_field("init_score"))
             self.assertFalse(np.isnan(data.init_score[0]))
             self.assertFalse(np.isinf(data.init_score[1]))
-            self.assertTrue(np.all(np.isclose([data.label[0], data.weight[0], data.init_score[0]],
-                                              data.label[0])))
+            self.assertTrue(
+                np.all(
+                    np.isclose(
+                        [data.label[0], data.weight[0], data.init_score[0]],
+                        data.label[0],
+                    )
+                )
+            )
             self.assertAlmostEqual(data.label[1], data.weight[1])
 
         X, y = load_breast_cancer(True)
         sequence = np.ones(y.shape[0])
         sequence[0] = np.nan
         sequence[1] = np.inf
-        lgb_data = lgb.Dataset(X, sequence, weight=sequence, init_score=sequence).construct()
+        lgb_data = lgb.Dataset(
+            X, sequence, weight=sequence, init_score=sequence
+        ).construct()
         check_asserts(lgb_data)
         lgb_data = lgb.Dataset(X, y).construct()
         lgb_data.set_label(sequence)

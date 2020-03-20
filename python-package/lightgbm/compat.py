@@ -7,14 +7,14 @@ import sys
 
 import numpy as np
 
-is_py3 = (sys.version_info[0] == 3)
+is_py3 = sys.version_info[0] == 3
 
 """Compatibility between Python2 and Python3"""
 if is_py3:
     zip_ = zip
     string_type = str
     numeric_types = (int, float, bool)
-    integer_types = (int, )
+    integer_types = (int,)
     range_ = range
 
     def argc_(func):
@@ -23,9 +23,12 @@ if is_py3:
 
     def decode_string(bytestring):
         """Decode C bytestring to ordinary string."""
-        return bytestring.decode('utf-8')
+        return bytestring.decode("utf-8")
+
+
 else:
     from itertools import izip as zip_
+
     string_type = basestring
     numeric_types = (int, long, float, bool)
     integer_types = (int, long)
@@ -38,6 +41,7 @@ else:
     def decode_string(bytestring):
         """Decode C bytestring to ordinary string."""
         return bytestring
+
 
 """json"""
 try:
@@ -62,6 +66,7 @@ def json_default_with_numpy(obj):
 try:
     from pandas import Series, DataFrame
     from pandas.api.types import is_sparse as is_dtype_sparse
+
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
@@ -81,6 +86,7 @@ except ImportError:
 """matplotlib"""
 try:
     import matplotlib
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -88,6 +94,7 @@ except ImportError:
 """graphviz"""
 try:
     import graphviz
+
     GRAPHVIZ_INSTALLED = True
 except ImportError:
     GRAPHVIZ_INSTALLED = False
@@ -95,6 +102,7 @@ except ImportError:
 """datatable"""
 try:
     import datatable
+
     if hasattr(datatable, "Frame"):
         DataTable = datatable.Frame
     else:
@@ -116,8 +124,13 @@ try:
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils.class_weight import compute_sample_weight
     from sklearn.utils.multiclass import check_classification_targets
-    from sklearn.utils.validation import (assert_all_finite, check_X_y,
-                                          check_array, check_consistent_length)
+    from sklearn.utils.validation import (
+        assert_all_finite,
+        check_X_y,
+        check_array,
+        check_consistent_length,
+    )
+
     try:
         from sklearn.model_selection import StratifiedKFold, GroupKFold
         from sklearn.exceptions import NotFittedError
@@ -126,6 +139,7 @@ try:
         from sklearn.utils.validation import NotFittedError
     SKLEARN_INSTALLED = True
     from sklearn import __version__ as SKLEARN_VERSION
+
     _LGBMModelBase = BaseEstimator
     _LGBMRegressorBase = RegressorMixin
     _LGBMClassifierBase = ClassifierMixin
@@ -141,7 +155,7 @@ try:
     _LGBMComputeSampleWeight = compute_sample_weight
 except ImportError:
     SKLEARN_INSTALLED = False
-    SKLEARN_VERSION = '0.0.0'
+    SKLEARN_VERSION = "0.0.0"
     _LGBMModelBase = object
     _LGBMClassifierBase = object
     _LGBMRegressorBase = object

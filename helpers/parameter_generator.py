@@ -37,7 +37,7 @@ def get_parameter_infos(config_hpp):
                 cur_key = line.split("region")[1].strip()
                 keys.append((cur_key, key_lvl))
                 member_infos.append([])
-            elif '#pragma endregion' in line:
+            elif "#pragma endregion" in line:
                 key_lvl -= 1
                 if cur_key is not None:
                     cur_key = None
@@ -117,7 +117,7 @@ def get_alias(infos):
         for y in x:
             if "alias" in y:
                 name = y["name"][0]
-                alias = y["alias"][0].split(',')
+                alias = y["alias"][0].split(",")
                 for name2 in alias:
                     pairs.append((name2.strip(), name))
     return pairs
@@ -145,7 +145,7 @@ def parse_check(check, reverse=False):
         idx = 2
         float(check[idx:])
     if reverse:
-        reversed_sign = {'<': '>', '>': '<', '<=': '>=', '>=': '<='}
+        reversed_sign = {"<": ">", ">": "<", "<=": ">=", ">=": "<="}
         return check[idx:], reversed_sign[check[:idx]]
     else:
         return check[idx:], check[:idx]
@@ -169,9 +169,14 @@ def set_one_var_from_string(name, param_type, checks):
         Lines of auto config file with getting and checks of one parameter value.
     """
     ret = ""
-    univar_mapper = {"int": "GetInt", "double": "GetDouble", "bool": "GetBool", "std::string": "GetString"}
+    univar_mapper = {
+        "int": "GetInt",
+        "double": "GetDouble",
+        "bool": "GetBool",
+        "std::string": "GetString",
+    }
     if "vector" not in param_type:
-        ret += "  %s(params, \"%s\", &%s);\n" % (univar_mapper[param_type], name, name)
+        ret += '  %s(params, "%s", &%s);\n' % (univar_mapper[param_type], name, name)
         if len(checks) > 0:
             check_mapper = {"<": "LT", ">": "GT", "<=": "LE", ">=": "GE"}
             for check in checks:
@@ -179,7 +184,7 @@ def set_one_var_from_string(name, param_type, checks):
                 ret += "  CHECK_%s(%s, %s);\n" % (check_mapper[sign], name, value)
         ret += "\n"
     else:
-        ret += "  if (GetString(params, \"%s\", &tmp_str)) {\n" % (name)
+        ret += '  if (GetString(params, "%s", &tmp_str)) {\n' % (name)
         type2 = param_type.split("<")[1][:-1]
         if type2 == "std::string":
             ret += "    %s = Common::Split(tmp_str.c_str(), ',');\n" % (name)
@@ -202,49 +207,73 @@ def gen_parameter_description(sections, descriptions, params_rst):
         Path to the file with parameters documentation.
     """
     params_to_write = []
-    lvl_mapper = {1: '-', 2: '~'}
+    lvl_mapper = {1: "-", 2: "~"}
     for (section_name, section_lvl), section_params in zip(sections, descriptions):
         heading_sign = lvl_mapper[section_lvl]
-        params_to_write.append('{0}\n{1}'.format(section_name, heading_sign * len(section_name)))
+        params_to_write.append(
+            "{0}\n{1}".format(section_name, heading_sign * len(section_name))
+        )
         for param_desc in section_params:
-            name = param_desc['name'][0]
-            default_raw = param_desc['default'][0]
-            default = default_raw.strip('"') if len(default_raw.strip('"')) > 0 else default_raw
-            param_type = param_desc.get('type', param_desc['inner_type'])[0].split(':')[-1].split('<')[-1].strip('>')
-            options = param_desc.get('options', [])
+            name = param_desc["name"][0]
+            default_raw = param_desc["default"][0]
+            default = (
+                default_raw.strip('"')
+                if len(default_raw.strip('"')) > 0
+                else default_raw
+            )
+            param_type = (
+                param_desc.get("type", param_desc["inner_type"])[0]
+                .split(":")[-1]
+                .split("<")[-1]
+                .strip(">")
+            )
+            options = param_desc.get("options", [])
             if len(options) > 0:
-                options_str = ', options: ``{0}``'.format('``, ``'.join([x.strip() for x in options[0].split(',')]))
+                options_str = ", options: ``{0}``".format(
+                    "``, ``".join([x.strip() for x in options[0].split(",")])
+                )
             else:
-                options_str = ''
-            aliases = param_desc.get('alias', [])
+                options_str = ""
+            aliases = param_desc.get("alias", [])
             if len(aliases) > 0:
-                aliases_str = ', aliases: ``{0}``'.format('``, ``'.join([x.strip() for x in aliases[0].split(',')]))
+                aliases_str = ", aliases: ``{0}``".format(
+                    "``, ``".join([x.strip() for x in aliases[0].split(",")])
+                )
             else:
-                aliases_str = ''
-            checks = sorted(param_desc.get('check', []))
+                aliases_str = ""
+            checks = sorted(param_desc.get("check", []))
             checks_len = len(checks)
             if checks_len > 1:
                 number1, sign1 = parse_check(checks[0])
                 number2, sign2 = parse_check(checks[1], reverse=True)
-                checks_str = ', constraints: ``{0} {1} {2} {3} {4}``'.format(number2, sign2, name, sign1, number1)
+                checks_str = ", constraints: ``{0} {1} {2} {3} {4}``".format(
+                    number2, sign2, name, sign1, number1
+                )
             elif checks_len == 1:
                 number, sign = parse_check(checks[0])
-                checks_str = ', constraints: ``{0} {1} {2}``'.format(name, sign, number)
+                checks_str = ", constraints: ``{0} {1} {2}``".format(name, sign, number)
             else:
-                checks_str = ''
-            main_desc = '-  ``{0}`` :raw-html:`<a id="{0}" title="Permalink to this parameter" href="#{0}">&#x1F517;&#xFE0E;</a>`, default = ``{1}``, type = {2}{3}{4}{5}'.format(name, default, param_type, options_str, aliases_str, checks_str)
+                checks_str = ""
+            main_desc = '-  ``{0}`` :raw-html:`<a id="{0}" title="Permalink to this parameter" href="#{0}">&#x1F517;&#xFE0E;</a>`, default = ``{1}``, type = {2}{3}{4}{5}'.format(
+                name, default, param_type, options_str, aliases_str, checks_str
+            )
             params_to_write.append(main_desc)
-            params_to_write.extend([' ' * 3 * int(desc[0][-1]) + '-  ' + desc[1] for desc in param_desc['desc']])
+            params_to_write.extend(
+                [
+                    " " * 3 * int(desc[0][-1]) + "-  " + desc[1]
+                    for desc in param_desc["desc"]
+                ]
+            )
 
     with open(params_rst) as original_params_file:
         all_lines = original_params_file.read()
-        before, start_sep, _ = all_lines.partition('.. start params list\n\n')
-        _, end_sep, after = all_lines.partition('\n\n.. end params list')
+        before, start_sep, _ = all_lines.partition(".. start params list\n\n")
+        _, end_sep, after = all_lines.partition("\n\n.. end params list")
 
     with open(params_rst, "w") as new_params_file:
         new_params_file.write(before)
         new_params_file.write(start_sep)
-        new_params_file.write('\n\n'.join(params_to_write))
+        new_params_file.write("\n\n".join(params_to_write))
         new_params_file.write(end_sep)
         new_params_file.write(after)
 
@@ -277,11 +306,13 @@ def gen_parameter_code(config_hpp, config_out_cpp):
 """
     str_to_write += "#include<LightGBM/config.h>\nnamespace LightGBM {\n"
     # alias table
-    str_to_write += "const std::unordered_map<std::string, std::string>& Config::alias_table() {\n"
+    str_to_write += (
+        "const std::unordered_map<std::string, std::string>& Config::alias_table() {\n"
+    )
     str_to_write += "  static std::unordered_map<std::string, std::string> aliases({\n"
 
     for pair in alias:
-        str_to_write += "  {\"%s\", \"%s\"},\n" % (pair[0], pair[1])
+        str_to_write += '  {"%s", "%s"},\n' % (pair[0], pair[1])
     str_to_write += "  });\n"
     str_to_write += "  return aliases;\n"
     str_to_write += "}\n\n"
@@ -291,13 +322,13 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "  static std::unordered_set<std::string> params({\n"
 
     for name in names:
-        str_to_write += "  \"%s\",\n" % (name)
+        str_to_write += '  "%s",\n' % (name)
     str_to_write += "  });\n"
     str_to_write += "  return params;\n"
     str_to_write += "}\n\n"
     # from strings
     str_to_write += "void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {\n"
-    str_to_write += "  std::string tmp_str = \"\";\n"
+    str_to_write += '  std::string tmp_str = "";\n'
     for x in infos:
         for y in x:
             if "[doc-only]" in y:
@@ -321,11 +352,17 @@ def gen_parameter_code(config_hpp, config_out_cpp):
             name = y["name"][0]
             if "vector" in param_type:
                 if "int8" in param_type:
-                    str_to_write += "  str_buf << \"[%s: \" << Common::Join(Common::ArrayCast<int8_t, int>(%s), \",\") << \"]\\n\";\n" % (name, name)
+                    str_to_write += (
+                        '  str_buf << "[%s: " << Common::Join(Common::ArrayCast<int8_t, int>(%s), ",") << "]\\n";\n'
+                        % (name, name)
+                    )
                 else:
-                    str_to_write += "  str_buf << \"[%s: \" << Common::Join(%s, \",\") << \"]\\n\";\n" % (name, name)
+                    str_to_write += (
+                        '  str_buf << "[%s: " << Common::Join(%s, ",") << "]\\n";\n'
+                        % (name, name)
+                    )
             else:
-                str_to_write += "  str_buf << \"[%s: \" << %s << \"]\\n\";\n" % (name, name)
+                str_to_write += '  str_buf << "[%s: " << %s << "]\\n";\n' % (name, name)
     # tails
     str_to_write += "  return str_buf.str();\n"
     str_to_write += "}\n\n"
@@ -338,8 +375,12 @@ def gen_parameter_code(config_hpp, config_out_cpp):
 
 if __name__ == "__main__":
     current_dir = os.path.abspath(os.path.dirname(__file__))
-    config_hpp = os.path.join(current_dir, os.path.pardir, 'include', 'LightGBM', 'config.h')
-    config_out_cpp = os.path.join(current_dir, os.path.pardir, 'src', 'io', 'config_auto.cpp')
-    params_rst = os.path.join(current_dir, os.path.pardir, 'docs', 'Parameters.rst')
+    config_hpp = os.path.join(
+        current_dir, os.path.pardir, "include", "LightGBM", "config.h"
+    )
+    config_out_cpp = os.path.join(
+        current_dir, os.path.pardir, "src", "io", "config_auto.cpp"
+    )
+    params_rst = os.path.join(current_dir, os.path.pardir, "docs", "Parameters.rst")
     sections, descriptions = gen_parameter_code(config_hpp, config_out_cpp)
     gen_parameter_description(sections, descriptions, params_rst)

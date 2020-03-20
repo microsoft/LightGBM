@@ -28,7 +28,7 @@ from sphinx.errors import VersionRequirementError
 from subprocess import PIPE, Popen
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
-LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
+LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, "python-package")
 sys.path.insert(0, LIB_PATH)
 
 # -- mock out modules
@@ -37,8 +37,15 @@ try:
 except ImportError:
     from mock import Mock  # Python 2.x
 
-MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'matplotlib', 'pandas', 'graphviz']
+MOCK_MODULES = [
+    "numpy",
+    "scipy",
+    "scipy.sparse",
+    "sklearn",
+    "matplotlib",
+    "pandas",
+    "graphviz",
+]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -55,28 +62,28 @@ class IgnoredDirective(Directive):
 
 # -- General configuration ------------------------------------------------
 
-os.environ['LIGHTGBM_BUILD_DOC'] = '1'
-C_API = os.environ.get('C_API', '').lower().strip() != 'no'
-RTD = bool(os.environ.get('READTHEDOCS', ''))
+os.environ["LIGHTGBM_BUILD_DOC"] = "1"
+C_API = os.environ.get("C_API", "").lower().strip() != "no"
+RTD = bool(os.environ.get("READTHEDOCS", ""))
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
+needs_sphinx = "1.3"  # Due to sphinx.ext.napoleon
 if needs_sphinx > sphinx.__version__:
-    message = 'This project needs at least Sphinx v%s' % needs_sphinx
+    message = "This project needs at least Sphinx v%s" % needs_sphinx
     raise VersionRequirementError(message)
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.todo',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
 ]
 
-autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
+autodoc_default_flags = ["members", "inherited-members", "show-inheritance"]
 autodoc_default_options = {
     "members": True,
     "inherited-members": True,
@@ -84,26 +91,26 @@ autodoc_default_options = {
 }
 
 # Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
-autosummary_generate = ['Python-API.rst']
+autosummary_generate = ["Python-API.rst"]
 
 # Only the class' docstring is inserted.
-autoclass_content = 'class'
+autoclass_content = "class"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = 'LightGBM'
-copyright = '%s, Microsoft Corporation' % str(datetime.datetime.now().year)
-author = 'Microsoft Corporation'
+project = "LightGBM"
+copyright = "%s, Microsoft Corporation" % str(datetime.datetime.now().year)
+author = "Microsoft Corporation"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-with open(os.path.join(CURR_PATH, os.path.pardir, 'VERSION.txt'), 'r') as f:
+with open(os.path.join(CURR_PATH, os.path.pardir, "VERSION.txt"), "r") as f:
     # The short X.Y version.
     version = f.read().strip()
 
@@ -120,20 +127,18 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'default'
+pygments_style = "default"
 
 # -- Configuration for C API docs generation ------------------------------
 
 if C_API:
-    extensions.extend([
-        'breathe',
-    ])
-    breathe_projects = {
-        "LightGBM": os.path.join(CURR_PATH, 'doxyoutput', 'xml')
-    }
+    extensions.extend(
+        ["breathe",]
+    )
+    breathe_projects = {"LightGBM": os.path.join(CURR_PATH, "doxyoutput", "xml")}
     breathe_default_project = "LightGBM"
     breathe_domain_by_extension = {
         "h": "c",
@@ -144,24 +149,24 @@ if C_API:
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'includehidden': False,
+    "includehidden": False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'LightGBMdoc'
+htmlhelp_basename = "LightGBMdoc"
 
 
 def generate_doxygen_xml(app):
@@ -173,9 +178,10 @@ def generate_doxygen_xml(app):
         The application object representing the Sphinx process.
     """
     doxygen_args = [
-        "INPUT={}".format(os.path.join(CURR_PATH, os.path.pardir,
-                                       'include', 'LightGBM', 'c_api.h')),
-        "OUTPUT_DIRECTORY={}".format(os.path.join(CURR_PATH, 'doxyoutput')),
+        "INPUT={}".format(
+            os.path.join(CURR_PATH, os.path.pardir, "include", "LightGBM", "c_api.h")
+        ),
+        "OUTPUT_DIRECTORY={}".format(os.path.join(CURR_PATH, "doxyoutput")),
         "GENERATE_HTML=NO",
         "GENERATE_LATEX=NO",
         "GENERATE_XML=YES",
@@ -190,22 +196,26 @@ def generate_doxygen_xml(app):
         "SORT_BRIEF_DOCS=YES",
         "WARN_AS_ERROR=YES",
     ]
-    doxygen_input = '\n'.join(doxygen_args)
+    doxygen_input = "\n".join(doxygen_args)
     is_py3 = sys.version[0] == "3"
     if is_py3:
         doxygen_input = bytes(doxygen_input, "utf-8")
-    if not os.path.exists(os.path.join(CURR_PATH, 'doxyoutput')):
-        os.makedirs(os.path.join(CURR_PATH, 'doxyoutput'))
+    if not os.path.exists(os.path.join(CURR_PATH, "doxyoutput")):
+        os.makedirs(os.path.join(CURR_PATH, "doxyoutput"))
     try:
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
         # Refer to https://github.com/svenevs/exhale
         # /blob/fe7644829057af622e467bb529db6c03a830da99/exhale/deploy.py#L99-L111
-        process = Popen(["doxygen", "-"],
-                        stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        process = Popen(["doxygen", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = process.communicate(doxygen_input)
-        output = '\n'.join([i.decode('utf-8') if is_py3 else i
-                            for i in (stdout, stderr) if i is not None])
+        output = "\n".join(
+            [
+                i.decode("utf-8") if is_py3 else i
+                for i in (stdout, stderr)
+                if i is not None
+            ]
+        )
         if process.returncode != 0:
             raise RuntimeError(output)
         else:
@@ -242,23 +252,28 @@ def generate_r_docs(app):
     sed -i'.bak' '/# Build the package (do not touch this line!)/q' build_r.R
     Rscript build_r.R
     Rscript build_r_site.R
-    """.format(os.path.join(CURR_PATH, os.path.pardir))
+    """.format(
+        os.path.join(CURR_PATH, os.path.pardir)
+    )
     try:
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
         # Refer to https://github.com/svenevs/exhale
         # /blob/fe7644829057af622e467bb529db6c03a830da99/exhale/deploy.py#L99-L111
-        process = Popen(['/bin/bash'],
-                        stdin=PIPE, stdout=PIPE, stderr=PIPE,
-                        universal_newlines=True)
+        process = Popen(
+            ["/bin/bash"], stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True
+        )
         stdout, stderr = process.communicate(commands)
-        output = '\n'.join([i for i in (stdout, stderr) if i is not None])
+        output = "\n".join([i for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
         else:
             print(output)
     except BaseException as e:
-        raise Exception("An error has occurred while generating documentation for R-package\n" + str(e))
+        raise Exception(
+            "An error has occurred while generating documentation for R-package\n"
+            + str(e)
+        )
 
 
 def setup(app):
@@ -269,18 +284,23 @@ def setup(app):
     app : object
         The application object representing the Sphinx process.
     """
-    first_run = not os.path.exists(os.path.join(CURR_PATH, '_FIRST_RUN.flag'))
+    first_run = not os.path.exists(os.path.join(CURR_PATH, "_FIRST_RUN.flag"))
     if first_run and RTD:
-        open(os.path.join(CURR_PATH, '_FIRST_RUN.flag'), 'w').close()
+        open(os.path.join(CURR_PATH, "_FIRST_RUN.flag"), "w").close()
     if C_API:
         app.connect("builder-inited", generate_doxygen_xml)
     else:
-        app.add_directive('doxygenfile', IgnoredDirective)
+        app.add_directive("doxygenfile", IgnoredDirective)
     if RTD:  # build R docs only on Read the Docs site
         if first_run:
             app.connect("builder-inited", generate_r_docs)
-        app.connect("build-finished",
-                    lambda app, exception: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
-                                                     os.path.join(app.outdir, "R"), verbose=0))
-    add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
+        app.connect(
+            "build-finished",
+            lambda app, exception: copy_tree(
+                os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
+                os.path.join(app.outdir, "R"),
+                verbose=0,
+            ),
+        )
+    add_js_file = getattr(app, "add_js_file", False) or app.add_javascript
     add_js_file("js/script.js")
