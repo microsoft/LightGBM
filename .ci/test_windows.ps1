@@ -69,7 +69,6 @@ if ($env:TASK -eq "r-package"){
 
   $env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
   Write-Output "PATH: $env:PATH"
-  Check-Output $False
   $env:BINPREF = "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/"
 
   # set up R if it doesn't exist yet
@@ -89,6 +88,9 @@ if ($env:TASK -eq "r-package"){
       Write-Output "Installing Rtools"
       Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools" ; Check-Output $?
       Write-Output "Done installing Rtools"
+
+      Rscript.exe -e "cat('libberty bibberty')"
+      Check-Output $False
 
       # download Miktex
       Write-Output "Downloading MiKTeX"
