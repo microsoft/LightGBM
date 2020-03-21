@@ -72,20 +72,28 @@ if ($env:TASK -eq "r-package"){
   # set up R if it doesn't exist yet
   if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
 
+      Write-Output "Downloading R and Rtools"
+
       # download R and RTools
       (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe", "R-win.exe")
       (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe", "Rtools.exe")
 
       # Install R
-      Start-Process -FilePath .\R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\R /COMPONENTS=main,x64"
-      Start-Process -FilePath .\Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools"
+      Write-Output "Installing R"
+      Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\R /COMPONENTS=main,x64" ; Check-Output $?
+
+      Write-Output "Installing Rtools"
+      Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools" ; Check-Output $?
 
       # download Miktex
+      Write-Output "Downloading miktex"
       (New-Object System.Net.WebClient).DownloadFile("https://miktex.org/download/win/miktexsetup-x64.zip", "miktexsetup-x64.zip")
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
-      .\miktex\miktexsetup.exe --local-package-repository=.\miktex\download --package-set=essential --quiet download
-      .\miktex\download\miktexsetup.exe --portable="$env:R_LIB_PATH\miktex" --quiet install
+      Write-Output "Installing Miktex"
+      .\miktex\miktexsetup.exe --local-package-repository=.\miktex\download --package-set=essential --quiet download ; Check-Output $?
+      .\miktex\download\miktexsetup.exe --portable="$env:R_LIB_PATH\miktex" --quiet install ; Check-Output $?
+      Write-Output "Done installing all the stuff"
   }
 
   initexmf --set-config-value [MPM]AutoInstall=1
@@ -96,14 +104,17 @@ if ($env:TASK -eq "r-package"){
   Add-Content .Rprofile "options(pkgType = 'binary')"
   Add-Content .Rprofile "options(install.packages.check.source = 'no')"
 
-  Rscript -e "install.packes(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'))" ; Check-Output $?
+  Write-Output "Installing dependencies"
+  Rscript.exe -e "install.packes(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'))" ; Check-Output $?
 
-  Rscript build_r.R ; Check-Output $?
+  Write-Output "Building R package"
+  Rscript.exe build_r.R ; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
   $PKG_NAME = $PKG_FILE_NAME.BaseName.split("_")[0]
   $LOG_FILE_NAME = "$PKG_NAME.Rcheck/00check.log"
 
+  Write-Output "Running R CMD check"
   R.exe CMD check "${PKG_FILE_NAME}" --as-cran --no-multiarch; Check-Output $?
 
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
