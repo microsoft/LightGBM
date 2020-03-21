@@ -68,15 +68,15 @@ if ($env:TASK -eq "r-package"){
   if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
 
       # download R and RTools
-      (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/base/R-$env:R_WINDOWS_VERSION-win.exe", ./R-win.exe)
-      (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe", ./Rtools.exe)
+      (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/base/R-$env:R_WINDOWS_VERSION-win.exe", "R-win.exe")
+      (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe", "Rtools.exe")
 
       # Install R
       Start-Process -FilePath .\R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\R /COMPONENTS=main,x64"
       Start-Process -FilePath .\Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools"
 
       # download Miktex
-      (New-Object System.Net.WebClient).DownloadFile(https://miktex.org/download/win/miktexsetup-x64.zip, ./miktexsetup-x64.zip)
+      (New-Object System.Net.WebClient).DownloadFile("https://miktex.org/download/win/miktexsetup-x64.zip", "miktexsetup-x64.zip")
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
       .\miktex\miktexsetup.exe --local-package-repository=.\miktex\download --package-set=essential --quiet download
