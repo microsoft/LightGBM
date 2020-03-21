@@ -53,6 +53,9 @@ if ($env:TASK -eq "regular") {
   jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $?  # run all notebooks
 }
 
+# TODO:
+# * https://cran.r-project.org/bin/windows/base/old/3.6.1/R-3.6.1-win.exe
+
 # test R package
 # based on https://github.com/RGF-team/rgf/blob/master/R-package/.R.appveyor.ps1
 if ($env:TASK -eq "r-package"){
@@ -70,7 +73,7 @@ if ($env:TASK -eq "r-package"){
   if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
 
       # download R and RTools
-      (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/base/R-$env:R_WINDOWS_VERSION-win.exe", "R-win.exe")
+      (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe", "R-win.exe")
       (New-Object System.Net.WebClient).DownloadFile("https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe", "Rtools.exe")
 
       # Install R
