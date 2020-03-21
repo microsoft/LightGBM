@@ -196,19 +196,11 @@ class Tree {
   std::string ToIfElse(int index, bool predict_leaf_index) const;
 
   inline static bool IsZero(double fval) {
-    if (fval > -kZeroThreshold && fval <= kZeroThreshold) {
-      return true;
-    } else {
-      return false;
-    }
+    return (fval >= -kZeroThreshold && fval <= kZeroThreshold);
   }
 
   inline static double MaybeRoundToZero(double fval) {
-    if (fval > -kZeroThreshold && fval <= kZeroThreshold) {
-      return 0;
-    } else {
-      return fval;
-    }
+    return IsZero(fval) ? 0 : fval;
   }
 
   inline static bool GetDecisionType(int8_t decision_type, int8_t mask) {
