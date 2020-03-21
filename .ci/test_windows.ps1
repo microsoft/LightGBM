@@ -61,7 +61,7 @@ if ($env:TASK -eq "regular") {
 if ($env:TASK -eq "r-package"){
 
   # Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
-  $env:R_LIB_PATH = "C:/Program Files/R"
+  $env:R_LIB_PATH = "C:\Program Files"
   Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
 
   tzutil /s "GMT Standard Time"
