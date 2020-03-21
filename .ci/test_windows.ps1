@@ -57,7 +57,9 @@ if ($env:TASK -eq "regular") {
 # based on https://github.com/RGF-team/rgf/blob/master/R-package/.R.appveyor.ps1
 if ($env:TASK -eq "r-package"){
 
-  Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
+  # Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
+  $env:R_LIB_PATH = "C:/Program Files"
+
   tzutil /s "GMT Standard Time"
   [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
