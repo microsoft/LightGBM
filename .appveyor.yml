@@ -37,8 +37,8 @@ install:
   - conda create -q -y -n test-env python=%PYTHON_VERSION% joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
   - activate test-env
 
-# build_script:
-#   - cd %APPVEYOR_BUILD_FOLDER%\python-package
+build_script:
+   - cd %APPVEYOR_BUILD_FOLDER%\python-package
 #   - IF "%COMPILER%"=="MINGW" (
 #     python setup.py install --mingw)
 #     ELSE (
