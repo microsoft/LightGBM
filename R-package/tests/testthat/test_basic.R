@@ -58,6 +58,7 @@ test_that("train and predict softmax", {
 
 
 test_that("use of multiple eval metrics works", {
+  metrics <- list("binary_error", "auc", "binary_logloss")
   bst <- lightgbm(
     data = train$data
     , label = train$label
@@ -65,9 +66,15 @@ test_that("use of multiple eval metrics works", {
     , learning_rate = 1.0
     , nrounds = 10L
     , objective = "binary"
-    , metric = list("binary_error", "auc", "binary_logloss")
+    , metric = metrics
   )
   expect_false(is.null(bst$record_evals))
+  expect_named(
+    bst$record_evals[["train"]]
+    , unlist(metrics)
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
 })
 
 test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for binary classification", {
@@ -203,6 +210,35 @@ test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset 
 })
 
 context("lgb.train()")
+
+test_that("lgb.train() works as expected with multiple eval metrics", {
+  metrics <- c("binary_error", "auc", "binary_logloss")
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      train$data
+      , label = train$label
+    )
+    , learning_rate = 1.0
+    , nrounds = 10L
+    , params = list(
+      objective = "binary"
+      , metric = metrics
+    )
+    , valids = list(
+      "train" = lgb.Dataset(
+        train$data
+        , label = train$label
+      )
+    )
+  )
+  expect_false(is.null(bst$record_evals))
+  expect_named(
+    bst$record_evals[["train"]]
+    , unlist(metrics)
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+})
 
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
