@@ -553,7 +553,23 @@ class Booster {
 
 }  // namespace LightGBM
 
-using namespace LightGBM;
+// explicitly declare symbols from LightGBM namespace
+using LightGBM::AllgatherFunction;
+using LightGBM::Booster;
+using LightGBM::Common::CheckElementsIntervalClosed;
+using LightGBM::Common::RemoveQuotationSymbol;
+using LightGBM::Common::Vector2Ptr;
+using LightGBM::Common::VectorSize;
+using LightGBM::Config;
+using LightGBM::data_size_t;
+using LightGBM::Dataset;
+using LightGBM::DatasetLoader;
+using LightGBM::kZeroThreshold;
+using LightGBM::LGBM_APIHandleException;
+using LightGBM::Log;
+using LightGBM::Network;
+using LightGBM::Random;
+using LightGBM::ReduceScatterFunction;
 
 // some help functions used to convert data
 
@@ -785,10 +801,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             ncol,
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, total_nrow));
   } else {
     ret.reset(new Dataset(total_nrow));
@@ -861,10 +877,10 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(num_col),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -929,10 +945,10 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(num_col),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -1002,10 +1018,10 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     }
     OMP_THROW_EX();
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -1063,7 +1079,7 @@ int LGBM_DatasetGetSubset(
   CHECK_GT(num_used_row_indices, 0);
   const int32_t lower = 0;
   const int32_t upper = full_dataset->num_data() - 1;
-  Common::CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
+  CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
   if (!std::is_sorted(used_row_indices, used_row_indices + num_used_row_indices)) {
     Log::Fatal("used_row_indices should be sorted in Subset");
   }
@@ -1755,7 +1771,7 @@ int LGBM_NetworkInit(const char* machines,
                      int num_machines) {
   API_BEGIN();
   Config config;
-  config.machines = Common::RemoveQuotationSymbol(std::string(machines));
+  config.machines = RemoveQuotationSymbol(std::string(machines));
   config.local_listen_port = local_listen_port;
   config.num_machines = num_machines;
   config.time_out = listen_time_out;
