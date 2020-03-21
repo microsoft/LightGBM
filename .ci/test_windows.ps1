@@ -61,12 +61,15 @@ if ($env:TASK -eq "regular") {
 if ($env:TASK -eq "r-package"){
 
   # Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
-  $env:R_LIB_PATH = "C:/Program Files"
+  $env:R_LIB_PATH = "C:/Program Files/R"
+  Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
 
   tzutil /s "GMT Standard Time"
   [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
   $env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
+  Write-Output "PATH: $env:PATH"
+  Check-Output $False
   $env:BINPREF = "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/"
 
   # set up R if it doesn't exist yet
@@ -81,19 +84,22 @@ if ($env:TASK -eq "r-package"){
       # Install R
       Write-Output "Installing R"
       Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\R /COMPONENTS=main,x64" ; Check-Output $?
+      Write-Output "Done installing R"
 
       Write-Output "Installing Rtools"
       Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools" ; Check-Output $?
+      Write-Output "Done installing Rtools"
 
       # download Miktex
-      Write-Output "Downloading miktex"
+      Write-Output "Downloading MiKTeX"
       (New-Object System.Net.WebClient).DownloadFile("https://miktex.org/download/win/miktexsetup-x64.zip", "miktexsetup-x64.zip")
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
-      Write-Output "Installing Miktex"
+      Write-Output "Setting up MiKTeX"
       .\miktex\miktexsetup.exe --local-package-repository=.\miktex\download --package-set=essential --quiet download ; Check-Output $?
+      Write-Output "Installing MiKTeX"
       .\miktex\download\miktexsetup.exe --portable="$env:R_LIB_PATH\miktex" --quiet install ; Check-Output $?
-      Write-Output "Done installing all the stuff"
+      Write-Output "Done installing R, Rtools, and MiKTeX"
   }
 
   initexmf --set-config-value [MPM]AutoInstall=1
@@ -105,7 +111,7 @@ if ($env:TASK -eq "r-package"){
   Add-Content .Rprofile "options(install.packages.check.source = 'no')"
 
   Write-Output "Installing dependencies"
-  Rscript.exe -e "install.packes(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'))" ; Check-Output $?
+  $env:R_LIB_PATH\Rscript.exe -e "install.packes(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'))" ; Check-Output $?
 
   Write-Output "Building R package"
   Rscript.exe build_r.R ; Check-Output $?
