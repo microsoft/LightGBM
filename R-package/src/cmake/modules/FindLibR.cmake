@@ -65,8 +65,8 @@ endfunction(create_rlib_for_msvc)
 # find the version of R and pass it through as a CMake variable
 if(CMAKE_R_VERSION)
   message("R version passed into FindLibR.cmake: ${CMAKE_R_VERSION}")
-else()
-  message(FATAL_ERROR "Expected CMAKE_R_VERSION to be passed in but none was provided. Check src/install.libs.R")
+elseif(WIN32)
+  message(FATAL_ERROR "Expected CMAKE_R_VERSION to be passed in on Windows but none was provided. Check src/install.libs.R")
 endif()
 
 # Find R executable
@@ -128,7 +128,7 @@ else()
     endif()
 
     if(NOT LIBR_HOME)
-      message(FATAL_ERROR "\nUnable to locate R executable.\
+      message(FATAL_ERROR "Unable to locate R executable.\
         \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable")
     endif()
 
@@ -141,8 +141,7 @@ endif()
 
 if(NOT LIBR_EXECUTABLE)
   message(FATAL_ERROR "Unable to locate R executable.\
-    \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable"
-  )
+    \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable")
 endif()
 
 # ask R for the home path
