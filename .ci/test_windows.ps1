@@ -92,9 +92,6 @@ if ($env:TASK -eq "r-package"){
       Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools" ; Check-Output $?
       Write-Output "Done installing Rtools"
 
-      Rscript -e "cat('libberty bibberty')"
-      Check-Output $False
-
       # download Miktex
       Write-Output "Downloading MiKTeX"
       (New-Object System.Net.WebClient).DownloadFile("https://miktex.org/download/win/miktexsetup-x64.zip", "miktexsetup-x64.zip")
@@ -119,7 +116,7 @@ if ($env:TASK -eq "r-package"){
   Rscript.exe -e "install.packes(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'))" ; Check-Output $?
 
   Write-Output "Building R package"
-  Rscript.exe build_r.R ; Check-Output $?
+  Rscript build_r.R ; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
   $PKG_NAME = $PKG_FILE_NAME.BaseName.split("_")[0]
