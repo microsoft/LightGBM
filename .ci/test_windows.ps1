@@ -53,9 +53,6 @@ if ($env:TASK -eq "regular") {
   jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $?  # run all notebooks
 }
 
-# TODO:
-# * https://cran.r-project.org/bin/windows/base/old/3.6.1/R-3.6.1-win.exe
-
 # test R package
 # based on https://github.com/RGF-team/rgf/blob/master/R-package/.R.appveyor.ps1
 if ($env:TASK -eq "r-package"){

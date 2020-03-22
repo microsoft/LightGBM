@@ -130,7 +130,7 @@ jobs:
       #   PYTHON_VERSION: 3.5
       rpkg:
         TASK: r-package
-        R_WINDOWS_VERSION: 3.6.1
+        R_WINDOWS_VERSION: 3.6.3
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Enable conda
