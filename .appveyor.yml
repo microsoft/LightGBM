@@ -60,4 +60,5 @@ test_script:
   # - conda install -q -y -n test-env ipywidgets notebook
   # - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks
     #- cmd /c "powershell -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1"
+    - cd %APPVEYOR_BUILD_FOLDER%
     - powershell.exe -ExecutionPolicy Bypass -File .\.ci\test_windows.ps1
