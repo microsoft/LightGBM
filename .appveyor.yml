@@ -20,11 +20,9 @@ environment:
 clone_depth: 5
 
 # install:
-#   script:
-#     Write-Output
+  - ps: Write-Output("using test_windows.ps1 to install")
 build_script:
-  - ps: Write-Output("using test_windows.ps1") to build
+  - ps: Write-Output("using test_windows.ps1 to build")
 
 test_script:
-  - cd %APPVEYOR_BUILD_FOLDER%
   - powershell.exe -ExecutionPolicy Bypass -File .\.ci\test_windows.ps1
