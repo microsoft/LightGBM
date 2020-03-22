@@ -14,24 +14,24 @@ env:
   global:  # default values
     - PYTHON_VERSION=3.7
   matrix:
-    - TASK=regular PYTHON_VERSION=3.6
-    - TASK=sdist PYTHON_VERSION=2.7
-    - TASK=bdist
-    - TASK=if-else
-    - TASK=lint
-    - TASK=check-docs
-    - TASK=mpi METHOD=source
-    - TASK=mpi METHOD=pip
-    - TASK=gpu METHOD=source PYTHON_VERSION=3.5
-    - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    # - TASK=regular PYTHON_VERSION=3.6
+    # - TASK=sdist PYTHON_VERSION=2.7
+    # - TASK=bdist
+    # - TASK=if-else
+    # - TASK=lint
+    # - TASK=check-docs
+    # - TASK=mpi METHOD=source
+    # - TASK=mpi METHOD=pip
+    # - TASK=gpu METHOD=source PYTHON_VERSION=3.5
+    # - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - TASK=r-package
 
 matrix:
   exclude:
-    - os: osx
-      env: TASK=gpu METHOD=source PYTHON_VERSION=3.5
-    - os: osx
-      env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    # - os: osx
+    #   env: TASK=gpu METHOD=source PYTHON_VERSION=3.5
+    # - os: osx
+    #   env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - os: osx
       env: TASK=lint
     - os: osx
@@ -45,11 +45,11 @@ before_install:
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         export OS_NAME="macos";
         export COMPILER="gcc";
-        export R_MAC_VERSION=3.6.1;
+        export R_MAC_VERSION=3.6.3;
     else
         export OS_NAME="linux";
         export COMPILER="clang";
-        export R_TRAVIS_LINUX_VERSION=3.6.1-3bionic;
+        export R_TRAVIS_LINUX_VERSION=3.6.3-3bionic;
     fi
   - export CONDA="$HOME/miniconda"
   - export PATH="$CONDA/bin:$PATH"

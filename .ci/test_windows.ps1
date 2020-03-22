@@ -6,6 +6,43 @@ function Check-Output {
   }
 }
 
+# unify environment variables for Azure devops and AppVeyor
+if (Test-Path env:APPVEYOR) {
+  $env:BUILD_SOURCESDIRECTORY = $env:APPVEYOR_BUILD_FOLDER
+}
+
+# setup for Python
+if ($env:TASK -ne "r-package") {
+  if (Test-Path env:APPVEYOR) {
+      Write-Output "Running AppVeyor-specific setup"
+      git submodule update --init --recursive  # get `compute` folder
+      $env:PATH = "$env:PATH;C:\Program Files\Git\usr\bin;="  # delete sh.exe from PATH (mingw32-make fix)
+      $env:PATH = "C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;$env:PATH"
+      $env:PYTHON_VERSION=$env:CONFIGURATION
+      switch ($env:PYTHON_VERSION) {
+          "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
+          "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
+          "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
+          "3.7" {$env:MINICONDA = """C:\Miniconda37-x64"""}
+          default {$env:MINICONDA = """C:\Miniconda37-x64"""}
+      }
+      $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
+      $env:LGB_VER = (Get-Content VERSION.txt).trim()
+  }
+  activate
+  conda config --set always_yes yes --set changeps1 no
+  conda update -q -y conda
+  conda create -q -y -n test-env python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
+  activate test-env
+  cd %APPVEYOR_BUILD_FOLDER%\python-package
+  Write-Output "Using compiler: '$env:COMPILER'"
+  if ($env:COMPILER -eq "MINGW") {
+    python setup.py install --mingw)
+  } else {
+    python setup.py install
+  }
+}
+
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
@@ -57,16 +94,15 @@ if ($env:TASK -eq "regular") {
 # based on https://github.com/RGF-team/rgf/blob/master/R-package/.R.appveyor.ps1
 if ($env:TASK -eq "r-package"){
 
-  #Get-ChildItem env: | Export-CliXml ./env-vars.clixml
-  #Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
   $env:R_LIB_PATH = "C:/RLibrary"
   $env:R_LIBS = "$env:R_LIB_PATH/R/library"
   Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
   Write-Output "R_LIBS: $env:R_LIBS"
 
-  if (Test-Path env:APPVEYOR) {
-    cd $env:APPVEYOR_BUILD_FOLDER
-  }
+  # if (Test-Path env:APPVEYOR) {
+  #   cd $env:APPVEYOR_BUILD_FOLDER
+  # }
+  cd $env:BUILD_SOURCESDIRECTORY
 
   tzutil /s "GMT Standard Time"
   
@@ -74,7 +110,6 @@ if ($env:TASK -eq "r-package"){
 
   #$env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
   $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
-  Write-Output "PATH: $env:PATH"
   $env:BINPREF = "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/"
 
   # set up R if it doesn't exist yet
@@ -119,7 +154,6 @@ if ($env:TASK -eq "r-package"){
   Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'), lib = '$env:R_LIBS')" ; Check-Output $?
 
   Write-Output "Building R package"
-  #Rscript.exe -e "install.packages('R6', pkgType = 'source')"
   Rscript --no-save -e "print(.libPaths())"
   Rscript --no-save -e "print('loading R6'); library(R6)"
   Rscript --no-save -e "print('R_LIBS'); print(Sys.getenv('R_LIBS'))"
