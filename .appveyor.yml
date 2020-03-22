@@ -12,7 +12,7 @@ environment:
     #   R_WINDOWS_VERSION: 3.6.1
     - COMPILER: MINGW
       TASK: r-package
-      R_WINDOWS_VERSION: 3.6.1
+      R_WINDOWS_VERSION: 3.6.3
 
 clone_depth: 5
 
