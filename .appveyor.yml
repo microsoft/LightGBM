@@ -19,7 +19,7 @@ environment:
 
 clone_depth: 5
 
-# install:
+install:
   - ps: Write-Output("using test_windows.ps1 to install")
 build_script:
   - ps: Write-Output("using test_windows.ps1 to build")
