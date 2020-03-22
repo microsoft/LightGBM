@@ -65,8 +65,12 @@ if ($env:TASK -eq "r-package"){
   $env:R_LIB_PATH = "C:\RLibrary"
   Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
 
+  if (Test-Path env:APPVEYOR) {
+    cd $env:APPVEYOR_BUILD_FOLDER
+  }
+
   tzutil /s "GMT Standard Time"
-  cd $env:APPVEYOR_BUILD_FOLDER
+  
   [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
   #$env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
