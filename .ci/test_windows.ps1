@@ -32,8 +32,8 @@ if ($env:TASK -ne "r-package") {
   activate
   conda config --set always_yes yes --set changeps1 no
   conda update -q -y conda
-  conda create -q -y -n "test-env" python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
-  activate "test-env"
+  conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
+  activate $env:CONDA_ENV
   cd %APPVEYOR_BUILD_FOLDER%\python-package
   Write-Output "Using compiler: '$env:COMPILER'"
   if ($env:COMPILER -eq "MINGW") {
@@ -44,7 +44,7 @@ if ($env:TASK -ne "r-package") {
 }
 
 if ($env:TASK -eq "regular") {
-  activate "test-env"
+  activate $env:CONDA_ENV
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
   cd $env:BUILD_SOURCESDIRECTORY/python-package
@@ -53,7 +53,7 @@ if ($env:TASK -eq "regular") {
   cp $env:BUILD_SOURCESDIRECTORY/Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 elseif ($env:TASK -eq "sdist") {
-  activate "test-env"
+  activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py sdist --formats gztar ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
@@ -68,7 +68,7 @@ elseif ($env:TASK -eq "sdist") {
   cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
 }
 elseif ($env:TASK -eq "bdist") {
-  activate "test-env"
+  activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py bdist_wheel --plat-name=win-amd64 --universal ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
@@ -81,7 +81,7 @@ if ($env:TASK -ne "r-package") {
 }
 
 if ($env:TASK -eq "regular") {
-  activate "test-env"
+  activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
   (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"

@@ -9,8 +9,10 @@ environment:
   matrix:
     - COMPILER: MSVC
       TASK: regular
+      CONDA_ENV: test-env
     - COMPILER: MINGW
       TASK: regular
+      CONDA_ENV: test-env
     - COMPILER: MINGW
       TASK: r-package
       R_WINDOWS_VERSION: 3.6.3
@@ -20,7 +22,8 @@ clone_depth: 5
 # install:
 #   script:
 #     Write-Output
-# build_script: null
+build_script:
+  - ps: Write-Output("using test_windows.ps1") to build
 
 test_script:
   - cd %APPVEYOR_BUILD_FOLDER%
