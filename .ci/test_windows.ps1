@@ -63,6 +63,7 @@ if ($env:TASK -eq "r-package"){
   #Get-ChildItem env: | Export-CliXml ./env-vars.clixml
   #Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
   $env:R_LIB_PATH = "C:\RLibrary"
+  $env:R_LIBS = "$env:R_LIB_PATH;"
   Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
 
   if (Test-Path env:APPVEYOR) {
