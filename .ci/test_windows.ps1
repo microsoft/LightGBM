@@ -123,6 +123,7 @@ if ($env:TASK -eq "r-package"){
   $LOG_FILE_NAME = "$PKG_NAME.Rcheck/00check.log"
 
   Write-Output "Running R CMD check"
+  $env:_R_CHECK_FORCE_SUGGESTS_=0
   R.exe CMD check "${PKG_FILE_NAME}" --as-cran --no-multiarch; Check-Output $?
 
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
