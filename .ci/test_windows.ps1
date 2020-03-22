@@ -113,7 +113,7 @@ if ($env:TASK -eq "r-package"){
   Add-Content .Rprofile "options(install.packages.check.source = 'no')"
 
   Write-Output "Installing dependencies"
-  Rscript.exe -e "install.packes(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'))" ; Check-Output $?
+  Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'))" ; Check-Output $?
 
   Write-Output "Building R package"
   Rscript build_r.R ; Check-Output $?
