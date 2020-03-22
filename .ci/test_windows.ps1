@@ -65,6 +65,7 @@ if ($env:TASK -eq "r-package"){
   $env:R_LIB_PATH = "C:\RLibrary"
   $env:R_LIBS = "$env:R_LIB_PATH;"
   Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
+  Write-Output "R_LIBS: $env:R_LIBS"
 
   if (Test-Path env:APPVEYOR) {
     cd $env:APPVEYOR_BUILD_FOLDER
@@ -121,6 +122,9 @@ if ($env:TASK -eq "r-package"){
   Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'))" ; Check-Output $?
 
   Write-Output "Building R package"
+  Rscript --no-save -e "print(.libPaths())"
+  Rscript --no-save -e "print('loading R6'); library(R6)"
+  Rscript --no-save -e "print('R_LIBS'); print(Sys.getenv('R_LIBS'))"
   Rscript build_r.R ; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
