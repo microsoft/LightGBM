@@ -32,12 +32,12 @@ if ($env:TASK -ne "r-package") {
   activate
   conda config --set always_yes yes --set changeps1 no
   conda update -q -y conda
-  conda create -q -y -n test-env python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
-  activate test-env
+  conda create -q -y -n "test-env" python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
+  activate "test-env"
   cd %APPVEYOR_BUILD_FOLDER%\python-package
   Write-Output "Using compiler: '$env:COMPILER'"
   if ($env:COMPILER -eq "MINGW") {
-    python setup.py install --mingw)
+    python setup.py install --mingw
   } else {
     python setup.py install
   }

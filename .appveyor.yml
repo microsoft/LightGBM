@@ -17,8 +17,10 @@ environment:
 
 clone_depth: 5
 
-install: null
-build_script: null
+# install:
+#   script:
+#     Write-Output
+# build_script: null
 
 test_script:
   - cd %APPVEYOR_BUILD_FOLDER%
