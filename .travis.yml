@@ -49,7 +49,7 @@ before_install:
     else
         export OS_NAME="linux";
         export COMPILER="clang";
-        export R_TRAVIS_LINUX_VERSION=3.6.3-3bionic;
+        export R_TRAVIS_LINUX_VERSION=3.6.3-1bionic;
     fi
   - export CONDA="$HOME/miniconda"
   - export PATH="$CONDA/bin:$PATH"
