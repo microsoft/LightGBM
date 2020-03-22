@@ -7,12 +7,12 @@ configuration:  # a trick to construct a build matrix with multiple Python versi
 
 environment:
   matrix:
-    - COMPILER: MSVC
-      TASK: r-package
-      R_WINDOWS_VERSION: 3.6.1
-    # - COMPILER: MINGW
+    # - COMPILER: MSVC
     #   TASK: r-package
     #   R_WINDOWS_VERSION: 3.6.1
+    - COMPILER: MINGW
+      TASK: r-package
+      R_WINDOWS_VERSION: 3.6.1
 
 clone_depth: 5
 
