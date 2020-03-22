@@ -24,24 +24,24 @@ jobs:
   strategy:
     maxParallel: 6
     matrix:
-      regular:
-        TASK: regular
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.5
-      bdist:
-        TASK: bdist
-        PYTHON_VERSION: 3.6
-      inference:
-        TASK: if-else
-      mpi_source:
-        TASK: mpi
-        METHOD: source
-        PYTHON_VERSION: 2.7
-      gpu_source:
-        TASK: gpu
-        METHOD: source
-        PYTHON_VERSION: 3.6
+      # regular:
+      #   TASK: regular
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 3.5
+      # bdist:
+      #   TASK: bdist
+      #   PYTHON_VERSION: 3.6
+      # inference:
+      #   TASK: if-else
+      # mpi_source:
+      #   TASK: mpi
+      #   METHOD: source
+      #   PYTHON_VERSION: 2.7
+      # gpu_source:
+      #   TASK: gpu
+      #   METHOD: source
+      #   PYTHON_VERSION: 3.6
       r_package:
         TASK: r-package
   steps:
@@ -78,14 +78,14 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.6
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.5
-      bdist:
-        TASK: bdist
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.6
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 3.5
+      # bdist:
+      #   TASK: bdist
       r_package:
         TASK: r-package
   steps:
@@ -119,15 +119,15 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.7
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 2.7
-      bdist:
-        TASK: bdist
-        PYTHON_VERSION: 3.5
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.7
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 2.7
+      # bdist:
+      #   TASK: bdist
+      #   PYTHON_VERSION: 3.5
       rpkg:
         TASK: r-package
         R_WINDOWS_VERSION: 3.6.1
