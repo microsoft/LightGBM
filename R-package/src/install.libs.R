@@ -1,7 +1,7 @@
 # User options
 use_precompile <- FALSE
 use_gpu <- FALSE
-use_mingw <- FALSE
+use_mingw <- TRUE
 
 if (.Machine$sizeof.pointer != 8L) {
   stop("LightGBM only supports 64-bit R, please check the version of R and Rtools.")
