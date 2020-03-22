@@ -25,7 +25,7 @@ if (Test-Path env:APPVEYOR) {
         "3.7" {$env:MINICONDA = "C:\Miniconda37-x64"}
         default {$env:MINICONDA = "C:\Miniconda37-x64"}
     }
-    $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
+    $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:MINICONDA\bin;$env:PATH"
     $env:LGB_VER = (Get-Content VERSION.txt).trim()
 }
 Write-Output "PATH: $env:PATH"
@@ -35,7 +35,7 @@ if ($env:TASK -ne "r-package") {
   activate
   conda config --set always_yes yes --set changeps1 no
   conda update -q -y conda
-  conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
+  conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel
   activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY\python-package
   Write-Output "Using compiler: '$env:COMPILER'"
@@ -80,6 +80,7 @@ elseif ($env:TASK -eq "bdist") {
 
 if ($env:TASK -ne "r-package") {
   activate $env:CONDA_ENV
+  conda env export
   $tests = $env:BUILD_SOURCESDIRECTORY + $(If ($env:TASK -eq "sdist") {"/tests/python_package_test"} Else {"/tests"})  # cannot test C API with "sdist" task
   pytest $tests ; Check-Output $?
 }
