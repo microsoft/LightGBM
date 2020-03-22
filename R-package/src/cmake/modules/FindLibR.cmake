@@ -69,55 +69,56 @@ elseif(WIN32)
   message(FATAL_ERROR "Expected CMAKE_R_VERSION to be passed in on Windows but none was provided. Check src/install.libs.R")
 endif()
 
-# Find R executable
-if(APPLE)
+# Find R executable unless it has been provided directly
+if (NOT LIBR_EXECUTABLE)
+  if(APPLE)
 
-  find_library(LIBR_LIBRARIES R)
+    find_library(LIBR_LIBRARIES R)
 
-  if(LIBR_LIBRARIES MATCHES ".*\\.framework")
-    set(LIBR_HOME "${LIBR_LIBRARIES}/Resources")
-    set(LIBR_EXECUTABLE "${LIBR_HOME}/R")
-  else()
-    get_filename_component(_LIBR_LIBRARIES "${LIBR_LIBRARIES}" REALPATH)
-    get_filename_component(_LIBR_LIBRARIES_DIR "${_LIBR_LIBRARIES}" DIRECTORY)
-    set(LIBR_EXECUTABLE "${_LIBR_LIBRARIES_DIR}/../bin/R")
-  endif()
-
-# Unix
-elseif(UNIX)
-
-  # attempt to find R executable
-  if(NOT LIBR_EXECUTABLE)
-
-    # CRAN may run RD CMD CHECK instead of R CMD CHECK,
-    # which can lead to this infamous error:
-    # 'R' should not be used without a path -- see par. 1.6 of the manual
-    find_program(
-      LIBR_EXECUTABLE
-      NO_DEFAULT_PATH
-      HINTS "${CMAKE_CURRENT_BINARY_DIR}" "/usr/bin" "/usr/lib/" "/usr/local/bin/"
-      NAMES R R.exe
-    )
-
-    if(LIBR_EXECUTABLE MATCHES ".*lightgbm\\.Rcheck.*")
-      message(FATAL_ERROR "If you are seeing this error, it means you are running R CMD check and R is using '${LIBR_EXECUTABLE}'.\
-        \nEdit src/cmake/modulesFindLibR.cmake and add your R path to HINTS near this error")
+    if(LIBR_LIBRARIES MATCHES ".*\\.framework")
+      set(LIBR_HOME "${LIBR_LIBRARIES}/Resources")
+      set(LIBR_EXECUTABLE "${LIBR_HOME}/R")
+    else()
+      get_filename_component(_LIBR_LIBRARIES "${LIBR_LIBRARIES}" REALPATH)
+      get_filename_component(_LIBR_LIBRARIES_DIR "${_LIBR_LIBRARIES}" DIRECTORY)
+      set(LIBR_EXECUTABLE "${_LIBR_LIBRARIES_DIR}/../bin/R")
     endif()
-  endif()
 
-# Windows
-else()
+  elseif(UNIX)
 
-  # if R executable not available, query R_HOME path from registry
-  if(NOT LIBR_HOME)
+    # attempt to find R executable
+    if(NOT LIBR_EXECUTABLE)
 
-    # Try to find R's location in the registry
-    # ref: https://cran.r-project.org/bin/windows/base/rw-FAQ.html#Does-R-use-the-Registry_003f
-    get_filename_component(
-      LIBR_HOME
-      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\R-core\\R\\${CMAKE_R_VERSION};InstallPath]"
-      ABSOLUTE
-    )
+      # CRAN may run RD CMD CHECK instead of R CMD CHECK,
+      # which can lead to this infamous error:
+      # 'R' should not be used without a path -- see par. 1.6 of the manual
+      find_program(
+        LIBR_EXECUTABLE
+        NO_DEFAULT_PATH
+        HINTS "${CMAKE_CURRENT_BINARY_DIR}" "/usr/bin" "/usr/lib/" "/usr/local/bin/"
+        NAMES R
+      )
+
+      if(LIBR_EXECUTABLE MATCHES ".*lightgbm\\.Rcheck.*")
+        message(FATAL_ERROR "If you are seeing this error, it means you are running R CMD check and R is using '${LIBR_EXECUTABLE}'.\
+          \nEdit src/cmake/modulesFindLibR.cmake and add your R path to HINTS near this error")
+      endif()
+    endif()
+
+  # Windows
+  else()
+
+    # if R executable not available, query R_HOME path from registry
+    if(NOT LIBR_HOME)
+
+      # Try to find R's location in the registry
+      # ref: https://cran.r-project.org/bin/windows/base/rw-FAQ.html#Does-R-use-the-Registry_003f
+      get_filename_component(
+        LIBR_HOME
+        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\R-core\\R\\${CMAKE_R_VERSION};InstallPath]"
+        ABSOLUTE
+      )
+    endif()
 
     if(NOT LIBR_HOME)
       get_filename_component(
@@ -137,11 +138,11 @@ else()
 
   endif()
 
-endif()
+  if(NOT LIBR_EXECUTABLE)
+    message(FATAL_ERROR "Unable to locate R executable.\
+      \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable")
+  endif()
 
-if(NOT LIBR_EXECUTABLE)
-  message(FATAL_ERROR "Unable to locate R executable.\
-    \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable")
 endif()
 
 # ask R for the home path
@@ -155,8 +156,6 @@ execute_process(
   COMMAND ${LIBR_EXECUTABLE} "--slave" "--no-save" "-e" "cat(normalizePath(R.home('include'), winslash='/'))"
   OUTPUT_VARIABLE LIBR_INCLUDE_DIRS
 )
-
-# C:/PROGRA~1/R/R-36~1.1/include
 
 # ask R for the lib dir
 execute_process(
