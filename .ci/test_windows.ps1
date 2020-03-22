@@ -60,7 +60,7 @@ if ($env:TASK -eq "r-package"){
   #Get-ChildItem env: | Export-CliXml ./env-vars.clixml
   #Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
   $env:R_LIB_PATH = "C:\RLibrary"
-  $env:R_LIBS = "$env:R_LIB_PATH;"
+  $env:R_LIBS = "$env:R_LIB_PATH\R\library"
   Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
   Write-Output "R_LIBS: $env:R_LIBS"
 
@@ -116,7 +116,7 @@ if ($env:TASK -eq "r-package"){
   Add-Content .Rprofile "options(install.packages.check.source = 'no')"
 
   Write-Output "Installing dependencies"
-  Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'), lib = .libPaths())" ; Check-Output $?
+  Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'), lib = '$env:R_LIBS')" ; Check-Output $?
 
   Write-Output "Building R package"
   #Rscript.exe -e "install.packages('R6', pkgType = 'source')"
