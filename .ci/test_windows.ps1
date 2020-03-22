@@ -59,8 +59,8 @@ if ($env:TASK -eq "r-package"){
 
   #Get-ChildItem env: | Export-CliXml ./env-vars.clixml
   #Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
-  $env:R_LIB_PATH = "C:\RLibrary"
-  $env:R_LIBS = "$env:R_LIB_PATH\R\library"
+  $env:R_LIB_PATH = "C:/RLibrary"
+  $env:R_LIBS = "$env:R_LIB_PATH/R/library"
   Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
   Write-Output "R_LIBS: $env:R_LIBS"
 
@@ -73,7 +73,7 @@ if ($env:TASK -eq "r-package"){
   [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
   #$env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
-  $env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
+  $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
   Write-Output "PATH: $env:PATH"
   $env:BINPREF = "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/"
 
@@ -88,11 +88,11 @@ if ($env:TASK -eq "r-package"){
 
       # Install R
       Write-Output "Installing R"
-      Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\R /COMPONENTS=main,x64" ; Check-Output $?
+      Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64" ; Check-Output $?
       Write-Output "Done installing R"
 
       Write-Output "Installing Rtools"
-      Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools" ; Check-Output $?
+      Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
       Write-Output "Done installing Rtools"
 
       # download Miktex
@@ -101,9 +101,9 @@ if ($env:TASK -eq "r-package"){
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
       Write-Output "Setting up MiKTeX"
-      .\miktex\miktexsetup.exe --local-package-repository=.\miktex\download --package-set=essential --quiet download ; Check-Output $?
+      .\miktex\miktexsetup.exe --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
       Write-Output "Installing MiKTeX"
-      .\miktex\download\miktexsetup.exe --portable="$env:R_LIB_PATH\miktex" --quiet install ; Check-Output $?
+      .\miktex\download\miktexsetup.exe --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
       Write-Output "Done installing R, Rtools, and MiKTeX"
   }
 
