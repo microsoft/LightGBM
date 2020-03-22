@@ -15,7 +15,7 @@ if (Test-Path env:APPVEYOR) {
 if (Test-Path env:APPVEYOR) {
     Write-Output "Running AppVeyor-specific setup"
     git submodule update --init --recursive  # get `compute` folder
-    $env:PATH = "$env:PATH:C:\Program Files\Git\usr\bin;="  # delete sh.exe from PATH (mingw32-make fix)
+    $env:PATH = "$env:PATH;C:\Program Files\Git\usr\bin;="  # delete sh.exe from PATH (mingw32-make fix)
     $env:PATH = "C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;$env:PATH"
     $env:PYTHON_VERSION=$env:CONFIGURATION
     switch ($env:PYTHON_VERSION) {
@@ -37,6 +37,9 @@ if ($env:TASK -ne "r-package") {
   conda update -q -y conda
   conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel
   activate $env:CONDA_ENV
+  Write-Output "Fixing path"
+  pytest
+  Write-Output "hey it works"
   cd $env:BUILD_SOURCESDIRECTORY\python-package
   Write-Output "Using compiler: '$env:COMPILER'"
   if ($env:COMPILER -eq "MINGW") {
