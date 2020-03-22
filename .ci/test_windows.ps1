@@ -15,7 +15,7 @@ if (Test-Path env:APPVEYOR) {
 if (Test-Path env:APPVEYOR) {
     Write-Output "Running AppVeyor-specific setup"
     git submodule update --init --recursive  # get `compute` folder
-    $env:PATH = "$env:PATH;C:\Program Files\Git\usr\bin;="  # delete sh.exe from PATH (mingw32-make fix)
+    $env:PATH = "$env:PATH:C:\Program Files\Git\usr\bin;="  # delete sh.exe from PATH (mingw32-make fix)
     $env:PATH = "C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;$env:PATH"
     $env:PYTHON_VERSION=$env:CONFIGURATION
     switch ($env:PYTHON_VERSION) {
