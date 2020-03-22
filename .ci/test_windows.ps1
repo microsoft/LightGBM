@@ -82,13 +82,11 @@ if ($env:TASK -eq "r-package"){
 
       # Install R
       Write-Output "Installing R"
-      Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/DIR=$env:R_LIB_PATH\R /COMPONENTS=main,x64" ; Check-Output $?
-      #Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\R /COMPONENTS=main,x64" ; Check-Output $?
+      Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\R /COMPONENTS=main,x64" ; Check-Output $?
       Write-Output "Done installing R"
 
       Write-Output "Installing Rtools"
-      Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/DIR=$env:R_LIB_PATH\Rtools" ; Check-Output $?
-      #Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools" ; Check-Output $?
+      Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH\Rtools" ; Check-Output $?
       Write-Output "Done installing Rtools"
 
       Rscript -e "cat('libberty bibberty')"
