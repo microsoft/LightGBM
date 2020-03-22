@@ -20,21 +20,22 @@ if ($env:TASK -ne "r-package") {
       $env:PATH = "C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;$env:PATH"
       $env:PYTHON_VERSION=$env:CONFIGURATION
       switch ($env:PYTHON_VERSION) {
-          "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
-          "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
-          "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
-          "3.7" {$env:MINICONDA = """C:\Miniconda37-x64"""}
-          default {$env:MINICONDA = """C:\Miniconda37-x64"""}
+          "2.7" {$env:MINICONDA = "C:\Miniconda-x64"}
+          "3.5" {$env:MINICONDA = "C:\Miniconda35-x64"}
+          "3.6" {$env:MINICONDA = "C:\Miniconda36-x64"}
+          "3.7" {$env:MINICONDA = "C:\Miniconda37-x64"}
+          default {$env:MINICONDA = "C:\Miniconda37-x64"}
       }
       $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
       $env:LGB_VER = (Get-Content VERSION.txt).trim()
   }
+  Write-Output "PATH: $env:PATH"
   activate
   conda config --set always_yes yes --set changeps1 no
   conda update -q -y conda
   conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
   activate $env:CONDA_ENV
-  cd %APPVEYOR_BUILD_FOLDER%\python-package
+  cd $env:BUILD_SOURCESDIRECTORY\python-package
   Write-Output "Using compiler: '$env:COMPILER'"
   if ($env:COMPILER -eq "MINGW") {
     python setup.py install --mingw
