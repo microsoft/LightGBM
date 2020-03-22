@@ -77,6 +77,7 @@ elseif ($env:TASK -eq "bdist") {
 }
 
 if ($env:TASK -ne "r-package") {
+  activate $env:CONDA_ENV
   $tests = $env:BUILD_SOURCESDIRECTORY + $(If ($env:TASK -eq "sdist") {"/tests/python_package_test"} Else {"/tests"})  # cannot test C API with "sdist" task
   pytest $tests ; Check-Output $?
 }
