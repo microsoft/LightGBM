@@ -60,14 +60,17 @@ if ($env:TASK -eq "regular") {
 # based on https://github.com/RGF-team/rgf/blob/master/R-package/.R.appveyor.ps1
 if ($env:TASK -eq "r-package"){
 
-  # Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
-  $env:R_LIB_PATH = "C:\Program Files"
+  #Get-ChildItem env: | Export-CliXml ./env-vars.clixml
+  #Import-CliXml .\env-vars.clixml | % { Set-Item "env:$($_.Name)" $_.Value }
+  $env:R_LIB_PATH = "C:\RLibrary"
   Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
 
   tzutil /s "GMT Standard Time"
+  cd $env:APPVEYOR_BUILD_FOLDER
   [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
-  $env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
+  #$env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
+  $env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
   Write-Output "PATH: $env:PATH"
   $env:BINPREF = "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/"
 
