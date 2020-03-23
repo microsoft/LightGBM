@@ -160,19 +160,19 @@ endif()
 
 # ask R for the home path
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "--no-save" "-e" "cat(normalizePath(R.home(), winslash='/'))"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(normalizePath(R.home(), winslash='/'))"
   OUTPUT_VARIABLE LIBR_HOME
 )
 
 # ask R for the include dir
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "--no-save" "-e" "cat(normalizePath(R.home('include'), winslash='/'))"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(normalizePath(R.home('include'), winslash='/'))"
   OUTPUT_VARIABLE LIBR_INCLUDE_DIRS
 )
 
 # ask R for the lib dir
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "--no-save" "-e" "cat(normalizePath(R.home('lib'), winslash='/'))"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(normalizePath(R.home('lib'), winslash='/'))"
   OUTPUT_VARIABLE LIBR_LIB_DIR
 )
 
