@@ -80,13 +80,11 @@ if (NOT LIBR_EXECUTABLE)
   # which can lead to this infamous error:
   # 'R' should not be used without a path -- see par. 1.6 of the manual
   if(LIBR_EXECUTABLE MATCHES ".*\\.Rcheck.*")
-    unset(LIBR_EXECUTABLE PARENT_SCOPE)
     unset(LIBR_EXECUTABLE CACHE)
   endif()
 
   # ignore the R bundled with R.app on Mac, since that is GUI-only
   if(LIBR_EXECUTABLE MATCHES ".+R\\.app.*")
-    unset(LIBR_EXECUTABLE PARENT_SCOPE)
     unset(LIBR_EXECUTABLE CACHE)
   endif()
 endif()
