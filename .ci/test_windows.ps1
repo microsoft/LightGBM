@@ -81,23 +81,15 @@ if (($env:TASK -eq "regular") -or ($env:TASK -eq "appveyor-python")) {
 }
 
 # test R package
-# based on https://github.com/RGF-team/rgf/blob/master/R-package/.R.appveyor.ps1
 if ($env:TASK -eq "r-package"){
 
   $env:R_LIB_PATH = "C:/RLibrary"
-  $env:R_LIBS = "$env:R_LIB_PATH/R/library"
-  Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
-  Write-Output "R_LIBS: $env:R_LIBS"
-
-  cd $env:BUILD_SOURCESDIRECTORY
-
-  tzutil /s "GMT Standard Time"
-  
-  [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
-
-  #$env:PATH = "$env:R_LIB_PATH\Rtools\bin;" + "$env:R_LIB_PATH\R\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin\x64;" + "$env:R_LIB_PATH\R\R-$env:R_WINDOWS_VERSION\bin;" + "$env:R_LIB_PATH\miktex\texmfs\install\miktex\bin\x64;" + $env:PATH
   $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
   $env:BINPREF = "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/"
+
+  cd $env:BUILD_SOURCESDIRECTORY
+  tzutil /s "GMT Standard Time"
+  [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
   # set up R if it doesn't exist yet
   if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
@@ -138,12 +130,9 @@ if ($env:TASK -eq "r-package"){
   Add-Content .Rprofile "options(install.packages.check.source = 'no')"
 
   Write-Output "Installing dependencies"
-  Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'), lib = '$env:R_LIBS')" ; Check-Output $?
+  Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'), lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
   Write-Output "Building R package"
-  Rscript --no-save -e "print(.libPaths())"
-  Rscript --no-save -e "print('loading R6'); library(R6)"
-  Rscript --no-save -e "print('R_LIBS'); print(Sys.getenv('R_LIBS'))"
   Rscript build_r.R ; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz

@@ -14,24 +14,24 @@ env:
   global:  # default values
     - PYTHON_VERSION=3.7
   matrix:
-    # - TASK=regular PYTHON_VERSION=3.6
-    # - TASK=sdist PYTHON_VERSION=2.7
-    # - TASK=bdist
-    # - TASK=if-else
-    # - TASK=lint
-    # - TASK=check-docs
-    # - TASK=mpi METHOD=source
-    # - TASK=mpi METHOD=pip
-    # - TASK=gpu METHOD=source PYTHON_VERSION=3.5
-    # - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    - TASK=regular PYTHON_VERSION=3.6
+    - TASK=sdist PYTHON_VERSION=2.7
+    - TASK=bdist
+    - TASK=if-else
+    - TASK=lint
+    - TASK=check-docs
+    - TASK=mpi METHOD=source
+    - TASK=mpi METHOD=pip
+    - TASK=gpu METHOD=source PYTHON_VERSION=3.5
+    - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - TASK=r-package
 
 matrix:
   exclude:
-    # - os: osx
-    #   env: TASK=gpu METHOD=source PYTHON_VERSION=3.5
-    # - os: osx
-    #   env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    - os: osx
+      env: TASK=gpu METHOD=source PYTHON_VERSION=3.5
+    - os: osx
+      env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - os: osx
       env: TASK=lint
     - os: osx
