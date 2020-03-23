@@ -69,6 +69,28 @@ elseif(WIN32)
   message(FATAL_ERROR "Expected CMAKE_R_VERSION to be passed in on Windows but none was provided. Check src/install.libs.R")
 endif()
 
+
+if (NOT LIBR_EXECUTABLE)
+  find_program(
+    LIBR_EXECUTABLE
+    NAMES R R.exe
+  )
+
+  # CRAN may run RD CMD CHECK instead of R CMD CHECK,
+  # which can lead to this infamous error:
+  # 'R' should not be used without a path -- see par. 1.6 of the manual
+  if(LIBR_EXECUTABLE MATCHES ".*\\.Rcheck.*")
+    unset(LIBR_EXECUTABLE PARENT_SCOPE)
+    unset(LIBR_EXECUTABLE CACHE)
+  endif()
+
+  # ignore the R bundled with R.app on Mac, since that is GUI-only
+  if(LIBR_EXECUTABLE MATCHES ".+R\\.app.*")
+    unset(LIBR_EXECUTABLE PARENT_SCOPE)
+    unset(LIBR_EXECUTABLE CACHE)
+  endif()
+endif()
+
 # Find R executable unless it has been provided directly
 if (NOT LIBR_EXECUTABLE)
   if(APPLE)
@@ -88,21 +110,12 @@ if (NOT LIBR_EXECUTABLE)
 
     # attempt to find R executable
     if(NOT LIBR_EXECUTABLE)
-
-      # CRAN may run RD CMD CHECK instead of R CMD CHECK,
-      # which can lead to this infamous error:
-      # 'R' should not be used without a path -- see par. 1.6 of the manual
       find_program(
         LIBR_EXECUTABLE
         NO_DEFAULT_PATH
         HINTS "${CMAKE_CURRENT_BINARY_DIR}" "/usr/bin" "/usr/lib/" "/usr/local/bin/"
         NAMES R
       )
-
-      if(LIBR_EXECUTABLE MATCHES ".*lightgbm\\.Rcheck.*")
-        message(FATAL_ERROR "If you are seeing this error, it means you are running R CMD check and R is using '${LIBR_EXECUTABLE}'.\
-          \nEdit src/cmake/modulesFindLibR.cmake and add your R path to HINTS near this error")
-      endif()
     endif()
 
   # Windows
@@ -147,19 +160,19 @@ endif()
 
 # ask R for the home path
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(normalizePath(R.home(), winslash='/'))"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "--no-save" "-e" "cat(normalizePath(R.home(), winslash='/'))"
   OUTPUT_VARIABLE LIBR_HOME
 )
 
 # ask R for the include dir
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--no-save" "-e" "cat(normalizePath(R.home('include'), winslash='/'))"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "--no-save" "-e" "cat(normalizePath(R.home('include'), winslash='/'))"
   OUTPUT_VARIABLE LIBR_INCLUDE_DIRS
 )
 
 # ask R for the lib dir
 execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--no-save" "-e" "cat(normalizePath(R.home('lib'), winslash='/'))"
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "--no-save" "-e" "cat(normalizePath(R.home('lib'), winslash='/'))"
   OUTPUT_VARIABLE LIBR_LIB_DIR
 )
 
