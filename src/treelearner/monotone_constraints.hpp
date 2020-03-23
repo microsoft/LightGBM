@@ -420,11 +420,17 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
                   thresholds_of_splits_going_up_from_original_leaf[i] &&
               !was_original_leaf_right_child_of_split[i]) {
             keep_going_right = false;
+            if (!keep_going_left) {
+              break;
+            }
           }
           if (threshold <=
                   thresholds_of_splits_going_up_from_original_leaf[i] &&
               was_original_leaf_right_child_of_split[i]) {
             keep_going_left = false;
+            if (!keep_going_right) {
+              break;
+            }
           }
         }
       }
