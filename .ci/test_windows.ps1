@@ -22,7 +22,6 @@ if ($env:TASK -ne "r-package") {
 }
 
 if ($env:TASK -eq "regular") {
-  activate $env:CONDA_ENV
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
   cd $env:BUILD_SOURCESDIRECTORY/python-package
@@ -31,7 +30,6 @@ if ($env:TASK -eq "regular") {
   cp $env:BUILD_SOURCESDIRECTORY/Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 elseif ($env:TASK -eq "sdist") {
-  activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py sdist --formats gztar ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
@@ -46,7 +44,6 @@ elseif ($env:TASK -eq "sdist") {
   cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
 }
 elseif ($env:TASK -eq "bdist") {
-  activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py bdist_wheel --plat-name=win-amd64 --universal ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
@@ -61,13 +58,11 @@ elseif ($env:TASK -eq "bdist") {
 }
 
 if ($env:TASK -ne "r-package") {
-  conda activate $env:CONDA_ENV
   $tests = $env:BUILD_SOURCESDIRECTORY + $(If (($env:TASK -eq "sdist") -or ($env:TASK -eq "appveyor-python")) {"/tests/python_package_test"} Else {"/tests"})  # cannot test C API with "sdist" task
   pytest $tests ; Check-Output $?
 }
 
 if (($env:TASK -eq "regular") -or ($env:TASK -eq "appveyor-python")) {
-  activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
   (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
