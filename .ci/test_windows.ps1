@@ -88,7 +88,7 @@ if ($env:TASK -eq "r-package"){
 
   if ($env:COMPILER -eq "MINGW") {
     Write-Output "Telling R to use MinGW"
-    $install_libs = $env:BUILD_SOURCESDIRECTORY\R-package\src\install.libs.R
+    $install_libs = "$env:BUILD_SOURCESDIRECTORY\R-package\src\install.libs.R"
     ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
   }
 
