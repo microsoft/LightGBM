@@ -145,50 +145,50 @@ jobs:
       artifactName: PackageAssets
       artifactType: container
 
-# ###########################################
-# - job: Package
-# ###########################################
-#   dependsOn:
-#   - Linux
-#   - MacOS
-#   - Windows
-#   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-#   pool:
-#     vmImage: 'vs2017-win2016'
-#   steps:
-#   # Download all agent packages from all previous phases
-#   - task: DownloadBuildArtifacts@0
-#     displayName: Download package assets
-#     inputs:
-#       artifactName: PackageAssets
-#       downloadPath: $(Build.SourcesDirectory)/binaries
-#   - script: |
-#       python %BUILD_SOURCESDIRECTORY%/.nuget/create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
-#     displayName: 'Create NuGet configuration files'
-#   - task: NuGetCommand@2
-#     inputs:
-#       command: pack
-#       packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
-#       packDestination: '$(Build.ArtifactStagingDirectory)'
-#   - task: PublishBuildArtifacts@1
-#     inputs:
-#       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-#       artifactName: NuGet
-#       artifactType: container
-#   - task: GitHubRelease@0
-#     displayName: 'Create GitHub Release'
-#     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-#     inputs:
-#       gitHubConnection: guolinke
-#       repositoryName: '$(Build.Repository.Name)'
-#       action: 'create'
-#       target: '$(Build.SourceVersion)'
-#       tagSource: 'auto'
-#       title: '$(Build.SourceBranchName)'
-#       assets: |
-#         $(Build.SourcesDirectory)/binaries/PackageAssets/*
-#         $(Build.ArtifactStagingDirectory)/*.nupkg
-#       assetUploadMode: 'delete'
-#       isDraft: true
-#       isPreRelease: false
-#       addChangeLog: false
+###########################################
+- job: Package
+###########################################
+  dependsOn:
+  - Linux
+  - MacOS
+  - Windows
+  condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+  pool:
+    vmImage: 'vs2017-win2016'
+  steps:
+  # Download all agent packages from all previous phases
+  - task: DownloadBuildArtifacts@0
+    displayName: Download package assets
+    inputs:
+      artifactName: PackageAssets
+      downloadPath: $(Build.SourcesDirectory)/binaries
+  - script: |
+      python %BUILD_SOURCESDIRECTORY%/.nuget/create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
+    displayName: 'Create NuGet configuration files'
+  - task: NuGetCommand@2
+    inputs:
+      command: pack
+      packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
+      packDestination: '$(Build.ArtifactStagingDirectory)'
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: NuGet
+      artifactType: container
+  - task: GitHubRelease@0
+    displayName: 'Create GitHub Release'
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    inputs:
+      gitHubConnection: guolinke
+      repositoryName: '$(Build.Repository.Name)'
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'auto'
+      title: '$(Build.SourceBranchName)'
+      assets: |
+        $(Build.SourcesDirectory)/binaries/PackageAssets/*
+        $(Build.ArtifactStagingDirectory)/*.nupkg
+      assetUploadMode: 'delete'
+      isDraft: true
+      isPreRelease: false
+      addChangeLog: false
