@@ -378,10 +378,11 @@ inline static void Int32ToStr(int32_t value, char* buffer) {
 
 inline static void DoubleToStr(double value, char* buffer, size_t buffer_len) {
   #ifdef _MSC_VER
-  sprintf_s(buffer, buffer_len, "%.17g", value);
+  int num_chars = sprintf_s(buffer, buffer_len, "%.17g", value);
   #else
-  snprintf(buffer, buffer_len, "%.17g", value);
+  int num_chars = snprintf(buffer, buffer_len, "%.17g", value);
   #endif
+  CHECK_GE(num_chars, 0);
 }
 
 inline static const char* SkipSpaceAndTab(const char* p) {
@@ -419,10 +420,11 @@ struct __TToStringHelperFast<T, true, false> {
   void operator()(T value, char* buffer, size_t buf_len)
   const {
     #ifdef _MSC_VER
-    sprintf_s(buffer, buf_len, "%g", value);
+    int num_chars = sprintf_s(buffer, buf_len, "%g", value);
     #else
-    snprintf(buffer, buf_len, "%g", value);
+    int num_chars = snprintf(buffer, buf_len, "%g", value);
     #endif
+    CHECK_GE(num_chars, 0);
   }
 };
 
