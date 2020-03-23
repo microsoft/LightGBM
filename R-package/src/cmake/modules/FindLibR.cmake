@@ -91,7 +91,7 @@ if (NOT LIBR_EXECUTABLE)
   endif()
 endif()
 
-# Find R executable unless it has been provided directly
+# Find R executable unless it has been provided directly or already found
 if (NOT LIBR_EXECUTABLE)
   if(APPLE)
 
