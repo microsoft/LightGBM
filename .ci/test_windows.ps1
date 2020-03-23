@@ -86,6 +86,12 @@ if ($env:TASK -eq "r-package"){
   tzutil /s "GMT Standard Time"
   [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
+  if ($env:COMPILER -eq "MINGW") {
+    Write-Output "Telling R to use MinGW"
+    $install_libs = $env:BUILD_SOURCESDIRECTORY\R-package\src\install.libs.R
+    ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
+  }
+
   # set up R if it doesn't exist yet
   if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
 
