@@ -147,6 +147,28 @@ class Tree {
 
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
+  inline double internal_value(int node_idx) const {
+    return internal_value_[node_idx];
+  }
+
+  inline bool IsNumericalSplit(int node_idx) const {
+    return !GetDecisionType(decision_type_[node_idx], kCategoricalMask);
+  }
+
+  inline int left_child(int node_idx) const { return left_child_[node_idx]; }
+
+  inline int right_child(int node_idx) const { return right_child_[node_idx]; }
+
+  inline int split_feature_inner(int node_idx) const {
+    return split_feature_inner_[node_idx];
+  }
+
+  inline int leaf_parent(int leaf_idx) const { return leaf_parent_[leaf_idx]; }
+
+  inline uint32_t threshold_in_bin(int node_idx) const {
+    return threshold_in_bin_[node_idx];
+  }
+
   /*! \brief Get the number of data points that fall at or below this node*/
   inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
 
@@ -436,7 +458,6 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   // add new node
   split_feature_inner_[new_node_idx] = feature;
   split_feature_[new_node_idx] = real_feature;
-
   split_gain_[new_node_idx] = gain;
   // add two new leaves
   left_child_[new_node_idx] = ~leaf;
@@ -543,7 +564,6 @@ inline int Tree::GetLeafByMap(const std::unordered_map<int, double>& feature_val
   }
   return ~node;
 }
-
 
 }  // namespace LightGBM
 

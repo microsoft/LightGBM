@@ -122,6 +122,8 @@ class SerialTreeLearner: public TreeLearner {
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
+  void RecomputeBestSplitForLeaf(int leaf, SplitInfo* split);
+
   /*!
   * \brief Some initial works before training
   */
@@ -188,7 +190,7 @@ class SerialTreeLearner: public TreeLearner {
   /*! \brief store best split per feature for all leaves */
   std::vector<SplitInfo> splits_per_leaf_;
   /*! \brief stores minimum and maximum constraints for each leaf */
-  std::unique_ptr<LeafConstraints<ConstraintEntry>> constraints_;
+  std::unique_ptr<LeafConstraintsBase> constraints_;
 
   /*! \brief stores best thresholds for all feature for smaller leaf */
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
