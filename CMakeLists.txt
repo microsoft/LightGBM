@@ -316,7 +316,12 @@ if(WIN32 AND (MINGW OR CYGWIN))
 endif()
 
 if(BUILD_FOR_R)
+  if(MSVC)
+    # https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
+    TARGET_LINK_LIBRARIES(_lightgbm ${CMAKE_CURRENT_BINARY_DIR}/R.lib)
+  else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
+  endif()
 endif(BUILD_FOR_R)
 
 install(TARGETS lightgbm _lightgbm
