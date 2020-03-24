@@ -450,7 +450,7 @@ struct Config {
   // alias = monotone_splits_penalty
   // check = >=0.0
   // desc = used only if ``monotone_constraints`` is set
-  // desc = monotone penalty: a penalization of 0 equals to no penalization. A penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+  // desc = `monotone penalty <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__: a penalization of 0 equals to no penalization. A penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
   double monotone_penalty = 0.;
 
   // type = multi-double

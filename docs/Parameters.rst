@@ -474,7 +474,7 @@ Learning Control Parameters
 
    -  used only if ``monotone_constraints`` is set
 
-   -  monotone penalty: a penalization of 0 equals to no penalization. A penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+   -  `monotone penalty <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__: a penalization of 0 equals to no penalization. A penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
 
 -  ``feature_contri`` :raw-html:`<a id="feature_contri" title="Permalink to this parameter" href="#feature_contri">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double, aliases: ``feature_contrib``, ``fc``, ``fp``, ``feature_penalty``
 
