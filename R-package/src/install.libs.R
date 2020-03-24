@@ -53,6 +53,17 @@ if (!use_precompile) {
   }
   cmake_cmd <- paste0(cmake_cmd, " -DBUILD_FOR_R=ON ")
 
+  # Pass in R version, used to help find R executable for linking
+  R_version_string <- paste(
+    R.Version()[["major"]]
+    , R.Version()[["minor"]]
+    , sep = "."
+  )
+  cmake_cmd <- sprintf(
+    paste0(cmake_cmd, " -DCMAKE_R_VERSION='%s' ")
+    , R_version_string
+  )
+
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {

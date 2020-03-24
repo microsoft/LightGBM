@@ -39,9 +39,9 @@
 
   // 64bit pointer
   #if INTPTR_MAX == INT64_MAX
-    typedef int64_t R_xlen_t;
+    typedef int64_t xlen_t;
   #else
-    typedef int R_xlen_t;
+    typedef int xlen_t;
   #endif
 
 #else
@@ -58,7 +58,7 @@
     unsigned int gccls : 3;
   };
 
-  typedef int R_xlen_t;
+  typedef int xlen_t;
 #endif  // R_VER_ABOVE_35
 
 struct lgbm_primsxp {
@@ -110,8 +110,8 @@ typedef struct LGBM_SER {
 } LGBM_SER, *LGBM_SE;
 
 struct lgbm_vecsxp {
-  R_xlen_t length;
-  R_xlen_t truelength;
+  xlen_t length;
+  xlen_t truelength;
 };
 
 typedef struct VECTOR_SER {
