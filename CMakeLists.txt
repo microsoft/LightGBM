@@ -279,9 +279,9 @@ if(USE_SWIG)
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
   else()
     add_custom_command(TARGET _lightgbm_swig POST_BUILD
-      COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-      COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
-      COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+	    COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+	    COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+	    COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
   endif()
 endif(USE_SWIG)
 

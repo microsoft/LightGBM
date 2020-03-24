@@ -59,7 +59,6 @@
   };
 
   typedef int xlen_t;
-
 #endif  // R_VER_ABOVE_35
 
 struct lgbm_primsxp {
