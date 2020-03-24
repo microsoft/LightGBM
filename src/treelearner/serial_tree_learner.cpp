@@ -692,6 +692,11 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         cegb_->DetlaGain(feature_index, real_fidx, leaf_splits->leaf_index(),
                          num_data, new_split);
   }
+  if (new_split.monotone_type != 0) {
+    double penalty = LeafConstraintsBase::ComputeMonotoneSplitGainPenalty(
+        tree->leaf_depth(leaf_splits->leaf_index()), config_->monotone_penalty); // FIXME The tree has been passed to all the functions just to be used here. You may not like that. Please advise for a better solution, for example storing depths in the constraints.
+    new_split.gain *= penalty;
+  }
   if (new_split > *best_split) {
     *best_split = new_split;
   }

@@ -62,6 +62,17 @@ class LeafConstraintsBase {
       const std::vector<SplitInfo>& best_split_per_leaf) = 0;
 
   inline static LeafConstraintsBase* Create(const Config* config, int num_leaves);
+
+  static double ComputeMonotoneSplitGainPenalty(int depth, double penalization,
+                                                double epsilon = 1e-10) {
+    if (penalization >= depth + 1.) {
+      return epsilon;
+    }
+    if (penalization <= 1.) {
+      return 1. - penalization / pow(2., depth) + epsilon;
+    }
+    return 1. - pow(2, penalization - 1. - depth) + epsilon;
+  }
 };
 
 class BasicLeafConstraints : public LeafConstraintsBase {
