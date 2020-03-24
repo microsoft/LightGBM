@@ -165,6 +165,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves));
   auto tree_prt = tree.get();
+  constraints_->ShareTreePointer(tree_prt);
+
   // root leaf
   int left_leaf = 0;
   int cur_depth = 1;
@@ -693,8 +695,8 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
                          num_data, new_split);
   }
   if (new_split.monotone_type != 0) {
-    double penalty = LeafConstraintsBase::ComputeMonotoneSplitGainPenalty(
-        tree->leaf_depth(leaf_splits->leaf_index()), config_->monotone_penalty); // FIXME The tree has been passed to all the functions just to be used here. You may not like that. Please advise for a better solution, for example storing depths in the constraints.
+    double penalty = constraints_->ComputeMonotoneSplitGainPenalty(
+        leaf_splits->leaf_index(), config_->monotone_penalty);
     new_split.gain *= penalty;
   }
   if (new_split > *best_split) {
