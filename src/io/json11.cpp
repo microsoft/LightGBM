@@ -350,11 +350,18 @@ namespace {
 struct JsonParser final {
     /* State
      */
-    const string str;
+    const string& str;
     size_t i;
     string &err;
     bool failed;
     const JsonParse strategy;
+    JsonParser(const string &in_str, size_t in_i, string &in_err,
+               bool in_failed, const JsonParse in_strategy)
+        : str(in_str),
+          i(in_i),
+          err(in_err),
+          failed(in_failed),
+          strategy(in_strategy) {}
 
     /* fail(msg, err_ret = Json())
      *
@@ -731,7 +738,7 @@ struct JsonParser final {
 }  // namespace
 
 Json Json::parse(const string &in, string &err, JsonParse strategy) {
-    JsonParser parser { in, 0, err, false, strategy };
+    JsonParser parser(in, 0, err, false, strategy);
     Json result = parser.parse_json(0);
 
     // Check for any trailing garbage
@@ -749,7 +756,7 @@ vector<Json> Json::parse_multi(const string &in,
                                std::string::size_type &parser_stop_pos,
                                string &err,
                                JsonParse strategy) {
-    JsonParser parser { in, 0, err, false, strategy };
+    JsonParser parser(in, 0, err, false, strategy);
     parser_stop_pos = 0;
     vector<Json> json_vec;
     while (parser.i != in.size() && !parser.failed) {
