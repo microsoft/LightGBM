@@ -118,11 +118,11 @@ class SerialTreeLearner: public TreeLearner {
                                   int feature_index, int real_fidx,
                                   bool is_feature_used, int num_data,
                                   const LeafSplits* leaf_splits,
-                                  SplitInfo* best_split, const Tree* tree);
+                                  SplitInfo* best_split);
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
-  void RecomputeBestSplitForLeaf(int leaf, SplitInfo* split, const Tree* tree);
+  void RecomputeBestSplitForLeaf(int leaf, SplitInfo* split);
 
   /*!
   * \brief Some initial works before training
@@ -134,11 +134,11 @@ class SerialTreeLearner: public TreeLearner {
   */
   virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf);
 
-  virtual void FindBestSplits(const Tree* tree);
+  virtual void FindBestSplits();
 
   virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
-  virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree* tree);
+  virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
   /*!
   * \brief Partition tree and data according best split.

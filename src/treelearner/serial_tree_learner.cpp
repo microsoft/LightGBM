@@ -177,7 +177,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     // some initial works before finding best split
     if (BeforeFindBestSplit(tree_prt, left_leaf, right_leaf)) {
       // find best threshold for every feature
-      FindBestSplits(tree_prt);
+      FindBestSplits();
     }
     // Get a leaf with max split gain
     int best_leaf = static_cast<int>(ArrayArgs<SplitInfo>::ArgMax(best_split_per_leaf_));
@@ -301,7 +301,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
   return true;
 }
 
-void SerialTreeLearner::FindBestSplits(const Tree* tree) {
+void SerialTreeLearner::FindBestSplits() {
   std::vector<int8_t> is_feature_used(num_features_, 0);
   #pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
@@ -315,7 +315,7 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
   ConstructHistograms(is_feature_used, use_subtract);
-  FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
+  FindBestSplitsFromHistograms(is_feature_used, use_subtract);
 }
 
 void SerialTreeLearner::ConstructHistograms(
@@ -344,7 +344,7 @@ void SerialTreeLearner::ConstructHistograms(
 }
 
 void SerialTreeLearner::FindBestSplitsFromHistograms(
-    const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree* tree) {
+    const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   Common::FunctionTimer fun_timer(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
   std::vector<SplitInfo> smaller_best(share_state_->num_threads);
@@ -370,7 +370,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
                                real_fidx,
                                smaller_node_used_features[feature_index],
                                smaller_leaf_splits_->num_data_in_leaf(),
-                               smaller_leaf_splits_.get(), &smaller_best[tid], tree);
+                               smaller_leaf_splits_.get(), &smaller_best[tid]);
 
     // only has root leaf
     if (larger_leaf_splits_ == nullptr ||
@@ -392,7 +392,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
                                real_fidx,
                                larger_node_used_features[feature_index],
                                larger_leaf_splits_->num_data_in_leaf(),
-                               larger_leaf_splits_.get(), &larger_best[tid], tree);
+                               larger_leaf_splits_.get(), &larger_best[tid]);
 
     OMP_LOOP_EX_END();
   }
@@ -428,7 +428,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
     // before processing next node from queue, store info for current left/right leaf
     // store "best split" for left and right, even if they might be overwritten by forced split
     if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
-      FindBestSplits(tree);
+      FindBestSplits();
     }
     // then, compute own splits
     SplitInfo left_split;
@@ -631,7 +631,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
       best_split_per_leaf_);
   // update leave outputs if needed
   for (auto leaf : leaves_need_update) {
-    RecomputeBestSplitForLeaf(leaf, &best_split_per_leaf_[leaf], tree);
+    RecomputeBestSplitForLeaf(leaf, &best_split_per_leaf_[leaf]);
   }
 }
 
@@ -678,7 +678,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
 void SerialTreeLearner::ComputeBestSplitForFeature(
     FeatureHistogram* histogram_array_, int feature_index, int real_fidx,
     bool is_feature_used, int num_data, const LeafSplits* leaf_splits,
-    SplitInfo* best_split, const Tree* tree) {
+    SplitInfo* best_split) {
   if (!is_feature_used) {
     return;
   }
@@ -702,7 +702,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   }
 }
 
-void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split, const Tree* tree) {
+void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
   FeatureHistogram* histogram_array_;
   if (!histogram_pool_.Get(leaf, &histogram_array_)) {
     Log::Warning(
@@ -730,8 +730,10 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split, co
     }
     const int tid = omp_get_thread_num();
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
-    ComputeBestSplitForFeature(histogram_array_, feature_index, real_fidx, true,
-                               num_data, &leaf_splits, &bests[tid], tree);
+    ComputeBestSplitForFeature(
+        histogram_array_, feature_index, real_fidx,
+        true,
+        num_data, &leaf_splits, &bests[tid]);
 
     OMP_LOOP_EX_END();
   }

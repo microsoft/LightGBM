@@ -146,7 +146,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
 }
 
 template <typename TREELEARNER_T>
-void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
+void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
   TREELEARNER_T::ConstructHistograms(
       this->col_sampler_.is_feature_used_bytree(), true);
   // construct local histograms
@@ -163,11 +163,11 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, sizeof(hist_t), block_start_.data(),
                          block_len_.data(), output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramSumReducer);
   this->FindBestSplitsFromHistograms(
-      this->col_sampler_.is_feature_used_bytree(), true, tree);
+      this->col_sampler_.is_feature_used_bytree(), true);
 }
 
 template <typename TREELEARNER_T>
-void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool, const Tree* tree) {
+void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->share_state_->num_threads);
   std::vector<SplitInfo> larger_bests_per_thread(this->share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features =
@@ -194,7 +194,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
         smaller_node_used_features[feature_index],
         GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->leaf_index()),
         this->smaller_leaf_splits_.get(),
-        &smaller_bests_per_thread[tid], tree);
+        &smaller_bests_per_thread[tid]);
 
     // only root leaf
     if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->leaf_index() < 0) continue;
@@ -208,7 +208,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
         larger_node_used_features[feature_index],
         GetGlobalDataCountInLeaf(this->larger_leaf_splits_->leaf_index()),
         this->larger_leaf_splits_.get(),
-        &larger_bests_per_thread[tid], tree);
+        &larger_bests_per_thread[tid]);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();

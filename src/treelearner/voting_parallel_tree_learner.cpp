@@ -242,7 +242,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::CopyLocalHistogram(const std::vec
 }
 
 template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
+void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
   // use local data to find local best splits
   std::vector<int8_t> is_feature_used(this->num_features_, 0);
 #pragma omp parallel for schedule(static)
@@ -279,7 +279,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
         this->smaller_leaf_histogram_array_, feature_index, real_feature_index,
         true, this->smaller_leaf_splits_->num_data_in_leaf(),
         this->smaller_leaf_splits_.get(),
-        &smaller_bestsplit_per_features[feature_index], tree);
+        &smaller_bestsplit_per_features[feature_index]);
     // only has root leaf
     if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->leaf_index() < 0) { continue; }
 
@@ -293,7 +293,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
         this->larger_leaf_histogram_array_, feature_index, real_feature_index,
         true, this->larger_leaf_splits_->num_data_in_leaf(),
         this->larger_leaf_splits_.get(),
-        &larger_bestsplit_per_features[feature_index], tree);
+        &larger_bestsplit_per_features[feature_index]);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -344,11 +344,11 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, sizeof(hist_t), block_start_.data(), block_len_.data(),
                          output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramSumReducer);
 
-  this->FindBestSplitsFromHistograms(is_feature_used, false, tree);
+  this->FindBestSplitsFromHistograms(is_feature_used, false);
 }
 
 template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool, const Tree* tree) {
+void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->share_state_->num_threads);
   std::vector<SplitInfo> larger_bests_per_thread(this->share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features =
@@ -376,7 +376,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
           smaller_leaf_histogram_array_global_.get(), feature_index,
           real_feature_index, smaller_node_used_features[feature_index],
           GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->leaf_index()),
-          smaller_leaf_splits_global_.get(), &smaller_bests_per_thread[tid], tree);
+          smaller_leaf_splits_global_.get(), &smaller_bests_per_thread[tid]);
     }
 
     if (larger_is_feature_aggregated_[feature_index]) {
@@ -392,7 +392,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
           real_feature_index,
           larger_node_used_features[feature_index],
           GetGlobalDataCountInLeaf(larger_leaf_splits_global_->leaf_index()),
-          larger_leaf_splits_global_.get(), &larger_bests_per_thread[tid], tree);
+          larger_leaf_splits_global_.get(), &larger_bests_per_thread[tid]);
     }
     OMP_LOOP_EX_END();
   }
