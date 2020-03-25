@@ -79,7 +79,7 @@ class LeafConstraintsBase {
   }
 
  private:
-    const Tree* tree_;
+  const Tree* tree_;
 };
 
 class BasicLeafConstraints : public LeafConstraintsBase {
