@@ -78,7 +78,7 @@ class LeafConstraintsBase {
     tree_ = tree;
   }
 
-  private:
+ private:
     const Tree* tree_;
 };
 
