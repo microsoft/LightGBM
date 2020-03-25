@@ -1125,7 +1125,7 @@ class TestEngine(unittest.TestCase):
     def test_monotone_penalty_max(self):
         max_depth = 5
         monotone_constraints = [1, -1, 0]
-        penalization_parameter = max_depth - 1e-10
+        penalization_parameter = max_depth
         for monotone_constraints_method in ["basic", "intermediate"]:
             trainset_constrained_model = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
             x = trainset_constrained_model.data
