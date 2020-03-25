@@ -63,16 +63,15 @@ class LeafConstraintsBase {
 
   inline static LeafConstraintsBase* Create(const Config* config, int num_leaves);
 
-  double ComputeMonotoneSplitGainPenalty(int leaf_index, double penalization,
-                                                double epsilon = 1e-10) {
+  double ComputeMonotoneSplitGainPenalty(int leaf_index, double penalization) {
     int depth = tree_->leaf_depth(leaf_index);
     if (penalization >= depth + 1.) {
-      return epsilon;
+      return kEpsilon;
     }
     if (penalization <= 1.) {
-      return 1. - penalization / pow(2., depth) + epsilon;
+      return 1. - penalization / pow(2., depth) + kEpsilon;
     }
-    return 1. - pow(2, penalization - 1. - depth) + epsilon;
+    return 1. - pow(2, penalization - 1. - depth) + kEpsilon;
   }
 
   void ShareTreePointer(Tree* tree) {
