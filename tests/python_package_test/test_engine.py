@@ -1137,6 +1137,7 @@ class TestEngine(unittest.TestCase):
                 'monotone_penalty': penalization_parameter,
                 "max_depth": max_depth,
                 "monotone_constraints_method": monotone_constraints_method,
+                "gpu_use_dp": True,
             }
             # The penalization is so high that the first 2 features should not be used here
             constrained_model = lgb.train(params_constrained_model, trainset_constrained_model, 10)
@@ -1144,6 +1145,7 @@ class TestEngine(unittest.TestCase):
             trainset_unconstrained_model = lgb.Dataset(x3_negatively_correlated_with_y.reshape(-1, 1), label=y)
             params_unconstrained_model = {
                 "max_depth": max_depth
+                "gpu_use_dp": True,
             }
             unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
 
