@@ -83,4 +83,5 @@ if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
     Check-Output $False
 }
 
+Write-Output "No issues were found checking the R package"
 Exit 0
