@@ -240,7 +240,7 @@ set(SOURCES "${SOURCES} src/c_api.cpp")
 # Only build the R part of the library if building for
 # use with the R package
 if(BUILD_FOR_R)
-  set(SOURCES "${SOURCES} lightgbm_R.cpp")
+  set(SOURCES "${SOURCES} src/lightgbm_R.cpp")
 endif(BUILD_FOR_R)
 
 add_library(_lightgbm SHARED ${SOURCES})
