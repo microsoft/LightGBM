@@ -1092,16 +1092,16 @@ class TestEngine(unittest.TestCase):
                 return True
             if monotone_constraints[tree["split_feature"]] != 0:
                 return False
-            return (are_first_splits_non_monotone(tree["left_child"], n - 1, monotone_constraints) and
-                    are_first_splits_non_monotone(tree["right_child"], n - 1, monotone_constraints))
+            return (are_first_splits_non_monotone(tree["left_child"], n - 1, monotone_constraints)
+                    and are_first_splits_non_monotone(tree["right_child"], n - 1, monotone_constraints))
 
         def are_there_monotone_splits(tree, monotone_constraints):
             if "leaf_value" in tree:
                 return False
             if monotone_constraints[tree["split_feature"]] != 0:
                 return True
-            return (are_there_monotone_splits(tree["left_child"], monotone_constraints) or
-                   are_there_monotone_splits(tree["right_child"], monotone_constraints))
+            return (are_there_monotone_splits(tree["left_child"], monotone_constraints)
+                    or are_there_monotone_splits(tree["right_child"], monotone_constraints))
 
         max_depth = 5
         monotone_constraints = [1, -1, 0]
@@ -1148,8 +1148,8 @@ class TestEngine(unittest.TestCase):
             unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
 
             # Check that a very high penalization is the same as not using the features at all
-            self.assert_((constrained_model.predict(x) ==
-                          unconstrained_model.predict(x3_negatively_correlated_with_y.reshape(-1, 1))).all())
+            self.assert_((constrained_model.predict(x)
+                          == unconstrained_model.predict(x3_negatively_correlated_with_y.reshape(-1, 1))).all())
 
     def test_max_bin_by_feature(self):
         col1 = np.arange(0, 100)[:, np.newaxis]
