@@ -423,9 +423,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetDouble(params, "monotone_penalty", &monotone_penalty);
   CHECK_GE(monotone_penalty, 0.0);
-  if (max_depth > 0) {  //FIXME Not specified in config.h because I don't know how to specify that, please advise
-    CHECK_LT(monotone_penalty, max_depth)
-  }
 
   if (GetString(params, "feature_contri", &tmp_str)) {
     feature_contri = Common::StringToArray<double>(tmp_str, ',');

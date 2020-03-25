@@ -328,6 +328,9 @@ void Config::CheckParamConflict() {
     Log::Warning("Cannot use \"intermediate\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
+  if (max_depth > 0 && monotone_penalty >= max_depth) {
+    Log::Warning("Monotone penalty greater than tree depth. Monotone features won't be used.");
+  }
 }
 
 std::string Config::ToString() const {
