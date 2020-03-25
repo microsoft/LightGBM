@@ -74,12 +74,12 @@ class LeafConstraintsBase {
     return 1. - pow(2, penalization - 1. - depth) + kEpsilon;
   }
 
-  void ShareTreePointer(Tree* tree) {
+  void ShareTreePointer(const Tree* tree) {
     tree_ = tree;
   }
 
   private:
-    Tree* tree_;
+    const Tree* tree_;
 };
 
 class BasicLeafConstraints : public LeafConstraintsBase {
