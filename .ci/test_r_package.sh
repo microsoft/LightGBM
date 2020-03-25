@@ -91,7 +91,7 @@ if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     exit -1
 fi
 
-ALLOWED_CHECK_NOTES=3
+ALLOWED_CHECK_NOTES=2
 NUM_CHECK_NOTES=$(
     cat ${LOG_FILE_NAME} \
         | grep -e '^Status: .* NOTE.*' \
