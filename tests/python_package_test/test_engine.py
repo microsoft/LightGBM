@@ -1117,9 +1117,9 @@ class TestEngine(unittest.TestCase):
             constrained_model = lgb.train(params, trainset, 10)
             dumped_model = constrained_model.dump_model()["tree_info"]
             for tree in dumped_model:
-                self.assert_(are_first_splits_non_monotone(tree["tree_structure"], int(penalization_parameter),
-                                                           monotone_constraints))
-                self.assert_(are_there_monotone_splits(tree["tree_structure"], monotone_constraints))
+                self.assertTrue(are_first_splits_non_monotone(tree["tree_structure"], int(penalization_parameter),
+                                                              monotone_constraints))
+                self.assertTrue(are_there_monotone_splits(tree["tree_structure"], monotone_constraints))
 
     # test if a penalty as high as the depth indeed prohibits all monotone splits
     def test_monotone_penalty_max(self):
@@ -1148,8 +1148,8 @@ class TestEngine(unittest.TestCase):
             unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
 
             # Check that a very high penalization is the same as not using the features at all
-            self.assert_((constrained_model.predict(x)
-                          == unconstrained_model.predict(x3_negatively_correlated_with_y.reshape(-1, 1))).all())
+            self.assertTrue((constrained_model.predict(x)
+                             == unconstrained_model.predict(x3_negatively_correlated_with_y.reshape(-1, 1))).all())
 
     def test_max_bin_by_feature(self):
         col1 = np.arange(0, 100)[:, np.newaxis]
