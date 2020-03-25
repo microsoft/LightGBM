@@ -1144,7 +1144,7 @@ class TestEngine(unittest.TestCase):
 
             trainset_unconstrained_model = lgb.Dataset(x3_negatively_correlated_with_y.reshape(-1, 1), label=y)
             params_unconstrained_model = {
-                "max_depth": max_depth
+                "max_depth": max_depth,
                 "gpu_use_dp": True,
             }
             unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
