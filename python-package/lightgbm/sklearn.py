@@ -298,9 +298,6 @@ class LGBMModel(_LGBMModelBase):
         """
         if not SKLEARN_INSTALLED:
             raise LightGBMError('Scikit-learn is required for this module')
-        elif SKLEARN_VERSION > '0.21.3':
-            raise RuntimeError("The last supported version of scikit-learn is 0.21.3.\n"
-                               "Found version: {0}.".format(SKLEARN_VERSION))
 
         self.boosting_type = boosting_type
         self.objective = objective

@@ -293,6 +293,11 @@ class TestSklearn(unittest.TestCase):
                 check_name = check.func.__name__ if hasattr(check, 'func') else check.__name__
                 if check_name == 'check_estimators_nan_inf':
                     continue  # skip test because LightGBM deals with nan
+                elif (check_name == "check_no_attributes_set_in_init"
+                      and sk_version < '0.23.0'):
+                    # scikit-learn <0.23 incorrectly asserts that private attributes
+                    # cannot be set in __init__.
+                    continue
                 try:
                     check(name, estimator)
                 except SkipTest as message:

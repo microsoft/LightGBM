@@ -78,7 +78,7 @@ If you want to use the Python interface of LightGBM, you can install it now (alo
 ::
 
     sudo apt-get -y install python-pip
-    sudo -H pip install setuptools numpy scipy "scikit-learn<=0.21.3" -U
+    sudo -H pip install setuptools numpy scipy "scikit-learn!=0.22.0" -U
     cd python-package/
     sudo python setup.py install --precompile
     cd ..
