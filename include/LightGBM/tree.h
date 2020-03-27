@@ -142,6 +142,9 @@ class Tree {
   /*! \brief Get depth of specific leaf*/
   inline int leaf_depth(int leaf_idx) const { return leaf_depth_[leaf_idx]; }
 
+  /*! \brief Get parent of specific leaf*/
+  inline int leaf_parent(int leaf_idx) const {return leaf_parent_[leaf_idx]; }
+
   /*! \brief Get feature of specific split*/
   inline int split_feature(int split_idx) const { return split_feature_[split_idx]; }
 
@@ -162,8 +165,6 @@ class Tree {
   inline int split_feature_inner(int node_idx) const {
     return split_feature_inner_[node_idx];
   }
-
-  inline int leaf_parent(int leaf_idx) const { return leaf_parent_[leaf_idx]; }
 
   inline uint32_t threshold_in_bin(int node_idx) const {
     return threshold_in_bin_[node_idx];

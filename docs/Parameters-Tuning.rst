@@ -82,3 +82,5 @@ Deal with Over-fitting
 -  Try ``extra_trees``
 
 .. _Optuna: https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258
+
+-  Try increasing ``path_smoothing``

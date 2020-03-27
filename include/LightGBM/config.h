@@ -488,6 +488,15 @@ struct Config {
   // desc = applied once per forest
   std::vector<double> cegb_penalty_feature_coupled;
 
+  // check = >= 0.0
+  // desc = controls smoothing applied to tree nodes
+  // desc = helps prevent overfitting on leaves with few samples
+  // desc = if set to zero, no smoothing is applied
+  // desc = if `path_smooth > 0` then `min_data_in_leaf` must be at least `2`.
+  // desc = larger values give stronger regularisation
+  // descl2 = the weight of each node is `(n / path_smooth) * w + w_p / (n / path_smooth + 1)`, where `n` is the number of samples in the node, `w` is the calculated node weight, and `w_p` is the weight of the parent node
+  double path_smooth = 0;
+
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
