@@ -15,7 +15,7 @@ cd $BUILD_DIRECTORY
 
 if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
+    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen libiconv
     pip install --user -r requirements.txt rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
