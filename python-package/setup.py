@@ -276,7 +276,7 @@ if __name__ == "__main__":
           install_requires=[
               'numpy',
               'scipy',
-              'scikit-learn<=0.21.3'
+              'scikit-learn'
           ],
           maintainer='Guolin Ke',
           maintainer_email='guolin.ke@microsoft.com',

@@ -125,7 +125,6 @@ try:
         from sklearn.cross_validation import StratifiedKFold, GroupKFold
         from sklearn.utils.validation import NotFittedError
     SKLEARN_INSTALLED = True
-    from sklearn import __version__ as SKLEARN_VERSION
     _LGBMModelBase = BaseEstimator
     _LGBMRegressorBase = RegressorMixin
     _LGBMClassifierBase = ClassifierMixin
@@ -141,7 +140,6 @@ try:
     _LGBMComputeSampleWeight = compute_sample_weight
 except ImportError:
     SKLEARN_INSTALLED = False
-    SKLEARN_VERSION = '0.0.0'
     _LGBMModelBase = object
     _LGBMClassifierBase = object
     _LGBMRegressorBase = object
