@@ -69,7 +69,7 @@ packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
 fi
-Rscript -e --vanilla "install.packages(${packages}, repos = '${CRAN_MIRROR}')" || exit -1
+Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}')" || exit -1
 
 cd ${BUILD_DIRECTORY}
 Rscript --vanilla build_r.R || exit -1
