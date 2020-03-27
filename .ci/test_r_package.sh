@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # set up R environment
+CRAN_MIRROR="https://cloud.r-project.org/"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
-CRAN_MIRROR="https://cloud.r-project.org/"
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
 # installing precompiled R for Ubuntu
