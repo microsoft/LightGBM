@@ -9,7 +9,7 @@ import numpy as np
 from .basic import Dataset, LightGBMError, _ConfigAliases
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
-                     _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
+                     _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
                      argc_, range_, zip_, string_type, DataFrame, DataTable)
 from .engine import train
@@ -544,7 +544,8 @@ class LGBMModel(_LGBMModelBase):
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
-            _LGBMCheckConsistentLength(_X, _y, sample_weight)
+            if sample_weight is not None:
+                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
 
