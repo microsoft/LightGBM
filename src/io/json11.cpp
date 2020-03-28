@@ -350,18 +350,12 @@ namespace {
 struct JsonParser final {
     /* State
      */
-    const string& str;
+    const char* str;
+    const size_t str_len;
     size_t i;
     string &err;
     bool failed;
     const JsonParse strategy;
-    JsonParser(const string &in_str, size_t in_i, string &in_err,
-               bool in_failed, const JsonParse in_strategy)
-        : str(in_str),
-          i(in_i),
-          err(in_err),
-          failed(in_failed),
-          strategy(in_strategy) {}
 
     /* fail(msg, err_ret = Json())
      *
@@ -396,23 +390,23 @@ struct JsonParser final {
       bool comment_found = false;
       if (str[i] == '/') {
         i++;
-        if (i == str.size())
+        if (i == str_len)
           return fail("Unexpected end of input after start of comment", false);
         if (str[i] == '/') {  // inline comment
           i++;
           // advance until next line, or end of input
-          while (i < str.size() && str[i] != '\n') {
+          while (i < str_len && str[i] != '\n') {
             i++;
           }
           comment_found = true;
         } else if (str[i] == '*') {  // multiline comment
           i++;
-          if (i > str.size()-2)
+          if (i > str_len - 2)
             return fail("Unexpected end of input inside multi-line comment", false);
           // advance until closing tokens
           while (!(str[i] == '*' && str[i+1] == '/')) {
             i++;
-            if (i > str.size()-2)
+            if (i > str_len - 2)
               return fail("Unexpected end of input inside multi-line comment", false);
           }
           i += 2;
@@ -448,7 +442,7 @@ struct JsonParser final {
     char get_next_token() {
         consume_garbage();
         if (failed) return char{0};
-        if (i == str.size())
+        if (i == str_len)
             return fail("Unexpected end of input", char{0});
 
         return str[i++];
@@ -487,7 +481,7 @@ struct JsonParser final {
         string out;
         long last_escaped_codepoint = -1;
         while (true) {
-            if (i == str.size())
+            if (i == str_len)
                 return fail("Unexpected end of input in string", "");
 
             char ch = str[i++];
@@ -509,14 +503,14 @@ struct JsonParser final {
             }
 
             // Handle escapes
-            if (i == str.size())
+            if (i == str_len)
                 return fail("Unexpected end of input in string", "");
 
             ch = str[i++];
 
             if (ch == 'u') {
                 // Extract 4-byte escape sequence
-                string esc = str.substr(i, 4);
+                string esc = string(str + i, 4);
                 // Explicitly check length of the substring. The following loop
                 // relies on std::string returning the terminating NUL when
                 // accessing str[length]. Checking here reduces brittleness.
@@ -597,7 +591,7 @@ struct JsonParser final {
 
         if (str[i] != '.' && str[i] != 'e' && str[i] != 'E'
                 && (i - start_pos) <= static_cast<size_t>(std::numeric_limits<int>::digits10)) {
-            return std::atoi(str.c_str() + start_pos);
+            return std::atoi(str + start_pos);
         }
 
         // Decimal part
@@ -624,7 +618,7 @@ struct JsonParser final {
                 i++;
         }
 
-        return std::strtod(str.c_str() + start_pos, nullptr);
+        return std::strtod(str + start_pos, nullptr);
     }
 
     /* expect(str, res)
@@ -637,11 +631,12 @@ struct JsonParser final {
           assert(i != 0);
         #endif
         i--;
-        if (str.compare(i, expected.length(), expected) == 0) {
+        auto substr = string(str + i, expected.length());
+        if (substr == expected) {
             i += expected.length();
             return res;
         } else {
-            return fail("Parse error: expected " + expected + ", got " + str.substr(i, expected.length()));
+          return fail("Parse error: expected " + expected + ", got " + substr);
         }
     }
 
@@ -738,7 +733,7 @@ struct JsonParser final {
 }  // namespace
 
 Json Json::parse(const string &in, string &err, JsonParse strategy) {
-    JsonParser parser(in, 0, err, false, strategy);
+    JsonParser parser{in.c_str(), in.size(), 0, err, false, strategy};
     Json result = parser.parse_json(0);
 
     // Check for any trailing garbage
@@ -756,7 +751,7 @@ vector<Json> Json::parse_multi(const string &in,
                                std::string::size_type &parser_stop_pos,
                                string &err,
                                JsonParse strategy) {
-    JsonParser parser(in, 0, err, false, strategy);
+    JsonParser parser{in.c_str(), in.size(), 0, err, false, strategy};
     parser_stop_pos = 0;
     vector<Json> json_vec;
     while (parser.i != in.size() && !parser.failed) {
