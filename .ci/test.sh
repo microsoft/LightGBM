@@ -47,6 +47,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
         r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
     conda install -q -y -n $CONDA_ENV \
         -c conda-forge \
+            libxml2 \
             r-lintr>=2.0
     pip install --user cpplint
     echo "Linting Python code"
