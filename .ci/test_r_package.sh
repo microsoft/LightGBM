@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # set up R environment
+CRAN_MIRROR="https://cloud.r-project.org/"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
-echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
 # installing precompiled R for Ubuntu
@@ -69,7 +69,7 @@ packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
 fi
-Rscript -e "install.packages(${packages})" || exit -1
+Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')" || exit -1
 
 cd ${BUILD_DIRECTORY}
 Rscript build_r.R || exit -1
