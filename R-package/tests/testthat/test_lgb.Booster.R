@@ -115,12 +115,12 @@ test_that("lgb.load() gives the expected error messages given different incorrec
     }, regexp = "either filename or model_str must be given")
 
     # if given, filename should be a string that points to an existing file
-    out_file = "lightgbm.model"
+    out_file <- "lightgbm.model"
     expect_error({
         lgb.load(filename = list(out_file))
     }, regexp = "filename should be character")
     file_to_check <- paste0("a.model")
-    while (file.exists(file_to_check)){
+    while (file.exists(file_to_check)) {
         file_to_check <- paste0("a", file_to_check)
     }
     expect_error({
@@ -129,7 +129,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
 
     # if given, model_str should be a string
     expect_error({
-        lgb.load(model_str = c(4, 5, 6))
+        lgb.load(model_str = c(4.0, 5.0, 6.0))
     }, regexp = "model_str should be character")
 
 })

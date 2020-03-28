@@ -798,18 +798,18 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
   filename_provided <- !is.null(filename)
   model_str_provided <- !is.null(model_str)
 
-  if (filename_provided){
-    if (!is.character(filename)){
+  if (filename_provided) {
+    if (!is.character(filename)) {
       stop("lgb.load: filename should be character")
     }
-    if (!file.exists(filename)){
+    if (!file.exists(filename)) {
       stop(sprintf("lgb.load: file '%s' passed to filename does not exist", filename))
     }
     return(invisible(Booster$new(modelfile = filename)))
   }
 
-  if (model_str_provided){
-    if (!is.character(model_str)){
+  if (model_str_provided) {
+    if (!is.character(model_str)) {
       stop("lgb.load: model_str should be character")
     }
     return(invisible(Booster$new(model_str = model_str)))
