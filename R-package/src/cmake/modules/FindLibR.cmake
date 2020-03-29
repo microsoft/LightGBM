@@ -49,7 +49,6 @@ function(create_rlib_for_msvc)
 
   # extract symbols from R.dll into R.def and R.lib import library
   execute_process(COMMAND ${GENDEF_EXE}
-    #"-" "${LIBR_LIB_DIR}/R.dll"
     "-" "${LIBR_CORE_LIBRARY}"
     OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def"
   )
@@ -184,11 +183,6 @@ else()
 endif()
 
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
-
-message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
-message(STATUS "LIBR_HOME: ${LIBR_HOME}")
-message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
-message(STATUS "LIBR_CORE_LIBRARY: ${LIBR_CORE_LIBRARY}")
 
 if(WIN32 AND MSVC)
 
