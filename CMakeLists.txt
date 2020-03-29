@@ -318,6 +318,10 @@ endif()
 if(BUILD_FOR_R)
   if(MSVC)
     # https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
+    set_property(
+      TARGET _lightgbm
+      PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+    )
     TARGET_LINK_LIBRARIES(_lightgbm ${CMAKE_CURRENT_BINARY_DIR}/R.lib)
   else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})

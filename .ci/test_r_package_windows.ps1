@@ -1,5 +1,5 @@
 # Download a file and retry upon failure. This looks like
-# an infinite looop 
+# an infinite loop but CI-level timeouts will kill it
 function Download-File-With-Retries {
   param(
     [string]$url,
@@ -15,6 +15,7 @@ function Download-File-With-Retries {
 $env:R_LIB_PATH = "C:/RLibrary"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:BINPREF = "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/"
+$env:CRAN_MIRROR = "https://cloud.r-project.org/"
 
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
@@ -60,24 +61,27 @@ initexmf --set-config-value [MPM]AutoInstall=1
 conda install -y --no-deps pandoc
 
 Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
-Add-Content .Rprofile "options(repos = 'https://cran.rstudio.com')"
-Add-Content .Rprofile "options(pkgType = 'binary')"
-Add-Content .Rprofile "options(install.packages.check.source = 'no')"
 
 Write-Output "Installing dependencies"
-Rscript.exe -e "install.packages(c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo'), lib = '$env:R_LIB_PATH')" ; Check-Output $?
+$packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+Rscript --vanilla -e "install.packages($packages, repos = '$env:CRAN_MIRROR', pkgType = 'binary', lib = '$env:R_LIB_PATH', install.packages.check.source = 'no')" ; Check-Output $?
 
 Write-Output "Building R package"
-Rscript build_r.R ; Check-Output $?
+Rscript build_r.R --skip-install ; Check-Output $?
 
 $PKG_FILE_NAME = Get-Item *.tar.gz
-$PKG_NAME = $PKG_FILE_NAME.BaseName.split("_")[0]
-$LOG_FILE_NAME = "$PKG_NAME.Rcheck/00check.log"
+$LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
 Write-Output "Running R CMD check"
+$check_flags = "--as-cran --no-multiarch"
+if ($env:AZURE -eq "true") {
+  $check_flags = "--no-multiarch --no-manual --ignore-vignettes"
+}
+Write-Output "using check flags '$check_flags'"
 $env:_R_CHECK_FORCE_SUGGESTS_=0
-R.exe CMD check "${PKG_FILE_NAME}" --as-cran --no-multiarch; Check-Output $?
+R.exe CMD check "${PKG_FILE_NAME}" $check_flags ; Check-Output $?
 
+Write-Output "Looking for issues with R CMD check results"
 if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
     echo "WARNINGS have been found by R CMD check!"
     Check-Output $False
