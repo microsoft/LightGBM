@@ -125,7 +125,7 @@ class RF : public GBDT {
           hess = tmp_hess_.data();
         }
 
-        new_tree.reset(tree_learner_->Train(grad, hess));
+        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
       }
 
       if (new_tree->num_leaves() > 1) {

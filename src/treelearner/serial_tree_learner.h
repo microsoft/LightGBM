@@ -79,7 +79,8 @@ class SerialTreeLearner: public TreeLearner {
     }
   }
 
-  Tree* Train(const score_t* gradients, const score_t *hessians) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
+              Json& forced_split_json) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
@@ -162,8 +163,9 @@ class SerialTreeLearner: public TreeLearner {
                   bool update_cnt);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
-  int32_t ForceSplits(Tree* tree, int* left_leaf, int* right_leaf,
-                      int* cur_depth);
+  virtual int32_t ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+                              int* right_leaf, int* cur_depth,
+                              bool *aborted_last_force_split);
 
   /*!
   * \brief Get the number of data in a leaf
@@ -226,6 +228,7 @@ class SerialTreeLearner: public TreeLearner {
   const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
+  bool is_constant_hessian_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {
