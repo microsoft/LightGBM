@@ -14,6 +14,7 @@
 
 #include "gpu_tree_learner.h"
 #include "serial_tree_learner.h"
+#include "cuda_tree_learner.h"
 
 namespace LightGBM {
 
