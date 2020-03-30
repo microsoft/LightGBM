@@ -306,7 +306,7 @@ lgb.train <- function(params = list(),
     booster$best_iter <- unname(
       .find_best(
         unlist(
-          booster$record_evals[[first_valid_name]][[first_metric_name]][[.EVAL_KEY()]]
+          booster$record_evals[[first_valid_name]][[first_metric]][[.EVAL_KEY()]]
         )
       )
     )

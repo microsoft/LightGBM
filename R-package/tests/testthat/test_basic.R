@@ -859,6 +859,7 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
     data = as.matrix(validDF[26L:50L, "feat1"], drop = FALSE)
     , label = validDF[26L:50L, "target"]
   )
+  nrounds <- 10L
   bst <- lightgbm(
     data = dtrain
     , nrounds = nrounds
