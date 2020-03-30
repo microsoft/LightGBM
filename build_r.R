@@ -5,6 +5,9 @@
 # Sys.setenv("CXX" = "/usr/local/bin/g++-8")
 # Sys.setenv("CC" = "/usr/local/bin/gcc-8")
 
+args <- commandArgs(trailingOnly=TRUE)
+INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
+
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
@@ -86,4 +89,8 @@ version <- gsub(
 tarball <- file.path(getwd(), sprintf("lightgbm_%s.tar.gz", version))
 
 cmd <- sprintf("R CMD INSTALL %s --no-multiarch --with-keep.source", tarball)
-.run_shell_command(cmd)
+if (INSTALL_AFTER_BUILD){
+  .run_shell_command(cmd)
+} else  {
+  print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
+}
