@@ -1,0 +1,179 @@
+/*
+ * ibmGBT: IBM CUDA Accelerated LightGBM
+ *
+ * IBM Confidential
+ * (C) Copyright IBM Corp. 2019. All Rights Reserved.
+ *
+ * The source code for this program is not published or otherwise
+ * divested of its trade secrets, irrespective of what has been
+ * deposited with the U.S. Copyright Office.
+ *
+ * US Government Users Restricted Rights - Use, duplication or
+ * disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+ */
+
+#ifndef _HISTOGRAM_256_KERNEL_
+#define _HISTOGRAM_256_KERNEL_
+
+//#pragma once
+
+// use double precision or not
+#ifndef USE_DP_FLOAT
+#define USE_DP_FLOAT 1
+#endif
+
+// ignore hessian, and use the local memory for hessian as an additional bank for gradient
+#ifndef CONST_HESSIAN
+#define CONST_HESSIAN 0
+#endif
+
+typedef unsigned char uchar;
+
+template<typename T>
+__device__ double as_double(const T t) {
+  static_assert(sizeof(T) == sizeof(double), "size mismatch");
+  double d; 
+  memcpy(&d, &t, sizeof(T)); 
+  return d;
+}
+template<typename T>
+__device__ ulong as_ulong(const T t) {
+  static_assert(sizeof(T) == sizeof(ulong), "size mismatch");
+  ulong u; 
+  memcpy(&u, &t, sizeof(T)); 
+  return u;
+}
+template<typename T>
+__device__ float as_float(const T t) {
+  static_assert(sizeof(T) == sizeof(float), "size mismatch");
+  float f; 
+  memcpy(&f, &t, sizeof(T)); 
+  return f;
+}
+template<typename T>
+__device__ uint as_uint(const T t) {
+  static_assert(sizeof(T) == sizeof(uint), "size_mismatch");
+  uint u; 
+  memcpy(&u, &t, sizeof(T)); 
+  return u;
+}
+template<typename T>
+__device__ uchar4 as_uchar4(const T t) {
+  static_assert(sizeof(T) == sizeof(uchar4), "size mismatch");
+  uchar4 u; 
+  memcpy(&u, &t, sizeof(T)); 
+  return u;
+}
+
+
+#define LOCAL_SIZE_0 256
+#define NUM_BINS 256
+#if USE_DP_FLOAT == 1
+typedef double acc_type;
+typedef ulong acc_int_type;
+#define as_acc_type as_double
+#define as_acc_int_type as_ulong
+#else
+typedef float acc_type;
+typedef uint acc_int_type;
+#define as_acc_type as_float
+#define as_acc_int_type as_uint
+#endif
+//#define LOCAL_MEM_SIZE (4 * (sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
+#define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
+
+// unroll the atomic operation for a few times. Takes more code space, 
+// but compiler can generate better code for faster atomics.
+#define UNROLL_ATOMIC 1
+
+// Options passed by compiler at run time:
+// IGNORE_INDICES will be set when the kernel does not 
+//#define IGNORE_INDICES
+//#define POWER_FEATURE_WORKGROUPS 10
+
+// detect Nvidia platforms
+#ifdef cl_nv_pragma_unroll
+#define NVIDIA 1
+#endif
+
+// use all features and do not use feature mask
+#ifndef ENABLE_ALL_FEATURES
+#define ENABLE_ALL_FEATURES 1
+#endif
+
+// use binary patching for AMD GCN 1.2 or newer
+#ifndef AMD_USE_DS_ADD_F32
+#define AMD_USE_DS_ADD_F32 0
+#endif
+
+typedef uint data_size_t;
+typedef float score_t;
+
+
+// define all of the different kernels
+
+#define DECLARE_CONST_BUF(name) \
+__global__ void name(__global const uchar* restrict feature_data_base, \
+                     const uchar* restrict feature_masks,\
+                     const data_size_t feature_size,\
+                     const data_size_t* restrict data_indices, \
+                     const data_size_t num_data, \
+                     const score_t* restrict ordered_gradients, \
+                     const score_t* restrict ordered_hessians,\
+                     char* __restrict__ output_buf,\
+                     volatile int * sync_counters,\
+                     acc_type* __restrict__ hist_buf_base, \
+                     const size_t power_feature_workgroups);
+
+
+#define DECLARE_CONST_HES_CONST_BUF(name) \
+__global__ void name(const uchar* __restrict__ feature_data_base, \
+                     const uchar* __restrict__ feature_masks,\
+                     const data_size_t feature_size,\
+                     const data_size_t* __restrict__ data_indices, \
+                     const data_size_t num_data, \
+                     const score_t* __restrict__ ordered_gradients, \
+                     const score_t const_hessian,\
+                     char* __restrict__ output_buf,\
+                     volatile int * sync_counters,\
+                     acc_type* __restrict__ hist_buf_base, \
+                     const size_t power_feature_workgroups);
+
+
+
+#define DECLARE_CONST_HES(name) \
+__global__ void name(const uchar* feature_data_base, \
+                     const uchar* __restrict__ feature_masks,\
+                     const data_size_t feature_size,\
+                     const data_size_t* data_indices, \
+                     const data_size_t num_data, \
+                     const score_t*  ordered_gradients, \
+                     const score_t const_hessian,\
+                     char* __restrict__ output_buf, \
+                     volatile int * sync_counters,\
+                     acc_type* __restrict__ hist_buf_base, \
+                     const size_t power_feature_workgroups);
+
+
+#define DECLARE(name) \
+__global__ void name(const uchar* feature_data_base, \
+                     const uchar* __restrict__ feature_masks,\
+                     const data_size_t feature_size,\
+                     const data_size_t* data_indices, \
+                     const data_size_t num_data, \
+                     const score_t*  ordered_gradients, \
+                     const score_t*  ordered_hessians,\
+                     char* __restrict__ output_buf, \
+                     volatile int * sync_counters,\
+                     acc_type* __restrict__ hist_buf_base, \
+                     const size_t power_feature_workgroups);
+
+
+DECLARE_CONST_HES(histogram256_allfeats);
+DECLARE_CONST_HES(histogram256_fulldata);
+DECLARE_CONST_HES(histogram256);
+DECLARE(histogram256_allfeats);
+DECLARE(histogram256_fulldata);
+DECLARE(histogram256);
+
+#endif // _HITOGRAM_256_KERNEL_
