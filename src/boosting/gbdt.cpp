@@ -96,7 +96,15 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type, config_.get()));
 
   // init tree learner
-  tree_learner_->Init(train_data_, is_constant_hessian_);
+  // LGBM_CUDA do not copy feature is is_use_subset for initialization
+  // LGBM_CUDA initialize training data info with bagging data size (tmp_subset_)
+
+  if (config_->device_type == std::string("cuda")) {
+     tree_learner_->Init(tmp_subset_.get(), is_constant_hessian_, is_use_subset_);
+  } else {
+    tree_learner_->Init(train_data_, is_constant_hessian_, is_use_subset_);
+  }
+
   tree_learner_->SetForcedSplit(&forced_splits_json_);
 
   // push training metrics
@@ -274,7 +282,7 @@ void GBDT::Bagging(int iter) {
         tmp_hessians_.resize(bag_gh_size);
       }
 
-      tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
+      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
 
       tree_learner_->ResetTrainingData(tmp_subset_.get(), is_constant_hessian_ );
     }
