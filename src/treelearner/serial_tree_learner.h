@@ -26,6 +26,11 @@
 #include "monotone_constraints.hpp"
 #include "split_info.hpp"
 
+// LGBM_CUDA
+#ifdef USE_CUDA
+#include <LightGBM/cuda/vector_cudahost.h>
+#endif
+
 #ifdef USE_GPU
 // Use 4KBytes aligned allocator for ordered gradients and ordered hessians when GPU is enabled.
 // This is necessary to pin the two arrays in memory and make transferring faster.
@@ -48,7 +53,8 @@ class SerialTreeLearner: public TreeLearner {
 
   ~SerialTreeLearner();
 
-  void Init(const Dataset* train_data, bool is_constant_hessian) override;
+  // LGBM_CUDA is_use_subset is used by CUDA only
+  void Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) override;
 
   void ResetTrainingData(const Dataset* train_data,
                          bool is_constant_hessian) override {
@@ -201,6 +207,11 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
+#elif USE_CUDA //LGBM_CUDA
+  /*! \brief gradients of current iteration, ordered for cache optimized */
+  std::vector<score_t,CHAllocator<score_t>> ordered_gradients_;
+  /*! \brief hessians of current iteration, ordered for cache optimized */
+  std::vector<score_t,CHAllocator<score_t>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_gradients_;

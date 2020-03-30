@@ -294,6 +294,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "gpu_platform_id",
   "gpu_device_id",
   "gpu_use_dp",
+  "num_gpu", /* LGBM_CUDA */
   });
   return params;
 }
@@ -482,6 +483,11 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
 
+  /* Hard-code to address the sparse layout issue. ONLY FOR CUDA IMPLEMENTATION */
+#if 0
+  is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
+#endif
+
   GetBool(params, "enable_bundle", &enable_bundle);
 
   GetBool(params, "use_missing", &use_missing);
@@ -605,6 +611,12 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "gpu_device_id", &gpu_device_id);
 
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
+  gpu_use_dp = true;  /* LGBM_CUDA hard-coding gpu_use_dp to TRUE (default is false) */
+
+  /* LGBM_CUDA get number of GPUs */
+  GetInt(params, "num_gpu", &num_gpu);
+  CHECK(num_gpu > 0);
+
 }
 
 std::string Config::SaveMembersToString() const {

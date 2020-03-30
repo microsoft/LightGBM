@@ -17,6 +17,11 @@
 
 namespace LightGBM {
 
+#ifdef USE_CUDA
+int LGBM_config_::current_device=lgbm_device_cpu;
+int LGBM_config_::current_learner=use_cpu_learner;
+#endif
+
 GBDT::GBDT()
     : iter_(0),
       train_data_(nullptr),
@@ -57,6 +62,19 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   early_stopping_round_ = config_->early_stopping_round;
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
+
+// LGBM_CUDA
+#ifdef USE_CUDA
+  if (config_->device_type == std::string("cuda")) {
+    // LGBM_config_::current_device=lgbm_device_cuda; moved to application.cpp
+     LGBM_config_::current_learner=use_cuda_learner;
+
+  /* Following are needed to ensure bagging required by the CUDA implementation */
+//  if (config_->bagging_fraction == 1.0){config_->bagging_fraction = 0.8;} moved to application.cpp
+//  if (config_->bagging_freq == 0) {config_->bagging_freq = 1;} moved to application.cpp
+
+  }
+#endif
 
   // load forced_splits file
   if (!config->forcedsplits_filename.empty()) {
@@ -107,7 +125,22 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   monotone_constraints_ = config->monotone_constraints;
 
   // if need bagging, create buffer
+  // LGBM_CUDA: for CUDA implementation, this function sets up the is_use_subset_ flag as TRUE and tmp_subset_ is allocated.
   ResetBaggingConfig(config_.get(), true);
+
+  // LGBM_CUDA
+  // Two key changes: position of the initializer is moved from the original code, and init() uses is_use_subset_ flag
+  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type, config_.get()));
+
+  // init tree learner
+  // LGBM_CUDA do not copy feature is is_use_subset for initialization
+  // LGBM_CUDA initialize training data info with bagging data size (tmp_subset_)
+
+  if (config_->device_type == std::string("cuda")) {
+    tree_learner_->Init(tmp_subset_.get(), is_constant_hessian_, is_use_subset_);
+  } else {
+    tree_learner_->Init(train_data_, is_constant_hessian_, is_use_subset_);
+  }
 
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
@@ -231,13 +264,19 @@ void GBDT::Bagging(int iter) {
     // set bagging data to tree learner
     if (!is_use_subset_) {
       tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
-    } else {
-      // get subset
-      tmp_subset_->ReSize(bag_data_cnt_);
-      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
-                              bag_data_cnt_, false);
-      tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
-                                    bag_data_cnt_);
+    } else { // LGBM_CUDA
+      // NEW get subset
+      bool resized= tmp_subset_->ReSize(bag_data_cnt_);
+
+     if (resized && (config_->device_type == std::string("cuda"))) {
+        size_t bag_gh_size = static_cast<size_t>(bag_data_cnt_) * num_tree_per_iteration_;
+        tmp_gradients_.resize(bag_gh_size);
+        tmp_hessians_.resize(bag_gh_size);
+      }
+
+      tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
+
+      tree_learner_->ResetTrainingData(tmp_subset_.get());
     }
   }
 }
@@ -245,13 +284,18 @@ void GBDT::Bagging(int iter) {
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   Common::FunctionTimer fun_timer("GBDT::Train", global_timer);
   bool is_finished = false;
+
+ //LGBM_CUDA
   auto start_time = std::chrono::steady_clock::now();
+
   for (int iter = 0; iter < config_->num_iterations && !is_finished; ++iter) {
     is_finished = TrainOneIter(nullptr, nullptr);
     if (!is_finished) {
       is_finished = EvalAndCheckEarlyStopping();
     }
+
     auto end_time = std::chrono::steady_clock::now();
+
     // output used time per iteration
     Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
               std::milli>(end_time - start_time) * 1e-3, iter + 1);
@@ -334,7 +378,136 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
   return 0.0f;
 }
 
+// LGBM_CUDA
+bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
+
+ // LGBM_CUDA invoke baggging during the first iteration
+ if ((config_->device_type == std::string("cuda")) && (iter_ == 0)) {
+
+    auto start_time = std::chrono::steady_clock::now();
+
+    Bagging(0); 
+  }
+
+  std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
+
+  // boosting first
+  if (gradients == nullptr || hessians == nullptr) {
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id, true);
+    }
+
+    // LGBM_CUDA
+    auto start_time = std::chrono::steady_clock::now();
+
+    Boosting();
+
+    gradients = gradients_.data();
+    hessians = hessians_.data();
+  }
+
+  // LGBM_CUDA  bagging logic
+  // Bagging(iter_);
+
+  bool should_continue = false;
+  for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+
+    // LGBM_CUDA
+    auto start_time = std::chrono::steady_clock::now();
+
+    const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
+    std::unique_ptr<Tree> new_tree(new Tree(2));
+
+    if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
+
+      auto grad = gradients + offset;
+      auto hess = hessians + offset;
+
+      // LGBM_CUDA
+      auto tmp_grad = tmp_gradients_.data();
+      auto tmp_hess = tmp_hessians_.data();
+
+      // need to copy gradients for bagging subset.
+      if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+      
+        #pragma omp parallel for schedule(static) // LGBM_CUDA
+        for (int i = 0; i < bag_data_cnt_; ++i) {
+          tmp_grad[i] = grad[bag_data_indices_[i]]; // LGBM_CUDA
+          tmp_hess[i] = hess[bag_data_indices_[i]]; // LGBM_CUDA
+        }
+     }
+
+      // LGBM_CUDA
+      new_tree.reset(tree_learner_->Train(tmp_grad, tmp_hess, is_constant_hessian_, forced_splits_json_));
+    }
+
+    if (new_tree->num_leaves() > 1) {
+      should_continue = true;
+      auto score_ptr = train_score_updater_->score() + offset;
+      auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
+      tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
+                                     num_data_, bag_data_indices_.data(), bag_data_cnt_);
+      // shrinkage by learning rate
+      new_tree->Shrinkage(shrinkage_rate_);
+      // update score
+      UpdateScore(new_tree.get(), cur_tree_id);
+      if (std::fabs(init_scores[cur_tree_id]) > kEpsilon) {
+        new_tree->AddBias(init_scores[cur_tree_id]);
+      }
+    } else {
+      // only add default score one-time
+      if (models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
+        double output = 0.0;
+        if (!class_need_train_[cur_tree_id]) {
+          if (objective_function_ != nullptr) {
+            output = objective_function_->BoostFromScore(cur_tree_id);
+          }
+        } else {
+          output = init_scores[cur_tree_id];
+        }
+        new_tree->AsConstantTree(output);
+        // updates scores
+        train_score_updater_->AddScore(output, cur_tree_id);
+        for (auto& score_updater : valid_score_updater_) {
+          score_updater->AddScore(output, cur_tree_id);
+        }
+      }
+
+    // LGBM_CUDA: moved for overlapping data copy w/ other operations
+    int iter_next = iter_ + 1;
+      if (iter_next < config_->num_iterations) {
+
+       auto start_time = std::chrono::steady_clock::now();
+
+       // bagging logic
+       Bagging(iter_next);
+
+      }
+    }
+    // add model
+    models_.push_back(std::move(new_tree));
+  }
+
+  if (!should_continue) {
+    Log::Warning("Stopped training because there are no more leaves that meet the split requirements");
+    if (models_.size() > static_cast<size_t>(num_tree_per_iteration_)) {
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        models_.pop_back();
+      }
+    }
+    return true;
+  }
+
+  ++iter_;
+  return false;
+}
+
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
+
+  if (config_->device_type == std::string("cuda")){ //LGBM_CUDA
+     return TrainOneIterCUDA(gradients, hessians);
+  }
+
   Common::FunctionTimer fun_timer("GBDT::TrainOneIter", global_timer);
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
   // boosting first
@@ -786,9 +959,22 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     }
   } else {
     bag_data_cnt_ = num_data_;
-    bag_data_indices_.clear();
-    bagging_runner_.ReSize(0);
-    is_use_subset_ = false;
+    if (config_->device_type == std::string("cuda")){ // LGBM_CUDA
+       if (tmp_subset_ == nullptr){
+          tmp_subset_.reset(new Dataset(bag_data_cnt_));
+          tmp_subset_->CopyFeatureMapperFrom(train_data_);
+          size_t bag_gh_size = static_cast<size_t>(bag_data_cnt_) * num_tree_per_iteration_;
+          tmp_gradients_.resize(bag_gh_size);
+          tmp_hessians_.resize(bag_gh_size);
+          is_use_subset_ = false;
+          bag_data_indices_.clear();
+       }
+    }
+    else {
+      bag_data_indices_.clear();
+      bagging_runner_.ReSize(0);
+      is_use_subset_ = false;
+    }
   }
 }
 

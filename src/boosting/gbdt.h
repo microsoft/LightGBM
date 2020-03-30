@@ -22,6 +22,10 @@
 #include <utility>
 #include <vector>
 
+#ifdef USE_CUDA
+#include <LightGBM/cuda/vector_cudahost.h> //LGBM_CUDA
+#endif
+
 #include "score_updater.hpp"
 
 namespace LightGBM {
@@ -143,6 +147,14 @@ class GBDT : public GBDTBase {
   * \return True if cannot train any more
   */
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
+
+  /*!
+  * \brief Training logic
+  * \param gradients nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessians nullptr for using default objective, otherwise use self-defined boosting
+  * \return True if cannot train any more
+  */
+  bool TrainOneIterCUDA(const score_t* gradients, const score_t* hessians);  // LGBM_CUDA
 
   /*!
   * \brief Rollback one iteration
@@ -463,10 +475,23 @@ class GBDT : public GBDTBase {
   std::vector<std::unique_ptr<Tree>> models_;
   /*! \brief Max feature index of training data*/
   int max_feature_idx_;
+
+#ifdef USE_CUDA
+  /*! \brief First order derivative of training data */
+  std::vector<score_t,CHAllocator<score_t>> gradients_; // LGBM_CUDA
+  std::vector<score_t,CHAllocator<score_t>> tmp_gradients_; // LGBM_CUDA
+  /*! \brief Second order derivative of training data */
+  std::vector<score_t, CHAllocator<score_t>> hessians_; // LGBM_CUDA
+  std::vector<score_t, CHAllocator<score_t>> tmp_hessians_; // LGBM_CUDA
+#else
   /*! \brief First order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> gradients_;
-  /*! \brief Secend order derivative of training data */
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> tmp_gradients_;
+  /*! \brief Second order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> hessians_;
+  std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> tmp_hessians_;
+#endif
+
   /*! \brief Store the indices of in-bag data */
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
   /*! \brief Number of in-bag data */

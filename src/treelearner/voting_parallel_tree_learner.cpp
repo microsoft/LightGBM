@@ -19,8 +19,8 @@ VotingParallelTreeLearner<TREELEARNER_T>::VotingParallelTreeLearner(const Config
 }
 
 template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian) {
-  TREELEARNER_T::Init(train_data, is_constant_hessian);
+void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) { // LGBM_CUDA
+  TREELEARNER_T::Init(train_data, is_constant_hessian, is_use_subset); // LGBM_CUDA
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
 
@@ -454,6 +454,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, 
 }
 
 // instantiate template classes, otherwise linker cannot find the code
+template class VotingParallelTreeLearner<CUDATreeLearner>; // LGBM_CUDA
 template class VotingParallelTreeLearner<GPUTreeLearner>;
 template class VotingParallelTreeLearner<SerialTreeLearner>;
 }  // namespace LightGBM

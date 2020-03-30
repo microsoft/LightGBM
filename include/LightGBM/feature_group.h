@@ -228,6 +228,16 @@ class FeatureGroup {
     return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
   }
 
+  // LGBM_CUDA
+  inline size_t FeatureGroupSizesInByte() {
+    return bin_data_->SizesInByte();
+  }
+
+  // LGBM_CUDA
+  inline void* FeatureGroupData() {
+    return bin_data_->get_data();
+  }
+
   inline data_size_t Split(int sub_feature, const uint32_t* threshold,
                            int num_threshold, bool default_left,
                            const data_size_t* data_indices, data_size_t cnt,

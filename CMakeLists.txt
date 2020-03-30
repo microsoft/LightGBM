@@ -1,7 +1,18 @@
+#LGBM_CUDA Added USE_CUDA flag
 if(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
+elseif(USE_CUDA)
+  cmake_minimum_required(VERSION 3.11)
+  enable_language(CUDA)
 else()
   cmake_minimum_required(VERSION 2.8)
+endif()
+
+#LGBM_CUDA
+if(USE_CUDA)
+  PROJECT(lightgbm LANGUAGES C CXX CUDA)
+else()
+  PROJECT(lightgbm LANGUAGES C CXX)
 endif()
 
 PROJECT(lightgbm)
@@ -12,7 +23,7 @@ OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not earlier than 3.5" OFF)
-OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
+OPTION(USE_CUDA "Enable CUDA-accelerated training" OFF) # LGBM_CUDA
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 
@@ -127,6 +138,101 @@ if(USE_GPU)
     ADD_DEFINITIONS(-DUSE_GPU)
 endif(USE_GPU)
 
+#LGBM_CUDA CUDA-specific code
+if(USE_CUDA)
+    find_package(CUDA REQUIRED)
+    include_directories(${CUDA_INCLUDE_DIRS})
+    LIST(APPEND CMAKE_CUDA_FLAGS -g -Xcompiler=-fopenmp -Xcompiler=-fPIC -Xcompiler=-Wall -lineinfo)
+    CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS 7.0)
+
+    LIST(APPEND CMAKE_CUDA_FLAGS ${CUDA_ARCH_FLAGS})
+    if(CMAKE_BUILD_TYPE MATCHES Release)
+      LIST(APPEND CMAKE_CUDA_FLAGS -03)
+    endif()
+
+    message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
+    string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+    message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
+    set(CMAKE_CUDA_FLAGS_DEBUG -G)
+    set(CMAKE_CUDA_FLAGS_RELEASE -lineinfo)
+
+    ADD_DEFINITIONS(-DUSE_CUDA)
+    if (NOT DEFINED CMAKE_CUDA_STANDARD)
+      set(CMAKE_CUDA_STANDARD 11)
+      set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    endif()
+
+    set(BASE_DEFINES
+     -DPOWER_FEATURE_WORKGROUPS=12
+     -DUSE_CONSTANT_BUF=0
+    )
+
+    set(ALLFEATS_DEFINES
+     ${BASE_DEFINES}
+     -DENABLE_ALL_FEATURES
+    )
+
+    set(FULLDATA_DEFINES
+     ${ALLFEATS_DEFINES}
+     -DIGNORE_INDICES
+    )
+
+    #string(REPLACE ";" " " BASE_DEFINES "${BASE_DEFINES}")
+    #string(REPLACE ";" " " ALLFEATS_DEFINES "${ALLFEATS_DEFINES}")
+    #string(REPLACE ";" " " FULLDATA_DEFINES "${FULLDATA_DEFINES}")
+
+    message(STATUS ALLFEATS_DEFINES: ${ALLFEATS_DEFINES})
+    message(STATUS FULLDATA_DEFINES: ${FULLDATA_DEFINES})
+
+    add_library(histo256_sp_const OBJECT src/treelearner/kernels/histogram256.cu)
+    set_target_properties(histo256_sp_const PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_compile_definitions(
+      histo256_sp_const PRIVATE
+      -DCONST_HESSIAN=1
+      ${BASE_DEFINES}
+    )
+
+    add_library(histo256_sp OBJECT src/treelearner/kernels/histogram256.cu)
+    set_target_properties(histo256_sp PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_compile_definitions(
+      histo256_sp PRIVATE
+      -DCONST_HESSIAN=0
+      ${BASE_DEFINES}
+    )
+
+    add_library(histo256-allfeats_sp_const OBJECT src/treelearner/kernels/histogram256.cu)
+    set_target_properties(histo256-allfeats_sp_const PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_compile_definitions(
+      histo256-allfeats_sp_const PRIVATE
+      -DCONST_HESSIAN=1
+      ${ALLFEATS_DEFINES}
+    )
+
+    add_library(histo256-allfeats_sp OBJECT src/treelearner/kernels/histogram256.cu)
+    set_target_properties(histo256-allfeats_sp PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_compile_definitions(
+      histo256-allfeats_sp PRIVATE
+      -DCONST_HESSIAN=0
+      ${ALLFEATS_DEFINES}
+    )
+
+    add_library(histo256-fulldata_sp_const OBJECT src/treelearner/kernels/histogram256.cu)
+    set_target_properties(histo256-fulldata_sp_const PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_compile_definitions(
+      histo256-fulldata_sp_const PRIVATE
+      -DCONST_HESSIAN=1
+      ${FULLDATA_DEFINES}
+    )
+
+    add_library(histo256-fulldata_sp OBJECT src/treelearner/kernels/histogram256.cu)
+    set_target_properties(histo256-fulldata_sp PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_compile_definitions(
+      histo256-fulldata_sp PRIVATE
+      -DCONST_HESSIAN=0
+      ${FULLDATA_DEFINES}
+    )
+endif(USE_CUDA)
+
 if(USE_HDFS)
     find_package(JNI REQUIRED)
     find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
@@ -224,6 +330,7 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif(USE_MPI)
 
+#LGBM_CUDA
 file(GLOB SOURCES
     src/application/*.cpp
     src/boosting/*.cpp
@@ -232,6 +339,9 @@ file(GLOB SOURCES
     src/objective/*.cpp
     src/network/*.cpp
     src/treelearner/*.cpp
+#ifdef USE_CUDA
+    src/treelearner/*cu
+#endif
 )
 
 add_executable(lightgbm src/main.cpp ${SOURCES})
@@ -302,6 +412,24 @@ if(USE_GPU)
   TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
   TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif(USE_GPU)
+
+#LGBM_CUDA
+if(USE_CUDA)
+  TARGET_LINK_LIBRARIES(
+    lightgbm
+    histo256_sp_const
+    histo256_sp
+    histo256-fulldata_sp_const
+    histo256-fulldata_sp
+  )
+  TARGET_LINK_LIBRARIES(
+    _lightgbm
+    histo256_sp_const
+    histo256_sp
+    histo256-fulldata_sp_const
+    histo256-fulldata_sp
+  )
+endif(USE_CUDA)
 
 if(USE_HDFS)
   TARGET_LINK_LIBRARIES(lightgbm ${HDFS_CXX_LIBRARIES})

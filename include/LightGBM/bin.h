@@ -288,6 +288,10 @@ class Bin {
   /*! \brief Number of all data */
   virtual data_size_t num_data() const = 0;
 
+  // LGBM_CUDA
+  /*! \brief Get data pointer */
+  virtual void* get_data() = 0;
+
   virtual void ReSize(data_size_t num_data) = 0;
 
   /*!

@@ -25,7 +25,8 @@ SerialTreeLearner::SerialTreeLearner(const Config* config)
 SerialTreeLearner::~SerialTreeLearner() {
 }
 
-void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
+//LGBM_CUDA
+void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   num_features_ = train_data_->num_features();
@@ -324,7 +325,18 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
     is_feature_used[feature_index] = 1;
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
+
+#ifdef USE_CUDA
+  if (LGBM_config_::current_learner == use_cpu_learner){
+      Log::Info("LightGBM-CUDA using CPU ConstructHistograms()");
+      SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract); 
+  }
+  else{
+      ConstructHistograms(is_feature_used, use_subtract);
+  }
+#else
   ConstructHistograms(is_feature_used, use_subtract);
+#endif
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
 }
 

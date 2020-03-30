@@ -34,7 +34,8 @@ class TreeLearner {
   * \param train_data The used training data
   * \param is_constant_hessian True if all hessians share the same value
   */
-  virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
+  // LGBM_CUDA is_use_subset_ for CUDA
+  virtual void Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) = 0;
 
   virtual void ResetIsConstantHessian(bool is_constant_hessian) = 0;
 

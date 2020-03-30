@@ -36,6 +36,10 @@ class Application {
   /*! \brief To call this function to run application*/
   inline void Run();
 
+  // LGBM_CUDA
+  /*! \brief call to get configuration */
+  Config GetConfig() {return config_ ;} ;
+
  private:
   /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);

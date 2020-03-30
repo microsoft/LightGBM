@@ -164,6 +164,8 @@ class DataPartition {
   /*! \brief used data count, used for bagging */
   data_size_t used_data_count_;
   ParallelPartitionRunner<data_size_t, true> runner_;
+  // LGBM_CUDA
+  //  bool is_cuda_;
 };
 
 }  // namespace LightGBM

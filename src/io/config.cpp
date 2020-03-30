@@ -126,6 +126,8 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
       *device_type = "cpu";
     } else if (value == std::string("gpu")) {
       *device_type = "gpu";
+    } else if (value == std::string("cuda")) { // LGBM_CUDA
+      *device_type = "cuda";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());
     }
@@ -320,7 +322,7 @@ void Config::CheckParamConflict() {
     }
   }
   // force col-wise for gpu
-  if (device_type == std::string("gpu")) {
+  if (device_type == std::string("gpu")) { // GCF maybe need to add some cuda here?
     force_col_wise = true;
     force_row_wise = false;
   }

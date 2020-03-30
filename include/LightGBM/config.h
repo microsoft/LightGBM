@@ -954,6 +954,10 @@ struct Config {
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   bool gpu_use_dp = false;
 
+  // desc = number of gpus (CUDA implementation only) LGBM_CUDA
+  // desc = default value is 1
+  int num_gpu = 1;
+
   #pragma endregion
 
   #pragma endregion

@@ -11,6 +11,10 @@
 int main(int argc, char** argv) {
   bool success = false;
   try {
+    // LGBM_CUDA
+    std::chrono::duration<double, std::milli> main_time;
+    auto start_main_time = std::chrono::steady_clock::now();
+
     LightGBM::Application app(argc, argv);
     app.Run();
 
@@ -18,6 +22,9 @@ int main(int argc, char** argv) {
     LightGBM::Linkers::MpiFinalizeIfIsParallel();
 #endif
 
+    // LGBM_CUDA
+    main_time = std::chrono::steady_clock::now() - start_main_time;
+    LightGBM::Log::Info("main::main time: %f sec", main_time * 1e-3);
     success = true;
   }
   catch (const std::exception& ex) {

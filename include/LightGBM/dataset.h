@@ -440,7 +440,10 @@ class Dataset {
     }
     return ret;
   }
-  void ReSize(data_size_t num_data);
+
+  /* LGBM_CUDA  void ReSize(data_size_t num_data); */
+  // LGBM_CUDA ReSize() returns true if resized
+  bool ReSize(data_size_t num_data);
 
   void CopySubrow(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
@@ -587,6 +590,16 @@ class Dataset {
 
   inline bool IsMultiGroup(int i) const {
     return feature_groups_[i]->is_multi_val_;
+  }
+
+  // LGBM_CUDA
+  inline size_t FeatureGroupSizesInByte(int group) const {
+    return feature_groups_[group]->FeatureGroupSizesInByte();
+  }
+
+  // LGBM_CUDA
+  inline void* FeatureGroupData(int group) const {
+    return feature_groups_[group]->FeatureGroupData();
   }
 
   inline double RealThreshold(int i, uint32_t threshold) const {
