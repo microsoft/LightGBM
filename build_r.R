@@ -5,11 +5,7 @@
 # Sys.setenv("CXX" = "/usr/local/bin/g++-8")
 # Sys.setenv("CC" = "/usr/local/bin/gcc-8")
 
-<<<<<<< HEAD
 args <- commandArgs(trailingOnly = TRUE)
-=======
-args <- commandArgs(trailingOnly=TRUE)
->>>>>>> [R-package] [ci] Add option to skip installation in build_r.R
 INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 
 # R returns FALSE (not a non-zero exit code) if a file copy operation
