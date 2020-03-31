@@ -8,10 +8,10 @@ configuration:  # a trick to construct a build matrix with multiple Python versi
 environment:
   matrix:
     - COMPILER: MSVC
-      TASK: appveyor-python
+      TASK: python
       CONDA_ENV: test-env
     - COMPILER: MINGW
-      TASK: appveyor-python
+      TASK: python
       CONDA_ENV: test-env
 
 clone_depth: 5
