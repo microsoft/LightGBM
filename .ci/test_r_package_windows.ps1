@@ -73,13 +73,14 @@ $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
 Write-Output "Running R CMD check"
-$check_flags = "--as-cran --no-multiarch"
-if ($env:AZURE -eq "true") {
-  $check_flags = "--no-multiarch --no-manual --ignore-vignettes"
-}
-Write-Output "using check flags '$check_flags'"
 $env:_R_CHECK_FORCE_SUGGESTS_=0
-R.exe CMD check "${PKG_FILE_NAME}" $check_flags ; Check-Output $?
+if ($env:AZURE -eq "true") {
+  Write-Output "Running R CMD check without checking documentation"
+  R.exe CMD check --no-multiarch --no-manual --ignore-vignettes ; Check-Output $?
+} else {
+  Write-Output "Running  R CMD check as CRAN"
+  R.exe CMD check --no-multiarch --as-cran  ${PKG_FILE_NAME} ; Check-Output $?
+}
 
 Write-Output "Looking for issues with R CMD check results"
 if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {

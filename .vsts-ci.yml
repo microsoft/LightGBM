@@ -24,6 +24,8 @@ jobs:
   strategy:
     maxParallel: 6
     matrix:
+      r_package:
+        TASK: r-package
       regular:
         TASK: regular
       sdist:
@@ -42,8 +44,6 @@ jobs:
         TASK: gpu
         METHOD: source
         PYTHON_VERSION: 3.6
-      r_package:
-        TASK: r-package
   steps:
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
@@ -78,6 +78,8 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
+      r_package:
+        TASK: r-package
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6
@@ -86,8 +88,6 @@ jobs:
         PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
-      r_package:
-        TASK: r-package
   steps:
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
@@ -126,11 +126,11 @@ jobs:
         TASK: regular
         PYTHON_VERSION: 3.7
       sdist:
-       TASK: sdist
-       PYTHON_VERSION: 2.7
+        TASK: sdist
+        PYTHON_VERSION: 2.7
       bdist:
-       TASK: bdist
-       PYTHON_VERSION: 3.5
+        TASK: bdist
+        PYTHON_VERSION: 3.5
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
