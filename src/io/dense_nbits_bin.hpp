@@ -75,7 +75,7 @@ class Dense4bitsBin : public Bin {
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
                           const score_t* ordered_gradients, const score_t* ordered_hessians,
-                          HistogramBinEntry* out) const override {
+                          hist_t* out) const override {
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
@@ -118,7 +118,7 @@ class Dense4bitsBin : public Bin {
 
   void ConstructHistogram(data_size_t num_data,
                           const score_t* ordered_gradients, const score_t* ordered_hessians,
-                          HistogramBinEntry* out) const override {
+                          hist_t* out) const override {
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
 
@@ -153,7 +153,7 @@ class Dense4bitsBin : public Bin {
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
                           const score_t* ordered_gradients,
-                          HistogramBinEntry* out) const override {
+                          hist_t* out) const override {
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
@@ -190,7 +190,7 @@ class Dense4bitsBin : public Bin {
 
   void ConstructHistogram(data_size_t num_data,
                           const score_t* ordered_gradients,
-                          HistogramBinEntry* out) const override {
+                          hist_t* out) const override {
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {

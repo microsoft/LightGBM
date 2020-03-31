@@ -83,7 +83,7 @@ void CUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, 
 
 // some functions used for debugging the GPU histogram construction
 
-void PrintHistograms(HistogramBinEntry* h, size_t size) {
+void PrintHistograms(hist_t* h, size_t size) {
   size_t total = 0;
   for (size_t i = 0; i < size; ++i) {
     printf("%03lu=%9.3g,%9.3g,%7d\t", i, h[i].sum_gradients, h[i].sum_hessians, h[i].cnt);
@@ -104,7 +104,7 @@ union Float_t
 };
   
 
-void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size, int feature_id) {
+void CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id) {
 
   size_t i;
   Float_t a, b;
@@ -221,7 +221,7 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
 
 
 template <typename HistType>
-void CUDATreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms) {
+void CUDATreeLearner::WaitAndGetHistograms(hist_t* histograms) {
   HistType* hist_outputs = (HistType*) host_histogram_outputs_;
 
   //#pragma omp parallel for schedule(static, num_gpu_)
@@ -321,7 +321,7 @@ void CUDATreeLearner::prevAllocateGPUMemory() {
   memset(ptr_pinned_feature_masks_, 0, num_dense_feature_groups_);
 
   // histogram bin entry size depends on the precision (single/double)
-  hist_bin_entry_sz_ = config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
+  hist_bin_entry_sz_ = config_->gpu_use_dp ? sizeof(hist_t) : sizeof(gpu_hist_t);
 
   // host_size histogram outputs
   //  host_histogram_outputs_ = malloc(num_dense_feature_groups_ * device_bin_size_ * hist_bin_entry_sz_);
@@ -591,12 +591,12 @@ Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians,
   return ret;
 }
 
-void CUDATreeLearner::ResetTrainingData(const Dataset* train_data) {
+void CUDATreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
 
   // LGBM_CUDA: check data size
   data_size_t old_num_data = num_data_;  
 
-  SerialTreeLearner::ResetTrainingData(train_data);
+  SerialTreeLearner::ResetTrainingDataInner(train_data, is_constant_hessian, reset_multi_val_bin);
 
   #if ResetTrainingData_DEBUG == 1 // LGBM_CUDA 
   serial_time = std::chrono::steady_clock::now() - start_serial_time;  
@@ -889,7 +889,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   }
 
   // construct smaller leaf
-  HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
+  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
 
   // Check workgroups per feature4 tuple..
   int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(smaller_leaf_splits_->num_data_in_leaf());
@@ -918,11 +918,11 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   if (is_gpu_used) {
     if (config_->gpu_use_dp) {
       // use double precision
-      WaitAndGetHistograms<HistogramBinEntry>(ptr_smaller_leaf_hist_data);
+      WaitAndGetHistograms<hist_t>(ptr_smaller_leaf_hist_data);
     }
     else {
       // use single precision
-      WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_smaller_leaf_hist_data);
+      WaitAndGetHistograms<gpu_hist_t>(ptr_smaller_leaf_hist_data);
     }
   }
 
@@ -936,13 +936,13 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
       continue;
     int dense_feature_group_index = dense_feature_group_map_[i];
     size_t size = train_data_->FeatureGroupNumBin(dense_feature_group_index);
-    HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
-    HistogramBinEntry* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index);
-    HistogramBinEntry* gpu_histogram = new HistogramBinEntry[size];
+    hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
+    hist_t* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index);
+    hist_t* gpu_histogram = new hist_t[size];
     data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
 
     std::copy(current_histogram, current_histogram + size, gpu_histogram);
-    std::memset(current_histogram, 0, train_data_->FeatureGroupNumBin(dense_feature_group_index) * sizeof(HistogramBinEntry));
+    std::memset(current_histogram, 0, train_data_->FeatureGroupNumBin(dense_feature_group_index) * sizeof(hist_t));
     if ( num_data == num_data_ ) {
       if ( is_constant_hessian_ ) {
         printf("ConstructHistogram(): num_data == num_data_ is_constant_hessian_");
@@ -991,7 +991,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
 
     // construct larger leaf
 
-    HistogramBinEntry* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - 1;
+    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - 1;
 
     is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf());
@@ -1013,11 +1013,11 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     if (is_gpu_used) {
       if (config_->gpu_use_dp) {
         // use double precision
-        WaitAndGetHistograms<HistogramBinEntry>(ptr_larger_leaf_hist_data);
+        WaitAndGetHistograms<hist_t>(ptr_larger_leaf_hist_data);
       }
       else {
         // use single precision
-        WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_larger_leaf_hist_data);
+        WaitAndGetHistograms<gpu_hist_t>(ptr_larger_leaf_hist_data);
       }
     }
   }

@@ -39,7 +39,7 @@ public:
   ~CUDATreeLearner();
   // LGBM_CUDA: is_use_subset is used by CUDA only
   void Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) override;
-  void ResetTrainingData(const Dataset* train_data) override;
+  void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
   Tree* Train(const score_t* gradients, const score_t *hessians,
               bool is_constant_hessian, Json& forced_split_json) override;
 
@@ -68,13 +68,7 @@ private:
   //    uint8_t s[4];
   //};
   
-  /*! \brief Single precision histogram entry for GPU */
-  struct GPUHistogramBinEntry {
-    score_t sum_gradients;
-    score_t sum_hessians;
-    uint32_t cnt;
-  };
-
+  typedef float gpu_hist_t;
 
   /*!
   * \brief Find the best number of workgroups processing one feature for maximizing efficiency
@@ -158,7 +152,7 @@ private:
    * \param histograms Destination of histogram results from GPU.
   */
   template <typename HistType>
-  void WaitAndGetHistograms(HistogramBinEntry* histograms);
+  void WaitAndGetHistograms(hist_t* histograms);
 
   /*!
    * \brief Construct GPU histogram asynchronously. 
