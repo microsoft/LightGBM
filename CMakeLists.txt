@@ -239,6 +239,17 @@ add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES})
 
 if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
+    if(USE_DEBUG)
+      set_property(
+        TARGET _lightgbm
+        PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebugDLL"
+      )
+    else()
+      set_property(
+        TARGET _lightgbm
+        PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+      )
+    endif(USE_DEBUG)
 endif(MSVC)
 
 if(USE_SWIG)
@@ -309,10 +320,6 @@ endif()
 
 if(BUILD_FOR_R)
   if(MSVC)
-    set_property(
-      TARGET _lightgbm
-      PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
-    )
     # https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
     TARGET_LINK_LIBRARIES(_lightgbm ${CMAKE_CURRENT_BINARY_DIR}/R.lib)
   else()
