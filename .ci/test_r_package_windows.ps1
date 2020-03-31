@@ -72,13 +72,12 @@ Rscript build_r.R --skip-install ; Check-Output $?
 $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
-Write-Output "Running R CMD check"
 $env:_R_CHECK_FORCE_SUGGESTS_=0
 if ($env:AZURE -eq "true") {
   Write-Output "Running R CMD check without checking documentation"
   R.exe CMD check --no-multiarch --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; Check-Output $?
 } else {
-  Write-Output "Running  R CMD check as CRAN"
+  Write-Output "Running R CMD check as CRAN"
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; Check-Output $?
 }
 
