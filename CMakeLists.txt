@@ -184,53 +184,30 @@ if(USE_CUDA)
     message(STATUS ALLFEATS_DEFINES: ${ALLFEATS_DEFINES})
     message(STATUS FULLDATA_DEFINES: ${FULLDATA_DEFINES})
 
-    add_library(histo256_sp_const OBJECT src/treelearner/kernels/histogram256.cu)
-    set_target_properties(histo256_sp_const PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    target_compile_definitions(
-      histo256_sp_const PRIVATE
-      -DCONST_HESSIAN=1
-      ${BASE_DEFINES}
-    )
+    function(add_histogram hsize hname hadd hconst hdir)
+      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
+      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+      if(hadd)
+        list(APPEND histograms histo${hsize}${hname})
+        set(histograms ${histograms} PARENT_SCOPE)
+      endif()
+      target_compile_definitions(
+        histo${hsize}${hname} PRIVATE
+        -DCONST_HESSIAN=${hconst}
+        ${hdir}
+      )
+    endfunction()
 
-    add_library(histo256_sp OBJECT src/treelearner/kernels/histogram256.cu)
-    set_target_properties(histo256_sp PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    target_compile_definitions(
-      histo256_sp PRIVATE
-      -DCONST_HESSIAN=0
-      ${BASE_DEFINES}
-    )
+    #foreach (hsize 16 64 256)
+    foreach (hsize 256)
+      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
+      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
+      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
+      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
+      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
+      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
+    endforeach()
 
-    add_library(histo256-allfeats_sp_const OBJECT src/treelearner/kernels/histogram256.cu)
-    set_target_properties(histo256-allfeats_sp_const PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    target_compile_definitions(
-      histo256-allfeats_sp_const PRIVATE
-      -DCONST_HESSIAN=1
-      ${ALLFEATS_DEFINES}
-    )
-
-    add_library(histo256-allfeats_sp OBJECT src/treelearner/kernels/histogram256.cu)
-    set_target_properties(histo256-allfeats_sp PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    target_compile_definitions(
-      histo256-allfeats_sp PRIVATE
-      -DCONST_HESSIAN=0
-      ${ALLFEATS_DEFINES}
-    )
-
-    add_library(histo256-fulldata_sp_const OBJECT src/treelearner/kernels/histogram256.cu)
-    set_target_properties(histo256-fulldata_sp_const PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    target_compile_definitions(
-      histo256-fulldata_sp_const PRIVATE
-      -DCONST_HESSIAN=1
-      ${FULLDATA_DEFINES}
-    )
-
-    add_library(histo256-fulldata_sp OBJECT src/treelearner/kernels/histogram256.cu)
-    set_target_properties(histo256-fulldata_sp PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    target_compile_definitions(
-      histo256-fulldata_sp PRIVATE
-      -DCONST_HESSIAN=0
-      ${FULLDATA_DEFINES}
-    )
 endif(USE_CUDA)
 
 if(USE_HDFS)
@@ -340,7 +317,7 @@ file(GLOB SOURCES
     src/network/*.cpp
     src/treelearner/*.cpp
 #ifdef USE_CUDA
-    src/treelearner/*cu
+    src/treelearner/*.cu
 #endif
 )
 
@@ -417,17 +394,11 @@ endif(USE_GPU)
 if(USE_CUDA)
   TARGET_LINK_LIBRARIES(
     lightgbm
-    histo256_sp_const
-    histo256_sp
-    histo256-fulldata_sp_const
-    histo256-fulldata_sp
+    ${histograms}
   )
   TARGET_LINK_LIBRARIES(
     _lightgbm
-    histo256_sp_const
-    histo256_sp
-    histo256-fulldata_sp_const
-    histo256-fulldata_sp
+    ${histograms}
   )
 endif(USE_CUDA)
 
