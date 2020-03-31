@@ -310,7 +310,7 @@ class Dense4bitsBin : public Bin {
   void* get_data() override { return data_.data(); }
 
   /*! \brief not ordered bin for dense feature */
-  OrderedBin* CreateOrderedBin() const override { return nullptr; }
+  Bin* CreateDenseBin() const { return nullptr; }
 
   void FinishLoad() override {
     if (buf_.empty()) { return; }
