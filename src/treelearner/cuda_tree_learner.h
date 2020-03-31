@@ -43,11 +43,11 @@ public:
   Tree* Train(const score_t* gradients, const score_t *hessians,
               bool is_constant_hessian, Json& forced_split_json) override;
 
-  void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
-    SerialTreeLearner::SetBaggingData(used_indices, num_data);
+  void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
+    SerialTreeLearner::SetBaggingData(subset, used_indices, num_data);
     // determine if we are using bagging before we construct the data partition
     // thus we can start data movement to GPU earlier
-    if (used_indices != nullptr) {
+    if (subset == nullptr && used_indices != nullptr) {
       if (num_data != num_data_) {
         use_bagging_ = true;
         return;
