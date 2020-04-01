@@ -35,4 +35,4 @@ build: false
 
 test_script:
   - conda init powershell
-  - powershell.exe -ExecutionPolicy Bypass -File $env:APPVEYOR_BUILD_FOLDER\.ci\test_windows.ps1
+  - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1
