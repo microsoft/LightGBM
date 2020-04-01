@@ -9,10 +9,8 @@ environment:
   matrix:
     - COMPILER: MSVC
       TASK: python
-      CONDA_ENV: test-env
     - COMPILER: MINGW
       TASK: python
-      CONDA_ENV: test-env
 
 clone_depth: 5
 
@@ -21,6 +19,7 @@ install:
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # delete sh.exe from PATH (mingw32-make fix)
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
+  - set CONDA_ENV="test-env"
   - ps: >-
       switch ($env:PYTHON_VERSION) {
           "2.7" {$env:MINICONDA = "C:\Miniconda-x64"}
@@ -35,5 +34,4 @@ install:
 build: false
 
 test_script:
-  - conda init powershell
   - powershell.exe -ExecutionPolicy Bypass -File .\.ci\test_windows.ps1
