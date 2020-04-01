@@ -52,7 +52,7 @@ elseif ($env:TASK -eq "bdist") {
   if ($env:COMPILER -eq "MINGW") {
     python setup.py install --mingw ; Check-Output $?
   } else {
-    python setup.py install | Check-Output $?
+    python setup.py install ; Check-Output $?
   }
 }
 
