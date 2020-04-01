@@ -50,7 +50,7 @@ elseif ($env:TASK -eq "bdist") {
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
   cd $env:BUILD_SOURCESDIRECTORY\python-package
   if ($env:COMPILER -eq "MINGW") {
-    python setup.py install --mingw | Check-Output $?
+    python setup.py install --mingw ; Check-Output $?
   } else {
     python setup.py install | Check-Output $?
   }
