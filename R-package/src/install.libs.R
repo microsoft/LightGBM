@@ -43,7 +43,7 @@ if (!use_precompile) {
   # Prepare installation steps
   cmake_cmd <- "cmake "
   build_cmd <- "make _lightgbm"
-  lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
+  lib_folder <- file.path(source_dir, fsep = "/")
 
   if (use_gpu) {
     cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=ON ")
@@ -98,7 +98,7 @@ if (!use_precompile) {
       } else {
         cmake_cmd <- paste0(cmake_cmd, local_vs_def)
         build_cmd <- "cmake --build . --target _lightgbm --config Release"
-        lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
+        lib_folder <- file.path(source_dir, "Release", fsep = "/")
       }
     }
   }
@@ -110,9 +110,7 @@ if (!use_precompile) {
   # Makefile. We don't need it here anyway since targets are built serially, so trying
   # to remove it with this hack
   generated_makefile <- file.path(
-    R_PACKAGE_SOURCE
-    , "src"
-    , "build"
+    build_dir
     , "Makefile"
   )
   if (file.exists(generated_makefile)) {
@@ -173,7 +171,7 @@ if (file.exists(src)) {
   print(paste0("Found library file: ", src, " to move to ", dest))
   file.copy(src, dest, overwrite = TRUE)
 
-  symbols_file <- file.path(R_PACKAGE_SOURCE, "src", "symbols.rds")
+  symbols_file <- file.path(source_dir, "symbols.rds")
   if (file.exists(symbols_file)) {
     file.copy(symbols_file, dest, overwrite = TRUE)
   }
