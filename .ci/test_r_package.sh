@@ -69,10 +69,10 @@ packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
 fi
-Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')" || exit -1
+Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
-Rscript build_r.R || exit -1
+Rscript build_r.R --skip-install || exit -1
 
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
@@ -91,7 +91,7 @@ if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     exit -1
 fi
 
-ALLOWED_CHECK_NOTES=3
+ALLOWED_CHECK_NOTES=2
 NUM_CHECK_NOTES=$(
     cat ${LOG_FILE_NAME} \
         | grep -e '^Status: .* NOTE.*' \
