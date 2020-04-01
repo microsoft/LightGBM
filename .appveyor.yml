@@ -34,4 +34,5 @@ install:
 build: false
 
 test_script:
+  - conda init powershell
   - powershell.exe -ExecutionPolicy Bypass -File .\.ci\test_windows.ps1
