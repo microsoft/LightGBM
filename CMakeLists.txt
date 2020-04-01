@@ -1,4 +1,3 @@
-#LGBM_CUDA Added USE_CUDA flag
 if(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 elseif(USE_CUDA)
@@ -8,7 +7,6 @@ else()
   cmake_minimum_required(VERSION 2.8)
 endif()
 
-#LGBM_CUDA
 if(USE_CUDA)
   PROJECT(lightgbm LANGUAGES C CXX CUDA)
 else()
@@ -23,7 +21,8 @@ OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not earlier than 3.5" OFF)
-OPTION(USE_CUDA "Enable CUDA-accelerated training" OFF) # LGBM_CUDA
+OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
+OPTION(USE_CUDA "Enable CUDA-accelerated training" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 
@@ -138,7 +137,6 @@ if(USE_GPU)
     ADD_DEFINITIONS(-DUSE_GPU)
 endif(USE_GPU)
 
-#LGBM_CUDA CUDA-specific code
 if(USE_CUDA)
     find_package(CUDA REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
@@ -166,12 +164,10 @@ if(USE_CUDA)
      -DPOWER_FEATURE_WORKGROUPS=12
      -DUSE_CONSTANT_BUF=0
     )
-
     set(ALLFEATS_DEFINES
      ${BASE_DEFINES}
      -DENABLE_ALL_FEATURES
     )
-
     set(FULLDATA_DEFINES
      ${ALLFEATS_DEFINES}
      -DIGNORE_INDICES
@@ -180,7 +176,6 @@ if(USE_CUDA)
     #string(REPLACE ";" " " BASE_DEFINES "${BASE_DEFINES}")
     #string(REPLACE ";" " " ALLFEATS_DEFINES "${ALLFEATS_DEFINES}")
     #string(REPLACE ";" " " FULLDATA_DEFINES "${FULLDATA_DEFINES}")
-
     message(STATUS ALLFEATS_DEFINES: ${ALLFEATS_DEFINES})
     message(STATUS FULLDATA_DEFINES: ${FULLDATA_DEFINES})
 
@@ -307,7 +302,6 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif(USE_MPI)
 
-#LGBM_CUDA
 file(GLOB SOURCES
     src/application/*.cpp
     src/boosting/*.cpp
@@ -390,7 +384,6 @@ if(USE_GPU)
   TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif(USE_GPU)
 
-#LGBM_CUDA
 if(USE_CUDA)
   TARGET_LINK_LIBRARIES(
     lightgbm
