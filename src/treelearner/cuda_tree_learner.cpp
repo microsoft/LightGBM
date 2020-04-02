@@ -1,7 +1,6 @@
 #ifdef USE_CUDA
 #include "cuda_tree_learner.h"
 #include "../io/dense_bin.hpp"
-#include "../io/dense_nbits_bin.hpp"
 
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/network.h>
