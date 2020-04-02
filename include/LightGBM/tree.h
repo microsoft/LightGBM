@@ -257,13 +257,11 @@ class Tree {
 
   inline int NumericalDecision(double fval, int node) const {
     uint8_t missing_type = GetMissingType(decision_type_[node]);
-    if (std::isnan(fval)) {
-      if (missing_type != 2) {
-        fval = 0.0f;
-      }
+    if (std::isnan(fval) && missing_type != MissingType::NaN) {
+      fval = 0.0f;
     }
-    if ((missing_type == 1 && IsZero(fval))
-        || (missing_type == 2 && std::isnan(fval))) {
+    if ((missing_type == MissingType::Zero && IsZero(fval))
+        || (missing_type == MissingType::NaN && std::isnan(fval))) {
       if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
         return left_child_[node];
       } else {
@@ -279,8 +277,8 @@ class Tree {
 
   inline int NumericalDecisionInner(uint32_t fval, int node, uint32_t default_bin, uint32_t max_bin) const {
     uint8_t missing_type = GetMissingType(decision_type_[node]);
-    if ((missing_type == 1 && fval == default_bin)
-        || (missing_type == 2 && fval == max_bin)) {
+    if ((missing_type == MissingType::Zero && fval == default_bin)
+        || (missing_type == MissingType::NaN && fval == max_bin)) {
       if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
         return left_child_[node];
       } else {
@@ -301,7 +299,7 @@ class Tree {
       return right_child_[node];;
     } else if (std::isnan(fval)) {
       // NaN is always in the right
-      if (missing_type == 2) {
+      if (missing_type == MissingType::NaN) {
         return right_child_[node];
       }
       int_fval = 0;
