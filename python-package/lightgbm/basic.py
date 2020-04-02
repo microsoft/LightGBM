@@ -432,6 +432,11 @@ def _load_pandas_categorical(file_name=None, model_str=None):
         return None
 
 
+def get_device_type():
+    """Get device type."""
+    return _LIB.LGBM_GetDeviceType()
+
+
 class _InnerPredictor(object):
     """_InnerPredictor of LightGBM.
 

@@ -194,7 +194,7 @@ class CustomInstall(install):
     user_options = install.user_options + [
         ('mingw', 'm', 'Compile with MinGW'),
         ('gpu', 'g', 'Compile GPU version'),
-        ('cuda', 'c', 'Compile CUDA version'),
+        ('cuda', None, 'Compile CUDA version'),
         ('mpi', None, 'Compile MPI version'),
         ('nomp', None, 'Compile version without OpenMP support'),
         ('hdfs', 'h', 'Compile HDFS version'),

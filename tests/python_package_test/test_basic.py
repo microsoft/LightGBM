@@ -29,6 +29,8 @@ class TestBasic(unittest.TestCase):
             "max_bin": 255,
             "gpu_use_dp": True
         }
+        if lgb.get_device_type() == 2:
+            params["device"] = "cuda"
         bst = lgb.Booster(params, train_data)
         bst.add_valid(valid_data, "valid_1")
 
