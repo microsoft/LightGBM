@@ -8,6 +8,7 @@ function Check-Output {
 
 # unify environment variables for Azure devops and AppVeyor
 if (Test-Path env:APPVEYOR) {
+  $env:APPVEYOR = "true"
   $env:BUILD_SOURCESDIRECTORY = $env:APPVEYOR_BUILD_FOLDER
 }
 
@@ -21,7 +22,7 @@ conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
-conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy wheel ; Check-Output $?
+conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy ; Check-Output $?
 conda activate $env:CONDA_ENV
 
 if ($env:TASK -eq "regular") {
@@ -51,19 +52,24 @@ elseif ($env:TASK -eq "bdist") {
   python setup.py bdist_wheel --plat-name=win-amd64 --universal ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-} elseif ($env:TASK -eq "appveyor-python") {
+} elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
   cd $env:BUILD_SOURCESDIRECTORY\python-package
   if ($env:COMPILER -eq "MINGW") {
-    python setup.py install --mingw | Check-Output $?
+    python setup.py install --mingw ; Check-Output $?
   } else {
-    python setup.py install | Check-Output $?
+    python setup.py install ; Check-Output $?
   }
 }
 
-$tests = $env:BUILD_SOURCESDIRECTORY + $(If (($env:TASK -eq "sdist") -or ($env:TASK -eq "appveyor-python")) {"/tests/python_package_test"} Else {"/tests"})  # cannot test C API with "sdist" task
+if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
+  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
+} else {
+  # cannot test C API with "sdist" task
+  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
+}
 pytest $tests ; Check-Output $?
 
-if (($env:TASK -eq "regular") -or ($env:TASK -eq "appveyor-python")) {
+if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
   (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
