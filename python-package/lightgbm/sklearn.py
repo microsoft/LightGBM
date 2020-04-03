@@ -230,9 +230,11 @@ class LGBMModel(_LGBMModelBase):
             L1 regularization term on weights.
         reg_lambda : float, optional (default=0.)
             L2 regularization term on weights.
-        random_state : int or None, optional (default=None)
+        random_state : int, RandomState object or None, optional (default=None)
             Random number seed.
-            If None, default seeds in C++ code will be used.
+            If int, this number is used to seed the C++ code.
+            If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
+            If None, default seeds in C++ code are used.
         n_jobs : int, optional (default=-1)
             Number of parallel threads.
         silent : bool, optional (default=True)
@@ -503,6 +505,8 @@ class LGBMModel(_LGBMModelBase):
         params.pop('importance_type', None)
         params.pop('n_estimators', None)
         params.pop('class_weight', None)
+        if isinstance(params['random_state'], np.random.RandomState):
+            params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
         for alias in _ConfigAliases.get('objective'):
             params.pop(alias, None)
         if self._n_classes is not None and self._n_classes > 2:

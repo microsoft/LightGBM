@@ -129,8 +129,8 @@ class TestSklearn(unittest.TestCase):
                 eval_metric='ndcg',
                 callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
         self.assertLessEqual(gbm.best_iteration_, 24)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6559)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6421)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.6382)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6319)
 
     def test_regression_with_custom_objective(self):
         X, y = load_boston(True)
@@ -226,6 +226,39 @@ class TestSklearn(unittest.TestCase):
         pred_origin = gbm.predict(X_test)
         pred_pickle = gbm_pickle.predict(X_test)
         np.testing.assert_allclose(pred_origin, pred_pickle)
+
+    def test_random_state_object(self):
+        X, y = load_iris(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        state1 = np.random.RandomState(123)
+        state2 = np.random.RandomState(123)
+        clf1 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state1)
+        clf2 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state2)
+        # Test if random_state is properly stored
+        self.assertIs(clf1.random_state, state1)
+        self.assertIs(clf2.random_state, state2)
+        # Test if two random states produce identical models
+        clf1.fit(X_train, y_train)
+        clf2.fit(X_train, y_train)
+        y_pred1 = clf1.predict(X_test, raw_score=True)
+        y_pred2 = clf2.predict(X_test, raw_score=True)
+        np.testing.assert_allclose(y_pred1, y_pred2)
+        np.testing.assert_array_equal(clf1.feature_importances_, clf2.feature_importances_)
+        df1 = clf1.booster_.model_to_string(num_iteration=0)
+        df2 = clf2.booster_.model_to_string(num_iteration=0)
+        self.assertMultiLineEqual(df1, df2)
+        # Test if subsequent fits sample from random_state object and produce different models
+        clf1.fit(X_train, y_train)
+        y_pred1_refit = clf1.predict(X_test, raw_score=True)
+        df3 = clf1.booster_.model_to_string(num_iteration=0)
+        self.assertIs(clf1.random_state, state1)
+        self.assertIs(clf2.random_state, state2)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_allclose,
+                          y_pred1, y_pred1_refit)
+        self.assertRaises(AssertionError,
+                          self.assertMultiLineEqual,
+                          df1, df3)
 
     def test_feature_importances_single_leaf(self):
         data = load_iris()
@@ -330,13 +363,17 @@ class TestSklearn(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_sparse(self):
         import pandas as pd
-        X = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 1, 2] * 100)),
-                          "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-                          "C": pd.SparseArray(np.random.permutation([True, False] * 150))})
-        y = pd.Series(pd.SparseArray(np.random.permutation([0, 1] * 150)))
-        X_test = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 2] * 30)),
-                               "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-                               "C": pd.SparseArray(np.random.permutation([True, False] * 30))})
+        try:
+            from pandas.arrays import SparseArray
+        except ImportError:  # support old versions
+            from pandas import SparseArray
+        X = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                          "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                          "C": SparseArray(np.random.permutation([True, False] * 150))})
+        y = pd.Series(SparseArray(np.random.permutation([0, 1] * 150)))
+        X_test = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 2] * 30)),
+                               "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                               "C": SparseArray(np.random.permutation([True, False] * 30))})
         if pd.__version__ >= '0.24.0':
             for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
                 self.assertTrue(pd.api.types.is_sparse(dtype))

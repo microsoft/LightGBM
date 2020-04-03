@@ -47,6 +47,10 @@ def decreasing_metric(preds, train_data):
     return ('decreasing_metric', next(decreasing_generator), False)
 
 
+def categorize(continuous_x):
+    return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
+
+
 class TestEngine(unittest.TestCase):
     def test_binary(self):
         X, y = load_breast_cancer(True)
@@ -335,6 +339,43 @@ class TestEngine(unittest.TestCase):
         self.assertGreater(ret, 0.999)
         self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
 
+    def test_categorical_non_zero_inputs(self):
+        x = [1, 1, 1, 1, 1, 1, 2, 2]
+        y = [1, 1, 1, 1, 1, 1, 0, 0]
+
+        X_train = np.array(x).reshape(len(x), 1)
+        y_train = np.array(y)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_train, y_train)
+
+        params = {
+            'objective': 'regression',
+            'metric': 'auc',
+            'verbose': -1,
+            'boost_from_average': False,
+            'min_data': 1,
+            'num_leaves': 2,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'min_data_per_group': 1,
+            'cat_smooth': 1,
+            'cat_l2': 0,
+            'max_cat_to_onehot': 1,
+            'zero_as_missing': False,
+            'categorical_column': 0
+        }
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=1,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        pred = gbm.predict(X_train)
+        np.testing.assert_allclose(pred, y)
+        ret = roc_auc_score(y_train, pred)
+        self.assertGreater(ret, 0.999)
+        self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
+
     def test_multiclass(self):
         X, y = load_digits(10, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -369,7 +410,8 @@ class TestEngine(unittest.TestCase):
             'num_class': 10,
             'num_leaves': 50,
             'min_data': 1,
-            'verbose': -1
+            'verbose': -1,
+            'gpu_use_dp': True
         }
         lgb_train = lgb.Dataset(X_train, y_train, params=params)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)
@@ -575,6 +617,19 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_allclose(evals_result['valid_0']['l1'], evals_result['valid_0']['custom_mae'])
         os.remove(model_name)
 
+    def test_continue_train_reused_dataset(self):
+        X, y = load_boston(True)
+        params = {
+            'objective': 'regression',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X, y, free_raw_data=False)
+        init_gbm = lgb.train(params, lgb_train, num_boost_round=5)
+        init_gbm_2 = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm)
+        init_gbm_3 = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm_2)
+        gbm = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm_3)
+        self.assertEqual(gbm.current_iteration(), 20)
+
     def test_continue_train_dart(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -709,6 +764,8 @@ class TestEngine(unittest.TestCase):
         ret_origin = train_and_predict(init_model=gbm)
         other_ret = []
         gbm.save_model('lgb.model')
+        with open('lgb.model') as f:  # check all params are logged into model file correctly
+            self.assertNotEqual(f.read().find("[num_iterations: 10]"), -1)
         other_ret.append(train_and_predict(init_model='lgb.model'))
         gbm_load = lgb.Booster(model_file='lgb.model')
         other_ret.append(train_and_predict(init_model=gbm_load))
@@ -813,13 +870,17 @@ class TestEngine(unittest.TestCase):
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_sparse(self):
         import pandas as pd
-        X = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 1, 2] * 100)),
-                          "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-                          "C": pd.SparseArray(np.random.permutation([True, False] * 150))})
-        y = pd.Series(pd.SparseArray(np.random.permutation([0, 1] * 150)))
-        X_test = pd.DataFrame({"A": pd.SparseArray(np.random.permutation([0, 2] * 30)),
-                               "B": pd.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-                               "C": pd.SparseArray(np.random.permutation([True, False] * 30))})
+        try:
+            from pandas.arrays import SparseArray
+        except ImportError:  # support old versions
+            from pandas import SparseArray
+        X = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                          "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                          "C": SparseArray(np.random.permutation([True, False] * 150))})
+        y = pd.Series(SparseArray(np.random.permutation([0, 1] * 150)))
+        X_test = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 2] * 30)),
+                               "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                               "C": SparseArray(np.random.permutation([True, False] * 30))})
         if pd.__version__ >= '0.24.0':
             for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
                 self.assertTrue(pd.api.types.is_sparse(dtype))
@@ -953,45 +1014,74 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(subset_data_3.get_data(), "lgb_train_data.bin")
         self.assertEqual(subset_data_4.get_data(), "lgb_train_data.bin")
 
-    def test_monotone_constraint(self):
+    def generate_trainset_for_monotone_constraints_tests(self, x3_to_category=True):
+        number_of_dpoints = 3000
+        x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x3_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x = np.column_stack(
+            (x1_positively_correlated_with_y,
+             x2_negatively_correlated_with_y,
+             categorize(x3_negatively_correlated_with_y) if x3_to_category else x3_negatively_correlated_with_y))
+
+        zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
+        scales = 10. * (np.random.random(6) + 0.5)
+        y = (scales[0] * x1_positively_correlated_with_y
+             + np.sin(scales[1] * np.pi * x1_positively_correlated_with_y)
+             - scales[2] * x2_negatively_correlated_with_y
+             - np.cos(scales[3] * np.pi * x2_negatively_correlated_with_y)
+             - scales[4] * x3_negatively_correlated_with_y
+             - np.cos(scales[5] * np.pi * x3_negatively_correlated_with_y)
+             + zs)
+        categorical_features = []
+        if x3_to_category:
+            categorical_features = [2]
+        trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features)
+        return trainset
+
+    def test_monotone_constraints(self):
         def is_increasing(y):
             return (np.diff(y) >= 0.0).all()
 
         def is_decreasing(y):
             return (np.diff(y) <= 0.0).all()
 
-        def is_correctly_constrained(learner):
-            n = 200
+        def is_non_monotone(y):
+            return (np.diff(y) < 0.0).any() and (np.diff(y) > 0.0).any()
+
+        def is_correctly_constrained(learner, x3_to_category=True):
+            iterations = 10
+            n = 1000
             variable_x = np.linspace(0, 1, n).reshape((n, 1))
             fixed_xs_values = np.linspace(0, 1, n)
-            for i in range(n):
+            for i in range(iterations):
                 fixed_x = fixed_xs_values[i] * np.ones((n, 1))
-                monotonically_increasing_x = np.column_stack((variable_x, fixed_x))
+                monotonically_increasing_x = np.column_stack((variable_x, fixed_x, fixed_x))
                 monotonically_increasing_y = learner.predict(monotonically_increasing_x)
-                monotonically_decreasing_x = np.column_stack((fixed_x, variable_x))
+                monotonically_decreasing_x = np.column_stack((fixed_x, variable_x, fixed_x))
                 monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
-                if not (is_increasing(monotonically_increasing_y) and is_decreasing(monotonically_decreasing_y)):
+                non_monotone_x = np.column_stack((fixed_x,
+                                                  fixed_x,
+                                                  categorize(variable_x) if x3_to_category else variable_x))
+                non_monotone_y = learner.predict(non_monotone_x)
+                if not (is_increasing(monotonically_increasing_y)
+                        and is_decreasing(monotonically_decreasing_y)
+                        and is_non_monotone(non_monotone_y)):
                     return False
             return True
 
-        number_of_dpoints = 2000
-        x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
-        x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
-        x = np.column_stack((x1_positively_correlated_with_y, x2_negatively_correlated_with_y))
-        zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
-        y = (5 * x1_positively_correlated_with_y
-             + np.sin(10 * np.pi * x1_positively_correlated_with_y)
-             - 5 * x2_negatively_correlated_with_y
-             - np.cos(10 * np.pi * x2_negatively_correlated_with_y)
-             + zs)
-        trainset = lgb.Dataset(x, label=y)
-        params = {
-            'min_data': 20,
-            'num_leaves': 20,
-            'monotone_constraints': '1,-1'
-        }
-        constrained_model = lgb.train(params, trainset)
-        self.assertTrue(is_correctly_constrained(constrained_model))
+        for test_with_categorical_variable in [True, False]:
+            for monotone_constraints_method in ["basic", "intermediate"]:
+                trainset = self.generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
+                params = {
+                    'min_data': 20,
+                    'num_leaves': 20,
+                    'monotone_constraints': [1, -1, 0],
+                    "monotone_constraints_method": monotone_constraints_method,
+                    "use_missing": False,
+                }
+                constrained_model = lgb.train(params, trainset)
+                self.assertTrue(is_correctly_constrained(constrained_model, test_with_categorical_variable))
 
     def test_max_bin_by_feature(self):
         col1 = np.arange(0, 100)[:, np.newaxis]
@@ -1913,6 +2003,18 @@ class TestEngine(unittest.TestCase):
                                                         else "forced bins"))
             with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
                 lgb.train(new_params, lgb_data, num_boost_round=3)
+
+    def test_dataset_params_with_reference(self):
+        default_params = {"max_bin": 100}
+        X = np.random.random((100, 2))
+        y = np.random.random(100)
+        X_val = np.random.random((100, 2))
+        y_val = np.random.random(100)
+        lgb_train = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
+        lgb_val = lgb.Dataset(X_val, y_val, reference=lgb_train, free_raw_data=False).construct()
+        self.assertDictEqual(lgb_train.get_params(), default_params)
+        self.assertDictEqual(lgb_val.get_params(), default_params)
+        model = lgb.train(default_params, lgb_train, valid_sets=[lgb_val])
 
     def test_extra_trees(self):
         # check extra trees increases regularization

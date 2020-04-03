@@ -73,7 +73,7 @@ lgb.train <- function(params = list(),
     stop("lgb.train: data must be an lgb.Dataset instance")
   }
   if (length(valids) > 0L) {
-    if (!is.list(valids) || !all(vapply(valids, lgb.is.Dataset, logical(1L)))) {
+    if (!identical(class(valids), "list") || !all(vapply(valids, lgb.is.Dataset, logical(1L)))) {
       stop("lgb.train: valids must be a list of lgb.Dataset elements")
     }
     evnames <- names(valids)

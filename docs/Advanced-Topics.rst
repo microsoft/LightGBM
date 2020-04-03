@@ -16,7 +16,7 @@ Categorical Feature Support
 ---------------------------
 
 -  LightGBM offers good accuracy with integer-encoded categorical features. LightGBM applies
-   `Fisher (1958) <http://www.csiss.org/SPACE/workshops/2004/SAC/files/fisher.pdf>`_
+   `Fisher (1958) <https://www.tandfonline.com/doi/abs/10.1080/01621459.1958.10501479>`_
    to find the optimal split over categories as
    `described here <./Features.rst#optimal-split-for-categorical-features>`_. This often performs better than one-hot encoding.
 
@@ -39,7 +39,7 @@ LambdaRank
 
 -  Use ``label_gain`` to set the gain(weight) of ``int`` label.
 
--  Use ``max_position`` to set the NDCG optimization position.
+-  Use ``lambdarank_truncation_level`` to truncate the max DCG.
 
 Cost Efficient Gradient Boosting
 --------------------------------

@@ -465,11 +465,7 @@ class _InnerPredictor(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.num_class = out_num_class.value
-            out_num_iterations = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetCurrentIteration(
-                self.handle,
-                ctypes.byref(out_num_iterations)))
-            self.num_total_iteration = out_num_iterations.value
+            self.num_total_iteration = self.current_iteration()
             self.pandas_categorical = None
         else:
             raise TypeError('Need model_file or booster_handle to create a predictor')
@@ -726,6 +722,20 @@ class _InnerPredictor(object):
             raise ValueError("Wrong length for predict results")
         return preds, nrow
 
+    def current_iteration(self):
+        """Get the index of the current iteration.
+
+        Returns
+        -------
+        cur_iter : int
+            The index of the current iteration.
+        """
+        out_cur_iter = ctypes.c_int(0)
+        _safe_call(_LIB.LGBM_BoosterGetCurrentIteration(
+            self.handle,
+            ctypes.byref(out_cur_iter)))
+        return out_cur_iter.value
+
 
 class Dataset(object):
     """Dataset in LightGBM."""
@@ -842,27 +852,32 @@ class Dataset(object):
         if isinstance(data, string_type):
             # check data has header or not
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
-        init_score = predictor.predict(data,
-                                       raw_score=True,
-                                       data_has_header=data_has_header,
-                                       is_reshape=False)
         num_data = self.num_data()
-        if used_indices is not None:
-            assert not self.need_slice
-            if isinstance(data, string_type):
-                sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
-                assert num_data == len(used_indices)
-                for i in range_(len(used_indices)):
+        if predictor is not None:
+            init_score = predictor.predict(data,
+                                           raw_score=True,
+                                           data_has_header=data_has_header,
+                                           is_reshape=False)
+            if used_indices is not None:
+                assert not self.need_slice
+                if isinstance(data, string_type):
+                    sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
+                    assert num_data == len(used_indices)
+                    for i in range_(len(used_indices)):
+                        for j in range_(predictor.num_class):
+                            sub_init_score[i * predictor.num_class + j] = init_score[used_indices[i] * predictor.num_class + j]
+                    init_score = sub_init_score
+            if predictor.num_class > 1:
+                # need to regroup init_score
+                new_init_score = np.zeros(init_score.size, dtype=np.float32)
+                for i in range_(num_data):
                     for j in range_(predictor.num_class):
-                        sub_init_score[i * predictor.num_class + j] = init_score[used_indices[i] * predictor.num_class + j]
-                init_score = sub_init_score
-        if predictor.num_class > 1:
-            # need to regroup init_score
-            new_init_score = np.zeros(init_score.size, dtype=np.float32)
-            for i in range_(num_data):
-                for j in range_(predictor.num_class):
-                    new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
-            init_score = new_init_score
+                        new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
+                init_score = new_init_score
+        elif self.init_score is not None:
+            init_score = np.zeros(self.init_score.shape, dtype=np.float32)
+        else:
+            return self
         self.set_init_score(init_score)
 
     def _lazy_init(self, data, label=None, reference=None,
@@ -1097,6 +1112,10 @@ class Dataset(object):
         """
         if self.handle is None:
             if self.reference is not None:
+                reference_params = self.reference.get_params()
+                if self.get_params() != reference_params:
+                    warnings.warn('Overriding the parameters from Reference Dataset.')
+                    self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid
                     self._lazy_init(self.data, label=self.label, reference=self.reference,
@@ -1222,6 +1241,8 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
+        if not params:
+            return self
         params = copy.deepcopy(params)
 
         def update():
@@ -1375,16 +1396,20 @@ class Dataset(object):
         It is not recommended for user to call this function.
         Please use init_model argument in engine.train() or engine.cv() instead.
         """
-        if predictor is self._predictor:
+        if predictor is self._predictor and (predictor is None or predictor.current_iteration() == self._predictor.current_iteration()):
             return self
-        if self.data is not None or (self.used_indices is not None
-                                     and self.reference is not None
-                                     and self.reference.data is not None):
+        if self.handle is None:
             self._predictor = predictor
-            return self._free_handle()
+        elif self.data is not None:
+            self._predictor = predictor
+            self._set_init_score_by_predictor(self._predictor, self.data)
+        elif self.used_indices is not None and self.reference is not None and self.reference.data is not None:
+            self._predictor = predictor
+            self._set_init_score_by_predictor(self._predictor, self.reference.data, self.used_indices)
         else:
             raise LightGBMError("Cannot set predictor after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
+        return self
 
     def set_reference(self, reference):
         """Set reference Dataset.
@@ -1751,7 +1776,7 @@ class Booster(object):
                     self.set_network(machines,
                                      local_listen_port=params.get("local_listen_port", 12400),
                                      listen_time_out=params.get("listen_time_out", 120),
-                                     num_machines=params.get("num_machines", num_machines))
+                                     num_machines=params.setdefault("num_machines", num_machines))
                     break
             # construct booster object
             train_set.construct()
@@ -2641,7 +2666,7 @@ class Booster(object):
         train_set = Dataset(data, label, silent=True)
         new_params = copy.deepcopy(self.params)
         new_params['refit_decay_rate'] = decay_rate
-        new_booster = Booster(new_params, train_set, silent=True)
+        new_booster = Booster(new_params, train_set)
         # Copy models
         _safe_call(_LIB.LGBM_BoosterMerge(
             new_booster.handle,
@@ -2711,14 +2736,24 @@ class Booster(object):
         num_feature = self.num_feature()
         # Get name of features
         tmp_out_len = ctypes.c_int(0)
-        string_buffers = [ctypes.create_string_buffer(255) for i in range_(num_feature)]
+        reserved_string_buffer_size = 255
+        required_string_buffer_size = ctypes.c_size_t(0)
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(num_feature)]
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
             self.handle,
+            num_feature,
             ctypes.byref(tmp_out_len),
+            reserved_string_buffer_size,
+            ctypes.byref(required_string_buffer_size),
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
             raise ValueError("Length of feature names doesn't equal with num_feature")
+        if reserved_string_buffer_size < required_string_buffer_size.value:
+            raise BufferError(
+                "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
+                .format(reserved_string_buffer_size, required_string_buffer_size.value)
+            )
         return [string_buffers[i].value.decode() for i in range_(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
@@ -2898,14 +2933,26 @@ class Booster(object):
             if self.__num_inner_eval > 0:
                 # Get name of evals
                 tmp_out_len = ctypes.c_int(0)
-                string_buffers = [ctypes.create_string_buffer(255) for i in range_(self.__num_inner_eval)]
+                reserved_string_buffer_size = 255
+                required_string_buffer_size = ctypes.c_size_t(0)
+                string_buffers = [
+                    ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(self.__num_inner_eval)
+                ]
                 ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                     self.handle,
+                    self.__num_inner_eval,
                     ctypes.byref(tmp_out_len),
+                    reserved_string_buffer_size,
+                    ctypes.byref(required_string_buffer_size),
                     ptr_string_buffers))
                 if self.__num_inner_eval != tmp_out_len.value:
                     raise ValueError("Length of eval names doesn't equal with num_evals")
+                if reserved_string_buffer_size < required_string_buffer_size.value:
+                    raise BufferError(
+                        "Allocated eval name buffer size ({}) was inferior to the needed size ({})."
+                        .format(reserved_string_buffer_size, required_string_buffer_size.value)
+                    )
                 self.__name_inner_eval = \
                     [string_buffers[i].value.decode() for i in range_(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \

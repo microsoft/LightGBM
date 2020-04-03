@@ -85,6 +85,8 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"topk", "top_k"},
   {"mc", "monotone_constraints"},
   {"monotone_constraint", "monotone_constraints"},
+  {"monotone_constraining_method", "monotone_constraints_method"},
+  {"mc_method", "monotone_constraints_method"},
   {"feature_contrib", "feature_contri"},
   {"fc", "feature_contri"},
   {"fp", "feature_contri"},
@@ -215,6 +217,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "max_cat_to_onehot",
   "top_k",
   "monotone_constraints",
+  "monotone_constraints_method",
   "feature_contri",
   "forcedsplits_filename",
   "refit_decay_rate",
@@ -257,6 +260,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "output_result",
   "convert_model_language",
   "convert_model",
+  "objective_seed",
   "num_class",
   "is_unbalance",
   "scale_pos_weight",
@@ -267,10 +271,9 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "fair_c",
   "poisson_max_delta_step",
   "tweedie_variance_power",
-  "max_position",
-  "lambdamart_norm",
+  "lambdarank_truncation_level",
+  "lambdarank_norm",
   "label_gain",
-  "objective_seed",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -298,14 +301,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   }
 
   GetInt(params, "num_iterations", &num_iterations);
-  CHECK(num_iterations >=0);
+  CHECK_GE(num_iterations, 0);
 
   GetDouble(params, "learning_rate", &learning_rate);
-  CHECK(learning_rate >0.0);
+  CHECK_GT(learning_rate, 0.0);
 
   GetInt(params, "num_leaves", &num_leaves);
-  CHECK(num_leaves >1);
-  CHECK(num_leaves <=131072);
+  CHECK_GT(num_leaves, 1);
+  CHECK_LE(num_leaves, 131072);
 
   GetInt(params, "num_threads", &num_threads);
 
@@ -318,34 +321,34 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "max_depth", &max_depth);
 
   GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
-  CHECK(min_data_in_leaf >=0);
+  CHECK_GE(min_data_in_leaf, 0);
 
   GetDouble(params, "min_sum_hessian_in_leaf", &min_sum_hessian_in_leaf);
-  CHECK(min_sum_hessian_in_leaf >=0.0);
+  CHECK_GE(min_sum_hessian_in_leaf, 0.0);
 
   GetDouble(params, "bagging_fraction", &bagging_fraction);
-  CHECK(bagging_fraction >0.0);
-  CHECK(bagging_fraction <=1.0);
+  CHECK_GT(bagging_fraction, 0.0);
+  CHECK_LE(bagging_fraction, 1.0);
 
   GetDouble(params, "pos_bagging_fraction", &pos_bagging_fraction);
-  CHECK(pos_bagging_fraction >0.0);
-  CHECK(pos_bagging_fraction <=1.0);
+  CHECK_GT(pos_bagging_fraction, 0.0);
+  CHECK_LE(pos_bagging_fraction, 1.0);
 
   GetDouble(params, "neg_bagging_fraction", &neg_bagging_fraction);
-  CHECK(neg_bagging_fraction >0.0);
-  CHECK(neg_bagging_fraction <=1.0);
+  CHECK_GT(neg_bagging_fraction, 0.0);
+  CHECK_LE(neg_bagging_fraction, 1.0);
 
   GetInt(params, "bagging_freq", &bagging_freq);
 
   GetInt(params, "bagging_seed", &bagging_seed);
 
   GetDouble(params, "feature_fraction", &feature_fraction);
-  CHECK(feature_fraction >0.0);
-  CHECK(feature_fraction <=1.0);
+  CHECK_GT(feature_fraction, 0.0);
+  CHECK_LE(feature_fraction, 1.0);
 
   GetDouble(params, "feature_fraction_bynode", &feature_fraction_bynode);
-  CHECK(feature_fraction_bynode >0.0);
-  CHECK(feature_fraction_bynode <=1.0);
+  CHECK_GT(feature_fraction_bynode, 0.0);
+  CHECK_LE(feature_fraction_bynode, 1.0);
 
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
 
@@ -360,23 +363,23 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "max_delta_step", &max_delta_step);
 
   GetDouble(params, "lambda_l1", &lambda_l1);
-  CHECK(lambda_l1 >=0.0);
+  CHECK_GE(lambda_l1, 0.0);
 
   GetDouble(params, "lambda_l2", &lambda_l2);
-  CHECK(lambda_l2 >=0.0);
+  CHECK_GE(lambda_l2, 0.0);
 
   GetDouble(params, "min_gain_to_split", &min_gain_to_split);
-  CHECK(min_gain_to_split >=0.0);
+  CHECK_GE(min_gain_to_split, 0.0);
 
   GetDouble(params, "drop_rate", &drop_rate);
-  CHECK(drop_rate >=0.0);
-  CHECK(drop_rate <=1.0);
+  CHECK_GE(drop_rate, 0.0);
+  CHECK_LE(drop_rate, 1.0);
 
   GetInt(params, "max_drop", &max_drop);
 
   GetDouble(params, "skip_drop", &skip_drop);
-  CHECK(skip_drop >=0.0);
-  CHECK(skip_drop <=1.0);
+  CHECK_GE(skip_drop, 0.0);
+  CHECK_LE(skip_drop, 1.0);
 
   GetBool(params, "xgboost_dart_mode", &xgboost_dart_mode);
 
@@ -385,34 +388,36 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "drop_seed", &drop_seed);
 
   GetDouble(params, "top_rate", &top_rate);
-  CHECK(top_rate >=0.0);
-  CHECK(top_rate <=1.0);
+  CHECK_GE(top_rate, 0.0);
+  CHECK_LE(top_rate, 1.0);
 
   GetDouble(params, "other_rate", &other_rate);
-  CHECK(other_rate >=0.0);
-  CHECK(other_rate <=1.0);
+  CHECK_GE(other_rate, 0.0);
+  CHECK_LE(other_rate, 1.0);
 
   GetInt(params, "min_data_per_group", &min_data_per_group);
-  CHECK(min_data_per_group >0);
+  CHECK_GT(min_data_per_group, 0);
 
   GetInt(params, "max_cat_threshold", &max_cat_threshold);
-  CHECK(max_cat_threshold >0);
+  CHECK_GT(max_cat_threshold, 0);
 
   GetDouble(params, "cat_l2", &cat_l2);
-  CHECK(cat_l2 >=0.0);
+  CHECK_GE(cat_l2, 0.0);
 
   GetDouble(params, "cat_smooth", &cat_smooth);
-  CHECK(cat_smooth >=0.0);
+  CHECK_GE(cat_smooth, 0.0);
 
   GetInt(params, "max_cat_to_onehot", &max_cat_to_onehot);
-  CHECK(max_cat_to_onehot >0);
+  CHECK_GT(max_cat_to_onehot, 0);
 
   GetInt(params, "top_k", &top_k);
-  CHECK(top_k >0);
+  CHECK_GT(top_k, 0);
 
   if (GetString(params, "monotone_constraints", &tmp_str)) {
     monotone_constraints = Common::StringToArray<int8_t>(tmp_str, ',');
   }
+
+  GetString(params, "monotone_constraints_method", &monotone_constraints_method);
 
   if (GetString(params, "feature_contri", &tmp_str)) {
     feature_contri = Common::StringToArray<double>(tmp_str, ',');
@@ -421,14 +426,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetString(params, "forcedsplits_filename", &forcedsplits_filename);
 
   GetDouble(params, "refit_decay_rate", &refit_decay_rate);
-  CHECK(refit_decay_rate >=0.0);
-  CHECK(refit_decay_rate <=1.0);
+  CHECK_GE(refit_decay_rate, 0.0);
+  CHECK_LE(refit_decay_rate, 1.0);
 
   GetDouble(params, "cegb_tradeoff", &cegb_tradeoff);
-  CHECK(cegb_tradeoff >=0.0);
+  CHECK_GE(cegb_tradeoff, 0.0);
 
   GetDouble(params, "cegb_penalty_split", &cegb_penalty_split);
-  CHECK(cegb_penalty_split >=0.0);
+  CHECK_GE(cegb_penalty_split, 0.0);
 
   if (GetString(params, "cegb_penalty_feature_lazy", &tmp_str)) {
     cegb_penalty_feature_lazy = Common::StringToArray<double>(tmp_str, ',');
@@ -447,17 +452,17 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "snapshot_freq", &snapshot_freq);
 
   GetInt(params, "max_bin", &max_bin);
-  CHECK(max_bin >1);
+  CHECK_GT(max_bin, 1);
 
   if (GetString(params, "max_bin_by_feature", &tmp_str)) {
     max_bin_by_feature = Common::StringToArray<int32_t>(tmp_str, ',');
   }
 
   GetInt(params, "min_data_in_bin", &min_data_in_bin);
-  CHECK(min_data_in_bin >0);
+  CHECK_GT(min_data_in_bin, 0);
 
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
-  CHECK(bin_construct_sample_cnt >0);
+  CHECK_GT(bin_construct_sample_cnt, 0);
 
   GetInt(params, "data_random_seed", &data_random_seed);
 
@@ -513,47 +518,47 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "convert_model", &convert_model);
 
+  GetInt(params, "objective_seed", &objective_seed);
+
   GetInt(params, "num_class", &num_class);
-  CHECK(num_class >0);
+  CHECK_GT(num_class, 0);
 
   GetBool(params, "is_unbalance", &is_unbalance);
 
   GetDouble(params, "scale_pos_weight", &scale_pos_weight);
-  CHECK(scale_pos_weight >0.0);
+  CHECK_GT(scale_pos_weight, 0.0);
 
   GetDouble(params, "sigmoid", &sigmoid);
-  CHECK(sigmoid >0.0);
+  CHECK_GT(sigmoid, 0.0);
 
   GetBool(params, "boost_from_average", &boost_from_average);
 
   GetBool(params, "reg_sqrt", &reg_sqrt);
 
   GetDouble(params, "alpha", &alpha);
-  CHECK(alpha >0.0);
+  CHECK_GT(alpha, 0.0);
 
   GetDouble(params, "fair_c", &fair_c);
-  CHECK(fair_c >0.0);
+  CHECK_GT(fair_c, 0.0);
 
   GetDouble(params, "poisson_max_delta_step", &poisson_max_delta_step);
-  CHECK(poisson_max_delta_step >0.0);
+  CHECK_GT(poisson_max_delta_step, 0.0);
 
   GetDouble(params, "tweedie_variance_power", &tweedie_variance_power);
-  CHECK(tweedie_variance_power >=1.0);
-  CHECK(tweedie_variance_power <2.0);
+  CHECK_GE(tweedie_variance_power, 1.0);
+  CHECK_LT(tweedie_variance_power, 2.0);
 
-  GetInt(params, "max_position", &max_position);
-  CHECK(max_position >0);
+  GetInt(params, "lambdarank_truncation_level", &lambdarank_truncation_level);
+  CHECK_GT(lambdarank_truncation_level, 0);
 
-  GetBool(params, "lambdamart_norm", &lambdamart_norm);
+  GetBool(params, "lambdarank_norm", &lambdarank_norm);
 
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
 
-  GetInt(params, "objective_seed", &objective_seed);
-
   GetInt(params, "metric_freq", &metric_freq);
-  CHECK(metric_freq >0);
+  CHECK_GT(metric_freq, 0);
 
   GetBool(params, "is_provide_training_metric", &is_provide_training_metric);
 
@@ -562,20 +567,20 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   }
 
   GetInt(params, "multi_error_top_k", &multi_error_top_k);
-  CHECK(multi_error_top_k >0);
+  CHECK_GT(multi_error_top_k, 0);
 
   if (GetString(params, "auc_mu_weights", &tmp_str)) {
     auc_mu_weights = Common::StringToArray<double>(tmp_str, ',');
   }
 
   GetInt(params, "num_machines", &num_machines);
-  CHECK(num_machines >0);
+  CHECK_GT(num_machines, 0);
 
   GetInt(params, "local_listen_port", &local_listen_port);
-  CHECK(local_listen_port >0);
+  CHECK_GT(local_listen_port, 0);
 
   GetInt(params, "time_out", &time_out);
-  CHECK(time_out >0);
+  CHECK_GT(time_out, 0);
 
   GetString(params, "machine_list_filename", &machine_list_filename);
 
@@ -633,6 +638,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_cat_to_onehot: " << max_cat_to_onehot << "]\n";
   str_buf << "[top_k: " << top_k << "]\n";
   str_buf << "[monotone_constraints: " << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints), ",") << "]\n";
+  str_buf << "[monotone_constraints_method: " << monotone_constraints_method << "]\n";
   str_buf << "[feature_contri: " << Common::Join(feature_contri, ",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
   str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";
@@ -641,9 +647,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
-  str_buf << "[input_model: " << input_model << "]\n";
-  str_buf << "[output_model: " << output_model << "]\n";
-  str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
@@ -663,18 +666,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[ignore_column: " << ignore_column << "]\n";
   str_buf << "[categorical_feature: " << categorical_feature << "]\n";
   str_buf << "[forcedbins_filename: " << forcedbins_filename << "]\n";
-  str_buf << "[save_binary: " << save_binary << "]\n";
-  str_buf << "[num_iteration_predict: " << num_iteration_predict << "]\n";
-  str_buf << "[predict_raw_score: " << predict_raw_score << "]\n";
-  str_buf << "[predict_leaf_index: " << predict_leaf_index << "]\n";
-  str_buf << "[predict_contrib: " << predict_contrib << "]\n";
-  str_buf << "[predict_disable_shape_check: " << predict_disable_shape_check << "]\n";
-  str_buf << "[pred_early_stop: " << pred_early_stop << "]\n";
-  str_buf << "[pred_early_stop_freq: " << pred_early_stop_freq << "]\n";
-  str_buf << "[pred_early_stop_margin: " << pred_early_stop_margin << "]\n";
-  str_buf << "[output_result: " << output_result << "]\n";
-  str_buf << "[convert_model_language: " << convert_model_language << "]\n";
-  str_buf << "[convert_model: " << convert_model << "]\n";
+  str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[is_unbalance: " << is_unbalance << "]\n";
   str_buf << "[scale_pos_weight: " << scale_pos_weight << "]\n";
@@ -685,12 +677,9 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[fair_c: " << fair_c << "]\n";
   str_buf << "[poisson_max_delta_step: " << poisson_max_delta_step << "]\n";
   str_buf << "[tweedie_variance_power: " << tweedie_variance_power << "]\n";
-  str_buf << "[max_position: " << max_position << "]\n";
-  str_buf << "[lambdamart_norm: " << lambdamart_norm << "]\n";
+  str_buf << "[lambdarank_truncation_level: " << lambdarank_truncation_level << "]\n";
+  str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
-  str_buf << "[objective_seed: " << objective_seed << "]\n";
-  str_buf << "[metric_freq: " << metric_freq << "]\n";
-  str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";

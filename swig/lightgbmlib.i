@@ -6,6 +6,7 @@
 %module lightgbmlib
 %ignore LGBM_BoosterSaveModelToString;
 %ignore LGBM_BoosterGetEvalNames;
+%ignore LGBM_BoosterGetFeatureNames;
 %{
 /* Includes the header in the wrapper code */
 #include "../include/LightGBM/export.h"
@@ -67,19 +68,6 @@
       dst = new char[realloc_len];
       result = LGBM_BoosterDumpModel(handle, start_iteration, num_iteration, realloc_len, out_len, dst);
     }
-    if (result != 0) {
-      return nullptr;
-    }
-    return dst;
-  }
-
-  char ** LGBM_BoosterGetEvalNamesSWIG(BoosterHandle handle,
-                                       int eval_counts) {
-    char** dst = new char*[eval_counts];
-    for (int i = 0; i < eval_counts; ++i) {
-      dst[i] = new char[128];
-    }
-    int result = LGBM_BoosterGetEvalNames(handle, &eval_counts, dst);
     if (result != 0) {
       return nullptr;
     }
@@ -249,10 +237,6 @@
 %array_functions(float, floatArray)
 %array_functions(int, intArray)
 %array_functions(long, longArray)
-/* Note: there is a bug in the SWIG generated string arrays when creating
-   a new array with strings where the strings are prematurely deallocated
-*/
-%array_functions(char *, stringArray)
 
 /* Custom pointer manipulation template */
 %define %pointer_manipulation(TYPE, NAME)
@@ -301,3 +285,5 @@ TYPE *NAME##_handle();
 
 /* Allow retrieving handle to void** */
 %pointer_handle(void*, voidpp)
+
+%include "StringArray_API_extensions.i"

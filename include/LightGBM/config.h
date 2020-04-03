@@ -3,8 +3,10 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  *
  * \note
- * desc and descl2 fields must be written in reStructuredText format;
- * nested sections can be placed only at the bottom of parent's section
+ * - desc and descl2 fields must be written in reStructuredText format;
+ * - nested sections can be placed only at the bottom of parent's section;
+ * - [doc-only] tag indicates that only documentation for this param should be generated and all other actions are performed manually;
+ * - [no-save] tag indicates that this param should not be saved into a model text representation.
  */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
@@ -83,12 +85,14 @@ struct Config {
 
   #pragma region Core Parameters
 
+  // [no-save]
   // [doc-only]
   // alias = config_file
   // desc = path of config file
   // desc = **Note**: can be used only in CLI version
   std::string config = "";
 
+  // [no-save]
   // [doc-only]
   // type = enum
   // default = train
@@ -128,7 +132,8 @@ struct Config {
   // descl2 = label is anything in interval [0, 1]
   // desc = ranking application
   // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
-  // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function. To obtain reproducible results, you should disable parallelism by setting ``num_threads`` to 1, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+  // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
+  // descl2 = ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   std::string objective = "regression";
 
@@ -191,6 +196,7 @@ struct Config {
   // desc = do not set it too large if your dataset is small (for instance, do not use 64 threads for a dataset with 10,000 rows)
   // desc = be aware a task manager or any similar CPU monitoring tool might report that cores not being fully utilized. **This is normal**
   // desc = for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
+  // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
   // [doc-only]
@@ -434,6 +440,13 @@ struct Config {
   // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
 
+  // alias = monotone_constraining_method, mc_method
+  // desc = used only if ``monotone_constraints`` is set
+  // desc = monotone constraints method
+  // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
+  // descl2 = ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+  std::string monotone_constraints_method = "basic";
+
   // type = multi-double
   // alias = feature_contrib, fc, fp, feature_penalty
   // default = None
@@ -480,6 +493,7 @@ struct Config {
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
   int verbosity = 1;
 
+  // [no-save]
   // alias = model_input, model_in
   // desc = filename of input model
   // desc = for ``prediction`` task, this model will be applied to prediction data
@@ -487,11 +501,13 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string input_model = "";
 
+  // [no-save]
   // alias = model_output, model_out
   // desc = filename of output model in training
   // desc = **Note**: can be used only in CLI version
   std::string output_model = "LightGBM_model.txt";
 
+  // [no-save]
   // alias = save_period
   // desc = frequency of saving model file snapshot
   // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
@@ -529,7 +545,7 @@ struct Config {
   int bin_construct_sample_cnt = 200000;
 
   // alias = data_seed
-  // desc = random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
+  // desc = random seed for sampling data to construct histogram bins
   int data_random_seed = 1;
 
   // alias = is_sparse, enable_sparse, sparse
@@ -624,6 +640,7 @@ struct Config {
   // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
+  // [no-save]
   // alias = is_save_binary, is_save_binary_file
   // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
   // desc = **Note**: ``init_score`` is not saved in binary file
@@ -634,22 +651,26 @@ struct Config {
 
   #pragma region Predict Parameters
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = used to specify how many trained iterations will be used in prediction
   // desc = ``<= 0`` means no limit
   int num_iteration_predict = -1;
 
+  // [no-save]
   // alias = is_predict_raw_score, predict_rawscore, raw_score
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to predict only the raw scores
   // desc = set this to ``false`` to predict transformed scores
   bool predict_raw_score = false;
 
+  // [no-save]
   // alias = is_predict_leaf_index, leaf_index
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to predict with leaf index of all trees
   bool predict_leaf_index = false;
 
+  // [no-save]
   // alias = is_predict_contrib, contrib
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
@@ -658,6 +679,7 @@ struct Config {
   // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
   bool predict_contrib = false;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
   // desc = if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
@@ -665,18 +687,22 @@ struct Config {
   // desc = **Note**: be very careful setting this parameter to ``true``
   bool predict_disable_shape_check = false;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
   bool pred_early_stop = false;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = the frequency of checking early-stopping prediction
   int pred_early_stop_freq = 10;
 
+  // [no-save]
   // desc = used only in ``prediction`` task
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
+  // [no-save]
   // alias = predict_result, prediction_result, predict_name, prediction_name, pred_name, name_pred
   // desc = used only in ``prediction`` task
   // desc = filename of prediction result
@@ -687,12 +713,14 @@ struct Config {
 
   #pragma region Convert Parameters
 
+  // [no-save]
   // desc = used only in ``convert_model`` task
   // desc = only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
   // desc = if ``convert_model_language`` is set and ``task=train``, the model will be also converted
   // desc = **Note**: can be used only in CLI version
   std::string convert_model_language = "";
 
+  // [no-save]
   // alias = convert_model_file
   // desc = used only in ``convert_model`` task
   // desc = output filename of converted model
@@ -704,6 +732,10 @@ struct Config {
   #pragma endregion
 
   #pragma region Objective Parameters
+
+  // desc = used only in ``rank_xendcg`` objective
+  // desc = random seed for objectives, if random process is needed
+  int objective_seed = 5;
 
   // check = >0
   // alias = num_classes
@@ -763,13 +795,13 @@ struct Config {
 
   // check = >0
   // desc = used only in ``lambdarank`` application
-  // desc = optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
-  int max_position = 20;
+  // desc = used for truncating the max DCG, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
+  int lambdarank_truncation_level = 20;
 
   // desc = used only in ``lambdarank`` application
   // desc = set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data
-  // desc = set this to ``false`` to enforce the original lambdamart algorithm
-  bool lambdamart_norm = true;
+  // desc = set this to ``false`` to enforce the original lambdarank algorithm
+  bool lambdarank_norm = true;
 
   // type = multi-double
   // default = 0,1,3,7,15,31,63,...,2^30-1
@@ -777,10 +809,6 @@ struct Config {
   // desc = relevant gain for labels. For example, the gain of label ``2`` is ``3`` in case of default label gains
   // desc = separate by ``,``
   std::vector<double> label_gain;
-
-  // desc = used only in the ``rank_xendcg`` objective
-  // desc = random seed for objectives
-  int objective_seed = 5;
 
   #pragma endregion
 
@@ -818,12 +846,14 @@ struct Config {
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 
+  // [no-save]
   // check = >0
   // alias = output_freq
   // desc = frequency for metric output
   // desc = **Note**: can be used only in CLI version
   int metric_freq = 1;
 
+  // [no-save]
   // alias = training_metric, is_training_metric, train_metric
   // desc = set this to ``true`` to output metric result over training dataset
   // desc = **Note**: can be used only in CLI version
@@ -906,7 +936,7 @@ struct Config {
   size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
 
   bool is_parallel = false;
-  bool is_parallel_find_bin = false;
+  bool is_data_based_parallel = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static const std::unordered_map<std::string, std::string>& alias_table();
   static const std::unordered_set<std::string>& parameter_set();

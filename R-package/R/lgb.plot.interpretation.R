@@ -125,13 +125,15 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
     cex <- 2.5 / log2(1.0 + top_n)
   }
 
-  # Do plot
+  # create plot
+  tree_interpretation[Contribution > 0.0, bar_color := "firebrick"]
+  tree_interpretation[Contribution == 0.0, bar_color := "steelblue"]
   tree_interpretation[.N:1L,
                       graphics::barplot(
                           height = Contribution
                           , names.arg = Feature
                           , horiz = TRUE
-                          , col = ifelse(Contribution > 0L, "firebrick", "steelblue")
+                          , col = bar_color
                           , border = NA
                           , main = title
                           , cex.names = cex

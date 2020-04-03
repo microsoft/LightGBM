@@ -15,6 +15,14 @@
 #include <stdexcept>
 #include <vector>
 
+inline int OMP_NUM_THREADS() {
+  int ret = 1;
+#pragma omp parallel
+#pragma omp master
+  { ret = omp_get_num_threads(); }
+  return ret;
+}
+
 class ThreadExceptionHelper {
  public:
   ThreadExceptionHelper() {
@@ -58,7 +66,7 @@ class ThreadExceptionHelper {
 #else
 
 #ifdef _MSC_VER
-  #pragma warning(disable: 4068)  // disable unknown pragma warning
+  #pragma warning(disable : 4068)  // disable unknown pragma warning
 #endif
 
 #ifdef __cplusplus
@@ -70,6 +78,7 @@ class ThreadExceptionHelper {
   inline void omp_set_num_threads(int) {}
   inline int omp_get_num_threads() {return 1;}
   inline int omp_get_thread_num() {return 0;}
+  inline int OMP_NUM_THREADS() { return 1; }
 #ifdef __cplusplus
 };  // extern "C"
 #endif

@@ -8,6 +8,8 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/json11.h>
+#include <LightGBM/utils/threading.h>
 
 #include <string>
 #include <algorithm>
@@ -20,12 +22,11 @@
 #include <utility>
 #include <vector>
 
-#include <LightGBM/json11.hpp>
 #include "score_updater.hpp"
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 /*!
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
@@ -397,24 +398,11 @@ class GBDT : public GBDTBase {
   */
   virtual void Bagging(int iter);
 
-  /*!
-  * \brief Helper function for bagging, used for multi-threading optimization
-  * \param start start indice of bagging
-  * \param cnt count
-  * \param buffer output buffer
-  * \return count of left size
-  */
-  data_size_t BaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
+  virtual data_size_t BaggingHelper(data_size_t start, data_size_t cnt,
+                                    data_size_t* buffer);
 
-
-  /*!
-  * \brief Helper function for bagging, used for multi-threading optimization, balanced sampling
-  * \param start start indice of bagging
-  * \param cnt count
-  * \param buffer output buffer
-  * \return count of left size
-  */
-  data_size_t BalancedBaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
+  data_size_t BalancedBaggingHelper(data_size_t start, data_size_t cnt,
+                                    data_size_t* buffer);
 
   /*!
   * \brief calculate the object function
@@ -483,8 +471,6 @@ class GBDT : public GBDTBase {
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
   /*! \brief Number of in-bag data */
   data_size_t bag_data_cnt_;
-  /*! \brief Store the indices of in-bag data */
-  std::vector<data_size_t> tmp_indices_;
   /*! \brief Number of training data */
   data_size_t num_data_;
   /*! \brief Number of trees per iterations */
@@ -502,18 +488,6 @@ class GBDT : public GBDTBase {
   /*! \brief Feature names */
   std::vector<std::string> feature_names_;
   std::vector<std::string> feature_infos_;
-  /*! \brief number of threads */
-  int num_threads_;
-  /*! \brief Buffer for multi-threading bagging */
-  std::vector<data_size_t> offsets_buf_;
-  /*! \brief Buffer for multi-threading bagging */
-  std::vector<data_size_t> left_cnts_buf_;
-  /*! \brief Buffer for multi-threading bagging */
-  std::vector<data_size_t> right_cnts_buf_;
-  /*! \brief Buffer for multi-threading bagging */
-  std::vector<data_size_t> left_write_pos_buf_;
-  /*! \brief Buffer for multi-threading bagging */
-  std::vector<data_size_t> right_write_pos_buf_;
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
   std::vector<bool> class_need_train_;
@@ -524,7 +498,9 @@ class GBDT : public GBDTBase {
   bool balanced_bagging_;
   std::string loaded_parameter_;
   std::vector<int8_t> monotone_constraints_;
-
+  const int bagging_rand_block_ = 1024;
+  std::vector<Random> bagging_rands_;
+  ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
 };
 

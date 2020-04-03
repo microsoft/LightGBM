@@ -48,8 +48,12 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
     if (strs[0][0] == '[') {
       strs[0].erase(0, 1);  // remove '['
       strs[1].erase(strs[1].size() - 1);  // remove ']'
-      json_str_buf << "{\"min_value\":" << strs[0] << ",";
-      json_str_buf << "\"max_value\":" << strs[1] << ",";
+      double max_, min_;
+      Common::Atof(strs[0].c_str(), &min_);
+      Common::Atof(strs[1].c_str(), &max_);
+      json_str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+      json_str_buf << "{\"min_value\":" << Common::AvoidInf(min_) << ",";
+      json_str_buf << "\"max_value\":" << Common::AvoidInf(max_) << ",";
       json_str_buf << "\"values\":[]}";
     } else if (strs[0] != "none") {  // categorical feature
       auto vals = Common::StringToArray<int>(feature_infos_[i], ':');
@@ -593,7 +597,7 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
 #ifdef DEBUG
-          CHECK(models_[iter]->split_feature(split_idx) >= 0);
+          CHECK_GE(models_[iter]->split_feature(split_idx), 0);
 #endif
           feature_importances[models_[iter]->split_feature(split_idx)] += 1.0;
         }
@@ -604,7 +608,7 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
 #ifdef DEBUG
-          CHECK(models_[iter]->split_feature(split_idx) >= 0);
+          CHECK_GE(models_[iter]->split_feature(split_idx), 0);
 #endif
           feature_importances[models_[iter]->split_feature(split_idx)] += models_[iter]->split_gain(split_idx);
         }

@@ -18,7 +18,7 @@ CB_ENV <- R6::R6Class(
 cb.reset.parameters <- function(new_params) {
 
   # Check for parameter list
-  if (!is.list(new_params)) {
+  if (!identical(class(new_params), "list")) {
     stop(sQuote("new_params"), " must be a list")
   }
 

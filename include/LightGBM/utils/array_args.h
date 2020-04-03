@@ -21,12 +21,7 @@ template<typename VAL_T>
 class ArrayArgs {
  public:
   inline static size_t ArgMaxMT(const std::vector<VAL_T>& array) {
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    {
-      num_threads = omp_get_num_threads();
-    }
+    int num_threads = OMP_NUM_THREADS();
     std::vector<size_t> arg_maxs(num_threads, 0);
     int n_blocks = Threading::For<size_t>(
         0, array.size(), 1024,

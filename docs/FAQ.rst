@@ -1,3 +1,6 @@
+.. role:: raw-html(raw)
+    :format: html
+
 LightGBM FAQ
 ############
 
@@ -82,8 +85,13 @@ You may also use the CPU version.
 6. Bagging is not reproducible when changing the number of threads.
 -------------------------------------------------------------------
 
+:raw-html:`<strike>`
 LightGBM bagging is multithreaded, so its output depends on the number of threads used.
 There is `no workaround currently <https://github.com/microsoft/LightGBM/issues/632>`__.
+:raw-html:`</strike>`
+
+Starting from `#2804 <https://github.com/microsoft/LightGBM/pull/2804>`__ bagging result doesn't depend on the number of threads.
+So this issue should be solved in the latest version.
 
 7. I tried to use Random Forest mode, and LightGBM crashes!
 -----------------------------------------------------------
@@ -193,11 +201,16 @@ Run ``lgb.unloader(wipe = TRUE)`` in the R console, and recreate the LightGBM da
 Due to the pointers, choosing to not wipe variables will not fix the error.
 This is a known issue: `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
 
-2. I used ``setinfo``, tried to print my ``lgb.Dataset``, and now the R console froze!
---------------------------------------------------------------------------------------
+2. I used ``setinfo()``, tried to print my ``lgb.Dataset``, and now the R console froze!
+----------------------------------------------------------------------------------------
 
 Avoid printing the ``lgb.Dataset`` after using ``setinfo``.
 This is a known bug: `Microsoft/LightGBM#539 <https://github.com/microsoft/LightGBM/issues/539>`__.
+
+3. ``error in data.table::data.table()...argument 2 is NULL``
+-------------------------------------------------------------
+
+If you experiencing this error when running `lightgbm`, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_. If you use ``lgb.dl()`` to build from source (i.e. not using pre-compiled dll), you need to upgrade your version of ``data.table`` to at least version 1.12.0.
 
 ------
 

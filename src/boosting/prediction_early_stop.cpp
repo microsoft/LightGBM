@@ -81,7 +81,7 @@ PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string&
   } else if (type == "binary") {
     return CreateBinary(config);
   } else {
-    throw std::runtime_error("Unknown early stopping type: " + type);
+    Log::Fatal("Unknown early stopping type: %s", type.c_str());
   }
 }
 

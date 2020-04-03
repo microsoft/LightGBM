@@ -1,6 +1,7 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
@@ -8,29 +9,103 @@
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
 
-#include <limits>
-#include <string>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <limits>
+#include <string>
 #include <vector>
 
 namespace LightGBM {
+
 /*!
-* \brief Objective function for Lambdrank with NDCG
-*/
-class LambdarankNDCG: public ObjectiveFunction {
+ * \brief Objective function for Ranking
+ */
+class RankingObjective : public ObjectiveFunction {
  public:
-  explicit LambdarankNDCG(const Config& config) {
-    sigmoid_ = static_cast<double>(config.sigmoid);
-    norm_ = config.lambdamart_norm;
+  explicit RankingObjective(const Config& config)
+      : seed_(config.objective_seed) {}
+
+  explicit RankingObjective(const std::vector<std::string>&) : seed_(0) {}
+
+  ~RankingObjective() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    num_data_ = num_data;
+    // get label
+    label_ = metadata.label();
+    // get weights
+    weights_ = metadata.weights();
+    // get boundries
+    query_boundaries_ = metadata.query_boundaries();
+    if (query_boundaries_ == nullptr) {
+      Log::Fatal("Ranking tasks require query information");
+    }
+    num_queries_ = metadata.num_queries();
+  }
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+#pragma omp parallel for schedule(guided)
+    for (data_size_t i = 0; i < num_queries_; ++i) {
+      const data_size_t start = query_boundaries_[i];
+      const data_size_t cnt = query_boundaries_[i + 1] - query_boundaries_[i];
+      GetGradientsForOneQuery(i, cnt, label_ + start, score + start,
+                              gradients + start, hessians + start);
+      if (weights_ != nullptr) {
+        for (data_size_t j = 0; j < cnt; ++j) {
+          gradients[start + j] =
+              static_cast<score_t>(gradients[start + j] * weights_[start + j]);
+          hessians[start + j] =
+              static_cast<score_t>(hessians[start + j] * weights_[start + j]);
+        }
+      }
+    }
+  }
+
+  virtual void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
+                                       const label_t* label,
+                                       const double* score, score_t* lambdas,
+                                       score_t* hessians) const = 0;
+
+  const char* GetName() const override = 0;
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool NeedAccuratePrediction() const override { return false; }
+
+ protected:
+  int seed_;
+  data_size_t num_queries_;
+  /*! \brief Number of data */
+  data_size_t num_data_;
+  /*! \brief Pointer of label */
+  const label_t* label_;
+  /*! \brief Pointer of weights */
+  const label_t* weights_;
+  /*! \brief Query boundries */
+  const data_size_t* query_boundaries_;
+};
+
+/*!
+ * \brief Objective function for Lambdrank with NDCG
+ */
+class LambdarankNDCG : public RankingObjective {
+ public:
+  explicit LambdarankNDCG(const Config& config)
+      : RankingObjective(config),
+        sigmoid_(config.sigmoid),
+        norm_(config.lambdarank_norm),
+        truncation_level_(config.lambdarank_truncation_level) {
     label_gain_ = config.label_gain;
     // initialize DCG calculator
     DCGCalculator::DefaultLabelGain(&label_gain_);
     DCGCalculator::Init(label_gain_);
-    // will optimize NDCG@optimize_pos_at_
-    optimize_pos_at_ = config.max_position;
     sigmoid_table_.clear();
     inverse_max_dcgs_.clear();
     if (sigmoid_ <= 0.0) {
@@ -38,31 +113,20 @@ class LambdarankNDCG: public ObjectiveFunction {
     }
   }
 
-  explicit LambdarankNDCG(const std::vector<std::string>&) {
-  }
+  explicit LambdarankNDCG(const std::vector<std::string>& strs)
+      : RankingObjective(strs) {}
 
-  ~LambdarankNDCG() {
-  }
+  ~LambdarankNDCG() {}
+
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    num_data_ = num_data;
-    // get label
-    label_ = metadata.label();
+    RankingObjective::Init(metadata, num_data);
     DCGCalculator::CheckLabel(label_, num_data_);
-    // get weights
-    weights_ = metadata.weights();
-    // get boundries
-    query_boundaries_ = metadata.query_boundaries();
-    if (query_boundaries_ == nullptr) {
-      Log::Fatal("Lambdarank tasks require query information");
-    }
-    num_queries_ = metadata.num_queries();
-    // cache inverse max DCG, avoid computation many times
     inverse_max_dcgs_.resize(num_queries_);
 #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
-      inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(optimize_pos_at_,
-        label_ + query_boundaries_[i],
-        query_boundaries_[i + 1] - query_boundaries_[i]);
+      inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(
+          truncation_level_, label_ + query_boundaries_[i],
+          query_boundaries_[i + 1] - query_boundaries_[i]);
 
       if (inverse_max_dcgs_[i] > 0.0) {
         inverse_max_dcgs_[i] = 1.0f / inverse_max_dcgs_[i];
@@ -72,39 +136,25 @@ class LambdarankNDCG: public ObjectiveFunction {
     ConstructSigmoidTable();
   }
 
-  void GetGradients(const double* score, score_t* gradients,
-                    score_t* hessians) const override {
-    #pragma omp parallel for schedule(guided)
-    for (data_size_t i = 0; i < num_queries_; ++i) {
-      GetGradientsForOneQuery(score, gradients, hessians, i);
-    }
-  }
-
-  inline void GetGradientsForOneQuery(const double* score,
-              score_t* lambdas, score_t* hessians, data_size_t query_id) const {
-    // get doc boundary for current query
-    const data_size_t start = query_boundaries_[query_id];
-    const data_size_t cnt =
-      query_boundaries_[query_id + 1] - query_boundaries_[query_id];
+  inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
+                                      const label_t* label, const double* score,
+                                      score_t* lambdas,
+                                      score_t* hessians) const override {
     // get max DCG on current query
     const double inverse_max_dcg = inverse_max_dcgs_[query_id];
-    // add pointers with offset
-    const label_t* label = label_ + start;
-    score += start;
-    lambdas += start;
-    hessians += start;
     // initialize with zero
     for (data_size_t i = 0; i < cnt; ++i) {
       lambdas[i] = 0.0f;
       hessians[i] = 0.0f;
     }
     // get sorted indices for scores
-    std::vector<data_size_t> sorted_idx;
+    std::vector<data_size_t> sorted_idx(cnt);
     for (data_size_t i = 0; i < cnt; ++i) {
-      sorted_idx.emplace_back(i);
+      sorted_idx[i] = i;
     }
-    std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
-                     [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
+    std::stable_sort(
+        sorted_idx.begin(), sorted_idx.end(),
+        [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
     // get best and worst score
     const double best_score = score[sorted_idx[0]];
     data_size_t worst_idx = cnt - 1;
@@ -118,20 +168,25 @@ class LambdarankNDCG: public ObjectiveFunction {
       const data_size_t high = sorted_idx[i];
       const int high_label = static_cast<int>(label[high]);
       const double high_score = score[high];
-      if (high_score == kMinScore) { continue; }
+      if (high_score == kMinScore) {
+        continue;
+      }
       const double high_label_gain = label_gain_[high_label];
       const double high_discount = DCGCalculator::GetDiscount(i);
       double high_sum_lambda = 0.0;
       double high_sum_hessian = 0.0;
       for (data_size_t j = 0; j < cnt; ++j) {
         // skip same data
-        if (i == j) { continue; }
-
+        if (i == j) {
+          continue;
+        }
         const data_size_t low = sorted_idx[j];
         const int low_label = static_cast<int>(label[low]);
         const double low_score = score[low];
         // only consider pair with different label
-        if (high_label <= low_label || low_score == kMinScore) { continue; }
+        if (high_label <= low_label || low_score == kMinScore) {
+          continue;
+        }
 
         const double delta_score = high_score - low_score;
 
@@ -144,7 +199,7 @@ class LambdarankNDCG: public ObjectiveFunction {
         // get delta NDCG
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
         // regular the delta_pair_NDCG by score distance
-        if (norm_ && high_label != low_label && best_score != worst_score) {
+        if (norm_ && best_score != worst_score) {
           delta_pair_NDCG /= (0.01f + fabs(delta_score));
         }
         // calculate lambda for this pair
@@ -171,25 +226,18 @@ class LambdarankNDCG: public ObjectiveFunction {
         hessians[i] = static_cast<score_t>(hessians[i] * norm_factor);
       }
     }
-    // if need weights
-    if (weights_ != nullptr) {
-      for (data_size_t i = 0; i < cnt; ++i) {
-        lambdas[i] = static_cast<score_t>(lambdas[i] * weights_[start + i]);
-        hessians[i] = static_cast<score_t>(hessians[i] * weights_[start + i]);
-      }
-    }
   }
-
 
   inline double GetSigmoid(double score) const {
     if (score <= min_sigmoid_input_) {
       // too small, use lower bound
       return sigmoid_table_[0];
     } else if (score >= max_sigmoid_input_) {
-      // too big, use upper bound
+      // too large, use upper bound
       return sigmoid_table_[_sigmoid_bins - 1];
     } else {
-      return sigmoid_table_[static_cast<size_t>((score - min_sigmoid_input_) * sigmoid_table_idx_factor_)];
+      return sigmoid_table_[static_cast<size_t>((score - min_sigmoid_input_) *
+                                                sigmoid_table_idx_factor_)];
     }
   }
 
@@ -200,7 +248,7 @@ class LambdarankNDCG: public ObjectiveFunction {
     sigmoid_table_.resize(_sigmoid_bins);
     // get score to bin factor
     sigmoid_table_idx_factor_ =
-      _sigmoid_bins / (max_sigmoid_input_ - min_sigmoid_input_);
+        _sigmoid_bins / (max_sigmoid_input_ - min_sigmoid_input_);
     // cache
     for (size_t i = 0; i < _sigmoid_bins; ++i) {
       const double score = i / sigmoid_table_idx_factor_ + min_sigmoid_input_;
@@ -208,41 +256,21 @@ class LambdarankNDCG: public ObjectiveFunction {
     }
   }
 
-  const char* GetName() const override {
-    return "lambdarank";
-  }
-
-  std::string ToString() const override {
-    std::stringstream str_buf;
-    str_buf << GetName();
-    return str_buf.str();
-  }
-
-  bool NeedAccuratePrediction() const override { return false; }
+  const char* GetName() const override { return "lambdarank"; }
 
  private:
-  /*! \brief Gains for labels */
-  std::vector<double> label_gain_;
-  /*! \brief Cache inverse max DCG, speed up calculation */
-  std::vector<double> inverse_max_dcgs_;
   /*! \brief Simgoid param */
   double sigmoid_;
   /*! \brief Normalize the lambdas or not */
   bool norm_;
-  /*! \brief Optimized NDCG@ */
-  int optimize_pos_at_;
-  /*! \brief Number of queries */
-  data_size_t num_queries_;
-  /*! \brief Number of data */
-  data_size_t num_data_;
-  /*! \brief Pointer of label */
-  const label_t* label_;
-  /*! \brief Pointer of weights */
-  const label_t* weights_;
-  /*! \brief Query boundries */
-  const data_size_t* query_boundaries_;
+  /*! \brief Truncation position for max DCG */
+  int truncation_level_;
+  /*! \brief Cache inverse max DCG, speed up calculation */
+  std::vector<double> inverse_max_dcgs_;
   /*! \brief Cache result for sigmoid transform to speed up */
   std::vector<double> sigmoid_table_;
+  /*! \brief Gains for labels */
+  std::vector<double> label_gain_;
   /*! \brief Number of bins in simoid table */
   size_t _sigmoid_bins = 1024 * 1024;
   /*! \brief Minimal input of sigmoid table */
@@ -253,5 +281,82 @@ class LambdarankNDCG: public ObjectiveFunction {
   double sigmoid_table_idx_factor_;
 };
 
+/*!
+ * \brief Implementation of the learning-to-rank objective function, XE_NDCG
+ * [arxiv.org/abs/1911.09798].
+ */
+class RankXENDCG : public RankingObjective {
+ public:
+  explicit RankXENDCG(const Config& config) : RankingObjective(config) {}
+
+  explicit RankXENDCG(const std::vector<std::string>& strs)
+      : RankingObjective(strs) {}
+
+  ~RankXENDCG() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    RankingObjective::Init(metadata, num_data);
+    for (data_size_t i = 0; i < num_queries_; ++i) {
+      rands_.emplace_back(seed_ + i);
+    }
+  }
+
+  inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
+                                      const label_t* label, const double* score,
+                                      score_t* lambdas,
+                                      score_t* hessians) const override {
+    // Turn scores into a probability distribution using Softmax.
+    std::vector<double> rho(cnt, 0.0);
+    Common::Softmax(score, rho.data(), cnt);
+
+    // used for Phi and L1
+    std::vector<double> l1s(cnt);
+    double sum_labels = 0;
+    for (data_size_t i = 0; i < cnt; ++i) {
+      l1s[i] = Phi(label[i], rands_[query_id].NextFloat());
+      sum_labels += l1s[i];
+    }
+    // sum_labels will always be positive number
+    sum_labels = std::max<double>(kEpsilon, sum_labels);
+    // Approximate gradients and inverse Hessian.
+    // First order terms.
+    double sum_l1 = 0.0f;
+    for (data_size_t i = 0; i < cnt; ++i) {
+      l1s[i] = -l1s[i] / sum_labels + rho[i];
+      sum_l1 += l1s[i];
+    }
+    if (cnt <= 1) {
+      // when cnt <= 1, the l2 and l3 are zeros
+      for (data_size_t i = 0; i < cnt; ++i) {
+        lambdas[i] = static_cast<score_t>(l1s[i]);
+        hessians[i] = static_cast<score_t>(rho[i] * (1.0 - rho[i]));
+      }
+    } else {
+      // Second order terms.
+      std::vector<double> l2s(cnt, 0.0);
+      double sum_l2 = 0.0;
+      for (data_size_t i = 0; i < cnt; ++i) {
+        l2s[i] = (sum_l1 - l1s[i]) / (1 - rho[i]);
+        sum_l2 += l2s[i];
+      }
+      for (data_size_t i = 0; i < cnt; ++i) {
+        auto l3 = (sum_l2 - l2s[i]) / (1 - rho[i]);
+        lambdas[i] = static_cast<score_t>(l1s[i] + rho[i] * l2s[i] +
+                                          rho[i] * rho[i] * l3);
+        hessians[i] = static_cast<score_t>(rho[i] * (1.0 - rho[i]));
+      }
+    }
+  }
+
+  double Phi(const label_t l, double g) const {
+    return Common::Pow(2, static_cast<int>(l)) - g;
+  }
+
+  const char* GetName() const override { return "rank_xendcg"; }
+
+ private:
+  mutable std::vector<Random> rands_;
+};
+
 }  // namespace LightGBM
-#endif   // LightGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
+#endif  // LightGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_

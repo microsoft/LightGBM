@@ -18,13 +18,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <LightGBM/json11.hpp>
+#include <LightGBM/utils/json11.h>
 
-#include <limits>
-#include <cassert>
+#include <LightGBM/utils/log.h>
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 
 namespace json11 {
 
@@ -36,6 +37,8 @@ using std::map;
 using std::make_shared;
 using std::initializer_list;
 using std::move;
+
+using LightGBM::Log;
 
 /* Helper for representing null - just a do-nothing struct, plus comparison
  * operators so the helpers in JsonValue work. We can't use nullptr_t because
@@ -624,7 +627,7 @@ struct JsonParser final {
      * the input and return res. If not, flag an error.
      */
     Json expect(const string &expected, Json res) {
-        assert(i != 0);
+        CHECK_NE(i, 0)
         i--;
         if (str.compare(i, expected.length(), expected) == 0) {
             i += expected.length();

@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_IO_SPARSE_BIN_HPP_
 #define LIGHTGBM_IO_SPARSE_BIN_HPP_
@@ -9,27 +10,29 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <limits>
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <utility>
 #include <vector>
 
 namespace LightGBM {
 
-template <typename VAL_T> class SparseBin;
+template <typename VAL_T>
+class SparseBin;
 
 const size_t kNumFastIndex = 64;
 
 template <typename VAL_T>
-class SparseBinIterator: public BinIterator {
+class SparseBinIterator : public BinIterator {
  public:
-  SparseBinIterator(const SparseBin<VAL_T>* bin_data,
-    uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin)
-    : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
-    max_bin_(static_cast<VAL_T>(max_bin)),
-    most_freq_bin_(static_cast<VAL_T>(most_freq_bin)) {
+  SparseBinIterator(const SparseBin<VAL_T>* bin_data, uint32_t min_bin,
+                    uint32_t max_bin, uint32_t most_freq_bin)
+      : bin_data_(bin_data),
+        min_bin_(static_cast<VAL_T>(min_bin)),
+        max_bin_(static_cast<VAL_T>(max_bin)),
+        most_freq_bin_(static_cast<VAL_T>(most_freq_bin)) {
     if (most_freq_bin_ == 0) {
       offset_ = 1;
     } else {
@@ -38,7 +41,7 @@ class SparseBinIterator: public BinIterator {
     Reset(0);
   }
   SparseBinIterator(const SparseBin<VAL_T>* bin_data, data_size_t start_idx)
-    : bin_data_(bin_data) {
+      : bin_data_(bin_data) {
     Reset(start_idx);
   }
 
@@ -67,27 +70,18 @@ class SparseBinIterator: public BinIterator {
 };
 
 template <typename VAL_T>
-class SparseBin: public Bin {
+class SparseBin : public Bin {
  public:
   friend class SparseBinIterator<VAL_T>;
 
-  explicit SparseBin(data_size_t num_data)
-    : num_data_(num_data) {
-    int num_threads = 1;
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads = omp_get_num_threads();
-    }
+  explicit SparseBin(data_size_t num_data) : num_data_(num_data) {
+    int num_threads = OMP_NUM_THREADS();
     push_buffers_.resize(num_threads);
   }
 
-  ~SparseBin() {
-  }
+  ~SparseBin() {}
 
-  void ReSize(data_size_t num_data) override {
-    num_data_ = num_data;
-  }
+  void ReSize(data_size_t num_data) override { num_data_ = num_data; }
 
   void Push(int tid, data_size_t idx, uint32_t value) override {
     auto cur_bin = static_cast<VAL_T>(value);
@@ -96,36 +90,49 @@ class SparseBin: public Bin {
     }
   }
 
-  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override;
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin,
+                           uint32_t most_freq_bin) const override;
 
-  #define ACC_GH(hist, i, g, h) \
+#define ACC_GH(hist, i, g, h)               \
   const auto ti = static_cast<int>(i) << 1; \
-  hist[ti] += g; \
-  hist[ti + 1] += h; \
+  hist[ti] += g;                            \
+  hist[ti + 1] += h;
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const override {
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
+                          data_size_t end, const score_t* ordered_gradients,
+                          const score_t* ordered_hessians,
+                          hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(data_indices[start], &i_delta, &cur_pos);
     data_size_t i = start;
     for (;;) {
       if (cur_pos < data_indices[i]) {
         cur_pos += deltas_[++i_delta];
-        if (i_delta >= num_vals_) { break; }
+        if (i_delta >= num_vals_) {
+          break;
+        }
       } else if (cur_pos > data_indices[i]) {
-        if (++i >= end) { break; }
+        if (++i >= end) {
+          break;
+        }
       } else {
         const VAL_T bin = vals_[i_delta];
         ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
-        if (++i >= end) { break; }
+        if (++i >= end) {
+          break;
+        }
         cur_pos += deltas_[++i_delta];
-        if (i_delta >= num_vals_) { break; }
+        if (i_delta >= num_vals_) {
+          break;
+        }
       }
     }
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians, hist_t* out) const override {
+                          const score_t* ordered_gradients,
+                          const score_t* ordered_hessians,
+                          hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(start, &i_delta, &cur_pos);
     while (cur_pos < start && i_delta < num_vals_) {
@@ -138,51 +145,67 @@ class SparseBin: public Bin {
     }
   }
 
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, hist_t* out) const override {
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
+                          data_size_t end, const score_t* ordered_gradients,
+                          hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(data_indices[start], &i_delta, &cur_pos);
     data_size_t i = start;
+    hist_t* grad = out;
+    hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(out + 1);
     for (;;) {
       if (cur_pos < data_indices[i]) {
         cur_pos += deltas_[++i_delta];
-        if (i_delta >= num_vals_) { break; }
+        if (i_delta >= num_vals_) {
+          break;
+        }
       } else if (cur_pos > data_indices[i]) {
-        if (++i >= end) { break; }
+        if (++i >= end) {
+          break;
+        }
       } else {
-        const VAL_T bin = vals_[i_delta];
-        ACC_GH(out, bin, ordered_gradients[i], 1.0f);
-        if (++i >= end) { break; }
+        const uint32_t ti = static_cast<uint32_t>(vals_[i_delta]) << 1;
+        grad[ti] += ordered_gradients[i];
+        ++cnt[ti];
+        if (++i >= end) {
+          break;
+        }
         cur_pos += deltas_[++i_delta];
-        if (i_delta >= num_vals_) { break; }
+        if (i_delta >= num_vals_) {
+          break;
+        }
       }
     }
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, hist_t* out) const override {
+                          const score_t* ordered_gradients,
+                          hist_t* out) const override {
     data_size_t i_delta, cur_pos;
     InitIndex(start, &i_delta, &cur_pos);
+    hist_t* grad = out;
+    hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(out + 1);
     while (cur_pos < start && i_delta < num_vals_) {
       cur_pos += deltas_[++i_delta];
     }
     while (cur_pos < end && i_delta < num_vals_) {
-      const VAL_T bin = vals_[i_delta];
-      ACC_GH(out, bin, ordered_gradients[cur_pos], 1.0f);
+      const uint32_t ti = static_cast<uint32_t>(vals_[i_delta]) << 1;
+      grad[ti] += ordered_gradients[cur_pos];
+      ++cnt[ti];
       cur_pos += deltas_[++i_delta];
     }
   }
-  #undef ACC_GH
+#undef ACC_GH
 
-  inline void NextNonzeroFast(data_size_t* i_delta, data_size_t* cur_pos) const {
+  inline void NextNonzeroFast(data_size_t* i_delta,
+                              data_size_t* cur_pos) const {
     *cur_pos += deltas_[++(*i_delta)];
     if (*i_delta >= num_vals_) {
       *cur_pos = num_data_;
     }
   }
 
-  inline bool NextNonzero(data_size_t* i_delta,
-    data_size_t* cur_pos) const {
+  inline bool NextNonzero(data_size_t* i_delta, data_size_t* cur_pos) const {
     *cur_pos += deltas_[++(*i_delta)];
     if (*i_delta < num_vals_) {
       return true;
@@ -192,96 +215,82 @@ class SparseBin: public Bin {
     }
   }
 
-
-  data_size_t Split(
-    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t most_freq_bin,
-    MissingType missing_type, bool default_left,
-    uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const override {
-    if (num_data <= 0) { return 0; }
-    VAL_T th = static_cast<VAL_T>(threshold + min_bin);
-    const VAL_T minb = static_cast<VAL_T>(min_bin);
-    const VAL_T maxb = static_cast<VAL_T>(max_bin);
-    VAL_T t_zero_bin = static_cast<VAL_T>(min_bin + default_bin);
-    VAL_T t_most_freq_bin = static_cast<VAL_T>(min_bin + most_freq_bin);
+  template <bool MISS_IS_ZERO, bool MISS_IS_NA, bool MFB_IS_ZERO,
+            bool MFB_IS_NA, bool USE_MIN_BIN>
+  data_size_t SplitInner(uint32_t min_bin, uint32_t max_bin,
+                         uint32_t default_bin, uint32_t most_freq_bin,
+                         bool default_left, uint32_t threshold,
+                         const data_size_t* data_indices, data_size_t cnt,
+                         data_size_t* lte_indices,
+                         data_size_t* gt_indices) const {
+    auto th = static_cast<VAL_T>(threshold + min_bin);
+    auto t_zero_bin = static_cast<VAL_T>(min_bin + default_bin);
     if (most_freq_bin == 0) {
-      th -= 1;
-      t_zero_bin -= 1;
-      t_most_freq_bin -= 1;
+      --th;
+      --t_zero_bin;
     }
+    const auto minb = static_cast<VAL_T>(min_bin);
+    const auto maxb = static_cast<VAL_T>(max_bin);
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
     data_size_t* missing_default_indices = gt_indices;
     data_size_t* missing_default_count = &gt_count;
-    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
     if (most_freq_bin <= threshold) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
-    if (missing_type == MissingType::NaN) {
+    if (MISS_IS_ZERO || MISS_IS_NA) {
       if (default_left) {
         missing_default_indices = lte_indices;
         missing_default_count = &lte_count;
       }
-      if (t_most_freq_bin == maxb) {
-        for (data_size_t i = 0; i < num_data; ++i) {
-          const data_size_t idx = data_indices[i];
-          const VAL_T bin = iterator.InnerRawGet(idx);
-          if (t_most_freq_bin == bin || bin < minb || bin > maxb) {
+    }
+    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
+    if (min_bin < max_bin) {
+      for (data_size_t i = 0; i < cnt; ++i) {
+        const data_size_t idx = data_indices[i];
+        const auto bin = iterator.InnerRawGet(idx);
+        if ((MISS_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) ||
+            (MISS_IS_NA && !MFB_IS_NA && bin == maxb)) {
+          missing_default_indices[(*missing_default_count)++] = idx;
+        } else if ((USE_MIN_BIN && (bin < minb || bin > maxb)) ||
+                   (!USE_MIN_BIN && bin == 0)) {
+          if ((MISS_IS_NA && MFB_IS_NA) || (MISS_IS_ZERO && MFB_IS_ZERO)) {
             missing_default_indices[(*missing_default_count)++] = idx;
-          } else if (bin > th) {
-            gt_indices[gt_count++] = idx;
           } else {
-            lte_indices[lte_count++] = idx;
-          }
-        }
-      } else {
-        for (data_size_t i = 0; i < num_data; ++i) {
-          const data_size_t idx = data_indices[i];
-          const VAL_T bin = iterator.InnerRawGet(idx);
-          if (bin == maxb) {
-            missing_default_indices[(*missing_default_count)++] = idx;
-          } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
             default_indices[(*default_count)++] = idx;
-          } else if (bin > th) {
-            gt_indices[gt_count++] = idx;
-          } else {
-            lte_indices[lte_count++] = idx;
           }
+        } else if (bin > th) {
+          gt_indices[gt_count++] = idx;
+        } else {
+          lte_indices[lte_count++] = idx;
         }
       }
     } else {
-      if ((default_left && missing_type == MissingType::Zero)
-        || (default_bin <= threshold && missing_type != MissingType::Zero)) {
-        missing_default_indices = lte_indices;
-        missing_default_count = &lte_count;
+      data_size_t* max_bin_indices = gt_indices;
+      data_size_t* max_bin_count = &gt_count;
+      if (maxb <= th) {
+        max_bin_indices = lte_indices;
+        max_bin_count = &lte_count;
       }
-      if (default_bin == most_freq_bin) {
-        for (data_size_t i = 0; i < num_data; ++i) {
-          const data_size_t idx = data_indices[i];
-          const VAL_T bin = iterator.InnerRawGet(idx);
-          if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
+      for (data_size_t i = 0; i < cnt; ++i) {
+        const data_size_t idx = data_indices[i];
+        const auto bin = iterator.InnerRawGet(idx);
+        if (MISS_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) {
+          missing_default_indices[(*missing_default_count)++] = idx;
+        } else if (bin != maxb) {
+          if ((MISS_IS_NA && MFB_IS_NA) || (MISS_IS_ZERO && MFB_IS_ZERO)) {
             missing_default_indices[(*missing_default_count)++] = idx;
-          } else if (bin > th) {
-            gt_indices[gt_count++] = idx;
           } else {
-            lte_indices[lte_count++] = idx;
-          }
-        }
-      } else {
-        for (data_size_t i = 0; i < num_data; ++i) {
-          const data_size_t idx = data_indices[i];
-          const VAL_T bin = iterator.InnerRawGet(idx);
-          if (bin == t_zero_bin) {
-            missing_default_indices[(*missing_default_count)++] = idx;
-          } else if (bin < minb || bin > maxb || t_most_freq_bin == bin) {
             default_indices[(*default_count)++] = idx;
-          } else if (bin > th) {
-            gt_indices[gt_count++] = idx;
+          }
+        } else {
+          if (MISS_IS_NA && !MFB_IS_NA) {
+            missing_default_indices[(*missing_default_count)++] = idx;
           } else {
-            lte_indices[lte_count++] = idx;
+            max_bin_indices[(*max_bin_count)++] = idx;
           }
         }
       }
@@ -289,32 +298,112 @@ class SparseBin: public Bin {
     return lte_count;
   }
 
-  data_size_t SplitCategorical(
-    uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
-    const uint32_t* threshold, int num_threahold, data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const override {
-    if (num_data <= 0) { return 0; }
+  data_size_t Split(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+                    uint32_t most_freq_bin, MissingType missing_type,
+                    bool default_left, uint32_t threshold,
+                    const data_size_t* data_indices, data_size_t cnt,
+                    data_size_t* lte_indices,
+                    data_size_t* gt_indices) const override {
+#define ARGUMENTS                                                        \
+  min_bin, max_bin, default_bin, most_freq_bin, default_left, threshold, \
+      data_indices, cnt, lte_indices, gt_indices
+    if (missing_type == MissingType::None) {
+      return SplitInner<false, false, false, false, true>(ARGUMENTS);
+    } else if (missing_type == MissingType::Zero) {
+      if (default_bin == most_freq_bin) {
+        return SplitInner<true, false, true, false, true>(ARGUMENTS);
+      } else {
+        return SplitInner<true, false, false, false, true>(ARGUMENTS);
+      }
+    } else {
+      if (max_bin == most_freq_bin + min_bin && most_freq_bin > 0) {
+        return SplitInner<false, true, false, true, true>(ARGUMENTS);
+      } else {
+        return SplitInner<false, true, false, false, true>(ARGUMENTS);
+      }
+    }
+#undef ARGUMENTS
+  }
+
+  data_size_t Split(uint32_t max_bin, uint32_t default_bin,
+                    uint32_t most_freq_bin, MissingType missing_type,
+                    bool default_left, uint32_t threshold,
+                    const data_size_t* data_indices, data_size_t cnt,
+                    data_size_t* lte_indices,
+                    data_size_t* gt_indices) const override {
+#define ARGUMENTS                                                  \
+  1, max_bin, default_bin, most_freq_bin, default_left, threshold, \
+      data_indices, cnt, lte_indices, gt_indices
+    if (missing_type == MissingType::None) {
+      return SplitInner<false, false, false, false, false>(ARGUMENTS);
+    } else if (missing_type == MissingType::Zero) {
+      if (default_bin == most_freq_bin) {
+        return SplitInner<true, false, true, false, false>(ARGUMENTS);
+      } else {
+        return SplitInner<true, false, false, false, false>(ARGUMENTS);
+      }
+    } else {
+      if (max_bin == most_freq_bin + 1 && most_freq_bin > 0) {
+        return SplitInner<false, true, false, true, false>(ARGUMENTS);
+      } else {
+        return SplitInner<false, true, false, false, false>(ARGUMENTS);
+      }
+    }
+#undef ARGUMENTS
+  }
+  template <bool USE_MIN_BIN>
+  data_size_t SplitCategoricalInner(uint32_t min_bin, uint32_t max_bin,
+                                    uint32_t most_freq_bin,
+                                    const uint32_t* threshold,
+                                    int num_threahold,
+                                    const data_size_t* data_indices,
+                                    data_size_t cnt, data_size_t* lte_indices,
+                                    data_size_t* gt_indices) const {
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
-    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
+    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
     if (Common::FindInBitset(threshold, num_threahold, most_freq_bin)) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
-    for (data_size_t i = 0; i < num_data; ++i) {
+    for (data_size_t i = 0; i < cnt; ++i) {
       const data_size_t idx = data_indices[i];
-      uint32_t bin = iterator.InnerRawGet(idx);
-      if (bin < min_bin || bin > max_bin) {
+      const uint32_t bin = iterator.RawGet(idx);
+      if (USE_MIN_BIN && (bin < min_bin || bin > max_bin)) {
         default_indices[(*default_count)++] = idx;
-      } else if (Common::FindInBitset(threshold, num_threahold, bin - min_bin)) {
+      } else if (!USE_MIN_BIN && bin == 0) {
+        default_indices[(*default_count)++] = idx;
+      } else if (Common::FindInBitset(threshold, num_threahold,
+                                      bin - min_bin)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;
       }
     }
     return lte_count;
+  }
+
+  data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
+                               uint32_t most_freq_bin,
+                               const uint32_t* threshold, int num_threahold,
+                               const data_size_t* data_indices, data_size_t cnt,
+                               data_size_t* lte_indices,
+                               data_size_t* gt_indices) const override {
+    return SplitCategoricalInner<true>(min_bin, max_bin, most_freq_bin,
+                                       threshold, num_threahold, data_indices,
+                                       cnt, lte_indices, gt_indices);
+  }
+
+  data_size_t SplitCategorical(uint32_t max_bin, uint32_t most_freq_bin,
+                               const uint32_t* threshold, int num_threahold,
+                               const data_size_t* data_indices, data_size_t cnt,
+                               data_size_t* lte_indices,
+                               data_size_t* gt_indices) const override {
+    return SplitCategoricalInner<false>(1, max_bin, most_freq_bin, threshold,
+                                        num_threahold, data_indices, cnt,
+                                        lte_indices, gt_indices);
   }
 
   data_size_t num_data() const override { return num_data_; }
@@ -325,24 +414,28 @@ class SparseBin: public Bin {
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
       pair_cnt += push_buffers_[i].size();
     }
-    std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs = push_buffers_[0];
+    std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs =
+        push_buffers_[0];
     idx_val_pairs.reserve(pair_cnt);
 
     for (size_t i = 1; i < push_buffers_.size(); ++i) {
-      idx_val_pairs.insert(idx_val_pairs.end(), push_buffers_[i].begin(), push_buffers_[i].end());
+      idx_val_pairs.insert(idx_val_pairs.end(), push_buffers_[i].begin(),
+                           push_buffers_[i].end());
       push_buffers_[i].clear();
       push_buffers_[i].shrink_to_fit();
     }
     // sort by data index
     std::sort(idx_val_pairs.begin(), idx_val_pairs.end(),
-      [](const std::pair<data_size_t, VAL_T>& a, const std::pair<data_size_t, VAL_T>& b) {
-        return a.first < b.first;
-      });
+              [](const std::pair<data_size_t, VAL_T>& a,
+                 const std::pair<data_size_t, VAL_T>& b) {
+                return a.first < b.first;
+              });
     // load delta array
     LoadFromPair(idx_val_pairs);
   }
 
-  void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs) {
+  void LoadFromPair(
+      const std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs) {
     deltas_.clear();
     vals_.clear();
     deltas_.reserve(idx_val_pairs.size());
@@ -354,7 +447,9 @@ class SparseBin: public Bin {
       const VAL_T bin = idx_val_pairs[i].second;
       data_size_t cur_delta = cur_idx - last_idx;
       // disallow the multi-val in one row
-      if (i > 0 && cur_delta == 0) { continue; }
+      if (i > 0 && cur_delta == 0) {
+        continue;
+      }
       while (cur_delta >= 256) {
         deltas_.push_back(255);
         vals_.push_back(0);
@@ -411,11 +506,13 @@ class SparseBin: public Bin {
   }
 
   size_t SizesInByte() const override {
-    return sizeof(num_vals_) + sizeof(uint8_t) * (num_vals_ + 1)
-      + sizeof(VAL_T) * num_vals_;
+    return sizeof(num_vals_) + sizeof(uint8_t) * (num_vals_ + 1) +
+           sizeof(VAL_T) * num_vals_;
   }
 
-  void LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices) override {
+  void LoadFromMemory(
+      const void* memory,
+      const std::vector<data_size_t>& local_used_indices) override {
     const char* mem_ptr = reinterpret_cast<const char*>(memory);
     data_size_t tmp_num_vals = *(reinterpret_cast<const data_size_t*>(mem_ptr));
     mem_ptr += sizeof(tmp_num_vals);
@@ -442,7 +539,8 @@ class SparseBin: public Bin {
       std::vector<std::pair<data_size_t, VAL_T>> tmp_pair;
       data_size_t cur_pos = 0;
       data_size_t j = -1;
-      for (data_size_t i = 0; i < static_cast<data_size_t>(local_used_indices.size()); ++i) {
+      for (data_size_t i = 0;
+           i < static_cast<data_size_t>(local_used_indices.size()); ++i) {
         const data_size_t idx = local_used_indices[i];
         while (cur_pos < idx && j < num_vals_) {
           NextNonzero(&j, &cur_pos);
@@ -456,7 +554,8 @@ class SparseBin: public Bin {
     }
   }
 
-  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+  void CopySubrow(const Bin* full_bin, const data_size_t* used_indices,
+                  data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const SparseBin<VAL_T>*>(full_bin);
     deltas_.clear();
     vals_.clear();
@@ -496,12 +595,16 @@ class SparseBin: public Bin {
   SparseBin<VAL_T>* Clone() override;
 
   SparseBin<VAL_T>(const SparseBin<VAL_T>& other)
-    : num_data_(other.num_data_), deltas_(other.deltas_), vals_(other.vals_),
-    num_vals_(other.num_vals_), push_buffers_(other.push_buffers_),
-    fast_index_(other.fast_index_), fast_index_shift_(other.fast_index_shift_) {
-  }
+      : num_data_(other.num_data_),
+        deltas_(other.deltas_),
+        vals_(other.vals_),
+        num_vals_(other.num_vals_),
+        push_buffers_(other.push_buffers_),
+        fast_index_(other.fast_index_),
+        fast_index_shift_(other.fast_index_shift_) {}
 
-  void InitIndex(data_size_t start_idx, data_size_t * i_delta, data_size_t * cur_pos) const {
+  void InitIndex(data_size_t start_idx, data_size_t* i_delta,
+                 data_size_t* cur_pos) const {
     auto idx = start_idx >> fast_index_shift_;
     if (static_cast<size_t>(idx) < fast_index_.size()) {
       const auto fast_pair = fast_index_[start_idx >> fast_index_shift_];
@@ -515,7 +618,8 @@ class SparseBin: public Bin {
 
  private:
   data_size_t num_data_;
-  std::vector<uint8_t, Common::AlignmentAllocator<uint8_t, kAlignedSize>> deltas_;
+  std::vector<uint8_t, Common::AlignmentAllocator<uint8_t, kAlignedSize>>
+      deltas_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> vals_;
   data_size_t num_vals_;
   std::vector<std::vector<std::pair<data_size_t, VAL_T>>> push_buffers_;
@@ -523,7 +627,7 @@ class SparseBin: public Bin {
   data_size_t fast_index_shift_;
 };
 
-template<typename VAL_T>
+template <typename VAL_T>
 SparseBin<VAL_T>* SparseBin<VAL_T>::Clone() {
   return new SparseBin(*this);
 }
@@ -551,9 +655,10 @@ inline void SparseBinIterator<VAL_T>::Reset(data_size_t start_idx) {
 }
 
 template <typename VAL_T>
-BinIterator* SparseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const {
+BinIterator* SparseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin,
+                                           uint32_t most_freq_bin) const {
   return new SparseBinIterator<VAL_T>(this, min_bin, max_bin, most_freq_bin);
 }
 
 }  // namespace LightGBM
-#endif   // LightGBM_IO_SPARSE_BIN_HPP_
+#endif  // LightGBM_IO_SPARSE_BIN_HPP_

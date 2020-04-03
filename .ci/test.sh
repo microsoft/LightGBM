@@ -47,6 +47,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
         r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
     conda install -q -y -n $CONDA_ENV \
         -c conda-forge \
+            libxml2 \
             r-lintr>=2.0
     pip install --user cpplint
     echo "Linting Python code"
@@ -138,7 +139,7 @@ elif [[ $TASK == "mpi" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-    cmake -DUSE_MPI=ON ..
+    cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
 else
     cmake ..
 fi

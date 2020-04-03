@@ -14,6 +14,13 @@
 #include <iostream>
 #include <stdexcept>
 
+#ifdef LGB_R_BUILD
+  #define R_NO_REMAP
+  #define R_USE_C99_IN_CXX
+  #include <R_ext/Error.h>
+  #include <R_ext/Print.h>
+#endif
+
 namespace LightGBM {
 
 #if defined(_MSC_VER)
@@ -28,11 +35,34 @@ namespace LightGBM {
      " at %s, line %d .\n", __FILE__,  __LINE__);
 #endif
 
+#ifndef CHECK_EQ
+#define CHECK_EQ(a, b) CHECK((a) == (b))
+#endif
+
+#ifndef CHECK_NE
+#define CHECK_NE(a, b) CHECK((a) != (b))
+#endif
+
+#ifndef CHECK_GE
+#define CHECK_GE(a, b) CHECK((a) >= (b))
+#endif
+
+#ifndef CHECK_LE
+#define CHECK_LE(a, b) CHECK((a) <= (b))
+#endif
+
+#ifndef CHECK_GT
+#define CHECK_GT(a, b) CHECK((a) > (b))
+#endif
+
+#ifndef CHECK_LT
+#define CHECK_LT(a, b) CHECK((a) < (b))
+#endif
+
 #ifndef CHECK_NOTNULL
 #define CHECK_NOTNULL(pointer)                             \
   if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL at %s, line %d .\n", __FILE__,  __LINE__);
 #endif
-
 
 enum class LogLevel: int {
   Fatal = -1,
@@ -40,7 +70,6 @@ enum class LogLevel: int {
   Info = 1,
   Debug = 2,
 };
-
 
 /*!
 * \brief A static Log class
@@ -83,19 +112,33 @@ class Log {
     vsprintf(str_buf, format, val);
 #endif
     va_end(val);
-    fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
-    fflush(stderr);
-    throw std::runtime_error(std::string(str_buf));
+
+    // R code should write back to R's error stream,
+    // otherwise to stderr
+    #ifndef LGB_R_BUILD
+      fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
+      fflush(stderr);
+      throw std::runtime_error(std::string(str_buf));
+    #else
+      Rf_error("[LightGBM] [Fatal] %s\n", str_buf);
+    #endif
   }
 
  private:
   static void Write(LogLevel level, const char* level_str, const char *format, va_list val) {
     if (level <= GetLevel()) {  // omit the message with low level
-      // write to STDOUT
-      printf("[LightGBM] [%s] ", level_str);
-      vprintf(format, val);
-      printf("\n");
-      fflush(stdout);
+      // R code should write back to R's output stream,
+      // otherwise to stdout
+      #ifndef LGB_R_BUILD
+        printf("[LightGBM] [%s] ", level_str);
+        vprintf(format, val);
+        printf("\n");
+        fflush(stdout);
+      #else
+        Rprintf("[LightGBM] [%s] ", level_str);
+        Rvprintf(format, val);
+        Rprintf("\n");
+      #endif
     }
   }
 
