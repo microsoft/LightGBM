@@ -45,7 +45,12 @@ if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
     Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
     Write-Output "Done installing Rtools"
 
-    # download Miktex
+}
+
+# MiKTeX and pandoc can be skipped on Azure builds, since we don't
+# build the package documentation there
+if ($env:AZURE -ne "true") {
+
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -54,17 +59,17 @@ if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
     .\miktex\miktexsetup.exe --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
     Write-Output "Installing MiKTeX"
     .\miktex\download\miktexsetup.exe --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
-    Write-Output "Done installing R, Rtools, and MiKTeX"
-}
+    Write-Output "Done installing MiKTeX"
 
-initexmf --set-config-value [MPM]AutoInstall=1
-conda install -y --no-deps pandoc
+    initexmf --set-config-value [MPM]AutoInstall=1
+    conda install -y --no-deps pandoc
+}
 
 Add-Content .Renviron "R_LIBS=$env:R_LIB_PATH"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Rscript --vanilla -e "install.packages($packages, repos = '$env:CRAN_MIRROR', pkgType = 'binary', lib = '$env:R_LIB_PATH', install.packages.check.source = 'no')" ; Check-Output $?
+Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
 Rscript build_r.R --skip-install ; Check-Output $?
@@ -75,7 +80,7 @@ $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 $env:_R_CHECK_FORCE_SUGGESTS_=0
 if ($env:AZURE -eq "true") {
   Write-Output "Running R CMD check without checking documentation"
-  R.exe CMD check --no-multiarch --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; Check-Output $?
+  R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; Check-Output $?
 } else {
   Write-Output "Running R CMD check as CRAN"
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; Check-Output $?
