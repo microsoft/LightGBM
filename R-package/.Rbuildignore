@@ -4,20 +4,22 @@
 ^pkgdown$
 
 # Objects created by compilation
-\.o$
-\.so$
-\.dll$
-\.out$
-\.bin$
+^.*\.o
+^.*\.so
+^.*\.dll
+^.*\.out
+^.*\.bin
 
 # Code copied in at build time
 ^src/CMakeLists.txt$
+^Makefile$
+^src/build/.*$
 
 # unnecessary files from submodules
 ^src/compute/.appveyor.yml$
 ^src/compute/.coveralls.yml$
 ^src/compute/.travis.yml$
-^src/compute/test/$
+^src/compute/test/.*$
 ^src/compute/index.html$
 ^src/compute/.git$
 ^src/compute/.gitignore$

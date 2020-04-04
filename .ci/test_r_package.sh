@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # set up R environment
+CRAN_MIRROR="https://cloud.r-project.org/"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
-echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
 # installing precompiled R for Ubuntu
@@ -69,10 +69,10 @@ packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
 fi
-Rscript -e "install.packages(${packages})" || exit -1
+Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
-Rscript build_r.R || exit -1
+Rscript build_r.R --skip-install || exit -1
 
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
@@ -88,6 +88,17 @@ R CMD check ${PKG_TARBALL} \
 
 if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     echo "WARNINGS have been found by R CMD check!"
+    exit -1
+fi
+
+ALLOWED_CHECK_NOTES=2
+NUM_CHECK_NOTES=$(
+    cat ${LOG_FILE_NAME} \
+        | grep -e '^Status: .* NOTE.*' \
+        | sed 's/[^0-9]*//g'
+)
+if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
+    echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
     exit -1
 fi
 
