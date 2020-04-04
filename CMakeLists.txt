@@ -235,7 +235,15 @@ file(GLOB SOURCES
 )
 
 add_executable(lightgbm src/main.cpp ${SOURCES})
-add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES})
+list(APPEND SOURCES "src/c_api.cpp")
+
+# Only build the R part of the library if building for
+# use with the R package
+if(BUILD_FOR_R)
+  list(APPEND SOURCES "src/lightgbm_R.cpp")
+endif(BUILD_FOR_R)
+
+add_library(_lightgbm SHARED ${SOURCES})
 
 if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
