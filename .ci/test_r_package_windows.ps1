@@ -81,6 +81,9 @@ if ($env:AZURE -eq "true") {
   R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; Check-Output $?
 }
 
+Write-Output "R CMD check build logs:"
+Get-Content -Path $env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out
+
 Write-Output "Looking for issues with R CMD check results"
 if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
     echo "WARNINGS have been found by R CMD check!"
