@@ -136,8 +136,17 @@ lgb.params2str <- function(params, ...) {
   # Perform key value join
   for (key in names(params)) {
 
-    # Join multi value first
-    val <- paste0(format(params[[key]], scientific = FALSE), collapse = ",")
+    # If a parameter has multiple values, join those values together with commas.
+    # trimws() is necessary because format() will pad to make strings the same width
+    val <- paste0(
+      trimws(
+        format(
+          x = params[[key]]
+          , scientific = FALSE
+        )
+      )
+      , collapse = ","
+    )
     if (nchar(val) <= 0L) next # Skip join
 
     # Join key value
@@ -148,16 +157,11 @@ lgb.params2str <- function(params, ...) {
 
   # Check ret length
   if (length(ret) == 0L) {
-
-    # Return empty string
-    lgb.c_str("")
-
-  } else {
-
-    # Return string separated by a space per element
-    lgb.c_str(paste0(ret, collapse = " "))
-
+    return(lgb.c_str(""))
   }
+
+  # Return string separated by a space per element
+  return(lgb.c_str(paste0(ret, collapse = " ")))
 
 }
 

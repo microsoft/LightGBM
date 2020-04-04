@@ -50,7 +50,7 @@
         API_OK_OR_NULL(LGBM_BoosterGetEvalNames(handle,
                                                 0, &eval_counts,
                                                 0, &string_size,
-                                                strings->data()));
+                                                nullptr));
 
         try {
             strings.reset(new StringArray(eval_counts, string_size));

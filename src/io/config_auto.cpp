@@ -85,6 +85,8 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"topk", "top_k"},
   {"mc", "monotone_constraints"},
   {"monotone_constraint", "monotone_constraints"},
+  {"monotone_constraining_method", "monotone_constraints_method"},
+  {"mc_method", "monotone_constraints_method"},
   {"feature_contrib", "feature_contri"},
   {"fc", "feature_contri"},
   {"fp", "feature_contri"},
@@ -215,6 +217,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "max_cat_to_onehot",
   "top_k",
   "monotone_constraints",
+  "monotone_constraints_method",
   "feature_contri",
   "forcedsplits_filename",
   "refit_decay_rate",
@@ -413,6 +416,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   if (GetString(params, "monotone_constraints", &tmp_str)) {
     monotone_constraints = Common::StringToArray<int8_t>(tmp_str, ',');
   }
+
+  GetString(params, "monotone_constraints_method", &monotone_constraints_method);
 
   if (GetString(params, "feature_contri", &tmp_str)) {
     feature_contri = Common::StringToArray<double>(tmp_str, ',');
@@ -633,6 +638,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_cat_to_onehot: " << max_cat_to_onehot << "]\n";
   str_buf << "[top_k: " << top_k << "]\n";
   str_buf << "[monotone_constraints: " << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints), ",") << "]\n";
+  str_buf << "[monotone_constraints_method: " << monotone_constraints_method << "]\n";
   str_buf << "[feature_contri: " << Common::Join(feature_contri, ",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
   str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";
