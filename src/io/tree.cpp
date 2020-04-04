@@ -71,7 +71,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
-  SetMissingType(&decision_type_[new_node_idx], missing_type);  
+  SetMissingType(&decision_type_[new_node_idx], missing_type);
   threshold_in_bin_[new_node_idx] = num_cat_;
   threshold_[new_node_idx] = num_cat_;
   ++num_cat_;
@@ -335,7 +335,7 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
   std::stringstream str_buf;
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
-  if (missing_type == MissingType::None 
+  if (missing_type == MissingType::None
       || (missing_type == MissingType::Zero && default_left && kZeroThreshold < threshold_[node])) {
     str_buf << "if (fval <= " << threshold_[node] << ") {";
   } else if (missing_type == MissingType::Zero) {
