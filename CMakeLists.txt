@@ -248,15 +248,9 @@ add_library(_lightgbm SHARED ${SOURCES})
 if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
     if(USE_DEBUG)
-      set_property(
-        TARGET _lightgbm
-        PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebugDLL"
-      )
+      set_target_properties(_lightgbm PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreadedDebugDLL")
     else()
-      set_property(
-        TARGET _lightgbm
-        PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
-      )
+      set_target_properties(_lightgbm PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
     endif(USE_DEBUG)
 endif(MSVC)
 
