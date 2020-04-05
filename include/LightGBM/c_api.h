@@ -1076,7 +1076,7 @@ static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everythin
  */
 inline void LGBM_SetLastError(const char* msg) {
   const int err_buf_len = 512;
-  snprintf(LastErrorMsg(), err_buf_len, msg);
+  snprintf(LastErrorMsg(), err_buf_len, "%s", msg);
 }
 
 #endif  // LIGHTGBM_C_API_H_
