@@ -354,7 +354,8 @@ static inline string esc(char c) {
   return string(buf);
 }
 
-static inline bool in_range(long x, long lower, long upper) {
+template <typename T>
+static inline bool in_range(T x, T lower, T upper) {
   return (x >= lower && x <= upper);
 }
 
@@ -466,23 +467,23 @@ struct JsonParser final {
    *
    * Encode pt as UTF-8 and add it to out.
    */
-  void encode_utf8(long pt, string &out) {
+  void encode_utf8(int64_t pt, string* out) {
     if (pt < 0) return;
 
     if (pt < 0x80) {
-      out += static_cast<char>(pt);
+      *out += static_cast<char>(pt);
     } else if (pt < 0x800) {
-      out += static_cast<char>((pt >> 6) | 0xC0);
-      out += static_cast<char>((pt & 0x3F) | 0x80);
+      *out += static_cast<char>((pt >> 6) | 0xC0);
+      *out += static_cast<char>((pt & 0x3F) | 0x80);
     } else if (pt < 0x10000) {
-      out += static_cast<char>((pt >> 12) | 0xE0);
-      out += static_cast<char>(((pt >> 6) & 0x3F) | 0x80);
-      out += static_cast<char>((pt & 0x3F) | 0x80);
+      *out += static_cast<char>((pt >> 12) | 0xE0);
+      *out += static_cast<char>(((pt >> 6) & 0x3F) | 0x80);
+      *out += static_cast<char>((pt & 0x3F) | 0x80);
     } else {
-      out += static_cast<char>((pt >> 18) | 0xF0);
-      out += static_cast<char>(((pt >> 12) & 0x3F) | 0x80);
-      out += static_cast<char>(((pt >> 6) & 0x3F) | 0x80);
-      out += static_cast<char>((pt & 0x3F) | 0x80);
+      *out += static_cast<char>((pt >> 18) | 0xF0);
+      *out += static_cast<char>(((pt >> 12) & 0x3F) | 0x80);
+      *out += static_cast<char>(((pt >> 6) & 0x3F) | 0x80);
+      *out += static_cast<char>((pt & 0x3F) | 0x80);
     }
   }
 
@@ -492,23 +493,23 @@ struct JsonParser final {
    */
   string parse_string() {
     string out;
-    long last_escaped_codepoint = -1;
+    int64_t last_escaped_codepoint = -1;
     while (true) {
       if (i == str_len) return fail("Unexpected end of input in string", "");
 
       char ch = str[i++];
 
       if (ch == '"') {
-        encode_utf8(last_escaped_codepoint, out);
+        encode_utf8(last_escaped_codepoint, &out);
         return out;
       }
 
-      if (in_range(ch, 0, 0x1f))
+      if (in_range<int64_t>(ch, 0, 0x1f))
         return fail("Unescaped " + esc(ch) + " in string", "");
 
       // The usual case: non-escaped characters
       if (ch != '\\') {
-        encode_utf8(last_escaped_codepoint, out);
+        encode_utf8(last_escaped_codepoint, &out);
         last_escaped_codepoint = -1;
         out += ch;
         continue;
@@ -534,24 +535,25 @@ struct JsonParser final {
             return fail("Bad \\u escape: " + esc, "");
         }
 
-        long codepoint = strtol(esc.data(), nullptr, 16);
+        int64_t codepoint =
+            static_cast<int64_t>(strtol(esc.data(), nullptr, 16));
 
         // JSON specifies that characters outside the BMP shall be encoded as a
         // pair of 4-hex-digit \u escapes encoding their surrogate pair
         // components. Check whether we're in the middle of such a beast: the
         // previous codepoint was an escaped lead (high) surrogate, and this is
         // a trail (low) surrogate.
-        if (in_range(last_escaped_codepoint, 0xD800, 0xDBFF) &&
-            in_range(codepoint, 0xDC00, 0xDFFF)) {
+        if (in_range<int64_t>(last_escaped_codepoint, 0xD800, 0xDBFF) &&
+            in_range<int64_t>(codepoint, 0xDC00, 0xDFFF)) {
           // Reassemble the two surrogate pairs into one astral-plane character,
           // per the UTF-16 algorithm.
           encode_utf8((((last_escaped_codepoint - 0xD800) << 10) |
                        (codepoint - 0xDC00)) +
                           0x10000,
-                      out);
+                      &out);
           last_escaped_codepoint = -1;
         } else {
-          encode_utf8(last_escaped_codepoint, out);
+          encode_utf8(last_escaped_codepoint, &out);
           last_escaped_codepoint = codepoint;
         }
 
@@ -559,7 +561,7 @@ struct JsonParser final {
         continue;
       }
 
-      encode_utf8(last_escaped_codepoint, out);
+      encode_utf8(last_escaped_codepoint, &out);
       last_escaped_codepoint = -1;
 
       if (ch == 'b') {
