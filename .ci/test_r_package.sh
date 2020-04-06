@@ -38,10 +38,8 @@ if [[ $OS_NAME == "macos" ]]; then
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
-
-    # Workaround for "/Library/TeX/texbin/tlmgr: unexpected return value from verify_checksum: -5"
-    # https://tug.org/pipermail/tex-live/2020-February/044772.html
-    curl -fsSL https://www.preining.info/rsa.asc | sudo tlmgr key add -
+    sudo tlmgr update --self
+    sudo tlmgr install inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \
@@ -58,10 +56,6 @@ if [[ $OS_NAME == "macos" ]]; then
             /Library/Frameworks/R.framework/Versions/${R_MAJOR_MINOR}/Resources/lib/libomp.dylib
     fi
 fi
-
-# Fix "! LaTeX Error: File `inconsolata.sty' not found."
-sudo tlmgr update --self
-sudo tlmgr install inconsolata helvetic
 
 conda install \
     -y \
