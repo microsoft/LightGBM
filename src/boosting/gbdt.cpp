@@ -93,20 +93,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
-  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type, config_.get()));
-
-  // init tree learner
-  // LGBM_CUDA do not copy feature is is_use_subset for initialization
-  // LGBM_CUDA initialize training data info with bagging data size (tmp_subset_)
-
-  if (config_->device_type == std::string("cuda")) {
-     tree_learner_->Init(tmp_subset_.get(), is_constant_hessian_, is_use_subset_);
-  } else {
-    tree_learner_->Init(train_data_, is_constant_hessian_, is_use_subset_);
-  }
-
-  tree_learner_->SetForcedSplit(&forced_splits_json_);
-
   // push training metrics
   training_metrics_.clear();
   for (const auto& metric : training_metrics) {
@@ -132,23 +118,30 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   feature_infos_ = train_data_->feature_infos();
   monotone_constraints_ = config->monotone_constraints;
 
-  // if need bagging, create buffer
-  // LGBM_CUDA: for CUDA implementation, this function sets up the is_use_subset_ flag as TRUE and tmp_subset_ is allocated.
-  ResetBaggingConfig(config_.get(), true);
-
   // LGBM_CUDA
   // Two key changes: position of the initializer is moved from the original code, and init() uses is_use_subset_ flag
   tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type, config_.get()));
+
+  // if need bagging, create buffer
+  // LGBM_CUDA: for CUDA implementation, this function sets up the is_use_subset_ flag as TRUE and tmp_subset_ is allocated.
+  ResetBaggingConfig(config_.get(), true);
 
   // init tree learner
   // LGBM_CUDA do not copy feature is is_use_subset for initialization
   // LGBM_CUDA initialize training data info with bagging data size (tmp_subset_)
 
   if (config_->device_type == std::string("cuda")) {
-    tree_learner_->Init(tmp_subset_.get(), is_constant_hessian_, is_use_subset_);
+    if (is_use_subset_) {
+      tree_learner_->Init(tmp_subset_.get(), is_constant_hessian_, is_use_subset_);
+    }
+    else {
+      tree_learner_->Init(train_data_, is_constant_hessian_, is_use_subset_);
+    }
   } else {
     tree_learner_->Init(train_data_, is_constant_hessian_, is_use_subset_);
   }
+
+  tree_learner_->SetForcedSplit(&forced_splits_json_);
 
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
