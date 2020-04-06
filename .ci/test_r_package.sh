@@ -43,7 +43,7 @@ if [[ $OS_NAME == "macos" ]]; then
     export PATH="/Library/TeX/texbin:$PATH"
     # work-around for "/Library/TeX/texbin/tlmgr: unexpected return value from verify_checksum: -5"
     sudo tlmgr --repo "http://ftp.jaist.ac.jp/pub/CTAN/systems/texlive/tlnet" update --self
-    sudo tlmgr install inconsolata helvetic
+    sudo tlmgr --repo "http://ftp.jaist.ac.jp/pub/CTAN/systems/texlive/tlnet" install inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \
