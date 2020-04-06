@@ -58,7 +58,7 @@ def c_array(ctype, values):
 
 
 def c_str(string):
-    return ctypes.c_char_p(string.encode('utf8'))
+    return ctypes.c_char_p(string.encode('ascii'))
 
 
 def load_from_file(filename, reference):
