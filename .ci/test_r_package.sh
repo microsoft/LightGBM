@@ -30,6 +30,9 @@ if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
             texlive-fonts-extra \
             qpdf \
             || exit -1
+    # Fix "! LaTeX Error: File `inconsolata.sty' not found." in TASK=r-package
+    sudo tlmgr update --self
+    sudo tlmgr install inconsolata helvetic
 fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
