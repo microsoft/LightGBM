@@ -45,11 +45,11 @@ if [[ $OS_NAME == "macos" ]]; then
     # https://tug.org/pipermail/tex-live/2020-February/044772.html
     sudo tlmgr repository list
     sudo tlmgr option repository http://mirror.ctan.org/systems/texlive/tlnet
+    curl -fsSL https://www.preining.info/rsa.asc | sudo tlmgr key add -
     sudo tlmgr repository add http://contrib.texlive.info/current tlcontrib
     sudo tlmgr pinning add tlcontrib "*"
-    curl -fsSL https://www.preining.info/rsa.asc | sudo tlmgr key add -
     sudo tlmgr update --self --all
-    sudo tlmgr install inconsolata helvetic
+    sudo tlmgr install --force inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \
