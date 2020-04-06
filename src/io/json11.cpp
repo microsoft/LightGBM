@@ -53,90 +53,90 @@ struct NullStruct {
  * Serialization
  */
 
-static void dump(NullStruct, string &out) { out += "null"; }
+static void dump(NullStruct, string *out) { *out += "null"; }
 
-static void dump(double value, string &out) {
+static void dump(double value, string *out) {
   if (std::isfinite(value)) {
     char buf[32];
     snprintf(buf, sizeof buf, "%.17g", value);
-    out += buf;
+    *out += buf;
   } else {
-    out += "null";
+    *out += "null";
   }
 }
 
-static void dump(int value, string &out) {
+static void dump(int value, string *out) {
   char buf[32];
   snprintf(buf, sizeof buf, "%d", value);
-  out += buf;
+  *out += buf;
 }
 
-static void dump(bool value, string &out) { out += value ? "true" : "false"; }
+static void dump(bool value, string *out) { *out += value ? "true" : "false"; }
 
-static void dump(const string &value, string &out) {
-  out += '"';
+static void dump(const string &value, string *out) {
+  *out += '"';
   for (size_t i = 0; i < value.length(); i++) {
     const char ch = value[i];
     if (ch == '\\') {
-      out += "\\\\";
+      *out += "\\\\";
     } else if (ch == '"') {
-      out += "\\\"";
+      *out += "\\\"";
     } else if (ch == '\b') {
-      out += "\\b";
+      *out += "\\b";
     } else if (ch == '\f') {
-      out += "\\f";
+      *out += "\\f";
     } else if (ch == '\n') {
-      out += "\\n";
+      *out += "\\n";
     } else if (ch == '\r') {
-      out += "\\r";
+      *out += "\\r";
     } else if (ch == '\t') {
-      out += "\\t";
+      *out += "\\t";
     } else if (static_cast<uint8_t>(ch) <= 0x1f) {
       char buf[8];
       snprintf(buf, sizeof buf, "\\u%04x", ch);
-      out += buf;
+      *out += buf;
     } else if (static_cast<uint8_t>(ch) == 0xe2 &&
                static_cast<uint8_t>(value[i + 1]) == 0x80 &&
                static_cast<uint8_t>(value[i + 2]) == 0xa8) {
-      out += "\\u2028";
+      *out += "\\u2028";
       i += 2;
     } else if (static_cast<uint8_t>(ch) == 0xe2 &&
                static_cast<uint8_t>(value[i + 1]) == 0x80 &&
                static_cast<uint8_t>(value[i + 2]) == 0xa9) {
-      out += "\\u2029";
+      *out += "\\u2029";
       i += 2;
     } else {
-      out += ch;
+      *out += ch;
     }
   }
-  out += '"';
+  *out += '"';
 }
 
-static void dump(const Json::array &values, string &out) {
+static void dump(const Json::array &values, string *out) {
   bool first = true;
-  out += "[";
+  *out += "[";
   for (const auto &value : values) {
-    if (!first) out += ", ";
+    if (!first) *out += ", ";
     value.dump(out);
     first = false;
   }
-  out += "]";
+  *out += "]";
 }
 
-static void dump(const Json::object &values, string &out) {
+static void dump(const Json::object &values, string *out) {
   bool first = true;
-  out += "{";
+  *out += "{";
   for (const auto &kv : values) {
-    if (!first) out += ", ";
+    if (!first) *out += ", ";
     dump(kv.first, out);
-    out += ": ";
+    *out += ": ";
     kv.second.dump(out);
     first = false;
   }
-  out += "}";
+  *out += "}";
 }
 
-void Json::dump(string &out) const { m_ptr->dump(out); }
+void Json::dump(string *out) const { m_ptr->dump(out); }
 
 /* * * * * * * * * * * * * * * * * * * *
  * Value wrappers
@@ -161,7 +161,7 @@ class Value : public JsonValue {
   }
 
   const T m_value;
-  void dump(string &out) const override { json11::dump(m_value, out); }
+  void dump(string *out) const override { json11::dump(m_value, out); }
 };
 
 class JsonDouble final : public Value<Json::NUMBER, double> {
@@ -369,7 +369,7 @@ struct JsonParser final {
   const char *str;
   const size_t str_len;
   size_t i;
-  string &err;
+  string *err;
   bool failed;
   const JsonParse strategy;
 
@@ -381,7 +381,7 @@ struct JsonParser final {
 
   template <typename T>
   T fail(string &&msg, const T err_ret) {
-    if (!failed) err = std::move(msg);
+    if (!failed) *err = std::move(msg);
     failed = true;
     return err_ret;
   }
@@ -671,12 +671,12 @@ struct JsonParser final {
 
     if (ch == 'n') return expect("null", Json());
 
-    if (ch == '"') return parse_string();
+    if (ch == '"') return Json(parse_string());
 
     if (ch == '{') {
       map<string, Json> data;
       ch = get_next_token();
-      if (ch == '}') return data;
+      if (ch == '}') return Json(data);
 
       while (1) {
         if (ch != '"') return fail("Expected '\"' in object, got " + esc(ch));
@@ -696,13 +696,13 @@ struct JsonParser final {
 
         ch = get_next_token();
       }
-      return data;
+      return Json(data);
     }
 
     if (ch == '[') {
       vector<Json> data;
       ch = get_next_token();
-      if (ch == ']') return data;
+      if (ch == ']') return Json(data);
 
       while (1) {
         i--;
@@ -716,7 +716,7 @@ struct JsonParser final {
         ch = get_next_token();
         (void)ch;
       }
-      return data;
+      return Json(data);
     }
 
     return fail("Expected value, got " + esc(ch));
@@ -724,7 +724,7 @@ struct JsonParser final {
 };
 }  // namespace
 
-Json Json::parse(const string &in, string &err, JsonParse strategy) {
+Json Json::parse(const string &in, string *err, JsonParse strategy) {
   JsonParser parser{in.c_str(), in.size(), 0, err, false, strategy};
   Json result = parser.parse_json(0);
 
@@ -739,10 +739,10 @@ Json Json::parse(const string &in, string &err, JsonParse strategy) {
 
 // Documented in json11.hpp
 vector<Json> Json::parse_multi(const string &in,
-                               std::string::size_type &parser_stop_pos,
-                               string &err, JsonParse strategy) {
+                               std::string::size_type *parser_stop_pos,
+                               string *err, JsonParse strategy) {
   JsonParser parser{in.c_str(), in.size(), 0, err, false, strategy};
-  parser_stop_pos = 0;
+  *parser_stop_pos = 0;
   vector<Json> json_vec;
   while (parser.i != in.size() && !parser.failed) {
     json_vec.push_back(parser.parse_json(0));
@@ -751,7 +751,7 @@ vector<Json> Json::parse_multi(const string &in,
     // Check for another object
     parser.consume_garbage();
     if (parser.failed) break;
-    parser_stop_pos = parser.i;
+    *parser_stop_pos = parser.i;
   }
   return json_vec;
 }
@@ -760,15 +760,15 @@ vector<Json> Json::parse_multi(const string &in,
  * Shape-checking
  */
 
-bool Json::has_shape(const shape &types, string &err) const {
+bool Json::has_shape(const shape &types, string *err) const {
   if (!is_object()) {
-    err = "Expected JSON object, got " + dump();
+    *err = "Expected JSON object, got " + dump();
     return false;
   }
 
   for (auto &item : types) {
     if ((*this)[item.first].type() != item.second) {
-      err = "Bad type for " + item.first + " in " + dump();
+      *err = "Bad type for " + item.first + " in " + dump();
       return false;
     }
   }

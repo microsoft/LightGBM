@@ -91,7 +91,7 @@ class Json final {
 
   // Implicit constructor: anything with a to_json() function.
   template <class T, class = decltype(&T::to_json)>
-  Json(const T &t) : Json(t.to_json()) {}
+  explicit Json(const T &t) : Json(t.to_json()) {}
 
   // Implicit constructor: map-like objects (std::map, std::unordered_map, etc)
   template <
@@ -102,7 +102,7 @@ class Json final {
               std::is_constructible<
                   Json, decltype(std::declval<M>().begin()->second)>::value,
           int>::type = 0>
-  Json(const M &m) : Json(object(m.begin(), m.end())) {}
+  explicit Json(const M &m) : Json(object(m.begin(), m.end())) {}
 
   // Implicit constructor: vector-like objects (std::list, std::vector,
   // std::set, etc)
@@ -110,11 +110,11 @@ class Json final {
                          std::is_constructible<
                              Json, decltype(*std::declval<V>().begin())>::value,
                          int>::type = 0>
-  Json(const V &v) : Json(array(v.begin(), v.end())) {}
+  explicit Json(const V &v) : Json(array(v.begin(), v.end())) {}
 
   // This prevents Json(some_pointer) from accidentally producing a bool. Use
   // Json(bool(some_pointer)) if that behavior is desired.
-  Json(void *) = delete;
+  explicit Json(void *) = delete;
 
   // Accessors
   Type type() const;
@@ -150,35 +150,35 @@ class Json final {
   const Json &operator[](const std::string &key) const;
 
   // Serialize.
-  void dump(std::string &out) const;
+  void dump(std::string *out) const;
   std::string dump() const {
     std::string out;
-    dump(out);
+    dump(&out);
     return out;
   }
 
   // Parse. If parse fails, return Json() and assign an error message to err.
-  static Json parse(const std::string &in, std::string &err,
+  static Json parse(const std::string &in, std::string *err,
                     JsonParse strategy = JsonParse::STANDARD);
-  static Json parse(const char *in, std::string &err,
+  static Json parse(const char *in, std::string *err,
                     JsonParse strategy = JsonParse::STANDARD) {
     if (in) {
       return parse(std::string(in), err, strategy);
     } else {
-      err = "null input";
+      *err = "null input";
       return Json(nullptr);
     }
   }
   // Parse multiple objects, concatenated or separated by whitespace
   static std::vector<Json> parse_multi(
-      const std::string &in, std::string::size_type &parser_stop_pos,
-      std::string &err, JsonParse strategy = JsonParse::STANDARD);
+      const std::string &in, std::string::size_type *parser_stop_pos,
+      std::string *err, JsonParse strategy = JsonParse::STANDARD);
 
   static inline std::vector<Json> parse_multi(
-      const std::string &in, std::string &err,
+      const std::string &in, std::string *err,
       JsonParse strategy = JsonParse::STANDARD) {
     std::string::size_type parser_stop_pos;
-    return parse_multi(in, parser_stop_pos, err, strategy);
+    return parse_multi(in, &parser_stop_pos, err, strategy);
   }
 
   bool operator==(const Json &rhs) const;
@@ -195,7 +195,7 @@ class Json final {
    * message.
    */
   typedef std::initializer_list<std::pair<std::string, Type>> shape;
-  bool has_shape(const shape &types, std::string &err) const;
+  bool has_shape(const shape &types, std::string *err) const;
 
  private:
   std::shared_ptr<JsonValue> m_ptr;
@@ -211,7 +211,7 @@ class JsonValue {
   virtual Json::Type type() const = 0;
   virtual bool equals(const JsonValue *other) const = 0;
   virtual bool less(const JsonValue *other) const = 0;
-  virtual void dump(std::string &out) const = 0;
+  virtual void dump(std::string *out) const = 0;
   virtual double number_value() const;
   virtual int int_value() const;
   virtual bool bool_value() const;

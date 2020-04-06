@@ -64,7 +64,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
     std::stringstream buffer;
     buffer << forced_splits_file.rdbuf();
     std::string err;
-    forced_splits_json_ = Json::parse(buffer.str(), err);
+    forced_splits_json_ = Json::parse(buffer.str(), &err);
   }
 
   objective_function_ = objective_function;
@@ -725,7 +725,7 @@ void GBDT::ResetConfig(const Config* config) {
       std::stringstream buffer;
       buffer << forced_splits_file.rdbuf();
       std::string err;
-      forced_splits_json_ = Json::parse(buffer.str(), err);
+      forced_splits_json_ = Json::parse(buffer.str(), &err);
       tree_learner_->SetForcedSplit(&forced_splits_json_);
     } else {
       forced_splits_json_ = Json();
