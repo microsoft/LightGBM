@@ -43,6 +43,8 @@ if [[ $OS_NAME == "macos" ]]; then
     export PATH="/Library/TeX/texbin:$PATH"
     # work-around for "/Library/TeX/texbin/tlmgr: unexpected return value from verify_checksum: -5"
     # https://tug.org/pipermail/tex-live/2020-February/044772.html
+    sudo tlmgr repository list
+    sudo tlmgr option repository http://mirror.ctan.org/systems/texlive/tlnet
     curl -fsSL https://www.preining.info/rsa.asc | sudo tlmgr key add -
     sudo tlmgr update --self --all
     sudo tlmgr install inconsolata helvetic
