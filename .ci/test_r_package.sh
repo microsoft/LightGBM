@@ -31,7 +31,7 @@ if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
             qpdf \
             || exit -1
     # Fix "! LaTeX Error: File `inconsolata.sty' not found." in TASK=r-package
-    sudo tlmgr update --self --all
+    sudo tlmgr update --self
     sudo tlmgr install inconsolata helvetic
 fi
 
@@ -42,14 +42,8 @@ if [[ $OS_NAME == "macos" ]]; then
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
     # work-around for "/Library/TeX/texbin/tlmgr: unexpected return value from verify_checksum: -5"
-    # https://tug.org/pipermail/tex-live/2020-February/044772.html
-    sudo tlmgr repository list
-    sudo tlmgr option repository http://mirror.ctan.org/systems/texlive/tlnet
-    curl -fsSL https://www.preining.info/rsa.asc | sudo tlmgr key add -
-    sudo tlmgr repository add http://contrib.texlive.info/current tlcontrib
-    sudo tlmgr pinning add tlcontrib "*"
-    sudo tlmgr update --self --all
-    sudo tlmgr install --force inconsolata helvetic
+    sudo tlmgr --repo "http://ftp.jaist.ac.jp/pub/CTAN/systems/texlive/tlnet" update --self
+    sudo tlmgr install inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \
