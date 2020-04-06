@@ -574,7 +574,7 @@ test_that("lgb.train() works with early stopping for regression", {
 
 test_that("lgb.train() supports non-ASCII feature names", {
   dtrain <- lgb.Dataset(
-    data = as.matrix(rnorm(400L), ncol =  4L)
+    data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
   )
   feature_names <- c("F_零", "F_一", "F_二", "F_三")
@@ -585,7 +585,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
     , params = list(
       metric = "rmse"
     )
-    , feature_names = feature_names
+    , colnames = feature_names
   )
   expect_true(lgb.is.Booster(bst))
   dumped_model <- jsonlite::fromJSON(bst$dump_model())
