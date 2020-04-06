@@ -32,6 +32,7 @@ if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
             || exit -1
     # Fix "! LaTeX Error: File `inconsolata.sty' not found." in TASK=r-package
     sudo tlmgr update --self
+    sudo tlmgr update --all
     sudo tlmgr install inconsolata helvetic
 fi
 
@@ -42,6 +43,7 @@ if [[ $OS_NAME == "macos" ]]; then
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr update --self
+    sudo tlmgr update --all
     sudo tlmgr install inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
