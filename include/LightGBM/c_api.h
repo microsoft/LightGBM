@@ -743,6 +743,59 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
+ * \brief Make sparse prediction for a new dataset in CSR format.  Currently only used for feature contributions.
+ * \note
+ * The outputs are pre-allocated, as they can vary for each invocation, but the shape should be the same:
+ *   - for feature contributions, the shape of sparse matrix will be ``num_class * num_data * (num_feature + 1)``.
+ * The output indptr_type for the sparse matrix will be the same as the given input indptr_type.
+ * \param handle Handle of booster
+ * \param indptr Pointer to row headers
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indices Pointer to column indices
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nindptr Number of rows in the matrix + 1
+ * \param nelem Number of nonzero elements in the matrix
+ * \param num_col Number of columns
+ * \param predict_type What should be predicted, only feature contributions supported currently
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param num_iteration Number of iterations for prediction, <= 0 means no limit
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
+ * \param[out] out_len Length of output indices and data
+ * \param[out] out_indptr Pointer to output row headers
+ * \param[out] out_indices Pointer to sparse indices
+ * \param[out] out_data Pointer to sparse data space
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictSparseForCSR(BoosterHandle handle,
+                                                      const void* indptr,
+                                                      int indptr_type,
+                                                      const int32_t* indices,
+                                                      const void* data,
+                                                      int data_type,
+                                                      int64_t nindptr,
+                                                      int64_t nelem,
+                                                      int64_t num_col,
+                                                      int predict_type,
+                                                      int num_iteration,
+                                                      const char* parameter,
+                                                      int64_t* out_len,
+                                                      void** out_indptr,
+                                                      int32_t** out_indices,
+                                                      void** out_data);
+
+/*!
+ * \brief Method corresponding to LGBM_BoosterPredictSparseForCSR to free the allocated data.
+ * \param indptr Pointer to output row headers or col headers to be deallocated
+ * \param indices Pointer to sparse indices to be deallocated
+ * \param data Pointer to sparse data space to be deallocated
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterFreePredictSparse(void* indptr, int32_t* indices, void* data, int indptr_type, int data_type);
+
+/*!
  * \brief Make prediction for a new dataset in CSR format. This method re-uses the internal predictor structure
  *        from previous calls and is optimized for single row invocation.
  * \note
@@ -826,6 +879,48 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                                                 const char* parameter,
                                                 int64_t* out_len,
                                                 double* out_result);
+
+/*!
+ * \brief Make sparse prediction for a new dataset in CSC format.  Currently only used for feature contributions.
+ * \note
+ * The outputs are pre-allocated, as they can vary for each invocation, but the shape should be the same:
+ *   - for feature contributions, the shape of sparse matrix will be ``num_class * num_data * (num_feature + 1)``.
+ * The output indptr_type for the sparse matrix will be the same as the given input indptr_type.
+ * \param handle Handle of booster
+ * \param col_ptr Pointer to column headers
+ * \param col_ptr_type Type of ``col_ptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indices Pointer to row indices
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param ncol_ptr Number of columns in the matrix + 1
+ * \param nelem Number of nonzero elements in the matrix
+ * \param num_row Number of rows
+ * \param predict_type What should be predicted
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param num_iteration Number of iteration for prediction, <= 0 means no limit
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
+ * \param[out] out_len Length of output indices and data
+ * \param[out] out_col_ptr Pointer to output column headers
+ * \param[out] out_indices Pointer to sparse indices
+ * \param[out] out_data Pointer to sparse data space
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictSparseForCSC(BoosterHandle handle,
+                                                      const void* col_ptr,
+                                                      int col_ptr_type,
+                                                      const int32_t* indices,
+                                                      const void* data,
+                                                      int data_type,
+                                                      int64_t ncol_ptr,
+                                                      int64_t nelem,
+                                                      int64_t num_row,
+                                                      int predict_type,
+                                                      int num_iteration,
+                                                      const char* parameter,
+                                                      int64_t* out_len,
+                                                      void** out_col_ptr,
+                                                      int32_t** out_indices,
+                                                      void** out_data);
 
 /*!
  * \brief Make prediction for a new dataset.

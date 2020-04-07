@@ -14,6 +14,7 @@ from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
+from sklearn.datasets import make_multilabel_classification
 
 try:
     import cPickle as pickle
@@ -940,6 +941,40 @@ class TestEngine(unittest.TestCase):
 
         self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
                                        - np.sum(gbm.predict(X_test, pred_contrib=True), axis=1)), 1e-4)
+
+    def test_contribs_sparse(self):
+        n_features = 20
+        n_samples = 100
+        # generate CSR sparse dataset
+        X, y = make_multilabel_classification(n_samples=n_samples,
+                                              sparse=True,
+                                              n_features=n_features,
+                                              n_classes=1,
+                                              n_labels=2)
+        y = y.flatten()
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20)
+        contribs_csr = gbm.predict(X_test, pred_contrib=True)
+        # convert data to dense and get back same contribs
+        contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
+        # validate the values are the same
+        np.testing.assert_allclose(contribs_csr.toarray(), contribs_dense)
+        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
+                                       - np.sum(contribs_dense, axis=1)), 1e-4)
+        # validate using CSC matrix
+        X_train_csc = X_train.tocsc()
+        X_test_csc = X_test.tocsc()
+        lgb_train = lgb.Dataset(X_train_csc, y_train)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20)
+        contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
+        # validate the values are the same
+        np.testing.assert_allclose(contribs_csr.toarray(), contribs_csc.toarray())
 
     def test_sliced_data(self):
         def train_and_get_predictions(features, labels):

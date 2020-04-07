@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function
 import copy
 import ctypes
 import os
+import sys
 import warnings
 from tempfile import NamedTemporaryFile
 from collections import OrderedDict
@@ -525,8 +526,8 @@ class _InnerPredictor(object):
 
         Returns
         -------
-        result : numpy array
-            Prediction result.
+        result : numpy array or scipy.sparse or list[scipy.sparse]
+            Prediction result, can be sparse for feature contributions (when pred_contrib=True).
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
@@ -651,6 +652,58 @@ class _InnerPredictor(object):
         else:
             return inner_predict(mat, num_iteration, predict_type)
 
+    def __convert_ctypes_to_numpy(self, ctypes_array, ctypes_array_len, array_type):
+        """Convert the ctypes array to a numpy array, note memory will still need to be managed."""
+        array_size = np.dtype(array_type).itemsize * ctypes_array_len
+        if sys.version_info.major >= 3:
+            bfm = ctypes.pythonapi.PyMemoryView_FromMemory
+            bfm.restype = ctypes.py_object
+            bfm.argtypes = (ctypes.c_void_p, ctypes.c_int, ctypes.c_int)
+            PyBUF_READ = 0x100
+            py_buffer = bfm(ctypes_array, array_size, PyBUF_READ)
+        else:
+            bfm = ctypes.pythonapi.PyBuffer_FromMemory
+            bfm.restype = ctypes.py_object
+            bfm.argtypes = (ctypes.c_void_p, ctypes.c_int)
+            py_buffer = bfm(ctypes_array, array_size)
+        return np.frombuffer(py_buffer, array_type)
+
+    def __create_sparse_native(self, cs, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
+                               np_indptr_type, np_data_type, indptr_type, data_type, is_csr=True):
+        # create numpy array from output arrays
+        data_indices_len = out_shape[0]
+        indptr_len = out_shape[1]
+        out_indptr = self.__convert_ctypes_to_numpy(out_ptr_indptr, indptr_len, np_indptr_type)
+        out_indices = self.__convert_ctypes_to_numpy(out_ptr_indices, data_indices_len, np.int32)
+        out_data = self.__convert_ctypes_to_numpy(out_ptr_data, data_indices_len, np_data_type)
+        # break up indptr based on number of rows (note more than one matrix in multiclass case)
+        per_class_indptr_shape = cs.indptr.shape[0]
+        # for CSC there is extra column added
+        if not is_csr:
+            per_class_indptr_shape += 1
+        out_indptr_arrays = np.split(out_indptr, out_indptr.shape[0] / per_class_indptr_shape)
+        # reformat output into a csr or csc matrix or list of csr or csc matrices
+        cs_output_matrices = []
+        offset = 0
+        for cs_indptr in out_indptr_arrays:
+            matrix_indptr_len = cs_indptr[cs_indptr.shape[0] - 1]
+            cs_indices = out_indices[offset + cs_indptr[0]:offset + matrix_indptr_len]
+            cs_data = out_data[offset + cs_indptr[0]:offset + matrix_indptr_len]
+            offset += matrix_indptr_len
+            # same shape as input csr or csc matrix except extra column for expected value
+            cs_shape = [cs.shape[0], cs.shape[1] + 1]
+            # note: make sure we copy data as it will be deallocated next
+            if is_csr:
+                cs_output_matrices.append(scipy.sparse.csr_matrix((cs_data, cs_indices, cs_indptr), cs_shape, copy=True))
+            else:
+                cs_output_matrices.append(scipy.sparse.csc_matrix((cs_data, cs_indices, cs_indptr), cs_shape, copy=True))
+            # free the temporary native indptr, indices, and data
+        _safe_call(_LIB.LGBM_BoosterFreePredictSparse(out_ptr_indptr, out_ptr_indices, out_ptr_data,
+                                                      ctypes.c_int(indptr_type), ctypes.c_int(data_type)))
+        if len(cs_output_matrices) == 1:
+            return cs_output_matrices[0]
+        return cs_output_matrices
+
     def __pred_for_csr(self, csr, num_iteration, predict_type):
         """Predict for a CSR data."""
         def inner_predict(csr, num_iteration, predict_type, preds=None):
@@ -666,6 +719,7 @@ class _InnerPredictor(object):
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
             assert csr.shape[1] <= MAX_INT32
+            # Note: not sure why this was csr.indices, we shouldn't be modifying the input matrix
             csr.indices = csr.indices.astype(np.int32, copy=False)
 
             _safe_call(_LIB.LGBM_BoosterPredictForCSR(
@@ -687,6 +741,49 @@ class _InnerPredictor(object):
                 raise ValueError("Wrong length for predict results")
             return preds, nrow
 
+        def inner_predict_sparse(csr, num_iteration, predict_type):
+            ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
+            ptr_data, type_ptr_data, _ = c_float_array(csr.data)
+            csr.indices = csr.indices.astype(np.int32, copy=False)
+            if type_ptr_indptr == C_API_DTYPE_INT32:
+                np_indptr_type = np.int32
+                out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
+            else:
+                np_indptr_type = np.int64
+                out_ptr_indptr = ctypes.POINTER(ctypes.c_int64)()
+            out_ptr_indices = ctypes.POINTER(ctypes.c_int32)()
+            if type_ptr_data == C_API_DTYPE_FLOAT32:
+                np_data_type = np.float32
+                out_ptr_data = ctypes.POINTER(ctypes.c_float)()
+            else:
+                np_data_type = np.float64
+                out_ptr_data = ctypes.POINTER(ctypes.c_double)()
+            out_shape = np.zeros(2, dtype=np.int64)
+            _safe_call(_LIB.LGBM_BoosterPredictSparseForCSR(
+                self.handle,
+                ptr_indptr,
+                ctypes.c_int32(type_ptr_indptr),
+                csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                ptr_data,
+                ctypes.c_int(type_ptr_data),
+                ctypes.c_int64(len(csr.indptr)),
+                ctypes.c_int64(len(csr.data)),
+                ctypes.c_int64(csr.shape[1]),
+                ctypes.c_int(predict_type),
+                ctypes.c_int(num_iteration),
+                c_str(self.pred_parameter),
+                out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
+                ctypes.byref(out_ptr_indptr),
+                ctypes.byref(out_ptr_indices),
+                ctypes.byref(out_ptr_data)))
+            matrices = self.__create_sparse_native(csr, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
+                                                   np_indptr_type, np_data_type, type_ptr_indptr,
+                                                   type_ptr_data, is_csr=True)
+            nrow = len(csr.indptr) - 1
+            return matrices, nrow
+
+        if predict_type == C_API_PREDICT_CONTRIB:
+            return inner_predict_sparse(csr, num_iteration, predict_type)
         nrow = len(csr.indptr) - 1
         if nrow > MAX_INT32:
             sections = [0] + list(np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)) + [nrow]
@@ -704,6 +801,49 @@ class _InnerPredictor(object):
 
     def __pred_for_csc(self, csc, num_iteration, predict_type):
         """Predict for a CSC data."""
+        def inner_predict_sparse(csc, num_iteration, predict_type):
+            ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
+            ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+            csc.indices = csc.indices.astype(np.int32, copy=False)
+            if type_ptr_indptr == C_API_DTYPE_INT32:
+                np_indptr_type = np.int32
+                out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
+            else:
+                np_indptr_type = np.int64
+                out_ptr_indptr = ctypes.POINTER(ctypes.c_int64)()
+            out_ptr_indices = ctypes.POINTER(ctypes.c_int32)()
+            if type_ptr_data == C_API_DTYPE_FLOAT32:
+                np_data_type = np.float32
+                out_ptr_data = ctypes.POINTER(ctypes.c_float)()
+            else:
+                np_data_type = np.float64
+                out_ptr_data = ctypes.POINTER(ctypes.c_double)()
+            out_shape = np.zeros(2, dtype=np.int64)
+            _safe_call(_LIB.LGBM_BoosterPredictSparseForCSC(
+                self.handle,
+                ptr_indptr,
+                ctypes.c_int32(type_ptr_indptr),
+                csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                ptr_data,
+                ctypes.c_int(type_ptr_data),
+                ctypes.c_int64(len(csc.indptr)),
+                ctypes.c_int64(len(csc.data)),
+                ctypes.c_int64(csc.shape[0]),
+                ctypes.c_int(predict_type),
+                ctypes.c_int(num_iteration),
+                c_str(self.pred_parameter),
+                out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
+                ctypes.byref(out_ptr_indptr),
+                ctypes.byref(out_ptr_indices),
+                ctypes.byref(out_ptr_data)))
+            matrices = self.__create_sparse_native(csc, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
+                                                   np_indptr_type, np_data_type, type_ptr_indptr,
+                                                   type_ptr_data, is_csr=False)
+            nrow = csc.shape[0]
+            return matrices, nrow
+
+        if predict_type == C_API_PREDICT_CONTRIB:
+            return inner_predict_sparse(csc, num_iteration, predict_type)
         nrow = csc.shape[0]
         if nrow > MAX_INT32:
             return self.__pred_for_csr(csc.tocsr(), num_iteration, predict_type)

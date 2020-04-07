@@ -11,6 +11,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <unordered_map>
 
 #if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_AMD64))) || defined(__INTEL_COMPILER) || MM_PREFETCH
   #include <xmmintrin.h>
@@ -57,6 +58,9 @@ typedef int32_t comm_size_t;
 
 using PredictFunction =
 std::function<void(const std::vector<std::pair<int, double>>&, double* output)>;
+
+using PredictSparseFunction =
+std::function<void(const std::vector<std::pair<int, double>>&, std::vector<std::unordered_map<int, double>>* output)>;
 
 typedef void(*ReduceFunction)(const char* input, char* output, int type_size, comm_size_t array_size);
 
