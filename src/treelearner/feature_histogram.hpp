@@ -95,19 +95,15 @@ class FeatureHistogram {
   }
 
   template <bool USE_RAND, bool USE_L1, bool USE_MAX_OUTPUT, bool USE_SMOOTHING>
-  double BeforeNumercal(double sum_gradient, double sum_hessian, double parent_output,
+  double BeforeNumercal(double sum_gradient, double sum_hessian, double parent_output, data_size_t num_data,
                         SplitInfo* output, int* rand_threshold) {
     is_splittable_ = false;
     output->monotone_type = meta_->monotone_type;
-    double gain_shift;
-    if (USE_SMOOTHING) {
-      gain_shift = GetLeafGainGivenOutput<USE_L1>(
-          sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, parent_output);
-    } else {
-      gain_shift = GetLeafGain<USE_L1, USE_MAX_OUTPUT, false>(
-          sum_gradient, sum_hessian, meta_->config->lambda_l1,
-          meta_->config->lambda_l2, meta_->config->max_delta_step, 0, 0, 0);
-    }
+    double output_without_split = CalculateSplittedLeafOutput<USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
+        sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2,
+        meta_->config->max_delta_step, meta_->config->path_smooth, num_data, parent_output);
+    double gain_shift = GetLeafGainGivenOutput<USE_L1>(
+        sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, output_without_split);
     *rand_threshold = 0;
     if (USE_RAND) {
       if (meta_->num_bin - 2 > 0) {
@@ -164,7 +160,7 @@ class FeatureHistogram {
 #define LAMBDA_ARGUMENTS                                         \
   double sum_gradient, double sum_hessian, data_size_t num_data, \
       const ConstraintEntry &constraints, double parent_output, SplitInfo *output
-#define BEFORE_ARGUMENTS sum_gradient, sum_hessian, parent_output, output, &rand_threshold
+#define BEFORE_ARGUMENTS sum_gradient, sum_hessian, parent_output, num_data, output, &rand_threshold
 #define FUNC_ARGUMENTS                                                      \
   sum_gradient, sum_hessian, num_data, constraints, min_gain_shift, \
       output, rand_threshold, parent_output
@@ -780,17 +776,12 @@ class FeatureHistogram {
     double ret;
     if (USE_L1) {
       ret = -ThresholdL1(sum_gradients, l1) / (sum_hessians + l2);
-      if (USE_MAX_OUTPUT) {
-        if (max_delta_step > 0 && std::fabs(ret) > max_delta_step) {
-          ret = Common::Sign(ret) * max_delta_step;
-        }
-      }
     } else {
       ret = -sum_gradients / (sum_hessians + l2);
-      if (USE_MAX_OUTPUT) {
-        if (max_delta_step > 0 && std::fabs(ret) > max_delta_step) {
-          ret = Common::Sign(ret) * max_delta_step;
-        }
+    }
+    if (USE_MAX_OUTPUT) {
+      if (max_delta_step > 0 && std::fabs(ret) > max_delta_step) {
+        ret = Common::Sign(ret) * max_delta_step;
       }
     }
     if (USE_SMOOTHING) {
