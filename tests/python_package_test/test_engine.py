@@ -1071,8 +1071,8 @@ class TestEngine(unittest.TestCase):
             return True
 
         for test_with_categorical_variable in [True, False]:
+            trainset = self.generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
             for monotone_constraints_method in ["basic", "intermediate"]:
-                trainset = self.generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
                 params = {
                     'min_data': 20,
                     'num_leaves': 20,
@@ -1105,8 +1105,8 @@ class TestEngine(unittest.TestCase):
         max_depth = 5
         monotone_constraints = [1, -1, 0]
         penalization_parameter = 2.0
+        trainset = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
         for monotone_constraints_method in ["basic", "intermediate"]:
-            trainset = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
             params = {
                 'max_depth': max_depth,
                 'monotone_constraints': monotone_constraints,
@@ -1125,8 +1125,8 @@ class TestEngine(unittest.TestCase):
         max_depth = 5
         monotone_constraints = [1, -1, 0]
         penalization_parameter = max_depth
+        trainset_constrained_model = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
         for monotone_constraints_method in ["basic", "intermediate"]:
-            trainset_constrained_model = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
             x = trainset_constrained_model.data
             y = trainset_constrained_model.label
             x3_negatively_correlated_with_y = x[:, 2]
