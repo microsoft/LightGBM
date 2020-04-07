@@ -1083,7 +1083,6 @@ class TestEngine(unittest.TestCase):
                 constrained_model = lgb.train(params, trainset)
                 self.assertTrue(is_correctly_constrained(constrained_model, test_with_categorical_variable))
 
-    # test if the monotone penalty is working
     def test_monotone_penalty(self):
         def are_first_splits_non_monotone(tree, n, monotone_constraints):
             if n <= 0:
