@@ -1036,7 +1036,7 @@ class TestEngine(unittest.TestCase):
         categorical_features = []
         if x3_to_category:
             categorical_features = [2]
-        trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features)
+        trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
         return trainset
 
     def test_monotone_constraints(self):
@@ -1126,31 +1126,32 @@ class TestEngine(unittest.TestCase):
         monotone_constraints = [1, -1, 0]
         penalization_parameter = max_depth
         trainset_constrained_model = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
-        for monotone_constraints_method in ["basic", "intermediate"]:
-            x = trainset_constrained_model.data
-            y = trainset_constrained_model.label
-            x3_negatively_correlated_with_y = x[:, 2]
+        x = trainset_constrained_model.data
+        y = trainset_constrained_model.label
+        x3_negatively_correlated_with_y = x[:, 2]
+        trainset_unconstrained_model = lgb.Dataset(x3_negatively_correlated_with_y.reshape(-1, 1), label=y)
+        params_constrained_model = {
+            'monotone_constraints': monotone_constraints,
+            'monotone_penalty': penalization_parameter,
+            "max_depth": max_depth,
+            "gpu_use_dp": True,
+        }
+        params_unconstrained_model = {
+            "max_depth": max_depth,
+            "gpu_use_dp": True,
+        }
 
-            params_constrained_model = {
-                'monotone_constraints': monotone_constraints,
-                'monotone_penalty': penalization_parameter,
-                "max_depth": max_depth,
-                "monotone_constraints_method": monotone_constraints_method,
-                "gpu_use_dp": True,
-            }
+        unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
+        unconstrained_model_predictions = unconstrained_model.\
+            predict(x3_negatively_correlated_with_y.reshape(-1, 1))
+
+        for monotone_constraints_method in ["basic", "intermediate"]:
+            params_constrained_model["monotone_constraints_method"] = monotone_constraints_method
             # The penalization is so high that the first 2 features should not be used here
             constrained_model = lgb.train(params_constrained_model, trainset_constrained_model, 10)
 
-            trainset_unconstrained_model = lgb.Dataset(x3_negatively_correlated_with_y.reshape(-1, 1), label=y)
-            params_unconstrained_model = {
-                "max_depth": max_depth,
-                "gpu_use_dp": True,
-            }
-            unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
-
             # Check that a very high penalization is the same as not using the features at all
-            self.assertTrue((constrained_model.predict(x)
-                             == unconstrained_model.predict(x3_negatively_correlated_with_y.reshape(-1, 1))).all())
+            np.testing.assert_array_equal(constrained_model.predict(x), unconstrained_model_predictions)
 
     def test_max_bin_by_feature(self):
         col1 = np.arange(0, 100)[:, np.newaxis]
