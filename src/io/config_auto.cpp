@@ -88,6 +88,8 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"monotone_constraining_method", "monotone_constraints_method"},
   {"mc_method", "monotone_constraints_method"},
   {"monotone_splits_penalty", "monotone_penalty"},
+  {"ms_penalty", "monotone_penalty"},
+  {"mc_penalty", "monotone_penalty"},
   {"feature_contrib", "feature_contri"},
   {"fc", "feature_contri"},
   {"fp", "feature_contri"},

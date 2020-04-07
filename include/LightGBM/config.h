@@ -447,7 +447,7 @@ struct Config {
   // descl2 = ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
   std::string monotone_constraints_method = "basic";
 
-  // alias = monotone_splits_penalty
+  // alias = monotone_splits_penalty, ms_penalty, mc_penalty
   // check = >=0.0
   // desc = used only if ``monotone_constraints`` is set
   // desc = `monotone penalty <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__: a penalization of 0 equals to no penalization. A penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
