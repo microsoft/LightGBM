@@ -1138,8 +1138,6 @@ class TestEngine(unittest.TestCase):
                     "monotone_constraints_method": monotone_constraints_method,
                     "use_missing": False,
                 }
-                if lgb.get_device_type() == 2:
-                    params["device"] = "cuda"
                 constrained_model = lgb.train(params, trainset)
                 self.assertTrue(is_correctly_constrained(constrained_model, test_with_categorical_variable))
 
