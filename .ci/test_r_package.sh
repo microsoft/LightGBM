@@ -42,11 +42,9 @@ if [[ $OS_NAME == "macos" ]]; then
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
     # work-around for "/Library/TeX/texbin/tlmgr: unexpected return value from verify_checksum: -5"
-    tlmgr repository list
-    sudo tlmgr option repository "http://ftp.jaist.ac.jp/pub/CTAN/systems/texlive/tlnet"
-    tlmgr repository list
-    sudo tlmgr update --self
-    sudo tlmgr install inconsolata helvetic
+    # https://tug.org/pipermail/tex-live/2020-April/045235.html
+    sudo tlmgr --verify-repo=none update --self
+    sudo tlmgr --verify-repo=none install inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \
@@ -79,22 +77,13 @@ fi
 Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
-Rscript build_r.R || exit -1
+Rscript build_r.R --skip-install || exit -1
 
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 
 # suppress R CMD check warning from Suggests dependencies not being available
 export _R_CHECK_FORCE_SUGGESTS_=0
-
-#  check locale
-echo "----- checking locale -----"
-locale
-
-# check test output
-pushd $(pwd)/R-package/tests
-    Rscript testthat.R || exit -1
-popd
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
