@@ -30,9 +30,6 @@ if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
             texlive-fonts-extra \
             qpdf \
             || exit -1
-    # Fix "! LaTeX Error: File `inconsolata.sty' not found." in TASK=r-package
-    sudo tlmgr update --self
-    sudo tlmgr install inconsolata helvetic
 fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
@@ -41,8 +38,6 @@ if [[ $OS_NAME == "macos" ]]; then
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
-    # work-around for "/Library/TeX/texbin/tlmgr: unexpected return value from verify_checksum: -5"
-    # https://tug.org/pipermail/tex-live/2020-April/045235.html
     sudo tlmgr --verify-repo=none update --self
     sudo tlmgr --verify-repo=none install inconsolata helvetic
 
