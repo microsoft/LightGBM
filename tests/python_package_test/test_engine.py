@@ -757,10 +757,8 @@ class TestEngine(unittest.TestCase):
 
         gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
         self.assertListEqual(feature_names, gbm.feature_name())
-
-        # save model
         gbm.save_model('lgb.model')
-        # load model to predict
+
         gbm2 = lgb.Booster(model_file='lgb.model')
         self.assertListEqual(feature_names, gbm2.feature_name())
 
