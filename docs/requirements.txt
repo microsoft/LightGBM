@@ -1,2 +1,2 @@
 -r requirements_base.txt
-breathe
+breathe < 4.15
