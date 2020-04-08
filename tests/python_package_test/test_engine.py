@@ -759,9 +759,9 @@ class TestEngine(unittest.TestCase):
         self.assertListEqual(feature_names, gbm.feature_name())
 
         # save model
-        gbm.save_model('model_feature_names.txt')
+        gbm.save_model('lgb.model')
         # load model to predict
-        gbm2 = lgb.Booster(model_file='model_feature_names.txt')
+        gbm2 = lgb.Booster(model_file='lgb.model')
         self.assertListEqual(feature_names, gbm2.feature_name())
 
     def test_save_load_copy_pickle(self):
