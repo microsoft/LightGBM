@@ -313,7 +313,7 @@ inline static unsigned CountDecimalDigit32(uint32_t n) {
     1000000000
   };
 #ifdef _MSC_VER
-  // NOLINT
+  // NOLINTNEXTLINE
   unsigned long i = 0;
   _BitScanReverse(&i, n | 1);
   uint32_t t = (i + 1) * 1233 >> 12;

@@ -218,7 +218,7 @@ class TcpSocket {
         continue;
       }
       if (ifa->ifa_addr->sa_family == AF_INET) {
-        // NOLINT
+        // NOLINTNEXTLINE
         tmpAddrPtr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
         char addressBuffer[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
