@@ -57,7 +57,7 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
   SetDecisionType(&decision_type_[new_node_idx], default_left, kDefaultLeftMask);
-  SetMissingType(&decision_type_[new_node_idx], missing_type);
+  SetMissingType(&decision_type_[new_node_idx], static_cast<int8_t>(missing_type));
   threshold_in_bin_[new_node_idx] = threshold_bin;
   threshold_[new_node_idx] = threshold_double;
   ++num_leaves_;
@@ -71,7 +71,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
-  SetMissingType(&decision_type_[new_node_idx], missing_type);
+  SetMissingType(&decision_type_[new_node_idx], static_cast<int8_t>(missing_type));
   threshold_in_bin_[new_node_idx] = num_cat_;
   threshold_[new_node_idx] = num_cat_;
   ++num_cat_;
