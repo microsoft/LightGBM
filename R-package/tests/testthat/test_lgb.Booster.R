@@ -88,3 +88,142 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         )
     }, regexp = "Only the following eval_names exist for dataset.*\\: \\[l2\\]", fixed = FALSE)
 })
+
+context("lgb.load()")
+
+test_that("lgb.load() gives the expected error messages given different incorrect inputs", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    data(agaricus.test, package = "lightgbm")
+    train <- agaricus.train
+    test <- agaricus.test
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = 2L
+        , objective = "binary"
+    )
+
+    # you have to give model_str or filename
+    expect_error({
+        lgb.load()
+    }, regexp = "either filename or model_str must be given")
+    expect_error({
+        lgb.load(filename = NULL, model_str = NULL)
+    }, regexp = "either filename or model_str must be given")
+
+    # if given, filename should be a string that points to an existing file
+    out_file <- "lightgbm.model"
+    expect_error({
+        lgb.load(filename = list(out_file))
+    }, regexp = "filename should be character")
+    file_to_check <- paste0("a.model")
+    while (file.exists(file_to_check)) {
+        file_to_check <- paste0("a", file_to_check)
+    }
+    expect_error({
+        lgb.load(filename = file_to_check)
+    }, regexp = "passed to filename does not exist")
+
+    # if given, model_str should be a string
+    expect_error({
+        lgb.load(model_str = c(4.0, 5.0, 6.0))
+    }, regexp = "model_str should be character")
+
+})
+
+test_that("Loading a Booster from a file works", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    data(agaricus.test, package = "lightgbm")
+    train <- agaricus.train
+    test <- agaricus.test
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = 2L
+        , objective = "binary"
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    pred <- predict(bst, test$data)
+    lgb.save(bst, "lightgbm.model")
+
+    # finalize the booster and destroy it so you know we aren't cheating
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    bst2 <- lgb.load(
+        filename = "lightgbm.model"
+    )
+    pred2 <- predict(bst2, test$data)
+    expect_identical(pred, pred2)
+})
+
+test_that("Loading a Booster from a string works", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    data(agaricus.test, package = "lightgbm")
+    train <- agaricus.train
+    test <- agaricus.test
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = 2L
+        , objective = "binary"
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    pred <- predict(bst, test$data)
+    model_string <- bst$save_model_to_string()
+
+    # finalize the booster and destroy it so you know we aren't cheating
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    bst2 <- lgb.load(
+        model_str = model_string
+    )
+    pred2 <- predict(bst2, test$data)
+    expect_identical(pred, pred2)
+})
+
+test_that("If a string and a file are both passed to lgb.load() the file is used model_str is totally ignored", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    data(agaricus.test, package = "lightgbm")
+    train <- agaricus.train
+    test <- agaricus.test
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = 2L
+        , objective = "binary"
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    pred <- predict(bst, test$data)
+    lgb.save(bst, "lightgbm.model")
+
+    # finalize the booster and destroy it so you know we aren't cheating
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    bst2 <- lgb.load(
+        filename = "lightgbm.model"
+        , model_str = 4.0
+    )
+    pred2 <- predict(bst2, test$data)
+    expect_identical(pred, pred2)
+})
