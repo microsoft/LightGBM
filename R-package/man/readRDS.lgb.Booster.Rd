@@ -18,6 +18,7 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 Attempts to load a model stored in a \code{.rds} file, using \code{\link[base]{readRDS}}
 }
 \examples{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -38,5 +39,5 @@ model <- lgb.train(
 )
 saveRDS.lgb.Booster(model, "model.rds")
 new_model <- readRDS.lgb.Booster("model.rds")
-
+}
 }

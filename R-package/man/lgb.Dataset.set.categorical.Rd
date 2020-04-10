@@ -21,7 +21,6 @@ Set the categorical features of an \code{lgb.Dataset} object. Use this function
              to tell LightGBM which features should be treated as categorical.
 }
 \examples{
-library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
