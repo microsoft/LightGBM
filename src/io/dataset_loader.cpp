@@ -6,12 +6,11 @@
 
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
 #include <fstream>
-
-#include <LightGBM/json11.hpp>
 
 namespace LightGBM {
 
@@ -1209,12 +1208,12 @@ std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced
       std::stringstream buffer;
       buffer << forced_bins_stream.rdbuf();
       std::string err;
-      Json forced_bins_json = Json::parse(buffer.str(), err);
+      Json forced_bins_json = Json::parse(buffer.str(), &err);
       CHECK(forced_bins_json.is_array());
       std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
       for (size_t i = 0; i < forced_bins_arr.size(); ++i) {
         int feature_num = forced_bins_arr[i]["feature"].int_value();
-        CHECK(feature_num < num_total_features);
+        CHECK_LT(feature_num, num_total_features);
         if (categorical_features.count(feature_num)) {
           Log::Warning("Feature %d is categorical. Will ignore forced bins for this  feature.", feature_num);
         } else {

@@ -13,7 +13,6 @@
 #include <algorithm>
 
 #include "../io/dense_bin.hpp"
-#include "../io/dense_nbits_bin.hpp"
 
 #define GPU_DEBUG 0
 
@@ -378,20 +377,20 @@ void GPUTreeLearner::AllocateGPUMemory() {
       BinIterator* bin_iters[8];
       for (int s_idx = 0; s_idx < 8; ++s_idx) {
         bin_iters[s_idx] = train_data_->FeatureGroupIterator(dense_ind[s_idx]);
-        if (dynamic_cast<Dense4bitsBinIterator*>(bin_iters[s_idx]) == 0) {
+        if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[s_idx]) == 0) {
           Log::Fatal("GPU tree learner assumes that all bins are Dense4bitsBin when num_bin <= 16, but feature %d is not", dense_ind[s_idx]);
         }
       }
       // this guarantees that the RawGet() function is inlined, rather than using virtual function dispatching
-      Dense4bitsBinIterator iters[8] = {
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[0]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[1]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[2]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[3]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[4]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[5]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[6]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[7])};
+      DenseBinIterator<uint8_t, true> iters[8] = {
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[0]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[1]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[2]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[3]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[4]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[5]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[6]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[7])};
       for (int j = 0; j < num_data_; ++j) {
         host4[j].s[0] = (uint8_t)((iters[0].RawGet(j) * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1)))
                       |((iters[1].RawGet(j) * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1))) << 4));
@@ -407,15 +406,15 @@ void GPUTreeLearner::AllocateGPUMemory() {
       for (int s_idx = 0; s_idx < 4; ++s_idx) {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_ind[s_idx]);
         // this guarantees that the RawGet() function is inlined, rather than using virtual function dispatching
-        if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
+        if (dynamic_cast<DenseBinIterator<uint8_t, false>*>(bin_iter) != 0) {
           // Dense bin
-          DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
+          DenseBinIterator<uint8_t, false> iter = *static_cast<DenseBinIterator<uint8_t, false>*>(bin_iter);
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[s_idx] = (uint8_t)(iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1)));
           }
-        } else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
+        } else if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           // Dense 4-bit bin
-          Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
+          DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[s_idx] = (uint8_t)(iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1)));
           }
@@ -450,8 +449,8 @@ void GPUTreeLearner::AllocateGPUMemory() {
     for (int i = 0; i < k; ++i) {
       if (dword_features_ == 8) {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
-        if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
-          Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
+        if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
+          DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i >> 1] |= (uint8_t)((iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
@@ -463,15 +462,15 @@ void GPUTreeLearner::AllocateGPUMemory() {
         }
       } else if (dword_features_ == 4) {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
-        if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
-          DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
+        if (dynamic_cast<DenseBinIterator<uint8_t, false>*>(bin_iter) != 0) {
+          DenseBinIterator<uint8_t, false> iter = *static_cast<DenseBinIterator<uint8_t, false>*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                           + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
           }
-        } else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
-          Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
+        } else if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
+          DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
@@ -735,9 +734,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   SetupKernelArguments();
 }
 
-Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            const Json& forced_split_json) {
-  return SerialTreeLearner::Train(gradients, hessians, forced_split_json);
+Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
+  return SerialTreeLearner::Train(gradients, hessians);
 }
 
 void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
@@ -750,10 +748,10 @@ void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_c
 }
 
 void GPUTreeLearner::ResetIsConstantHessian(bool is_constant_hessian) {
-  if (is_constant_hessian != share_state_->is_constant_hessian) {	
+  if (is_constant_hessian != share_state_->is_constant_hessian) {
     SerialTreeLearner::ResetIsConstantHessian(is_constant_hessian);
-    BuildGPUKernels();	
-    SetupKernelArguments();	
+    BuildGPUKernels();
+    SetupKernelArguments();
   }
 }
 
@@ -957,7 +955,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   std::vector<int8_t> is_dense_feature_used(num_features_, 0);
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!is_feature_used_[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (!is_feature_used[feature_index]) continue;
     if (train_data_->IsMultiGroup(train_data_->Feature2Group(feature_index))) {
       is_sparse_feature_used[feature_index] = 1;
@@ -1062,7 +1060,7 @@ void GPUTreeLearner::FindBestSplits() {
 
 #if GPU_DEBUG >= 3
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!is_feature_used_[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
         && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);

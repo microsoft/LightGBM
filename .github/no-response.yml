@@ -1,0 +1,11 @@
+# Configuration for probot-no-response - https://github.com/probot/no-response
+
+# Number of days of inactivity before an Issue is closed for lack of response
+daysUntilClose: 30
+# Label requiring a response
+responseRequiredLabel: awaiting response
+# Comment to post when closing an Issue for lack of response. Set to `false` to disable
+closeComment: >
+    This issue has been automatically closed because it has been awaiting a response for too long.
+    When you have time to to work with the maintainers to resolve this issue, please post a new comment and it will be re-opened.
+    If the issue has been locked for editing by the time you return to it, please open a new issue and reference this one. Thank you for taking the time to improve LightGBM!

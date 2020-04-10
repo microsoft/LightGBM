@@ -48,7 +48,7 @@ context("parameter aliases")
 
 test_that(".PARAMETER_ALIASES() returns a named list of character vectors, where names are unique", {
   param_aliases <- .PARAMETER_ALIASES()
-  expect_true(is.list(param_aliases))
+  expect_identical(class(param_aliases), "list")
   expect_true(is.character(names(param_aliases)))
   expect_true(is.character(param_aliases[["boosting"]]))
   expect_true(is.character(param_aliases[["early_stopping_round"]]))

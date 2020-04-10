@@ -90,17 +90,22 @@ class BinMapper {
 
   /*! \brief Get number of bins */
   inline int num_bin() const { return num_bin_; }
+
   /*! \brief Missing Type */
   inline MissingType missing_type() const { return missing_type_; }
+
   /*! \brief True if bin is trivial (contains only one bin) */
   inline bool is_trivial() const { return is_trivial_; }
+
   /*! \brief Sparsity of this bin ( num_zero_bins / num_data ) */
   inline double sparse_rate() const { return sparse_rate_; }
+
   /*!
   * \brief Save binary data to file
   * \param file File want to write
   */
   void SaveBinaryToFile(const VirtualFileWriter* writer) const;
+
   /*!
   * \brief Mapping bin into feature value
   * \param bin
@@ -118,6 +123,7 @@ class BinMapper {
   * \brief Get sizes in byte of this object
   */
   size_t SizesInByte() const;
+
   /*!
   * \brief Mapping feature value into bin
   * \param value
@@ -218,61 +224,6 @@ class BinMapper {
   uint32_t most_freq_bin_;
 };
 
-/*!
-* \brief Interface for ordered bin data. efficient for construct histogram, especially for sparse bin
-*        There are 2 advantages by using ordered bin.
-*        1. group the data by leafs to improve the cache hit.
-*        2. only store the non-zero bin, which can speed up the histogram construction for sparse features.
-*        However it brings additional cost: it need re-order the bins after every split, which will cost much for dense feature.
-*        So we only using ordered bin for sparse situations.
-*/
-class OrderedBin {
- public:
-  /*! \brief virtual destructor */
-  virtual ~OrderedBin() {}
-
-  /*!
-  * \brief Initialization logic.
-  * \param used_indices If used_indices.size() == 0 means using all data, otherwise, used_indices[i] == true means i-th data is used
-           (this logic was build for bagging logic)
-  * \param num_leaves Number of leaves on this iteration
-  */
-  virtual void Init(const char* used_indices, data_size_t num_leaves) = 0;
-
-  /*!
-  * \brief Construct histogram by using this bin
-  *        Note: Unlike Bin, OrderedBin doesn't use ordered gradients and ordered hessians.
-  *        Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
-  * \param leaf Using which leaf's data to construct
-  * \param gradients Gradients, Note:non-ordered by leaf
-  * \param hessians Hessians, Note:non-ordered by leaf
-  * \param out Output Result
-  */
-  virtual void ConstructHistogram(int leaf, const score_t* gradients,
-    const score_t* hessians, hist_t* out) const = 0;
-
-  /*!
-  * \brief Construct histogram by using this bin
-  *        Note: Unlike Bin, OrderedBin doesn't use ordered gradients and ordered hessians.
-  *        Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
-  * \param leaf Using which leaf's data to construct
-  * \param gradients Gradients, Note:non-ordered by leaf
-  * \param out Output Result
-  */
-  virtual void ConstructHistogram(int leaf, const score_t* gradients, hist_t* out) const = 0;
-
-  /*!
-  * \brief Split current bin, and perform re-order by leaf
-  * \param leaf Using which leaf's to split
-  * \param right_leaf The new leaf index after perform this split
-  * \param is_in_leaf is_in_leaf[i] == mark means the i-th data will be on left leaf after split
-  * \param mark is_in_leaf[i] == mark means the i-th data will be on left leaf after split
-  */
-  virtual void Split(int leaf, int right_leaf, const char* is_in_leaf, char mark) = 0;
-
-  virtual data_size_t NonZeroCount(int leaf) const = 0;
-};
-
 /*! \brief Iterator for one bin column */
 class BinIterator {
  public:
@@ -304,7 +255,6 @@ class Bin {
   * \param value bin value of record
   */
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
-
 
   virtual void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
   /*!
@@ -382,43 +332,31 @@ class Bin {
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
                                   const score_t* ordered_gradients, hist_t* out) const = 0;
 
-  /*!
-  * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
-  * \param min_bin min_bin of current used feature
-  * \param max_bin max_bin of current used feature
-  * \param default_bin default bin for feature value 0
-  * \param most_freq_bin
-  * \param missing_type missing type
-  * \param default_left missing bin will go to left child
-  * \param threshold The split threshold.
-  * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.
-  * \param num_data Number of used data
-  * \param lte_indices After called this function. The less or equal data indices will store on this object.
-  * \param gt_indices After called this function. The greater data indices will store on this object.
-  * \return The number of less than or equal data.
-  */
   virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin,
-    uint32_t default_bin, uint32_t most_freq_bin, MissingType missing_type, bool default_left, uint32_t threshold,
-    data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+                            uint32_t default_bin, uint32_t most_freq_bin,
+                            MissingType missing_type, bool default_left,
+                            uint32_t threshold, const data_size_t* data_indices,
+                            data_size_t cnt,
+                            data_size_t* lte_indices,
+                            data_size_t* gt_indices) const = 0;
 
-  /*!
-  * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
-  * \param min_bin min_bin of current used feature
-  * \param max_bin max_bin of current used feature
-  * \param most_freq_bin
-  * \param threshold The split threshold.
-  * \param num_threshold Number of threshold
-  * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.
-  * \param num_data Number of used data
-  * \param lte_indices After called this function. The less or equal data indices will store on this object.
-  * \param gt_indices After called this function. The greater data indices will store on this object.
-  * \return The number of less than or equal data.
-  */
-  virtual data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
-                            uint32_t most_freq_bin, const uint32_t* threshold, int num_threshold,
-                            data_size_t* data_indices, data_size_t num_data,
-                            data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+  virtual data_size_t SplitCategorical(
+      uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
+      const uint32_t* threshold, int num_threshold,
+      const data_size_t* data_indices, data_size_t cnt,
+      data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+
+  virtual data_size_t Split(uint32_t max_bin, uint32_t default_bin,
+                            uint32_t most_freq_bin, MissingType missing_type,
+                            bool default_left, uint32_t threshold,
+                            const data_size_t* data_indices, data_size_t cnt,
+                            data_size_t* lte_indices,
+                            data_size_t* gt_indices) const = 0;
+
+  virtual data_size_t SplitCategorical(
+      uint32_t max_bin, uint32_t most_freq_bin, const uint32_t* threshold,
+      int num_threshold, const data_size_t* data_indices, data_size_t cnt,
+      data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
   /*!
   * \brief After pushed all feature data, call this could have better refactor for bin data
@@ -469,7 +407,6 @@ class MultiValBin {
                                   int num_feature,
                                   double estimate_element_per_row) const = 0;
 
-
   virtual void CopySubcol(const MultiValBin* full_bin,
                           const std::vector<int>& used_feature_index,
                           const std::vector<uint32_t>& lower,
@@ -496,13 +433,11 @@ class MultiValBin {
                                   const score_t* hessians,
                                   hist_t* out) const = 0;
 
-
   virtual void ConstructHistogramOrdered(const data_size_t* data_indices,
                                          data_size_t start, data_size_t end,
                                          const score_t* ordered_gradients,
                                          const score_t* ordered_hessians,
                                          hist_t* out) const = 0;
-
 
   virtual void FinishLoad() = 0;
 

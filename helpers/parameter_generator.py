@@ -123,6 +123,34 @@ def get_alias(infos):
     return pairs
 
 
+def parse_check(check, reverse=False):
+    """Parse the constraint.
+
+    Parameters
+    ----------
+    check : string
+        String representation of the constraint.
+    reverse : bool, optional (default=False)
+        Whether to reverse the sign of the constraint.
+
+    Returns
+    -------
+    pair : tuple
+        Parsed constraint in the form of tuple (value, sign).
+    """
+    try:
+        idx = 1
+        float(check[idx:])
+    except ValueError:
+        idx = 2
+        float(check[idx:])
+    if reverse:
+        reversed_sign = {'<': '>', '>': '<', '<=': '>=', '>=': '<='}
+        return check[idx:], reversed_sign[check[:idx]]
+    else:
+        return check[idx:], check[:idx]
+
+
 def set_one_var_from_string(name, param_type, checks):
     """Construct code for auto config file for one param value.
 
@@ -145,8 +173,10 @@ def set_one_var_from_string(name, param_type, checks):
     if "vector" not in param_type:
         ret += "  %s(params, \"%s\", &%s);\n" % (univar_mapper[param_type], name, name)
         if len(checks) > 0:
+            check_mapper = {"<": "LT", ">": "GT", "<=": "LE", ">=": "GE"}
             for check in checks:
-                ret += "  CHECK(%s %s);\n" % (name, check)
+                value, sign = parse_check(check)
+                ret += "  CHECK_%s(%s, %s);\n" % (check_mapper[sign], name, value)
         ret += "\n"
     else:
         ret += "  if (GetString(params, \"%s\", &tmp_str)) {\n" % (name)
@@ -171,33 +201,6 @@ def gen_parameter_description(sections, descriptions, params_rst):
     params_rst : string
         Path to the file with parameters documentation.
     """
-    def parse_check(check, reverse=False):
-        """Parse the constraint.
-
-        Parameters
-        ----------
-        check : string
-            String representation of the constraint.
-        reverse : bool, optional (default=False)
-            Whether to reverse the sign of the constraint.
-
-        Returns
-        -------
-        pair : tuple
-            Parsed constraint in the form of tuple (value, sign).
-        """
-        try:
-            idx = 1
-            float(check[idx:])
-        except ValueError:
-            idx = 2
-            float(check[idx:])
-        if reverse:
-            reversed_sign = {'<': '>', '>': '<', '<=': '>=', '>=': '<='}
-            return check[idx:], reversed_sign[check[:idx]]
-        else:
-            return check[idx:], check[:idx]
-
     params_to_write = []
     lvl_mapper = {1: '-', 2: '~'}
     for (section_name, section_lvl), section_params in zip(sections, descriptions):
@@ -312,7 +315,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "  std::stringstream str_buf;\n"
     for x in infos:
         for y in x:
-            if "[doc-only]" in y:
+            if "[doc-only]" in y or "[no-save]" in y:
                 continue
             param_type = y["inner_type"][0]
             name = y["name"][0]

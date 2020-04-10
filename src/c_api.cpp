@@ -13,6 +13,7 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/locale_context.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
@@ -295,7 +296,6 @@ class Booster {
     if (param.count("metric")) {
       Log::Fatal("Cannot change metric during training");
     }
-
     CheckDatasetResetConfig(config_, param);
 
     config_.Set(param);
@@ -502,21 +502,31 @@ class Booster {
     return ret;
   }
 
-  int GetEvalNames(char** out_strs) const {
+  int GetEvalNames(char** out_strs, const int len, const size_t buffer_len, size_t *out_buffer_len) const {
+    *out_buffer_len = 0;
     int idx = 0;
     for (const auto& metric : train_metric_) {
       for (const auto& name : metric->GetName()) {
-        std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+        if (idx < len) {
+          std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
+          out_strs[idx][buffer_len - 1] = '\0';
+        }
+        *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
         ++idx;
       }
     }
     return idx;
   }
 
-  int GetFeatureNames(char** out_strs) const {
+  int GetFeatureNames(char** out_strs, const int len, const size_t buffer_len, size_t *out_buffer_len) const {
+    *out_buffer_len = 0;
     int idx = 0;
     for (const auto& name : boosting_->FeatureNames()) {
-      std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+      if (idx < len) {
+        std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
+        out_strs[idx][buffer_len - 1] = '\0';
+      }
+      *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
       ++idx;
     }
     return idx;
@@ -543,7 +553,23 @@ class Booster {
 
 }  // namespace LightGBM
 
-using namespace LightGBM;
+// explicitly declare symbols from LightGBM namespace
+using LightGBM::AllgatherFunction;
+using LightGBM::Booster;
+using LightGBM::Common::CheckElementsIntervalClosed;
+using LightGBM::Common::RemoveQuotationSymbol;
+using LightGBM::Common::Vector2Ptr;
+using LightGBM::Common::VectorSize;
+using LightGBM::Config;
+using LightGBM::data_size_t;
+using LightGBM::Dataset;
+using LightGBM::DatasetLoader;
+using LightGBM::kZeroThreshold;
+using LightGBM::LGBM_APIHandleException;
+using LightGBM::Log;
+using LightGBM::Network;
+using LightGBM::Random;
+using LightGBM::ReduceScatterFunction;
 
 // some help functions used to convert data
 
@@ -775,10 +801,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             ncol,
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, total_nrow));
   } else {
     ret.reset(new Dataset(total_nrow));
@@ -843,7 +869,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (std::pair<int, double>& inner_data : row) {
-        CHECK(inner_data.first < num_col);
+        CHECK_LT(inner_data.first, num_col);
         if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
@@ -851,10 +877,10 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(num_col),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -911,7 +937,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       auto idx = sample_indices[i];
       get_row_fun(static_cast<int>(idx), buffer);
       for (std::pair<int, double>& inner_data : buffer) {
-        CHECK(inner_data.first < num_col);
+        CHECK_LT(inner_data.first, num_col);
         if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
@@ -919,10 +945,10 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(num_col),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -992,10 +1018,10 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     }
     OMP_THROW_EX();
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -1053,7 +1079,7 @@ int LGBM_DatasetGetSubset(
   CHECK_GT(num_used_row_indices, 0);
   const int32_t lower = 0;
   const int32_t upper = full_dataset->num_data() - 1;
-  Common::CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
+  CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
   if (!std::is_sorted(used_row_indices, used_row_indices + num_used_row_indices)) {
     Log::Fatal("used_row_indices should be sorted in Subset");
   }
@@ -1092,7 +1118,9 @@ int LGBM_DatasetGetFeatureNames(
   API_END();
 }
 
-#pragma warning(disable : 4702)
+#ifdef _MSC_VER
+  #pragma warning(disable : 4702)
+#endif
 int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);
@@ -1209,6 +1237,7 @@ int LGBM_BoosterCreateFromModelfile(
   int* out_num_iterations,
   BoosterHandle* out) {
   API_BEGIN();
+  LocaleContext withLocaleContext("C");
   auto ret = std::unique_ptr<Booster>(new Booster(filename));
   *out_num_iterations = ret->GetBoosting()->GetCurrentIteration();
   *out = ret.release();
@@ -1220,6 +1249,7 @@ int LGBM_BoosterLoadModelFromString(
   int* out_num_iterations,
   BoosterHandle* out) {
   API_BEGIN();
+  LocaleContext withLocaleContext("C");
   auto ret = std::unique_ptr<Booster>(new Booster(nullptr));
   ret->LoadModelFromString(model_str);
   *out_num_iterations = ret->GetBoosting()->GetCurrentIteration();
@@ -1227,7 +1257,9 @@ int LGBM_BoosterLoadModelFromString(
   API_END();
 }
 
-#pragma warning(disable : 4702)
+#ifdef _MSC_VER
+  #pragma warning(disable : 4702)
+#endif
 int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
@@ -1353,17 +1385,27 @@ int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
   API_END();
 }
 
-int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetEvalNames(BoosterHandle handle,
+                             const int len,
+                             int* out_len,
+                             const size_t buffer_len,
+                             size_t* out_buffer_len,
+                             char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetEvalNames(out_strs);
+  *out_len = ref_booster->GetEvalNames(out_strs, len, buffer_len, out_buffer_len);
   API_END();
 }
 
-int LGBM_BoosterGetFeatureNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
+                                const int len,
+                                int* out_len,
+                                const size_t buffer_len,
+                                size_t* out_buffer_len,
+                                char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetFeatureNames(out_strs);
+  *out_len = ref_booster->GetFeatureNames(out_strs, len, buffer_len, out_buffer_len);
   API_END();
 }
 
@@ -1632,6 +1674,7 @@ int LGBM_BoosterSaveModel(BoosterHandle handle,
                           int num_iteration,
                           const char* filename) {
   API_BEGIN();
+  LocaleContext withLocaleContext("C");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SaveModelToFile(start_iteration, num_iteration, filename);
   API_END();
@@ -1644,6 +1687,7 @@ int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                   int64_t* out_len,
                                   char* out_str) {
   API_BEGIN();
+  LocaleContext withLocaleContext("C");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->SaveModelToString(start_iteration, num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;
@@ -1660,6 +1704,7 @@ int LGBM_BoosterDumpModel(BoosterHandle handle,
                           int64_t* out_len,
                           char* out_str) {
   API_BEGIN();
+  LocaleContext withLocaleContext("C");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->DumpModel(start_iteration, num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;
@@ -1726,7 +1771,7 @@ int LGBM_NetworkInit(const char* machines,
                      int num_machines) {
   API_BEGIN();
   Config config;
-  config.machines = Common::RemoveQuotationSymbol(std::string(machines));
+  config.machines = RemoveQuotationSymbol(std::string(machines));
   config.local_listen_port = local_listen_port;
   config.num_machines = num_machines;
   config.time_out = listen_time_out;
@@ -1798,6 +1843,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     }
   }
   Log::Fatal("Unknown data type in RowFunctionFromDenseMatric");
+  return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
@@ -1902,6 +1948,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
     }
   }
   Log::Fatal("Unknown data type in RowFunctionFromCSR");
+  return nullptr;
 }
 
 std::function<std::pair<int, double>(int idx)>
@@ -1967,6 +2014,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
     }
   }
   Log::Fatal("Unknown data type in CSC matrix");
+  return nullptr;
 }
 
 CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,

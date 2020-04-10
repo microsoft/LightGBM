@@ -57,7 +57,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
   for (int i = 0; i < this->train_data_->num_total_features(); ++i) {
     int inner_feature_index = this->train_data_->InnerFeatureIndex(i);
     if (inner_feature_index == -1) { continue; }
-    if (this->is_feature_used_[inner_feature_index]) {
+    if (this->col_sampler_.is_feature_used_bytree()[inner_feature_index]) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
       feature_distribution[cur_min_machine].push_back(inner_feature_index);
       auto num_bin = this->train_data_->FeatureNumBin(inner_feature_index);
@@ -147,11 +147,13 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
-  TREELEARNER_T::ConstructHistograms(this->is_feature_used_, true);
+  TREELEARNER_T::ConstructHistograms(
+      this->col_sampler_.is_feature_used_bytree(), true);
   // construct local histograms
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
-    if ((!this->is_feature_used_.empty() && this->is_feature_used_[feature_index] == false)) continue;
+    if (this->col_sampler_.is_feature_used_bytree()[feature_index] == false)
+      continue;
     // copy to buffer
     std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
                 this->smaller_leaf_histogram_array_[feature_index].RawData(),
@@ -160,19 +162,18 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
   // Reduce scatter for histogram
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, sizeof(hist_t), block_start_.data(),
                          block_len_.data(), output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramSumReducer);
-  this->FindBestSplitsFromHistograms(this->is_feature_used_, true);
+  this->FindBestSplitsFromHistograms(
+      this->col_sampler_.is_feature_used_bytree(), true);
 }
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->share_state_->num_threads);
   std::vector<SplitInfo> larger_bests_per_thread(this->share_state_->num_threads);
-  std::vector<int8_t> smaller_node_used_features(this->num_features_, 1);
-  std::vector<int8_t> larger_node_used_features(this->num_features_, 1);
-  if (this->config_->feature_fraction_bynode < 1.0f) {
-    smaller_node_used_features = this->GetUsedFeatures(false);
-    larger_node_used_features = this->GetUsedFeatures(false);
-  }
+  std::vector<int8_t> smaller_node_used_features =
+      this->col_sampler_.GetByNode();
+  std::vector<int8_t> larger_node_used_features =
+      this->col_sampler_.GetByNode();
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
@@ -241,7 +242,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
 
 template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) {
-  this->SplitInner(tree, best_Leaf, left_leaf, right_leaf, false);
+  TREELEARNER_T::SplitInner(tree, best_Leaf, left_leaf, right_leaf, false);
   const SplitInfo& best_split_info = this->best_split_per_leaf_[best_Leaf];
   // need update global number of data in leaf
   global_data_count_in_leaf_[*left_leaf] = best_split_info.left_count;

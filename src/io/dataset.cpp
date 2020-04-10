@@ -319,7 +319,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                         const int* num_per_col, int num_sample_col,
                         size_t total_sample_cnt, const Config& io_config) {
   num_total_features_ = num_total_features;
-  CHECK(num_total_features_ == static_cast<int>(bin_mappers->size()));
+  CHECK_EQ(num_total_features_, static_cast<int>(bin_mappers->size()));
   // get num_features
   std::vector<int> used_features;
   auto& ref_bin_mappers = *bin_mappers;
@@ -512,7 +512,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   std::vector<uint32_t> most_freq_bins;
   double sum_sparse_rate = 0;
   for (int i = 0; i < num_feature; ++i) {
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 1)
     for (int tid = 0; tid < num_threads; ++tid) {
       iters[tid].emplace_back(
           feature_groups_[multi_group_id]->SubFeatureIterator(i));
@@ -556,7 +556,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
           num_total_bin -= 1;
         }
         offsets.push_back(num_total_bin);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
               feature_groups_[gid]->SubFeatureIterator(fid));
@@ -775,7 +775,7 @@ void Dataset::ReSize(data_size_t num_data) {
 void Dataset::CopySubrow(const Dataset* fullset,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices, bool need_meta_data) {
-  CHECK(num_used_indices == num_data_);
+  CHECK_EQ(num_used_indices, num_data_);
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
@@ -1228,7 +1228,7 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
     hist_data = share_state->TempBuf();
   }
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 1) num_threads(share_state->num_threads)
   for (int tid = 0; tid < n_data_block; ++tid) {
     OMP_LOOP_EX_BEGIN();
     data_size_t start = tid * data_block_size;
@@ -1261,7 +1261,7 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
   int bin_block_size = num_bin;
   Threading::BlockInfo<data_size_t>(share_state->num_threads, num_bin, 512, &n_bin_block,
                                     &bin_block_size);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 1) num_threads(share_state->num_threads)
   for (int t = 0; t < n_bin_block; ++t) {
     const int start = t * bin_block_size;
     const int end = std::min(start + bin_block_size, num_bin);
@@ -1333,7 +1333,7 @@ void Dataset::ConstructHistogramsInner(
       }
     }
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
     for (int gi = 0; gi < num_used_dense_group; ++gi) {
       OMP_LOOP_EX_BEGIN();
       int group = used_dense_group[gi];

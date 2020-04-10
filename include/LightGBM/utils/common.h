@@ -376,16 +376,13 @@ inline static void Int32ToStr(int32_t value, char* buffer) {
   Uint32ToStr(u, buffer);
 }
 
-inline static void DoubleToStr(double value, char* buffer, size_t
-                               #ifdef _MSC_VER
-                               buffer_len
-                               #endif
-) {
+inline static void DoubleToStr(double value, char* buffer, size_t buffer_len) {
   #ifdef _MSC_VER
-  sprintf_s(buffer, buffer_len, "%.17g", value);
+  int num_chars = sprintf_s(buffer, buffer_len, "%.17g", value);
   #else
-  sprintf(buffer, "%.17g", value);
+  int num_chars = snprintf(buffer, buffer_len, "%.17g", value);
   #endif
+  CHECK_GE(num_chars, 0);
 }
 
 inline static const char* SkipSpaceAndTab(const char* p) {
@@ -420,17 +417,14 @@ struct __TToStringHelperFast {
 
 template<typename T>
 struct __TToStringHelperFast<T, true, false> {
-  void operator()(T value, char* buffer, size_t
-                  #ifdef _MSC_VER
-                  buf_len
-                  #endif
-                  )
+  void operator()(T value, char* buffer, size_t buf_len)
   const {
     #ifdef _MSC_VER
-    sprintf_s(buffer, buf_len, "%g", value);
+    int num_chars = sprintf_s(buffer, buf_len, "%g", value);
     #else
-    sprintf(buffer, "%g", value);
+    int num_chars = snprintf(buffer, buf_len, "%g", value);
     #endif
+    CHECK_GE(num_chars, 0);
   }
 };
 
@@ -509,7 +503,7 @@ inline static std::vector<T> StringToArray(const std::string& str, int n) {
     return std::vector<T>();
   }
   std::vector<std::string> strs = Split(str.c_str(), ' ');
-  CHECK(strs.size() == static_cast<size_t>(n));
+  CHECK_EQ(strs.size(), static_cast<size_t>(n));
   std::vector<T> ret;
   ret.reserve(strs.size());
   __StringToTHelper<T, std::is_floating_point<T>::value> helper;
@@ -735,7 +729,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t inner_size = (len + num_threads - 1) / num_threads;
   inner_size = std::max(inner_size, kMinInnerLen);
   num_threads = static_cast<int>((len + inner_size - 1) / inner_size);
-  #pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
   for (int i = 0; i < num_threads; ++i) {
     size_t left = inner_size*i;
     size_t right = left + inner_size;
@@ -927,15 +921,6 @@ static T SafeLog(T x) {
   }
 }
 
-inline bool CheckASCII(const std::string& s) {
-  for (auto c : s) {
-    if (static_cast<unsigned char>(c) > 127) {
-      return false;
-    }
-  }
-  return true;
-}
-
 inline bool CheckAllowedJSON(const std::string& s) {
   unsigned char char_code;
   for (auto c : s) {
@@ -1089,11 +1074,10 @@ class Timer {
 // Note: this class is not thread-safe, don't use it inside omp blocks
 class FunctionTimer {
  public:
+#ifdef TIMETAG
   FunctionTimer(const std::string& name, Timer& timer) : timer_(timer) {
     timer.Start(name);
-#ifdef TIMETAG
     name_ = name;
-#endif  // TIMETAG
   }
 
   ~FunctionTimer() { timer_.Stop(name_); }
@@ -1101,6 +1085,9 @@ class FunctionTimer {
  private:
   std::string name_;
   Timer& timer_;
+#else
+  FunctionTimer(const std::string&, Timer&) {}
+#endif  // TIMETAG
 };
 
 }  // namespace Common

@@ -5,8 +5,6 @@ data(agaricus.test, package = "lightgbm")
 train <- agaricus.train
 test <- agaricus.test
 
-windows_flag <- grepl("Windows", Sys.info()[["sysname"]])
-
 TOLERANCE <- 1e-6
 
 test_that("train and predict binary classification", {
@@ -60,6 +58,7 @@ test_that("train and predict softmax", {
 
 
 test_that("use of multiple eval metrics works", {
+  metrics <- list("binary_error", "auc", "binary_logloss")
   bst <- lightgbm(
     data = train$data
     , label = train$label
@@ -67,9 +66,15 @@ test_that("use of multiple eval metrics works", {
     , learning_rate = 1.0
     , nrounds = 10L
     , objective = "binary"
-    , metric = list("binary_error", "auc", "binary_logloss")
+    , metric = metrics
   )
   expect_false(is.null(bst$record_evals))
+  expect_named(
+    bst$record_evals[["train"]]
+    , unlist(metrics)
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
 })
 
 test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for binary classification", {
@@ -116,6 +121,47 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
   }
 })
 
+test_that("lightgbm() performs evaluation on validation sets if they are provided", {
+  set.seed(708L)
+  dvalid1 <- lgb.Dataset(
+    data = train$data
+    , labels = train$label
+  )
+  dvalid2 <- lgb.Dataset(
+    data = train$data
+    , labels = train$label
+  )
+  nrounds <- 10L
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , num_leaves = 5L
+    , nrounds = nrounds
+    , objective = "binary"
+    , metric = "binary_error"
+    , valids = list(
+      "valid1" = dvalid1
+      , "valid2" = dvalid2
+    )
+  )
+
+  expect_named(
+    bst$record_evals
+    , c("train", "valid1", "valid2", "start_iter")
+    , ignore.order = TRUE
+    , ignore.case = FALSE
+  )
+  for (valid_name in c("train", "valid1", "valid2")) {
+    eval_results <- bst$record_evals[[valid_name]][["binary_error"]]
+    expect_length(eval_results[["eval"]], nrounds)
+  }
+  expect_true(abs(bst$record_evals[["train"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
+  expect_true(abs(bst$record_evals[["valid1"]][["binary_error"]][["eval"]][[1L]] - 0.4825733) < TOLERANCE)
+  expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.4825733) < TOLERANCE)
+})
+
+
+context("training continuation")
 
 test_that("training continuation works", {
   testthat::skip("This test is currently broken. See issue #2468 for details.")
@@ -205,6 +251,35 @@ test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset 
 })
 
 context("lgb.train()")
+
+test_that("lgb.train() works as expected with multiple eval metrics", {
+  metrics <- c("binary_error", "auc", "binary_logloss")
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      train$data
+      , label = train$label
+    )
+    , learning_rate = 1.0
+    , nrounds = 10L
+    , params = list(
+      objective = "binary"
+      , metric = metrics
+    )
+    , valids = list(
+      "train" = lgb.Dataset(
+        train$data
+        , label = train$label
+      )
+    )
+  )
+  expect_false(is.null(bst$record_evals))
+  expect_named(
+    bst$record_evals[["train"]]
+    , unlist(metrics)
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+})
 
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -333,7 +408,7 @@ test_that("lgb.train() works as expected with sparse features", {
   num_obs <- 70000L
   trainDF <- data.frame(
     y = sample(c(0L, 1L), size = num_obs, replace = TRUE)
-    , x = sample(c(1.0:10.0, rep(NA_real_, 50L)), size = num_obs , replace = TRUE)
+    , x = sample(c(1.0:10.0, rep(NA_real_, 50L)), size = num_obs, replace = TRUE)
   )
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["x"]], drop = FALSE)
@@ -357,4 +432,166 @@ test_that("lgb.train() works as expected with sparse features", {
   expect_false(parsed_model$average_output)
   expected_error <- 0.6931268
   expect_true(abs(bst$eval_train()[[1L]][["value"]] - expected_error) < TOLERANCE)
+})
+
+test_that("lgb.train() works with early stopping for classification", {
+  trainDF <- data.frame(
+    "feat1" = rep(c(5.0, 10.0), 500L)
+    , "target" = rep(c(0L, 1L), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = rep(c(5.0, 10.0), 50L)
+    , "target" = rep(c(0L, 1L), 50L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid <- lgb.Dataset(
+    data = as.matrix(validDF[["feat1"]], drop = FALSE)
+    , label = validDF[["target"]]
+  )
+  nrounds <- 10L
+
+  ################################
+  # train with no early stopping #
+  ################################
+  bst <- lgb.train(
+    params = list(
+      objective = "binary"
+      , metric = "binary_error"
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # a perfect model should be trivial to obtain, but all 10 rounds
+  # should happen
+  expect_equal(bst$best_score, 0.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(length(bst$record_evals[["valid1"]][["binary_error"]][["eval"]]), nrounds)
+
+  #############################
+  # train with early stopping #
+  #############################
+  early_stopping_rounds <- 5L
+  bst  <- lgb.train(
+    params = list(
+      objective = "binary"
+      , metric = "binary_error"
+      , early_stopping_rounds = early_stopping_rounds
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # a perfect model should be trivial to obtain, and only 6 rounds
+  # should have happen (1 with improvement, 5 consecutive with no improvement)
+  expect_equal(bst$best_score, 0.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(
+    length(bst$record_evals[["valid1"]][["binary_error"]][["eval"]])
+    , early_stopping_rounds + 1L
+  )
+
+})
+
+test_that("lgb.train() works with early stopping for regression", {
+  set.seed(708L)
+  trainDF <- data.frame(
+    "feat1" = rep(c(10.0, 100.0), 500L)
+    , "target" = rep(c(-50.0, 50.0), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = rep(50.0, 4L)
+    , "target" = rep(50.0, 4L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid <- lgb.Dataset(
+    data = as.matrix(validDF[["feat1"]], drop = FALSE)
+    , label = validDF[["target"]]
+  )
+  nrounds <- 10L
+
+  ################################
+  # train with no early stopping #
+  ################################
+  bst <- lgb.train(
+    params = list(
+      objective = "regression"
+      , metric = "rmse"
+      , min_data_in_bin = 5L
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # the best possible model should come from the first iteration, but
+  # all 10 training iterations should happen
+  expect_equal(bst$best_score, 55.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(length(bst$record_evals[["valid1"]][["rmse"]][["eval"]]), nrounds)
+
+  #############################
+  # train with early stopping #
+  #############################
+  early_stopping_rounds <- 5L
+  bst  <- lgb.train(
+    params = list(
+      objective = "regression"
+      , metric = "rmse"
+      , min_data_in_bin = 5L
+      , early_stopping_rounds = early_stopping_rounds
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # the best model should be from the first iteration, and only 6 rounds
+  # should have happen (1 with improvement, 5 consecutive with no improvement)
+  expect_equal(bst$best_score, 55.0)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(
+    length(bst$record_evals[["valid1"]][["rmse"]][["eval"]])
+    , early_stopping_rounds + 1L
+  )
+})
+
+test_that("lgb.train() supports non-ASCII feature names", {
+  testthat::skip("UTF-8 feature names are not fully supported in the R package")
+  dtrain <- lgb.Dataset(
+    data = matrix(rnorm(400L), ncol =  4L)
+    , label = rnorm(100L)
+  )
+  feature_names <- c("F_零", "F_一", "F_二", "F_三")
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 5L
+    , obj = "regression"
+    , params = list(
+      metric = "rmse"
+    )
+    , colnames = feature_names
+  )
+  expect_true(lgb.is.Booster(bst))
+  dumped_model <- jsonlite::fromJSON(bst$dump_model())
+  expect_identical(
+    dumped_model[["feature_names"]]
+    , feature_names
+  )
 })

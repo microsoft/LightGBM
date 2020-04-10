@@ -41,13 +41,13 @@ GBDT::~GBDT() {
 
 void GBDT::Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
                 const std::vector<const Metric*>& training_metrics) {
-  CHECK(train_data != nullptr);
+  CHECK_NOTNULL(train_data);
   train_data_ = train_data;
   if (!config->monotone_constraints.empty()) {
-    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->monotone_constraints.size());
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->monotone_constraints.size());
   }
   if (!config->feature_contri.empty()) {
-    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->feature_contri.size());
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->feature_contri.size());
   }
   iter_ = 0;
   num_iteration_for_pred_ = 0;
@@ -58,14 +58,13 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-  std::string forced_splits_path = config->forcedsplits_filename;
   // load forced_splits file
-  if (forced_splits_path != "") {
-      std::ifstream forced_splits_file(forced_splits_path.c_str());
-      std::stringstream buffer;
-      buffer << forced_splits_file.rdbuf();
-      std::string err;
-      forced_splits_json_ = Json::parse(buffer.str(), err);
+  if (!config->forcedsplits_filename.empty()) {
+    std::ifstream forced_splits_file(config->forcedsplits_filename.c_str());
+    std::stringstream buffer;
+    buffer << forced_splits_file.rdbuf();
+    std::string err;
+    forced_splits_json_ = Json::parse(buffer.str(), &err);
   }
 
   objective_function_ = objective_function;
@@ -81,6 +80,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   // init tree learner
   tree_learner_->Init(train_data_, is_constant_hessian_);
+  tree_learner_->SetForcedSplit(&forced_splits_json_);
 
   // push training metrics
   training_metrics_.clear();
@@ -112,7 +112,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
-    CHECK(num_tree_per_iteration_ == num_class_);
+    CHECK_EQ(num_tree_per_iteration_, num_class_);
     for (int i = 0; i < num_class_; ++i) {
       class_need_train_[i] = objective_function_->ClassNeedTrain(i);
     }
@@ -277,7 +277,7 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
       #pragma omp parallel for schedule(static)
       for (int i = 0; i < num_data_; ++i) {
         leaf_pred[i] = tree_leaf_prediction[i][model_index];
-        CHECK(leaf_pred[i] < models_[model_index]->num_leaves());
+        CHECK_LT(leaf_pred[i], models_[model_index]->num_leaves());
       }
       size_t offset = static_cast<size_t>(tree_id) * num_data_;
       auto grad = gradients_.data() + offset;
@@ -366,7 +366,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         grad = gradients_.data() + offset;
         hess = hessians_.data() + offset;
       }
-      new_tree.reset(tree_learner_->Train(grad, hess, forced_splits_json_));
+      new_tree.reset(tree_learner_->Train(grad, hess));
     }
 
     if (new_tree->num_leaves() > 1) {
@@ -654,7 +654,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   objective_function_ = objective_function;
   if (objective_function_ != nullptr) {
     is_constant_hessian_ = objective_function_->IsConstantHessian();
-    CHECK(num_tree_per_iteration_ == objective_function_->NumModelPerIteration());
+    CHECK_EQ(num_tree_per_iteration_, objective_function_->NumModelPerIteration());
   } else {
     is_constant_hessian_ = false;
   }
@@ -704,10 +704,10 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 void GBDT::ResetConfig(const Config* config) {
   auto new_config = std::unique_ptr<Config>(new Config(*config));
   if (!config->monotone_constraints.empty()) {
-    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->monotone_constraints.size());
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->monotone_constraints.size());
   }
   if (!config->feature_contri.empty()) {
-    CHECK(static_cast<size_t>(train_data_->num_total_features()) == config->feature_contri.size());
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->feature_contri.size());
   }
   early_stopping_round_ = new_config->early_stopping_round;
   shrinkage_rate_ = new_config->learning_rate;
@@ -716,6 +716,21 @@ void GBDT::ResetConfig(const Config* config) {
   }
   if (train_data_ != nullptr) {
     ResetBaggingConfig(new_config.get(), false);
+  }
+  if (config_->forcedsplits_filename != new_config->forcedbins_filename) {
+    // load forced_splits file
+    if (!new_config->forcedsplits_filename.empty()) {
+      std::ifstream forced_splits_file(
+          new_config->forcedsplits_filename.c_str());
+      std::stringstream buffer;
+      buffer << forced_splits_file.rdbuf();
+      std::string err;
+      forced_splits_json_ = Json::parse(buffer.str(), &err);
+      tree_learner_->SetForcedSplit(&forced_splits_json_);
+    } else {
+      forced_splits_json_ = Json();
+      tree_learner_->SetForcedSplit(nullptr);
+    }
   }
   config_.reset(new_config.release());
 }

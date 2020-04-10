@@ -47,6 +47,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
         r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
     conda install -q -y -n $CONDA_ENV \
         -c conda-forge \
+            libxml2 \
             r-lintr>=2.0
     pip install --user cpplint
     echo "Linting Python code"
@@ -73,7 +74,7 @@ if [[ $TASK == "r-package" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
+conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)

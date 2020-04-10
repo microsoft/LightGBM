@@ -47,9 +47,8 @@ class GPUTreeLearner: public SerialTreeLearner {
   ~GPUTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
-  void ResetIsConstantHessian(bool is_constant_hessian);
-  Tree* Train(const score_t* gradients, const score_t *hessians,
-              const Json& forced_split_json) override;
+  void ResetIsConstantHessian(bool is_constant_hessian) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians) override;
 
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
     SerialTreeLearner::SetBaggingData(subset, used_indices, num_data);
@@ -272,7 +271,9 @@ namespace LightGBM {
 
 class GPUTreeLearner: public SerialTreeLearner {
  public:
-  #pragma warning(disable : 4702)
+  #ifdef _MSC_VER
+    #pragma warning(disable : 4702)
+  #endif
   explicit GPUTreeLearner(const Config* tree_config) : SerialTreeLearner(tree_config) {
     Log::Fatal("GPU Tree Learner was not enabled in this build.\n"
                "Please recompile with CMake option -DUSE_GPU=1");

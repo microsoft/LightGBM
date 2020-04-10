@@ -38,16 +38,16 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
   for (int i = 0; i < this->train_data_->num_total_features(); ++i) {
     int inner_feature_index = this->train_data_->InnerFeatureIndex(i);
     if (inner_feature_index == -1) { continue; }
-    if (this->is_feature_used_[inner_feature_index]) {
+    if (this->col_sampler_.is_feature_used_bytree()[inner_feature_index]) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
       feature_distribution[cur_min_machine].push_back(inner_feature_index);
       num_bins_distributed[cur_min_machine] += this->train_data_->FeatureNumBin(inner_feature_index);
-      this->is_feature_used_[inner_feature_index] = false;
+      this->col_sampler_.SetIsFeatureUsedByTree(inner_feature_index, false);
     }
   }
   // get local used features
   for (auto fid : feature_distribution[rank_]) {
-    this->is_feature_used_[fid] = true;
+    this->col_sampler_.SetIsFeatureUsedByTree(fid, true);
   }
 }
 

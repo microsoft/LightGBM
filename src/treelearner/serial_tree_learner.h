@@ -9,6 +9,7 @@
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
 #include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/random.h>
 
 #include <string>
@@ -18,6 +19,7 @@
 #include <random>
 #include <vector>
 
+#include "col_sampler.hpp"
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
 #include "leaf_splits.hpp"
@@ -63,8 +65,15 @@ class SerialTreeLearner: public TreeLearner {
 
   void ResetConfig(const Config* config) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians,
-              const Json& forced_split_json) override;
+  inline void SetForcedSplit(const Json* forced_split_json) override {
+    if (forced_split_json != nullptr && !forced_split_json->is_null()) {
+      forced_split_json_ = forced_split_json;
+    } else {
+      forced_split_json_ = nullptr;
+    }
+  }
+
+  Tree* Train(const score_t* gradients, const score_t *hessians) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
@@ -89,7 +98,7 @@ class SerialTreeLearner: public TreeLearner {
     if (tree->num_leaves() <= 1) {
       return;
     }
-    CHECK(tree->num_leaves() <= data_partition_->num_leaves());
+    CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
@@ -113,7 +122,8 @@ class SerialTreeLearner: public TreeLearner {
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
-  virtual std::vector<int8_t> GetUsedFeatures(bool is_tree_level);
+  void RecomputeBestSplitForLeaf(int leaf, SplitInfo* split);
+
   /*!
   * \brief Some initial works before training
   */
@@ -142,12 +152,12 @@ class SerialTreeLearner: public TreeLearner {
     SplitInner(tree, best_leaf, left_leaf, right_leaf, true);
   }
 
-  void SplitInner(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf, bool update_cnt);
+  void SplitInner(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf,
+                  bool update_cnt);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
-  virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
-                              int* right_leaf, int* cur_depth,
-                              bool *aborted_last_force_split);
+  int32_t ForceSplits(Tree* tree, int* left_leaf, int* right_leaf,
+                      int* cur_depth);
 
   /*!
   * \brief Get the number of data in a leaf
@@ -168,12 +178,6 @@ class SerialTreeLearner: public TreeLearner {
   const score_t* hessians_;
   /*! \brief training data partition on leaves */
   std::unique_ptr<DataPartition> data_partition_;
-  /*! \brief used for generate used features */
-  Random random_;
-  /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
-  std::vector<int8_t> is_feature_used_;
-  /*! \brief used feature indices in current tree */
-  std::vector<int> used_feature_indices_;
   /*! \brief pointer to histograms array of parent of current leaves */
   FeatureHistogram* parent_leaf_histogram_array_;
   /*! \brief pointer to histograms array of smaller leaf */
@@ -186,13 +190,12 @@ class SerialTreeLearner: public TreeLearner {
   /*! \brief store best split per feature for all leaves */
   std::vector<SplitInfo> splits_per_leaf_;
   /*! \brief stores minimum and maximum constraints for each leaf */
-  std::unique_ptr<LeafConstraints<ConstraintEntry>> constraints_;
+  std::unique_ptr<LeafConstraintsBase> constraints_;
 
   /*! \brief stores best thresholds for all feature for smaller leaf */
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
   /*! \brief stores best thresholds for all feature for larger leaf */
   std::unique_ptr<LeafSplits> larger_leaf_splits_;
-  std::vector<int> valid_feature_indices_;
 
 #ifdef USE_GPU
   /*! \brief gradients of current iteration, ordered for cache optimized, aligned to 4K page */
@@ -209,6 +212,8 @@ class SerialTreeLearner: public TreeLearner {
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
   const Config* config_;
+  ColSampler col_sampler_;
+  const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
 };
