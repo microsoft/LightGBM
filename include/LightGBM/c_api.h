@@ -961,7 +961,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
 /*!
  * \brief Release FastConfig object.
  *
- * \param fastConfig Handle to the FastConfig object acquired with a `...FastInit()` method.
+ * \param fastConfig Handle to the FastConfig object acquired with a `*FastInit()` method.
  * \return LIGHTGBM_C_EXPORT LGBM_FastConfigFree
  */
 LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);

@@ -1983,23 +1983,15 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
   API_END();
 }
 
-/*
-struct SingleRowPredictCfg {
-  Config config;
-  Booster* ref_booster;
-  int is_row_major;
-  int predict_type;
-  int num_iteration;
-  std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun;
-}
-*/
-
-
-static Config _PredictForMatSingleRowFastConfig_;
-static std::function<std::vector<std::pair<int, double>>(int row_idx)> _get_row_fun_fast_;
-
 /*!
- * \brief Store resources meant for single-row Fast Predict methods.
+ * \brief Object to store resources meant for single-row Fast Predict methods.
+ *
+ * Meant to be used as a basic struct by the *Fast* predict methods only.
+ * It stores the configuration resources for reuse during prediction.
+ *
+ * Even the row function is stored. We score the instance at the same memory
+ * address all the time. One just replaces the feature values at that address
+ * and scores again with the *Fast* methods.
  */
 struct FastConfig {
  public:
@@ -2011,17 +2003,17 @@ struct FastConfig {
   }
 
   friend int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
-                                               const void* data,
-                                               int data_type,
-                                               int32_t ncol,
-                                               const char* parameter,
-                                               FastConfigHandle *out_fastConfig);
+                                                        const void* data,
+                                                        int data_type,
+                                                        int32_t ncol,
+                                                        const char* parameter,
+                                                        FastConfigHandle *out_fastConfig);
 
   friend int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fast_config_handle,
-                                           int predict_type,
-                                           int num_iteration,
-                                           int64_t* out_len,
-                                           double* out_result);
+                                                    int predict_type,
+                                                    int num_iteration,
+                                                    int64_t* out_len,
+                                                    double* out_result);
  private:
   Booster* booster;
   Config config;
@@ -2042,18 +2034,18 @@ int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
                                                const char* parameter,
                                                FastConfigHandle *out_fastConfig) {
   API_BEGIN();
-  auto fastPredictConfig_ptr = std::unique_ptr<FastConfig>(new FastConfig(
+  auto fastConfig_ptr = std::unique_ptr<FastConfig>(new FastConfig(
     reinterpret_cast<Booster*>(handle),
     parameter,
-    RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, 1),
+    RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, 1), // Single row in row-major format.
     ncol
   ));
 
-  if (fastPredictConfig_ptr->config.num_threads > 0) {
-    omp_set_num_threads(fastPredictConfig_ptr->config.num_threads);
+  if (fastConfig_ptr->config.num_threads > 0) {
+    omp_set_num_threads(fastConfig_ptr->config.num_threads);
   }
 
-  *out_fastConfig = fastPredictConfig_ptr.release();
+  *out_fastConfig = fastConfig_ptr.release();
   API_END();
 }
 
