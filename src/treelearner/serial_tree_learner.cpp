@@ -165,6 +165,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves));
   auto tree_prt = tree.get();
+  constraints_->ShareTreePointer(tree_prt);
+
   // root leaf
   int left_leaf = 0;
   int cur_depth = 1;
@@ -691,6 +693,11 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     new_split.gain -=
         cegb_->DetlaGain(feature_index, real_fidx, leaf_splits->leaf_index(),
                          num_data, new_split);
+  }
+  if (new_split.monotone_type != 0) {
+    double penalty = constraints_->ComputeMonotoneSplitGainPenalty(
+        leaf_splits->leaf_index(), config_->monotone_penalty);
+    new_split.gain *= penalty;
   }
   if (new_split > *best_split) {
     *best_split = new_split;

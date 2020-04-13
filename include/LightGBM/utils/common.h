@@ -922,15 +922,6 @@ static T SafeLog(T x) {
   }
 }
 
-inline bool CheckASCII(const std::string& s) {
-  for (auto c : s) {
-    if (static_cast<unsigned char>(c) > 127) {
-      return false;
-    }
-  }
-  return true;
-}
-
 inline bool CheckAllowedJSON(const std::string& s) {
   unsigned char char_code;
   for (auto c : s) {
