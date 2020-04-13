@@ -2536,7 +2536,7 @@ class Booster(object):
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        ret = string_buffer.value.decode()
+        ret = string_buffer.value.decode('utf-8')
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
@@ -2582,7 +2582,7 @@ class Booster(object):
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        ret = json.loads(string_buffer.value.decode())
+        ret = json.loads(string_buffer.value.decode('utf-8'))
         ret['pandas_categorical'] = json.loads(json.dumps(self.pandas_categorical,
                                                           default=json_default_with_numpy))
         return ret
@@ -2754,7 +2754,7 @@ class Booster(object):
                 "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
                 .format(reserved_string_buffer_size, required_string_buffer_size.value)
             )
-        return [string_buffers[i].value.decode() for i in range_(num_feature)]
+        return [string_buffers[i].value.decode('utf-8') for i in range_(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
         """Get feature importances.
@@ -2954,7 +2954,7 @@ class Booster(object):
                         .format(reserved_string_buffer_size, required_string_buffer_size.value)
                     )
                 self.__name_inner_eval = \
-                    [string_buffers[i].value.decode() for i in range_(self.__num_inner_eval)]
+                    [string_buffers[i].value.decode('utf-8') for i in range_(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \
                     [name.startswith(('auc', 'ndcg@', 'map@')) for name in self.__name_inner_eval]
 

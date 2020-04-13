@@ -6,8 +6,9 @@
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 #ifdef _OPENMP
 
-#include <omp.h>
 #include <LightGBM/utils/log.h>
+
+#include <omp.h>
 
 #include <exception>
 #include <memory>

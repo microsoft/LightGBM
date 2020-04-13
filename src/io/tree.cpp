@@ -57,13 +57,7 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
   SetDecisionType(&decision_type_[new_node_idx], default_left, kDefaultLeftMask);
-  if (missing_type == MissingType::None) {
-    SetMissingType(&decision_type_[new_node_idx], 0);
-  } else if (missing_type == MissingType::Zero) {
-    SetMissingType(&decision_type_[new_node_idx], 1);
-  } else if (missing_type == MissingType::NaN) {
-    SetMissingType(&decision_type_[new_node_idx], 2);
-  }
+  SetMissingType(&decision_type_[new_node_idx], static_cast<int8_t>(missing_type));
   threshold_in_bin_[new_node_idx] = threshold_bin;
   threshold_[new_node_idx] = threshold_double;
   ++num_leaves_;
@@ -77,13 +71,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
-  if (missing_type == MissingType::None) {
-    SetMissingType(&decision_type_[new_node_idx], 0);
-  } else if (missing_type == MissingType::Zero) {
-    SetMissingType(&decision_type_[new_node_idx], 1);
-  } else if (missing_type == MissingType::NaN) {
-    SetMissingType(&decision_type_[new_node_idx], 2);
-  }
+  SetMissingType(&decision_type_[new_node_idx], static_cast<int8_t>(missing_type));
   threshold_in_bin_[new_node_idx] = num_cat_;
   threshold_[new_node_idx] = num_cat_;
   ++num_cat_;
@@ -316,9 +304,9 @@ std::string Tree::NodeToJSON(int index) const {
       str_buf << "\"default_left\":false," << '\n';
     }
     uint8_t missing_type = GetMissingType(decision_type_[index]);
-    if (missing_type == 0) {
+    if (missing_type == MissingType::None) {
       str_buf << "\"missing_type\":\"None\"," << '\n';
-    } else if (missing_type == 1) {
+    } else if (missing_type == MissingType::Zero) {
       str_buf << "\"missing_type\":\"Zero\"," << '\n';
     } else {
       str_buf << "\"missing_type\":\"NaN\"," << '\n';
@@ -347,9 +335,10 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
   std::stringstream str_buf;
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
-  if (missing_type == 0 || (missing_type == 1 && default_left && kZeroThreshold < threshold_[node])) {
+  if (missing_type == MissingType::None
+      || (missing_type == MissingType::Zero && default_left && kZeroThreshold < threshold_[node])) {
     str_buf << "if (fval <= " << threshold_[node] << ") {";
-  } else if (missing_type == 1) {
+  } else if (missing_type == MissingType::Zero) {
     if (default_left) {
       str_buf << "if (fval <= " << threshold_[node] << " || Tree::IsZero(fval)" << " || std::isnan(fval)) {";
     } else {
@@ -368,7 +357,7 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
 std::string Tree::CategoricalDecisionIfElse(int node) const {
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   std::stringstream str_buf;
-  if (missing_type == 2) {
+  if (missing_type == MissingType::NaN) {
     str_buf << "if (std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
   } else {
     str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";

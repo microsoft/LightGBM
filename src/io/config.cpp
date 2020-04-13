@@ -20,9 +20,6 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const 
     if (tmp_strs.size() == 2) {
       value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
     }
-    if (!Common::CheckASCII(key) || !Common::CheckASCII(value)) {
-      Log::Fatal("Do not support non-ASCII characters in config.");
-    }
     if (key.size() > 0) {
       auto value_search = params->find(key);
       if (value_search == params->end()) {  // not set
@@ -327,6 +324,9 @@ void Config::CheckParamConflict() {
     // split initially, then the sampling needs to be recorded or done once again, which is currently not supported
     Log::Warning("Cannot use \"intermediate\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
     monotone_constraints_method = "basic";
+  }
+  if (max_depth > 0 && monotone_penalty >= max_depth) {
+    Log::Warning("Monotone penalty greater than tree depth. Monotone features won't be used.");
   }
 }
 
