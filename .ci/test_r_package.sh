@@ -35,6 +35,10 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
 
+    # temp fix for basictex
+    if [[ $AZURE == "true" ]]; then
+        brew update
+    fi
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"

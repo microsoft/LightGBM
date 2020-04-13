@@ -434,7 +434,7 @@ void Dataset::FinishLoad() {
 void PushDataToMultiValBin(
     data_size_t num_data, const std::vector<uint32_t> most_freq_bins,
     const std::vector<uint32_t> offsets,
-    std::vector<std::vector<std::unique_ptr<BinIterator>>>& iters,
+    std::vector<std::vector<std::unique_ptr<BinIterator>>>* iters,
     MultiValBin* ret) {
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
@@ -444,12 +444,12 @@ void PushDataToMultiValBin(
           std::vector<uint32_t> cur_data;
           cur_data.reserve(most_freq_bins.size());
           for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-            iters[tid][j]->Reset(start);
+            (*iters)[tid][j]->Reset(start);
           }
           for (data_size_t i = start; i < end; ++i) {
             cur_data.clear();
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-              auto cur_bin = iters[tid][j]->Get(i);
+              auto cur_bin = (*iters)[tid][j]->Get(i);
               if (cur_bin == most_freq_bins[j]) {
                 continue;
               }
@@ -467,11 +467,11 @@ void PushDataToMultiValBin(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
           for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-            iters[tid][j]->Reset(start);
+            (*iters)[tid][j]->Reset(start);
           }
           for (data_size_t i = start; i < end; ++i) {
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-              auto cur_bin = iters[tid][j]->Get(i);
+              auto cur_bin = (*iters)[tid][j]->Get(i);
               if (cur_bin == most_freq_bins[j]) {
                 cur_bin = 0;
               } else {
@@ -528,7 +528,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   std::unique_ptr<MultiValBin> ret;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
                                            num_feature, sum_sparse_rate));
-  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, iters, ret.get());
+  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
@@ -581,7 +581,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   ret.reset(MultiValBin::CreateMultiValBin(
       num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()),
       1.0 - sum_dense_ratio));
-  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, iters, ret.get());
+  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
