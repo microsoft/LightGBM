@@ -75,8 +75,8 @@ RUN echo "export PATH=$CONDA_DIR/bin:"'$PATH' > /etc/profile.d/conda.sh && \
     rm ~/miniconda.sh
 
 RUN conda config --set always_yes yes --set changeps1 no && \
-    conda create -y -q -n py2 python=2.7 mkl numpy scipy "scikit-learn<=0.21.3" jupyter notebook ipython pandas matplotlib && \
-    conda create -y -q -n py3 python=3.6 mkl numpy scipy "scikit-learn<=0.21.3" jupyter notebook ipython pandas matplotlib
+    conda create -y -q -n py2 python=2.7 mkl numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib && \
+    conda create -y -q -n py3 python=3.6 mkl numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
 
 #################################################################################################################
 #           LightGBM

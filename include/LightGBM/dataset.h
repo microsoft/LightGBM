@@ -8,7 +8,6 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
-#include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
@@ -633,10 +632,6 @@ class Dataset {
     // replace ' ' in feature_names with '_'
     bool spaceInFeatureName = false;
     for (auto& feature_name : feature_names_) {
-      // check ascii
-      if (!Common::CheckASCII(feature_name)) {
-        Log::Fatal("Do not support non-ASCII characters in feature name.");
-      }
       // check json
       if (!Common::CheckAllowedJSON(feature_name)) {
         Log::Fatal("Do not support special JSON characters in feature name.");

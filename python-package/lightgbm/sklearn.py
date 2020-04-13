@@ -7,9 +7,9 @@ import warnings
 import numpy as np
 
 from .basic import Dataset, LightGBMError, _ConfigAliases
-from .compat import (SKLEARN_INSTALLED, SKLEARN_VERSION, _LGBMClassifierBase,
+from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
-                     _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
+                     _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
                      argc_, range_, zip_, string_type, DataFrame, DataTable)
 from .engine import train
@@ -298,9 +298,6 @@ class LGBMModel(_LGBMModelBase):
         """
         if not SKLEARN_INSTALLED:
             raise LightGBMError('Scikit-learn is required for this module')
-        elif SKLEARN_VERSION > '0.21.3':
-            raise RuntimeError("The last supported version of scikit-learn is 0.21.3.\n"
-                               "Found version: {0}.".format(SKLEARN_VERSION))
 
         self.boosting_type = boosting_type
         self.objective = objective
@@ -547,7 +544,8 @@ class LGBMModel(_LGBMModelBase):
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
-            _LGBMCheckConsistentLength(_X, _y, sample_weight)
+            if sample_weight is not None:
+                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
 
