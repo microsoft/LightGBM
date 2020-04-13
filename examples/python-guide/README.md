@@ -8,7 +8,7 @@ You should install LightGBM [Python-package](https://github.com/microsoft/LightG
 You also need scikit-learn, pandas, matplotlib (only for plot example), and scipy (only for logistic regression example) to run the examples, but they are not required for the package itself. You can install them with pip:
 
 ```
-pip install "scikit-learn<=0.21.3" pandas matplotlib scipy -U
+pip install scikit-learn pandas matplotlib scipy -U
 ```
 
 Now you can run examples in this folder, for example:

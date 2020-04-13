@@ -747,6 +747,21 @@ class TestEngine(unittest.TestCase):
         gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names_with_space)
         self.assertListEqual(feature_names, gbm.feature_name())
 
+    def test_feature_name_with_non_ascii(self):
+        X_train = np.random.normal(size=(100, 4))
+        y_train = np.random.random(100)
+        # This has non-ascii strings.
+        feature_names = [u'F_零', u'F_一', u'F_二', u'F_三']
+        params = {'verbose': -1}
+        lgb_train = lgb.Dataset(X_train, y_train)
+
+        gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
+        self.assertListEqual(feature_names, gbm.feature_name())
+        gbm.save_model('lgb.model')
+
+        gbm2 = lgb.Booster(model_file='lgb.model')
+        self.assertListEqual(feature_names, gbm2.feature_name())
+
     def test_save_load_copy_pickle(self):
         def train_and_predict(init_model=None, return_model=False):
             X, y = load_boston(True)
