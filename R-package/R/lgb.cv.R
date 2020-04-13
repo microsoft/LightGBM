@@ -66,7 +66,7 @@ CVBooster <- R6::R6Class(
 #'   , nrounds = 5L
 #'   , nfold = 3L
 #'   , min_data = 1L
-#'   , learning_rate = 0.05
+#'   , learning_rate = 1.0
 #' )
 #' @importFrom data.table data.table setorderv
 #' @export

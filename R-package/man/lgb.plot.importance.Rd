@@ -43,7 +43,7 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 
 params <- list(
     objective = "binary"
-    , learning_rate = 0.01
+    , learning_rate = 0.1
     , min_data_in_leaf = 1L
     , min_sum_hessian_in_leaf = 1.0
 )
