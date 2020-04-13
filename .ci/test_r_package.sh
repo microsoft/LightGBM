@@ -35,11 +35,15 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
 
+    # temp fix for basictex
+    if [[ $AZURE == "true" ]]; then
+        brew update
+    fi
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
-    sudo tlmgr update --self
-    sudo tlmgr install inconsolata helvetic
+    sudo tlmgr --verify-repo=none update --self
+    sudo tlmgr --verify-repo=none install inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \

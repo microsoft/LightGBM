@@ -276,7 +276,7 @@ if __name__ == "__main__":
           install_requires=[
               'numpy',
               'scipy',
-              'scikit-learn<=0.21.3'
+              'scikit-learn!=0.22.0'
           ],
           maintainer='Guolin Ke',
           maintainer_email='guolin.ke@microsoft.com',
@@ -304,4 +304,5 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.5',
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
+                       'Programming Language :: Python :: 3.8',
                        'Topic :: Scientific/Engineering :: Artificial Intelligence'])
