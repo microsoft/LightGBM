@@ -48,7 +48,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         -c conda-forge \
             libxml2 \
-            r-lintr>=2.0
+            "r-lintr>=2.0"
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
@@ -74,7 +74,7 @@ if [[ $TASK == "r-package" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
+conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)

@@ -157,7 +157,7 @@ Known issues:
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
 
-.. _ROCm: https://rocm.github.io/
+.. _ROCm: https://rocm-documentation.readthedocs.io/en/latest/
 
 .. _our GitHub repo: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
 

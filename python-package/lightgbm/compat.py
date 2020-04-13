@@ -116,16 +116,24 @@ try:
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils.class_weight import compute_sample_weight
     from sklearn.utils.multiclass import check_classification_targets
-    from sklearn.utils.validation import (assert_all_finite, check_X_y,
-                                          check_array, check_consistent_length)
+    from sklearn.utils.validation import assert_all_finite, check_X_y, check_array
     try:
         from sklearn.model_selection import StratifiedKFold, GroupKFold
         from sklearn.exceptions import NotFittedError
     except ImportError:
         from sklearn.cross_validation import StratifiedKFold, GroupKFold
         from sklearn.utils.validation import NotFittedError
+    try:
+        from sklearn.utils.validation import _check_sample_weight
+    except ImportError:
+        from sklearn.utils.validation import check_consistent_length
+
+        # dummy function to support older version of scikit-learn
+        def _check_sample_weight(sample_weight, X, dtype=None):
+            check_consistent_length(sample_weight, X)
+            return sample_weight
+
     SKLEARN_INSTALLED = True
-    from sklearn import __version__ as SKLEARN_VERSION
     _LGBMModelBase = BaseEstimator
     _LGBMRegressorBase = RegressorMixin
     _LGBMClassifierBase = ClassifierMixin
@@ -135,13 +143,12 @@ try:
     _LGBMGroupKFold = GroupKFold
     _LGBMCheckXY = check_X_y
     _LGBMCheckArray = check_array
-    _LGBMCheckConsistentLength = check_consistent_length
+    _LGBMCheckSampleWeight = _check_sample_weight
     _LGBMAssertAllFinite = assert_all_finite
     _LGBMCheckClassificationTargets = check_classification_targets
     _LGBMComputeSampleWeight = compute_sample_weight
 except ImportError:
     SKLEARN_INSTALLED = False
-    SKLEARN_VERSION = '0.0.0'
     _LGBMModelBase = object
     _LGBMClassifierBase = object
     _LGBMRegressorBase = object
@@ -151,7 +158,7 @@ except ImportError:
     _LGBMGroupKFold = None
     _LGBMCheckXY = None
     _LGBMCheckArray = None
-    _LGBMCheckConsistentLength = None
+    _LGBMCheckSampleWeight = None
     _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None

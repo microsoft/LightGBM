@@ -13,7 +13,6 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
-#include <LightGBM/utils/locale_context.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
@@ -1237,7 +1236,6 @@ int LGBM_BoosterCreateFromModelfile(
   int* out_num_iterations,
   BoosterHandle* out) {
   API_BEGIN();
-  LocaleContext withLocaleContext("C");
   auto ret = std::unique_ptr<Booster>(new Booster(filename));
   *out_num_iterations = ret->GetBoosting()->GetCurrentIteration();
   *out = ret.release();
@@ -1249,7 +1247,6 @@ int LGBM_BoosterLoadModelFromString(
   int* out_num_iterations,
   BoosterHandle* out) {
   API_BEGIN();
-  LocaleContext withLocaleContext("C");
   auto ret = std::unique_ptr<Booster>(new Booster(nullptr));
   ret->LoadModelFromString(model_str);
   *out_num_iterations = ret->GetBoosting()->GetCurrentIteration();
@@ -1674,7 +1671,6 @@ int LGBM_BoosterSaveModel(BoosterHandle handle,
                           int num_iteration,
                           const char* filename) {
   API_BEGIN();
-  LocaleContext withLocaleContext("C");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SaveModelToFile(start_iteration, num_iteration, filename);
   API_END();
@@ -1687,7 +1683,6 @@ int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                   int64_t* out_len,
                                   char* out_str) {
   API_BEGIN();
-  LocaleContext withLocaleContext("C");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->SaveModelToString(start_iteration, num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;
@@ -1704,7 +1699,6 @@ int LGBM_BoosterDumpModel(BoosterHandle handle,
                           int64_t* out_len,
                           char* out_str) {
   API_BEGIN();
-  LocaleContext withLocaleContext("C");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->DumpModel(start_iteration, num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;

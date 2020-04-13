@@ -150,7 +150,6 @@ export CC=/usr/local/bin/gcc-8
 Rscript build_r.R
 
 # Get coverage
-rm -rf lightgbm_r/build
 Rscript -e " \
     coverage  <- covr::package_coverage('./lightgbm_r', quiet=FALSE);
     print(coverage);
