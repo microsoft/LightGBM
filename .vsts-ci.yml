@@ -6,7 +6,7 @@ trigger:
     include:
     - v*
 variables:
-  PYTHON_VERSION: 3.7
+  PYTHON_VERSION: 3.8
   CONDA_ENV: test-env
 resources:
   containers:
@@ -31,7 +31,7 @@ jobs:
         PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.6
+        PYTHON_VERSION: 3.7
       inference:
         TASK: if-else
       mpi_source:
@@ -80,7 +80,7 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.6
+        PYTHON_VERSION: 3.7
       sdist:
         TASK: sdist
         PYTHON_VERSION: 3.5
@@ -121,13 +121,12 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: 3.6
       sdist:
         TASK: sdist
         PYTHON_VERSION: 2.7
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.5
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
