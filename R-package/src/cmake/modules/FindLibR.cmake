@@ -172,11 +172,15 @@ set(LIBR_EXECUTABLE ${LIBR_EXECUTABLE} CACHE PATH "R executable")
 set(LIBR_INCLUDE_DIRS ${LIBR_INCLUDE_DIRS} CACHE PATH "R include directory")
 
 # look for the core R library
-find_library(
-  LIBR_CORE_LIBRARY
-  NAMES R
-  HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
-)
+if(WIN32)
+  set(LIBR_CORE_LIBRARY ${LIBR_HOME}/bin/${R_ARCH}/R.dll)
+else()
+  find_library(
+    LIBR_CORE_LIBRARY
+    NAMES R
+    HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
+  )
+endif()
 
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
 
