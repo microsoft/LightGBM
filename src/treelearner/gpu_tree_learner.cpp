@@ -13,7 +13,6 @@
 #include <algorithm>
 
 #include "../io/dense_bin.hpp"
-#include "../io/dense_nbits_bin.hpp"
 
 #define GPU_DEBUG 0
 
@@ -158,7 +157,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
     indices_future_.wait();
   }
   // for constant hessian, hessians are not copied except for the root node
-  if (!is_constant_hessian_) {
+  if (!share_state_->is_constant_hessian) {
     hessians_future_.wait();
   }
   gradients_future_.wait();
@@ -378,20 +377,20 @@ void GPUTreeLearner::AllocateGPUMemory() {
       BinIterator* bin_iters[8];
       for (int s_idx = 0; s_idx < 8; ++s_idx) {
         bin_iters[s_idx] = train_data_->FeatureGroupIterator(dense_ind[s_idx]);
-        if (dynamic_cast<Dense4bitsBinIterator*>(bin_iters[s_idx]) == 0) {
+        if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[s_idx]) == 0) {
           Log::Fatal("GPU tree learner assumes that all bins are Dense4bitsBin when num_bin <= 16, but feature %d is not", dense_ind[s_idx]);
         }
       }
       // this guarantees that the RawGet() function is inlined, rather than using virtual function dispatching
-      Dense4bitsBinIterator iters[8] = {
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[0]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[1]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[2]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[3]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[4]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[5]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[6]),
-        *static_cast<Dense4bitsBinIterator*>(bin_iters[7])};
+      DenseBinIterator<uint8_t, true> iters[8] = {
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[0]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[1]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[2]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[3]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[4]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[5]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[6]),
+        *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[7])};
       for (int j = 0; j < num_data_; ++j) {
         host4[j].s[0] = (uint8_t)((iters[0].RawGet(j) * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1)))
                       |((iters[1].RawGet(j) * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1))) << 4));
@@ -407,15 +406,15 @@ void GPUTreeLearner::AllocateGPUMemory() {
       for (int s_idx = 0; s_idx < 4; ++s_idx) {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_ind[s_idx]);
         // this guarantees that the RawGet() function is inlined, rather than using virtual function dispatching
-        if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
+        if (dynamic_cast<DenseBinIterator<uint8_t, false>*>(bin_iter) != 0) {
           // Dense bin
-          DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
+          DenseBinIterator<uint8_t, false> iter = *static_cast<DenseBinIterator<uint8_t, false>*>(bin_iter);
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[s_idx] = (uint8_t)(iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1)));
           }
-        } else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
+        } else if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           // Dense 4-bit bin
-          Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
+          DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[s_idx] = (uint8_t)(iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1)));
           }
@@ -450,8 +449,8 @@ void GPUTreeLearner::AllocateGPUMemory() {
     for (int i = 0; i < k; ++i) {
       if (dword_features_ == 8) {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
-        if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
-          Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
+        if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
+          DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i >> 1] |= (uint8_t)((iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
@@ -463,15 +462,15 @@ void GPUTreeLearner::AllocateGPUMemory() {
         }
       } else if (dword_features_ == 4) {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
-        if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
-          DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
+        if (dynamic_cast<DenseBinIterator<uint8_t, false>*>(bin_iter) != 0) {
+          DenseBinIterator<uint8_t, false> iter = *static_cast<DenseBinIterator<uint8_t, false>*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                           + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
           }
-        } else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
-          Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
+        } else if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
+          DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
@@ -581,7 +580,7 @@ void GPUTreeLearner::BuildGPUKernels() {
     // compile the GPU kernel depending if double precision is used, constant hessian is used, etc.
     opts << " -D POWER_FEATURE_WORKGROUPS=" << i
          << " -D USE_CONSTANT_BUF=" << use_constants << " -D USE_DP_FLOAT=" << int(config_->gpu_use_dp)
-         << " -D CONST_HESSIAN=" << int(is_constant_hessian_)
+         << " -D CONST_HESSIAN=" << int(share_state_->is_constant_hessian)
          << " -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
     #if GPU_DEBUG >= 1
     std::cout << "Building GPU kernels with options: " << opts.str() << std::endl;
@@ -642,7 +641,7 @@ void GPUTreeLearner::SetupKernelArguments() {
   }
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
     // The only argument that needs to be changed later is num_data_
-    if (is_constant_hessian_) {
+    if (share_state_->is_constant_hessian) {
       // hessian is passed as a parameter, but it is not available now.
       // hessian will be set in BeforeTrain()
       histogram_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
@@ -700,17 +699,20 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   }
   // determine which kernel to use based on the max number of bins
   if (max_num_bin_ <= 16) {
-    kernel_source_ = kernel16_src_;
+    // the +9 skips extra characters ")", newline, "#endif" and newline at the beginning
+    kernel_source_ = kernel16_src_ + 9;
     kernel_name_ = "histogram16";
     device_bin_size_ = 16;
     dword_features_ = 8;
   } else if (max_num_bin_ <= 64) {
-    kernel_source_ = kernel64_src_;
+    // the +9 skips extra characters ")", newline, "#endif" and newline at the beginning
+    kernel_source_ = kernel64_src_ + 9;
     kernel_name_ = "histogram64";
     device_bin_size_ = 64;
     dword_features_ = 4;
   } else if (max_num_bin_ <= 256) {
-    kernel_source_ = kernel256_src_;
+    // the +9 skips extra characters ")", newline, "#endif" and newline at the beginning
+    kernel_source_ = kernel256_src_ + 9;
     kernel_name_ = "histogram256";
     device_bin_size_ = 256;
     dword_features_ = 4;
@@ -732,26 +734,25 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   SetupKernelArguments();
 }
 
-Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            bool is_constant_hessian, const Json& forced_split_json) {
-  // check if we need to recompile the GPU kernel (is_constant_hessian changed)
-  // this should rarely occur
-  if (is_constant_hessian != is_constant_hessian_) {
-    Log::Info("Recompiling GPU kernel because hessian is %sa constant now", is_constant_hessian ? "" : "not ");
-    is_constant_hessian_ = is_constant_hessian;
-    BuildGPUKernels();
-    SetupKernelArguments();
-  }
-  return SerialTreeLearner::Train(gradients, hessians, is_constant_hessian, forced_split_json);
+Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
+  return SerialTreeLearner::Train(gradients, hessians);
 }
 
-void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {
-  SerialTreeLearner::ResetTrainingData(train_data);
+void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
+  SerialTreeLearner::ResetTrainingDataInner(train_data, is_constant_hessian, reset_multi_val_bin);
   num_feature_groups_ = train_data_->num_feature_groups();
   // GPU memory has to been reallocated because data may have been changed
   AllocateGPUMemory();
   // setup GPU kernel arguments after we allocating all the buffers
   SetupKernelArguments();
+}
+
+void GPUTreeLearner::ResetIsConstantHessian(bool is_constant_hessian) {
+  if (is_constant_hessian != share_state_->is_constant_hessian) {
+    SerialTreeLearner::ResetIsConstantHessian(is_constant_hessian);
+    BuildGPUKernels();
+    SetupKernelArguments();
+  }
 }
 
 void GPUTreeLearner::BeforeTrain() {
@@ -761,7 +762,7 @@ void GPUTreeLearner::BeforeTrain() {
   // Copy initial full hessians and gradients to GPU.
   // We start copying as early as possible, instead of at ConstructHistogram().
   if (!use_bagging_ && num_dense_feature_groups_) {
-    if (!is_constant_hessian_) {
+    if (!share_state_->is_constant_hessian) {
       hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data_ * sizeof(score_t), hessians_);
     } else {
       // setup hessian parameters only
@@ -789,7 +790,7 @@ void GPUTreeLearner::BeforeTrain() {
     #endif
     // transfer the indices to GPU
     indices_future_ = boost::compute::copy_async(indices, indices + cnt, device_data_indices_->begin(), queue_);
-    if (!is_constant_hessian_) {
+    if (!share_state_->is_constant_hessian) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < cnt; ++i) {
         ordered_hessians_[i] = hessians_[indices[i]];
@@ -843,7 +844,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
     #endif
     indices_future_ = boost::compute::copy_async(indices + begin, indices + end, device_data_indices_->begin(), queue_);
 
-    if (!is_constant_hessian_) {
+    if (!share_state_->is_constant_hessian) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = begin; i < end; ++i) {
         ordered_hessians_[i - begin] = hessians_[indices[i]];
@@ -896,7 +897,7 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
     }
   }
   // generate and copy ordered_hessians if hessians is not null
-  if (hessians != nullptr && !is_constant_hessian_) {
+  if (hessians != nullptr && !share_state_->is_constant_hessian) {
     if (num_data != num_data_) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -954,7 +955,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   std::vector<int8_t> is_dense_feature_used(num_features_, 0);
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!is_feature_used_[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (!is_feature_used[feature_index]) continue;
     if (train_data_->IsMultiGroup(train_data_->Feature2Group(feature_index))) {
       is_sparse_feature_used[feature_index] = 1;
@@ -973,8 +974,8 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   train_data_->ConstructHistograms(is_sparse_feature_used,
     smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
     gradients_, hessians_,
-    ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-    is_hist_colwise_, temp_state_.get(),
+    ordered_gradients_.data(), ordered_hessians_.data(),
+    share_state_.get(),
     ptr_smaller_leaf_hist_data);
   // wait for GPU to finish, only if GPU is actually used
   if (is_gpu_used) {
@@ -1038,8 +1039,8 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     train_data_->ConstructHistograms(is_sparse_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
-      ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-      is_hist_colwise_, temp_state_.get(),
+      ordered_gradients_.data(), ordered_hessians_.data(),
+      share_state_.get(),
       ptr_larger_leaf_hist_data);
     // wait for GPU to finish, only if GPU is actually used
     if (is_gpu_used) {
@@ -1059,7 +1060,7 @@ void GPUTreeLearner::FindBestSplits() {
 
 #if GPU_DEBUG >= 3
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!is_feature_used_[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
         && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);

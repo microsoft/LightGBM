@@ -93,7 +93,7 @@ void Application::LoadData() {
   }
 
   // sync up random seed for data partition
-  if (config_.is_parallel_find_bin) {
+  if (config_.is_data_based_parallel) {
     config_.data_random_seed = Network::GlobalSyncUpByMin(config_.data_random_seed);
   }
 
@@ -101,7 +101,7 @@ void Application::LoadData() {
   DatasetLoader dataset_loader(config_, predict_fun,
                                config_.num_class, config_.data.c_str());
   // load Training data
-  if (config_.is_parallel_find_bin) {
+  if (config_.is_data_based_parallel) {
     // load data for parallel training
     train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(),
                                                   Network::rank(), Network::num_machines()));

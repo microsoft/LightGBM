@@ -15,11 +15,11 @@ Install
 -------
 
 Install Python-package dependencies,
-``setuptools``, ``wheel``, ``numpy`` and ``scipy`` are required, ``scikit-learn<=0.21.3`` is required for sklearn interface and recommended:
+``setuptools``, ``wheel``, ``numpy`` and ``scipy`` are required, ``scikit-learn`` is required for sklearn interface and recommended:
 
 ::
 
-    pip install setuptools wheel numpy scipy "scikit-learn<=0.21.3" -U
+    pip install setuptools wheel numpy scipy scikit-learn -U
 
 Refer to `Python-package`_ folder for the installation guide.
 

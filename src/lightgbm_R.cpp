@@ -9,11 +9,12 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
 
+#include <R_ext/Rdynload.h>
+
 #include <string>
 #include <cstdio>
 #include <cstring>
 #include <memory>
-#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -33,14 +34,18 @@
     return call_state;\
   }
 
-using namespace LightGBM;
+using LightGBM::Common::Join;
+using LightGBM::Common::Split;
+using LightGBM::Log;
 
 LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
   if (str_len > INT32_MAX) {
     Log::Fatal("Don't support large string in R-package");
   }
   R_INT_PTR(actual_len)[0] = static_cast<int>(str_len);
-  if (R_AS_INT(buf_len) < static_cast<int>(str_len)) { return dest; }
+  if (R_AS_INT(buf_len) < static_cast<int>(str_len)) {
+    return dest;
+  }
   auto ptr = R_CHAR_PTR(dest);
   std::memcpy(ptr, src, str_len);
   return dest;
@@ -117,7 +122,7 @@ LGBM_SE LGBM_DatasetGetSubset_R(LGBM_SE handle,
   int len = R_AS_INT(len_used_row_indices);
   std::vector<int> idxvec(len);
   // convert from one-based to  zero-based index
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (int i = 0; i < len; ++i) {
     idxvec[i] = R_INT_PTR(used_row_indices)[i] - 1;
   }
@@ -133,7 +138,7 @@ LGBM_SE LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
   LGBM_SE feature_names,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  auto vec_names = Common::Split(R_CHAR_PTR(feature_names), '\t');
+  auto vec_names = Split(R_CHAR_PTR(feature_names), '\t');
   std::vector<const char*> vec_sptr;
   int len = static_cast<int>(vec_names.size());
   for (int i = 0; i < len; ++i) {
@@ -161,8 +166,8 @@ LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   int out_len;
   CHECK_CALL(LGBM_DatasetGetFeatureNames(R_GET_PTR(handle),
     ptr_names.data(), &out_len));
-  CHECK(len == out_len);
-  auto merge_str = Common::Join<char*>(ptr_names, "\t");
+  CHECK_EQ(len, out_len);
+  auto merge_str = Join<char*>(ptr_names, "\t");
   EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len, merge_str.size() + 1);
   R_API_END();
 }
@@ -196,7 +201,7 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
   const char* name = R_CHAR_PTR(field_name);
   if (!strcmp("group", name) || !strcmp("query", name)) {
     std::vector<int32_t> vec(len);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (len >= 1024)
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
     }
@@ -205,7 +210,7 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, R_REAL_PTR(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (len >= 1024)
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<float>(R_REAL_PTR(field_data)[i]);
     }
@@ -228,19 +233,19 @@ LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   if (!strcmp("group", name) || !strcmp("query", name)) {
     auto p_data = reinterpret_cast<const int32_t*>(res);
     // convert from boundaries to size
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len - 1; ++i) {
       R_INT_PTR(field_data)[i] = p_data[i + 1] - p_data[i];
     }
   } else if (!strcmp("init_score", name)) {
     auto p_data = reinterpret_cast<const double*>(res);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
       R_REAL_PTR(field_data)[i] = p_data[i];
     }
   } else {
     auto p_data = reinterpret_cast<const float*>(res);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
       R_REAL_PTR(field_data)[i] = p_data[i];
     }
@@ -396,7 +401,7 @@ LGBM_SE LGBM_BoosterUpdateOneIterCustom_R(LGBM_SE handle,
   R_API_BEGIN();
   int int_len = R_AS_INT(len);
   std::vector<float> tgrad(int_len), thess(int_len);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (int_len >= 1024)
   for (int j = 0; j < int_len; ++j) {
     tgrad[j] = static_cast<float>(R_REAL_PTR(grad)[j]);
     thess[j] = static_cast<float>(R_REAL_PTR(hess)[j]);
@@ -448,16 +453,26 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   R_API_BEGIN();
   int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
+
+  const size_t reserved_string_size = 128;
   std::vector<std::vector<char>> names(len);
   std::vector<char*> ptr_names(len);
   for (int i = 0; i < len; ++i) {
-    names[i].resize(128);
+    names[i].resize(reserved_string_size);
     ptr_names[i] = names[i].data();
   }
+
   int out_len;
-  CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle), &out_len, ptr_names.data()));
-  CHECK(out_len == len);
-  auto merge_names = Common::Join<char*>(ptr_names, "\t");
+  size_t required_string_size;
+  CHECK_CALL(
+    LGBM_BoosterGetEvalNames(
+      R_GET_PTR(handle),
+      len, &out_len,
+      reserved_string_size, &required_string_size,
+      ptr_names.data()));
+  CHECK_EQ(out_len, len);
+  CHECK_GE(reserved_string_size, required_string_size);
+  auto merge_names = Join<char*>(ptr_names, "\t");
   EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len, merge_names.size() + 1);
   R_API_END();
 }
@@ -472,7 +487,7 @@ LGBM_SE LGBM_BoosterGetEval_R(LGBM_SE handle,
   double* ptr_ret = R_REAL_PTR(out_result);
   int out_len;
   CHECK_CALL(LGBM_BoosterGetEval(R_GET_PTR(handle), R_AS_INT(data_idx), &out_len, ptr_ret));
-  CHECK(out_len == len);
+  CHECK_EQ(out_len, len);
   R_API_END();
 }
 
@@ -642,4 +657,55 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
+}
+
+// .Call() calls
+static const R_CallMethodDef CallEntries[] = {
+  {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 3},
+  {"LGBM_DatasetCreateFromFile_R"     , (DL_FUNC) &LGBM_DatasetCreateFromFile_R     , 5},
+  {"LGBM_DatasetCreateFromCSC_R"      , (DL_FUNC) &LGBM_DatasetCreateFromCSC_R      , 10},
+  {"LGBM_DatasetCreateFromMat_R"      , (DL_FUNC) &LGBM_DatasetCreateFromMat_R      , 7},
+  {"LGBM_DatasetGetSubset_R"          , (DL_FUNC) &LGBM_DatasetGetSubset_R          , 6},
+  {"LGBM_DatasetSetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetSetFeatureNames_R    , 3},
+  {"LGBM_DatasetGetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetGetFeatureNames_R    , 5},
+  {"LGBM_DatasetSaveBinary_R"         , (DL_FUNC) &LGBM_DatasetSaveBinary_R         , 3},
+  {"LGBM_DatasetFree_R"               , (DL_FUNC) &LGBM_DatasetFree_R               , 2},
+  {"LGBM_DatasetSetField_R"           , (DL_FUNC) &LGBM_DatasetSetField_R           , 5},
+  {"LGBM_DatasetGetFieldSize_R"       , (DL_FUNC) &LGBM_DatasetGetFieldSize_R       , 4},
+  {"LGBM_DatasetGetField_R"           , (DL_FUNC) &LGBM_DatasetGetField_R           , 4},
+  {"LGBM_DatasetUpdateParamChecking_R", (DL_FUNC) &LGBM_DatasetUpdateParamChecking_R, 3},
+  {"LGBM_DatasetGetNumData_R"         , (DL_FUNC) &LGBM_DatasetGetNumData_R         , 3},
+  {"LGBM_DatasetGetNumFeature_R"      , (DL_FUNC) &LGBM_DatasetGetNumFeature_R      , 3},
+  {"LGBM_BoosterCreate_R"             , (DL_FUNC) &LGBM_BoosterCreate_R             , 4},
+  {"LGBM_BoosterFree_R"               , (DL_FUNC) &LGBM_BoosterFree_R               , 2},
+  {"LGBM_BoosterCreateFromModelfile_R", (DL_FUNC) &LGBM_BoosterCreateFromModelfile_R, 3},
+  {"LGBM_BoosterLoadModelFromString_R", (DL_FUNC) &LGBM_BoosterLoadModelFromString_R, 3},
+  {"LGBM_BoosterMerge_R"              , (DL_FUNC) &LGBM_BoosterMerge_R              , 3},
+  {"LGBM_BoosterAddValidData_R"       , (DL_FUNC) &LGBM_BoosterAddValidData_R       , 3},
+  {"LGBM_BoosterResetTrainingData_R"  , (DL_FUNC) &LGBM_BoosterResetTrainingData_R  , 3},
+  {"LGBM_BoosterResetParameter_R"     , (DL_FUNC) &LGBM_BoosterResetParameter_R     , 3},
+  {"LGBM_BoosterGetNumClasses_R"      , (DL_FUNC) &LGBM_BoosterGetNumClasses_R      , 3},
+  {"LGBM_BoosterUpdateOneIter_R"      , (DL_FUNC) &LGBM_BoosterUpdateOneIter_R      , 2},
+  {"LGBM_BoosterUpdateOneIterCustom_R", (DL_FUNC) &LGBM_BoosterUpdateOneIterCustom_R, 5},
+  {"LGBM_BoosterRollbackOneIter_R"    , (DL_FUNC) &LGBM_BoosterRollbackOneIter_R    , 2},
+  {"LGBM_BoosterGetCurrentIteration_R", (DL_FUNC) &LGBM_BoosterGetCurrentIteration_R, 3},
+  {"LGBM_BoosterGetUpperBoundValue_R" , (DL_FUNC) &LGBM_BoosterGetUpperBoundValue_R , 3},
+  {"LGBM_BoosterGetLowerBoundValue_R" , (DL_FUNC) &LGBM_BoosterGetLowerBoundValue_R , 3},
+  {"LGBM_BoosterGetEvalNames_R"       , (DL_FUNC) &LGBM_BoosterGetEvalNames_R       , 5},
+  {"LGBM_BoosterGetEval_R"            , (DL_FUNC) &LGBM_BoosterGetEval_R            , 4},
+  {"LGBM_BoosterGetNumPredict_R"      , (DL_FUNC) &LGBM_BoosterGetNumPredict_R      , 4},
+  {"LGBM_BoosterGetPredict_R"         , (DL_FUNC) &LGBM_BoosterGetPredict_R         , 4},
+  {"LGBM_BoosterPredictForFile_R"     , (DL_FUNC) &LGBM_BoosterPredictForFile_R     , 10},
+  {"LGBM_BoosterCalcNumPredict_R"     , (DL_FUNC) &LGBM_BoosterCalcNumPredict_R     , 8},
+  {"LGBM_BoosterPredictForCSC_R"      , (DL_FUNC) &LGBM_BoosterPredictForCSC_R      , 14},
+  {"LGBM_BoosterPredictForMat_R"      , (DL_FUNC) &LGBM_BoosterPredictForMat_R      , 11},
+  {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
+  {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 6},
+  {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 6},
+  {NULL, NULL, 0}
+};
+
+void R_init_lightgbm(DllInfo *dll) {
+  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
 }

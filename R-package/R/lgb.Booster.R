@@ -322,9 +322,9 @@ Booster <- R6::R6Class(
     },
 
     # Get upper bound
-    upper_bound_ = function() {
+    upper_bound = function() {
 
-      upper_bound <- 0L
+      upper_bound <- 0.0
       lgb.call(
         "LGBM_BoosterGetUpperBoundValue_R"
         , ret = upper_bound
@@ -334,12 +334,12 @@ Booster <- R6::R6Class(
     },
 
     # Get lower bound
-    lower_bound_ = function() {
+    lower_bound = function() {
 
-      lower_bound <- 0L
+      lower_bound <- 0.0
       lgb.call(
         "LGBM_BoosterGetLowerBoundValue_R"
-        , ret = upper_bound
+        , ret = lower_bound
         , private$handle
       )
 
@@ -795,32 +795,27 @@ predict.lgb.Booster <- function(object,
 #' @export
 lgb.load <- function(filename = NULL, model_str = NULL) {
 
-  if (is.null(filename) && is.null(model_str)) {
-    stop("lgb.load: either filename or model_str must be given")
-  }
+  filename_provided <- !is.null(filename)
+  model_str_provided <- !is.null(model_str)
 
-  # Load from filename
-  if (!is.null(filename) && !is.character(filename)) {
-    stop("lgb.load: filename should be character")
-  }
-
-  # Return new booster
-  if (!is.null(filename) && !file.exists(filename)) {
-    stop("lgb.load: file does not exist for supplied filename")
-  }
-  if (!is.null(filename)) {
+  if (filename_provided) {
+    if (!is.character(filename)) {
+      stop("lgb.load: filename should be character")
+    }
+    if (!file.exists(filename)) {
+      stop(sprintf("lgb.load: file '%s' passed to filename does not exist", filename))
+    }
     return(invisible(Booster$new(modelfile = filename)))
   }
 
-  # Load from model_str
-  if (!is.null(model_str) && !is.character(model_str)) {
-    stop("lgb.load: model_str should be character")
-  }
-  # Return new booster
-  if (!is.null(model_str)) {
+  if (model_str_provided) {
+    if (!is.character(model_str)) {
+      stop("lgb.load: model_str should be character")
+    }
     return(invisible(Booster$new(model_str = model_str)))
   }
 
+  stop("lgb.load: either filename or model_str must be given")
 }
 
 #' @name lgb.save

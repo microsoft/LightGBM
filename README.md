@@ -32,17 +32,17 @@ Our primary documentation is at https://lightgbm.readthedocs.io/ and is generate
 
 Next you may want to read:
 
-* [**Examples**](https://github.com/microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
-* [**Features**](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
-* [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
-* [**Parallel Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
-* [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
+- [**Examples**](https://github.com/microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
+- [**Features**](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
+- [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
+- [**Parallel Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
+- [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
+- [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters.
 
 Documentation for contributors:
 
-* [**How we update readthedocs.io**](https://github.com/microsoft/LightGBM/blob/master/docs/README.rst).
-* Check out the [**Development Guide**](https://github.com/microsoft/LightGBM/blob/master/docs/Development-Guide.rst).
-
+- [**How we update readthedocs.io**](https://github.com/microsoft/LightGBM/blob/master/docs/README.rst).
+- Check out the [**Development Guide**](https://github.com/microsoft/LightGBM/blob/master/docs/Development-Guide.rst).
 
 News
 ----
@@ -53,6 +53,8 @@ Some old update logs are available at [Key Events](https://github.com/microsoft/
 
 External (Unofficial) Repositories
 ----------------------------------
+
+Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
 
 Julia-package: https://github.com/Allardvm/LightGBM.jl
 
@@ -85,23 +87,16 @@ Ruby gem: https://github.com/ankane/lightgbm
 Support
 -------
 
-* Ask a question [on Stack Overflow with the `lightgbm` tag](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
-* Discuss on the [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
-* Discuss on the [LightGBM Slack team](https://lightgbm.slack.com).
-  * Use [this invite link](https://lightgbm-slack-autojoin.herokuapp.com/) to join the team.
-* Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/microsoft/LightGBM/issues).
+- Ask a question [on Stack Overflow with the `lightgbm` tag](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
+- Discuss on the [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
+- Discuss on the [LightGBM Slack team](https://lightgbm.slack.com).
+  - Use [this invite link](https://lightgbm-slack-autojoin.herokuapp.com/) to join the team.
+- Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/microsoft/LightGBM/issues).
 
 How to Contribute
 -----------------
 
-LightGBM has been developed and used by many active community members. Your help is very valuable to make it better for everyone.
-
-- Contribute to the [tests](https://github.com/microsoft/LightGBM/tree/master/tests) to make it more reliable.
-- Contribute to the [documentation](https://github.com/microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
-- Contribute to the [examples](https://github.com/microsoft/LightGBM/tree/master/examples) to share your experience with other users.
-- Look for [issues with tag "help wanted"](https://github.com/microsoft/LightGBM/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) and submit pull requests to address them.
-- Add your stories and experience to [Awesome LightGBM](https://github.com/microsoft/LightGBM/blob/master/examples/README.md). If LightGBM helped you in a machine learning competition or some research application, we want to hear about it!
-- [Open an issue](https://github.com/microsoft/LightGBM/issues) to report problems or recommend new features.
+Check [CONTRIBUTING](https://github.com/microsoft/LightGBM/blob/master/CONTRIBUTING.md) page.
 
 Microsoft Open Source Code of Conduct
 -------------------------------------

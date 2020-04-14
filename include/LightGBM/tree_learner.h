@@ -7,15 +7,14 @@
 
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/utils/json11.h>
 
 #include <string>
 #include <vector>
 
-#include <LightGBM/json11.hpp>
-
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 /*! \brief forward declaration */
 class Tree;
@@ -37,7 +36,10 @@ class TreeLearner {
   */
   virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
-  virtual void ResetTrainingData(const Dataset* train_data) = 0;
+  virtual void ResetIsConstantHessian(bool is_constant_hessian) = 0;
+
+  virtual void ResetTrainingData(const Dataset* train_data,
+                                 bool is_constant_hessian) = 0;
 
   /*!
   * \brief Reset tree configs
@@ -45,15 +47,15 @@ class TreeLearner {
   */
   virtual void ResetConfig(const Config* config) = 0;
 
+  virtual void SetForcedSplit(const Json* forced_split_json) = 0;
+
   /*!
   * \brief training tree model on dataset
   * \param gradients The first order gradients
   * \param hessians The second order gradients
-  * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian,
-                      const Json& forced_split_json) = 0;
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians) = 0;
 
   /*!
   * \brief use an existing tree to fit the new gradients and hessians.
@@ -65,13 +67,13 @@ class TreeLearner {
 
   /*!
   * \brief Set bagging data
+  * \param subset subset of bagging
   * \param used_indices Used data indices
   * \param num_data Number of used data
   */
-  virtual void SetBaggingData(const data_size_t* used_indices,
-    data_size_t num_data) = 0;
-
-  virtual bool IsHistColWise() const = 0;
+  virtual void SetBaggingData(const Dataset* subset,
+                              const data_size_t* used_indices,
+                              data_size_t num_data) = 0;
 
   /*!
   * \brief Using last trained tree to predict score then adding to out_score;

@@ -97,13 +97,15 @@ class SingleRowPredictor {
     predict_function = predictor_->GetPredictFunction();
     num_total_model_ = boosting->NumberOfTotalModel();
   }
+
   ~SingleRowPredictor() {}
+
   bool IsPredictorEqual(const Config& config, int iter, Boosting* boosting) {
-    return early_stop_ != config.pred_early_stop ||
-      early_stop_freq_ != config.pred_early_stop_freq ||
-      early_stop_margin_ != config.pred_early_stop_margin ||
-      iter_ != iter ||
-      num_total_model_ != boosting->NumberOfTotalModel();
+    return early_stop_ == config.pred_early_stop &&
+      early_stop_freq_ == config.pred_early_stop_freq &&
+      early_stop_margin_ == config.pred_early_stop_margin &&
+      iter_ == iter &&
+      num_total_model_ == boosting->NumberOfTotalModel();
   }
 
  private:
@@ -313,7 +315,6 @@ class Booster {
     if (param.count("metric")) {
       Log::Fatal("Cannot change metric during training");
     }
-
     CheckDatasetResetConfig(config_, param);
 
     config_.Set(param);
@@ -527,23 +528,33 @@ class Booster {
     return ret;
   }
 
-  int GetEvalNames(char** out_strs) const {
+  int GetEvalNames(char** out_strs, const int len, const size_t buffer_len, size_t *out_buffer_len) const {
     SHARED_LOCK(mutex_)
+    *out_buffer_len = 0;
     int idx = 0;
     for (const auto& metric : train_metric_) {
       for (const auto& name : metric->GetName()) {
-        std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+        if (idx < len) {
+          std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
+          out_strs[idx][buffer_len - 1] = '\0';
+        }
+        *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
         ++idx;
       }
     }
     return idx;
   }
 
-  int GetFeatureNames(char** out_strs) const {
+  int GetFeatureNames(char** out_strs, const int len, const size_t buffer_len, size_t *out_buffer_len) const {
     SHARED_LOCK(mutex_)
+    *out_buffer_len = 0;
     int idx = 0;
     for (const auto& name : boosting_->FeatureNames()) {
-      std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+      if (idx < len) {
+        std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
+        out_strs[idx][buffer_len - 1] = '\0';
+      }
+      *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
       ++idx;
     }
     return idx;
@@ -574,7 +585,23 @@ class Booster {
 
 }  // namespace LightGBM
 
-using namespace LightGBM;
+// explicitly declare symbols from LightGBM namespace
+using LightGBM::AllgatherFunction;
+using LightGBM::Booster;
+using LightGBM::Common::CheckElementsIntervalClosed;
+using LightGBM::Common::RemoveQuotationSymbol;
+using LightGBM::Common::Vector2Ptr;
+using LightGBM::Common::VectorSize;
+using LightGBM::Config;
+using LightGBM::data_size_t;
+using LightGBM::Dataset;
+using LightGBM::DatasetLoader;
+using LightGBM::kZeroThreshold;
+using LightGBM::LGBM_APIHandleException;
+using LightGBM::Log;
+using LightGBM::Network;
+using LightGBM::Random;
+using LightGBM::ReduceScatterFunction;
 
 // some help functions used to convert data
 
@@ -806,10 +833,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             ncol,
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, total_nrow));
   } else {
     ret.reset(new Dataset(total_nrow));
@@ -874,7 +901,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (std::pair<int, double>& inner_data : row) {
-        CHECK(inner_data.first < num_col);
+        CHECK_LT(inner_data.first, num_col);
         if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
@@ -882,10 +909,10 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(num_col),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -942,7 +969,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       auto idx = sample_indices[i];
       get_row_fun(static_cast<int>(idx), buffer);
       for (std::pair<int, double>& inner_data : buffer) {
-        CHECK(inner_data.first < num_col);
+        CHECK_LT(inner_data.first, num_col);
         if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
@@ -950,10 +977,10 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(num_col),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -962,14 +989,14 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   }
 
   OMP_INIT_EX();
-  std::vector<std::pair<int, double>> threadBuffer;
-  #pragma omp parallel for schedule(static) private(threadBuffer)
+  std::vector<std::pair<int, double>> thread_buffer;
+  #pragma omp parallel for schedule(static) private(thread_buffer)
   for (int i = 0; i < num_rows; ++i) {
     OMP_LOOP_EX_BEGIN();
     {
       const int tid = omp_get_thread_num();
-      get_row_fun(i, threadBuffer);
-      ret->PushOneRow(tid, i, threadBuffer);
+      get_row_fun(i, thread_buffer);
+      ret->PushOneRow(tid, i, thread_buffer);
     }
     OMP_LOOP_EX_END();
   }
@@ -1023,10 +1050,10 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     }
     OMP_THROW_EX();
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(&sample_values).data(),
-                                            Common::Vector2Ptr<int>(&sample_idx).data(),
+    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                            Vector2Ptr<int>(&sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
-                                            Common::VectorSize<double>(sample_values).data(),
+                                            VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
@@ -1081,16 +1108,16 @@ int LGBM_DatasetGetSubset(
     omp_set_num_threads(config.num_threads);
   }
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
-  CHECK(num_used_row_indices > 0);
+  CHECK_GT(num_used_row_indices, 0);
   const int32_t lower = 0;
   const int32_t upper = full_dataset->num_data() - 1;
-  Common::CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
+  CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
   if (!std::is_sorted(used_row_indices, used_row_indices + num_used_row_indices)) {
     Log::Fatal("used_row_indices should be sorted in Subset");
   }
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
   ret->CopyFeatureMapperFrom(full_dataset);
-  ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
+  ret->CopySubrow(full_dataset, used_row_indices, num_used_row_indices, true);
   *out = ret.release();
   API_END();
 }
@@ -1123,7 +1150,9 @@ int LGBM_DatasetGetFeatureNames(
   API_END();
 }
 
-#pragma warning(disable : 4702)
+#ifdef _MSC_VER
+  #pragma warning(disable : 4702)
+#endif
 int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);
@@ -1161,7 +1190,7 @@ int LGBM_DatasetSetField(DatasetHandle handle,
   } else if (type == C_API_DTYPE_FLOAT64) {
     is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
-  if (!is_success) { throw std::runtime_error("Input data type error or field not found"); }
+  if (!is_success) { Log::Fatal("Input data type error or field not found"); }
   API_END();
 }
 
@@ -1182,8 +1211,8 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   } else if (dataset->GetDoubleField(field_name, out_len, reinterpret_cast<const double**>(out_ptr))) {
     *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
-  } 
-  if (!is_success) { throw std::runtime_error("Field not found"); }
+  }
+  if (!is_success) { Log::Fatal("Field not found"); }
   if (*out_ptr == nullptr) { *out_len = 0; }
   API_END();
 }
@@ -1258,7 +1287,9 @@ int LGBM_BoosterLoadModelFromString(
   API_END();
 }
 
-#pragma warning(disable : 4702)
+#ifdef _MSC_VER
+  #pragma warning(disable : 4702)
+#endif
 int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
@@ -1384,17 +1415,27 @@ int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
   API_END();
 }
 
-int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetEvalNames(BoosterHandle handle,
+                             const int len,
+                             int* out_len,
+                             const size_t buffer_len,
+                             size_t* out_buffer_len,
+                             char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetEvalNames(out_strs);
+  *out_len = ref_booster->GetEvalNames(out_strs, len, buffer_len, out_buffer_len);
   API_END();
 }
 
-int LGBM_BoosterGetFeatureNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
+                                const int len,
+                                int* out_len,
+                                const size_t buffer_len,
+                                size_t* out_buffer_len,
+                                char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetFeatureNames(out_strs);
+  *out_len = ref_booster->GetFeatureNames(out_strs, len, buffer_len, out_buffer_len);
   API_END();
 }
 
@@ -1561,12 +1602,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  int num_threads = 1;
-  #pragma omp parallel
-  #pragma omp master
-  {
-    num_threads = omp_get_num_threads();
-  }
+  int num_threads = OMP_NUM_THREADS();
   int ncol = static_cast<int>(ncol_ptr - 1);
   std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
   for (int i = 0; i < num_threads; ++i) {
@@ -1575,17 +1611,18 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     }
   }
   std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun =
-    [&iterators, ncol] (int i) {
-    std::vector<std::pair<int, double>> one_row;
-    const int tid = omp_get_thread_num();
-    for (int j = 0; j < ncol; ++j) {
-      auto val = iterators[tid][j].Get(i);
-      if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        one_row.emplace_back(j, val);
-      }
-    }
-    return one_row;
-  };
+      [&iterators, ncol](int i) {
+        std::vector<std::pair<int, double>> one_row;
+        one_row.reserve(ncol);
+        const int tid = omp_get_thread_num();
+        for (int j = 0; j < ncol; ++j) {
+          auto val = iterators[tid][j].Get(i);
+          if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
+            one_row.emplace_back(j, val);
+          }
+        }
+        return one_row;
+      };
   ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
                        out_result, out_len);
   API_END();
@@ -1763,7 +1800,7 @@ int LGBM_NetworkInit(const char* machines,
                      int num_machines) {
   API_BEGIN();
   Config config;
-  config.machines = Common::RemoveQuotationSymbol(std::string(machines));
+  config.machines = RemoveQuotationSymbol(std::string(machines));
   config.local_listen_port = local_listen_port;
   config.num_machines = num_machines;
   config.time_out = listen_time_out;
@@ -1834,7 +1871,8 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
       };
     }
   }
-  throw std::runtime_error("Unknown data type in RowFunctionFromDenseMatric");
+  Log::Fatal("Unknown data type in RowFunctionFromDenseMatric");
+  return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
@@ -1844,6 +1882,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
     return [inner_function] (int row_idx) {
       auto raw_values = inner_function(row_idx);
       std::vector<std::pair<int, double>> ret;
+      ret.reserve(raw_values.size());
       for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
         if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
           ret.emplace_back(i, raw_values[i]);
@@ -1862,6 +1901,7 @@ RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
     auto inner_function = RowFunctionFromDenseMatric(data[row_idx], 1, num_col, data_type, /* is_row_major */ true);
     auto raw_values = inner_function(0);
     std::vector<std::pair<int, double>> ret;
+    ret.reserve(raw_values.size());
     for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
       if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
         ret.emplace_back(i, raw_values[i]);
@@ -1936,7 +1976,8 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
       };
     }
   }
-  throw std::runtime_error("Unknown data type in RowFunctionFromCSR");
+  Log::Fatal("Unknown data type in RowFunctionFromCSR");
+  return nullptr;
 }
 
 std::function<std::pair<int, double>(int idx)>
@@ -2001,7 +2042,8 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       };
     }
   }
-  throw std::runtime_error("Unknown data type in CSC matrix");
+  Log::Fatal("Unknown data type in CSC matrix");
+  return nullptr;
 }
 
 CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,

@@ -6,16 +6,15 @@
 
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
 #include <fstream>
 
-#include <LightGBM/json11.hpp>
-
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
   :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
@@ -390,8 +389,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(int) * (dataset->num_groups_);
 
   if (!config_.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.max_bin_by_feature.size());
-    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+    CHECK_EQ(static_cast<size_t>(dataset->num_total_features_), config_.max_bin_by_feature.size());
+    CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
     dataset->max_bin_by_feature_.resize(dataset->num_total_features_);
     dataset->max_bin_by_feature_.assign(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end());
   } else {
@@ -542,8 +541,8 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   if (!config_.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(num_col) == config_.max_bin_by_feature.size());
-    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+    CHECK_EQ(static_cast<size_t>(num_col), config_.max_bin_by_feature.size());
+    CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
   }
 
   // get forced split
@@ -631,6 +630,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       }
       OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     comm_size_t self_buf_size = 0;
     for (int i = 0; i < len[rank]; ++i) {
       if (ignore_features_.count(start[rank] + i) > 0) {
@@ -849,12 +849,12 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
     dataset->num_total_features_ = Network::GlobalSyncUpByMax(dataset->num_total_features_);
   }
   if (!feature_names_.empty()) {
-    CHECK(dataset->num_total_features_ == static_cast<int>(feature_names_.size()));
+    CHECK_EQ(dataset->num_total_features_, static_cast<int>(feature_names_.size()));
   }
 
   if (!config_.max_bin_by_feature.empty()) {
-    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.max_bin_by_feature.size());
-    CHECK(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())) > 1);
+    CHECK_EQ(static_cast<size_t>(dataset->num_total_features_), config_.max_bin_by_feature.size());
+    CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
   }
 
   // get forced split
@@ -1208,12 +1208,12 @@ std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced
       std::stringstream buffer;
       buffer << forced_bins_stream.rdbuf();
       std::string err;
-      Json forced_bins_json = Json::parse(buffer.str(), err);
+      Json forced_bins_json = Json::parse(buffer.str(), &err);
       CHECK(forced_bins_json.is_array());
       std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
       for (size_t i = 0; i < forced_bins_arr.size(); ++i) {
         int feature_num = forced_bins_arr[i]["feature"].int_value();
-        CHECK(feature_num < num_total_features);
+        CHECK_LT(feature_num, num_total_features);
         if (categorical_features.count(feature_num)) {
           Log::Warning("Feature %d is categorical. Will ignore forced bins for this  feature.", feature_num);
         } else {

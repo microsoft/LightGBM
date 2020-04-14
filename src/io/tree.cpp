@@ -50,19 +50,14 @@ Tree::~Tree() {
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
-                int left_cnt, int right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type, bool default_left) {
+                int left_cnt, int right_cnt, double left_weight, double right_weight, float gain,
+                MissingType missing_type, bool default_left) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
   SetDecisionType(&decision_type_[new_node_idx], default_left, kDefaultLeftMask);
-  if (missing_type == MissingType::None) {
-    SetMissingType(&decision_type_[new_node_idx], 0);
-  } else if (missing_type == MissingType::Zero) {
-    SetMissingType(&decision_type_[new_node_idx], 1);
-  } else if (missing_type == MissingType::NaN) {
-    SetMissingType(&decision_type_[new_node_idx], 2);
-  }
+  SetMissingType(&decision_type_[new_node_idx], static_cast<int8_t>(missing_type));
   threshold_in_bin_[new_node_idx] = threshold_bin;
   threshold_[new_node_idx] = threshold_double;
   ++num_leaves_;
@@ -76,13 +71,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
-  if (missing_type == MissingType::None) {
-    SetMissingType(&decision_type_[new_node_idx], 0);
-  } else if (missing_type == MissingType::Zero) {
-    SetMissingType(&decision_type_[new_node_idx], 1);
-  } else if (missing_type == MissingType::NaN) {
-    SetMissingType(&decision_type_[new_node_idx], 2);
-  }
+  SetMissingType(&decision_type_[new_node_idx], static_cast<int8_t>(missing_type));
   threshold_in_bin_[new_node_idx] = num_cat_;
   threshold_[new_node_idx] = num_cat_;
   ++num_cat_;
@@ -98,24 +87,26 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   return num_leaves_ - 1;
 }
 
-#define PredictionFun(niter, fidx_in_iter, start_pos, decision_fun, iter_idx, data_idx) \
-std::vector<std::unique_ptr<BinIterator>> iter((niter)); \
-for (int i = 0; i < (niter); ++i) { \
-  iter[i].reset(data->FeatureIterator((fidx_in_iter))); \
-  iter[i]->Reset((start_pos)); \
-}\
-for (data_size_t i = start; i < end; ++i) {\
-  int node = 0;\
-  while (node >= 0) {\
-    node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node, default_bins[node], max_bins[node]);\
+#define PredictionFun(niter, fidx_in_iter, start_pos, decision_fun, iter_idx, \
+                      data_idx)                                               \
+  std::vector<std::unique_ptr<BinIterator>> iter((niter));                    \
+  for (int i = 0; i < (niter); ++i) {                                         \
+    iter[i].reset(data->FeatureIterator((fidx_in_iter)));                     \
+    iter[i]->Reset((start_pos));                                              \
+  }                                                                           \
+  for (data_size_t i = start; i < end; ++i) {                                 \
+    int node = 0;                                                             \
+    while (node >= 0) {                                                       \
+      node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,            \
+                          default_bins[node], max_bins[node]);                \
+    }                                                                         \
+    score[(data_idx)] += static_cast<double>(leaf_value_[~node]);             \
   }\
-  score[(data_idx)] += static_cast<double>(leaf_value_[~node]);\
-}\
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
   if (num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
-      #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
         score[i] += leaf_value_[0];
       }
@@ -132,24 +123,24 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
   }
   if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, DecisionInner, node, i);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
       });
     }
   } else {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, NumericalDecisionInner, node, i);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(data->num_features(), i, start, NumericalDecisionInner, split_feature_inner_[node], i);
       });
@@ -162,7 +153,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
                                 data_size_t num_data, double* score) const {
   if (num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
-      #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
         score[used_data_indices[i]] += leaf_value_[0];
       }
@@ -179,24 +170,24 @@ void Tree::AddPredictionToScore(const Dataset* data,
   }
   if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], DecisionInner, node, used_data_indices[i]);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
       });
     }
   } else {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], NumericalDecisionInner, node, used_data_indices[i]);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
       (int, data_size_t start, data_size_t end) {
         PredictionFun(data->num_features(), i, used_data_indices[start], NumericalDecisionInner, split_feature_inner_[node], used_data_indices[i]);
       });
@@ -313,9 +304,9 @@ std::string Tree::NodeToJSON(int index) const {
       str_buf << "\"default_left\":false," << '\n';
     }
     uint8_t missing_type = GetMissingType(decision_type_[index]);
-    if (missing_type == 0) {
+    if (missing_type == MissingType::None) {
       str_buf << "\"missing_type\":\"None\"," << '\n';
-    } else if (missing_type == 1) {
+    } else if (missing_type == MissingType::Zero) {
       str_buf << "\"missing_type\":\"Zero\"," << '\n';
     } else {
       str_buf << "\"missing_type\":\"NaN\"," << '\n';
@@ -344,9 +335,10 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
   std::stringstream str_buf;
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
-  if (missing_type == 0 || (missing_type == 1 && default_left && kZeroThreshold < threshold_[node])) {
+  if (missing_type == MissingType::None
+      || (missing_type == MissingType::Zero && default_left && kZeroThreshold < threshold_[node])) {
     str_buf << "if (fval <= " << threshold_[node] << ") {";
-  } else if (missing_type == 1) {
+  } else if (missing_type == MissingType::Zero) {
     if (default_left) {
       str_buf << "if (fval <= " << threshold_[node] << " || Tree::IsZero(fval)" << " || std::isnan(fval)) {";
     } else {
@@ -365,7 +357,7 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
 std::string Tree::CategoricalDecisionIfElse(int node) const {
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   std::stringstream str_buf;
-  if (missing_type == 2) {
+  if (missing_type == MissingType::NaN) {
     str_buf << "if (std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
   } else {
     str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";

@@ -1,5 +1,5 @@
-require(lightgbm)
-require(methods)
+library(lightgbm)
+library(methods)
 
 # Load in the agaricus dataset
 data(agaricus.train, package = "lightgbm")

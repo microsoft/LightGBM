@@ -8,7 +8,7 @@ Please search your question on previous issues, Stack Overflow (https://stackove
 -->
 
 <!--
-For bugs and unexpected issues, please provide the following information, so that we could reproduce them on our system.
+For bugs and unexpected issues, please check the latest master branch first. If problems indeed exist, please provide the following information, so that we could reproduce them on our system.
 -->
 
 ## Environment info
@@ -19,6 +19,7 @@ CPU/GPU model:
 
 C++/Python/R version:
 
+<!-- Please check the latest master branch first -->
 LightGBM version or commit hash:
 
 ## Error message

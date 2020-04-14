@@ -7,9 +7,9 @@ import warnings
 import numpy as np
 
 from .basic import Dataset, LightGBMError, _ConfigAliases
-from .compat import (SKLEARN_INSTALLED, SKLEARN_VERSION, _LGBMClassifierBase,
+from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
-                     _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
+                     _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
                      argc_, range_, zip_, string_type, DataFrame, DataTable)
 from .engine import train
@@ -230,9 +230,11 @@ class LGBMModel(_LGBMModelBase):
             L1 regularization term on weights.
         reg_lambda : float, optional (default=0.)
             L2 regularization term on weights.
-        random_state : int or None, optional (default=None)
+        random_state : int, RandomState object or None, optional (default=None)
             Random number seed.
-            If None, default seeds in C++ code will be used.
+            If int, this number is used to seed the C++ code.
+            If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
+            If None, default seeds in C++ code are used.
         n_jobs : int, optional (default=-1)
             Number of parallel threads.
         silent : bool, optional (default=True)
@@ -296,9 +298,6 @@ class LGBMModel(_LGBMModelBase):
         """
         if not SKLEARN_INSTALLED:
             raise LightGBMError('Scikit-learn is required for this module')
-        elif SKLEARN_VERSION > '0.21.3':
-            raise RuntimeError("The last supported version of scikit-learn is 0.21.3.\n"
-                               "Found version: {0}.".format(SKLEARN_VERSION))
 
         self.boosting_type = boosting_type
         self.objective = objective
@@ -503,6 +502,8 @@ class LGBMModel(_LGBMModelBase):
         params.pop('importance_type', None)
         params.pop('n_estimators', None)
         params.pop('class_weight', None)
+        if isinstance(params['random_state'], np.random.RandomState):
+            params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
         for alias in _ConfigAliases.get('objective'):
             params.pop(alias, None)
         if self._n_classes is not None and self._n_classes > 2:
@@ -543,7 +544,8 @@ class LGBMModel(_LGBMModelBase):
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
-            _LGBMCheckConsistentLength(_X, _y, sample_weight)
+            if sample_weight is not None:
+                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
 

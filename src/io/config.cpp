@@ -20,9 +20,6 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const 
     if (tmp_strs.size() == 2) {
       value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
     }
-    if (!Common::CheckASCII(key) || !Common::CheckASCII(value)) {
-      Log::Fatal("Do not support non-ASCII characters in config.");
-    }
     if (key.size() > 0) {
       auto value_search = params->find(key);
       if (value_search == params->end()) {  // not set
@@ -280,10 +277,10 @@ void Config::CheckParamConflict() {
   }
 
   if (is_single_tree_learner || tree_learner == std::string("feature")) {
-    is_parallel_find_bin = false;
+    is_data_based_parallel = false;
   } else if (tree_learner == std::string("data")
              || tree_learner == std::string("voting")) {
-    is_parallel_find_bin = true;
+    is_data_based_parallel = true;
     if (histogram_pool_size >= 0
         && tree_learner == std::string("data")) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f).\n"
@@ -291,6 +288,12 @@ void Config::CheckParamConflict() {
                    histogram_pool_size);
       // Change pool size to -1 (no limit) when using data parallel to reduce communication costs
       histogram_pool_size = -1;
+    }
+  }
+  if (is_data_based_parallel) {
+    if (!forcedsplits_filename.empty()) {
+      Log::Fatal("Don't support forcedsplits in %s tree learner",
+                 tree_learner.c_str());
     }
   }
   // Check max_depth and num_leaves
@@ -310,6 +313,20 @@ void Config::CheckParamConflict() {
   if (device_type == std::string("gpu")) {
     force_col_wise = true;
     force_row_wise = false;
+  }
+  if (is_parallel && monotone_constraints_method == std::string("intermediate")) {
+    // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
+    Log::Warning("Cannot use \"intermediate\" monotone constraints in parallel learning, auto set to \"basic\" method.");
+    monotone_constraints_method = "basic";
+  }
+  if (feature_fraction_bynode != 1.0 && monotone_constraints_method == std::string("intermediate")) {
+    // "intermediate" monotone constraints need to recompute splits. If the features are sampled when computing the
+    // split initially, then the sampling needs to be recorded or done once again, which is currently not supported
+    Log::Warning("Cannot use \"intermediate\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
+    monotone_constraints_method = "basic";
+  }
+  if (max_depth > 0 && monotone_penalty >= max_depth) {
+    Log::Warning("Monotone penalty greater than tree depth. Monotone features won't be used.");
   }
 }
 

@@ -26,12 +26,6 @@ class NDCGMetric:public Metric {
     DCGCalculator::DefaultLabelGain(&label_gain);
     // initialize DCG calculator
     DCGCalculator::Init(label_gain);
-    // get number of threads
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
   }
 
   ~NDCGMetric() {
@@ -89,9 +83,10 @@ class NDCGMetric:public Metric {
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
+    int num_threads = OMP_NUM_THREADS();
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
-    for (int i = 0; i < num_threads_; ++i) {
+    for (int i = 0; i < num_threads; ++i) {
       result_buffer_.emplace_back(eval_at_.size(), 0.0f);
     }
     std::vector<double> tmp_dcg(eval_at_.size(), 0.0f);
@@ -139,7 +134,7 @@ class NDCGMetric:public Metric {
     // Get final average NDCG
     std::vector<double> result(eval_at_.size(), 0.0f);
     for (size_t j = 0; j < result.size(); ++j) {
-      for (int i = 0; i < num_threads_; ++i) {
+      for (int i = 0; i < num_threads; ++i) {
         result[j] += result_buffer_[i][j];
       }
       result[j] /= sum_query_weights_;
@@ -166,8 +161,6 @@ class NDCGMetric:public Metric {
   std::vector<data_size_t> eval_at_;
   /*! \brief Cache the inverse max dcg for all queries */
   std::vector<std::vector<double>> inverse_max_dcgs_;
-  /*! \brief Number of threads */
-  int num_threads_;
 };
 
 }  // namespace LightGBM

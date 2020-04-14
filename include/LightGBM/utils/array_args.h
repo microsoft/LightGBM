@@ -6,6 +6,7 @@
 #define LIGHTGBM_UTILS_ARRAY_AGRS_H_
 
 #include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/threading.h>
 
 #include <algorithm>
 #include <utility>
@@ -20,29 +21,21 @@ template<typename VAL_T>
 class ArrayArgs {
  public:
   inline static size_t ArgMaxMT(const std::vector<VAL_T>& array) {
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    {
-      num_threads = omp_get_num_threads();
-    }
-    int step = std::max(1, (static_cast<int>(array.size()) + num_threads - 1) / num_threads);
+    int num_threads = OMP_NUM_THREADS();
     std::vector<size_t> arg_maxs(num_threads, 0);
-    #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads; ++i) {
-      size_t start = step * i;
-      if (start >= array.size()) { continue; }
-      size_t end = std::min(array.size(), start + step);
-      size_t arg_max = start;
-      for (size_t j = start + 1; j < end; ++j) {
-        if (array[j] > array[arg_max]) {
-          arg_max = j;
-        }
-      }
-      arg_maxs[i] = arg_max;
-    }
+    int n_blocks = Threading::For<size_t>(
+        0, array.size(), 1024,
+        [&array, &arg_maxs](int i, size_t start, size_t end) {
+          size_t arg_max = start;
+          for (size_t j = start + 1; j < end; ++j) {
+            if (array[j] > array[arg_max]) {
+              arg_max = j;
+            }
+          }
+          arg_maxs[i] = arg_max;
+        });
     size_t ret = arg_maxs[0];
-    for (int i = 1; i < num_threads; ++i) {
+    for (int i = 1; i < n_blocks; ++i) {
       if (array[arg_maxs[i]] > array[ret]) {
         ret = arg_maxs[i];
       }

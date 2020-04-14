@@ -1,5 +1,5 @@
-require(lightgbm)
-require(Matrix)
+library(lightgbm)
+library(Matrix)
 
 context("testing lgb.Dataset functionality")
 
@@ -140,7 +140,7 @@ test_that("Dataset$get_params() successfully returns parameters if you passed th
     , params = params
   )
   returned_params <- ds$get_params()
-  expect_true(methods::is(returned_params, "list"))
+  expect_identical(class(returned_params), "list")
   expect_identical(length(params), length(returned_params))
   expect_identical(sort(names(params)), sort(names(returned_params)))
   for (param_name in names(params)) {
