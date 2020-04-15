@@ -19,7 +19,7 @@ Load LightGBM takes in either a file path or model string.
               If both are provided, Load will default to loading from file
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -31,15 +31,15 @@ valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
-  , nrounds = 10L
+  , nrounds = 5L
   , valids = valids
   , min_data = 1L
   , learning_rate = 1.0
-  , early_stopping_rounds = 5L
+  , early_stopping_rounds = 3L
 )
 lgb.save(model, "model.txt")
 load_booster <- lgb.load(filename = "model.txt")
 model_string <- model$save_model_to_string(NULL) # saves best iteration
 load_booster_from_str <- lgb.load(model_str = model_string)
-
+}
 }

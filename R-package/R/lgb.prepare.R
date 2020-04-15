@@ -8,7 +8,6 @@
 #'         for input in \code{lgb.Dataset}.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(iris)
 #'
 #' str(iris)

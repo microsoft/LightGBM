@@ -25,7 +25,6 @@ Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              Consider this as a half memory technique which is dangerous, especially for LightGBM.
 }
 \examples{
-library(lightgbm)
 data(iris)
 
 str(iris)
