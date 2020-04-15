@@ -14,7 +14,6 @@ function Download-File-With-Retries {
 
 $env:R_LIB_PATH = "C:/RLibrary"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
-$env:BINPREF = "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/"
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 
 cd $env:BUILD_SOURCESDIRECTORY
