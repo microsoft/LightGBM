@@ -184,7 +184,6 @@ find_library(
   LIBR_CORE_LIBRARY
   NAMES R R.dll
   HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
-  PATHS "${LIBR_HOME}/bin/${R_ARCH}/R.dll"
 )
 
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
