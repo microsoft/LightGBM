@@ -95,5 +95,13 @@ if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
     Check-Output $False
 }
 
+$ALLOWED_CHECK_NOTES=3
+$note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String
+$NUM_CHECK_NOTES = $note_str.replace("Status: ", "").replace(" ", "").replace("NOTE", "").replace("s", "")
+if ( [int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES ){
+    Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
+    Check-Output $False
+}
+
 Write-Output "No issues were found checking the R package"
 Exit 0
