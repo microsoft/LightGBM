@@ -280,9 +280,9 @@ if(USE_SWIG)
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
   else()
     add_custom_command(TARGET _lightgbm_swig POST_BUILD
-	    COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-	    COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
-	    COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+      COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+      COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+      COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
   endif()
 endif(USE_SWIG)
 
@@ -316,16 +316,7 @@ if(WIN32 AND (MINGW OR CYGWIN))
 endif()
 
 if(BUILD_FOR_R)
-  if(MSVC)
-    # https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
-    set_property(
-      TARGET _lightgbm
-      PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
-    )
-    TARGET_LINK_LIBRARIES(_lightgbm ${CMAKE_CURRENT_BINARY_DIR}/R.lib)
-  else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
-  endif()
 endif(BUILD_FOR_R)
 
 install(TARGETS lightgbm _lightgbm

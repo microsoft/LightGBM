@@ -10,6 +10,7 @@
 #  LIBR_HOME
 #  LIBR_EXECUTABLE
 #  LIBR_INCLUDE_DIRS
+#  LIBR_LIB_DIR
 #  LIBR_CORE_LIBRARY
 # and a CMake function to create R.lib for MSVC
 
@@ -35,8 +36,8 @@ function(create_rlib_for_msvc)
     message(FATAL_ERROR "create_rlib_for_msvc() can only be used with MSVC")
   endif()
 
-  if(NOT EXISTS "${LIBR_CORE_LIBRARY}")
-    message(FATAL_ERROR "LIBR_CORE_LIBRARY, '${LIBR_CORE_LIBRARY}', not found")
+  if(NOT EXISTS "${LIBR_LIB_DIR}")
+    message(FATAL_ERROR "LIBR_LIB_DIR, '${LIBR_LIB_DIR}', not found")
   endif()
 
   find_program(GENDEF_EXE gendef)
@@ -49,7 +50,7 @@ function(create_rlib_for_msvc)
 
   # extract symbols from R.dll into R.def and R.lib import library
   execute_process(COMMAND ${GENDEF_EXE}
-    "-" "${LIBR_CORE_LIBRARY}"
+    "-" "${LIBR_LIB_DIR}/R.dll"
     OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def"
   )
   execute_process(COMMAND ${DLLTOOL_EXE}
@@ -167,20 +168,24 @@ execute_process(
   OUTPUT_VARIABLE LIBR_INCLUDE_DIRS
 )
 
+# ask R for the lib dir
+execute_process(
+  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(normalizePath(R.home('lib'), winslash='/'))"
+  OUTPUT_VARIABLE LIBR_LIB_DIR
+)
+
 set(LIBR_HOME ${LIBR_HOME} CACHE PATH "R home directory")
 set(LIBR_EXECUTABLE ${LIBR_EXECUTABLE} CACHE PATH "R executable")
 set(LIBR_INCLUDE_DIRS ${LIBR_INCLUDE_DIRS} CACHE PATH "R include directory")
+set(LIBR_LIB_DIR ${LIBR_LIB_DIR} CACHE PATH "R shared libraries directory")
 
 # look for the core R library
-if(WIN32)
-  set(LIBR_CORE_LIBRARY ${LIBR_HOME}/bin/${R_ARCH}/R.dll)
-else()
-  find_library(
-    LIBR_CORE_LIBRARY
-    NAMES R
-    HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
-  )
-endif()
+find_library(
+  LIBR_CORE_LIBRARY
+  NAMES R R.dll
+  HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/lib" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
+  PATHS "${LIBR_HOME}/bin/${R_ARCH}/R.dll"
+)
 
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
 
@@ -200,5 +205,6 @@ find_package_handle_standard_args(LibR DEFAULT_MSG
   LIBR_HOME
   LIBR_EXECUTABLE
   LIBR_INCLUDE_DIRS
+  LIBR_LIB_DIR
   LIBR_CORE_LIBRARY
 )
