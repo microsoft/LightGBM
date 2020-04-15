@@ -43,6 +43,7 @@ struct CHAllocator {
       if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda){
           cudaError_t ret= cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
           if (ret != cudaSuccess){
+fprintf(stderr, "   TROUBLE: defaulting to malloc in CHAllocator!!!\n"); fflush(stderr);
              ptr = (T*) malloc(n*sizeof(T));
           }
       }

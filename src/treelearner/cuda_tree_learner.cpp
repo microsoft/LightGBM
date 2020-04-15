@@ -63,7 +63,6 @@ CUDATreeLearner::~CUDATreeLearner() {
 
 void CUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
 
-
   // initialize SerialTreeLearner
   SerialTreeLearner::Init(train_data, is_constant_hessian, is_use_subset);
 
@@ -212,13 +211,9 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
     size_t output_size = num_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
     size_t host_output_offset = offset_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
 
-
     CUDASUCCESS_OR_FATAL(cudaMemcpyAsync((char*)host_histogram_outputs_ + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost, stream_[device_id]));
-
-
     CUDASUCCESS_OR_FATAL(cudaEventRecord(histograms_wait_obj_[device_id], stream_[device_id]));
   }
-
 }
 
 
@@ -337,7 +332,6 @@ void CUDATreeLearner::prevAllocateGPUMemory() {
 // LGBM_CUDA: allocate GPU memory for each GPU
 void CUDATreeLearner::AllocateGPUMemory() {
 
-
   #pragma omp parallel for schedule(static, num_gpu_)
 
   for(int device_id = 0; device_id < num_gpu_; ++device_id) {
@@ -400,7 +394,7 @@ void CUDATreeLearner::AllocateGPUMemory() {
       // create atomic counters for inter-group coordination
       CUDASUCCESS_OR_FATAL(cudaFree(sync_counters_[device_id]));
       CUDASUCCESS_OR_FATAL(cudaMalloc(&(sync_counters_[device_id]), (size_t) num_gpu_feature_groups * sizeof(int))); 
-      CUDASUCCESS_OR_FATAL(cudaMemsetAsync(sync_counters_[device_id], 0, num_gpu_feature_groups * sizeof(int)));
+      CUDASUCCESS_OR_FATAL(cudaMemsetAsync(sync_counters_[device_id], 0, num_gpu_feature_groups * sizeof(int), stream_[device_id]));
 
       // The output buffer is allocated to host directly, to overlap compute and data transfer
       CUDASUCCESS_OR_FATAL(cudaFree(device_histogram_outputs_[device_id]));
@@ -452,7 +446,7 @@ void CUDATreeLearner::copyDenseFeature() {
          copied_feature = 0;
          if(device_id < num_gpu_) {
            device_features = device_features_[device_id];
-           //CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id)); 
+           CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id)); 
          }
       }
     }
@@ -726,18 +720,22 @@ void CUDATreeLearner::BeforeTrain() {
 
       if (!is_constant_hessian_) {
 
-        CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_hessians_[device_id], hessians_, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
+void *foo = malloc(num_data_ * sizeof(score_t));
+memcpy(foo, &(hessians_[0]), num_data_ * sizeof(score_t));
+        CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_hessians_[device_id], foo, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
+free(foo);
         CUDASUCCESS_OR_FATAL(cudaEventRecord(hessians_future_[device_id], stream_[device_id]));
 
       }
 
-      CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_gradients_[device_id], gradients_, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
+void *foo = malloc(num_data_ * sizeof(score_t));
+memcpy(foo, &(gradients_[0]), num_data_ * sizeof(score_t));
+      CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_gradients_[device_id], foo, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
+free(foo);
       CUDASUCCESS_OR_FATAL(cudaEventRecord(gradients_future_[device_id], stream_[device_id]));
     }
-
   }
   }
-
 }
 
 bool CUDATreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
@@ -855,8 +853,7 @@ bool CUDATreeLearner::ConstructGPUHistogramsAsync(
     //#pragma omp parallel for schedule(static, num_gpu_)
     for(int device_id = 0; device_id < num_gpu_; ++device_id) {
       int offset = offset_gpu_feature_groups_[device_id];
-      CUDASUCCESS_OR_FATAL(cudaMemcpy(device_feature_masks_[device_id], ptr_pinned_feature_masks_ + offset, num_gpu_feature_groups_[device_id] , cudaMemcpyHostToDevice));
-      //CUDASUCCESS_OR_FATAL(cudaMemcpy(device_feature_masks_[device_id], ptr_pinned_feature_masks_ + offset, num_gpu_feature_groups_[device_id] , cudaMemcpyHostToDevice, stream_[device_id]));
+      CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_feature_masks_[device_id], ptr_pinned_feature_masks_ + offset, num_gpu_feature_groups_[device_id] , cudaMemcpyHostToDevice, stream_[device_id]));
     }
 
   // All data have been prepared, now run the GPU kernel

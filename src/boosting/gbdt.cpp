@@ -425,6 +425,12 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
       auto hess = hessians + offset;
 
       // LGBM_CUDA
+      if (((tmp_gradients_.data() == 0) || (tmp_hessians_.data() == 0)) && (config_->device_type == std::string("cuda"))) {
+        size_t bag_gh_size = static_cast<size_t>(bag_data_cnt_) * num_tree_per_iteration_;
+        tmp_gradients_.resize(bag_gh_size);
+        tmp_hessians_.resize(bag_gh_size);
+      }
+
       auto tmp_grad = tmp_gradients_.data();
       auto tmp_hess = tmp_hessians_.data();
 
@@ -436,7 +442,7 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
           tmp_grad[i] = grad[bag_data_indices_[i]]; // LGBM_CUDA
           tmp_hess[i] = hess[bag_data_indices_[i]]; // LGBM_CUDA
         }
-     }
+      }
 
       // LGBM_CUDA
       new_tree.reset(tree_learner_->Train(tmp_grad, tmp_hess, is_constant_hessian_, forced_splits_json_));

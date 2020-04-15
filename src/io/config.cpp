@@ -322,7 +322,7 @@ void Config::CheckParamConflict() {
     }
   }
   // force col-wise for gpu
-  if (device_type == std::string("gpu")) { // GCF maybe need to add some cuda here?
+  if (device_type == std::string("gpu")) {
     force_col_wise = true;
     force_row_wise = false;
   }
