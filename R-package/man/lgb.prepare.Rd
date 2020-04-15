@@ -19,7 +19,6 @@ Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              \code{\link{lgb.prepare_rules}} if you want to apply this transformation to other datasets.
 }
 \examples{
-library(lightgbm)
 data(iris)
 
 str(iris)

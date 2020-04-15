@@ -15,28 +15,43 @@
 #' The \code{lgb.plot.interpretation} function creates a \code{barplot}.
 #'
 #' @examples
-#' library(lightgbm)
-#' Sigmoid <- function(x) {1.0 / (1.0 + exp(-x))}
-#' Logit <- function(x) {log(x / (1.0 - x))}
+#' \donttest{
+#' Logit <- function(x) {
+#'   log(x / (1.0 - x))
+#' }
 #' data(agaricus.train, package = "lightgbm")
-#' train <- agaricus.train
-#' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' setinfo(dtrain, "init_score", rep(Logit(mean(train$label)), length(train$label)))
+#' labels <- agaricus.train$label
+#' dtrain <- lgb.Dataset(
+#'   agaricus.train$data
+#'   , label = labels
+#' )
+#' setinfo(dtrain, "init_score", rep(Logit(mean(labels)), length(labels)))
+#'
 #' data(agaricus.test, package = "lightgbm")
-#' test <- agaricus.test
 #'
 #' params <- list(
 #'   objective = "binary"
-#'   , learning_rate = 0.01
-#'   , num_leaves = 63L
+#'   , learning_rate = 0.1
 #'   , max_depth = -1L
 #'   , min_data_in_leaf = 1L
 #'   , min_sum_hessian_in_leaf = 1.0
 #' )
-#' model <- lgb.train(params, dtrain, 10L)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 5L
+#' )
 #'
-#' tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
-#' lgb.plot.interpretation(tree_interpretation[[1L]], top_n = 10L)
+#' tree_interpretation <- lgb.interprete(
+#'   model = model
+#'   , data = agaricus.test$data
+#'   , idxset = 1L:5L
+#' )
+#' lgb.plot.interpretation(
+#'   tree_interpretation_dt = tree_interpretation[[1L]]
+#'   , top_n = 5L
+#' )
+#' }
 #' @importFrom data.table setnames
 #' @importFrom graphics barplot par
 #' @export

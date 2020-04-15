@@ -20,6 +20,7 @@ lgb.Booster
 Save LightGBM model
 }
 \examples{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -39,4 +40,5 @@ model <- lgb.train(
   , early_stopping_rounds = 5L
 )
 lgb.save(model, "model.txt")
+}
 }

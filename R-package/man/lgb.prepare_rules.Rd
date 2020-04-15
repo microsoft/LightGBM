@@ -22,7 +22,6 @@ Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              so you can convert other datasets using this converter.
 }
 \examples{
-library(lightgbm)
 data(iris)
 
 str(iris)

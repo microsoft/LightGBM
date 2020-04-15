@@ -24,7 +24,6 @@ Generic \code{dimnames} methods are used by \code{colnames}.
 Since row names are irrelevant, it is recommended to use \code{colnames} directly.
 }
 \examples{
-library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
