@@ -14,7 +14,7 @@ function Download-File-With-Retries {
 
 $env:R_WINDOWS_VERSION = "3.6.3"
 
-$env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary"
+$env:R_LIB_PATH = $env:BUILD_SOURCESDIRECTORY/RLibrary
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 
