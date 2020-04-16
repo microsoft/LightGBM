@@ -227,7 +227,7 @@ def generate_r_docs(app):
     /home/docs/.conda/bin/conda create -q -y -n r_env \
         r-base=3.5.1=h1e0a451_2 \
         r-devtools=1.13.6=r351h6115d3f_0 \
-        r-data.table=1.11.4=r351h96ca727_0 \
+        r-data.table=1.12.2=r36h96ca727_0 \
         r-jsonlite=1.5=r351h96ca727_0 \
         r-matrix=1.2_14=r351h96ca727_0 \
         r-testthat=2.0.0=r351h29659fb_0 \
