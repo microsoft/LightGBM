@@ -414,7 +414,6 @@ lightgbm.Rcheck/
 **/model.txt
 **/lgb-model.txt
 
-
 # Files from interactive R sessions
 .Rproj.user
 **/.Rhistory
