@@ -13,8 +13,7 @@ function Download-File-With-Retries {
 }
 
 $env:R_WINDOWS_VERSION = "3.6.3"
-
-$env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY\RLibrary"
+$env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
@@ -25,7 +24,7 @@ tzutil /s "GMT Standard Time"
 
 if ($env:COMPILER -eq "MINGW") {
   Write-Output "Telling R to use MinGW"
-  $install_libs = "$env:BUILD_SOURCESDIRECTORY\R-package\src\install.libs.R"
+  $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
   ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
 }
 
