@@ -48,9 +48,9 @@ if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
 
 }
 
-# MiKTeX and pandoc can be skipped on Azure builds, since we don't
-# build the package documentation there
-if ($env:AZURE -ne "true") {
+# MiKTeX and pandoc can be skipped on MSVC builds, since we don't
+# build the package documentation for those
+if ($env:COMPILER -ne "MSVC") {
 
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
@@ -79,7 +79,7 @@ $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
 $env:_R_CHECK_FORCE_SUGGESTS_=0
-if ($env:AZURE -eq "true") {
+if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running R CMD check without checking documentation"
   R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; Check-Output $?
 } else {
