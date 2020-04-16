@@ -317,7 +317,7 @@ void CUDATreeLearner::prevAllocateGPUMemory() {
   memset(ptr_pinned_feature_masks_, 0, num_dense_feature_groups_);
 
   // histogram bin entry size depends on the precision (single/double)
-  hist_bin_entry_sz_ = config_->gpu_use_dp ? sizeof(hist_t) : sizeof(gpu_hist_t);
+  hist_bin_entry_sz_ = 2 * (config_->gpu_use_dp ? sizeof(hist_t) : sizeof(gpu_hist_t)); // two elements in this "size"
 
   // host_size histogram outputs
   //  host_histogram_outputs_ = malloc(num_dense_feature_groups_ * device_bin_size_ * hist_bin_entry_sz_);

@@ -270,9 +270,9 @@ void GBDT::Bagging(int iter) {
       bool resized= tmp_subset_->ReSize(bag_data_cnt_);
 
      if (resized && (config_->device_type == std::string("cuda"))) {
-        size_t bag_gh_size = static_cast<size_t>(bag_data_cnt_) * num_tree_per_iteration_;
-        tmp_gradients_.resize(bag_gh_size);
-        tmp_hessians_.resize(bag_gh_size);
+        size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+        tmp_gradients_.resize(total_size);
+        tmp_hessians_.resize(total_size);
       }
 
       tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
@@ -426,9 +426,9 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
 
       // LGBM_CUDA
       if (((tmp_gradients_.data() == 0) || (tmp_hessians_.data() == 0)) && (config_->device_type == std::string("cuda"))) {
-        size_t bag_gh_size = static_cast<size_t>(bag_data_cnt_) * num_tree_per_iteration_;
-        tmp_gradients_.resize(bag_gh_size);
-        tmp_hessians_.resize(bag_gh_size);
+        size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+        tmp_gradients_.resize(total_size);
+        tmp_hessians_.resize(total_size);
       }
 
       auto tmp_grad = tmp_gradients_.data();
@@ -971,9 +971,9 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
        if (tmp_subset_ == nullptr){
           tmp_subset_.reset(new Dataset(bag_data_cnt_));
           tmp_subset_->CopyFeatureMapperFrom(train_data_);
-          size_t bag_gh_size = static_cast<size_t>(bag_data_cnt_) * num_tree_per_iteration_;
-          tmp_gradients_.resize(bag_gh_size);
-          tmp_hessians_.resize(bag_gh_size);
+          size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+          tmp_gradients_.resize(total_size);
+          tmp_hessians_.resize(total_size);
           is_use_subset_ = false;
           bag_data_indices_.clear();
        }
