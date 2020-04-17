@@ -29,25 +29,22 @@ if ($env:COMPILER -eq "MINGW") {
   ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
 }
 
-# set up R if it doesn't exist yet
-if (!(Get-Command R.exe -errorAction SilentlyContinue)) {
+# set up R
 
-    Write-Output "Downloading R and Rtools"
+Write-Output "Downloading R and Rtools"
 
-    # download R and RTools
-    Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-    Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe" -destfile "Rtools.exe"
+# download R and RTools
+Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
+Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe" -destfile "Rtools.exe"
 
-    # Install R
-    Write-Output "Installing R"
-    Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64" ; Check-Output $?
-    Write-Output "Done installing R"
+# Install R
+Write-Output "Installing R"
+Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64" ; Check-Output $?
+Write-Output "Done installing R"
 
-    Write-Output "Installing Rtools"
-    Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
-    Write-Output "Done installing Rtools"
-
-}
+Write-Output "Installing Rtools"
+Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
+Write-Output "Done installing Rtools"
 
 # MiKTeX and pandoc can be skipped on MSVC builds, since we don't
 # build the package documentation for those
@@ -82,14 +79,16 @@ $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 $env:_R_CHECK_FORCE_SUGGESTS_=0
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running R CMD check without checking documentation"
-  R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; Check-Output $?
+  R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded=$?
 } else {
   Write-Output "Running R CMD check as CRAN"
-  R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; Check-Output $?
+  R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded=$?
 }
 
 Write-Output "R CMD check build logs:"
 Get-Content -Path $env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out
+
+Check-Output $check_succeeded
 
 Write-Output "Looking for issues with R CMD check results"
 if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
