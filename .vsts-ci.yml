@@ -119,7 +119,7 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      rpkg:
+      r_package:
         TASK: r-package
         COMPILER: MINGW
       regular:
