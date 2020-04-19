@@ -15,9 +15,14 @@ function Download-File-With-Retries {
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 Write-Output "R_LIB_PATH: $env:R_LIB_PATH"
-$env:PATH = "$env:R_LIB_PATH/Rtools/mingw_64/bin;" + "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
+
+if ($env:COMPILER -eq "MINGW") {
+  $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
+  $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
+}
 
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
@@ -29,11 +34,8 @@ if ($env:COMPILER -eq "MINGW") {
   ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
 }
 
-# set up R
-
-Write-Output "Downloading R and Rtools"
-
 # download R and RTools
+Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
 Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe" -destfile "Rtools.exe"
 
@@ -46,9 +48,9 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-# MiKTeX and pandoc can be skipped on Azure builds, since we don't
+# MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
-if ($env:AZURE -ne "true") {
+if ($env:COMPILER -eq "MINGW") {
 
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
@@ -77,7 +79,7 @@ $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
 $env:_R_CHECK_FORCE_SUGGESTS_=0
-if ($env:AZURE -eq "true") {
+if ($env:COMPILER -ne "MINGW") {
   Write-Output "Running R CMD check without checking documentation"
   R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded=$?
 } else {
