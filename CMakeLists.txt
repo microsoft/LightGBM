@@ -194,7 +194,7 @@ if(USE_CUDA)
     endfunction()
 
     #foreach (hsize 16 64 256)
-    foreach (hsize 256)
+    foreach (hsize _16_64_256)
       add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
       add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
       add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")

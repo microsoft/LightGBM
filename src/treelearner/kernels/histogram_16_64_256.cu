@@ -12,7 +12,7 @@
  * disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
  */
 
-#include "histogram256.hu"
+#include "histogram_16_64_256.hu"
 #include "stdio.h"
 
 #define PRINT(b,t,fmt,...) \

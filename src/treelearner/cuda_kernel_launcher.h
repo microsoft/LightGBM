@@ -3,7 +3,7 @@
 
 #ifdef USE_CUDA
 // what should I include??
-#include "kernels/histogram256.hu" // kernel, acc_type, data_size_t, uchar, score_t
+#include "kernels/histogram_16_64_256.hu" // kernel, acc_type, data_size_t, uchar, score_t
 #include <chrono>
 
 struct ThreadData {
