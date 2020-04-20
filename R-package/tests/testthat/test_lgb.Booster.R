@@ -279,3 +279,35 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
     expect_identical(bst_from_ds$eval_train(), list())
     expect_equal(bst_from_ds$current_iter(), nrounds)
 })
+
+test_that("Booster$rollback_one_iter() should work as expected", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    data(agaricus.test, package = "lightgbm")
+    train <- agaricus.train
+    test <- agaricus.test
+    nrounds <- 5L
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = nrounds
+        , objective = "binary"
+    )
+    expect_equal(bst$current_iter(), nrounds)
+    expect_true(lgb.is.Booster(bst))
+    logloss <- bst$eval_train()[[1L]][["value"]]
+    expect_equal(logloss, 0.01904786)
+
+    x <- bst$rollback_one_iter()
+
+    # rollback_one_iter() should return a booster and modify the original
+    # booster in place
+    expect_true(lgb.is.Booster(x))
+    expect_equal(bst$current_iter(), nrounds - 1L)
+
+    # score should now come from the model as of 4 iterations
+    logloss <- bst$eval_train()[[1L]][["value"]]
+    expect_equal(logloss, 0.027915146)
+})
