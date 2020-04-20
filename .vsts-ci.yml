@@ -117,7 +117,7 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
-    maxParallel: 3
+    maxParallel: 4
     matrix:
       r_package:
         TASK: r-package

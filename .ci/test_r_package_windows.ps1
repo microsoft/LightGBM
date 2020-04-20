@@ -78,7 +78,7 @@ Rscript build_r.R --skip-install ; Check-Output $?
 $PKG_FILE_NAME = Get-Item *.tar.gz
 $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
-$env:_R_CHECK_FORCE_SUGGESTS_=0
+$env:_R_CHECK_FORCE_SUGGESTS_ = 0
 if ($env:COMPILER -ne "MINGW") {
   Write-Output "Running R CMD check without checking documentation"
   R.exe CMD check --no-multiarch --no-examples --no-manual --ignore-vignettes ${PKG_FILE_NAME} ; $check_succeeded=$?
@@ -101,7 +101,7 @@ if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
 $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
 $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
 $NUM_CHECK_NOTES = $matches[1]
-$ALLOWED_CHECK_NOTES=3
+$ALLOWED_CHECK_NOTES = 3
 if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
     Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
     Check-Output $False
