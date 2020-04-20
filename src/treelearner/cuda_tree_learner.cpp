@@ -720,18 +720,12 @@ void CUDATreeLearner::BeforeTrain() {
 
       if (!is_constant_hessian_) {
 
-void *foo = malloc(num_data_ * sizeof(score_t));
-memcpy(foo, &(hessians_[0]), num_data_ * sizeof(score_t));
-        CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_hessians_[device_id], foo, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
-free(foo);
+        CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_hessians_[device_id], (void *) &(hessians_[0]), num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
         CUDASUCCESS_OR_FATAL(cudaEventRecord(hessians_future_[device_id], stream_[device_id]));
 
       }
 
-void *foo = malloc(num_data_ * sizeof(score_t));
-memcpy(foo, &(gradients_[0]), num_data_ * sizeof(score_t));
-      CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_gradients_[device_id], foo, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
-free(foo);
+      CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_gradients_[device_id], (void *) &(gradients_[0]), num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
       CUDASUCCESS_OR_FATAL(cudaEventRecord(gradients_future_[device_id], stream_[device_id]));
     }
   }
