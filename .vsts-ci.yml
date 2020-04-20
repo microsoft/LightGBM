@@ -22,7 +22,7 @@ jobs:
     vmImage: 'ubuntu-latest'
   container: ubuntu1404
   strategy:
-    maxParallel: 6
+    maxParallel: 7
     matrix:
       regular:
         TASK: regular
@@ -76,7 +76,7 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
   strategy:
-    maxParallel: 3
+    maxParallel: 4
     matrix:
       regular:
         TASK: regular
