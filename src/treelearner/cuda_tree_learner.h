@@ -109,11 +109,12 @@ private:
   */
   void GPUHistogram(data_size_t leaf_num_data, bool use_all_features);
   
-  void SetThreadData(ThreadData* thread_data, int device_id,
+  void SetThreadData(ThreadData* thread_data, int device_id, int histogram_size,
 		int leaf_num_data, bool use_all_features, 
 		int num_workgroups, int exp_workgroups_per_feature) {
     ThreadData* td = &thread_data[device_id];
     td->device_id		= device_id;
+    td->histogram_size		= histogram_size;
     td->leaf_num_data		= leaf_num_data;
     td->num_data		= num_data_;
     td->use_all_features	= use_all_features;
@@ -208,6 +209,7 @@ private:
    * which GPU kernel to use */
   int max_num_bin_;
   /*! \brief Used GPU kernel bin size (64, 256) */
+  int histogram_size_;
   int device_bin_size_;
   /*! \brief Size of histogram bin entry, depending if single or double precision is used */
   size_t hist_bin_entry_sz_;

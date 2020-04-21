@@ -24,7 +24,8 @@ static void *launch_cuda_histogram(void *thread_data) {
   CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
 
   // launch cuda kernel
-  cuda_histogram(td.leaf_num_data, td.num_data, td.use_all_features,
+  cuda_histogram(td.histogram_size,
+                td.leaf_num_data, td.num_data, td.use_all_features,
                 td.is_constant_hessian, td.num_workgroups, td.stream,
                 td.device_features,
                 td.device_feature_masks,
@@ -183,7 +184,7 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
       cudaMalloc(&(device_subhistograms_[device_id]), (size_t) num_workgroups * dword_features_ * device_bin_size_ * hist_bin_entry_sz_);
     }
     //set thread_data
-    SetThreadData(thread_data, device_id, leaf_num_data, use_all_features,
+    SetThreadData(thread_data, device_id, histogram_size_, leaf_num_data, use_all_features,
                   num_workgroups, exp_workgroups_per_feature);
   }
  
@@ -479,17 +480,21 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
     max_num_bin_ = std::max(max_num_bin_, train_data_->FeatureGroupNumBin(i));
   }
 
+  // GCF XXX: resolving device_bin_size_ and histogram_size_ is the remaining work
   if (max_num_bin_ <= 16) {
     device_bin_size_ = 256; //LGBM_CUDA
+    histogram_size_ = 16;
     dword_features_ = 1; // LGBM_CUDA
   }
   else if (max_num_bin_ <= 64) {
     device_bin_size_ = 256; //LGBM_CUDA
+    histogram_size_ = 64;
     dword_features_ = 1; // LGBM_CUDA
   }
   else if ( max_num_bin_ <= 256) {
     Log::Debug("device_bin_size_ = 256");
     device_bin_size_ = 256;
+    histogram_size_ = 256;
     dword_features_ = 1; // LGBM_CUDA
   }
   else {

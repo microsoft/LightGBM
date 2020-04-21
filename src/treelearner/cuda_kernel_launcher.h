@@ -10,6 +10,7 @@ struct ThreadData {
           // device id
           int             device_id;
           // parameters for cuda_histogram
+          int             histogram_size;
           data_size_t     leaf_num_data;
           data_size_t     num_data;
           bool            use_all_features;
@@ -40,6 +41,7 @@ struct ThreadData {
 
 
 void cuda_histogram(
+		int		histogram_size,
 		data_size_t	leaf_num_data, 
 		data_size_t	num_data,
 		bool		use_all_features, 

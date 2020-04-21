@@ -12,8 +12,8 @@
  * disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
  */
 
-#ifndef _HISTOGRAM_256_KERNEL_
-#define _HISTOGRAM_256_KERNEL_
+#ifndef _HISTOGRAM_16_64_256_KERNEL_
+#define _HISTOGRAM_16_64_256_KERNEL_
 
 //#pragma once
 
@@ -65,8 +65,6 @@ __device__ uchar4 as_uchar4(const T t) {
   return u;
 }
 
-
-#define LOCAL_SIZE_0 256
 #define NUM_BINS 256
 #if USE_DP_FLOAT == 1
 typedef double acc_type;
@@ -79,7 +77,6 @@ typedef uint acc_int_type;
 #define as_acc_type as_float
 #define as_acc_int_type as_uint
 #endif
-//#define LOCAL_MEM_SIZE (4 * (sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
 #define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
 
 // unroll the atomic operation for a few times. Takes more code space, 
@@ -168,6 +165,20 @@ __global__ void name(const uchar* feature_data_base, \
                      acc_type* __restrict__ hist_buf_base, \
                      const size_t power_feature_workgroups);
 
+
+DECLARE_CONST_HES(histogram16_allfeats);
+DECLARE_CONST_HES(histogram16_fulldata);
+DECLARE_CONST_HES(histogram16);
+DECLARE(histogram16_allfeats);
+DECLARE(histogram16_fulldata);
+DECLARE(histogram16);
+
+DECLARE_CONST_HES(histogram64_allfeats);
+DECLARE_CONST_HES(histogram64_fulldata);
+DECLARE_CONST_HES(histogram64);
+DECLARE(histogram64_allfeats);
+DECLARE(histogram64_fulldata);
+DECLARE(histogram64);
 
 DECLARE_CONST_HES(histogram256_allfeats);
 DECLARE_CONST_HES(histogram256_fulldata);
