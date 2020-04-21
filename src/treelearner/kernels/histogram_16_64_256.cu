@@ -372,6 +372,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 // end of histogram16 stuff
 
 // histogram64 stuff
+#undef KERNEL_NAME
 #ifdef ENABLE_ALL_FEATURES
 #ifdef IGNORE_INDICES
 #define KERNEL_NAME histogram64_fulldata
@@ -717,6 +718,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 // end of histogram64 stuff
 
 // histogram256 stuff
+#undef KERNEL_NAME
 #ifdef ENABLE_ALL_FEATURES
 #ifdef IGNORE_INDICES
 #define KERNEL_NAME histogram256_fulldata
