@@ -845,7 +845,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
-#' lgb.save(model, "model.txt")
+#' lgb.save(model, "lgb-model.txt")
 #' }
 #' @export
 lgb.save <- function(booster, filename, num_iteration = NULL) {

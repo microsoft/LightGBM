@@ -24,8 +24,8 @@ Set the categorical features of an \code{lgb.Dataset} object. Use this function
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
-lgb.Dataset.save(dtrain, "lgb.Dataset.data")
-dtrain <- lgb.Dataset("lgb.Dataset.data")
+lgb.Dataset.save(dtrain, "lgb-Dataset.data")
+dtrain <- lgb.Dataset("lgb-Dataset.data")
 lgb.Dataset.set.categorical(dtrain, 1L:2L)
 
 }
