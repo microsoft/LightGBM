@@ -385,7 +385,7 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
  // LGBM_CUDA invoke baggging during the first iteration
  if ((config_->device_type == std::string("cuda")) && (iter_ == 0)) {
 
-    auto start_time = std::chrono::steady_clock::now();
+//    auto start_time = std::chrono::steady_clock::now();
 
     Bagging(0); 
   }
@@ -399,7 +399,7 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
     }
 
     // LGBM_CUDA
-    auto start_time = std::chrono::steady_clock::now();
+//    auto start_time = std::chrono::steady_clock::now();
 
     Boosting();
 
@@ -414,7 +414,7 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
 
     // LGBM_CUDA
-    auto start_time = std::chrono::steady_clock::now();
+//    auto start_time = std::chrono::steady_clock::now();
 
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
     std::unique_ptr<Tree> new_tree(new Tree(2));
@@ -484,7 +484,7 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
     int iter_next = iter_ + 1;
       if (iter_next < config_->num_iterations) {
 
-       auto start_time = std::chrono::steady_clock::now();
+//       auto start_time = std::chrono::steady_clock::now();
 
        // bagging logic
        Bagging(iter_next);

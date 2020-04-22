@@ -58,6 +58,7 @@ fprintf(stderr, "   TROUBLE: defaulting to malloc in CHAllocator!!!\n"); fflush(
 
  void deallocate(T* p, std::size_t n)
  {
+    (void)n;  // UNUSED
     if (p==NULL) return;
     #ifdef USE_CUDA
       if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda){

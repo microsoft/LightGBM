@@ -225,7 +225,7 @@ void CUDATreeLearner::WaitAndGetHistograms(hist_t* histograms) {
   //#pragma omp parallel for schedule(static, num_gpu_)
   for(int device_id = 0; device_id < num_gpu_; ++device_id) {
 
-    auto start_time = std::chrono::steady_clock::now();
+//    auto start_time = std::chrono::steady_clock::now();
 
     // when the output is ready, the computation is done
     CUDASUCCESS_OR_FATAL(cudaEventSynchronize(histograms_wait_obj_[device_id]));
@@ -865,7 +865,7 @@ bool CUDATreeLearner::ConstructGPUHistogramsAsync(
 void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
 
   // LGBM_CUDA
-  auto start_time = std::chrono::steady_clock::now();
+//  auto start_time = std::chrono::steady_clock::now();
 
   std::vector<int8_t> is_sparse_feature_used(num_features_, 0);
   std::vector<int8_t> is_dense_feature_used(num_features_, 0);

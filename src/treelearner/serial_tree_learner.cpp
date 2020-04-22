@@ -27,6 +27,7 @@ SerialTreeLearner::~SerialTreeLearner() {
 
 //LGBM_CUDA
 void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
+  (void)is_use_subset;	// UNUSED
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   num_features_ = train_data_->num_features();
@@ -444,6 +445,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
 int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
                                        int* right_leaf, int *cur_depth,
                                        bool *aborted_last_force_split) {
+  (void)aborted_last_force_split;
   bool abort_last_forced_split = false;
   if (forced_split_json_ == nullptr) {
     return 0;
