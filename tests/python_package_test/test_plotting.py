@@ -24,6 +24,8 @@ class TestBasic(unittest.TestCase):
             "verbose": -1,
             "num_leaves": 3
         }
+        if lgb.get_device_type() == 2:
+            self.params["device"] = "cuda"
 
     @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
     def test_plot_importance(self):

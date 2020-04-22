@@ -453,6 +453,8 @@ class TestSklearn(unittest.TestCase):
     def test_metrics(self):
         X, y = load_boston(True)
         params = {'n_estimators': 2, 'verbose': -1}
+        if lgb.get_device_type() == 2:
+            params["device"] = "cuda"
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # no custom objective, no custom metric
@@ -709,6 +711,8 @@ class TestSklearn(unittest.TestCase):
         y = np.random.randn(nrows) + np.full(nrows, 1e30)
         weight = np.full(nrows, 1e10)
         params = {'n_estimators': 20, 'verbose': -1}
+        if lgb.get_device_type() == 2:
+            params["device"] = "cuda"
         params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
                       'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
@@ -721,6 +725,8 @@ class TestSklearn(unittest.TestCase):
         y = np.random.randn(nrows) + np.full(nrows, 1e30)
         weight = np.zeros(nrows)
         params = {'n_estimators': 20, 'verbose': -1}
+        if lgb.get_device_type() == 2:
+            params["device"] = "cuda"
         params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
                       'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)

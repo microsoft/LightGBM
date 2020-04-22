@@ -68,6 +68,8 @@ class TestEngine(unittest.TestCase):
 
     def test_binary(self):
         fd = FileLoader('../../examples/binary_classification', 'binary')
+        if lgb.get_device_type() == 2:
+            fd.params["device"] = "cuda"
         X_train, y_train, _ = fd.load_dataset('.train')
         X_test, _, X_test_fn = fd.load_dataset('.test')
         weight_train = fd.load_field('.train.weight')
@@ -91,6 +93,8 @@ class TestEngine(unittest.TestCase):
 
     def test_regression(self):
         fd = FileLoader('../../examples/regression', 'regression')
+        if lgb.get_device_type() == 2:
+            fd.params["device"] = "cuda"
         X_train, y_train, _ = fd.load_dataset('.train')
         X_test, _, X_test_fn = fd.load_dataset('.test')
         init_score_train = fd.load_field('.train.init')
