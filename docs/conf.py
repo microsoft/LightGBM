@@ -139,6 +139,7 @@ if C_API:
         "h": "c",
     }
     breathe_show_define_initializer = True
+    c_id_attributes = ['LIGHTGBM_C_EXPORT']
 
 # -- Options for HTML output ----------------------------------------------
 
