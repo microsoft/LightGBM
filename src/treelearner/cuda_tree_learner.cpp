@@ -482,12 +482,12 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
 
   // GCF XXX: resolving device_bin_size_ and histogram_size_ is the remaining work
   if (max_num_bin_ <= 16) {
-    device_bin_size_ = 256; //LGBM_CUDA
+    device_bin_size_ = 16; //LGBM_CUDA
     histogram_size_ = 16;
     dword_features_ = 1; // LGBM_CUDA
   }
   else if (max_num_bin_ <= 64) {
-    device_bin_size_ = 256; //LGBM_CUDA
+    device_bin_size_ = 64; //LGBM_CUDA
     histogram_size_ = 64;
     dword_features_ = 1; // LGBM_CUDA
   }

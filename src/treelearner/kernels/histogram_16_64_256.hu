@@ -65,7 +65,6 @@ __device__ uchar4 as_uchar4(const T t) {
   return u;
 }
 
-#define NUM_BINS 256
 #if USE_DP_FLOAT == 1
 typedef double acc_type;
 typedef ulong acc_int_type;
@@ -77,7 +76,6 @@ typedef uint acc_int_type;
 #define as_acc_type as_float
 #define as_acc_int_type as_uint
 #endif
-#define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
 
 // unroll the atomic operation for a few times. Takes more code space, 
 // but compiler can generate better code for faster atomics.

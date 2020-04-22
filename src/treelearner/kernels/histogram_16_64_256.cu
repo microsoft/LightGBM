@@ -38,6 +38,8 @@ inline __device__ void atomic_local_add_f(acc_type *addr, const float val)
 #error "ENABLE_ALL_FEATURES should always be 1"
 #define KERNEL_NAME histogram16
 #endif // ENABLE_ALL_FEATURES
+#define NUM_BINS 16
+#define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
 
 // this function will be called by histogram16
 // we have one sub-histogram of one feature in local memory, and need to read others
@@ -129,6 +131,8 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort ltid = threadIdx.x;
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
+
+//if (gtid == 0) printf("Entering the 16-bucket kernel, NUM_BINS = %d, block size = %d\n", NUM_BINS, blockDim.x); 
 
      // local memory per workgroup is 3 KB
      // clear local memory
@@ -373,6 +377,8 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 
 // histogram64 stuff
 #undef KERNEL_NAME
+#undef NUM_BINS
+#undef LOCAL_MEM_SIZE
 #ifdef ENABLE_ALL_FEATURES
 #ifdef IGNORE_INDICES
 #define KERNEL_NAME histogram64_fulldata
@@ -384,6 +390,8 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 #error "ENABLE_ALL_FEATURES should always be 1"
 #define KERNEL_NAME histogram64
 #endif // ENABLE_ALL_FEATURES
+#define NUM_BINS 64
+#define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
 
 // this function will be called by histogram64
 // we have one sub-histogram of one feature in local memory, and need to read others
@@ -475,6 +483,8 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort ltid = threadIdx.x;
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
+
+//if (gtid == 0) printf("Entering the 64-bucket kernel, NUM_BINS = %d, block size = %d\n", NUM_BINS, blockDim.x); 
 
      // local memory per workgroup is 3 KB
      // clear local memory
@@ -719,6 +729,8 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 
 // histogram256 stuff
 #undef KERNEL_NAME
+#undef NUM_BINS
+#undef LOCAL_MEM_SIZE
 #ifdef ENABLE_ALL_FEATURES
 #ifdef IGNORE_INDICES
 #define KERNEL_NAME histogram256_fulldata
@@ -730,6 +742,8 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 #error "ENABLE_ALL_FEATURES should always be 1"
 #define KERNEL_NAME histogram256
 #endif // ENABLE_ALL_FEATURES
+#define NUM_BINS 256
+#define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
 
 // this function will be called by histogram256
 // we have one sub-histogram of one feature in local memory, and need to read others
@@ -821,6 +835,8 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort ltid = threadIdx.x;
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
+
+//if (gtid == 0) printf("Entering the 256-bucket kernel, NUM_BINS = %d, block size = %d\n", NUM_BINS, blockDim.x); 
 
      // local memory per workgroup is 3 KB
      // clear local memory
