@@ -66,7 +66,7 @@ if needs_sphinx > sphinx.__version__:
     raise VersionRequirementError(message)
 # Temp fix for https://github.com/pypa/pip/issues/8001 on RTD site
 if RTD:
-    Popen(["pip" "install" "Sphinx" "--upgrade"],
+    Popen(["pip", "install", "Sphinx", "--upgrade"],
           stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate()
 
 # Add any Sphinx extension module names here, as strings. They can be
