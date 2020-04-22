@@ -64,6 +64,10 @@ needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
 if needs_sphinx > sphinx.__version__:
     message = 'This project needs at least Sphinx v%s' % needs_sphinx
     raise VersionRequirementError(message)
+# Temp fix for https://github.com/pypa/pip/issues/8001 on RTD site
+if RTD:
+    Popen(["pip" "install" "Sphinx" "--upgrade"],
+          stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate()
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -283,8 +287,5 @@ def setup(app):
         app.connect("build-finished",
                     lambda app, exception: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
                                                      os.path.join(app.outdir, "R"), verbose=0))
-        # Temp fix for https://github.com/pypa/pip/issues/8001 on RTD site
-        Popen(["pip" "install" "Sphinx" "--upgrade"],
-              stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate()
     add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
     add_js_file("js/script.js")
