@@ -273,6 +273,9 @@ def setup(app):
     first_run = not os.path.exists(os.path.join(CURR_PATH, '_FIRST_RUN.flag'))
     if first_run and RTD:
         open(os.path.join(CURR_PATH, '_FIRST_RUN.flag'), 'w').close()
+        # Temp fix for https://github.com/pypa/pip/issues/8001 on RTD site
+        Popen(["pip" "install" "Sphinx" "--upgrade"],
+              stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate()
     if C_API:
         app.connect("builder-inited", generate_doxygen_xml)
     else:
