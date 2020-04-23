@@ -2014,6 +2014,7 @@ struct FastConfig {
                                                     int num_iteration,
                                                     int64_t* out_len,
                                                     double* out_result);
+
  private:
   Booster* booster;
   Config config;
@@ -2037,9 +2038,8 @@ int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
   auto fastConfig_ptr = std::unique_ptr<FastConfig>(new FastConfig(
     reinterpret_cast<Booster*>(handle),
     parameter,
-    RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, 1), // Single row in row-major format.
-    ncol
-  ));
+    RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, 1),  // Single row in row-major format.
+    ncol));
 
   if (fastConfig_ptr->config.num_threads > 0) {
     omp_set_num_threads(fastConfig_ptr->config.num_threads);

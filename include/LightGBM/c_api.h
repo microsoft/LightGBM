@@ -989,7 +989,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
 /*!
  * \brief Score a single row after setup with `LGBM_BoosterPredictForMatSingleRowFastInit`.
  *
- * \param fast_config_handle FastConfig object handle returned by `LGBM_BoosterPredictForMatSingleRowFastInit`
+ * \param fastConfig_handle FastConfig object handle returned by `LGBM_BoosterPredictForMatSingleRowFastInit`
  * \param predict_type What should be predicted
  *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
