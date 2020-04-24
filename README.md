@@ -56,7 +56,7 @@ External (Unofficial) Repositories
 
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
 
-Julia-package: https://github.com/Allardvm/LightGBM.jl
+Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
 
 JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
