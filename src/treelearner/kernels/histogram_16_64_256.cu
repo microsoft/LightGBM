@@ -74,7 +74,7 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
         }
 
         // skip the counters we already have
-        p += 3 * NUM_BINS;  
+        p += 2 * NUM_BINS;  
 
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
@@ -85,9 +85,8 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
     __syncthreads();
 
 
-    output_buf[ltid * 3 + 0] = grad_bin;
-    output_buf[ltid * 3 + 1] = hess_bin;
-    output_buf[ltid * 3 + 2] = as_acc_type((acc_int_type)cont_bin); 
+    output_buf[ltid * 2 + 0] = grad_bin;
+    output_buf[ltid * 2 + 1] = hess_bin;
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -131,8 +130,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort ltid = threadIdx.x;
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
-
-//if (gtid == 0) printf("Entering the 16-bucket kernel, NUM_BINS = %d, block size = %d\n", NUM_BINS, blockDim.x); 
 
      // local memory per workgroup is 3 KB
      // clear local memory
@@ -294,7 +291,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #endif
 
 #if POWER_FEATURE_WORKGROUPS != 0
-     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 3 * NUM_BINS;
+     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 2 * NUM_BINS;
      // write gradients and hessians
      acc_type *__restrict__ ptr_f = output;
      for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
@@ -361,12 +358,12 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
          acc_type const * __restrict__ feature_subhists =
-                  (acc_type *)output_buf + output_offset * 3 * NUM_BINS;
+                  (acc_type *)output_buf + output_offset * 2 * NUM_BINS;
          // skip reading the data already in local memory
          //uint skip_id = feature_id ^ output_offset;
          uint skip_id = group_id - output_offset;
          // locate output histogram location for this feature4
-         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 3 * NUM_BINS;
+         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 
          
          within_kernel_reduction16x4(feature_subhists, skip_id, old_val, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
@@ -426,7 +423,7 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
         }
 
         // skip the counters we already have
-        p += 3 * NUM_BINS;  
+        p += 2 * NUM_BINS;  
 
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
@@ -437,9 +434,8 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
     __syncthreads();
 
 
-    output_buf[ltid * 3 + 0] = grad_bin;
-    output_buf[ltid * 3 + 1] = hess_bin;
-    output_buf[ltid * 3 + 2] = as_acc_type((acc_int_type)cont_bin); 
+    output_buf[ltid * 2 + 0] = grad_bin;
+    output_buf[ltid * 2 + 1] = hess_bin;
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -483,8 +479,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort ltid = threadIdx.x;
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
-
-//if (gtid == 0) printf("Entering the 64-bucket kernel, NUM_BINS = %d, block size = %d\n", NUM_BINS, blockDim.x); 
 
      // local memory per workgroup is 3 KB
      // clear local memory
@@ -646,7 +640,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #endif
 
 #if POWER_FEATURE_WORKGROUPS != 0
-     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 3 * NUM_BINS;
+     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 2 * NUM_BINS;
      // write gradients and hessians
      acc_type *__restrict__ ptr_f = output;
      for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
@@ -713,12 +707,12 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
          acc_type const * __restrict__ feature_subhists =
-                  (acc_type *)output_buf + output_offset * 3 * NUM_BINS;
+                  (acc_type *)output_buf + output_offset * 2 * NUM_BINS;
          // skip reading the data already in local memory
          //uint skip_id = feature_id ^ output_offset;
          uint skip_id = group_id - output_offset;
          // locate output histogram location for this feature4
-         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 3 * NUM_BINS;
+         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 
          
          within_kernel_reduction64x4(feature_subhists, skip_id, old_val, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
@@ -778,7 +772,7 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
         }
 
         // skip the counters we already have
-        p += 3 * NUM_BINS;  
+        p += 2 * NUM_BINS;  
 
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
@@ -789,9 +783,8 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
     __syncthreads();
 
 
-    output_buf[ltid * 3 + 0] = grad_bin;
-    output_buf[ltid * 3 + 1] = hess_bin;
-    output_buf[ltid * 3 + 2] = as_acc_type((acc_int_type)cont_bin); 
+    output_buf[ltid * 2 + 0] = grad_bin;
+    output_buf[ltid * 2 + 1] = hess_bin;
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -835,8 +828,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort ltid = threadIdx.x;
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
-
-//if (gtid == 0) printf("Entering the 256-bucket kernel, NUM_BINS = %d, block size = %d\n", NUM_BINS, blockDim.x); 
 
      // local memory per workgroup is 3 KB
      // clear local memory
@@ -998,7 +989,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #endif
 
 #if POWER_FEATURE_WORKGROUPS != 0
-     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 3 * NUM_BINS;
+     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 2 * NUM_BINS;
      // write gradients and hessians
      acc_type *__restrict__ ptr_f = output;
      for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
@@ -1065,12 +1056,12 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
          acc_type const * __restrict__ feature_subhists =
-                  (acc_type *)output_buf + output_offset * 3 * NUM_BINS;
+                  (acc_type *)output_buf + output_offset * 2 * NUM_BINS;
          // skip reading the data already in local memory
          //uint skip_id = feature_id ^ output_offset;
          uint skip_id = group_id - output_offset;
          // locate output histogram location for this feature4
-         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 3 * NUM_BINS;
+         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 
          
          within_kernel_reduction256x4(feature_subhists, skip_id, old_val, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);

@@ -188,7 +188,6 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
                   num_workgroups, exp_workgroups_per_feature);
   }
  
-
   for(int device_id = 0; device_id < num_gpu_; ++device_id) {
     if (pthread_create(cpu_threads_[device_id], NULL, launch_cuda_histogram, (void *)(&thread_data[device_id]))){
         fprintf(stderr, "Error in creating threads. Exiting\n");
@@ -238,7 +237,7 @@ void CUDATreeLearner::WaitAndGetHistograms(hist_t* histograms) {
       continue;
     }
     int dense_group_index = dense_feature_group_map_[i];
-    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index);
+    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
     int bin_size = train_data_->FeatureGroupNumBin(dense_group_index); 
 
     for (int j = 0; j < bin_size; ++j) {
@@ -480,7 +479,6 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
     max_num_bin_ = std::max(max_num_bin_, train_data_->FeatureGroupNumBin(i));
   }
 
-  // GCF XXX: resolving device_bin_size_ and histogram_size_ is the remaining work
   if (max_num_bin_ <= 16) {
     device_bin_size_ = 16; //LGBM_CUDA
     histogram_size_ = 16;
