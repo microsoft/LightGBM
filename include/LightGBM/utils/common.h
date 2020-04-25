@@ -313,6 +313,7 @@ inline static unsigned CountDecimalDigit32(uint32_t n) {
     1000000000
   };
 #ifdef _MSC_VER
+  // NOLINTNEXTLINE
   unsigned long i = 0;
   _BitScanReverse(&i, n | 1);
   uint32_t t = (i + 1) * 1233 >> 12;
@@ -376,16 +377,13 @@ inline static void Int32ToStr(int32_t value, char* buffer) {
   Uint32ToStr(u, buffer);
 }
 
-inline static void DoubleToStr(double value, char* buffer, size_t
-                               #ifdef _MSC_VER
-                               buffer_len
-                               #endif
-) {
+inline static void DoubleToStr(double value, char* buffer, size_t buffer_len) {
   #ifdef _MSC_VER
-  sprintf_s(buffer, buffer_len, "%.17g", value);
+  int num_chars = sprintf_s(buffer, buffer_len, "%.17g", value);
   #else
-  sprintf(buffer, "%.17g", value);
+  int num_chars = snprintf(buffer, buffer_len, "%.17g", value);
   #endif
+  CHECK_GE(num_chars, 0);
 }
 
 inline static const char* SkipSpaceAndTab(const char* p) {
@@ -420,17 +418,14 @@ struct __TToStringHelperFast {
 
 template<typename T>
 struct __TToStringHelperFast<T, true, false> {
-  void operator()(T value, char* buffer, size_t
-                  #ifdef _MSC_VER
-                  buf_len
-                  #endif
-                  )
+  void operator()(T value, char* buffer, size_t buf_len)
   const {
     #ifdef _MSC_VER
-    sprintf_s(buffer, buf_len, "%g", value);
+    int num_chars = sprintf_s(buffer, buf_len, "%g", value);
     #else
-    sprintf(buffer, "%g", value);
+    int num_chars = snprintf(buffer, buf_len, "%g", value);
     #endif
+    CHECK_GE(num_chars, 0);
   }
 };
 
@@ -925,15 +920,6 @@ static T SafeLog(T x) {
   } else {
     return -INFINITY;
   }
-}
-
-inline bool CheckASCII(const std::string& s) {
-  for (auto c : s) {
-    if (static_cast<unsigned char>(c) > 127) {
-      return false;
-    }
-  }
-  return true;
 }
 
 inline bool CheckAllowedJSON(const std::string& s) {

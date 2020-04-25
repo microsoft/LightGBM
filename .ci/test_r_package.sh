@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # set up R environment
+CRAN_MIRROR="https://cloud.r-project.org/"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
-echo 'options(repos = "https://cran.rstudio.com")' > ${HOME}/.Rprofile
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
 # installing precompiled R for Ubuntu
@@ -34,12 +34,11 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
-
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
-    sudo tlmgr update --self
-    sudo tlmgr install inconsolata helvetic
+    sudo tlmgr --verify-repo=none update --self
+    sudo tlmgr --verify-repo=none install inconsolata helvetic
 
     wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
     sudo installer \
@@ -69,10 +68,10 @@ packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
 fi
-Rscript -e "install.packages(${packages})" || exit -1
+Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
-Rscript build_r.R || exit -1
+Rscript build_r.R --skip-install || exit -1
 
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
@@ -82,13 +81,30 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
+check_succeeded="yes"
 R CMD check ${PKG_TARBALL} \
     --as-cran \
-|| exit -1
+|| check_succeeded="no"
+
+echo "R CMD check build logs:"
+cat ${BUILD_DIRECTORY}/lightgbm.Rcheck/00install.out
+
+if [[ $check_succeeded == "no" ]]; then
+    exit -1
+fi
 
 if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     echo "WARNINGS have been found by R CMD check!"
     exit -1
 fi
 
-exit 0
+ALLOWED_CHECK_NOTES=2
+NUM_CHECK_NOTES=$(
+    cat ${LOG_FILE_NAME} \
+        | grep -e '^Status: .* NOTE.*' \
+        | sed 's/[^0-9]*//g'
+)
+if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
+    echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
+    exit -1
+fi

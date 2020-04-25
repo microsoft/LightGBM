@@ -47,6 +47,10 @@ def decreasing_metric(preds, train_data):
     return ('decreasing_metric', next(decreasing_generator), False)
 
 
+def categorize(continuous_x):
+    return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
+
+
 class TestEngine(unittest.TestCase):
     def test_binary(self):
         X, y = load_breast_cancer(True)
@@ -613,6 +617,19 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_allclose(evals_result['valid_0']['l1'], evals_result['valid_0']['custom_mae'])
         os.remove(model_name)
 
+    def test_continue_train_reused_dataset(self):
+        X, y = load_boston(True)
+        params = {
+            'objective': 'regression',
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X, y, free_raw_data=False)
+        init_gbm = lgb.train(params, lgb_train, num_boost_round=5)
+        init_gbm_2 = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm)
+        init_gbm_3 = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm_2)
+        gbm = lgb.train(params, lgb_train, num_boost_round=5, init_model=init_gbm_3)
+        self.assertEqual(gbm.current_iteration(), 20)
+
     def test_continue_train_dart(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -729,6 +746,21 @@ class TestEngine(unittest.TestCase):
         feature_names_with_space = ['f ' + str(i) for i in range(X_train.shape[-1])]
         gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names_with_space)
         self.assertListEqual(feature_names, gbm.feature_name())
+
+    def test_feature_name_with_non_ascii(self):
+        X_train = np.random.normal(size=(100, 4))
+        y_train = np.random.random(100)
+        # This has non-ascii strings.
+        feature_names = [u'F_零', u'F_一', u'F_二', u'F_三']
+        params = {'verbose': -1}
+        lgb_train = lgb.Dataset(X_train, y_train)
+
+        gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
+        self.assertListEqual(feature_names, gbm.feature_name())
+        gbm.save_model('lgb.model')
+
+        gbm2 = lgb.Booster(model_file='lgb.model')
+        self.assertListEqual(feature_names, gbm2.feature_name())
 
     def test_save_load_copy_pickle(self):
         def train_and_predict(init_model=None, return_model=False):
@@ -997,45 +1029,144 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(subset_data_3.get_data(), "lgb_train_data.bin")
         self.assertEqual(subset_data_4.get_data(), "lgb_train_data.bin")
 
-    def test_monotone_constraint(self):
+    def generate_trainset_for_monotone_constraints_tests(self, x3_to_category=True):
+        number_of_dpoints = 3000
+        x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x3_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x = np.column_stack(
+            (x1_positively_correlated_with_y,
+             x2_negatively_correlated_with_y,
+             categorize(x3_negatively_correlated_with_y) if x3_to_category else x3_negatively_correlated_with_y))
+
+        zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
+        scales = 10. * (np.random.random(6) + 0.5)
+        y = (scales[0] * x1_positively_correlated_with_y
+             + np.sin(scales[1] * np.pi * x1_positively_correlated_with_y)
+             - scales[2] * x2_negatively_correlated_with_y
+             - np.cos(scales[3] * np.pi * x2_negatively_correlated_with_y)
+             - scales[4] * x3_negatively_correlated_with_y
+             - np.cos(scales[5] * np.pi * x3_negatively_correlated_with_y)
+             + zs)
+        categorical_features = []
+        if x3_to_category:
+            categorical_features = [2]
+        trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
+        return trainset
+
+    def test_monotone_constraints(self):
         def is_increasing(y):
             return (np.diff(y) >= 0.0).all()
 
         def is_decreasing(y):
             return (np.diff(y) <= 0.0).all()
 
-        def is_correctly_constrained(learner):
-            n = 200
+        def is_non_monotone(y):
+            return (np.diff(y) < 0.0).any() and (np.diff(y) > 0.0).any()
+
+        def is_correctly_constrained(learner, x3_to_category=True):
+            iterations = 10
+            n = 1000
             variable_x = np.linspace(0, 1, n).reshape((n, 1))
             fixed_xs_values = np.linspace(0, 1, n)
-            for i in range(n):
+            for i in range(iterations):
                 fixed_x = fixed_xs_values[i] * np.ones((n, 1))
-                monotonically_increasing_x = np.column_stack((variable_x, fixed_x))
+                monotonically_increasing_x = np.column_stack((variable_x, fixed_x, fixed_x))
                 monotonically_increasing_y = learner.predict(monotonically_increasing_x)
-                monotonically_decreasing_x = np.column_stack((fixed_x, variable_x))
+                monotonically_decreasing_x = np.column_stack((fixed_x, variable_x, fixed_x))
                 monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
-                if not (is_increasing(monotonically_increasing_y) and is_decreasing(monotonically_decreasing_y)):
+                non_monotone_x = np.column_stack((fixed_x,
+                                                  fixed_x,
+                                                  categorize(variable_x) if x3_to_category else variable_x))
+                non_monotone_y = learner.predict(non_monotone_x)
+                if not (is_increasing(monotonically_increasing_y)
+                        and is_decreasing(monotonically_decreasing_y)
+                        and is_non_monotone(non_monotone_y)):
                     return False
             return True
 
-        number_of_dpoints = 2000
-        x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
-        x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
-        x = np.column_stack((x1_positively_correlated_with_y, x2_negatively_correlated_with_y))
-        zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
-        y = (5 * x1_positively_correlated_with_y
-             + np.sin(10 * np.pi * x1_positively_correlated_with_y)
-             - 5 * x2_negatively_correlated_with_y
-             - np.cos(10 * np.pi * x2_negatively_correlated_with_y)
-             + zs)
-        trainset = lgb.Dataset(x, label=y)
-        params = {
-            'min_data': 20,
-            'num_leaves': 20,
-            'monotone_constraints': '1,-1'
+        for test_with_categorical_variable in [True, False]:
+            trainset = self.generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
+            for monotone_constraints_method in ["basic", "intermediate"]:
+                params = {
+                    'min_data': 20,
+                    'num_leaves': 20,
+                    'monotone_constraints': [1, -1, 0],
+                    "monotone_constraints_method": monotone_constraints_method,
+                    "use_missing": False,
+                }
+                constrained_model = lgb.train(params, trainset)
+                self.assertTrue(is_correctly_constrained(constrained_model, test_with_categorical_variable))
+
+    def test_monotone_penalty(self):
+        def are_first_splits_non_monotone(tree, n, monotone_constraints):
+            if n <= 0:
+                return True
+            if "leaf_value" in tree:
+                return True
+            if monotone_constraints[tree["split_feature"]] != 0:
+                return False
+            return (are_first_splits_non_monotone(tree["left_child"], n - 1, monotone_constraints)
+                    and are_first_splits_non_monotone(tree["right_child"], n - 1, monotone_constraints))
+
+        def are_there_monotone_splits(tree, monotone_constraints):
+            if "leaf_value" in tree:
+                return False
+            if monotone_constraints[tree["split_feature"]] != 0:
+                return True
+            return (are_there_monotone_splits(tree["left_child"], monotone_constraints)
+                    or are_there_monotone_splits(tree["right_child"], monotone_constraints))
+
+        max_depth = 5
+        monotone_constraints = [1, -1, 0]
+        penalization_parameter = 2.0
+        trainset = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
+        for monotone_constraints_method in ["basic", "intermediate"]:
+            params = {
+                'max_depth': max_depth,
+                'monotone_constraints': monotone_constraints,
+                'monotone_penalty': penalization_parameter,
+                "monotone_constraints_method": monotone_constraints_method,
+            }
+            constrained_model = lgb.train(params, trainset, 10)
+            dumped_model = constrained_model.dump_model()["tree_info"]
+            for tree in dumped_model:
+                self.assertTrue(are_first_splits_non_monotone(tree["tree_structure"], int(penalization_parameter),
+                                                              monotone_constraints))
+                self.assertTrue(are_there_monotone_splits(tree["tree_structure"], monotone_constraints))
+
+    # test if a penalty as high as the depth indeed prohibits all monotone splits
+    def test_monotone_penalty_max(self):
+        max_depth = 5
+        monotone_constraints = [1, -1, 0]
+        penalization_parameter = max_depth
+        trainset_constrained_model = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
+        x = trainset_constrained_model.data
+        y = trainset_constrained_model.label
+        x3_negatively_correlated_with_y = x[:, 2]
+        trainset_unconstrained_model = lgb.Dataset(x3_negatively_correlated_with_y.reshape(-1, 1), label=y)
+        params_constrained_model = {
+            'monotone_constraints': monotone_constraints,
+            'monotone_penalty': penalization_parameter,
+            "max_depth": max_depth,
+            "gpu_use_dp": True,
         }
-        constrained_model = lgb.train(params, trainset)
-        self.assertTrue(is_correctly_constrained(constrained_model))
+        params_unconstrained_model = {
+            "max_depth": max_depth,
+            "gpu_use_dp": True,
+        }
+
+        unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
+        unconstrained_model_predictions = unconstrained_model.\
+            predict(x3_negatively_correlated_with_y.reshape(-1, 1))
+
+        for monotone_constraints_method in ["basic", "intermediate"]:
+            params_constrained_model["monotone_constraints_method"] = monotone_constraints_method
+            # The penalization is so high that the first 2 features should not be used here
+            constrained_model = lgb.train(params_constrained_model, trainset_constrained_model, 10)
+
+            # Check that a very high penalization is the same as not using the features at all
+            np.testing.assert_array_equal(constrained_model.predict(x), unconstrained_model_predictions)
 
     def test_max_bin_by_feature(self):
         col1 = np.arange(0, 100)[:, np.newaxis]
@@ -1957,6 +2088,18 @@ class TestEngine(unittest.TestCase):
                                                         else "forced bins"))
             with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
                 lgb.train(new_params, lgb_data, num_boost_round=3)
+
+    def test_dataset_params_with_reference(self):
+        default_params = {"max_bin": 100}
+        X = np.random.random((100, 2))
+        y = np.random.random(100)
+        X_val = np.random.random((100, 2))
+        y_val = np.random.random(100)
+        lgb_train = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
+        lgb_val = lgb.Dataset(X_val, y_val, reference=lgb_train, free_raw_data=False).construct()
+        self.assertDictEqual(lgb_train.get_params(), default_params)
+        self.assertDictEqual(lgb_val.get_params(), default_params)
+        model = lgb.train(default_params, lgb_train, valid_sets=[lgb_val])
 
     def test_extra_trees(self):
         # check extra trees increases regularization

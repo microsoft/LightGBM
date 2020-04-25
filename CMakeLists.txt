@@ -14,6 +14,7 @@ OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not earlier than 3.5" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
+OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
@@ -69,6 +70,16 @@ endif(USE_SWIG)
 if(USE_R35)
     ADD_DEFINITIONS(-DR_VER_ABOVE_35)
 endif(USE_R35)
+
+if(BUILD_FOR_R)
+    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
+    find_package(LibR REQUIRED)
+    message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
+    message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
+    message(STATUS "LIBR_CORE_LIBRARY: ${LIBR_CORE_LIBRARY}")
+    include_directories(${LIBR_INCLUDE_DIRS})
+    ADD_DEFINITIONS(-DLGB_R_BUILD)
+endif(BUILD_FOR_R)
 
 if(USE_TIMETAG)
     ADD_DEFINITIONS(-DTIMETAG)
@@ -224,7 +235,15 @@ file(GLOB SOURCES
 )
 
 add_executable(lightgbm src/main.cpp ${SOURCES})
-add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES})
+list(APPEND SOURCES "src/c_api.cpp")
+
+# Only build the R part of the library if building for
+# use with the R package
+if(BUILD_FOR_R)
+  list(APPEND SOURCES "src/lightgbm_R.cpp")
+endif(BUILD_FOR_R)
+
+add_library(_lightgbm SHARED ${SOURCES})
 
 if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
@@ -295,6 +314,10 @@ if(WIN32 AND (MINGW OR CYGWIN))
     TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
     TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
 endif()
+
+if(BUILD_FOR_R)
+    TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
+endif(BUILD_FOR_R)
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

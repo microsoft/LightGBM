@@ -29,7 +29,6 @@
 #' @return a trained booster model \code{lgb.Booster}.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -41,11 +40,11 @@
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , valids = valids
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
+#'   , early_stopping_rounds = 3L
 #' )
 #' @export
 lgb.train <- function(params = list(),
@@ -73,7 +72,7 @@ lgb.train <- function(params = list(),
     stop("lgb.train: data must be an lgb.Dataset instance")
   }
   if (length(valids) > 0L) {
-    if (!is.list(valids) || !all(vapply(valids, lgb.is.Dataset, logical(1L)))) {
+    if (!identical(class(valids), "list") || !all(vapply(valids, lgb.is.Dataset, logical(1L)))) {
       stop("lgb.train: valids must be a list of lgb.Dataset elements")
     }
     evnames <- names(valids)

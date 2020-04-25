@@ -42,6 +42,7 @@ Attempts to save a model using RDS. Has an additional parameter (\code{raw})
              which decides whether to save the raw model or not.
 }
 \examples{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -60,5 +61,6 @@ model <- lgb.train(
     , learning_rate = 1.0
     , early_stopping_rounds = 5L
 )
-saveRDS.lgb.Booster(model, "model.rds")
+saveRDS.lgb.Booster(model, "lgb-model.rds")
+}
 }

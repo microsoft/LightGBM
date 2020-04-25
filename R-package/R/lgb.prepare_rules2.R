@@ -13,7 +13,6 @@
 #'         \code{lgb.Dataset}.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(iris)
 #'
 #' str(iris)

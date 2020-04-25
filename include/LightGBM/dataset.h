@@ -8,7 +8,6 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
-#include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
@@ -535,13 +534,16 @@ class Dataset {
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
-  inline data_size_t Split(int feature,
-                           const uint32_t* threshold, int num_threshold,  bool default_left,
-                           data_size_t* data_indices, data_size_t num_data,
-                           data_size_t* lte_indices, data_size_t* gt_indices) const {
+  inline data_size_t Split(int feature, const uint32_t* threshold,
+                           int num_threshold, bool default_left,
+                           const data_size_t* data_indices,
+                           data_size_t cnt, data_size_t* lte_indices,
+                           data_size_t* gt_indices) const {
     const int group = feature2group_[feature];
     const int sub_feature = feature2subfeature_[feature];
-    return feature_groups_[group]->Split(sub_feature, threshold, num_threshold, default_left, data_indices, num_data, lte_indices, gt_indices);
+    return feature_groups_[group]->Split(
+        sub_feature, threshold, num_threshold, default_left, data_indices,
+        cnt, lte_indices, gt_indices);
   }
 
   inline int SubFeatureBinOffset(int i) const {
@@ -630,10 +632,6 @@ class Dataset {
     // replace ' ' in feature_names with '_'
     bool spaceInFeatureName = false;
     for (auto& feature_name : feature_names_) {
-      // check ascii
-      if (!Common::CheckASCII(feature_name)) {
-        Log::Fatal("Do not support non-ASCII characters in feature name.");
-      }
       // check json
       if (!Common::CheckAllowedJSON(feature_name)) {
         Log::Fatal("Do not support special JSON characters in feature name.");

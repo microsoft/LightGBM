@@ -24,7 +24,6 @@ Get a new \code{lgb.Dataset} containing the specified rows of
              original \code{lgb.Dataset} object
 }
 \examples{
-library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

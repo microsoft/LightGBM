@@ -22,6 +22,7 @@ You may also ping a member of the core team according to the relevant area of ex
 
 -  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke** (C++ code / R-package / Python-package)
 -  `@chivee <https://github.com/chivee>`__ **Qiwei Ye** (C++ code / Python-package)
+-  `@btrotta <https://github.com/btrotta>`__ **Belinda Trotta** (C++ code)
 -  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
 -  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package)
 -  `@wxchan <https://github.com/wxchan>`__ **Wenxuan Chen** (Python-package)
@@ -210,7 +211,7 @@ This is a known bug: `Microsoft/LightGBM#539 <https://github.com/microsoft/Light
 3. ``error in data.table::data.table()...argument 2 is NULL``
 -------------------------------------------------------------
 
-If you experiencing this error when running `lightgbm`, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_. If you use ``lgb.dl()`` to build from source (i.e. not using pre-compiled dll), you need to upgrade your version of ``data.table`` to at least version 1.12.0.
+If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that some in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
 
 ------
 

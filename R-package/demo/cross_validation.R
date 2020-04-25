@@ -1,4 +1,5 @@
-require(lightgbm)
+library(lightgbm)
+
 # load in the agaricus dataset
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")

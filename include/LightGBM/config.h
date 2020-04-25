@@ -440,6 +440,20 @@ struct Config {
   // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
 
+  // alias = monotone_constraining_method, mc_method
+  // desc = used only if ``monotone_constraints`` is set
+  // desc = monotone constraints method
+  // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
+  // descl2 = ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+  std::string monotone_constraints_method = "basic";
+
+  // alias = monotone_splits_penalty, ms_penalty, mc_penalty
+  // check = >=0.0
+  // desc = used only if ``monotone_constraints`` is set
+  // desc = `monotone penalty <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+  // desc = if ``0.0`` (the default), no penalization is applied
+  double monotone_penalty = 0.0;
+
   // type = multi-double
   // alias = feature_contrib, fc, fp, feature_penalty
   // default = None
