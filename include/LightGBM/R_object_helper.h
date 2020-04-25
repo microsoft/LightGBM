@@ -15,7 +15,6 @@
 
 #include <cstdint>
 
-#define TYPE_BITS 5
 // use .Internal(internalsID()) to uuid
 #define R_INTERNALS_UUID "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327"
 

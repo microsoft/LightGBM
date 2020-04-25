@@ -48,3 +48,23 @@ test_that("lgb.params2str() works as expected for a key in params with multiple 
         , "objective=magic metric=a,ab,abc,abcdefg nrounds=10 learning_rate=0.0000001"
     )
 })
+
+context("lgb.last_error")
+
+test_that("lgb.last_error() throws an error if there are no errors", {
+    expect_error({
+        lgb.last_error()
+    }, regexp = "Everything is fine")
+})
+
+test_that("lgb.last_error() correctly returns errors from the C++ side", {
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    dvalid1 <- lgb.Dataset(
+        data = train$data
+        , label = as.matrix(rnorm(5L))
+    )
+    expect_error({
+        dvalid1$construct()
+    }, regexp = "[LightGBM] [Fatal] Length of label is not same with #data", fixed = TRUE)
+})

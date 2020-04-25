@@ -1,3 +1,11 @@
+# constants that control naming in lists
+.EVAL_KEY <- function() {
+  return("eval")
+}
+.EVAL_ERR_KEY <- function() {
+  return("eval_err")
+}
+
 #' @importFrom R6 R6Class
 CB_ENV <- R6::R6Class(
   "lgb.cb_env",
@@ -216,8 +224,8 @@ cb.record.evaluation <- function() {
 
         # Create dummy lists
         env$model$record_evals[[data_name]][[name]] <- list()
-        env$model$record_evals[[data_name]][[name]]$eval <- list()
-        env$model$record_evals[[data_name]][[name]]$eval_err <- list()
+        env$model$record_evals[[data_name]][[name]][[.EVAL_KEY()]] <- list()
+        env$model$record_evals[[data_name]][[name]][[.EVAL_ERR_KEY()]] <- list()
 
       }
 
@@ -238,12 +246,12 @@ cb.record.evaluation <- function() {
       name <- eval_res$name
 
       # Store evaluation data
-      env$model$record_evals[[data_name]][[name]]$eval <- c(
-        env$model$record_evals[[data_name]][[name]]$eval
+      env$model$record_evals[[data_name]][[name]][[.EVAL_KEY()]] <- c(
+        env$model$record_evals[[data_name]][[name]][[.EVAL_KEY()]]
         , eval_res$value
       )
-      env$model$record_evals[[data_name]][[name]]$eval_err <- c(
-        env$model$record_evals[[data_name]][[name]]$eval_err
+      env$model$record_evals[[data_name]][[name]][[.EVAL_ERR_KEY()]] <- c(
+        env$model$record_evals[[data_name]][[name]][[.EVAL_ERR_KEY()]]
         , eval_err
       )
 

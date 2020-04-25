@@ -250,6 +250,37 @@ test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset 
   }
 })
 
+test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric where higher values are better", {
+  set.seed(708L)
+  dtrain <- lgb.Dataset(
+    data = as.matrix(runif(n = 500L, min = 0.0, max = 15.0), drop = FALSE)
+    , label = rep(c(0L, 1L), 250L)
+  )
+  nrounds <- 10L
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , nfold = 5L
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , params = list(
+      objective = "binary"
+      , metric = "auc,binary_error"
+      , learning_rate = 1.5
+    )
+  )
+  expect_is(cv_bst, "lgb.CVBooster")
+  expect_named(
+    cv_bst$record_evals
+    , c("start_iter", "valid")
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+  auc_scores <- unlist(cv_bst$record_evals[["valid"]][["auc"]][["eval"]])
+  expect_length(auc_scores, nrounds)
+  expect_identical(cv_bst$best_iter, which.max(auc_scores))
+  expect_identical(cv_bst$best_score, auc_scores[which.max(auc_scores)])
+})
+
 context("lgb.train()")
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
@@ -594,4 +625,267 @@ test_that("lgb.train() supports non-ASCII feature names", {
     dumped_model[["feature_names"]]
     , feature_names
   )
+})
+
+test_that("when early stopping is not activated, best_iter and best_score come from valids and not training data", {
+  set.seed(708L)
+  trainDF <- data.frame(
+    "feat1" = rep(c(10.0, 100.0), 500L)
+    , "target" = rep(c(-50.0, 50.0), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = rep(50.0, 4L)
+    , "target" = rep(50.0, 4L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid1 <- lgb.Dataset(
+    data = as.matrix(validDF[["feat1"]], drop = FALSE)
+    , label = validDF[["target"]]
+  )
+  dvalid2 <- lgb.Dataset(
+    data = as.matrix(validDF[1L:10L, "feat1"], drop = FALSE)
+    , label = validDF[1L:10L, "target"]
+  )
+  nrounds <- 10L
+  train_params <- list(
+    objective = "regression"
+    , metric = "rmse"
+    , learning_rate = 1.5
+  )
+
+  # example 1: two valids, neither are the training data
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , valids = list(
+      "valid1" = dvalid1
+      , "valid2" = dvalid2
+    )
+    , params = train_params
+  )
+  expect_named(
+    bst$record_evals
+    , c("start_iter", "valid1", "valid2")
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+  rmse_scores <- unlist(bst$record_evals[["valid1"]][["rmse"]][["eval"]])
+  expect_length(rmse_scores, nrounds)
+  expect_identical(bst$best_iter, which.min(rmse_scores))
+  expect_identical(bst$best_score, rmse_scores[which.min(rmse_scores)])
+
+  # example 2: train first (called "train") and two valids
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , valids = list(
+      "train" = dtrain
+      , "valid1" = dvalid1
+      , "valid2" = dvalid2
+    )
+    , params = train_params
+  )
+  expect_named(
+    bst$record_evals
+    , c("start_iter", "train", "valid1", "valid2")
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+  rmse_scores <- unlist(bst$record_evals[["valid1"]][["rmse"]][["eval"]])
+  expect_length(rmse_scores, nrounds)
+  expect_identical(bst$best_iter, which.min(rmse_scores))
+  expect_identical(bst$best_score, rmse_scores[which.min(rmse_scores)])
+
+  # example 3: train second (called "train") and two valids
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , valids = list(
+      "valid1" = dvalid1
+      , "train" = dtrain
+      , "valid2" = dvalid2
+    )
+    , params = train_params
+  )
+  # note that "train" still ends up as the first one
+  expect_named(
+    bst$record_evals
+    , c("start_iter", "train", "valid1", "valid2")
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+  rmse_scores <- unlist(bst$record_evals[["valid1"]][["rmse"]][["eval"]])
+  expect_length(rmse_scores, nrounds)
+  expect_identical(bst$best_iter, which.min(rmse_scores))
+  expect_identical(bst$best_score, rmse_scores[which.min(rmse_scores)])
+
+  # example 4: train third (called "train") and two valids
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , valids = list(
+      "valid1" = dvalid1
+      , "valid2" = dvalid2
+      , "train" = dtrain
+    )
+    , params = train_params
+  )
+  # note that "train" still ends up as the first one
+  expect_named(
+    bst$record_evals
+    , c("start_iter", "train", "valid1", "valid2")
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+  rmse_scores <- unlist(bst$record_evals[["valid1"]][["rmse"]][["eval"]])
+  expect_length(rmse_scores, nrounds)
+  expect_identical(bst$best_iter, which.min(rmse_scores))
+  expect_identical(bst$best_score, rmse_scores[which.min(rmse_scores)])
+
+  # example 5: train second (called "something-random-we-would-not-hardcode") and two valids
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , valids = list(
+      "valid1" = dvalid1
+      , "something-random-we-would-not-hardcode" = dtrain
+      , "valid2" = dvalid2
+    )
+    , params = train_params
+  )
+  # note that "something-random-we-would-not-hardcode" was recognized as the training
+  # data even though it isn't named "train"
+  expect_named(
+    bst$record_evals
+    , c("start_iter", "something-random-we-would-not-hardcode", "valid1", "valid2")
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+  rmse_scores <- unlist(bst$record_evals[["valid1"]][["rmse"]][["eval"]])
+  expect_length(rmse_scores, nrounds)
+  expect_identical(bst$best_iter, which.min(rmse_scores))
+  expect_identical(bst$best_score, rmse_scores[which.min(rmse_scores)])
+
+  # example 6: the only valid supplied is the training data
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , valids = list(
+      "train" = dtrain
+    )
+    , params = train_params
+  )
+  expect_identical(bst$best_iter, -1L)
+  expect_identical(bst$best_score, NA_real_)
+})
+
+test_that("lightgbm.train() gives the correct best_score and best_iter for a metric where higher values are better", {
+  set.seed(708L)
+  trainDF <- data.frame(
+    "feat1" = runif(n = 500L, min = 0.0, max = 15.0)
+    , "target" = rep(c(0L, 1L), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = runif(n = 50L, min = 0.0, max = 15.0)
+    , "target" = rep(c(0L, 1L), 50L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid1 <- lgb.Dataset(
+    data = as.matrix(validDF[1L:25L, "feat1"], drop = FALSE)
+    , label = validDF[1L:25L, "target"]
+  )
+  nrounds <- 10L
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , valids = list(
+      "valid1" = dvalid1
+      , "something-random-we-would-not-hardcode" = dtrain
+    )
+    , params = list(
+      objective = "binary"
+      , metric = "auc"
+      , learning_rate = 1.5
+    )
+  )
+  # note that "something-random-we-would-not-hardcode" was recognized as the training
+  # data even though it isn't named "train"
+  expect_named(
+    bst$record_evals
+    , c("start_iter", "something-random-we-would-not-hardcode", "valid1")
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+  auc_scores <- unlist(bst$record_evals[["valid1"]][["auc"]][["eval"]])
+  expect_length(auc_scores, nrounds)
+  expect_identical(bst$best_iter, which.max(auc_scores))
+  expect_identical(bst$best_score, auc_scores[which.max(auc_scores)])
+})
+
+test_that("using lightgbm() without early stopping, best_iter and best_score come from valids and not training data", {
+  set.seed(708L)
+  # example: train second (called "something-random-we-would-not-hardcode"), two valids,
+  #          and a metric where higher values are better ("auc")
+  trainDF <- data.frame(
+    "feat1" = runif(n = 500L, min = 0.0, max = 15.0)
+    , "target" = rep(c(0L, 1L), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = runif(n = 50L, min = 0.0, max = 15.0)
+    , "target" = rep(c(0L, 1L), 50L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid1 <- lgb.Dataset(
+    data = as.matrix(validDF[1L:25L, "feat1"], drop = FALSE)
+    , label = validDF[1L:25L, "target"]
+  )
+  dvalid2 <- lgb.Dataset(
+    data = as.matrix(validDF[26L:50L, "feat1"], drop = FALSE)
+    , label = validDF[26L:50L, "target"]
+  )
+  nrounds <- 10L
+  bst <- lightgbm(
+    data = dtrain
+    , nrounds = nrounds
+    , num_leaves = 5L
+    , valids = list(
+      "valid1" = dvalid1
+      , "something-random-we-would-not-hardcode" = dtrain
+      , "valid2" = dvalid2
+    )
+    , params = list(
+      objective = "binary"
+      , metric = "auc"
+      , learning_rate = 1.5
+    )
+    , verbose = -7L
+  )
+  # when verbose <= 0 is passed to lightgbm(), 'valids' is passed through to lgb.train()
+  # untouched. If you set verbose to > 0, the training data will still be first but called "train"
+  expect_named(
+    bst$record_evals
+    , c("start_iter", "something-random-we-would-not-hardcode", "valid1", "valid2")
+    , ignore.order = FALSE
+    , ignore.case = FALSE
+  )
+  auc_scores <- unlist(bst$record_evals[["valid1"]][["auc"]][["eval"]])
+  expect_length(auc_scores, nrounds)
+  expect_identical(bst$best_iter, which.max(auc_scores))
+  expect_identical(bst$best_score, auc_scores[which.max(auc_scores)])
 })

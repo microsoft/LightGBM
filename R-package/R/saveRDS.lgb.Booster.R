@@ -37,7 +37,7 @@
 #'     , learning_rate = 1.0
 #'     , early_stopping_rounds = 5L
 #' )
-#' saveRDS.lgb.Booster(model, "model.rds")
+#' saveRDS.lgb.Booster(model, "lgb-model.rds")
 #' }
 #' @export
 saveRDS.lgb.Booster <- function(object,

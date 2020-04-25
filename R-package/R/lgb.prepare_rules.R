@@ -36,9 +36,13 @@
 #' data(iris) # Erase iris dataset
 #'
 #' # We remapped values differently
-#' personal_rules <- list(Species = c("setosa" = 3L,
-#'                                    "versicolor" = 2L,
-#'                                    "virginica" = 1L))
+#' personal_rules <- list(
+#'     Species = c(
+#'         "setosa" = 3L
+#'         , "versicolor" = 2L
+#'         , "virginica" = 1L
+#'     )
+#' )
 #' newest_iris <- lgb.prepare_rules(data = iris, rules = personal_rules)
 #' str(newest_iris$data) # SUCCESS!
 #'

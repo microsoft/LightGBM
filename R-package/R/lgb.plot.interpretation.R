@@ -49,7 +49,7 @@
 #' )
 #' lgb.plot.interpretation(
 #'   tree_interpretation_dt = tree_interpretation[[1L]]
-#'   , top_n = 5L
+#'   , top_n = 3L
 #' )
 #' }
 #' @importFrom data.table setnames
@@ -141,7 +141,7 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
   }
 
   # create plot
-  tree_interpretation[Contribution > 0.0, bar_color := "firebrick"]
+  tree_interpretation[abs(Contribution) > 0.0, bar_color := "firebrick"]
   tree_interpretation[Contribution == 0.0, bar_color := "steelblue"]
   tree_interpretation[.N:1L,
                       graphics::barplot(

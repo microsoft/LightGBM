@@ -406,6 +406,14 @@ lightgbm_r/*
 lightgbm*.tar.gz
 lightgbm.Rcheck/
 
+# Files created by R examples and tests
+**/lgb-Dataset.data
+**/lgb-model.rds
+**/lgb.Dataset.data
+**/model.rds
+**/model.txt
+**/lgb-model.txt
+
 # Files from interactive R sessions
 .Rproj.user
 **/.Rhistory

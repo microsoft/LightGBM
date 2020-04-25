@@ -68,7 +68,7 @@ tree_interpretation <- lgb.interprete(
 )
 lgb.plot.interpretation(
   tree_interpretation_dt = tree_interpretation[[1L]]
-  , top_n = 5L
+  , top_n = 3L
 )
 }
 }
