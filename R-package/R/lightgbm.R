@@ -178,6 +178,7 @@ NULL
 
 # Various imports
 #' @import methods
+#' @importFrom Matrix Matrix
 #' @importFrom R6 R6Class
 #' @useDynLib lib_lightgbm , .registration = TRUE
 NULL

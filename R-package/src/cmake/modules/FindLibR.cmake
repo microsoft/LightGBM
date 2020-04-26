@@ -174,17 +174,31 @@ execute_process(
   OUTPUT_VARIABLE LIBR_LIB_DIR
 )
 
-# look for the core R library
-find_library(
-  LIBR_CORE_LIBRARY
-  NAMES R
-  HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_LIB_DIR}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}"
-)
-
 set(LIBR_HOME ${LIBR_HOME} CACHE PATH "R home directory")
 set(LIBR_EXECUTABLE ${LIBR_EXECUTABLE} CACHE PATH "R executable")
 set(LIBR_INCLUDE_DIRS ${LIBR_INCLUDE_DIRS} CACHE PATH "R include directory")
 set(LIBR_LIB_DIR ${LIBR_LIB_DIR} CACHE PATH "R shared libraries directory")
+
+# where is R.so / R.dll / libR.so likely to be found?
+set(LIBR_PATH_HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_LIB_DIR}" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}")
+
+# look for the core R library
+find_library(
+  LIBR_CORE_LIBRARY
+  NAMES R R.dll
+  HINTS ${LIBR_PATH_HINTS}
+)
+
+# starting from CMake 3.17, find_library() will not find .dll files by default
+# https://cmake.org/cmake/help/v3.17/release/3.17.html#other-changes
+if (WIN32 AND NOT LIBR_CORE_LIBRARY)
+    find_file(
+        LIBR_CORE_LIBRARY
+        NAME R.dll
+        HINTS ${LIBR_PATH_HINTS}
+    )
+endif()
+
 set(LIBR_CORE_LIBRARY ${LIBR_CORE_LIBRARY} CACHE PATH "R core shared library")
 
 if(WIN32 AND MSVC)
