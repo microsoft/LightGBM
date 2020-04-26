@@ -5,7 +5,7 @@ Booster <- R6::R6Class(
   public = list(
 
     best_iter = -1L,
-    best_score = NA,
+    best_score = NA_real_,
     record_evals = list(),
 
     # Finalize will free up the handles
@@ -711,7 +711,6 @@ Booster <- R6::R6Class(
 #'         number of columns corresponding to the number of trees.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -723,11 +722,10 @@ Booster <- R6::R6Class(
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , valids = valids
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
 #' )
 #' preds <- predict(model, test$data)
 #' @export
@@ -769,7 +767,7 @@ predict.lgb.Booster <- function(object,
 #' @return lgb.Booster
 #'
 #' @examples
-#' library(lightgbm)
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -781,17 +779,17 @@ predict.lgb.Booster <- function(object,
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , valids = valids
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
+#'   , early_stopping_rounds = 3L
 #' )
 #' lgb.save(model, "model.txt")
 #' load_booster <- lgb.load(filename = "model.txt")
 #' model_string <- model$save_model_to_string(NULL) # saves best iteration
 #' load_booster_from_str <- lgb.load(model_str = model_string)
-#'
+#' }
 #' @export
 lgb.load <- function(filename = NULL, model_str = NULL) {
 
@@ -828,6 +826,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @return lgb.Booster
 #'
 #' @examples
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -846,7 +845,8 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
-#' lgb.save(model, "model.txt")
+#' lgb.save(model, "lgb-model.txt")
+#' }
 #' @export
 lgb.save <- function(booster, filename, num_iteration = NULL) {
 
@@ -874,6 +874,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @return json format of model
 #'
 #' @examples
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -893,7 +894,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #'   , early_stopping_rounds = 5L
 #' )
 #' json_model <- lgb.dump(model)
-#'
+#' }
 #' @export
 lgb.dump <- function(booster, num_iteration = NULL) {
 
@@ -922,7 +923,6 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'
 #' @examples
 #' # train a regression model
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -934,11 +934,10 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , valids = valids
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
 #' )
 #'
 #' # Examine valid data_name values
@@ -990,11 +989,11 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
   }
 
   # Create result
-  result <- booster$record_evals[[data_name]][[eval_name]]$eval
+  result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_KEY()]]
 
   # Check if error is requested
   if (is_err) {
-    result <- booster$record_evals[[data_name]][[eval_name]]$eval_err
+    result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_ERR_KEY()]]
   }
 
   # Check if iteration is non existant

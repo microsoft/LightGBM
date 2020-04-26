@@ -1,7 +1,6 @@
 # coding: utf-8
 import ctypes
 import os
-import sys
 
 from platform import system
 

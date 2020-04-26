@@ -12,6 +12,11 @@ if (Test-Path env:APPVEYOR) {
   $env:BUILD_SOURCESDIRECTORY = $env:APPVEYOR_BUILD_FOLDER
 }
 
+if ($env:TASK -eq "r-package") {
+  & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 ; Check-Output $?
+  Exit 0
+}
+
 # setup for Python
 conda init powershell
 conda activate

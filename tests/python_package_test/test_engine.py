@@ -1857,7 +1857,6 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])), 4)
         iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
         iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
-        iter_min = min([iter_min_l1, iter_min_l2])
         iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
 
         iter_cv_l1 = 4

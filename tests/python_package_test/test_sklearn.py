@@ -4,6 +4,7 @@ import joblib
 import math
 import os
 import unittest
+import warnings
 
 import lightgbm as lgb
 import numpy as np

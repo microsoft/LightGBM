@@ -29,7 +29,6 @@ For regression, binary classification and lambdarank model, a \code{list} of \co
 Computes feature contribution components of rawscore prediction.
 }
 \examples{
-Sigmoid <- function(x) 1.0 / (1.0 + exp(-x))
 Logit <- function(x) log(x / (1.0 - x))
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -40,13 +39,16 @@ test <- agaricus.test
 
 params <- list(
     objective = "binary"
-    , learning_rate = 0.01
-    , num_leaves = 63L
+    , learning_rate = 0.1
     , max_depth = -1L
     , min_data_in_leaf = 1L
     , min_sum_hessian_in_leaf = 1.0
 )
-model <- lgb.train(params, dtrain, 10L)
+model <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = 3L
+)
 
 tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
 

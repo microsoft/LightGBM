@@ -19,6 +19,8 @@ lgb.encode.char <- function(arr, len) {
 
 }
 
+# [description] Raise an error. Before raising that error, check for any error message
+#               stored in a buffer on the C++ side.
 lgb.last_error <- function() {
   # Perform text error buffering
   buf_len <- 200L

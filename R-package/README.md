@@ -147,7 +147,7 @@ The example below shows how to generate code coverage for the R package on a mac
 # Install
 export CXX=/usr/local/bin/g++-8
 export CC=/usr/local/bin/gcc-8
-Rscript build_r.R
+Rscript build_r.R --skip-install
 
 # Get coverage
 Rscript -e " \

@@ -56,7 +56,6 @@ CVBooster <- R6::R6Class(
 #' @return a trained model \code{lgb.CVBooster}.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -64,11 +63,10 @@ CVBooster <- R6::R6Class(
 #' model <- lgb.cv(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , nfold = 3L
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
 #' )
 #' @importFrom data.table data.table setorderv
 #' @export
@@ -372,14 +370,22 @@ lgb.cv <- function(params = list()
 
   }
 
+  # When early stopping is not activated, we compute the best iteration / score ourselves
+  # based on the first first metric
   if (record && is.na(env$best_score)) {
-    if (env$eval_list[[1L]]$higher_better[1L] == TRUE) {
-      cv_booster$best_iter <- unname(which.max(unlist(cv_booster$record_evals[[2L]][[1L]][[1L]])))
-      cv_booster$best_score <- cv_booster$record_evals[[2L]][[1L]][[1L]][[cv_booster$best_iter]]
-    } else {
-      cv_booster$best_iter <- unname(which.min(unlist(cv_booster$record_evals[[2L]][[1L]][[1L]])))
-      cv_booster$best_score <- cv_booster$record_evals[[2L]][[1L]][[1L]][[cv_booster$best_iter]]
+    first_metric <- cv_booster$boosters[[1L]][[1L]]$.__enclos_env__$private$eval_names[1L]
+    .find_best <- which.min
+    if (isTRUE(env$eval_list[[1L]]$higher_better[1L])) {
+      .find_best <- which.max
     }
+    cv_booster$best_iter <- unname(
+      .find_best(
+        unlist(
+          cv_booster$record_evals[["valid"]][[first_metric]][[.EVAL_KEY()]]
+        )
+      )
+    )
+    cv_booster$best_score <- cv_booster$record_evals[["valid"]][[first_metric]][[.EVAL_KEY()]][[cv_booster$best_iter]]
   }
 
   if (reset_data) {
