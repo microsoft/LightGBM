@@ -5,7 +5,7 @@ Booster <- R6::R6Class(
   public = list(
 
     best_iter = -1L,
-    best_score = NA,
+    best_score = NA_real_,
     record_evals = list(),
 
     # Finalize will free up the handles
@@ -845,7 +845,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
-#' lgb.save(model, "model.txt")
+#' lgb.save(model, "lgb-model.txt")
 #' }
 #' @export
 lgb.save <- function(booster, filename, num_iteration = NULL) {
@@ -989,11 +989,11 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
   }
 
   # Create result
-  result <- booster$record_evals[[data_name]][[eval_name]]$eval
+  result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_KEY()]]
 
   # Check if error is requested
   if (is_err) {
-    result <- booster$record_evals[[data_name]][[eval_name]]$eval_err
+    result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_ERR_KEY()]]
   }
 
   # Check if iteration is non existant

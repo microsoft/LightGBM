@@ -237,6 +237,7 @@ lgb.train <- function(params = list(),
   if (valid_contain_train) {
     booster$set_train_data_name(train_data_name)
   }
+
   for (key in names(reduced_valid_sets)) {
     booster$add_valid(reduced_valid_sets[[key]], key)
   }
@@ -290,16 +291,26 @@ lgb.train <- function(params = list(),
 
   }
 
+  # check if any valids were given other than the training data
+  non_train_valid_names <- names(valids)[!(names(valids) == train_data_name)]
+  first_valid_name <- non_train_valid_names[1L]
+
   # When early stopping is not activated, we compute the best iteration / score ourselves by
   # selecting the first metric and the first dataset
-  if (record && length(valids) > 0L && is.na(env$best_score)) {
-    if (env$eval_list[[1L]]$higher_better[1L] == TRUE) {
-      booster$best_iter <- unname(which.max(unlist(booster$record_evals[[2L]][[1L]][[1L]])))
-      booster$best_score <- booster$record_evals[[2L]][[1L]][[1L]][[booster$best_iter]]
-    } else {
-      booster$best_iter <- unname(which.min(unlist(booster$record_evals[[2L]][[1L]][[1L]])))
-      booster$best_score <- booster$record_evals[[2L]][[1L]][[1L]][[booster$best_iter]]
+  if (record && length(non_train_valid_names) > 0L && is.na(env$best_score)) {
+    first_metric <- booster$.__enclos_env__$private$eval_names[1L]
+    .find_best <- which.min
+    if (isTRUE(env$eval_list[[1L]]$higher_better[1L])) {
+      .find_best <- which.max
     }
+    booster$best_iter <- unname(
+      .find_best(
+        unlist(
+          booster$record_evals[[first_valid_name]][[first_metric]][[.EVAL_KEY()]]
+        )
+      )
+    )
+    booster$best_score <- booster$record_evals[[first_valid_name]][[first_metric]][[.EVAL_KEY()]][[booster$best_iter]]
   }
 
   # Check for booster model conversion to predictor model

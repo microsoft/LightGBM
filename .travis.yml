@@ -8,7 +8,7 @@ os:
   - linux
   - osx
 dist: bionic
-osx_image: xcode11.3
+osx_image: xcode11.4
 
 env:
   global:  # default values
