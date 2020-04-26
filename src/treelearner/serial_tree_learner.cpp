@@ -708,9 +708,9 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   } else {
     parent_output = leaf_splits->weight();
   }
-   histogram_array_[feature_index].FindBestThreshold(
-       leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), num_data,
-       constraints_->Get(leaf_splits->leaf_index()),  parent_output, &new_split);
+  histogram_array_[feature_index].FindBestThreshold(
+      leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), num_data,
+      constraints_->Get(leaf_splits->leaf_index()),  parent_output, &new_split);
   new_split.feature = real_fidx;
   if (cegb_ != nullptr) {
     new_split.gain -=

@@ -137,8 +137,8 @@ class LeafSplits {
   /*! \brief Get indices of data of current leaf */
   const data_size_t* data_indices() const { return data_indices_; }
 
- /*! \brief Get weight of current leaf */
- double weight() const { return weight_; }
+  /*! \brief Get weight of current leaf */
+  double weight() const { return weight_; }
 
 
 
