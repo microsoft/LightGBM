@@ -227,3 +227,87 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
     pred2 <- predict(bst2, test$data)
     expect_identical(pred, pred2)
 })
+
+context("Booster")
+
+test_that("Creating a Booster from a Dataset should work", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    data(agaricus.test, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+    )
+    bst <- Booster$new(
+        params = list(
+            objective = "binary"
+        ),
+        train_set = dtrain
+    )
+    expect_true(lgb.is.Booster(bst))
+    expect_equal(bst$current_iter(), 0L)
+    expect_true(is.na(bst$best_score))
+    expect_true(all(bst$predict(agaricus.train$data) == 0.5))
+})
+
+test_that("Creating a Booster from a Dataset with an existing predictor should work", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    nrounds <- 2L
+    bst <- lightgbm(
+        data = as.matrix(agaricus.train$data)
+        , label = agaricus.train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = nrounds
+        , objective = "binary"
+    )
+    data(agaricus.test, package = "lightgbm")
+    dtest <- Dataset$new(
+        data = agaricus.test$data
+        , label = agaricus.test$label
+        , predictor = bst$to_predictor()
+    )
+    bst_from_ds <- Booster$new(
+        train_set = dtest
+    )
+    expect_true(lgb.is.Booster(bst))
+    expect_equal(bst$current_iter(), nrounds)
+    expect_equal(bst$eval_train()[[1L]][["value"]], 0.1115352)
+    expect_equal(bst_from_ds$current_iter(), nrounds)
+    dumped_model <- jsonlite::fromJSON(bst$dump_model())
+    expect_identical(bst_from_ds$eval_train(), list())
+    expect_equal(bst_from_ds$current_iter(), nrounds)
+})
+
+test_that("Booster$rollback_one_iter() should work as expected", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    data(agaricus.test, package = "lightgbm")
+    train <- agaricus.train
+    test <- agaricus.test
+    nrounds <- 5L
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = nrounds
+        , objective = "binary"
+    )
+    expect_equal(bst$current_iter(), nrounds)
+    expect_true(lgb.is.Booster(bst))
+    logloss <- bst$eval_train()[[1L]][["value"]]
+    expect_equal(logloss, 0.01904786)
+
+    x <- bst$rollback_one_iter()
+
+    # rollback_one_iter() should return a booster and modify the original
+    # booster in place
+    expect_true(lgb.is.Booster(x))
+    expect_equal(bst$current_iter(), nrounds - 1L)
+
+    # score should now come from the model as of 4 iterations
+    logloss <- bst$eval_train()[[1L]][["value"]]
+    expect_equal(logloss, 0.027915146)
+})

@@ -18,6 +18,7 @@ json format of model
 Dump LightGBM model to json
 }
 \examples{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -37,5 +38,5 @@ model <- lgb.train(
   , early_stopping_rounds = 5L
 )
 json_model <- lgb.dump(model)
-
+}
 }

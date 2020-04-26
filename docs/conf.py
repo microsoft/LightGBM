@@ -139,6 +139,7 @@ if C_API:
         "h": "c",
     }
     breathe_show_define_initializer = True
+    c_id_attributes = ['LIGHTGBM_C_EXPORT']
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -227,13 +228,13 @@ def generate_r_docs(app):
     /home/docs/.conda/bin/conda create -q -y -n r_env \
         r-base=3.5.1=h1e0a451_2 \
         r-devtools=1.13.6=r351h6115d3f_0 \
-        r-data.table=1.11.4=r351h96ca727_0 \
         r-jsonlite=1.5=r351h96ca727_0 \
         r-matrix=1.2_14=r351h96ca727_0 \
         r-testthat=2.0.0=r351h29659fb_0 \
         cmake=3.14.0=h52cb24c_0 \
         ca-certificates=2019.11.27=0
     /home/docs/.conda/bin/conda install -q -y -n r_env -c conda-forge \
+        r-data.table=1.12.8=r35hcdcec82_0 \
         r-pkgdown=1.3.0=r35h6115d3f_1001 \
         r-roxygen2=6.1.1=r35h0357c0b_1001
     source /home/docs/.conda/bin/activate r_env

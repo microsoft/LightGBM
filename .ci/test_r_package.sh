@@ -34,7 +34,6 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
-
     brew install qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
@@ -82,9 +81,17 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
+check_succeeded="yes"
 R CMD check ${PKG_TARBALL} \
     --as-cran \
-|| exit -1
+|| check_succeeded="no"
+
+echo "R CMD check build logs:"
+cat ${BUILD_DIRECTORY}/lightgbm.Rcheck/00install.out
+
+if [[ $check_succeeded == "no" ]]; then
+    exit -1
+fi
 
 if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     echo "WARNINGS have been found by R CMD check!"
@@ -101,5 +108,3 @@ if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
     echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
     exit -1
 fi
-
-exit 0

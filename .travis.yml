@@ -8,11 +8,11 @@ os:
   - linux
   - osx
 dist: bionic
-osx_image: xcode11.3
+osx_image: xcode11.4
 
 env:
   global:  # default values
-    - PYTHON_VERSION=3.7
+    - PYTHON_VERSION=3.8
   matrix:
     - TASK=regular PYTHON_VERSION=3.6
     - TASK=sdist PYTHON_VERSION=2.7
@@ -21,7 +21,7 @@ env:
     - TASK=lint
     - TASK=check-docs
     - TASK=mpi METHOD=source
-    - TASK=mpi METHOD=pip
+    - TASK=mpi METHOD=pip PYTHON_VERSION=3.7
     - TASK=gpu METHOD=source PYTHON_VERSION=3.5
     - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - TASK=r-package

@@ -17,7 +17,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $AZURE == "true" ]] && [[ $TASK == "sdist" ]]; then
         brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/f3544543a3115023fc7ca962c21d14b443f419d0/Formula/swig.rb  # swig 3.0.12
     fi
-    wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
+    wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
@@ -37,7 +37,7 @@ else  # Linux
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
     if [[ $TRAVIS == "true" ]]; then
-        wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-Linux-x86_64.sh
+        wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi
 fi
 

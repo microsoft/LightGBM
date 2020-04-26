@@ -4,7 +4,9 @@
 \name{bank}
 \alias{bank}
 \title{Bank Marketing Data Set}
-\format{A data.table with 4521 rows and 17 variables}
+\format{
+A data.table with 4521 rows and 17 variables
+}
 \usage{
 data(bank)
 }

@@ -313,6 +313,7 @@ inline static unsigned CountDecimalDigit32(uint32_t n) {
     1000000000
   };
 #ifdef _MSC_VER
+  // NOLINTNEXTLINE
   unsigned long i = 0;
   _BitScanReverse(&i, n | 1);
   uint32_t t = (i + 1) * 1233 >> 12;
@@ -919,15 +920,6 @@ static T SafeLog(T x) {
   } else {
     return -INFINITY;
   }
-}
-
-inline bool CheckASCII(const std::string& s) {
-  for (auto c : s) {
-    if (static_cast<unsigned char>(c) > 127) {
-      return false;
-    }
-  }
-  return true;
 }
 
 inline bool CheckAllowedJSON(const std::string& s) {

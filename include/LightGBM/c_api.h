@@ -16,6 +16,7 @@
 #include <LightGBM/export.h>
 
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 
@@ -1074,7 +1075,8 @@ static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everythin
  * \param msg Error message
  */
 inline void LGBM_SetLastError(const char* msg) {
-  std::strcpy(LastErrorMsg(), msg);
+  const int err_buf_len = 512;
+  snprintf(LastErrorMsg(), err_buf_len, "%s", msg);
 }
 
 #endif  // LIGHTGBM_C_API_H_
