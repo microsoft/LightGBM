@@ -102,7 +102,7 @@ class FeatureHistogram {
 
     double gain_shift = GetLeafGain<USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
         sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2,
-      meta_->config->max_delta_step, meta_->config->path_smooth, num_data, parent_output);
+        meta_->config->max_delta_step, meta_->config->path_smooth, num_data, parent_output);
     *rand_threshold = 0;
     if (USE_RAND) {
       if (meta_->num_bin - 2 > 0) {
