@@ -237,7 +237,7 @@ void CUDATreeLearner::WaitAndGetHistograms(hist_t* histograms) {
       continue;
     }
     int dense_group_index = dense_feature_group_map_[i];
-    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
+    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index);
     int bin_size = train_data_->FeatureGroupNumBin(dense_group_index); 
 
     for (int j = 0; j < bin_size; ++j) {
