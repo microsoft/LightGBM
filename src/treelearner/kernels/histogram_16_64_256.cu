@@ -45,7 +45,6 @@ inline __device__ void atomic_local_add_f(acc_type *addr, const float val)
 // we have one sub-histogram of one feature in local memory, and need to read others
 inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ feature_sub_hist,
                            const uint skip_id,
-                           const uint old_val_cont_bin0,
                            const ushort num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
@@ -54,14 +53,7 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
     // TODO: try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = (uint *)(local_hist + 2 * NUM_BINS);
 
-    uint cont_bin;
-    if (power_feature_workgroups != 0) {
-      cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
-    } else {
-      cont_bin = local_cnt[ltid];
-    }
     ushort i;
 
     if (power_feature_workgroups != 0) {
@@ -70,7 +62,6 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
         for (i = 0; i < skip_id; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
 
         // skip the counters we already have
@@ -79,11 +70,9 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
     }
     __syncthreads();
-
 
     output_buf[ltid * 2 + 0] = grad_bin;
     output_buf[ltid * 2 + 1] = hess_bin;
@@ -335,7 +324,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // but currently there is no easy way to access it via OpenCL.
      uint * counter_val = cnt_hist;     
      // backup the old value
-     uint old_val = *counter_val;
      if (ltid == 0) {
          // all workgroups processing the same feature add this counter
          *counter_val = atomicAdd(const_cast<int*>(sync_counters + feature_id), 1);
@@ -353,7 +341,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // only 1 work group, no need to increase counter
      // the reduction will become a simple copy
      if (1) {
-         uint old_val; // dummy
  #endif
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
@@ -366,7 +353,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 
          
-         within_kernel_reduction16x4(feature_subhists, skip_id, old_val, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
+         within_kernel_reduction16x4(feature_subhists, skip_id, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
      }
 }
 
@@ -394,7 +381,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 // we have one sub-histogram of one feature in local memory, and need to read others
 inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ feature_sub_hist,
                            const uint skip_id,
-                           const uint old_val_cont_bin0,
                            const ushort num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
@@ -403,14 +389,7 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
     // TODO: try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = (uint *)(local_hist + 2 * NUM_BINS);
 
-    uint cont_bin;
-    if (power_feature_workgroups != 0) {
-      cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
-    } else {
-      cont_bin = local_cnt[ltid];
-    }
     ushort i;
 
     if (power_feature_workgroups != 0) {
@@ -419,7 +398,6 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
         for (i = 0; i < skip_id; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
 
         // skip the counters we already have
@@ -428,11 +406,9 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
     }
     __syncthreads();
-
 
     output_buf[ltid * 2 + 0] = grad_bin;
     output_buf[ltid * 2 + 1] = hess_bin;
@@ -684,7 +660,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // but currently there is no easy way to access it via OpenCL.
      uint * counter_val = cnt_hist;     
      // backup the old value
-     uint old_val = *counter_val;
      if (ltid == 0) {
          // all workgroups processing the same feature add this counter
          *counter_val = atomicAdd(const_cast<int*>(sync_counters + feature_id), 1);
@@ -702,7 +677,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // only 1 work group, no need to increase counter
      // the reduction will become a simple copy
      if (1) {
-         uint old_val; // dummy
  #endif
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
@@ -715,7 +689,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 
          
-         within_kernel_reduction64x4(feature_subhists, skip_id, old_val, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
+         within_kernel_reduction64x4(feature_subhists, skip_id, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
      }
 }
 
@@ -743,7 +717,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 // we have one sub-histogram of one feature in local memory, and need to read others
 inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__ feature_sub_hist,
                            const uint skip_id,
-                           const uint old_val_cont_bin0,
                            const ushort num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
@@ -752,14 +725,7 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
     // TODO: try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = (uint *)(local_hist + 2 * NUM_BINS);
 
-    uint cont_bin;
-    if (power_feature_workgroups != 0) {
-      cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
-    } else {
-      cont_bin = local_cnt[ltid];
-    }
     ushort i;
 
     if (power_feature_workgroups != 0) {
@@ -768,7 +734,6 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
         for (i = 0; i < skip_id; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
 
         // skip the counters we already have
@@ -777,11 +742,9 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
     }
     __syncthreads();
-
 
     output_buf[ltid * 2 + 0] = grad_bin;
     output_buf[ltid * 2 + 1] = hess_bin;
@@ -1033,7 +996,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // but currently there is no easy way to access it via OpenCL.
      uint * counter_val = cnt_hist;     
      // backup the old value
-     uint old_val = *counter_val;
      if (ltid == 0) {
          // all workgroups processing the same feature add this counter
          *counter_val = atomicAdd(const_cast<int*>(sync_counters + feature_id), 1);
@@ -1051,7 +1013,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // only 1 work group, no need to increase counter
      // the reduction will become a simple copy
      if (1) {
-         uint old_val; // dummy
  #endif
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
@@ -1064,7 +1025,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 
          
-         within_kernel_reduction256x4(feature_subhists, skip_id, old_val, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
+         within_kernel_reduction256x4(feature_subhists, skip_id, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
      }
 }
 
