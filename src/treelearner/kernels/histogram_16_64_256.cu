@@ -289,13 +289,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          acc_type value = gh_hist[i];
          ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
      }
-     // write counts
-     acc_int_type *__restrict__ ptr_i = (acc_int_type *)(output + 2 * NUM_BINS);
-     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-         // FIXME: 2-way bank conflict
-         uint value = cnt_hist[i];
-         ptr_i[i] = value;
-     }
      // FIXME: is this right
      __syncthreads();
      __threadfence();
@@ -625,13 +618,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          acc_type value = gh_hist[i];
          ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
      }
-     // write counts
-     acc_int_type *__restrict__ ptr_i = (acc_int_type *)(output + 2 * NUM_BINS);
-     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-         // FIXME: 2-way bank conflict
-         uint value = cnt_hist[i];
-         ptr_i[i] = value;
-     }
      // FIXME: is this right
      __syncthreads();
      __threadfence();
@@ -960,13 +946,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // FIXME: 2-way bank conflict
          acc_type value = gh_hist[i];
          ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
-     }
-     // write counts
-     acc_int_type *__restrict__ ptr_i = (acc_int_type *)(output + 2 * NUM_BINS);
-     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-         // FIXME: 2-way bank conflict
-         uint value = cnt_hist[i];
-         ptr_i[i] = value;
      }
      // FIXME: is this right
      __syncthreads();
