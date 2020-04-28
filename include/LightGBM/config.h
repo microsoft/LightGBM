@@ -499,7 +499,7 @@ struct Config {
   // desc = controls smoothing applied to tree nodes
   // desc = helps prevent overfitting on leaves with few samples
   // desc = if set to zero, no smoothing is applied
-  // desc = if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``.
+  // desc = if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
   // desc = larger values give stronger regularisation
   // descl2 = the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
   // descl2 = note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth

@@ -530,7 +530,7 @@ Learning Control Parameters
 
    -  if set to zero, no smoothing is applied
 
-   -  if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``.
+   -  if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
 
    -  larger values give stronger regularisation
 
