@@ -36,9 +36,9 @@ GPUTreeLearner::~GPUTreeLearner() {
   }
 }
 
-void GPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
+void GPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
   // initialize SerialTreeLearner
-  SerialTreeLearner::Init(train_data, is_constant_hessian);
+  SerialTreeLearner::Init(train_data, is_constant_hessian, is_use_subset);
   // some additional variables needed for GPU trainer
   num_feature_groups_ = train_data_->num_feature_groups();
   // Initialize GPU buffers and kernels
@@ -734,8 +734,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   SetupKernelArguments();
 }
 
-Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
-  return SerialTreeLearner::Train(gradients, hessians);
+Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
+                           bool is_constant_hessian, Json& forced_split_json) {
+  return SerialTreeLearner::Train(gradients, hessians, is_constant_hessian, forced_split_json);
 }
 
 void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
