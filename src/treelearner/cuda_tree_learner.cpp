@@ -84,60 +84,53 @@ void CUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, 
 #if GPU_DEBUG > 0
 
 void PrintHistograms(hist_t* h, size_t size) {
-  size_t total = 0;
+  double total_hess = 0;
   for (size_t i = 0; i < size; ++i) {
-    printf("%03lu=%9.3g,%9.3g,%7d\t", i, h[i].sum_gradients, h[i].sum_hessians, h[i].cnt);
-    total += h[i].cnt;
-    if ((i & 3) == 3)
+    printf("%03lu=%9.3g,%9.3g\t", i, GET_GRAD(h, i), GET_HESS(h, i));
+    if ((i & 2) == 2)
         printf("\n");
+    total_hess += GET_HESS(h, i);
   }
-  printf("\nTotal examples: %lu\n", total);
+  printf("\nSum hessians: %9.3g\n", total_hess);
 }
 
-union Float_t
-{
+union Float_t {
     int64_t i;
     double f;
     static int64_t ulp_diff(Float_t a, Float_t b) {
       return abs(a.i - b.i);
     }
 };
-  
 
-void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size, int feature_id) {
 
+void CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id) {
   size_t i;
   Float_t a, b;
   for (i = 0; i < size; ++i) {
-    a.f = h1[i].sum_gradients;
-    b.f = h2[i].sum_gradients;
+    a.f = GET_GRAD(h1, i);
+    b.f = GET_GRAD(h2, i);
     int32_t ulps = Float_t::ulp_diff(a, b);
-    if (fabs(h1[i].cnt           - h2[i].cnt != 0)) {
-      printf("idx: %lu, %d != %d, (diff: %d, err_rate: %f)\n", i, h1[i].cnt, h2[i].cnt, h1[i].cnt - h2[i].cnt, (float)(h1[i].cnt - h2[i].cnt)/h2[i].cnt);
-      goto err;
-    } else {
-      printf("idx: %lu, %d == %d\n", i, h1[i].cnt, h2[i].cnt);
-      printf("idx: %lu, pass\n", i);
-    }
     if (ulps > 0) {
-      printf("idx: %ld, grad %g != %g\n", i, h1[i].sum_gradients, h2[i].sum_gradients);
-      //printf("idx: %ld, grad %g != %g (%d ULPs)\n", i, h1[i].sum_gradients, h2[i].sum_gradients, ulps);
-      goto err;
-    }
-    a.f = h1[i].sum_hessians;
-    b.f = h2[i].sum_hessians;
-    ulps = Float_t::ulp_diff(a, b);
-    if (ulps > 0) {
-      printf("idx: %ld, hessian %g != %g\n", i, h1[i].sum_hessians, h2[i].sum_hessians);
-      //printf("idx: %ld, hessian %g != %g (%d ULPs)\n", i, h1[i].sum_hessians, h2[i].sum_hessians, ulps);
+      // printf("grad %g != %g (%d ULPs)\n", GET_GRAD(h1, i), GET_GRAD(h2, i), ulps);
       // goto err;
+    }
+    a.f = GET_HESS(h1, i);
+    b.f = GET_HESS(h2, i);
+    ulps = Float_t::ulp_diff(a, b);
+    if (std::fabs(a.f - b.f) >= 1e-20) {
+      printf("hessian %g != %g (%d ULPs)\n", GET_HESS(h1, i), GET_HESS(h2, i), ulps);
+      goto err;
     }
   }
   return;
 err:
   Log::Warning("Mismatched histograms found for feature %d at location %lu.", feature_id, i);
+  std::cin.get();
+  PrintHistograms(h1, size);
+  printf("\n");
+  PrintHistograms(h2, size);
+  std::cin.get();
 }
-
 #endif
 
 int CUDATreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
@@ -1037,17 +1030,17 @@ void CUDATreeLearner::FindBestSplits() {
 
 #if GPU_DEBUG >= 3
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!is_feature_used_[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
         && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
       continue;
     }
     size_t bin_size = train_data_->FeatureNumBin(feature_index) + 1; 
-    printf("CUDATreeLearner::FindBestSplits() Feature %d bin_size=%d smaller leaf:\n", feature_index, bin_size);
+    printf("CUDATreeLearner::FindBestSplits() Feature %d bin_size=%zd smaller leaf:\n", feature_index, bin_size);
     PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() - 1, bin_size);
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->leaf_index() < 0) { continue; }
-    printf("CUDATreeLearner::FindBestSplits() Feature %d bin_size=%d larger leaf:\n", feature_index, bin_size);
+    printf("CUDATreeLearner::FindBestSplits() Feature %d bin_size=%zd larger leaf:\n", feature_index, bin_size);
 
     PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() - 1, bin_size);
   }
