@@ -317,8 +317,7 @@ endif()
 
 if(BUILD_FOR_R)
   if(MSVC)
-    # https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
-    TARGET_LINK_LIBRARIES(_lightgbm ${CMAKE_CURRENT_BINARY_DIR}/R.lib)
+    TARGET_LINK_LIBRARIES(_lightgbm ${R_DOT_LIB_FILE})
   else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
   endif(MSVC)

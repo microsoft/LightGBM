@@ -26,6 +26,7 @@ if(NOT ("${R_ARCH}" STREQUAL "x64"))
 endif()
 
 # Creates R.lib and R.def in the build directory for linking with MSVC
+# https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
 function(create_rlib_for_msvc)
 
   message("Creating R.lib and R.def")
@@ -47,6 +48,8 @@ function(create_rlib_for_msvc)
       \nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
 
+  set(R_DOT_LIB_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.lib")
+
   # extract symbols from R.dll into R.def and R.lib import library
   execute_process(COMMAND ${GENDEF_EXE}
     "-" "${LIBR_CORE_LIBRARY}"
@@ -54,7 +57,7 @@ function(create_rlib_for_msvc)
   )
   execute_process(COMMAND ${DLLTOOL_EXE}
     "--input-def" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
-    "--output-lib" "${CMAKE_CURRENT_BINARY_DIR}/R.lib"
+    "--output-lib" "${R_DOT_LIB_FILE}"
   )
 endfunction(create_rlib_for_msvc)
 
