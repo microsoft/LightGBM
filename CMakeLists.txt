@@ -321,7 +321,7 @@ if(BUILD_FOR_R)
     TARGET_LINK_LIBRARIES(_lightgbm ${CMAKE_CURRENT_BINARY_DIR}/R.lib)
   else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
-  endif()
+  endif(MSVC)
 endif(BUILD_FOR_R)
 
 install(TARGETS lightgbm _lightgbm
