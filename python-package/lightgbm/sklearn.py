@@ -43,6 +43,7 @@ class _ObjectiveFunctionWrapper(object):
 
         .. note::
 
+            For binary task, the y_pred is margin.
             For multi-class task, the y_pred is group by class_id first, then group by row_id.
             If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -130,6 +131,7 @@ class _EvalFunctionWrapper(object):
 
         .. note::
 
+            For binary task, the y_pred is probability of positive class (or margin in case of custom ``objective``).
             For multi-class task, the y_pred is group by class_id first, then group by row_id.
             If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
@@ -292,6 +294,7 @@ class LGBMModel(_LGBMModelBase):
             hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the second order derivative (Hessian) for each sample point.
 
+        For binary task, the y_pred is margin.
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
         and you should group grad and hess in this way as well.
@@ -477,6 +480,7 @@ class LGBMModel(_LGBMModelBase):
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+        For binary task, the y_pred is probability of positive class (or margin in case of custom ``objective``).
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
