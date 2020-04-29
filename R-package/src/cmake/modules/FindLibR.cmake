@@ -48,7 +48,7 @@ function(create_rlib_for_msvc)
       \nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
 
-  set(R_DOT_LIB_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.lib")
+  set(R_DOT_LIB_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib file location"))
 
   # extract symbols from R.dll into R.def and R.lib import library
   execute_process(COMMAND ${GENDEF_EXE}
