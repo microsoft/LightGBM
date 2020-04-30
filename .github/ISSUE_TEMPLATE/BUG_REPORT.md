@@ -33,7 +33,7 @@ Operating System:
 
 CPU/GPU model:
 
-C++ version:
+C++ compiler version:
 
 CMake version:
 
@@ -61,13 +61,13 @@ can find this issue from search engines.
 ## Reproducible example(s)
 
 <!--
-Paste examples log below.
+Paste examples code below.
 
 Please paste code and text logs instead of screenshots, so others
 can find this issue from search engines.
 
 If possible, try to provide a minimum working example that does not
-require access to proprietary data.
+require access to proprietary data: https://stackoverflow.com/help/minimal-reproducible-example.
 -->
 
 ## Steps to reproduce
