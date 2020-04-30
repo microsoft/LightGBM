@@ -16,7 +16,7 @@ Installation
 
 You need to install git and [CMake](https://cmake.org/) first.
 
-Note: 32-bit R/Rtools is not supported.
+Note: 32-bit (i386) R/Rtools is currently not supported.
 
 #### Windows Preparation
 
@@ -25,8 +25,6 @@ Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory
 The default compiler is Visual Studio (or [VS Build Tools](https://visualstudio.microsoft.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
 
 To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
-
-For users who wants to install online with GPU or want to choose a specific compiler, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
 
@@ -69,57 +67,6 @@ dtrain <- lgb.Dataset(train$data, label=train$label)
 params <- list(objective="regression", metric="l2")
 model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
 ```
-
-Installation with Precompiled dll/lib from R Using GitHub
----------------------------------------------------------
-
-You can install LightGBM R-package from GitHub with devtools thanks to a helper package for LightGBM.
-
-### Prerequisites
-
-You will need:
-
-* Precompiled LightGBM dll/lib
-* MinGW / Visual Studio / gcc (depending on your OS and your needs) with make in PATH environment variable
-* git in PATH environment variable
-* [CMake](https://cmake.org/) in PATH environment variable
-* [lgbdl](https://github.com/Laurae2/lgbdl/) R-package, which can be installed using `devtools::install_github("Laurae2/lgbdl")`
-* [Rtools](https://cran.r-project.org/bin/windows/Rtools/) if using Windows
-
-In addition, if you are using a Visual Studio precompiled DLL, assuming you do not have Visual Studio installed (if you have it installed, ignore the warnings below):
-
-* Visual Studio 2015/2017/2019 precompiled DLL: download and install Visual Studio Runtime for [2015](https://www.microsoft.com/en-us/download/details.aspx?id=52685)/[2017](https://aka.ms/vs/15/release/vc_redist.x64.exe)/[2019](https://aka.ms/vs/16/release/vc_redist.x64.exe) (you will get an error about MSVCP140.dll missing otherwise)
-
-Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
-
-For instance, you can install the R-package from LightGBM master commit of GitHub with Visual Studio using the following from R:
-
-```r
-lgb.dl(commit = "master",
-       compiler = "vs",
-       repo = "https://github.com/microsoft/LightGBM")
-```
-
-You may also install using a precompiled dll/lib using the following from R:
-
-```r
-lgb.dl(commit = "master",
-       libdll = "C:\\LightGBM\\windows\\x64\\DLL\\lib_lightgbm.dll", # YOUR PRECOMPILED DLL
-       repo = "https://github.com/microsoft/LightGBM")
-```
-
-You may also install online using a LightGBM with proper GPU support using Visual Studio (as an example here) using the following from R:
-
-```r
-lgb.dl(commit = "master",
-       compiler = "vs", # Remove this for MinGW + GPU installation
-       repo = "https://github.com/microsoft/LightGBM",
-       use_gpu = TRUE)
-```
-
-For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
-
-You may also read [Microsoft/LightGBM#912](https://github.com/microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM installation in Windows with Visual Studio.
 
 Examples
 --------
