@@ -323,7 +323,7 @@ class RankXENDCG : public RankingObjective {
     double sum_l1 = 0.0f;
     for (data_size_t i = 0; i < cnt; ++i) {
       l1s[i] = -l1s[i] / sum_labels + rho[i];
-      sum_l1 += l1s[i];
+      sum_l1 += l1s[i] / (1. - rho[i]);
     }
     if (cnt <= 1) {
       // when cnt <= 1, the l2 and l3 are zeros
@@ -336,13 +336,13 @@ class RankXENDCG : public RankingObjective {
       std::vector<double> l2s(cnt, 0.0);
       double sum_l2 = 0.0;
       for (data_size_t i = 0; i < cnt; ++i) {
-        l2s[i] = (sum_l1 - l1s[i]) / (1 - rho[i]);
-        sum_l2 += l2s[i];
+        l2s[i] = sum_l1 - (l1s[i] / (1. - rho[i]));
+        sum_l2 += l2s[i] * rho[i] / (1. - rho[i]);
       }
       for (data_size_t i = 0; i < cnt; ++i) {
-        auto l3 = (sum_l2 - l2s[i]) / (1 - rho[i]);
+        auto l3 = sum_l2 - (l2s[i] * rho[i] / (1. - rho[i]));
         lambdas[i] = static_cast<score_t>(l1s[i] + rho[i] * l2s[i] +
-                                          rho[i] * rho[i] * l3);
+                                          rho[i] * l3);
         hessians[i] = static_cast<score_t>(rho[i] * (1.0 - rho[i]));
       }
     }
