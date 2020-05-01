@@ -48,7 +48,7 @@ LightGBM version or commit hash:
 
 ## Error message and / or logs
 
-<!-- Paste error log below -->
+<!-- Paste error log below (please avoid screenshots, use raw text) -->
 
 
 ## Reproducible example(s)
