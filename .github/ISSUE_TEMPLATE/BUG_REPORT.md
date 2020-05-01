@@ -5,6 +5,8 @@ about: Something isn't working as expected? Here is the right place to report.
 
 <!--
 Please search your question on previous issues, Stack Overflow (https://stackoverflow.com/questions/tagged/lightgbm) or other search engines before you open a new one.
+
+Also, for bugs and unexpected issues, please check the latest master branch first.
 -->
 
 ## How you are using LightGBM?
