@@ -9,7 +9,7 @@
 #  LIBR_FOUND
 #  LIBR_HOME
 #  LIBR_EXECUTABLE
-#  R_MSVC_CORE_LIBRARY
+#  LIBR_MSVC_CORE_LIBRARY
 #  LIBR_INCLUDE_DIRS
 #  LIBR_CORE_LIBRARY
 # and a CMake function to create R.lib for MSVC
@@ -49,7 +49,7 @@ function(create_rlib_for_msvc)
       \nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
 
-  set(R_MSVC_CORE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib file location")
+  set(LIBR_MSVC_CORE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib filepath")
 
   # extract symbols from R.dll into R.def and R.lib import library
   execute_process(COMMAND ${GENDEF_EXE}
@@ -58,7 +58,7 @@ function(create_rlib_for_msvc)
   )
   execute_process(COMMAND ${DLLTOOL_EXE}
     "--input-def" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
-    "--output-lib" "${R_MSVC_CORE_LIBRARY}"
+    "--output-lib" "${LIBR_MSVC_CORE_LIBRARY}"
   )
 endfunction(create_rlib_for_msvc)
 
