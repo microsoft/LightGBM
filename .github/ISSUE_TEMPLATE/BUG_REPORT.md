@@ -54,7 +54,7 @@ LightGBM version or commit hash:
 ## Reproducible example(s)
 
 <!--
-Paste examples code below.
+Paste examples code below (please avoid screenshots, use raw text).
 
 If possible, try to provide a minimum working example that does not
 require access to proprietary data: https://stackoverflow.com/help/minimal-reproducible-example.
