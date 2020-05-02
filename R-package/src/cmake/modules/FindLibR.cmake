@@ -9,8 +9,8 @@
 #  LIBR_FOUND
 #  LIBR_HOME
 #  LIBR_EXECUTABLE
+#  LIBR_MSVC_CORE_LIBRARY
 #  LIBR_INCLUDE_DIRS
-#  LIBR_LIB_DIR
 #  LIBR_CORE_LIBRARY
 # and a CMake function to create R.lib for MSVC
 
@@ -27,6 +27,7 @@ if(NOT ("${R_ARCH}" STREQUAL "x64"))
 endif()
 
 # Creates R.lib and R.def in the build directory for linking with MSVC
+# https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
 function(create_rlib_for_msvc)
 
   message("Creating R.lib and R.def")
@@ -36,8 +37,8 @@ function(create_rlib_for_msvc)
     message(FATAL_ERROR "create_rlib_for_msvc() can only be used with MSVC")
   endif()
 
-  if(NOT EXISTS "${LIBR_LIB_DIR}")
-    message(FATAL_ERROR "LIBR_LIB_DIR, '${LIBR_LIB_DIR}', not found")
+  if(NOT EXISTS "${LIBR_CORE_LIBRARY}")
+    message(FATAL_ERROR "LIBR_CORE_LIBRARY, '${LIBR_CORE_LIBRARY}', not found")
   endif()
 
   find_program(GENDEF_EXE gendef)
@@ -48,14 +49,16 @@ function(create_rlib_for_msvc)
       \nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
 
+  set(LIBR_MSVC_CORE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib filepath")
+
   # extract symbols from R.dll into R.def and R.lib import library
   execute_process(COMMAND ${GENDEF_EXE}
-    "-" "${LIBR_LIB_DIR}/R.dll"
+    "-" "${LIBR_CORE_LIBRARY}"
     OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def"
   )
   execute_process(COMMAND ${DLLTOOL_EXE}
     "--input-def" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
-    "--output-lib" "${CMAKE_CURRENT_BINARY_DIR}/R.lib"
+    "--output-lib" "${LIBR_MSVC_CORE_LIBRARY}"
   )
 endfunction(create_rlib_for_msvc)
 
@@ -168,19 +171,12 @@ execute_process(
   OUTPUT_VARIABLE LIBR_INCLUDE_DIRS
 )
 
-# ask R for the lib dir
-execute_process(
-  COMMAND ${LIBR_EXECUTABLE} "--slave" "--vanilla" "-e" "cat(normalizePath(R.home('lib'), winslash='/'))"
-  OUTPUT_VARIABLE LIBR_LIB_DIR
-)
-
 set(LIBR_HOME ${LIBR_HOME} CACHE PATH "R home directory")
 set(LIBR_EXECUTABLE ${LIBR_EXECUTABLE} CACHE PATH "R executable")
 set(LIBR_INCLUDE_DIRS ${LIBR_INCLUDE_DIRS} CACHE PATH "R include directory")
-set(LIBR_LIB_DIR ${LIBR_LIB_DIR} CACHE PATH "R shared libraries directory")
 
 # where is R.so / R.dll / libR.so likely to be found?
-set(LIBR_PATH_HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_LIB_DIR}" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}")
+set(LIBR_PATH_HINTS "${CMAKE_CURRENT_BINARY_DIR}" "${LIBR_HOME}/bin/${R_ARCH}" "${LIBR_HOME}/bin" "${LIBR_LIBRARIES}")
 
 # look for the core R library
 find_library(
@@ -213,10 +209,19 @@ endif()
 # define find requirements
 include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(LibR DEFAULT_MSG
-  LIBR_HOME
-  LIBR_EXECUTABLE
-  LIBR_INCLUDE_DIRS
-  LIBR_LIB_DIR
-  LIBR_CORE_LIBRARY
-)
+if(WIN32 AND MSVC)
+  find_package_handle_standard_args(LibR DEFAULT_MSG
+    LIBR_HOME
+    LIBR_EXECUTABLE
+    LIBR_INCLUDE_DIRS
+    LIBR_CORE_LIBRARY
+    LIBR_MSVC_CORE_LIBRARY
+  )
+else()
+  find_package_handle_standard_args(LibR DEFAULT_MSG
+    LIBR_HOME
+    LIBR_EXECUTABLE
+    LIBR_INCLUDE_DIRS
+    LIBR_CORE_LIBRARY
+  )
+endif()
