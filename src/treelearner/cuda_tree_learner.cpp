@@ -103,33 +103,41 @@ union Float_t {
 };
 
 
-void CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id) {
-  size_t i;
-  Float_t a, b;
-  for (i = 0; i < size; ++i) {
-    a.f = GET_GRAD(h1, i);
-    b.f = GET_GRAD(h2, i);
-    int32_t ulps = Float_t::ulp_diff(a, b);
-    if (ulps > 0) {
-      // printf("grad %g != %g (%d ULPs)\n", GET_GRAD(h1, i), GET_GRAD(h2, i), ulps);
-      // goto err;
-    }
-    a.f = GET_HESS(h1, i);
-    b.f = GET_HESS(h2, i);
-    ulps = Float_t::ulp_diff(a, b);
-    if (std::fabs(a.f - b.f) >= 1e-20) {
-      printf("hessian %g != %g (%d ULPs)\n", GET_HESS(h1, i), GET_HESS(h2, i), ulps);
-      goto err;
+void CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int dp_flag) {
+  int i;
+  printf("Comparing Histograms, feature_id = %d, size = %d\n", feature_id, (int) size);
+  if (dp_flag) { // double precision
+    double a, b;
+    for (i = 0; i < (int) size; ++i) {
+      a = GET_GRAD(h1, i);
+      b = GET_GRAD(h2, i);
+      if (((std::fabs(a - b))/a) >= 1e-6) {
+        printf("i = %5d, h1.grad %13.6lf, h2.grad %13.6lf\n", i, a, b);
+      }
+      a = GET_HESS(h1, i);
+      b = (double) GET_HESS(((long long int *) h2), i); // GCF HACK becuse CPU hessians are apparently stored as long long ints
+      if (((std::fabs(a - b))/a) >= 1e-6) {
+        printf("i = %5d, h1.hess %13.6lf, h2.hess %13.6lf\n", i, a, b);
+      }
     }
   }
+  else { // single precision
+    float a, b;
+    for (i = 0; i < (int) size; ++i) {
+      a = GET_GRAD(h1, i);
+      b = GET_GRAD(h2, i);
+      if (((std::fabs(a - b))/a) >= 1e-5) {
+        printf("i = %5d, h1.grad %13.6f, h2.grad %13.6f\n", i, a, b);
+      }
+      a = GET_HESS(h1, i);
+      b = GET_HESS(h2, i);
+      if (((std::fabs(a - b))/a) >= 1e-5) {
+        printf("i = %5d, h1.hess %13.6f, h2.hess %13.6f\n", i, a, b);
+      }
+    }
+  }
+  printf("DONE Comparing Histograms...\n");
   return;
-err:
-  Log::Warning("Mismatched histograms found for feature %d at location %lu.", feature_id, i);
-  std::cin.get();
-  PrintHistograms(h1, size);
-  printf("\n");
-  PrintHistograms(h2, size);
-  std::cin.get();
 }
 #endif
 
@@ -204,7 +212,8 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
     size_t output_size = num_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
     size_t host_output_offset = offset_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
 
-    CUDASUCCESS_OR_FATAL(cudaMemcpyAsync((char*)host_histogram_outputs_ + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost, stream_[device_id]));
+    //CUDASUCCESS_OR_FATAL(cudaMemcpyAsync((char*)host_histogram_outputs_ + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost, stream_[device_id]));
+    CUDASUCCESS_OR_FATAL(cudaMemcpy((char*)host_histogram_outputs_ + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost));
     CUDASUCCESS_OR_FATAL(cudaEventRecord(histograms_wait_obj_[device_id], stream_[device_id]));
   }
 }
@@ -230,7 +239,7 @@ void CUDATreeLearner::WaitAndGetHistograms(hist_t* histograms) {
       continue;
     }
     int dense_group_index = dense_feature_group_map_[i];
-    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index);
+    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
     int bin_size = train_data_->FeatureGroupNumBin(dense_group_index); 
 
     for (int j = 0; j < bin_size; ++j) {
@@ -471,6 +480,9 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
     #endif
     max_num_bin_ = std::max(max_num_bin_, train_data_->FeatureGroupNumBin(i));
   }
+  #if GPU_DEBUG >= 1
+  printf("\n");
+  #endif
 
   if (max_num_bin_ <= 16) {
     device_bin_size_ = 16; //LGBM_CUDA
@@ -831,7 +843,7 @@ bool CUDATreeLearner::ConstructGPUHistogramsAsync(
     printf("%d ", feature_masks_[i]);
   }
   printf("\n");
-  printf("CudaTreeLearner::ConstructGPUHistogramsAsync() %d feature groups, %d used, %d\n", num_dense_feature_groups_, used_dense_feature_groups, use_all_features);
+  printf("CudaTreeLearner::ConstructGPUHistogramsAsync() %d feature groups, %d used, %d use_all_features\n", num_dense_feature_groups_, used_dense_feature_groups, use_all_features);
 #endif
 
   // if not all feature groups are used, we need to transfer the feature mask to GPU
@@ -877,7 +889,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   }
 
   // construct smaller leaf
-  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
+  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset; 
 
   // Check workgroups per feature4 tuple..
   int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(smaller_leaf_splits_->num_data_in_leaf());
@@ -924,7 +936,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   // Compare GPU histogram with CPU histogram, useful for debuggin GPU code problem
   // #define GPU_DEBUG_COMPARE
 #ifdef GPU_DEBUG_COMPARE
-  printf("Start Comparing_Histogram between GPU and CPU num_dense_feature_groups_=%d\n",num_dense_feature_groups_);
+  printf("Start Comparing_Histogram between GPU and CPU, num_dense_feature_groups_ = %d\n",num_dense_feature_groups_);
   bool compare = true;
   for (int i = 0; i < num_dense_feature_groups_; ++i) {
     if (!feature_masks_[i])
@@ -935,7 +947,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     hist_t* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index) * 2;
     hist_t* gpu_histogram = new hist_t[size * 2];
     data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
-    printf("Comparing histogram for feature %d size %d, %lu bins\n", dense_feature_group_index, num_data, size);
+    printf("Comparing histogram for feature %d, size %d, %lu bins\n", dense_feature_group_index, num_data, size);
     std::copy(current_histogram, current_histogram + size * 2, gpu_histogram);
     std::memset(current_histogram, 0, size * sizeof(hist_t) * 2);
     if (train_data_->FeatureGroupBin(dense_feature_group_index) == nullptr) {
@@ -943,14 +955,14 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     }
     if ( num_data == num_data_ ) {
       if ( is_constant_hessian_ ) {
-        printf("ConstructHistogram(): num_data == num_data_ is_constant_hessian_");
+        printf("ConstructHistogram(): num_data == num_data_ is_constant_hessian_\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             0,
             num_data,
             gradients_,
             current_histogram);
       } else {
-        printf("ConstructHistogram(): num_data == num_data_ ");
+        printf("ConstructHistogram(): num_data == num_data_\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             0,
             num_data,
@@ -959,7 +971,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
       }
     } else {
       if ( is_constant_hessian_ ) {
-        printf("ConstructHistogram(): is_constant_hessian_");
+        printf("ConstructHistogram(): is_constant_hessian_\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             smaller_leaf_splits_->data_indices(),
             0,
@@ -967,7 +979,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
             ordered_gradients_.data(),
             current_histogram);
       } else {  
-        printf("ConstructHistogram(): 4");
+        printf("ConstructHistogram(): 4\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             smaller_leaf_splits_->data_indices(),
             0,
@@ -977,10 +989,10 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
       }
     }
     if ( (num_data != num_data_) && compare ) {
-        CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index);
+        CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp);
         compare = false;
     }
-    CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index);
+    CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp);
     std::copy(gpu_histogram, gpu_histogram + size * 2, current_histogram);
     delete [] gpu_histogram;
     //break; // LGBM_CUDA: see only first feature info
@@ -993,7 +1005,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
 
     // construct larger leaf
 
-    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - 1;
+    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - kHistOffset;
 
     is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf());
@@ -1009,11 +1021,11 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     //  ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
     //  ptr_larger_leaf_hist_data);
     train_data_->ConstructHistograms(is_sparse_feature_used,
-      smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
+      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(),
       share_state_.get(),
-      ptr_smaller_leaf_hist_data);
+      ptr_larger_leaf_hist_data);
     }
 
     // wait for GPU to finish, only if GPU is actually used
