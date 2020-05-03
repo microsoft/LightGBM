@@ -2118,6 +2118,23 @@ class TestEngine(unittest.TestCase):
         err_new = mean_squared_error(y, predicted_new)
         self.assertLess(err, err_new)
 
+    def test_path_smoothing(self):
+        # check path smoothing increases regularization
+        X, y = load_boston(True)
+        lgb_x = lgb.Dataset(X, label=y)
+        params = {'objective': 'regression',
+                  'num_leaves': 32,
+                  'verbose': -1,
+                  'seed': 0}
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted = est.predict(X)
+        err = mean_squared_error(y, predicted)
+        params['path_smooth'] = 1
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted_new = est.predict(X)
+        err_new = mean_squared_error(y, predicted_new)
+        self.assertLess(err, err_new)
+
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_trees_to_dataframe(self):
 

@@ -436,17 +436,21 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, 
   if (best_split_info.left_count < best_split_info.right_count) {
     smaller_leaf_splits_global_->Init(*left_leaf, this->data_partition_.get(),
       best_split_info.left_sum_gradient,
-      best_split_info.left_sum_hessian);
+      best_split_info.left_sum_hessian,
+      best_split_info.left_output);
     larger_leaf_splits_global_->Init(*right_leaf, this->data_partition_.get(),
       best_split_info.right_sum_gradient,
-      best_split_info.right_sum_hessian);
+      best_split_info.right_sum_hessian,
+      best_split_info.right_output);
   } else {
     smaller_leaf_splits_global_->Init(*right_leaf, this->data_partition_.get(),
       best_split_info.right_sum_gradient,
-      best_split_info.right_sum_hessian);
+      best_split_info.right_sum_hessian,
+      best_split_info.right_output);
     larger_leaf_splits_global_->Init(*left_leaf, this->data_partition_.get(),
       best_split_info.left_sum_gradient,
-      best_split_info.left_sum_hessian);
+      best_split_info.left_sum_hessian,
+      best_split_info.left_output);
   }
 }
 
