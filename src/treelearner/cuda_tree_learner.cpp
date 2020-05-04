@@ -877,6 +877,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
 
+    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (!is_feature_used[feature_index]) continue;
     if (train_data_->IsMultiGroup(train_data_->Feature2Group(feature_index))) {
       is_sparse_feature_used[feature_index] = 1;
