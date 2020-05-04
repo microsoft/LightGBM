@@ -102,42 +102,68 @@ union Float_t {
     }
 };
 
-
-void CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int dp_flag) {
+int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int dp_flag, int const_flag) {
   int i;
+  int retval = 0;
   printf("Comparing Histograms, feature_id = %d, size = %d\n", feature_id, (int) size);
   if (dp_flag) { // double precision
-    double a, b;
+    double af, bf;
+    long long int ai, bi;
     for (i = 0; i < (int) size; ++i) {
-      a = GET_GRAD(h1, i);
-      b = GET_GRAD(h2, i);
-      if (((std::fabs(a - b))/a) >= 1e-6) {
-        printf("i = %5d, h1.grad %13.6lf, h2.grad %13.6lf\n", i, a, b);
+      af = GET_GRAD(h1, i);
+      bf = GET_GRAD(h2, i);
+      if (((std::fabs(af - bf))/af) >= 1e-6) {
+        printf("i = %5d, h1.grad %13.6lf, h2.grad %13.6lf\n", i, af, bf);
+        ++retval;
       }
-      a = GET_HESS(h1, i);
-      b = (double) GET_HESS(((long long int *) h2), i); // GCF HACK becuse CPU hessians are apparently stored as long long ints
-      if (((std::fabs(a - b))/a) >= 1e-6) {
-        printf("i = %5d, h1.hess %13.6lf, h2.hess %13.6lf\n", i, a, b);
+      if (const_flag) {
+        ai = GET_HESS(((long long int *) h1), i);
+        bi = GET_HESS(((long long int *) h2), i);
+        if (ai != bi) {
+          printf("i = %5d, h1.hess %lld, h2.hess %lld\n", i, ai, bi);
+          ++retval;
+        }
+      }
+      else {
+        af = GET_HESS(h1, i);
+        bf = GET_HESS(h2, i);
+        if (((std::fabs(af - bf))/af) >= 1e-6) {
+          printf("i = %5d, h1.hess %13.6lf, h2.hess %13.6lf\n", i, af, bf);
+          ++retval;
+        }
       }
     }
   }
   else { // single precision
-    float a, b;
+    float af, bf;
+    int ai, bi;
     for (i = 0; i < (int) size; ++i) {
-      a = GET_GRAD(h1, i);
-      b = GET_GRAD(h2, i);
-      if (((std::fabs(a - b))/a) >= 1e-5) {
-        printf("i = %5d, h1.grad %13.6f, h2.grad %13.6f\n", i, a, b);
+      af = GET_GRAD(h1, i);
+      bf = GET_GRAD(h2, i);
+      if (((std::fabs(af - bf))/af) >= 1e-5) {
+        printf("i = %5d, h1.grad %13.6f, h2.grad %13.6f\n", i, af, bf);
+        ++retval;
       }
-      a = GET_HESS(h1, i);
-      b = GET_HESS(h2, i);
-      if (((std::fabs(a - b))/a) >= 1e-5) {
-        printf("i = %5d, h1.hess %13.6f, h2.hess %13.6f\n", i, a, b);
+      if (const_flag) {
+        ai = GET_HESS(h1, i);
+        bi = GET_HESS(h2, i);
+        if (ai != bi) {
+          printf("i = %5d, h1.hess %d, h2.hess %d\n", i, ai, bi);
+          ++retval;
+        }
+      }
+      else {
+        af = GET_HESS(h1, i);
+        bf = GET_HESS(h2, i);
+        if (((std::fabs(af - bf))/af) >= 1e-5) {
+          printf("i = %5d, h1.hess %13.6f, h2.hess %13.6f\n", i, af, bf);
+          ++retval;
+        }
       }
     }
   }
   printf("DONE Comparing Histograms...\n");
-  return;
+  return retval;
 }
 #endif
 
@@ -948,7 +974,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     hist_t* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index) * 2;
     hist_t* gpu_histogram = new hist_t[size * 2];
     data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
-    printf("Comparing histogram for feature %d, size %d, %lu bins\n", dense_feature_group_index, num_data, size);
+    printf("Comparing histogram for feature %d, num_data %d, num_data_ = %d, %lu bins\n", dense_feature_group_index, num_data, num_data_, size);
     std::copy(current_histogram, current_histogram + size * 2, gpu_histogram);
     std::memset(current_histogram, 0, size * sizeof(hist_t) * 2);
     if (train_data_->FeatureGroupBin(dense_feature_group_index) == nullptr) {
@@ -980,7 +1006,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
             ordered_gradients_.data(),
             current_histogram);
       } else {  
-        printf("ConstructHistogram(): 4\n");
+        printf("ConstructHistogram(): 4, num_data = %d, num_data_ = %d\n", num_data, num_data_);
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             smaller_leaf_splits_->data_indices(),
             0,
@@ -989,11 +1015,19 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
             current_histogram);
       }
     }
+    int retval;
     if ( (num_data != num_data_) && compare ) {
-        CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp);
+        retval = CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, is_constant_hessian_);
+        if (retval < 4) printf("CompareHistograms reports only %d errors\n", retval);
         compare = false;
     }
-    CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp);
+    retval = CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, is_constant_hessian_);
+    if (num_data == num_data_) {
+        if (retval > 1) printf("CompareHistograms reports %d errors\n", retval);
+    }
+    else {
+        if (retval < 3) printf("CompareHistograms reports only %d errors\n", retval);
+    }
     std::copy(gpu_histogram, gpu_histogram + size * 2, current_histogram);
     delete [] gpu_histogram;
     //break; // LGBM_CUDA: see only first feature info
@@ -1058,11 +1092,11 @@ void CUDATreeLearner::FindBestSplits() {
     }
     size_t bin_size = train_data_->FeatureNumBin(feature_index) + 1; 
     printf("CUDATreeLearner::FindBestSplits() Feature %d bin_size=%zd smaller leaf:\n", feature_index, bin_size);
-    PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() - 1, bin_size);
+    PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->leaf_index() < 0) { continue; }
     printf("CUDATreeLearner::FindBestSplits() Feature %d bin_size=%zd larger leaf:\n", feature_index, bin_size);
 
-    PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() - 1, bin_size);
+    PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() - kHistOffset1, bin_size);
   }
 #endif
 }
