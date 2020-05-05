@@ -208,7 +208,7 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
     if (num_workgroups > preallocd_max_num_wg_[device_id]) {
       preallocd_max_num_wg_.at(device_id) = num_workgroups;
       CUDASUCCESS_OR_FATAL(cudaFree(device_subhistograms_[device_id]));
-      cudaMalloc(&(device_subhistograms_[device_id]), (size_t) num_workgroups * dword_features_ * device_bin_size_ * hist_bin_entry_sz_);
+      cudaMalloc(&(device_subhistograms_[device_id]), (size_t) num_workgroups * dword_features_ * device_bin_size_ * (3 * hist_bin_entry_sz_ / 2));
     }
     //set thread_data
     SetThreadData(thread_data, device_id, histogram_size_, leaf_num_data, use_all_features,
@@ -413,7 +413,7 @@ void CUDATreeLearner::AllocateGPUMemory() {
       if (!device_subhistograms_[device_id]) {
 
   // only initialize once here, as this will not need to change when ResetTrainingData() is called
-        CUDASUCCESS_OR_FATAL(cudaMalloc(&(device_subhistograms_[device_id]), (size_t) preallocd_max_num_wg_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_));
+        CUDASUCCESS_OR_FATAL(cudaMalloc(&(device_subhistograms_[device_id]), (size_t) preallocd_max_num_wg_[device_id] * dword_features_ * device_bin_size_ * (3 * hist_bin_entry_sz_ / 2)));
 
         Log::Debug("created device_subhistograms_: %p", device_subhistograms_[device_id]);
 
