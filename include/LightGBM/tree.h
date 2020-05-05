@@ -16,8 +16,8 @@
 
 namespace LightGBM {
 
-#define kCategoricalMask (1)
-#define kDefaultLeftMask (2)
+constexpr uint8_t kCategoricalMask = 1;
+constexpr uint8_t kDefaultLeftMask = 2;
 
 /*!
 * \brief Tree model
@@ -158,12 +158,20 @@ class Tree {
     return !GetDecisionType(decision_type_[node_idx], kCategoricalMask);
   }
 
+  inline uint8_t decision_type(int node_idx) const {
+    return decision_type_[node_idx];
+  }
+
   inline int left_child(int node_idx) const { return left_child_[node_idx]; }
 
   inline int right_child(int node_idx) const { return right_child_[node_idx]; }
 
   inline int split_feature_inner(int node_idx) const {
     return split_feature_inner_[node_idx];
+  }
+
+  inline double threshold(int node_idx) const {
+    return threshold_[node_idx];
   }
 
   inline uint32_t threshold_in_bin(int node_idx) const {
