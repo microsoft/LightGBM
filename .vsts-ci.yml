@@ -37,7 +37,6 @@ jobs:
       mpi_source:
         TASK: mpi
         METHOD: source
-        PYTHON_VERSION: 2.7
       gpu_source:
         TASK: gpu
         METHOD: source
