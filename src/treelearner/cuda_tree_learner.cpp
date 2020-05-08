@@ -102,9 +102,8 @@ union Float_t {
     }
 };
 
-int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int dp_flag, int const_flag) {
+void CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int dp_flag, int const_flag) {
   int i;
-  int retval = 0;
   printf("Comparing Histograms, feature_id = %d, size = %d\n", feature_id, (int) size);
   if (dp_flag) { // double precision
     double af, bf;
@@ -114,14 +113,12 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
       bf = GET_GRAD(h2, i);
       if (((std::fabs(af - bf))/af) >= 1e-6) {
         printf("i = %5d, h1.grad %13.6lf, h2.grad %13.6lf\n", i, af, bf);
-        ++retval;
       }
       if (const_flag) {
         ai = GET_HESS(((long long int *) h1), i);
         bi = GET_HESS(((long long int *) h2), i);
         if (ai != bi) {
           printf("i = %5d, h1.hess %lld, h2.hess %lld\n", i, ai, bi);
-          ++retval;
         }
       }
       else {
@@ -129,7 +126,6 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
         bf = GET_HESS(h2, i);
         if (((std::fabs(af - bf))/af) >= 1e-6) {
           printf("i = %5d, h1.hess %13.6lf, h2.hess %13.6lf\n", i, af, bf);
-          ++retval;
         }
       }
     }
@@ -142,14 +138,12 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
       bf = GET_GRAD(h2, i);
       if (((std::fabs(af - bf))/af) >= 1e-5) {
         printf("i = %5d, h1.grad %13.6f, h2.grad %13.6f\n", i, af, bf);
-        ++retval;
       }
       if (const_flag) {
         ai = GET_HESS(h1, i);
         bi = GET_HESS(h2, i);
         if (ai != bi) {
           printf("i = %5d, h1.hess %d, h2.hess %d\n", i, ai, bi);
-          ++retval;
         }
       }
       else {
@@ -157,13 +151,11 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
         bf = GET_HESS(h2, i);
         if (((std::fabs(af - bf))/af) >= 1e-5) {
           printf("i = %5d, h1.hess %13.6f, h2.hess %13.6f\n", i, af, bf);
-          ++retval;
         }
       }
     }
   }
   printf("DONE Comparing Histograms...\n");
-  return retval;
 }
 #endif
 
@@ -962,9 +954,8 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
 
   // Compare GPU histogram with CPU histogram, useful for debuggin GPU code problem
   // #define GPU_DEBUG_COMPARE
-#ifdef GPU_DEBUG_COMPARE
+  #ifdef GPU_DEBUG_COMPARE
   printf("Start Comparing_Histogram between GPU and CPU, num_dense_feature_groups_ = %d\n",num_dense_feature_groups_);
-  bool compare = true;
   for (int i = 0; i < num_dense_feature_groups_; ++i) {
     if (!feature_masks_[i])
       continue;
@@ -981,31 +972,13 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
       continue;
     }
     if ( num_data == num_data_ ) {
-      if ( is_constant_hessian_ ) {
-        printf("ConstructHistogram(): num_data == num_data_ is_constant_hessian_\n");
-        train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
-            0,
-            num_data,
-            gradients_,
-            current_histogram);
-      } else {
         printf("ConstructHistogram(): num_data == num_data_\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             0,
             num_data,
             gradients_, hessians_,
             current_histogram);
-      }
     } else {
-      if ( is_constant_hessian_ ) {
-        printf("ConstructHistogram(): is_constant_hessian_\n");
-        train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
-            smaller_leaf_splits_->data_indices(),
-            0,
-            num_data,
-            gradients_,
-            current_histogram);
-      } else {  
         printf("ConstructHistogram(): 4, num_data = %d, num_data_ = %d\n", num_data, num_data_);
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             smaller_leaf_splits_->data_indices(),
@@ -1013,27 +986,12 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
             num_data,
             gradients_, hessians_,
             current_histogram);
-      }
     }
-    int retval;
-    if ( (num_data != num_data_) && compare ) {
-        retval = CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, is_constant_hessian_);
-        if (retval < 4) printf("CompareHistograms reports only %d errors\n", retval);
-        compare = false;
-    }
-    retval = CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, is_constant_hessian_);
-    if (num_data == num_data_) {
-        if (retval > 1) printf("CompareHistograms reports %d errors\n", retval);
-    }
-    else {
-        if (retval < 3) printf("CompareHistograms reports only %d errors\n", retval);
-    }
+    CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, is_constant_hessian_);
     std::copy(gpu_histogram, gpu_histogram + size * 2, current_histogram);
     delete [] gpu_histogram;
-    //break; // LGBM_CUDA: see only first feature info
   }
   printf("End Comparing Histogram between GPU and CPU\n");
-//  #endif
 #endif
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
