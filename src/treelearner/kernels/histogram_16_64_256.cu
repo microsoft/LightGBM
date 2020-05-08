@@ -54,14 +54,6 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
     // TODO: try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = (uint *)(local_hist + 2 * NUM_BINS);
-
-    uint cont_bin;
-    if (power_feature_workgroups != 0) {
-      cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
-    } else {
-      cont_bin = local_cnt[ltid];
-    }
     ushort i;
 
     if (power_feature_workgroups != 0) {
@@ -70,28 +62,20 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
         for (i = 0; i < skip_id; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
 
         // skip the counters we already have
-        p += 3 * NUM_BINS;  
+        p += 2 * NUM_BINS;  
 
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
     }
     __syncthreads();
 
-
     output_buf[ltid * 2 + 0] = grad_bin;
-#if CONST_HESSIAN == 0
     output_buf[ltid * 2 + 1] = hess_bin;
-#else
-    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
-#endif
-    //output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -152,7 +136,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 
      // counter histogram
      // total size: 256 * size_of(uint) = 1 KB
+     #if CONST_HESSIAN == 1
      uint *cnt_hist = (uint *)(gh_hist + 2 * NUM_BINS);
+     #endif
 
      // odd threads (1, 3, ...) compute histograms for hessians first
      // even thread (0, 2, ...) compute histograms for gradients first
@@ -259,8 +245,10 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // prefetch the next iteration variables
          feature_next = feature_data[ind_next >> feature_mask];
 
+         #if CONST_HESSIAN == 1
          // STAGE 3: accumulate counter
          atomicAdd(cnt_hist + feature, 1);
+         #endif
 
          // STAGE 4: update next stat
          grad = grad_next;
@@ -296,7 +284,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #endif
 
 #if POWER_FEATURE_WORKGROUPS != 0
-     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 3 * NUM_BINS;
+     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 2 * NUM_BINS;
      // write gradients and hessians
      acc_type *__restrict__ ptr_f = output;
      for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
@@ -304,13 +292,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // FIXME: 2-way bank conflict
          acc_type value = gh_hist[i];
          ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
-     }
-     // write counts
-     acc_int_type *__restrict__ ptr_i = (acc_int_type *)(output + 2 * NUM_BINS);
-     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-         // FIXME: 2-way bank conflict
-         uint value = cnt_hist[i];
-         ptr_i[i] = value;
      }
      // FIXME: is this right
      __syncthreads();
@@ -338,7 +319,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // The is done by using an global atomic counter.
      // On AMD GPUs ideally this should be done in GDS,
      // but currently there is no easy way to access it via OpenCL.
-     uint * counter_val = cnt_hist;     
+     uint * counter_val = (uint *)(gh_hist + 2 * NUM_BINS);
      // backup the old value
      uint old_val = *counter_val;
      if (ltid == 0) {
@@ -363,7 +344,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
          acc_type const * __restrict__ feature_subhists =
-                  (acc_type *)output_buf + output_offset * 3 * NUM_BINS;
+                  (acc_type *)output_buf + output_offset * 2 * NUM_BINS;
          // skip reading the data already in local memory
          //uint skip_id = feature_id ^ output_offset;
          uint skip_id = group_id - output_offset;
@@ -408,14 +389,6 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
     // TODO: try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = (uint *)(local_hist + 2 * NUM_BINS);
-
-    uint cont_bin;
-    if (power_feature_workgroups != 0) {
-      cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
-    } else {
-      cont_bin = local_cnt[ltid];
-    }
     ushort i;
 
     if (power_feature_workgroups != 0) {
@@ -424,28 +397,20 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
         for (i = 0; i < skip_id; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
 
         // skip the counters we already have
-        p += 3 * NUM_BINS;  
+        p += 2 * NUM_BINS;  
 
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
     }
     __syncthreads();
 
-
     output_buf[ltid * 2 + 0] = grad_bin;
-#if CONST_HESSIAN == 0
     output_buf[ltid * 2 + 1] = hess_bin;                              
-#else
-    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
-#endif
-//    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -506,7 +471,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 
      // counter histogram
      // total size: 256 * size_of(uint) = 1 KB
+     #if CONST_HESSIAN == 1
      uint *cnt_hist = (uint *)(gh_hist + 2 * NUM_BINS);
+     #endif
 
      // odd threads (1, 3, ...) compute histograms for hessians first
      // even thread (0, 2, ...) compute histograms for gradients first
@@ -613,8 +580,10 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // prefetch the next iteration variables
          feature_next = feature_data[ind_next >> feature_mask];
 
+         #if CONST_HESSIAN == 1
          // STAGE 3: accumulate counter
          atomicAdd(cnt_hist + feature, 1);
+         #endif
 
          // STAGE 4: update next stat
          grad = grad_next;
@@ -650,7 +619,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #endif
 
 #if POWER_FEATURE_WORKGROUPS != 0
-     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 3 * NUM_BINS;
+     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 2 * NUM_BINS;
      // write gradients and hessians
      acc_type *__restrict__ ptr_f = output;
      for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
@@ -658,13 +627,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // FIXME: 2-way bank conflict
          acc_type value = gh_hist[i];
          ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
-     }
-     // write counts
-     acc_int_type *__restrict__ ptr_i = (acc_int_type *)(output + 2 * NUM_BINS);
-     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-         // FIXME: 2-way bank conflict
-         uint value = cnt_hist[i];
-         ptr_i[i] = value;
      }
      // FIXME: is this right
      __syncthreads();
@@ -692,7 +654,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // The is done by using an global atomic counter.
      // On AMD GPUs ideally this should be done in GDS,
      // but currently there is no easy way to access it via OpenCL.
-     uint * counter_val = cnt_hist;     
+     uint * counter_val = (uint *)(gh_hist + 2 * NUM_BINS);
      // backup the old value
      uint old_val = *counter_val;
      if (ltid == 0) {
@@ -717,7 +679,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
          acc_type const * __restrict__ feature_subhists =
-                  (acc_type *)output_buf + output_offset * 3 * NUM_BINS;
+                  (acc_type *)output_buf + output_offset * 2 * NUM_BINS;
          // skip reading the data already in local memory
          //uint skip_id = feature_id ^ output_offset;
          uint skip_id = group_id - output_offset;
@@ -762,14 +724,6 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
     // TODO: try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = (uint *)(local_hist + 2 * NUM_BINS);
-
-    uint cont_bin;
-    if (power_feature_workgroups != 0) {
-      cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
-    } else {
-      cont_bin = local_cnt[ltid];
-    }
     ushort i;
 
     if (power_feature_workgroups != 0) {
@@ -778,28 +732,20 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
         for (i = 0; i < skip_id; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
 
         // skip the counters we already have
-        p += 3 * NUM_BINS;  
+        p += 2 * NUM_BINS;  
 
         for (i = i + 1; i < num_sub_hist; ++i) {
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
-            cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
     }
     __syncthreads();
 
-
     output_buf[ltid * 2 + 0] = grad_bin;
-#if CONST_HESSIAN == 0
     output_buf[ltid * 2 + 1] = hess_bin;
-#else
-    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
-#endif
-//    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -860,7 +806,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 
      // counter histogram
      // total size: 256 * size_of(uint) = 1 KB
+     #if CONST_HESSIAN == 1
      uint *cnt_hist = (uint *)(gh_hist + 2 * NUM_BINS);
+     #endif
 
      // odd threads (1, 3, ...) compute histograms for hessians first
      // even thread (0, 2, ...) compute histograms for gradients first
@@ -967,8 +915,10 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // prefetch the next iteration variables
          feature_next = feature_data[ind_next >> feature_mask];
 
+         #if CONST_HESSIAN == 1
          // STAGE 3: accumulate counter
          atomicAdd(cnt_hist + feature, 1);
+         #endif
 
          // STAGE 4: update next stat
          grad = grad_next;
@@ -1004,7 +954,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #endif
 
 #if POWER_FEATURE_WORKGROUPS != 0
-     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 3 * NUM_BINS;
+     acc_type *__restrict__ output = ((acc_type *)output_buf) + group_id * 2 * NUM_BINS;
      // write gradients and hessians
      acc_type *__restrict__ ptr_f = output;
      for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
@@ -1012,13 +962,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // FIXME: 2-way bank conflict
          acc_type value = gh_hist[i];
          ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
-     }
-     // write counts
-     acc_int_type *__restrict__ ptr_i = (acc_int_type *)(output + 2 * NUM_BINS);
-     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-         // FIXME: 2-way bank conflict
-         uint value = cnt_hist[i];
-         ptr_i[i] = value;
      }
      // FIXME: is this right
      __syncthreads();
@@ -1046,7 +989,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // The is done by using an global atomic counter.
      // On AMD GPUs ideally this should be done in GDS,
      // but currently there is no easy way to access it via OpenCL.
-     uint * counter_val = cnt_hist;     
+     uint * counter_val = (uint *)(gh_hist + 2 * NUM_BINS);
      // backup the old value
      uint old_val = *counter_val;
      if (ltid == 0) {
@@ -1071,7 +1014,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
          acc_type const * __restrict__ feature_subhists =
-                  (acc_type *)output_buf + output_offset * 3 * NUM_BINS;
+                  (acc_type *)output_buf + output_offset * 2 * NUM_BINS;
          // skip reading the data already in local memory
          //uint skip_id = feature_id ^ output_offset;
          uint skip_id = group_id - output_offset;
