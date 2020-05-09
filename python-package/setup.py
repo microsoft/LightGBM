@@ -121,7 +121,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
 
-    if system() in ('Windows', 'Microsoft'):
+    if system() in {'Windows', 'Microsoft'}:
         if use_mingw:
             if use_mpi:
                 raise Exception('MPI version cannot be compiled by MinGW due to the miss of MPI library in it')
