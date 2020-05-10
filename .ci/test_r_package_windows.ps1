@@ -12,16 +12,24 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
-$env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
+# some paths and file names are different on R4.0
+if ($env:R_WINDOWS_VERSION -eq "4.0.0") {
+  $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw64/bin"
+  $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
+} else {
+  $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw_64/bin"
+  $env:RTOOLS_EXE_FILE = "Rtools35.exe"
+}
+
 if ($env:COMPILER -eq "MINGW") {
-  $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
-  $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
+  $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
+  $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
 }
 
 cd $env:BUILD_SOURCESDIRECTORY
@@ -37,7 +45,12 @@ if ($env:COMPILER -eq "MINGW") {
 # download R and RTools
 Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe" -destfile "Rtools.exe"
+
+if ($env:R_WINDOWS_VERSION -eq "4.0.0") {
+  Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
+} else {
+  Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
+}
 
 # Install R
 Write-Output "Installing R"

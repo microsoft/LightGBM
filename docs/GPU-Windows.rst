@@ -135,7 +135,7 @@ To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usua
 If it says ``mingw_64`` then you need the 64-bit version (PATH with ``c:\Rtools\bin;c:\Rtools\mingw_64\bin``),
 otherwise you need the 32-bit version (``c:\Rtools\bin;c:\Rtools\mingw_32\bin``), the latter being a very rare and untested case.
 
---------------
+NOTE: As of `Rtools` 4.0, the `_` in these paths has been removed. If you are using `Rtools` 4.0 or later, the path will have `mingw64` instead of `mingw_64` and `mingw32` instead of `mingw_32`.
 
 Download the prebuilt Boost
 ---------------------------
