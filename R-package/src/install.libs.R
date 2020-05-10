@@ -109,10 +109,10 @@ if (!use_precompile) {
     , showWarnings = FALSE
   )
   setwd(build_dir)
-  
-  # If using MSVC to build, pull in the file used
+
+ # If using MSVC to build, pull in the file used
   # to create R.def from R.dll
-  if (WINDOWS && !use_mingw){
+  if (WINDOWS && !use_mingw) {
     write_succeeded <- file.copy(
       "../../inst/make-r-def.R"
       , file.path(build_dir, "make-r-def.R")
@@ -128,6 +128,12 @@ if (!use_precompile) {
   build_cmd <- "make"
   build_args <- "_lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
+
+  # Rtools 4.0 removed mingw32-make.exe
+  windows_cmake_exe <- "mingw32-make.exe"
+  if (R_ver >= 4.0) {
+    windows_cmake_exe <- "make.exe"
+  }
 
   if (use_gpu) {
     cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
@@ -157,7 +163,7 @@ if (!use_precompile) {
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-      build_cmd <- "mingw32-make.exe"
+      build_cmd <- windows_cmake_exe
       build_args <- "_lightgbm"
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
@@ -166,10 +172,10 @@ if (!use_precompile) {
         # Must build twice for Windows due sh.exe in Rtools
         cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
         .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-        build_cmd <- "mingw32-make.exe"
+        build_cmd <- windows_cmake_exe
         build_args <- "_lightgbm"
       } else {
-        build_cmd <- "cmake"
+        build_cmd <- windows_cmake_exe
         build_args <- c("--build", ".", "--target", "_lightgbm", "--config", "Release")
         lib_folder <- file.path(source_dir, "Release", fsep = "/")
         makefiles_already_generated <- TRUE
