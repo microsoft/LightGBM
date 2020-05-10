@@ -2,7 +2,7 @@
 #     Create a definition file (.def) from a .dll file, using objdump.
 #
 # [usage]
-# 
+#
 #     Rscript make-r-def.R something.dll something.def
 #
 # [references]
@@ -10,14 +10,11 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 
-IN_DLL_FILE <- args[[1]]
-OUT_DEF_FILE <- args[[2]]
+IN_DLL_FILE <- args[[1L]]
+OUT_DEF_FILE <- args[[2L]]
 DLL_BASE_NAME <- basename(IN_DLL_FILE)
 
 print(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
-
-# Creates a .def file from R.dll, using tools bundled with R4.0
-#LIBR_CORE_LIBRARY <- "C:/Program Files/R/R-3.6.1/bin/x64/R.dll"
 
 # use objdump to dump all the symbols
 OBJDUMP_FILE <- "objdump-out.txt"
@@ -43,10 +40,10 @@ start_index <- which(
     )
 )
 empty_lines <- which(objdump_results == "")
-end_of_table <- empty_lines[empty_lines > start_index][1]
+end_of_table <- empty_lines[empty_lines > start_index][1L]
 
 # Read the contents of the table
-exported_symbols <- objdump_results[(start_index + 1):end_of_table]
+exported_symbols <- objdump_results[(start_index + 1L):end_of_table]
 exported_symbols <- gsub("\t", "", exported_symbols)
 exported_symbols <- gsub(".*\\] ", "", exported_symbols)
 exported_symbols <- gsub(" ", "", exported_symbols)
