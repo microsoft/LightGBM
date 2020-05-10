@@ -114,7 +114,7 @@ if (!use_precompile) {
   # to create R.def from R.dll
   if (WINDOWS && !use_mingw){
     write_succeeded <- file.copy(
-      "../../inst/bin/make-r-def.R"
+      "../../inst/make-r-def.R"
       , file.path(build_dir, "make-r-def.R")
       , overwrite = TRUE
     )

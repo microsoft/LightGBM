@@ -12,13 +12,15 @@ args <- commandArgs(trailingOnly = TRUE)
 
 IN_DLL_FILE <- args[[1]]
 OUT_DEF_FILE <- args[[2]]
-print(sprintf("Creating '%s' from '%s'", IN_DLL_FILE, OUT_DEF_FILE))
+DLL_BASE_NAME <- basename(IN_DLL_FILE)
+
+print(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
 
 # Creates a .def file from R.dll, using tools bundled with R4.0
 #LIBR_CORE_LIBRARY <- "C:/Program Files/R/R-3.6.1/bin/x64/R.dll"
 
 # use objdump to dump all the symbols
-OBJDUMP_FILE <- "R.fil"
+OBJDUMP_FILE <- "objdump-out.txt"
 exit_code <- system2(
     command = "objdump"
     , args = c(
@@ -29,10 +31,10 @@ exit_code <- system2(
 )
 
 objdump_results <- readLines(OBJDUMP_FILE)
-file.remove(OBJDUMP_FILE)
+result <- file.remove(OBJDUMP_FILE)
 
-# Name Pointer table start
-# https://www.cs.colorado.edu/~main/cs1300/doc/mingwfaq.html
+# Only one table in the objdump results matters for our purposes,
+# see https://www.cs.colorado.edu/~main/cs1300/doc/mingwfaq.html
 start_index <- which(
     grepl(
         pattern = "[Ordinal/Name Pointer] Table"
@@ -50,15 +52,12 @@ exported_symbols <- gsub(".*\\] ", "", exported_symbols)
 exported_symbols <- gsub(" ", "", exported_symbols)
 
 # Write R.def file
-write_succeeded <- writeLines(
+writeLines(
     text = c(
-        paste0("LIBRARY ", '\"R.dll\"')
+        paste0("LIBRARY \"", DLL_BASE_NAME, "\"")
         , "EXPORTS"
         , exported_symbols
     )
     , con = OUT_DEF_FILE
     , sep = "\n"
 )
-if (!isTRUE(write_succeeded)){
-    stop("Failed to create R.def")
-}
