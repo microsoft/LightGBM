@@ -20,13 +20,29 @@ Note: 32-bit (i386) R/Rtools is currently not supported.
 
 #### Windows Preparation
 
-Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version. It requires to add to PATH the Rtools MinGW64 folder, if it was not done automatically during installation.
+Installing a 64-bit version of [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory.
 
-The default compiler is Visual Studio (or [VS Build Tools](https://visualstudio.microsoft.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
+The default compiler is Visual Studio (or [VS Build Tools](https://visualstudio.microsoft.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available. This means if you have only Rtools and CMake, you can still compile the library.
 
 To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
+
+After installing the software mentioned above, be sure the following paths are added to the environment variable `PATH`. These may have been automatically when installing other software
+
+* `Rtools` MinGW bin:
+    - example: `C:\Rtools\mingw_64\bin`
+* `CMake`
+    - example: `C:\Program Files\CMake\bin`
+* `R`
+    - example: `C\Program Files\R\R-3.6.1\bin`
+
+**Notes for R4.0+ users**
+
+As of `Rtools` 4.0, some common paths changed and software was removed from `Rtools`. If you are using `R` 4.0 or later and the corresponding `Rtools`, you need to add one additional path to `PATH`.
+
+* `Rtools` usr bin:
+    - example: `C:\Rtools\usr\bin`
 
 #### Mac OS Preparation
 
