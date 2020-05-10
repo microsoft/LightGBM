@@ -41,10 +41,11 @@ function(create_rlib_for_msvc)
     message(FATAL_ERROR "LIBR_CORE_LIBRARY, '${LIBR_CORE_LIBRARY}', not found")
   endif()
 
-  find_program(GENDEF_EXE gendef)
+  # find_program(GENDEF_EXE gendef)
   find_program(DLLTOOL_EXE dlltool)
 
-  if(NOT GENDEF_EXE OR NOT DLLTOOL_EXE)
+  #if(NOT GENDEF_EXE OR NOT DLLTOOL_EXE)
+  if(NOT DLLTOOL_EXE)
     message(FATAL_ERROR "Either gendef.exe or dlltool.exe not found!\
       \nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
@@ -52,9 +53,14 @@ function(create_rlib_for_msvc)
   set(LIBR_MSVC_CORE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib filepath")
 
   # extract symbols from R.dll into R.def and R.lib import library
-  execute_process(COMMAND ${GENDEF_EXE}
-    "-" "${LIBR_CORE_LIBRARY}"
-    OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def"
+  #execute_process(COMMAND ${GENDEF_EXE}
+  #  "-" "${LIBR_CORE_LIBRARY}"
+  #  OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def"
+  #)
+  execute_process(
+    COMMAND "${LIBR_HOME}/bin/Rscript"
+    "${CMAKE_CURRENT_BINARY_DIR}/make-r-def.R"
+    "${LIBR_CORE_LIBRARY}" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
   )
   execute_process(COMMAND ${DLLTOOL_EXE}
     "--input-def" "${CMAKE_CURRENT_BINARY_DIR}/R.def"

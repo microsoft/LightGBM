@@ -109,6 +109,19 @@ if (!use_precompile) {
     , showWarnings = FALSE
   )
   setwd(build_dir)
+  
+  # If using MSVC to build, pull in the file used
+  # to create R.def from R.dll
+  if (WINDOWS && !use_mingw){
+    write_succeeded <- file.copy(
+      "../../inst/bin/make-r-def.R"
+      , file.path(build_dir, "make-r-def.R")
+      , overwrite = TRUE
+    )
+    if (!write_succeeded) {
+      stop("Copying make-r-def.R failed")
+    }
+  }
 
   # Prepare installation steps
   cmake_args <- NULL
