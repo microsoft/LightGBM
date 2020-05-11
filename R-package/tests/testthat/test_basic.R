@@ -33,6 +33,7 @@ test_that("train and predict binary classification", {
 
 
 test_that("train and predict softmax", {
+  set.seed(708L)
   lb <- as.numeric(iris$Species) - 1L
 
   bst <- lightgbm(
@@ -42,7 +43,7 @@ test_that("train and predict softmax", {
     , learning_rate = 0.1
     , nrounds = 20L
     , min_data = 20L
-    , min_hess = 20.0
+    , min_hessian = 20.0
     , objective = "multiclass"
     , metric = "multi_error"
     , num_class = 3L
@@ -50,7 +51,7 @@ test_that("train and predict softmax", {
 
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "multi_error")
-  expect_lt(min(record_results), 0.03)
+  expect_lt(min(record_results), 0.05)
 
   pred <- predict(bst, as.matrix(iris[, -5L]))
   expect_equal(length(pred), nrow(iris) * 3L)
@@ -125,11 +126,11 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   set.seed(708L)
   dvalid1 <- lgb.Dataset(
     data = train$data
-    , labels = train$label
+    , label = train$label
   )
   dvalid2 <- lgb.Dataset(
     data = train$data
-    , labels = train$label
+    , label = train$label
   )
   nrounds <- 10L
   bst <- lightgbm(
@@ -156,8 +157,8 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
     expect_length(eval_results[["eval"]], nrounds)
   }
   expect_true(abs(bst$record_evals[["train"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
-  expect_true(abs(bst$record_evals[["valid1"]][["binary_error"]][["eval"]][[1L]] - 0.4825733) < TOLERANCE)
-  expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.4825733) < TOLERANCE)
+  expect_true(abs(bst$record_evals[["valid1"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
+  expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
 })
 
 
