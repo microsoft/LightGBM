@@ -227,7 +227,6 @@ def generate_r_docs(app):
     echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile
     /home/docs/.conda/bin/conda create -q -y -n r_env \
         r-base=3.5.1=h1e0a451_2 \
-        r-devtools=1.13.6=r351h6115d3f_0 \
         r-jsonlite=1.5=r351h96ca727_0 \
         r-matrix=1.2_14=r351h96ca727_0 \
         r-testthat=2.0.0=r351h29659fb_0 \
@@ -236,7 +235,7 @@ def generate_r_docs(app):
     /home/docs/.conda/bin/conda install -q -y -n r_env -c conda-forge \
         r-data.table=1.12.8=r35hcdcec82_0 \
         r-pkgdown=1.3.0=r35h6115d3f_1001 \
-        r-roxygen2=6.1.1=r35h0357c0b_1001
+        r-roxygen2=7.1.0=r36h0357c0b_1
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {0}
