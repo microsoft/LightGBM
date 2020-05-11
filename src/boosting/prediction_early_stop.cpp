@@ -74,7 +74,6 @@ PredictionEarlyStopInstance CreateBinary(const PredictionEarlyStopConfig& config
 
 PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string& type,
                                                               const PredictionEarlyStopConfig& config) {
-
   if (type != "none" && type != "multiclass" && type != "binary") {
     Log::Fatal("Unknown early stopping type: %s", type.c_str());
   }
