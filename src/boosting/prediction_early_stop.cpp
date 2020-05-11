@@ -74,15 +74,19 @@ PredictionEarlyStopInstance CreateBinary(const PredictionEarlyStopConfig& config
 
 PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string& type,
                                                               const PredictionEarlyStopConfig& config) {
+
+  if (type != "none" && type != "multiclass" && type != "binary") {
+    Log::Fatal("Unknown early stopping type: %s", type.c_str());
+  }
+
   if (type == "none") {
     return CreateNone(config);
   } else if (type == "multiclass") {
     return CreateMulticlass(config);
-  } else if (type == "binary") {
-    return CreateBinary(config);
-  } else {
-    Log::Fatal("Unknown early stopping type: %s", type.c_str());
   }
+
+  // "binary"
+  return CreateBinary(config);
 }
 
 }  // namespace LightGBM
