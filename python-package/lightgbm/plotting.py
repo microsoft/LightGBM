@@ -9,7 +9,7 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster
-from .compat import (MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED, LGBMDeprecationWarning,
+from .compat import (MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED,
                      range_, zip_, string_type)
 from .sklearn import LGBMModel
 
@@ -329,7 +329,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     num_metric = len(metrics_for_one)
     if metric is None:
         if num_metric > 1:
-            msg = """more than one metric available, picking one to plot."""
+            msg = "More than one metric available, picking one to plot."
             warnings.warn(msg, stacklevel=2)
         metric, results = metrics_for_one.popitem()
     else:
@@ -471,9 +471,6 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
 
 
 def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
-                        old_name=None, old_comment=None, old_filename=None, old_directory=None,
-                        old_format=None, old_engine=None, old_encoding=None, old_graph_attr=None,
-                        old_node_attr=None, old_edge_attr=None, old_body=None, old_strict=False,
                         orientation='horizontal', **kwargs):
     """Create a digraph representation of specified tree.
 
@@ -512,23 +509,6 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     elif not isinstance(booster, Booster):
         raise TypeError('booster must be Booster or LGBMModel.')
 
-    for param_name in ['old_name', 'old_comment', 'old_filename', 'old_directory',
-                       'old_format', 'old_engine', 'old_encoding', 'old_graph_attr',
-                       'old_node_attr', 'old_edge_attr', 'old_body']:
-        param = locals().get(param_name)
-        if param is not None:
-            warnings.warn('{0} parameter is deprecated and will be removed in 2.4 version.\n'
-                          'Please use **kwargs to pass {1} parameter.'.format(param_name, param_name[4:]),
-                          LGBMDeprecationWarning)
-            if param_name[4:] not in kwargs:
-                kwargs[param_name[4:]] = param
-    if locals().get('strict'):
-        warnings.warn('old_strict parameter is deprecated and will be removed in 2.4 version.\n'
-                      'Please use **kwargs to pass strict parameter.',
-                      LGBMDeprecationWarning)
-        if 'strict' not in kwargs:
-            kwargs['strict'] = True
-
     model = booster.dump_model()
     tree_infos = model['tree_info']
     if 'feature_names' in model:
@@ -553,7 +533,6 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
 
 
 def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
-              old_graph_attr=None, old_node_attr=None, old_edge_attr=None,
               show_info=None, precision=3, orientation='horizontal', **kwargs):
     """Plot specified tree.
 
@@ -599,15 +578,6 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         import matplotlib.image as image
     else:
         raise ImportError('You must install matplotlib to plot tree.')
-
-    for param_name in ['old_graph_attr', 'old_node_attr', 'old_edge_attr']:
-        param = locals().get(param_name)
-        if param is not None:
-            warnings.warn('{0} parameter is deprecated and will be removed in 2.4 version.\n'
-                          'Please use **kwargs to pass {1} parameter.'.format(param_name, param_name[4:]),
-                          LGBMDeprecationWarning)
-            if param_name[4:] not in kwargs:
-                kwargs[param_name[4:]] = param
 
     if ax is None:
         if figsize is not None:
