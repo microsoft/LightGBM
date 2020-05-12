@@ -59,7 +59,8 @@ elseif ($env:TASK -eq "bdist") {
   .\OCL_SDK_LIGHT_AMD.exe /silent
   $env:OCL_ROOT = "C:\Program Files (x86)\OCL_SDK_Light"
   $env:LGBM_GPU = "1"
-  $env:LGBM_BOOST_ROOT = "$env:BOOST_ROOT"
+  $env:LGBM_BOOST_ROOT = "$env:BOOST_ROOT_1_72_0"
+  echo "BOOST: $env:LGBM_BOOST_ROOT"
   $env:LGBM_OPENCL_LIBRARY_DIR = "$env:OCL_ROOT\lib\x86_64\opencl.lib"
   $env:LGBM_OPENCL_INCLUDE_DIR = "$env:OCL_ROOT\include"
   cd $env:BUILD_SOURCESDIRECTORY/python-package
