@@ -58,8 +58,12 @@ elseif ($env:TASK -eq "bdist") {
   curl -o OCL_SDK_LIGHT_AMD.exe https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases/download/1.0/OCL_SDK_Light_AMD.exe
   .\OCL_SDK_LIGHT_AMD.exe /silent
   $env:OCL_ROOT = "C:\Program Files (x86)\OCL_SDK_Light"
+  $env:LGBM_GPU = "1"
+  $env:LGBM_BOOST_ROOT = "$env:BOOST_ROOT"
+  $env:LGBM_OPENCL_LIBRARY_DIR = "$env:OCL_ROOT\lib\x86_64\opencl.lib"
+  $env:LGBM_OPENCL_INCLUDE_DIR = "$env:OCL_ROOT\include"
   cd $env:BUILD_SOURCESDIRECTORY/python-package
-  python setup.py bdist_wheel --gpu --boost-root="$env:BOOST_ROOT" --opencl-library="$env:OCL_ROOT\lib\x86_64\opencl.lib" --opencl-include-dir="$env:OCL_ROOT\include" --plat-name=win-amd64 --universal ; Check-Output $?
+  python setup.py bdist_wheel --plat-name=win-amd64 --universal ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
   Get-ChildItem *.whl | Rename-Item -NewName { $_.Name -replace 'lightgbm-','lightgbm-opencl-' }
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY

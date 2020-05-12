@@ -10,6 +10,7 @@ import shutil
 import struct
 import subprocess
 import sys
+from os import environ
 
 from platform import system
 from setuptools import find_packages, setup
@@ -202,19 +203,19 @@ class CustomInstall(install):
 
     def initialize_options(self):
         install.initialize_options(self)
-        self.mingw = 0
-        self.gpu = 0
-        self.boost_root = None
-        self.boost_dir = None
-        self.boost_include_dir = None
-        self.boost_librarydir = None
-        self.opencl_include_dir = None
-        self.opencl_library = None
-        self.mpi = 0
-        self.hdfs = 0
-        self.precompile = 0
-        self.nomp = 0
-        self.bit32 = 0
+        self.mingw = environ.get("LGBM_MINGW", 0)
+        self.gpu = environ.get("LGBM_GPU", 0)
+        self.boost_root = environ.get("LGBM_BOOST_ROOT", None)
+        self.boost_dir = environ.get("LGBM_BOOST_DIR", None)
+        self.boost_include_dir = environ.get("LGBM_BOOST_INCLUDE_DIR", None)
+        self.boost_librarydir = environ.get("LGBM_BOOST_LIBRARY_DIR", None)
+        self.opencl_include_dir = environ.get("LGBM_OPENCL_INCLUDE_DIR", None)
+        self.opencl_library = environ.get("LGBM_OPENCL_LIBRARY_DIR", None)
+        self.mpi = environ.get("LGBM_MPI", 0)
+        self.hdfs = environ.get("LGBM_HDFS", 0)
+        self.precompile = environ.get("LGBM_PRECOMPILE", 0)
+        self.nomp = environ.get("LGBM_NOMP", 0)
+        self.bit32 = environ.get("LGBM_BIT32", 0)
 
     def run(self):
         if (8 * struct.calcsize("P")) != 64:
