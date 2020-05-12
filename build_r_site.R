@@ -6,7 +6,7 @@ if (!dir.exists("docs")) {
   dir.create("docs")
 }
 
-roxygen2::roxygenize(load ="installed")
+roxygen2::roxygenize()
 pkgdown::clean_site()
 pkgdown::init_site()
 pkgdown::build_home(preview = FALSE, quiet = FALSE)
