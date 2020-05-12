@@ -91,7 +91,6 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
 #else
     output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 #endif
-    //output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -219,17 +218,18 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
          // prefetch the next iteration variables
          // we don't need bondary check because we have made the buffer large
+         int i_next = i + subglobal_size;
          #ifdef IGNORE_INDICES
          // we need to check to bounds here
-         ind_next = i + subglobal_size < num_data ? i + subglobal_size : i;
+         ind_next = i_next < num_data ? i_next : i;
          #else
-         ind_next = data_indices[i + subglobal_size];
+         ind_next = data_indices[i_next];
          #endif
 
          // imbGBT v5.1
-         grad_next = ordered_gradients[ind_next];
+         grad_next = ordered_gradients[i_next];
          #if CONST_HESSIAN == 0
-         hess_next = ordered_hessians[ind_next];
+         hess_next = ordered_hessians[i_next];
          #endif
 
          // STAGE 2: accumulate gradient and hessian
@@ -441,11 +441,10 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
 
     output_buf[ltid * 2 + 0] = grad_bin;
 #if CONST_HESSIAN == 0
-    output_buf[ltid * 2 + 1] = hess_bin;                              
+    output_buf[ltid * 2 + 1] = hess_bin;
 #else
     output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 #endif
-//    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -573,17 +572,18 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
          // prefetch the next iteration variables
          // we don't need bondary check because we have made the buffer large
+         int i_next = i + subglobal_size;
          #ifdef IGNORE_INDICES
          // we need to check to bounds here
-         ind_next = i + subglobal_size < num_data ? i + subglobal_size : i;
+         ind_next = i_next < num_data ? i_next : i;
          #else
-         ind_next = data_indices[i + subglobal_size];
+         ind_next = data_indices[i_next];
          #endif
 
          // imbGBT v5.1
-         grad_next = ordered_gradients[ind_next];
+         grad_next = ordered_gradients[i_next];
          #if CONST_HESSIAN == 0
-         hess_next = ordered_hessians[ind_next];
+         hess_next = ordered_hessians[i_next];
          #endif
 
          // STAGE 2: accumulate gradient and hessian
@@ -792,14 +792,12 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
     }
     __syncthreads();
 
-
     output_buf[ltid * 2 + 0] = grad_bin;
 #if CONST_HESSIAN == 0
     output_buf[ltid * 2 + 1] = hess_bin;
 #else
     output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 #endif
-//    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -927,17 +925,18 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
          // prefetch the next iteration variables
          // we don't need bondary check because we have made the buffer large
+         int i_next = i + subglobal_size;
          #ifdef IGNORE_INDICES
          // we need to check to bounds here
-         ind_next = i + subglobal_size < num_data ? i + subglobal_size : i;
+         ind_next = i_next < num_data ? i_next : i;
          #else
-         ind_next = data_indices[i + subglobal_size];
+         ind_next = data_indices[i_next];
          #endif
 
          // imbGBT v5.1
-         grad_next = ordered_gradients[ind_next];
+         grad_next = ordered_gradients[i_next];
          #if CONST_HESSIAN == 0
-         hess_next = ordered_hessians[ind_next];
+         hess_next = ordered_hessians[i_next];
          #endif
 
          // STAGE 2: accumulate gradient and hessian

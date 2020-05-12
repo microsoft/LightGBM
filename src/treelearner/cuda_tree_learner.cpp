@@ -112,7 +112,7 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
     for (i = 0; i < (int) size; ++i) {
       af = GET_GRAD(h1, i);
       bf = GET_GRAD(h2, i);
-      if (((std::fabs(af - bf))/af) >= 1e-6) {
+      if ((((std::fabs(af - bf))/af) >= 1e-6) && ((std::fabs(af - bf)) >= 1e-6)) {
         printf("i = %5d, h1.grad %13.6lf, h2.grad %13.6lf\n", i, af, bf);
         ++retval;
       }
@@ -140,7 +140,7 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
     for (i = 0; i < (int) size; ++i) {
       af = GET_GRAD(h1, i);
       bf = GET_GRAD(h2, i);
-      if (((std::fabs(af - bf))/af) >= 1e-5) {
+      if ((((std::fabs(af - bf))/af) >= 1e-6) && ((std::fabs(af - bf)) >= 1e-6)) {
         printf("i = %5d, h1.grad %13.6f, h2.grad %13.6f\n", i, af, bf);
         ++retval;
       }
@@ -1033,6 +1033,8 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     //break; // LGBM_CUDA: see only first feature info
   }
   printf("End Comparing Histogram between GPU and CPU\n");
+  fflush(stderr);
+  fflush(stdout);
 //  #endif
 #endif
 
