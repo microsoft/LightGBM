@@ -240,6 +240,7 @@ def generate_r_docs(app):
     export TAR=/bin/tar
     cd {0}
     sed -i'.bak' '/# Build the package (do not touch this line!)/q' build_r.R
+    export R_LIBS="/home/docs/.conda/envs/r_env/lib/R/library"
     Rscript build_r.R
     Rscript build_r_site.R
     """.format(os.path.join(CURR_PATH, os.path.pardir))
