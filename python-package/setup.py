@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 from platform import system
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup, sic
 from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.sdist import sdist
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     logger = logging.getLogger('LightGBM')
 
     setup(name='lightgbm',
-          version=version,
+          version=sic(version),
           description='LightGBM Python Package',
           long_description=readme,
           install_requires=[
