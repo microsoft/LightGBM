@@ -337,7 +337,7 @@ test_that("Booster$update() passing a train_set works as expected", {
     expect_true(lgb.is.Booster(bst))
     expect_equal(bst$current_iter(), nrounds + 1L)
 
-    # train with 3 rounds directlry
+    # train with 3 rounds directly
     bst2 <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
