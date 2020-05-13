@@ -57,6 +57,10 @@ elseif ($env:TASK -eq "bdist") {
   # extension can still be used with other OpenCL engines.
   curl -o OCL_SDK_LIGHT_AMD.exe https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases/download/1.0/OCL_SDK_Light_AMD.exe
   .\OCL_SDK_LIGHT_AMD.exe /silent
+  # The Intel CPU runtime, so we can run OpenCL code
+  curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
+  msiexec /i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /le msi.log 
+  cat msi.log
   $env:OCL_ROOT = "C:\Program Files (x86)\OCL_SDK_Light"
   $env:LGBM_GPU = "1"
   $env:LGBM_BOOST_ROOT = "$env:BOOST_ROOT_1_72_0"
