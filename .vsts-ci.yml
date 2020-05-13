@@ -120,7 +120,7 @@ jobs:
     matrix:
       r_package:
         TASK: r-package
-        COMPILER: MINGW
+        COMPILER: MSVC
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6
