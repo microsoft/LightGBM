@@ -59,7 +59,11 @@ class GOSS: public GBDT {
     balanced_bagging_ = false;
     bag_data_indices_.resize(num_data_);
     bagging_runner_.ReSize(num_data_);
-
+    bagging_rands_.clear();
+    for (int i = 0;
+         i < (num_data_ + bagging_rand_block_ - 1) / bagging_rand_block_; ++i) {
+      bagging_rands_.emplace_back(config_->bagging_seed + i);
+    }
     is_use_subset_ = false;
     if (config_->top_rate + config_->other_rate <= 0.5) {
       auto bag_data_cnt = static_cast<data_size_t>((config_->top_rate + config_->other_rate) * num_data_);
