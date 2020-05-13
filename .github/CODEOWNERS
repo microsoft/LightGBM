@@ -12,7 +12,7 @@
 # main C++ code
 include/    @guolinke @chivee @btrotta
 src/    @guolinke @chivee @btrotta
-CmakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta
+CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta
 
 # R code
 include/LightGBM/lightgbm_R.h    @Laurae2 @jameslamb
