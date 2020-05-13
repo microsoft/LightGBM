@@ -186,6 +186,18 @@ The appropriate splitting strategy depends on the task and domain of the data, i
 
 LightGBM supports loading data from zero-based LibSVM format file directly.
 
+14. Why cmake cannot find the compiler when compiling LightGBM with MinGW?
+--------------------------------------------------------------------------
+
+.. code-block:: bash
+
+    CMake Error: CMAKE_C_COMPILER not set, after EnableLanguage
+    CMake Error: CMAKE_CXX_COMPILER not set, after EnableLanguage
+
+This is a known issue of `cmake` when using MinGW. The easiest solution is to run again `cmake` to bypass the one time stopper from `cmake`.
+
+See `Microsoft/LightGBM#3060 <https://github.com/microsoft/LightGBM/issues/3060#issuecomment-62633853>`__ for more details.
+
 ------
 
 R-package
