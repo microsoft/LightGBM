@@ -12,7 +12,7 @@ pkgdown::init_site()
 pkgdown::build_home(preview = FALSE, quiet = FALSE)
 pkgdown::build_reference(
     lazy = FALSE
-    , document = FALSE
+    , devel = FALSE
     , examples = TRUE
     , run_dont_run = FALSE
     , seed = 42L
