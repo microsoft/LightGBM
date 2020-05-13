@@ -164,6 +164,7 @@ if (!use_precompile) {
     }
   } else {
       .run_shell_command("cmake", c(cmake_args, ".."))
+      makefiles_already_generated <- TRUE
   }
 
   # generate build files
