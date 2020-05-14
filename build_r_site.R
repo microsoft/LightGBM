@@ -1,17 +1,18 @@
 library(pkgdown)
+library(roxygen2)
 
 setwd("lightgbm_r")
 if (!dir.exists("docs")) {
   dir.create("docs")
 }
 
-devtools::document()
-clean_site()
-init_site()
-build_home(preview = FALSE, quiet = FALSE)
-build_reference(
+roxygen2::roxygenize(load = "installed")
+pkgdown::clean_site()
+pkgdown::init_site()
+pkgdown::build_home(preview = FALSE, quiet = FALSE)
+pkgdown::build_reference(
     lazy = FALSE
-    , document = FALSE
+    , devel = FALSE
     , examples = TRUE
     , run_dont_run = FALSE
     , seed = 42L
