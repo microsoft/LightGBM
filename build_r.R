@@ -17,12 +17,42 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 }
 
 # system() will not raise an R exception if the process called
-# fails. Wrapping it here to get that behavior
-.run_shell_command <- function(cmd, ...) {
-    exit_code <- system(cmd, ...)
-    if (exit_code != 0L) {
+# fails. Wrapping it here to get that behavior.
+#
+# system() introduces a lot of overhead, at least on Windows,
+# so trying processx if it is available
+.run_shell_command <- function(cmd, args, strict = TRUE) {
+    on_windows <- .Platform$OS.type == "windows"
+    has_processx <- suppressMessages({
+      suppressWarnings({
+        require("processx")  # nolint
+      })
+    })
+    if (has_processx && on_windows) {
+      result <- processx::run(
+        command = cmd
+        , args = args
+        , windows_verbatim_args = TRUE
+        , error_on_status = FALSE
+        , echo = TRUE
+      )
+      exit_code <- result$status
+    } else {
+      if (on_windows) {
+        message(paste0(
+          "Using system() to run shell commands. Installing "
+          , "'processx' with install.packages('processx') might "
+          , "make this faster."
+        ))
+      }
+      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      exit_code <- system(cmd)
+    }
+
+    if (exit_code != 0L && isTRUE(strict)) {
         stop(paste0("Command failed with exit code: ", exit_code))
     }
+    return(invisible(exit_code))
 }
 
 # Make a new temporary folder to work in
@@ -73,8 +103,7 @@ result <- file.copy(
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-cmd <- "R CMD build lightgbm_r --keep-empty-dirs"
-.run_shell_command(cmd)
+.run_shell_command("R", c("CMD", "build", "lightgbm_r", "--keep-empty-dirs"))
 
 # Install the package
 version <- gsub(
@@ -88,9 +117,11 @@ version <- gsub(
 )
 tarball <- file.path(getwd(), sprintf("lightgbm_%s.tar.gz", version))
 
-cmd <- sprintf("R CMD INSTALL %s --no-multiarch --with-keep.source", tarball)
+install_cmd <- "R"
+install_args <- c("CMD", "INSTALL", "--no-multiarch", "--with-keep.source", tarball)
 if (INSTALL_AFTER_BUILD) {
-  .run_shell_command(cmd)
+  .run_shell_command(install_cmd, install_args)
 } else {
+  cmd <- paste0(install_cmd, " ", paste0(install_args, collapse = " "))
   print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
 }
