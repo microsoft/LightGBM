@@ -6,6 +6,13 @@ site:
   root: ''
   title: LightGBM, Light Gradient Boosting Machine
 
+repo:
+  url:
+    home: https://github.com/microsoft/LightGBM/
+    source: https://github.com/microsoft/LightGBM/tree/master/R-package/
+    issue: https://github.com/microsoft/LightGBM/issues/
+    user: https://github.com/
+
 development:
   mode: unreleased
 
