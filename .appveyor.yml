@@ -10,6 +10,9 @@ environment:
     - COMPILER: MINGW
       TASK: r-package
     - COMPILER: MSVC
+      TASK: r-package
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    - COMPILER: MSVC
       TASK: python
     - COMPILER: MINGW
       TASK: python
