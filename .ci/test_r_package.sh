@@ -71,7 +71,7 @@ fi
 Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
-Rscript build_r.R --skip-install || exit -1
+Rscript build_r.R || exit -1
 
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
