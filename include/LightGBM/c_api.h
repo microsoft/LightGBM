@@ -972,7 +972,6 @@ LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);
  * Release the `FastConfig` by passing its handle to `LGBM_FastConfigFree` when no longer needed.
  *
  * \param handle Booster handle
- * \param data Single-row array data (no other way than row-major form).
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param ncol Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
@@ -980,7 +979,6 @@ LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);
  * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
-                                                                 const void* data,
                                                                  int data_type,
                                                                  int32_t ncol,
                                                                  const char* parameter,
@@ -990,6 +988,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
  * \brief Score a single row after setup with `LGBM_BoosterPredictForMatSingleRowFastInit`.
  *
  * \param fastConfig_handle FastConfig object handle returned by `LGBM_BoosterPredictForMatSingleRowFastInit`
+ * \param data Single-row array data (no other way than row-major form).
  * \param predict_type What should be predicted
  *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
@@ -1001,6 +1000,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
  * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fastConfig_handle,
+                                                             const void* data,
                                                              int predict_type,
                                                              int num_iteration,
                                                              int64_t* out_len,
