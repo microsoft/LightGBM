@@ -153,6 +153,11 @@ class GOSS: public GBDT {
                                     bag_data_cnt_);
     }
   }
+
+ protected:
+  bool GetIsConstHessian(const ObjectiveFunction*) override {
+    return false;
+  }
 };
 
 }  // namespace LightGBM
