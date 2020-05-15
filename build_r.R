@@ -7,6 +7,8 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
+TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
+TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
@@ -56,13 +58,13 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 }
 
 # Make a new temporary folder to work in
-unlink(x = "lightgbm_r", recursive = TRUE)
-dir.create("lightgbm_r")
+unlink(x = TEMP_R_DIR, recursive = TRUE)
+dir.create(TEMP_R_DIR)
 
 # copy in the relevant files
 result <- file.copy(
   from = "R-package/./"
-  , to = "lightgbm_r/"
+  , to = sprintf("%s/", TEMP_R_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
@@ -70,7 +72,7 @@ result <- file.copy(
 
 result <- file.copy(
   from = "include/"
-  , to = file.path("lightgbm_r", "src/")
+  , to =  sprintf("%s/", TEMP_SOURCE_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
@@ -78,7 +80,7 @@ result <- file.copy(
 
 result <- file.copy(
   from = "src/"
-  , to = file.path("lightgbm_r", "src/")
+  , to = sprintf("%s/", TEMP_SOURCE_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
@@ -86,7 +88,7 @@ result <- file.copy(
 
 result <- file.copy(
   from = "compute/"
-  , to = file.path("lightgbm_r", "src/")
+  , to = sprintf("%s/", TEMP_SOURCE_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
@@ -94,15 +96,29 @@ result <- file.copy(
 
 result <- file.copy(
   from = "CMakeLists.txt"
-  , to = file.path("lightgbm_r", "inst", "bin/")
+  , to = file.path(TEMP_R_DIR, "inst", "bin/")
   , overwrite = TRUE
 )
 .handle_result(result)
 
+# copy files into the place CMake expects
+for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
+  result <- file.copy(
+    from = file.path(TEMP_SOURCE_DIR, src_file)
+    , to = file.path(TEMP_SOURCE_DIR, "src", src_file)
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+  result <- file.remove(
+    file.path(TEMP_SOURCE_DIR, src_file)
+  )
+  .handle_result(result)
+}
+
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-.run_shell_command("R", c("CMD", "build", "lightgbm_r", "--keep-empty-dirs"))
+.run_shell_command("R", c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs"))
 
 # Install the package
 version <- gsub(
@@ -110,7 +126,7 @@ version <- gsub(
   "",
   grep(
     "Version: "
-    , readLines(con = file.path("lightgbm_r", "DESCRIPTION"))
+    , readLines(con = file.path(TEMP_R_DIR, "DESCRIPTION"))
     , value = TRUE
   )
 )

@@ -6,7 +6,7 @@
 #define LIGHTGBM_R_H_
 
 #include <LightGBM/c_api.h>
-#include <LightGBM/R_object_helper.h>
+#include "./R_object_helper.h"
 
 /*!
 * \brief get string message of the last error
