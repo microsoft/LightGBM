@@ -44,7 +44,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
           , "make this faster."
         ))
         cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
-        exit_code <- system(cmd)
+        exit_code <- system2(
+          command = cmd
+          , args = args
+          , wait = TRUE
+        )
       }
     }
 
@@ -167,9 +171,6 @@ if (!use_precompile) {
       makefiles_already_generated <- TRUE
   }
 
-  # Some testing environments time out if nothing is written to stdout
-  print("")
-
   # generate build files
   if (!makefiles_already_generated) {
     .run_shell_command("cmake", c(cmake_args, ".."))
@@ -197,9 +198,6 @@ if (!use_precompile) {
       , sep = "\n"
     )
   }
-
-  # Some testing environments time out if nothing is written to stdout
-  print("")
 
   # build the library
   .run_shell_command(build_cmd, build_args)
