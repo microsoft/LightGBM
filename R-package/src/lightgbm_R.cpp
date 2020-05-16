@@ -2,7 +2,8 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#include "./lightgbm_R.h"
+
+#include "lightgbm_R.h"
 
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
