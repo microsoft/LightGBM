@@ -2,7 +2,7 @@
 #' @title Data preparator for LightGBM datasets with rules (numeric)
 #' @description **NOTE: This function is deprecated and will be removed in a future release.
 #'              Please use \code{\link{lgb.prepare_rules2}}.**
-#' 
+#'
 #'              Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
 #'              Factors and characters are converted to numeric. In addition, keeps rules created
 #'              so you can convert other datasets using this converter.
