@@ -43,13 +43,12 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
           , "'processx' with install.packages('processx') might "
           , "make this faster."
         ))
-        cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
-        exit_code <- system2(
-          command = cmd
-          , args = args
-          , wait = TRUE
-        )
       }
+      exit_code <- system2(
+        command = cmd
+        , args = args
+        , wait = TRUE
+      )
     }
 
     if (exit_code != 0L && isTRUE(strict)) {
