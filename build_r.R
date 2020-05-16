@@ -45,11 +45,8 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
           , "make this faster."
         ))
       }
-      exit_code <- system2(
-        command = cmd
-        , args = args
-        , wait = TRUE
-      )
+      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      exit_code <- system(cmd)
     }
 
     if (exit_code != 0L && isTRUE(strict)) {

@@ -38,17 +38,14 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       exit_code <- result$status
     } else {
       if (on_windows) {
-        message(paste0(
+        print(paste0(
           "Using system() to run shell commands. Installing "
           , "'processx' with install.packages('processx') might "
           , "make this faster."
         ))
       }
-      exit_code <- system2(
-        command = cmd
-        , args = args
-        , wait = TRUE
-      )
+      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      exit_code <- system(cmd)
     }
 
     if (exit_code != 0L && isTRUE(strict)) {
@@ -66,7 +63,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   )
   working_vs_version <- NULL
   for (vs_version in vs_versions) {
-    message(sprintf("Trying '%s'", vs_version))
+    print(sprintf("Trying '%s'", vs_version))
     # if the build directory is not empty, clean it
     if (file.exists("CMakeCache.txt")) {
       file.remove("CMakeCache.txt")
@@ -80,7 +77,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     )
     exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."), strict = FALSE)
     if (exit_code == 0L) {
-      message(sprintf("Successfully created build files for '%s'", vs_version))
+      print(sprintf("Successfully created build files for '%s'", vs_version))
       return(invisible(TRUE))
     }
 
@@ -143,7 +140,7 @@ if (!use_precompile) {
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
-      message("Trying to build with MinGW")
+      print("Trying to build with MinGW")
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
@@ -238,7 +235,7 @@ if (!use_precompile) {
 dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH), fsep = "/")
 dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 if (file.exists(src)) {
-  message(paste0("Found library file: ", src, " to move to ", dest))
+  print(paste0("Found library file: ", src, " to move to ", dest))
   file.copy(src, dest, overwrite = TRUE)
 
   symbols_file <- file.path(source_dir, "symbols.rds")
@@ -252,7 +249,7 @@ if (file.exists(src)) {
 
 # clean up the "build" directory
 if (dir.exists(build_dir)) {
-  message("Removing 'build/' directory")
+  print("Removing 'build/' directory")
   unlink(
     x = build_dir
     , recursive = TRUE
