@@ -40,7 +40,7 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
     } else {
       if (on_windows) {
         message(paste0(
-          "Using system2() to run shell commands. Installing "
+          "Using system() to run shell commands. Installing "
           , "'processx' with install.packages('processx') might "
           , "make this faster."
         ))
