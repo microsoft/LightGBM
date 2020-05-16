@@ -22,12 +22,13 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 # system() introduces a lot of overhead, at least on Windows,
 # so trying processx if it is available
 .run_shell_command <- function(cmd, args, strict = TRUE) {
+    on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
         require("processx")  # nolint
       })
     })
-    if (has_processx) {
+    if (has_processx && on_windows) {
       result <- processx::run(
         command = cmd
         , args = args
@@ -37,11 +38,13 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
       )
       exit_code <- result$status
     } else {
-      message(paste0(
-        "Using system() to run shell commands. Installing "
-        , "'processx' with install.packages('processx') might "
-        , "make this faster."
-      ))
+      if (on_windows) {
+        message(paste0(
+          "Using system() to run shell commands. Installing "
+          , "'processx' with install.packages('processx') might "
+          , "make this faster."
+        ))
+      }
       cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
       exit_code <- system(cmd)
     }
