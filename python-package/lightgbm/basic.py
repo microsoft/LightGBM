@@ -53,6 +53,7 @@ def _safe_call(ret):
     if ret != 0:
         raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
 
+
 def is_numeric(obj):
     """Check whether object is a number or not, include numpy number, etc."""
     try:
