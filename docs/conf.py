@@ -254,7 +254,7 @@ def generate_r_docs(app):
         )
         "
     cd {0}
-    """.format(os.path.join(CURR_PATH, os.path.pardir), os.path.join(CURR_PATH, os.path.pardir), "lightgbm_r")
+    """.format(os.path.join(CURR_PATH, os.path.pardir), os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r"))
     try:
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
