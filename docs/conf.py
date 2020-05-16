@@ -240,8 +240,21 @@ def generate_r_docs(app):
     cd {0}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
     Rscript build_r.R
-    Rscript build_r_site.R
-    """.format(os.path.join(CURR_PATH, os.path.pardir))
+    cd {1}
+    Rscript -e "
+        roxygen2::roxygenize(load = 'installed');
+        pkgdown::build_site(
+            lazy = FALSE
+            , install = FALSE
+            , devel = FALSE
+            , examples = TRUE
+            , run_dont_run = FALSE
+            , seed = 42L
+            , preview = FALSE
+        )
+        "
+    cd {0}
+    """.format(os.path.join(CURR_PATH, os.path.pardir), os.path.join(CURR_PATH, os.path.pardir), "lightgbm_r")
     try:
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
