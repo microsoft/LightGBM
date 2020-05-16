@@ -130,10 +130,7 @@ if (!use_precompile) {
   lib_folder <- file.path(source_dir, fsep = "/")
 
   # Rtools 4.0 removed mingw32-make.exe
-  windows_cmake_exe <- "mingw32-make.exe"
-  if (R_ver >= 4.0) {
-    windows_cmake_exe <- "make.exe"
-  }
+  windows_cmake_exe <- "make.exe"
 
   if (use_gpu) {
     cmake_args <- c(cmake_args, "-DUSE_GPU=ON")

@@ -114,7 +114,7 @@ jobs:
       r_package:
         TASK: r-package
         COMPILER: MSVC
-        R_WINDOWS_VERSION: 3.6.3
+        R_VERSION: 3.6.3
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6

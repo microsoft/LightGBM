@@ -19,12 +19,16 @@ $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
 # some paths and file names are different on R4.0
-if ($env:R_WINDOWS_VERSION -eq "4.0.0") {
+$env:R_MAJOR_VERSION=$env:R_VERSION.split('.')[0]
+if ($env:R_MAJOR_VERSION -eq "3") {
+  $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw_64/bin"
+  $env:RTOOLS_EXE_FILE = "Rtools35.exe"
+} elseif ($env:R_MAJOR_VERSION -eq "4") {
   $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw64/bin"
   $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
 } else {
-  $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw_64/bin"
-  $env:RTOOLS_EXE_FILE = "Rtools35.exe"
+  Write-Output "Unrecognized R version: $env:R_VERSION"
+  Check-Output $false
 }
 
 if ($env:COMPILER -eq "MINGW") {
@@ -44,13 +48,8 @@ if ($env:COMPILER -eq "MINGW") {
 
 # download R and RTools
 Write-Output "Downloading R and Rtools"
-Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-
-if ($env:R_WINDOWS_VERSION -eq "4.0.0") {
-  Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
-} else {
-  Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
-}
+Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_VERSION/R-$env:R_VERSION-win.exe" -destfile "R-win.exe"
+Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 # Install R
 Write-Output "Installing R"
