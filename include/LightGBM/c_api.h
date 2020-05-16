@@ -39,6 +39,8 @@ typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
  */
 LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
 
+LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallback(void (*callback)(const char*));
+
 // --- start Dataset interface
 
 /*!

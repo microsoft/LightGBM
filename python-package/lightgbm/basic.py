@@ -21,6 +21,10 @@ from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
 from .libpath import find_lib_path
 
 
+def _log_callback(msg):
+    """Redirect logs from native library into Python console"""
+    print("{0:s}".format(decode_string(msg)))
+
 def _load_lib():
     """Load LightGBM library."""
     lib_path = find_lib_path()
@@ -28,6 +32,10 @@ def _load_lib():
         return None
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
+    CALLBACK = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
+    lib.callback = CALLBACK(_log_callback)
+    if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
+        raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
     return lib
 
 
@@ -44,7 +52,6 @@ def _safe_call(ret):
     """
     if ret != 0:
         raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
-
 
 def is_numeric(obj):
     """Check whether object is a number or not, include numpy number, etc."""
