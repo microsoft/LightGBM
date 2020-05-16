@@ -12,7 +12,7 @@ if [[ ${R_MAJOR_VERSION} == "3" ]]; then
     export R_MAC_VERSION=3.6.3
     export R_TRAVIS_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
-elif [[ ${R_MAJOR_VERSION} == "4" ]];
+elif [[ ${R_MAJOR_VERSION} == "4" ]]; then
     export R_MAC_VERSION=4.0.0
     export R_TRAVIS_LINUX_VERSION="4.0.0-1.1804.0"
     export R_APT_REPO="bionic-cran40/"

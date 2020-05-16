@@ -172,7 +172,7 @@ if (!use_precompile) {
         build_cmd <- windows_cmake_exe
         build_args <- "_lightgbm"
       } else {
-        build_cmd <- windows_cmake_exe
+        build_cmd <- "cmake"
         build_args <- c("--build", ".", "--target", "_lightgbm", "--config", "Release")
         lib_folder <- file.path(source_dir, "Release", fsep = "/")
         makefiles_already_generated <- TRUE
