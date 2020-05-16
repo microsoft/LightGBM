@@ -93,7 +93,7 @@ check_succeeded="yes"
 #     * https://github.com/travis-ci/travis-ci/issues/4190#issuecomment-169987525
 #     * https://stackoverflow.com/a/29890106/3986677
 CHECK_PID=$!
-while kill -0 ${CHECK_PID}; do
+while kill -0 ${CHECK_PID} >/dev/null 2>&1; do
     echo -n -e " \b"
     sleep 5
 done
