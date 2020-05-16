@@ -21,13 +21,12 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 # system() introduces a lot of overhead, at least on Windows,
 # so trying processx if it is available
 .run_shell_command <- function(cmd, args, strict = TRUE) {
-    on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
         require("processx")  # nolint
       })
     })
-    if (has_processx && on_windows) {
+    if (has_processx) {
       result <- processx::run(
         command = cmd
         , args = args
@@ -37,13 +36,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       )
       exit_code <- result$status
     } else {
-      if (on_windows) {
-        message(paste0(
-          "Using system() to run shell commands. Installing "
-          , "'processx' with install.packages('processx') might "
-          , "make this faster."
-        ))
-      }
+      message(paste0(
+        "Using system() to run shell commands. Installing "
+        , "'processx' with install.packages('processx') might "
+        , "make this faster."
+      ))
       cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
       exit_code <- system(cmd)
     }
