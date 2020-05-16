@@ -148,6 +148,7 @@ class Log {
         GetLogCallBack()(buf);
         vsnprintf(buf, buf_size, format, val);
         GetLogCallBack()(buf);
+        GetLogCallBack()("\n");
       }
 #else
       Rprintf("[LightGBM] [%s] ", level_str);

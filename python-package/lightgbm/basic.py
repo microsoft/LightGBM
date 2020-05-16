@@ -23,7 +23,7 @@ from .libpath import find_lib_path
 
 def _log_callback(msg):
     """Redirect logs from native library into Python console"""
-    print("{0:s}".format(decode_string(msg)))
+    print("{0:s}".format(decode_string(msg)), end='')
 
 def _load_lib():
     """Load LightGBM library."""
