@@ -1,6 +1,9 @@
 #' @name lgb.prepare_rules
 #' @title Data preparator for LightGBM datasets with rules (numeric)
-#' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+#' @description **NOTE: This function is deprecated and will be removed in a future release.
+#'              Please use \code{\link{lgb.prepare_rules2}}.**
+#' 
+#'              Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
 #'              Factors and characters are converted to numeric. In addition, keeps rules created
 #'              so you can convert other datasets using this converter.
 #' @param data A data.frame or data.table to prepare.
@@ -49,6 +52,12 @@
 #' @importFrom data.table set
 #' @export
 lgb.prepare_rules <- function(data, rules = NULL) {
+
+  .Deprecated(
+    new = "lgb.prepare2"
+    , package = "lightgbm"
+    , msg = "lgb.prepare is deprecated and will be removed in LightGBM 3.0.0. lgb.prepare2() is preferred."
+  )
 
   # data.table not behaving like data.frame
   if (inherits(data, "data.table")) {

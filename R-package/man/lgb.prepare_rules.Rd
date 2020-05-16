@@ -17,7 +17,10 @@ A list with the cleaned dataset (\code{data}) and the rules (\code{rules}).
         in \code{lgb.Dataset}.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+**NOTE: This function is deprecated and will be removed in a future release.
+             Please use \code{\link{lgb.prepare_rules2}}.**
+
+             Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              Factors and characters are converted to numeric. In addition, keeps rules created
              so you can convert other datasets using this converter.
 }

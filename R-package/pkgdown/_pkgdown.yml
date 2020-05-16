@@ -68,9 +68,7 @@ reference:
   - title: Machine Learning
     desc: Train models with LightGBM
     contents:
-    - '`lgb.prepare`'
     - '`lgb.prepare2`'
-    - '`lgb.prepare_rules`'
     - '`lgb.prepare_rules2`'
     - '`lightgbm`'
     - '`lgb.train`'
@@ -97,3 +95,8 @@ reference:
     desc: Ungroupable functions to troubleshoot LightGBM
     contents:
     - '`lgb.unloader`'
+  - title: Deprecated functions
+    desc: Functions that will be removed in a future release
+    contents:
+    - '`lgb.prepare`'
+    - '`lgb.prepare_rules`'

@@ -14,7 +14,10 @@ The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
         for input in \code{lgb.Dataset}.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+**NOTE: This function is deprecated and will be removed in a future release.
+             Please use \code{\link{lgb.prepare2}}.**
+
+             Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              Factors and characters are converted to numeric without integers. Please use
              \code{\link{lgb.prepare_rules}} if you want to apply this transformation to other datasets.
 }
