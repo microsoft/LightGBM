@@ -15,6 +15,7 @@
 #' @param nrounds number of training rounds
 #' @param params List of parameters
 #' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
+#' @keywords internal
 NULL
 
 #' @name lightgbm

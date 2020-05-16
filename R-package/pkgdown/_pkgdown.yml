@@ -72,6 +72,7 @@ reference:
     - '`lgb.prepare2`'
     - '`lgb.prepare_rules`'
     - '`lgb.prepare_rules2`'
+    - '`lightgbm`'
     - '`lgb.train`'
     - '`lgb.cv`'
   - title: Saving / Loading Models
