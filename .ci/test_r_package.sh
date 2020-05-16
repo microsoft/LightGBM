@@ -82,9 +82,21 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
-R CMD check ${PKG_TARBALL} \
-    --as-cran \
-|| check_succeeded="no"
+(
+    R CMD check ${PKG_TARBALL} \
+        --as-cran \
+    || check_succeeded="no"
+) &
+
+# R CMD check suppresses output, some CIs kill builds after
+# a few minutes with no output. This trick gives R CMD check more time
+#     * https://github.com/travis-ci/travis-ci/issues/4190#issuecomment-169987525
+#     * https://stackoverflow.com/a/29890106/3986677
+CHECK_PID=$!
+while kill -0 ${CHECK_PID} >/dev/null 2>&1; do
+    echo -n -e " \b"
+    sleep 5
+done
 
 echo "R CMD check build logs:"
 cat ${BUILD_DIRECTORY}/lightgbm.Rcheck/00install.out
