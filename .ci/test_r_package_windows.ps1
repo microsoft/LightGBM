@@ -67,7 +67,8 @@ Write-Output "Done installing Rtools"
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
-if ($env:COMPILER -eq "MINGW") {
+#if ($env:COMPILER -eq "MINGW") {
+if ($false) {
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -85,6 +86,9 @@ if ($env:COMPILER -eq "MINGW") {
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+
+Rscript build_r.R
+Check-Output $false
 
 Write-Output "Building R package"
 

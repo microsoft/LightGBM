@@ -14,7 +14,7 @@ IN_DLL_FILE <- args[[1L]]
 OUT_DEF_FILE <- args[[2L]]
 DLL_BASE_NAME <- basename(IN_DLL_FILE)
 
-print(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
+message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
 
 # use objdump to dump all the symbols
 OBJDUMP_FILE <- "objdump-out.txt"
@@ -58,3 +58,4 @@ writeLines(
     , con = OUT_DEF_FILE
     , sep = "\n"
 )
+message(sprintf("Successfully created '%s'", OUT_DEF_FILE))

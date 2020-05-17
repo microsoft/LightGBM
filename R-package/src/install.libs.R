@@ -157,7 +157,7 @@ if (!use_precompile) {
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-      build_cmd <- "make.exe"
+      build_cmd <- "make"
       build_args <- "_lightgbm"
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
@@ -166,7 +166,7 @@ if (!use_precompile) {
         # Must build twice for Windows due sh.exe in Rtools
         cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
         .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-        build_cmd <- "make.exe"
+        build_cmd <- "make"
         build_args <- "_lightgbm"
       } else {
         build_cmd <- "cmake"
@@ -209,6 +209,7 @@ if (!use_precompile) {
   }
 
   # build the library
+  message("building lib_lightgbm")
   .run_shell_command(build_cmd, build_args)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 
