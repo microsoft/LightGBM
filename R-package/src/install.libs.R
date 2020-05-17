@@ -2,7 +2,7 @@
 use_precompile <- FALSE
 use_gpu <- FALSE
 
-# Package will be built with Visual Studio unless you set one of these
+# Package will be built with Visual Studio unless you set one of these to TRUE
 use_mingw <- FALSE
 use_msys <- FALSE
 
@@ -155,7 +155,8 @@ if (!use_precompile) {
     windows_toolchain <- "MSYS"
   } else {
     # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
-    # Visual Studio install but that fails, fall back to
+    # Visual Studio install but that fails, fall back to the toolchain
+    # supported in Rtools
     if (R_ver >= 4.0) {
       windows_toolchain <- "MSYS"
     } else {

@@ -36,7 +36,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   Check-Output $false
 }
 
-if ($env:COMPILER -ne "MSVC") {
+if ($env:COMPILER -ne "MINGW") {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
 }
@@ -49,8 +49,7 @@ if ($env:TOOLCHAIN -eq "MINGW") {
   Write-Output "Telling R to use MinGW"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
   ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
-}
-if ($env:TOOLCHAIN -eq "MSYS") {
+} elseif ($env:TOOLCHAIN -eq "MSYS") {
   Write-Output "Telling R to use MSYS"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
   ((Get-Content -path $install_libs -Raw) -replace 'use_msys <- FALSE','use_msys <- TRUE') | Set-Content -Path $install_libs
@@ -70,7 +69,7 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-# MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
+# MiKTeX and pandoc can be skipped on MSVC builds, since we don't
 # build the package documentation for those
 if ($env:COMPILER -ne "MSVC") {
     Write-Output "Downloading MiKTeX"
@@ -119,7 +118,7 @@ if ($env:COMPILER -ne "MSVC") {
   $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
   $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
   $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 3
+  $ALLOWED_CHECK_NOTES = 4
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
       Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
       Check-Output $False
