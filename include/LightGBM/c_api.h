@@ -39,6 +39,11 @@ typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
  */
 LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
 
+/*!
+ * \brief Register a callback function for log redirecting. 
+ * \param callback The callback function want to register
+ * \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallback(void (*callback)(const char*));
 
 // --- start Dataset interface
