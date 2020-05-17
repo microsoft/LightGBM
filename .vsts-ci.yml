@@ -114,15 +114,15 @@ jobs:
       r_package:
         TASK: r-package
         COMPILER: MSVC
-        R_VERSION: 3.6.3
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.6
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 2.7
-      bdist:
-        TASK: bdist
+        R_VERSION: 3.6
+      # regular:
+      #   TASK: regular
+      #   PYTHON_VERSION: 3.6
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 2.7
+      # bdist:
+      #   TASK: bdist
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
