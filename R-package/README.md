@@ -36,9 +36,9 @@ As of `Rtools` 4.0, some common paths changed and software was removed from `Rto
 * `Rtools` usr bin:
     - example: `C:\Rtools\usr\bin`
 
-##### Windows Compiler options
+#### Windows Toolchain Options
 
-The R package can be built with three different toolchains.
+A "toolchain" refers to the collection of software used to build the library. The R package can be built with three different toolchains.
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
 
