@@ -9,7 +9,7 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 
 # Get details needed for installing R components
 # Linux builds on Azure use a container and don't need these details
-if ! { [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]] }; then
+if ! { [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]]; }; then
     R_MAJOR_VERSION=( ${R_VERSION//./ } )
     if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
         export R_MAC_VERSION=3.6.3
