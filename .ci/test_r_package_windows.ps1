@@ -36,7 +36,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   Check-Output $false
 }
 
-if ($env:COMPILER -eq "MINGW") {
+if ($env:COMPILER -ne "MSVC") {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
 }
@@ -45,10 +45,15 @@ cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
-if ($env:COMPILER -eq "MINGW") {
+if ($env:TOOLCHAIN -eq "MINGW") {
   Write-Output "Telling R to use MinGW"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
   ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
+}
+if ($env:TOOLCHAIN -eq "MSYS") {
+  Write-Output "Telling R to use MSYS"
+  $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
+  ((Get-Content -path $install_libs -Raw) -replace 'use_msys <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
 }
 
 # download R and RTools

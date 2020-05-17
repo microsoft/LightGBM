@@ -2,8 +2,7 @@
 use_precompile <- FALSE
 use_gpu <- FALSE
 
-# Package will be built with Visual Studio unless
-# you set one of these
+# Package will be built with Visual Studio unless you set one of these
 use_mingw <- FALSE
 use_msys <- FALSE
 
@@ -137,24 +136,32 @@ if (!use_precompile) {
   build_args <- "_lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
 
+  WINDOWS_BUILD_TOOLS <- list(
+    "MinGW" = c(
+      build_tool = "mingw32-make.exe"
+      , makefile_generator = "MinGW Makefiles"
+    )
+    , "MSYS" = c(
+      build_tool = "make.exe"
+      , makefile_generator = "MSYS Makefiles"
+    )
+  )
+
   if (use_mingw) {
-    windows_build_tool <- "mingw32-make.exe"
-    windows_makefile_generator <- "MinGW Makefiles"
+    windows_toolchain <- "MinGW"
   } else if (use_msys) {
-    windows_build_tool <- "make.exe"
-    windows_makefile_generator <- "MSYS Makefiles"
+    windows_toolchain <- "MSYS"
   } else {
     # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
     # Visual Studio install but that fails, fall back to 
     if (R_ver >= 4.0) {
-      windows_build_tool <- "make.exe"
-      windows_makefile_generator <- "MSYS Makefiles"
+      windows_toolchain <- "MSYS"
     } else {
-      windows_build_tool <- "mingw32-make.exe"
-      windows_makefile_generator <- "MinGW Makefiles"
+      windows_toolchain <- "MinGW"
     }
   }
-  
+  windows_build_tool <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["build_tool"]]
+  windows_makefile_generator <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["makefile_generator"]]
 
   if (use_gpu) {
     cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
@@ -180,7 +187,7 @@ if (!use_precompile) {
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
-      message("Trying to build with MinGW")
+      message(sprintf("Trying to build with %s", windows_toolchain))
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
@@ -189,7 +196,7 @@ if (!use_precompile) {
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
       if (!isTRUE(visual_studio_succeeded)) {
-        warning("Building with Visual Studio failed. Attempting with MinGW")
+        warning(sprintf("Building with Visual Studio failed. Attempting with %s", windows_toolchain))
         # Must build twice for Windows due sh.exe in Rtools
         cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
         .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
