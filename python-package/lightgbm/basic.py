@@ -22,7 +22,7 @@ from .libpath import find_lib_path
 
 
 def _log_callback(msg):
-    """Redirect logs from native library into Python console"""
+    """Redirect logs from native library into Python console."""
     print("{0:s}".format(decode_string(msg)), end='')
 
 def _load_lib():
@@ -32,10 +32,10 @@ def _load_lib():
         return None
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
-    CALLBACK = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
-    lib.callback = CALLBACK(_log_callback)
+    callback= ctypes.CFUNCTYPE(None, ctypes.c_char_p)
+    lib.callback = callback(_log_callback)
     if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
-        raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
+        raise LightGBMError(decode_string(lib.LGBM_GetLastError()))
     return lib
 
 
