@@ -250,6 +250,7 @@ def generate_r_docs(app):
             , run_dont_run = FALSE \
             , seed = 42L \
             , preview = FALSE \
+            , new_process = TRUE \
         ) \
         "
     cd {0}
