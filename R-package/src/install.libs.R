@@ -117,9 +117,11 @@ if (!use_precompile) {
   )
   setwd(build_dir)
 
+  use_visual_studio <- !(use_mingw || use_msys)
+
   # If using MSVC to build, pull in the script used
   # to create R.def from R.dll
-  if (WINDOWS && !use_mingw) {
+  if (WINDOWS && !use_visual_studio) {
     write_succeeded <- file.copy(
       "../../inst/make-r-def.R"
       , file.path(build_dir, "make-r-def.R")
@@ -186,7 +188,7 @@ if (!use_precompile) {
 
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
-    if (use_mingw) {
+    if (!use_visual_studio) {
       message(sprintf("Trying to build with %s", windows_toolchain))
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
