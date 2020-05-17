@@ -63,20 +63,15 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
   larger_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
-  auto num_total_bin = train_data->NumTotalBin();
-  smaller_leaf_histogram_data_.resize(num_total_bin);
-  larger_leaf_histogram_data_.resize(num_total_bin);
+  std::vector<int> offsets;
+  int num_total_bin = HistogramPool::GetNumTotalHistogramBins(
+      train_data, this->share_state_->is_colwise, &offsets);
+  smaller_leaf_histogram_data_.resize(num_total_bin * 2);
+  larger_leaf_histogram_data_.resize(num_total_bin * 2);
   HistogramPool::SetFeatureInfo<true, true>(train_data, this->config_, &feature_metas_);
-  uint64_t offset = 0;
   for (int j = 0; j < train_data->num_features(); ++j) {
-    offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
-    smaller_leaf_histogram_array_global_[j].Init(smaller_leaf_histogram_data_.data() + offset, &feature_metas_[j]);
-    larger_leaf_histogram_array_global_[j].Init(larger_leaf_histogram_data_.data() + offset, &feature_metas_[j]);
-    auto num_bin = train_data->FeatureNumBin(j);
-    if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-      num_bin -= 1;
-    }
-    offset += static_cast<uint64_t>(num_bin);
+    smaller_leaf_histogram_array_global_[j].Init(smaller_leaf_histogram_data_.data() + offsets[j] * 2, &feature_metas_[j]);
+    larger_leaf_histogram_array_global_[j].Init(larger_leaf_histogram_data_.data() + offsets[j] * 2, &feature_metas_[j]);
   }
 }
 
