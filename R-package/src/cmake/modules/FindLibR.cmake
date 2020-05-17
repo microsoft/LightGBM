@@ -44,7 +44,7 @@ function(create_rlib_for_msvc)
   find_program(DLLTOOL_EXE dlltool)
 
   if(NOT DLLTOOL_EXE)
-    message(FATAL_ERROR "Either dlltool.exe not found!\
+    message(FATAL_ERROR "dlltool.exe not found!\
       \nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
 

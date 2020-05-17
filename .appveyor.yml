@@ -13,20 +13,20 @@ branches:
 
 environment:
   matrix:
-    # - COMPILER: MINGW
-    #   TASK: r-package
-    #   R_WINDOWS_VERSION: 3.6.3
-    # - COMPILER: MINGW
-    #   TASK: r-package
-    #   R_WINDOWS_VERSION: 4.0.0
-    # - COMPILER: MSVC
-    #   TASK: r-package
-    #   R_WINDOWS_VERSION: 4.0.0
-    #   APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    - COMPILER: MSVC
-      TASK: python
     - COMPILER: MINGW
-      TASK: python
+      TASK: r-package
+      R_WINDOWS_VERSION: 3.6.3
+    - COMPILER: MINGW
+      TASK: r-package
+      R_WINDOWS_VERSION: 4.0.0
+    - COMPILER: MSVC
+      TASK: r-package
+      R_WINDOWS_VERSION: 4.0.0
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    # - COMPILER: MSVC
+    #   TASK: python
+    # - COMPILER: MINGW
+    #   TASK: python
 
 clone_depth: 5
 

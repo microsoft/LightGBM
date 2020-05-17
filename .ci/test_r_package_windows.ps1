@@ -18,7 +18,10 @@ $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/Rtools/usr/bin;" + 
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
 
-# some paths and file names are different on R4.0
+# Get details needed for installing R components
+#
+# NOTES:
+#    * some paths and file names are different on R4.0
 $env:R_MAJOR_VERSION=$env:R_VERSION.split('.')[0]
 if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw_64/bin"

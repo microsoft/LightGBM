@@ -28,7 +28,7 @@ To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-pa
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
 
-After installing the software mentioned above, be sure the following paths are added to the environment variable `PATH`. These may have been automatically when installing other software
+After installing the software mentioned above, be sure the following paths are added to the environment variable `PATH`. These may have been automatically when installing other software.
 
 * `Rtools` MinGW bin:
     - example: `C:\Rtools\mingw_64\bin`
