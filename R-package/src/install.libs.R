@@ -1,7 +1,15 @@
 # User options
 use_precompile <- FALSE
 use_gpu <- FALSE
+
+# Package will be built with Visual Studio unless
+# you set one of these
 use_mingw <- FALSE
+use_msys <- FALSE
+
+if (use_mingw && use_msys) {
+  stop("Cannot use both MinGW and MSYS. Please choose only one.")
+}
 
 if (.Machine$sizeof.pointer != 8L) {
   stop("LightGBM only supports 64-bit R, please check the version of R and Rtools.")
@@ -129,6 +137,25 @@ if (!use_precompile) {
   build_args <- "_lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
 
+  if (use_mingw) {
+    windows_build_tool <- "mingw32-make.exe"
+    windows_makefile_generator <- "MinGW Makefiles"
+  } else if (use_msys) {
+    windows_build_tool <- "make.exe"
+    windows_makefile_generator <- "MSYS Makefiles"
+  } else {
+    # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
+    # Visual Studio install but that fails, fall back to 
+    if (R_ver >= 4.0) {
+      windows_build_tool <- "make.exe"
+      windows_makefile_generator <- "MSYS Makefiles"
+    } else {
+      windows_build_tool <- "mingw32-make.exe"
+      windows_makefile_generator <- "MinGW Makefiles"
+    }
+  }
+  
+
   if (use_gpu) {
     cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
   }
@@ -155,21 +182,21 @@ if (!use_precompile) {
     if (use_mingw) {
       message("Trying to build with MinGW")
       # Must build twice for Windows due sh.exe in Rtools
-      cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+      cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-      build_cmd <- "mingw32-make"
+      build_cmd <- windows_build_tool
       build_args <- "_lightgbm"
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
       if (!isTRUE(visual_studio_succeeded)) {
         warning("Building with Visual Studio failed. Attempting with MinGW")
         # Must build twice for Windows due sh.exe in Rtools
-        cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+        cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
         .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-        build_cmd <- "make"
+        build_cmd <- windows_build_tool
         build_args <- "_lightgbm"
       } else {
-        build_cmd <- "mingw32-make"
+        build_cmd <- "cmake"
         build_args <- c("--build", ".", "--target", "_lightgbm", "--config", "Release")
         lib_folder <- file.path(source_dir, "Release", fsep = "/")
         makefiles_already_generated <- TRUE
