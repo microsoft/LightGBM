@@ -121,7 +121,7 @@ if (!use_precompile) {
 
   # If using MSVC to build, pull in the script used
   # to create R.def from R.dll
-  if (WINDOWS && !use_visual_studio) {
+  if (WINDOWS && use_visual_studio) {
     write_succeeded <- file.copy(
       "../../inst/make-r-def.R"
       , file.path(build_dir, "make-r-def.R")

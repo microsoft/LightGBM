@@ -72,8 +72,7 @@ Write-Output "Done installing Rtools"
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
-#if ($env:COMPILER -eq "MINGW") {
-if ($false) {
+if ($env:COMPILER -ne "MSVC") {
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
