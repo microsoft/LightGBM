@@ -92,9 +92,6 @@ Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
-Rscript build_r.R
-Check-Output $false
-
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
@@ -144,6 +141,16 @@ $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for wor
 if ($checks.Matches.length -eq 0) {
   Write-Output "The wrong compiler was used. Check the build logs."
   Check-Output $False
+}
+
+# Checking that we got the right toolchain for MinGW. If using MinGW, both
+# MinGW and MSYS toolchains are supported
+if ($env:COMPILER -eq "MINGW") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Trying to build with.*$env:TOOLCHAIN"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "The wrong toolchain was used. Check the build logs."
+    Check-Output $False
+  }
 }
 
 if ($env:COMPILER -eq "MSVC") {

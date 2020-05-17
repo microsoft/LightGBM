@@ -155,7 +155,7 @@ if (!use_precompile) {
     windows_toolchain <- "MSYS"
   } else {
     # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
-    # Visual Studio install but that fails, fall back to 
+    # Visual Studio install but that fails, fall back to
     if (R_ver >= 4.0) {
       windows_toolchain <- "MSYS"
     } else {
