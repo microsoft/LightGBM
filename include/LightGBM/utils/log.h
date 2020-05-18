@@ -142,11 +142,11 @@ class Log {
         printf("\n");
         fflush(stdout);
       } else {
-        const size_t buf_size = 512;
-        char buf[buf_size];
-        snprintf(buf, buf_size, "[LightGBM] [%s] ", level_str);
+        const size_t kBufSize = 512;
+        char buf[kBufSize];
+        snprintf(buf, kBufSize, "[LightGBM] [%s] ", level_str);
         GetLogCallBack()(buf);
-        vsnprintf(buf, buf_size, format, val);
+        vsnprintf(buf, kBufSize, format, val);
         GetLogCallBack()(buf);
         GetLogCallBack()("\n");
       }
