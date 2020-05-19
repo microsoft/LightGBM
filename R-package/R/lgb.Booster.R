@@ -596,7 +596,7 @@ Booster <- R6::R6Class(
           # Parse and store privately names
           names <- strsplit(names, "\t")[[1L]]
           private$eval_names <- names
-          private$higher_better_inner_eval <- grepl("^ndcg|^map|^auc", names)
+          private$higher_better_inner_eval <- .METRICS_HIGHER_BETTER()[names]
 
         }
 
