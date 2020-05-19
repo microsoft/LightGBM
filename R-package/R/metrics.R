@@ -26,7 +26,6 @@
         , "binary_error" = FALSE
         , "auc_mu" = TRUE
         , "multi_logloss" = FALSE
-        , "multiclass" = FALSE
         , "multi_error" = FALSE
         , "cross_entropy" = FALSE
         , "cross_entropy_lambda" = FALSE

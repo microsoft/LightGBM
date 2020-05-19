@@ -585,7 +585,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
   eval_info <- bst_binary_error$.__enclos_env__$private$get_eval_info()
   expect_identical(eval_info, "binary_error")
   expect_identical(
-    bst_binary_error$.__enclos_env__$private$higher_better_inner_eval
+    unname(bst_binary_error$.__enclos_env__$private$higher_better_inner_eval)
     , FALSE
   )
   expect_identical(bst_binary_error$best_iter, 1L)
@@ -596,7 +596,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
   eval_info <- bst_auc$.__enclos_env__$private$get_eval_info()
   expect_identical(eval_info, "auc")
   expect_identical(
-    bst_auc$.__enclos_env__$private$higher_better_inner_eval
+    unname(bst_auc$.__enclos_env__$private$higher_better_inner_eval)
     , TRUE
   )
   expect_identical(bst_auc$best_iter, 9L)
@@ -727,9 +727,9 @@ test_that("lgb.train() works with early stopping for regression with a metric th
 
   # Booster should understand thatt all three of these metrics should be minimized
   eval_info <- bst$.__enclos_env__$private$get_eval_info()
-  expect_identical(eval_info, c("mape", "rmse", "mae"))
+  expect_identical(eval_info, c("mape", "rmse", "l1"))
   expect_identical(
-    bst$.__enclos_env__$private$higher_better_inner_eval
+    unname(bst$.__enclos_env__$private$higher_better_inner_eval)
     , rep(FALSE, 3L)
   )
 })
