@@ -59,8 +59,15 @@ elseif ($env:TASK -eq "bdist") {
   .\OCL_SDK_LIGHT_AMD.exe /silent
   # The Intel CPU runtime, so we can run OpenCL code
   curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
-  msiexec /i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log 
+  $msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
+  $return = Start-Process msiexec -ArgumentList $msiarglist -Wait -passthru
   cat msi.log
+  If (@(0,3010) -contains $return.exitcode) {
+    echo "OpenCL install successful"
+  } else {
+    echo "OpenCL install failed, aborting"
+    exit 1
+  }
   $env:OCL_ROOT = "C:\Program Files (x86)\OCL_SDK_Light"
   $env:LGBM_GPU = "1"
   $env:LGBM_BOOST_ROOT = "$env:BOOST_ROOT_1_72_0"
