@@ -67,6 +67,10 @@ elseif ($env:TASK -eq "bdist") {
   echo "BOOST: $env:LGBM_BOOST_ROOT"
   $env:LGBM_OPENCL_LIBRARY_DIR = "$env:OCL_ROOT\lib\x86_64\opencl.lib"
   $env:LGBM_OPENCL_INCLUDE_DIR = "$env:OCL_ROOT\include"
+  # Set default device to GPU:
+  cd $env:BUILD_SOURCESDIRECTORY
+  (Get-Content include\LightGBM\config.h).replace('std::string device_type = "cpu";', 'std::string device_type = "gpu";') | Set-Content include\LightGBM\config.h
+  # Build the wheel:
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py bdist_wheel --plat-name=win-amd64 --universal ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
