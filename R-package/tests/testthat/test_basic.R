@@ -557,10 +557,8 @@ test_that("lgb.train() works with early stopping for classification with a metri
   bst_auc  <- lgb.train(
     params = list(
       objective = "binary"
-      , metric = c(
-        "auc"
-      )
-      , max_depth = 3
+      , metric = "auc"
+      , max_depth = 3L
       , early_stopping_rounds = early_stopping_rounds
     )
     , data = dtrain
@@ -572,10 +570,8 @@ test_that("lgb.train() works with early stopping for classification with a metri
   bst_binary_error  <- lgb.train(
     params = list(
       objective = "binary"
-      , metric = c(
-        "binary_error"
-      )
-      , max_depth = 3
+      , metric = "binary_error"
+      , max_depth = 3L
       , early_stopping_rounds = early_stopping_rounds
     )
     , data = dtrain
@@ -734,7 +730,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
   expect_identical(eval_info, c("mape", "rmse", "mae"))
   expect_identical(
     bst$.__enclos_env__$private$higher_better_inner_eval
-    , rep(FALSE, 3)
+    , rep(FALSE, 3L)
   )
 })
 

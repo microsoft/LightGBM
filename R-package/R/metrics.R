@@ -3,7 +3,7 @@
 #
 # [return] A named logical vector, where each key is a metric name and each value is a boolean.
 #          TRUE if higher values of the metric are desirable, FALSE if lower values are desirable.
-.METRICS_HIGHER_BETTER <- function(){
+.METRICS_HIGHER_BETTER <- function() {
     return(c(
         "l1" = FALSE
         , "l2" = FALSE
