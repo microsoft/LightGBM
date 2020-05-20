@@ -30,7 +30,7 @@ endif()
 # https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
 function(create_rlib_for_msvc)
 
-  message("Creating R.lib and R.def")
+  message(STATUS "Creating R.lib and R.def")
 
   # various checks and warnings
   if(NOT WIN32 OR NOT MSVC)
@@ -67,7 +67,7 @@ endfunction(create_rlib_for_msvc)
 # an R script (src/install.libs.R), that script uses R's built-ins to
 # find the version of R and pass it through as a CMake variable
 if(CMAKE_R_VERSION)
-  message("R version passed into FindLibR.cmake: ${CMAKE_R_VERSION}")
+  message(STATUS "R version passed into FindLibR.cmake: ${CMAKE_R_VERSION}")
 elseif(WIN32)
   message(FATAL_ERROR "Expected CMAKE_R_VERSION to be passed in on Windows but none was provided. Check src/install.libs.R")
 endif()
