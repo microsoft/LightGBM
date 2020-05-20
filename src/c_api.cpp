@@ -658,6 +658,12 @@ int LGBM_GetDeviceType() {
 #endif
 }
 
+int LGBM_RegisterLogCallback(void (*callback)(const char*)) {
+  API_BEGIN();
+  Log::ResetCallBack(callback);
+  API_END();
+}
+
 int LGBM_DatasetCreateFromFile(const char* filename,
                                const char* parameters,
                                const DatasetHandle reference,
