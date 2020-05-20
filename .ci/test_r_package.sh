@@ -14,11 +14,11 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 # This only needs to get run on Travis because R environment for Linux
 # used by Azure pipelines is set up in https://github.com/guolinke/lightgbm-ci-docker
 if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
-    sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+    sudo add-apt-repository \
+        "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
