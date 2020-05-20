@@ -436,7 +436,7 @@ class Booster {
   void PredictSparse(int num_iteration, int predict_type, int nrow, int ncol,
                      std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                      const Config& config, int* out_elements_size,
-                     std::vector<std::vector<std::unordered_map<int, double>>> *agg_ptr,
+                     std::vector<std::vector<std::unordered_map<int, double>>>* agg_ptr,
                      int32_t** out_indices, void** out_data, int data_type,
                      bool* is_data_float32_ptr, int num_matrices) {
     auto predictor = CreatePredictor(num_iteration, predict_type, ncol, config);
@@ -500,20 +500,41 @@ class Booster {
     int elements_size = 0;
     PredictSparse(num_iteration, predict_type, nrow, ncol, get_row_fun, config, &elements_size, &agg,
                   out_indices, out_data, data_type, &is_data_float32, num_matrices);
-    // copy vector results to output for each row
-    // TODO(imatiach-msft): should this be parallelized, or is there no perf benefit?
-    int element_index = 0;
-    int indptr_index = 0;
+    std::vector<int> row_sizes(num_matrices * nrow);
+    std::vector<int> row_matrix_offsets(num_matrices * nrow);
+    int row_vector_cnt = 0;
     for (int m = 0; m < num_matrices; m++) {
-      int indptr_value = 0;
-      if (is_indptr_int32) {
-        (reinterpret_cast<int32_t*>(*out_indptr))[indptr_index] = indptr_value;
-      } else {
-        (reinterpret_cast<int64_t*>(*out_indptr))[indptr_index] = indptr_value;
-      }
-      indptr_index++;
       for (int i = 0; i < static_cast<int>(agg.size()); i++) {
         auto row_vector = agg[i];
+        auto row_vector_size = row_vector[m].size();
+        // keep track of the row_vector sizes for parallelization
+        row_sizes[row_vector_cnt] = row_vector_size;
+        if (i == 0) {
+          row_matrix_offsets[row_vector_cnt] = 0;
+        } else {
+          row_matrix_offsets[row_vector_cnt] = row_sizes[row_vector_cnt - 1] + row_matrix_offsets[row_vector_cnt - 1];
+        }
+        row_vector_cnt++;
+      }
+    }
+    // copy vector results to output for each row
+    int indptr_index = 0;
+    for (int m = 0; m < num_matrices; m++) {
+      if (is_indptr_int32) {
+        (reinterpret_cast<int32_t*>(*out_indptr))[indptr_index] = 0;
+      } else {
+        (reinterpret_cast<int64_t*>(*out_indptr))[indptr_index] = 0;
+      }
+      indptr_index++;
+      int matrix_start_index = m * agg.size();
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < static_cast<int>(agg.size()); i++) {
+        OMP_LOOP_EX_BEGIN();
+        auto row_vector = agg[i];
+        int row_start_index = matrix_start_index + i;
+        int element_index = row_matrix_offsets[row_start_index];
+        int indptr_loop_index = indptr_index + i;
         for (auto it = row_vector[m].begin(); it != row_vector[m].end(); ++it) {
           (*out_indices)[element_index] = it->first;
           if (is_data_float32) {
@@ -522,15 +543,17 @@ class Booster {
             (reinterpret_cast<double*>(*out_data))[element_index] = it->second;
           }
           element_index++;
-          indptr_value++;
         }
+        int indptr_value = row_matrix_offsets[row_start_index] + row_sizes[row_start_index];
         if (is_indptr_int32) {
-          (reinterpret_cast<int32_t*>(*out_indptr))[indptr_index] = indptr_value;
+          (reinterpret_cast<int32_t*>(*out_indptr))[indptr_loop_index] = indptr_value;
         } else {
-          (reinterpret_cast<int64_t*>(*out_indptr))[indptr_index] = indptr_value;
+          (reinterpret_cast<int64_t*>(*out_indptr))[indptr_loop_index] = indptr_value;
         }
-        indptr_index++;
+        OMP_LOOP_EX_END();
       }
+      OMP_THROW_EX();
+      indptr_index += agg.size();
     }
     out_len[0] = elements_size;
     out_len[1] = indptr_size;
@@ -1746,7 +1769,7 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   API_END();
 }
 
-int LGBM_BoosterPredictSparseForCSR(BoosterHandle handle,
+int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
                                     const void* indptr,
                                     int indptr_type,
                                     const int32_t* indices,
@@ -1754,31 +1777,60 @@ int LGBM_BoosterPredictSparseForCSR(BoosterHandle handle,
                                     int data_type,
                                     int64_t nindptr,
                                     int64_t nelem,
-                                    int64_t num_col,
+                                    int64_t num_col_or_row,
                                     int predict_type,
                                     int num_iteration,
                                     const char* parameter,
+                                    int matrix_type,
                                     int64_t* out_len,
                                     void** out_indptr,
                                     int32_t** out_indices,
                                     void** out_data) {
   API_BEGIN();
-  if (num_col <= 0) {
-    Log::Fatal("The number of columns should be greater than zero.");
-  } else if (num_col >= INT32_MAX) {
-    Log::Fatal("The number of columns should be smaller than INT32_MAX.");
-  }
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  int nrow = static_cast<int>(nindptr - 1);
-  ref_booster->PredictSparseCSR(num_iteration, predict_type, nrow, static_cast<int>(num_col), get_row_fun,
-                                config, out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
+  if (matrix_type == C_API_MATRIX_TYPE_CSR) {
+    if (num_col_or_row <= 0) {
+      Log::Fatal("The number of columns should be greater than zero.");
+    } else if (num_col_or_row >= INT32_MAX) {
+      Log::Fatal("The number of columns should be smaller than INT32_MAX.");
+    }
+    auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+    int nrow = static_cast<int>(nindptr - 1);
+    ref_booster->PredictSparseCSR(num_iteration, predict_type, nrow, static_cast<int>(num_col_or_row), get_row_fun,
+                                  config, out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
+  } else if (matrix_type == C_API_MATRIX_TYPE_CSC) {
+    int num_threads = OMP_NUM_THREADS();
+    int ncol = static_cast<int>(nindptr - 1);
+    std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
+    for (int i = 0; i < num_threads; ++i) {
+      for (int j = 0; j < ncol; ++j) {
+        iterators[i].emplace_back(indptr, indptr_type, indices, data, data_type, nindptr, nelem, j);
+      }
+    }
+    std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun =
+      [&iterators, ncol](int i) {
+      std::vector<std::pair<int, double>> one_row;
+      one_row.reserve(ncol);
+      const int tid = omp_get_thread_num();
+      for (int j = 0; j < ncol; ++j) {
+        auto val = iterators[tid][j].Get(i);
+        if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
+          one_row.emplace_back(j, val);
+        }
+      }
+      return one_row;
+    };
+    ref_booster->PredictSparseCSC(num_iteration, predict_type, static_cast<int>(num_col_or_row), ncol, get_row_fun, config,
+                                  out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
+  } else {
+    Log::Fatal("Unknown matrix type in LGBM_BoosterPredictSparseOutput");
+  }
   API_END();
 }
 
@@ -1880,56 +1932,6 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
       };
   ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
                        out_result, out_len);
-  API_END();
-}
-
-int LGBM_BoosterPredictSparseForCSC(BoosterHandle handle,
-                                    const void* col_ptr,
-                                    int col_ptr_type,
-                                    const int32_t* indices,
-                                    const void* data,
-                                    int data_type,
-                                    int64_t ncol_ptr,
-                                    int64_t nelem,
-                                    int64_t num_row,
-                                    int predict_type,
-                                    int num_iteration,
-                                    const char* parameter,
-                                    int64_t* out_len,
-                                    void** out_col_ptr,
-                                    int32_t** out_indices,
-                                    void** out_data) {
-  API_BEGIN();
-  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto param = Config::Str2Map(parameter);
-  Config config;
-  config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  }
-  int num_threads = OMP_NUM_THREADS();
-  int ncol = static_cast<int>(ncol_ptr - 1);
-  std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
-  for (int i = 0; i < num_threads; ++i) {
-    for (int j = 0; j < ncol; ++j) {
-      iterators[i].emplace_back(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, j);
-    }
-  }
-  std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun =
-      [&iterators, ncol](int i) {
-        std::vector<std::pair<int, double>> one_row;
-        one_row.reserve(ncol);
-        const int tid = omp_get_thread_num();
-        for (int j = 0; j < ncol; ++j) {
-          auto val = iterators[tid][j].Get(i);
-          if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-            one_row.emplace_back(j, val);
-          }
-        }
-        return one_row;
-      };
-  ref_booster->PredictSparseCSC(num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
-                                out_len, out_col_ptr, col_ptr_type, out_indices, out_data, data_type);
   API_END();
 }
 

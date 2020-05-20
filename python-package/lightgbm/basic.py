@@ -273,6 +273,10 @@ C_API_PREDICT_RAW_SCORE = 1
 C_API_PREDICT_LEAF_INDEX = 2
 C_API_PREDICT_CONTRIB = 3
 
+"""Macro definition of sparse matrix type"""
+C_API_MATRIX_TYPE_CSR = 0
+C_API_MATRIX_TYPE_CSC = 1
+
 """Data type of data field"""
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
@@ -719,14 +723,13 @@ class _InnerPredictor(object):
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
             assert csr.shape[1] <= MAX_INT32
-            # Note: not sure why this was csr.indices, we shouldn't be modifying the input matrix
-            csr.indices = csr.indices.astype(np.int32, copy=False)
+            csr_indices = csr.indices.astype(np.int32, copy=False)
 
             _safe_call(_LIB.LGBM_BoosterPredictForCSR(
                 self.handle,
                 ptr_indptr,
                 ctypes.c_int32(type_ptr_indptr),
-                csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int64(len(csr.indptr)),
@@ -744,7 +747,8 @@ class _InnerPredictor(object):
         def inner_predict_sparse(csr, num_iteration, predict_type):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
-            csr.indices = csr.indices.astype(np.int32, copy=False)
+            csr_indices = csr.indices.astype(np.int32, copy=False)
+            matrix_type = C_API_MATRIX_TYPE_CSR
             if type_ptr_indptr == C_API_DTYPE_INT32:
                 np_indptr_type = np.int32
                 out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
@@ -759,11 +763,11 @@ class _InnerPredictor(object):
                 np_data_type = np.float64
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
             out_shape = np.zeros(2, dtype=np.int64)
-            _safe_call(_LIB.LGBM_BoosterPredictSparseForCSR(
+            _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
                 self.handle,
                 ptr_indptr,
                 ctypes.c_int32(type_ptr_indptr),
-                csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int64(len(csr.indptr)),
@@ -772,6 +776,7 @@ class _InnerPredictor(object):
                 ctypes.c_int(predict_type),
                 ctypes.c_int(num_iteration),
                 c_str(self.pred_parameter),
+                ctypes.c_int(matrix_type),
                 out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
                 ctypes.byref(out_ptr_indptr),
                 ctypes.byref(out_ptr_indices),
@@ -804,7 +809,8 @@ class _InnerPredictor(object):
         def inner_predict_sparse(csc, num_iteration, predict_type):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csc.data)
-            csc.indices = csc.indices.astype(np.int32, copy=False)
+            csc_indices = csc.indices.astype(np.int32, copy=False)
+            matrix_type = C_API_MATRIX_TYPE_CSC
             if type_ptr_indptr == C_API_DTYPE_INT32:
                 np_indptr_type = np.int32
                 out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
@@ -819,11 +825,11 @@ class _InnerPredictor(object):
                 np_data_type = np.float64
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
             out_shape = np.zeros(2, dtype=np.int64)
-            _safe_call(_LIB.LGBM_BoosterPredictSparseForCSC(
+            _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
                 self.handle,
                 ptr_indptr,
                 ctypes.c_int32(type_ptr_indptr),
-                csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int64(len(csc.indptr)),
@@ -832,6 +838,7 @@ class _InnerPredictor(object):
                 ctypes.c_int(predict_type),
                 ctypes.c_int(num_iteration),
                 c_str(self.pred_parameter),
+                ctypes.c_int(matrix_type),
                 out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
                 ctypes.byref(out_ptr_indptr),
                 ctypes.byref(out_ptr_indices),
@@ -855,13 +862,13 @@ class _InnerPredictor(object):
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
         assert csc.shape[0] <= MAX_INT32
-        csc.indices = csc.indices.astype(np.int32, copy=False)
+        csc_indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_BoosterPredictForCSC(
             self.handle,
             ptr_indptr,
             ctypes.c_int32(type_ptr_indptr),
-            csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             ptr_data,
             ctypes.c_int(type_ptr_data),
             ctypes.c_int64(len(csc.indptr)),
@@ -1214,12 +1221,12 @@ class Dataset(object):
         ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
         assert csr.shape[1] <= MAX_INT32
-        csr.indices = csr.indices.astype(np.int32, copy=False)
+        csr_indices = csr.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
             ptr_indptr,
             ctypes.c_int(type_ptr_indptr),
-            csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             ptr_data,
             ctypes.c_int(type_ptr_data),
             ctypes.c_int64(len(csr.indptr)),
@@ -1240,12 +1247,12 @@ class Dataset(object):
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
         assert csc.shape[0] <= MAX_INT32
-        csc.indices = csc.indices.astype(np.int32, copy=False)
+        csc_indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
             ptr_indptr,
             ctypes.c_int(type_ptr_indptr),
-            csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             ptr_data,
             ctypes.c_int(type_ptr_data),
             ctypes.c_int64(len(csc.indptr)),
