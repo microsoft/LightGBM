@@ -91,7 +91,7 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
   }
   for (auto& line : lines) {
     line = Common::Trim(line);
-    if (line.find_first_of("rank=") != std::string::npos) {
+    if (line.find("rank=") != std::string::npos) {
       std::vector<std::string> str_after_split = Common::Split(line.c_str(), '=');
       Common::Atoi(str_after_split[1].c_str(), &rank_);
       continue;
