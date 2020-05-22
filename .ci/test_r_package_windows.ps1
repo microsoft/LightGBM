@@ -12,6 +12,8 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
+Write-Output "schmibberty"
+
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"

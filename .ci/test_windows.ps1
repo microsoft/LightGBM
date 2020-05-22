@@ -5,16 +5,20 @@ function Check-Output {
     Exit -1
   }
 }
+Write-Output "here"
 
 # unify environment variables for Azure devops and AppVeyor
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"
   $env:BUILD_SOURCESDIRECTORY = $env:APPVEYOR_BUILD_FOLDER
 } elseif ($env:GITHUB_ACTIONS -eq "true") {
+  Write-Output "there"
   $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
 }
+Write-Output "libberty"
 
 if ($env:TASK -eq "r-package") {
+  Write-Output "bibberty"
   & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 ; Check-Output $?
   Exit 0
 }
