@@ -38,7 +38,7 @@ jobs:
           fi
           export GITHUB_ACTIONS="true"
           export CONDA="$HOME/miniconda"
-          export PATH="$CONDA/bin:$PATH"
+          export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
           export CONDA_ENV="test-env"
           export LGB_VER=$(head -n 1 VERSION.txt)
           export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
