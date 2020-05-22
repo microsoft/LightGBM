@@ -46,3 +46,11 @@ if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
 fi
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
+
+echo '----- CONDA/bin -----'
+ls $CONDA/bin
+echo '----- CONDA -----'
+ls $CONDA
+echo '----- PATH -----'
+echo "PATH: $PATH"
+echo '--------------'
