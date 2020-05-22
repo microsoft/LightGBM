@@ -38,6 +38,7 @@ jobs:
           fi
           export CONDA="$HOME/miniconda"
           export PATH="$CONDA/bin:$PATH"
+          echo "COONDA: $CONDA"
           export GITHUB_ACTIONS="true"
           export CONDA_ENV="test-env"
           export LGB_VER=$(head -n 1 VERSION.txt)
