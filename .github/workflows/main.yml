@@ -43,11 +43,5 @@ jobs:
           export LGB_VER=$(head -n 1 VERSION.txt)
           export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
           export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
-          echo "--- TASK: ${TASK}"
-        - name: run tests
-          if: matrix.os != 'windows-latest'
-          shell: bash
-          run: |
-
-            $GITHUB_WORKSPACE/.ci/setup.sh
-            $GITHUB_WORKSPACE/.ci/test.sh
+          $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/test.sh
