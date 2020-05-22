@@ -41,7 +41,7 @@ else  # Linux
     fi
 fi
 
-if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
+if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
     sh conda.sh -b -p $CONDA
 fi
 conda config --set always_yes yes --set changeps1 no
