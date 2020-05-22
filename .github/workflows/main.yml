@@ -9,42 +9,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [regular, sdist, bdist, if-else, pylint, mpi-source, mpi-pip, gpu-source, gpu-pip]
+        task: [lint, r-package]
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        include:
-          - task: regular
-            python_version: 3.6
-          - task: sdist
-            python_version: 2.7
-          - task: mpi-source
-            method: source
-          - task: mpi-pip
-            method: pip
-          - task: gpu-source
-            method: source
-            python_version: 3.5
-          - task: gpu-pip
-            method: pip
-            python_version: 3.6
         exclude:
           - os: macOS-latest
-            task: pylint
-          - os: macOS-latest
-            task: gpu-source
-          - os: macOS-latest
-            task: gpu-pip
+            task: lint
           - os: windows-latest
-            task: if-else
-          - os: windows-latest
-            task: pylint
-          - os: windows-latest
-            task: mpi-source
-          - os: windows-latest
-            task: mpi-pip
-          - os: windows-latest
-            task: gpu-source
-          - os: windows-latest
-            task: gpu-pip
+            task: lint
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
@@ -55,18 +26,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         shell: bash
         run: |
-          if [[ "${{ matrix.task }}" == "gpu-source" || "${{ matrix.task }}" == "gpu-pip" ]]; then
-              export TASK="gpu"
-          elif [[ "${{ matrix.task }}" == "mpi-source" || "${{ matrix.task }}" == "mpi-pip" ]]; then
-              export TASK="mpi"
-          fi
-          export METHOD="${{ matrix.method }}"
-          if [ -z ${{ matrix.python_version }} ]; then
-              export PYTHON_VERSION="3.7"
-          else
-              export PYTHON_VERSION=${{ matrix.python_version }}
-          fi
-
+          export TASK="{{ matrix.task }}"
           export HOME_DIRECTORY="$HOME"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
@@ -79,9 +39,6 @@ jobs:
           export GITHUB_ACTIONS="true"
           export CONDA_ENV="test-env"
           export LGB_VER=$(head -n 1 VERSION.txt)
-          export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
           export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
-          export OPENCL_VENDOR_PATH=$AMDAPPSDK_PATH/etc/OpenCL/vendors
-
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
