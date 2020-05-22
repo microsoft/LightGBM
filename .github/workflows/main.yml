@@ -4,11 +4,7 @@ name: CI
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -18,7 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-16.04, ubuntu-18.04]
-        task: [r-package]
     runs-on: ${{ matrix.os }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -49,9 +44,9 @@ jobs:
             export OPENCL_VENDOR_PATH=$AMDAPPSDK_PATH/etc/OpenCL/vendors
       - name: setup
         env:
-          TASK: {{ matrix.task }}
+          TASK: r-package
         run: bash .ci/setup.sh
       - name: test
         env:
-          TASK: {{ matrix.task }}
+          TASK: r-package
         run: bash .ci/test.sh
