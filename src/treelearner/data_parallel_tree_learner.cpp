@@ -231,6 +231,11 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
   }
 
   // sync global best info
+  auto max_cat_threshold = this->config_->max_cat_threshold;
+  int splitInfoSize = SplitInfo::Size(max_cat_threshold);
+  if (input_buffer_.size() < splitInfoSize * 2) {
+    input_buffer_.resize(splitInfoSize * 2);
+  }
   SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->config_->max_cat_threshold);
 
   // set best split
