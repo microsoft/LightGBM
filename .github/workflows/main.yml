@@ -71,7 +71,7 @@ jobs:
           $GITHUB_WORKSPACE/.ci/test.sh
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
-        shell: pwsh
+        shell: cmd
         run: |
           $env:HOME_DIRECTORY=$env:HOME
           $env:GITHUB_ACTIONS="true"
