@@ -9,7 +9,8 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
 fi
 
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
-source activate $CONDA_ENV
+#source activate $CONDA_ENV
+conda activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
 
