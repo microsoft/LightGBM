@@ -67,12 +67,18 @@ jobs:
           export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
-      # reference: https://github.com/marketplace/actions/setup-conda
+      # # reference: https://github.com/marketplace/actions/setup-conda
+      # - name: Use conda on Windows
+      #   if: matrix.os == 'windows-latest'
+      #   uses: s-weigand/setup-conda@v1
+      #   with:
+      #     activate-conda: true
+      #  https://github.com/marketplace/actions/setup-miniconda
       - name: Use conda on Windows
         if: matrix.os == 'windows-latest'
-        uses: s-weigand/setup-conda@v1
+        uses: goanpeca/setup-miniconda@v1
         with:
-          activate-conda: true
+          auto-update-conda: false
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
         shell: cmd
