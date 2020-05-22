@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [lint, r-package]
+        task: [lint] # r-package
         os: [ubuntu-latest, macOS-latest, windows-latest]
         exclude:
           - os: macOS-latest
@@ -36,11 +36,9 @@ jobs:
               export OS_NAME="linux"
               export COMPILER="clang"
           fi
+          export GITHUB_ACTIONS="true"
           export CONDA="$HOME/miniconda"
           export PATH="$CONDA/bin:$PATH"
-          echo "PATH: $PATH"
-          which activate
-          export GITHUB_ACTIONS="true"
           export CONDA_ENV="test-env"
           export LGB_VER=$(head -n 1 VERSION.txt)
           export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
