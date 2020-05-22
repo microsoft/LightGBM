@@ -43,5 +43,5 @@ jobs:
           export LGB_VER=$(head -n 1 VERSION.txt)
           export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
           export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
-          $GITHUB_WORKSPACE/.ci/setup.sh
-          $GITHUB_WORKSPACE/.ci/test.sh
+          bash $GITHUB_WORKSPACE/.ci/setup.sh
+          bash $GITHUB_WORKSPACE/.ci/test.sh
