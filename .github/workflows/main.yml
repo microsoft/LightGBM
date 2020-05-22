@@ -85,5 +85,6 @@ jobs:
         run: |
           $env:HOME_DIRECTORY=$env:HOME
           $env:GITHUB_ACTIONS="true"
+          $env:TASK="r-package"
           conda init powershell
           powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
