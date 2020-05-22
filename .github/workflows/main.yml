@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [lint] # r-package
+        task: [lint, r-package]
         os: [ubuntu-latest, macOS-latest, windows-latest]
         exclude:
           - os: macOS-latest
