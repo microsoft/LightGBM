@@ -1,5 +1,7 @@
 # This is a basic workflow to help you get started with Actions
-
+# workflow syntax:
+#    - https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idstepsenv
+#    - 
 name: CI
 
 # Controls when the action will run. Triggers the workflow on push or pull request
@@ -24,7 +26,7 @@ jobs:
             test -n $CC  && unset CC
             test -n $CXX && unset CXX
             export HOME_DIRECTORY="$HOME"
-            export BUILD_DIRECTORY="$TRAVIS_BUILD_DIR"
+            export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
             if [[ $TRAVIS_OS_NAME == "osx" ]]; then
                 export OS_NAME="macos";
                 export COMPILER="gcc";
