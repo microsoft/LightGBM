@@ -79,6 +79,10 @@ jobs:
         uses: goanpeca/setup-miniconda@v1
         with:
           auto-update-conda: false
+      - name: conda init powershell
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: conda init powershell
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
         shell: cmd
@@ -86,5 +90,4 @@ jobs:
           $env:HOME_DIRECTORY=$env:HOME
           $env:GITHUB_ACTIONS="true"
           $env:TASK="r-package"
-          conda init powershell
           powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
