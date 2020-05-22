@@ -26,7 +26,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         shell: bash
         run: |
-          export TASK="{{ matrix.task }}"
+          export TASK="${{ matrix.task }}"
           export HOME_DIRECTORY="$HOME"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
@@ -44,5 +44,10 @@ jobs:
           export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
           export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
           echo "--- TASK: ${TASK}"
-          $GITHUB_WORKSPACE/.ci/setup.sh
-          $GITHUB_WORKSPACE/.ci/test.sh
+        - name: run tests
+          if: matrix.os != 'windows-latest'
+          shell: bash
+          run: |
+
+            $GITHUB_WORKSPACE/.ci/setup.sh
+            $GITHUB_WORKSPACE/.ci/test.sh
