@@ -51,10 +51,10 @@ jobs:
       - name: setup
         env:
           TASK: r-package
-        working-directory: ${BUILD_DIRECTORY}
+        working-directory: /home/runner/work/LightGBM/LightGBM
         run: bash .ci/setup.sh
       - name: test
-        working-directory: ${BUILD_DIRECTORY}
+        working-directory: /home/runner/work/LightGBM/LightGBM
         env:
           TASK: r-package
         run: bash .ci/test.sh
