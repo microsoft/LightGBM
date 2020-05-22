@@ -75,6 +75,4 @@ jobs:
         run: |
           $env:HOME_DIRECTORY=$env:HOME
           $env:GITHUB_ACTIONS="true"
-          $env:CONDA_ENV="test-env"
-          & "conda init powershell"
           & "powershell -ExecutionPolicy Bypass -File %BUILD_DIRECTORY%/.ci/test_windows.ps1"
