@@ -29,6 +29,7 @@ jobs:
             test -n $CC  && unset CC
             test -n $CXX && unset CXX
             export HOME_DIRECTORY="$HOME"
+            echo ${GITHUB_WORKSPACE}
             export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
             if [[ $TRAVIS_OS_NAME == "osx" ]]; then
                 export OS_NAME="macos";
