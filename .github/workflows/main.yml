@@ -9,23 +9,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [lint, r-package]
-        os: [windows-latest] # ubuntu-latest, macOS-latest, 
         include:
-          - os: ubuntu-latest
-            task: r-package
-          - os: macOS-latest
-            task: r-package
+          # - os: ubuntu-latest
+          #   task: r-package
+          # - os: macOS-latest
+          #   task: r-package
           - os: windows-latest
             task: r-package
             compiler: MINGW
-          - os: ubuntu-latest
-            task: lint
-        exclude:
-          - os: macOS-latest
-            task: lint
-          - os: windows-latest
-            task: lint
+          # - os: ubuntu-latest
+          #   task: lint
+        # exclude:
+        #   - os: macOS-latest
+        #     task: lint
+        #   - os: windows-latest
+        #     task: lint
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
@@ -81,4 +79,5 @@ jobs:
         run: |
           $env:HOME_DIRECTORY=$env:HOME
           $env:GITHUB_ACTIONS="true"
+          conda init powershell
           powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
