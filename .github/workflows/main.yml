@@ -1,0 +1,59 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+strategy:
+  fail-fast: false
+  matrix:
+    os: [ubuntu-16.04, ubuntu-18.04]
+    task: [r-package]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ${{ matrix.os }}
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: actions/checkout@v2
+      - name: env_vars
+        run: |
+            test -n $CC  && unset CC
+            test -n $CXX && unset CXX
+            export HOME_DIRECTORY="$HOME"
+            export BUILD_DIRECTORY="$TRAVIS_BUILD_DIR"
+            if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+                export OS_NAME="macos";
+                export COMPILER="gcc";
+                export R_MAC_VERSION=3.6.3;
+            else
+                export OS_NAME="linux";
+                export COMPILER="clang";
+                export R_TRAVIS_LINUX_VERSION=3.6.3-1bionic;
+            fi
+            export CONDA="$HOME/miniconda"
+            export PATH="$CONDA/bin:$PATH"
+            export CONDA_ENV="test-env"
+            export LGB_VER=$(head -n 1 VERSION.txt)
+            export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
+            export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
+            export LD_LIBRARY_PATH="/usr/local/clang/lib:$LD_LIBRARY_PATH"  # fix error "libomp.so: cannot open shared object file: No such file or directory" on Linux with Clang
+            export OPENCL_VENDOR_PATH=$AMDAPPSDK_PATH/etc/OpenCL/vendors
+      - name: setup
+        env:
+          TASK: {{ matrix.task }}
+        run: bash .ci/setup.sh
+      - name: test
+        env:
+          TASK: {{ matrix.task }}
+        run: bash .ci/test.sh
