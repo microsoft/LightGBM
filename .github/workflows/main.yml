@@ -83,12 +83,12 @@ jobs:
         run: conda init powershell
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
-        shell: cmd
+        shell: pwsh
         env:
           GITHUB_ACTIONS: "true"
           TASK: "r-package"
         run: |
-          powershell.exe -ExecutionPolicy Bypass ErrorActionPreference Continue -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
+          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
 
 # links
 # * https://github.com/microsoft/LightGBM/issues/2353
