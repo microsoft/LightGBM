@@ -13,7 +13,6 @@ if (Test-Path env:APPVEYOR) {
 } elseif ($env:GITHUB_ACTIONS -eq "true") {
   $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
 }
-Write-Output "BUILD_SOURCESDIRECTORY (test): $env:BUILD_SOURCESDIRECTORY"
 
 if ($env:TASK -eq "r-package") {
   & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 ; Check-Output $?
