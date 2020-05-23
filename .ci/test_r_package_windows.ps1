@@ -12,7 +12,6 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
-Write-Output "schmibberty"
 Write-Output "BUILD_SOURCESDIRECTORY (test-r): $env:BUILD_SOURCESDIRECTORY"
 
 $env:R_WINDOWS_VERSION = "3.6.3"
@@ -72,7 +71,7 @@ Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 
 # have to divert stderr to null because GitHub Actions treats writing to stderr as a failed task
-Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" 2> $null ; Check-Output $?
+Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" 2> $null # ; Check-Output $?
 
 Write-Output "Building R package"
 
