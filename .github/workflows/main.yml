@@ -79,10 +79,9 @@ jobs:
         run: conda init powershell
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
-        shell: pwsh
+        shell: cmd
         env:
           GITHUB_ACTIONS: "true"
-          TASK: "r-package"
         # https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide
         # https://stackoverflow.com/a/11826589/3986677
         # run: |
@@ -94,6 +93,7 @@ jobs:
         run: |
           set COMPILER="${{ matrix.compiler }}"
           set BUILD_SOURCESDIRECTORY=%GITHUB_WORKSPACE%
+          set TASK="{{ matrix.task }}"
           powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
 
 
