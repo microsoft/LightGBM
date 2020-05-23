@@ -14,6 +14,7 @@ if (Test-Path env:APPVEYOR) {
   $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
 }
 
+Write-Output "TASK: $env:TASK"
 if ($env:TASK -eq "r-package") {
   Write-Output "libberty"
   & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 ; Check-Output $?
