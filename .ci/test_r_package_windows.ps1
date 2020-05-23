@@ -50,7 +50,7 @@ Write-Output "Done installing Rtools"
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
-if ($env:COMPILER -ne "MSVC") {
+if ($env:COMPILER -eq "MINGW") {
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -72,7 +72,7 @@ Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.pac
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
-if ($env:COMPILER -eq "MINGW") {
+if ($env:COMPILER -ne "MSVC") {
   Rscript build_r.R --skip-install ; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
