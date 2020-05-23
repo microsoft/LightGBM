@@ -20,8 +20,8 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MSVC
-          # - os: ubuntu-latest
-          #   task: lint
+          - os: ubuntu-latest
+            task: lint
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
@@ -32,8 +32,6 @@ jobs:
         if: matrix.os != 'windows-latest'
         shell: bash
         run: |
-          export HOME_DIRECTORY="$HOME"
-          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
               export COMPILER="gcc"
@@ -65,12 +63,6 @@ jobs:
           export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
-      # # reference: https://github.com/marketplace/actions/setup-conda
-      # - name: Use conda on Windows
-      #   if: matrix.os == 'windows-latest'
-      #   uses: s-weigand/setup-conda@v1
-      #   with:
-      #     activate-conda: true
       #  https://github.com/marketplace/actions/setup-miniconda
       - name: Use conda on Windows
         if: matrix.os == 'windows-latest'
@@ -88,6 +80,9 @@ jobs:
           GITHUB_ACTIONS: "true"
           TASK: "r-package"
         run: |
+          if ("${{ matrix.compiler }}" -ne "") {
+            $env:COMPILER = "${{ matrix.compiler }}"
+          }
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
 
 # links
