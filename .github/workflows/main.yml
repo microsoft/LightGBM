@@ -86,10 +86,10 @@ jobs:
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
         shell: cmd
+        env:
+          GITHUB_ACTIONS: "true"
+          TASK: "r-package"
         run: |
-          set HOME_DIRECTORY=%HOME%
-          set GITHUB_ACTIONS="true"
-          set TASK="r-package"
           powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
 
 # links
