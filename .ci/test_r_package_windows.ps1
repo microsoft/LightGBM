@@ -12,8 +12,6 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
-Write-Output "BUILD_SOURCESDIRECTORY (test-r): $env:BUILD_SOURCESDIRECTORY"
-
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
@@ -52,7 +50,7 @@ Write-Output "Done installing Rtools"
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
-if ($env:COMPILER -eq "MINGW") {
+if ($env:COMPILER -ne "MSVC") {
     Write-Output "Downloading MiKTeX"
     Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -69,9 +67,7 @@ if ($env:COMPILER -eq "MINGW") {
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-
-# have to divert stderr to null because GitHub Actions treats writing to stderr as a failed task
-Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" 2> $null # ; Check-Output $?
+Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')"
 
 Write-Output "Building R package"
 

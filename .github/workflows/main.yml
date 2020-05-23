@@ -17,13 +17,11 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
+          - os: windows-latest
+            task: r-package
+            compiler: MSVC
           # - os: ubuntu-latest
           #   task: lint
-        # exclude:
-        #   - os: macOS-latest
-        #     task: lint
-        #   - os: windows-latest
-        #     task: lint
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
