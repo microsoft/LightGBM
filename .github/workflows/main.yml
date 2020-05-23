@@ -93,7 +93,7 @@ jobs:
         run: |
           set COMPILER="${{ matrix.compiler }}"
           set BUILD_SOURCESDIRECTORY=%GITHUB_WORKSPACE%
-          set TASK="{{ matrix.task }}"
+          set TASK="${{ matrix.task }}"
           powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
 
 
