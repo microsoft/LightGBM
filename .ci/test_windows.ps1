@@ -10,8 +10,6 @@ function Check-Output {
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"
   $env:BUILD_SOURCESDIRECTORY = $env:APPVEYOR_BUILD_FOLDER
-} elseif ($env:GITHUB_ACTIONS -eq "true") {
-  $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
 }
 
 if ($env:TASK -eq "r-package") {
