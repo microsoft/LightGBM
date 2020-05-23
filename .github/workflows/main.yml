@@ -88,7 +88,7 @@ jobs:
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
           Write-Output "CI default for Errors: $ErrorActionPreference"
           $ErrorActionPreference = "Continue"
-          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
+          & cmd /c "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1 2>&1"
 
 # links
 # * https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_iddefaultsrun
