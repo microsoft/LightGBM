@@ -95,6 +95,32 @@
     return ret;
   }
 
+  /*! \brief Even faster variant of `LGBM_BoosterPredictForMatSingle`.
+   *
+   * Uses `LGBM_BoosterPredictForMatSingleRowFast` which is faster
+   * than `LGBM_BoosterPredictForMatSingleRow` and the trick of
+   * `LGBM_BoosterPredictForMatSingle` to capture the Java data array
+   * using `GetPrimitiveArrayCritical`, which can yield faster access
+   * to the array if the JVM passes the actual address to the C++ side
+   * instead of performing a copy.
+   */
+  int LGBM_BoosterPredictForMatSingleRowFastCriticalSWIG(JNIEnv *jenv,
+                                                         jdoubleArray data,
+                                                         FastConfigHandle handle,
+                                                         int predict_type,
+                                                         int num_iteration,
+                                                         int64_t* out_len,
+                                                         double* out_result) {
+    double* data0 = (double*)jenv->GetPrimitiveArrayCritical(data, 0);
+
+    int ret = LGBM_BoosterPredictForMatSingleRowFast(handle, data0, predict_type,
+                                                     num_iteration, out_len, out_result);
+
+    jenv->ReleasePrimitiveArrayCritical(data, data0, JNI_ABORT);
+
+    return ret;
+  }
+
   int LGBM_BoosterPredictForCSRSingle(JNIEnv *jenv,
                                       jintArray indices,
                                       jdoubleArray values,
@@ -123,6 +149,50 @@
 
     int ret = LGBM_BoosterPredictForCSRSingleRow(handle, ind, indptr_type, indices0, values0, data_type, 2,
                                                  nelem, num_col, predict_type, num_iteration, parameter, out_len, out_result);
+
+    jenv->ReleasePrimitiveArrayCritical(values, values0, JNI_ABORT);
+    jenv->ReleasePrimitiveArrayCritical(indices, indices0, JNI_ABORT);
+
+    return ret;
+  }
+
+  /*! \brief Even faster variant of `LGBM_BoosterPredictForCSRSingle`.
+   *
+   * Uses `LGBM_BoosterPredictForCSRSingleRowFast` which is faster
+   * than `LGBM_BoosterPredictForMatSingleRow` and the trick of
+   * `LGBM_BoosterPredictForCSRSingle` to capture the Java data array
+   * using `GetPrimitiveArrayCritical`, which can yield faster access
+   * to the array if the JVM passes the actual address to the C++ side
+   * instead of performing a copy.
+   */
+  int LGBM_BoosterPredictForCSRSingleRowFastCriticalSWIG(JNIEnv *jenv,
+                                                         jintArray indices,
+                                                         jdoubleArray values,
+                                                         int numNonZeros,
+                                                         FastConfigHandle handle,
+                                                         int indptr_type,
+                                                         //int data_type,
+                                                         int64_t nelem,
+                                                         //int64_t num_col,
+                                                         int predict_type,
+                                                         int num_iteration,
+                                                         //const char* parameter,
+                                                         int64_t* out_len,
+                                                         double* out_result) {
+    // Alternatives
+    // - GetIntArrayElements: performs copy
+    // - GetDirectBufferAddress: fails on wrapped array
+    // Some words of warning for GetPrimitiveArrayCritical
+    // https://stackoverflow.com/questions/23258357/whats-the-trade-off-between-using-getprimitivearraycritical-and-getprimitivety
+
+    jboolean isCopy;
+    int* indices0 = (int*)jenv->GetPrimitiveArrayCritical(indices, &isCopy);
+    double* values0 = (double*)jenv->GetPrimitiveArrayCritical(values, &isCopy);
+
+    int32_t ind[2] = { 0, numNonZeros };
+
+    int ret = LGBM_BoosterPredictForCSRSingleRowFast(handle, ind, indptr_type, indices0, values0, 2,
+                                                     nelem, predict_type, num_iteration, out_len, out_result);
 
     jenv->ReleasePrimitiveArrayCritical(values, values0, JNI_ABORT);
     jenv->ReleasePrimitiveArrayCritical(indices, indices0, JNI_ABORT);

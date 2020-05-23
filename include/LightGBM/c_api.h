@@ -705,6 +705,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
                                                  int64_t* out_len);
 
 /*!
+ * \brief Release FastConfig object.
+ *
+ * \param fastConfig Handle to the FastConfig object acquired with a `*FastInit()` method.
+ * \return LIGHTGBM_C_EXPORT LGBM_FastConfigFree
+ */
+LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);
+
+/*!
  * \brief Make prediction for a new dataset in CSR format.
  * \note
  * You should pre-allocate memory for ``out_result``:
@@ -846,6 +854,73 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
                                                          double* out_result);
 
 /*!
+ * \brief Initialize and return a `FastConfigHandle` for use with `LGBM_BoosterPredictForCSRSingleRowFast`.
+ *
+ * Release the `FastConfig` by passing its handle to `LGBM_FastConfigFree` when no longer needed.
+ *
+ * \param handle Booster handle
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param ncol Number of columns
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
+ * \param[out] out_fastConfig FastConfig object with which you can call `LGBM_BoosterPredictForMatSingleRowFast`
+ * \return 0 when it succeeds, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
+                                                                 const int data_type,
+                                                                 const int64_t num_col,
+                                                                 const char* parameter,
+                                                                 FastConfigHandle *out_fastConfig);
+
+/*!
+ * \brief Faster variant of `LGBM_BoosterPredictForCSRSingleRow`.
+ *
+ * Score single rows after setup with `LGBM_BoosterPredictForCSRSingleRowFastInit`.
+ *
+ * By removing the setup steps from this call extra optimizations can be made like
+ * initializing the config only once, instead of once per call.
+ *
+ * \note
+ *   Setting up #threads is only done once at `LGBM_BoosterPredictForCSRSingleRowFastInit`
+ *   instead of at each prediction.
+ *   If you use a different #threads in other calls, you need to start the setup process over,
+ *   or that number of threads will be used for this calls as well.
+ *
+ * \note
+ * You should pre-allocate memory for ``out_result``:
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
+ *
+ * \param fastConfig_handle FastConfig object handle returned by `LGBM_BoosterPredictForCSRSingleRowFastInit`
+ * \param indptr Pointer to row headers
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indices Pointer to column indices
+ * \param data Pointer to the data space
+ * \param nindptr Number of rows in the matrix + 1
+ * \param nelem Number of nonzero elements in the matrix
+ * \param predict_type What should be predicted
+ *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
+ *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
+ *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param num_iteration Number of iterations for prediction, <= 0 means no limit
+ * \param[out] out_len Length of output result
+ * \param[out] out_result Pointer to array with predictions
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
+                                                             const void* indptr,
+                                                             int indptr_type,
+                                                             const int32_t* indices,
+                                                             const void* data,
+                                                             int64_t nindptr,
+                                                             int64_t nelem,
+                                                             int predict_type,
+                                                             int num_iteration,
+                                                             int64_t* out_len,
+                                                             double* out_result);
+
+/*!
  * \brief Make prediction for a new dataset in CSC format.
  * \note
  * You should pre-allocate memory for ``out_result``:
@@ -959,14 +1034,6 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
                                                          double* out_result);
 
 /*!
- * \brief Release FastConfig object.
- *
- * \param fastConfig Handle to the FastConfig object acquired with a `*FastInit()` method.
- * \return LIGHTGBM_C_EXPORT LGBM_FastConfigFree
- */
-LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);
-
-/*!
  * \brief Initialize and return a `FastConfigHandle` for use with `LGBM_BoosterPredictForMatSingleRowFast`.
  *
  * Release the `FastConfig` by passing its handle to `LGBM_FastConfigFree` when no longer needed.
@@ -985,7 +1052,18 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
                                                                  FastConfigHandle *out_fastConfig);
 
 /*!
- * \brief Score a single row after setup with `LGBM_BoosterPredictForMatSingleRowFastInit`.
+ * \brief Faster variant of `LGBM_BoosterPredictForMatSingleRow`.
+ *
+ * Score a single row after setup with `LGBM_BoosterPredictForMatSingleRowFastInit`.
+ *
+ * By removing the setup steps from this call extra optimizations can be made like
+ * initializing the config only once, instead of once per call.
+ *
+ * \note
+ *   Setting up #threads is only done once at `LGBM_BoosterPredictForMatSingleRowFastInit`
+ *   instead of at each prediction.
+ *   If you use a different #threads in other calls, you need to start the setup process over,
+ *   or that number of threads will be used for this calls as well.
  *
  * \param fastConfig_handle FastConfig object handle returned by `LGBM_BoosterPredictForMatSingleRowFastInit`
  * \param data Single-row array data (no other way than row-major form).
