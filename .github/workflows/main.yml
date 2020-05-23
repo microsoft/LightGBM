@@ -79,11 +79,15 @@ jobs:
         env:
           GITHUB_ACTIONS: "true"
           TASK: "r-package"
+        # https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide
+        # https://stackoverflow.com/a/11826589/3986677
         run: |
           if ("${{ matrix.compiler }}" -ne "") {
             $env:COMPILER = "${{ matrix.compiler }}"
           }
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
+          Write-Output "CI default for Errors: $ErrorActionPreference"
+          $ErrorActionPreference = "Continue"
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
 
 # links
