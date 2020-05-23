@@ -87,7 +87,17 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: cmd
         run: |
-          $env:HOME_DIRECTORY=$env:HOME
-          $env:GITHUB_ACTIONS="true"
-          $env:TASK="r-package"
+          set HOME_DIRECTORY=%HOME%
+          set GITHUB_ACTIONS="true"
+          set TASK="r-package"
           powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
+
+# links
+# * https://github.com/microsoft/LightGBM/issues/2353
+# *  https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_iddefaultsrun
+# * https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
+# * https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
+# * https://github.com/marketplace/actions/setup-miniconda
+# * https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners#supported-runners-and-hardware-resources
+# * https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md
+# * 
