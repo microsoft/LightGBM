@@ -67,12 +67,12 @@ if ($env:COMPILER -ne "MSVC") {
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')"  ; Check-Output $?
+Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
-if ($env:COMPILER -ne "MSVC") {
+if ($env:COMPILER -eq "MINGW") {
   Rscript build_r.R --skip-install ; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
