@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   test:
-    name: ${{ matrix.task }} (${{ matrix.os }})
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.subtitle }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -12,14 +12,18 @@ jobs:
         include:
           - os: ubuntu-latest
             task: r-package
+            subtitle: ""
           - os: macOS-latest
             task: r-package
+            subtitle: ""
           - os: windows-latest
             task: r-package
             compiler: MINGW
+            subtitle: MINGW
           - os: windows-latest
             task: r-package
             compiler: MSVC
+            subtitle: MSVC
           - os: ubuntu-latest
             task: lint
     steps:
@@ -81,14 +85,20 @@ jobs:
           TASK: "r-package"
         # https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide
         # https://stackoverflow.com/a/11826589/3986677
+        # run: |
+        #   if ("${{ matrix.compiler }}" -ne "") {
+        #     $env:COMPILER = "${{ matrix.compiler }}"
+        #   }
+        #   $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
+        #   cmd /c "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
         run: |
-          if ("${{ matrix.compiler }}" -ne "") {
-            $env:COMPILER = "${{ matrix.compiler }}"
-          }
-          $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
-          Write-Output "CI default for Errors: $ErrorActionPreference"
-          $ErrorActionPreference = "Continue"
-          & cmd /c "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1 2>&1"
+          set COMPILER="${{ matrix.compiler }}"
+          set BUILD_SOURCESDIRECTORY=%GITHUB_WORKSPACE%
+          powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
+
+
+# Write-Output "CI default for Errors: $ErrorActionPreference"
+# $ErrorActionPreference = "Continue"
 
 # links
 # * https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_iddefaultsrun
