@@ -17,11 +17,11 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
-          - os: ubuntu-latest
-            task: lint
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MSVC
+          # - os: ubuntu-latest
+          #   task: lint
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
@@ -86,11 +86,9 @@ jobs:
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
 
 # links
-# * https://github.com/microsoft/LightGBM/issues/2353
-# *  https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_iddefaultsrun
+# * https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_iddefaultsrun
 # * https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
 # * https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
 # * https://github.com/marketplace/actions/setup-miniconda
 # * https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners#supported-runners-and-hardware-resources
 # * https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md
-# * https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide
