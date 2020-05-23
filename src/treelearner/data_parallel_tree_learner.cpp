@@ -29,7 +29,14 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
   // allocate buffer for communication
   size_t buffer_size = this->train_data_->NumTotalBin() * kHistEntrySize;
 
-  input_buffer_.resize(buffer_size);
+  auto max_cat_threshold = this->config_->max_cat_threshold;
+  // input_buffer_ needs to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
+  int splitInfoSize = SplitInfo::Size(max_cat_threshold) * 2;
+  if (buffer_size < static_cast<size_t>(splitInfoSize)) {
+    input_buffer_.resize(splitInfoSize);
+  } else {
+    input_buffer_.resize(buffer_size);
+  }
   output_buffer_.resize(buffer_size);
 
   is_feature_aggregated_.resize(this->num_features_);
@@ -231,11 +238,6 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
   }
 
   // sync global best info
-  auto max_cat_threshold = this->config_->max_cat_threshold;
-  int splitInfoSize = SplitInfo::Size(max_cat_threshold);
-  if (input_buffer_.size() < splitInfoSize * 2) {
-    input_buffer_.resize(splitInfoSize * 2);
-  }
   SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->config_->max_cat_threshold);
 
   // set best split
