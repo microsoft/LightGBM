@@ -13,6 +13,7 @@ function Download-File-With-Retries {
 }
 
 Write-Output "schmibberty"
+Write-Output "BUILD_SOURCESDIRECTORY (test-r): $env:BUILD_SOURCESDIRECTORY"
 
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
