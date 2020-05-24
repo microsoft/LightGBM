@@ -74,7 +74,7 @@ jobs:
           auto-update-conda: false
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
-        shell: pwsh
+        shell: powershell
         env:
           COMPILER: "${{ matrix.compiler }}"
           GITHUB_ACTIONS: "true"
@@ -94,3 +94,4 @@ jobs:
 # * https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide/2095623#2095623
 # * https://stackoverflow.com/a/11826589/3986677
 # * https://github.com/marketplace/actions/setup-miniconda
+# * https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions
