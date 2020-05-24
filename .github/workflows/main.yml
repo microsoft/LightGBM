@@ -12,10 +12,20 @@ jobs:
         include:
           - os: ubuntu-latest
             task: r-package
-            subtitle: ""
-          # - os: macOS-latest
-          #   task: r-package
-          #   subtitle: ""
+            compiler: gcc
+            subtitle: gcc
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            subtitle: clang
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            subtitle: gcc
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            subtitle: clang
           - os: windows-latest
             task: r-package
             compiler: MINGW
@@ -43,11 +53,9 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
-              export COMPILER="gcc"
               export R_MAC_VERSION=3.6.3
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
-              export COMPILER="clang"
               export R_TRAVIS_LINUX_VERSION=3.6.3-1bionic;
           fi
           if [ -z ${{ matrix.compiler }} ]; then
@@ -59,16 +67,11 @@ jobs:
           export LGB_VER=$(head -n 1 VERSION.txt)
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
-      #  https://github.com/marketplace/actions/setup-miniconda
       - name: Use conda on Windows
         if: matrix.os == 'windows-latest'
         uses: goanpeca/setup-miniconda@v1
         with:
           auto-update-conda: false
-      # - name: conda init powershell
-      #   if: matrix.os == 'windows-latest'
-      #   shell: cmd
-      #   run: conda init powershell
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
         shell: pwsh
@@ -79,10 +82,7 @@ jobs:
         run: |
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
           conda init powershell
-          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
-
-# set BUILD_SOURCESDIRECTORY=%GITHUB_WORKSPACE%
-# powershell.exe -ExecutionPolicy Bypass -File %GITHUB_WORKSPACE%/.ci/test_windows.ps1
+          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1 2&>1"
 
 # links
 # * https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_iddefaultsrun
@@ -93,3 +93,4 @@ jobs:
 # * https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md
 # * https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide/2095623#2095623
 # * https://stackoverflow.com/a/11826589/3986677
+# * https://github.com/marketplace/actions/setup-miniconda

@@ -41,8 +41,6 @@ jobs:
         TASK: gpu
         METHOD: source
         PYTHON_VERSION: 3.6
-      r_package:
-        TASK: r-package
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -74,7 +72,7 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
   strategy:
-    maxParallel: 4
+    maxParallel: 3
     matrix:
       regular:
         TASK: regular
@@ -84,8 +82,6 @@ jobs:
         PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
-      r_package:
-        TASK: r-package
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
