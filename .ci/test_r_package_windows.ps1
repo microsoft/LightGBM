@@ -18,6 +18,7 @@ $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
+$env:MIKTEX_ZIP = "https://ctan.math.illinois.edu/systems/win32/miktex/setup/windows-x64/miktexsetup-2.9.7442-x64.zip"
 
 if ($env:COMPILER -eq "MINGW") {
   $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
@@ -52,7 +53,7 @@ Write-Output "Done installing Rtools"
 # build the package documentation for those
 if ($env:COMPILER -eq "MINGW") {
     Write-Output "Downloading MiKTeX"
-    Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
+    Download-File-With-Retries -url "$env:MIKTEX_ZIP" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
