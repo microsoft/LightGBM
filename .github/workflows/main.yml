@@ -16,16 +16,16 @@ jobs:
           # - os: macOS-latest
           #   task: r-package
           #   subtitle: ""
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MINGW
-          #   subtitle: MINGW
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            subtitle: MINGW
           - os: windows-latest
             task: r-package
             compiler: MSVC
             subtitle: MSVC
-          - os: ubuntu-latest
-            task: lint
+          # - os: ubuntu-latest
+          #   task: lint
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
