@@ -424,7 +424,7 @@ class DenseBin : public Bin {
       const void* memory,
       const std::vector<data_size_t>& local_used_indices) override {
     const VAL_T* mem_data = reinterpret_cast<const VAL_T*>(memory);
-//fprintf(stderr, "inside LoadFromMemory (in src/io/dense_bin.hpp), updating the FEATURE DATA, num_data_ = %d\n", (int) num_data_);
+fprintf(stderr, "inside LoadFromMemory (in src/io/dense_bin.hpp), updating the FEATURE DATA, num_data_ = %d\n", (int) num_data_);
     if (!local_used_indices.empty()) {
       if (IS_4BIT) {
         const data_size_t rest = num_data_ & 1;
@@ -468,7 +468,7 @@ class DenseBin : public Bin {
   void CopySubrow(const Bin* full_bin, const data_size_t* used_indices,
                   data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const DenseBin<VAL_T, IS_4BIT>*>(full_bin);
-//fprintf(stderr, "inside CopySubrow (in src/io/dense_bin.hpp), updating the FEATURE DATA, num_used_indices = %d\n", (int) num_used_indices);
+fprintf(stderr, "inside CopySubrow (in src/io/dense_bin.hpp), updating the FEATURE DATA, num_used_indices = %d\n", (int) num_used_indices);
     if (IS_4BIT) {
       const data_size_t rest = num_used_indices & 1;
       for (int i = 0; i < num_used_indices - rest; i += 2) {

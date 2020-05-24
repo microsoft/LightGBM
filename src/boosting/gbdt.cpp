@@ -243,10 +243,10 @@ data_size_t GBDT::BalancedBaggingHelper(data_size_t start, data_size_t cnt,
 void GBDT::Bagging(int iter) {
   Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
   // if need bagging
-fprintf(stderr, "inside GBDT::Bagging!\n"); fflush(stderr);
+fprintf(stderr, "inside GBDT::Bagging, iter = %d\n", iter); fflush(stderr);
   if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0) ||
       need_re_bagging_) {
-//fprintf(stderr, "inside GBDT::Bagging, past first hurdle\n"); fflush(stderr);
+fprintf(stderr, "inside GBDT::Bagging, past first hurdle\n"); fflush(stderr);
     need_re_bagging_ = false;
     auto left_cnt = bagging_runner_.Run<true>(
         num_data_,
@@ -265,9 +265,9 @@ fprintf(stderr, "inside GBDT::Bagging!\n"); fflush(stderr);
     bag_data_cnt_ = left_cnt;
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
-//fprintf(stderr, "inside GBDT::Bagging, past second hurdle\n"); fflush(stderr);
+fprintf(stderr, "inside GBDT::Bagging, past second hurdle\n"); fflush(stderr);
     if (!is_use_subset_) {
-//fprintf(stderr, "inside GBDT::Bagging, calling SetBaggingData\n"); fflush(stderr);
+fprintf(stderr, "inside GBDT::Bagging, calling SetBaggingData\n"); fflush(stderr);
       tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
     } else { // LGBM_CUDA
       // NEW get subset
@@ -279,7 +279,7 @@ fprintf(stderr, "inside GBDT::Bagging!\n"); fflush(stderr);
         tmp_hessians_.resize(total_size);
       }
 
-//fprintf(stderr, "CopySubrow CP2, bag_data_cnt_ = %d\n", bag_data_cnt_); fflush(stderr);
+fprintf(stderr, "CopySubrow CP2, bag_data_cnt_ = %d\n", bag_data_cnt_); fflush(stderr);
 //char *temp_bag = (char *) bag_data_indices_.data();
 //for (int i=0; i<bag_data_cnt_; i+=1000) {
 //fprintf(stderr, "bag_data[%6d] = %d\n", i, (int) temp_bag[i]); 
@@ -396,15 +396,16 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 // LGBM_CUDA
 bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
 
-//fprintf(stderr, "inside TrainOneIterCUDA CP103\n"); fflush(stderr);
+fprintf(stderr, "inside TrainOneIterCUDA, iter_ = %d\n", iter_); fflush(stderr);
 
  // LGBM_CUDA invoke baggging during the first iteration
- if ((config_->device_type == std::string("cuda")) && (iter_ == 0)) {
+ if (config_->device_type == std::string("cuda")) {
 
 //    auto start_time = std::chrono::steady_clock::now();
 
-//fprintf(stderr, "calling Bagging CP104\n"); fflush(stderr);
-    Bagging(0); 
+fprintf(stderr, "calling Bagging CP104\n"); fflush(stderr);
+    Bagging(iter_); 
+fprintf(stderr, "back from Bagging CP104\n"); fflush(stderr);
   }
 
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
@@ -508,8 +509,9 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
 //       auto start_time = std::chrono::steady_clock::now();
 
        // bagging logic
-//fprintf(stderr, "inside TrainOneIterCUDA CP108\n"); fflush(stderr);
+fprintf(stderr, "calling Bagging CP105\n"); fflush(stderr);
        Bagging(iter_next);
+fprintf(stderr, "back from Bagging CP105\n"); fflush(stderr);
 
       }
     }
@@ -549,7 +551,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     hessians = hessians_.data();
   }
   // bagging logic
+fprintf(stderr, "calling Bagging CP106\n"); fflush(stderr);
   Bagging(iter_);
+fprintf(stderr, "back from Bagging CP106\n"); fflush(stderr);
 
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
