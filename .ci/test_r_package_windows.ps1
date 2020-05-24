@@ -12,10 +12,6 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
-# GitHub Actions puts $ErrorActionPreference = 'stop' on the top of powershell scripts,
-# which causes the script to fail if anything is written to stderr
-$ErrorActionPreference = "Continue"
-
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
