@@ -10,32 +10,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            subtitle: gcc
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
-            subtitle: clang
-          - os: macOS-latest
-            task: r-package
-            compiler: gcc
-            subtitle: gcc
-          - os: macOS-latest
-            task: r-package
-            compiler: clang
-            subtitle: clang
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   subtitle: gcc
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: clang
+          #   subtitle: clang
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   subtitle: gcc
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: clang
+          #   subtitle: clang
           - os: windows-latest
             task: r-package
             compiler: MINGW
             subtitle: MINGW
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
-            subtitle: MSVC
-          - os: ubuntu-latest
-            task: lint
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MSVC
+          #   subtitle: MSVC
+          # - os: ubuntu-latest
+          #   task: lint
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
