@@ -74,7 +74,7 @@ jobs:
           auto-update-conda: false
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
-        shell: powershell -File {0}
+        shell: pwsh -File {0}
         env:
           COMPILER: "${{ matrix.compiler }}"
           GITHUB_ACTIONS: "true"
