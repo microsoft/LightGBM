@@ -26,17 +26,15 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
   // Get local rank and global machine size
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
-  // allocate buffer for communication
-  size_t buffer_size = this->train_data_->NumTotalBin() * kHistEntrySize;
 
   auto max_cat_threshold = this->config_->max_cat_threshold;
-  // input_buffer_ needs to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
-  int splitInfoSize = SplitInfo::Size(max_cat_threshold) * 2;
-  if (buffer_size < static_cast<size_t>(splitInfoSize)) {
-    input_buffer_.resize(splitInfoSize);
-  } else {
-    input_buffer_.resize(buffer_size);
-  }
+  // need to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
+  size_t split_info_size = static_cast<size_t>(SplitInfo::Size(max_cat_threshold) * 2);
+
+  // allocate buffer for communication
+  size_t buffer_size = std::max(this->train_data_->NumTotalBin() * kHistEntrySize, split_info_size);
+
+  input_buffer_.resize(buffer_size);
   output_buffer_.resize(buffer_size);
 
   is_feature_aggregated_.resize(this->num_features_);
