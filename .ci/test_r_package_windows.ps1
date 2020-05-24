@@ -96,6 +96,8 @@ if ($env:COMPILER -ne "MSVC") {
   }
 
   $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
+  Write-Output "note_str:"
+  Write-Output $note_str
   $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
   $NUM_CHECK_NOTES = $matches[1]
   $ALLOWED_CHECK_NOTES = 3
