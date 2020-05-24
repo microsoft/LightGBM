@@ -82,7 +82,7 @@ jobs:
         run: |
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
           conda init powershell
-          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1 2&>1"
+          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
 
 # links
 # * https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_iddefaultsrun
