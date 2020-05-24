@@ -80,6 +80,7 @@ jobs:
           GITHUB_ACTIONS: "true"
           TASK: "${{ matrix.task }}"
         run: |
+          $ErrorActionPreference = "Continue"
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
           conda init powershell
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
