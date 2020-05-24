@@ -919,12 +919,14 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset; 
 
   // Check workgroups per feature4 tuple..
-  int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(smaller_leaf_splits_->num_data_in_leaf());
+// GCF Let's try this!!!
+//  int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(smaller_leaf_splits_->num_data_in_leaf());
 
   // if the workgroup per feature is 1 (2^0), return as the work is too small for a GPU
-  if (exp_workgroups_per_feature == 0){
-    return SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
-  }
+// GCF Let's try this!!!
+//  if (exp_workgroups_per_feature == 0){
+//    return SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
+//  }
 
   // ConstructGPUHistogramsAsync will return true if there are availabe feature gourps dispatched to GPU
   bool is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,

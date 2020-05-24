@@ -801,8 +801,10 @@ void Dataset::CopySubrow(const Dataset* fullset,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices, bool need_meta_data) {
   CHECK_EQ(num_used_indices, num_data_);
+fprintf(stderr, "CopySubrow CP3, used_indices[5503] = %4d\n", (int) used_indices[5503]); fflush(stderr); 
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
+
   for (int group = 0; group < num_groups_; ++group) {
     OMP_LOOP_EX_BEGIN();
     feature_groups_[group]->CopySubrow(fullset->feature_groups_[group].get(),
@@ -1310,10 +1312,18 @@ void Dataset::ConstructHistogramsInner(
     data_size_t num_data, const score_t* gradients, const score_t* hessians,
     score_t* ordered_gradients, score_t* ordered_hessians,
     TrainingShareStates* share_state, hist_t* hist_data) const {
+
+fprintf(stderr, "CPU ");
+if (!USE_INDICES) fprintf(stderr, "IGNORE_INDICES ");
+if (!USE_HESSIAN) fprintf(stderr, "CONST_HESSIAN ");
+fprintf(stderr, "\n"); fflush(stderr);
+//fprintf(stderr, "gradients[2161] = %lf\n", gradients[2161]); fflush(stderr);
+
   if (!share_state->is_colwise) {
     return ConstructHistogramsMultiVal<USE_INDICES, false>(
         data_indices, num_data, gradients, hessians, share_state, hist_data);
   }
+
   std::vector<int> used_dense_group;
   int multi_val_groud_id = -1;
   used_dense_group.reserve(num_groups_);
@@ -1358,12 +1368,20 @@ void Dataset::ConstructHistogramsInner(
       }
     }
     OMP_INIT_EX();
+if (USE_INDICES) {
+   //fprintf(stderr, "   data_indices = %3d %3d %3d %3d %3d %3d %3d %3d\n", data_indices[0], data_indices[1], data_indices[2], data_indices[3], data_indices[4], data_indices[5], data_indices[6], data_indices[7]); fflush(stderr);
+   //fprintf(stderr, "   gradients = %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf\n", ptr_ordered_grad[0],  ptr_ordered_grad[1],  ptr_ordered_grad[2],  ptr_ordered_grad[3],  ptr_ordered_grad[4],  ptr_ordered_grad[5],  ptr_ordered_grad[6],  ptr_ordered_grad[7]); fflush(stderr); 
+   //fprintf(stderr, "   hessians = %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf\n", ptr_ordered_hess[0],  ptr_ordered_hess[1],  ptr_ordered_hess[2],  ptr_ordered_hess[3],  ptr_ordered_hess[4],  ptr_ordered_hess[5],  ptr_ordered_hess[6],  ptr_ordered_hess[7]); fflush(stderr); 
+//fprintf(stderr, "   offset into return array for gi = 0: %d\n", (int) group_bin_boundaries_[used_dense_group[0]]); fflush(stderr);
+}
+
 #pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
     for (int gi = 0; gi < num_used_dense_group; ++gi) {
       OMP_LOOP_EX_BEGIN();
       int group = used_dense_group[gi];
       auto data_ptr = hist_data + group_bin_boundaries_[group] * 2;
       const int num_bin = feature_groups_[group]->num_total_bin_;
+//fprintf(stderr, "gi = %2d, group_bin_boundaries_[%2d] = %4d, num_bin = %d\n", gi, (int) group, (int) group_bin_boundaries_[group], (int) num_bin);
       std::memset(reinterpret_cast<void*>(data_ptr), 0,
                   num_bin * kHistEntrySize);
       if (USE_HESSIAN) {
@@ -1372,8 +1390,16 @@ void Dataset::ConstructHistogramsInner(
               data_indices, 0, num_data, ptr_ordered_grad, ptr_ordered_hess,
               data_ptr);
         } else {
-          feature_groups_[group]->bin_data_->ConstructHistogram(
-              0, num_data, ptr_ordered_grad, ptr_ordered_hess, data_ptr);
+          if (gi == 0) {
+//fprintf(stderr, "   calling core ConstructHistogramDebug\n"); fflush(stderr);
+             feature_groups_[group]->bin_data_->ConstructHistogramDebug(
+                 0, num_data, ptr_ordered_grad, ptr_ordered_hess, data_ptr);
+//fprintf(stderr, "   back from ConstructHistogramDebug, hist_data = %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf\n", hist_data[0], hist_data[1], hist_data[2], hist_data[3], hist_data[4], hist_data[5]); fflush(stderr);
+          }
+          else {
+             feature_groups_[group]->bin_data_->ConstructHistogram(
+                 0, num_data, ptr_ordered_grad, ptr_ordered_hess, data_ptr);
+          }
         }
       } else {
         if (USE_INDICES) {
@@ -1392,6 +1418,7 @@ void Dataset::ConstructHistogramsInner(
     }
     OMP_THROW_EX();
   }
+//fprintf(stderr, "   leaving 'CPU kernel' hist_data = %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf\n", hist_data[0], hist_data[1], hist_data[2], hist_data[3], hist_data[4], hist_data[5]); fflush(stderr);
   global_timer.Stop("Dataset::dense_bin_histogram");
   if (multi_val_groud_id >= 0) {
     if (num_used_dense_group > 0) {
@@ -1439,6 +1466,7 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient,
   const BinMapper* bin_mapper =
       feature_groups_[group]->bin_mappers_[sub_feature].get();
   const int most_freq_bin = bin_mapper->GetMostFreqBin();
+//fprintf(stderr, "in Dataset::FixHistogram, feature_idx = %2d, group = %2d, sub_feature = %d, most_freq_bin = %3d\n", feature_idx, group, sub_feature, most_freq_bin); fflush(stderr);
   if (most_freq_bin > 0) {
     const int num_bin = bin_mapper->num_bin();
     GET_GRAD(data, most_freq_bin) = sum_gradient;
