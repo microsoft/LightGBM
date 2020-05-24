@@ -95,7 +95,7 @@ if ($env:COMPILER -ne "MSVC") {
       Check-Output $False
   }
 
-  $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
+  $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
   Write-Output "note_str:"
   Write-Output $note_str
   $stuff = Get-Content "${LOG_FILE_NAME}"
