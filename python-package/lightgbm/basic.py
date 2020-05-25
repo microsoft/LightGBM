@@ -116,7 +116,15 @@ def cint32_array_to_numpy(cptr, length):
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.fromiter(cptr, dtype=np.int32, count=length)
     else:
-        raise RuntimeError('Expected int pointer')
+        raise RuntimeError('Expected int32 pointer')
+
+
+def cint64_array_to_numpy(cptr, length):
+    """Convert a ctypes int pointer array to a numpy array."""
+    if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
+        return np.fromiter(cptr, dtype=np.int64, count=length)
+    else:
+        raise RuntimeError('Expected int64 pointer')
 
 
 def c_str(string):
@@ -656,30 +664,24 @@ class _InnerPredictor(object):
         else:
             return inner_predict(mat, num_iteration, predict_type)
 
-    def __convert_ctypes_to_numpy(self, ctypes_array, ctypes_array_len, array_type):
-        """Convert the ctypes array to a numpy array, note memory will still need to be managed."""
-        array_size = np.dtype(array_type).itemsize * ctypes_array_len
-        if sys.version_info.major >= 3:
-            bfm = ctypes.pythonapi.PyMemoryView_FromMemory
-            bfm.restype = ctypes.py_object
-            bfm.argtypes = (ctypes.c_void_p, ctypes.c_int, ctypes.c_int)
-            PyBUF_READ = 0x100
-            py_buffer = bfm(ctypes_array, array_size, PyBUF_READ)
-        else:
-            bfm = ctypes.pythonapi.PyBuffer_FromMemory
-            bfm.restype = ctypes.py_object
-            bfm.argtypes = (ctypes.c_void_p, ctypes.c_int)
-            py_buffer = bfm(ctypes_array, array_size)
-        return np.frombuffer(py_buffer, array_type)
-
     def __create_sparse_native(self, cs, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
-                               np_indptr_type, np_data_type, indptr_type, data_type, is_csr=True):
+                               indptr_type, data_type, is_csr=True):
         # create numpy array from output arrays
         data_indices_len = out_shape[0]
         indptr_len = out_shape[1]
-        out_indptr = self.__convert_ctypes_to_numpy(out_ptr_indptr, indptr_len, np_indptr_type)
-        out_indices = self.__convert_ctypes_to_numpy(out_ptr_indices, data_indices_len, np.int32)
-        out_data = self.__convert_ctypes_to_numpy(out_ptr_data, data_indices_len, np_data_type)
+        if indptr_type == C_API_DTYPE_INT32:
+            out_indptr = cint32_array_to_numpy(out_ptr_indptr, indptr_len)
+        elif indptr_type == C_API_DTYPE_INT64:
+            out_indptr = cint64_array_to_numpy(out_ptr_indptr, indptr_len)
+        else:
+            raise TypeError("Expected int32 or int64 type for indptr")
+        if data_type == C_API_DTYPE_FLOAT32:
+            out_data = cfloat32_array_to_numpy(out_ptr_data, data_indices_len)
+        elif data_type == C_API_DTYPE_FLOAT64:
+            out_data = cfloat64_array_to_numpy(out_ptr_data, data_indices_len)
+        else:
+            raise TypeError("Expected float32 or float64 type for data")
+        out_indices = cint32_array_to_numpy(out_ptr_indices, data_indices_len)
         # break up indptr based on number of rows (note more than one matrix in multiclass case)
         per_class_indptr_shape = cs.indptr.shape[0]
         # for CSC there is extra column added
@@ -698,9 +700,9 @@ class _InnerPredictor(object):
             cs_shape = [cs.shape[0], cs.shape[1] + 1]
             # note: make sure we copy data as it will be deallocated next
             if is_csr:
-                cs_output_matrices.append(scipy.sparse.csr_matrix((cs_data, cs_indices, cs_indptr), cs_shape, copy=True))
+                cs_output_matrices.append(scipy.sparse.csr_matrix((cs_data, cs_indices, cs_indptr), cs_shape))
             else:
-                cs_output_matrices.append(scipy.sparse.csc_matrix((cs_data, cs_indices, cs_indptr), cs_shape, copy=True))
+                cs_output_matrices.append(scipy.sparse.csc_matrix((cs_data, cs_indices, cs_indptr), cs_shape))
             # free the temporary native indptr, indices, and data
         _safe_call(_LIB.LGBM_BoosterFreePredictSparse(out_ptr_indptr, out_ptr_indices, out_ptr_data,
                                                       ctypes.c_int(indptr_type), ctypes.c_int(data_type)))
@@ -750,17 +752,13 @@ class _InnerPredictor(object):
             csr_indices = csr.indices.astype(np.int32, copy=False)
             matrix_type = C_API_MATRIX_TYPE_CSR
             if type_ptr_indptr == C_API_DTYPE_INT32:
-                np_indptr_type = np.int32
                 out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
             else:
-                np_indptr_type = np.int64
                 out_ptr_indptr = ctypes.POINTER(ctypes.c_int64)()
             out_ptr_indices = ctypes.POINTER(ctypes.c_int32)()
             if type_ptr_data == C_API_DTYPE_FLOAT32:
-                np_data_type = np.float32
                 out_ptr_data = ctypes.POINTER(ctypes.c_float)()
             else:
-                np_data_type = np.float64
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
             out_shape = np.zeros(2, dtype=np.int64)
             _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
@@ -782,8 +780,7 @@ class _InnerPredictor(object):
                 ctypes.byref(out_ptr_indices),
                 ctypes.byref(out_ptr_data)))
             matrices = self.__create_sparse_native(csr, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
-                                                   np_indptr_type, np_data_type, type_ptr_indptr,
-                                                   type_ptr_data, is_csr=True)
+                                                   type_ptr_indptr, type_ptr_data, is_csr=True)
             nrow = len(csr.indptr) - 1
             return matrices, nrow
 
@@ -812,17 +809,13 @@ class _InnerPredictor(object):
             csc_indices = csc.indices.astype(np.int32, copy=False)
             matrix_type = C_API_MATRIX_TYPE_CSC
             if type_ptr_indptr == C_API_DTYPE_INT32:
-                np_indptr_type = np.int32
                 out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
             else:
-                np_indptr_type = np.int64
                 out_ptr_indptr = ctypes.POINTER(ctypes.c_int64)()
             out_ptr_indices = ctypes.POINTER(ctypes.c_int32)()
             if type_ptr_data == C_API_DTYPE_FLOAT32:
-                np_data_type = np.float32
                 out_ptr_data = ctypes.POINTER(ctypes.c_float)()
             else:
-                np_data_type = np.float64
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
             out_shape = np.zeros(2, dtype=np.int64)
             _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
@@ -844,8 +837,7 @@ class _InnerPredictor(object):
                 ctypes.byref(out_ptr_indices),
                 ctypes.byref(out_ptr_data)))
             matrices = self.__create_sparse_native(csc, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
-                                                   np_indptr_type, np_data_type, type_ptr_indptr,
-                                                   type_ptr_data, is_csr=False)
+                                                   type_ptr_indptr, type_ptr_data, is_csr=False)
             nrow = csc.shape[0]
             return matrices, nrow
 
