@@ -52,7 +52,8 @@ Write-Output "Done installing Rtools"
 # build the package documentation for those
 if ($env:COMPILER -eq "MINGW") {
     Write-Output "Downloading MiKTeX"
-    Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
+    Rscript $env:BUILD_SOURCESDIRECTORY\.ci\download-miktex.R "miktexsetup-x64.zip"
+    #Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
