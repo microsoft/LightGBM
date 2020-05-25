@@ -74,6 +74,8 @@ jobs:
           auto-update-conda: false
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
+        # have to use 'pwsh' because with 'powershell', anything writing to
+        # stderr causes the job to fail
         shell: pwsh -File {0}
         env:
           COMPILER: "${{ matrix.compiler }}"
