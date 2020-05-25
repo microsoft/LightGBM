@@ -76,7 +76,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         # have to use 'pwsh' because with 'powershell', anything writing to
         # stderr causes the job to fail
-        shell: pwsh -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: powershell -NonInteractive -ExecutionPolicy Bypass -File {0}
         env:
           COMPILER: "${{ matrix.compiler }}"
           GITHUB_ACTIONS: "true"
