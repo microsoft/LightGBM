@@ -101,10 +101,12 @@ if ($env:COMPILER -ne "MSVC") {
   $stuff = Get-Content "${LOG_FILE_NAME}"
   Write-Output "---- stuff ----"
   Write-Output $stuff
-  $stuff2 = Get-Content -Path "${LOG_FILE_NAME}"
+  $stuff2 = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String
   Write-Output "---- stuff2 ----"
   Write-Output $stuff2
   $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
+  Write-Output "----- matches -----"
+  Write-Output $matches
   $NUM_CHECK_NOTES = $matches[1]
   $ALLOWED_CHECK_NOTES = 3
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
