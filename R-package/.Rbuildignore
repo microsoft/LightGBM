@@ -1,4 +1,4 @@
-^build_package.R$
+^build_r.R$
 \.gitkeep$
 ^docs$
 ^pkgdown$
