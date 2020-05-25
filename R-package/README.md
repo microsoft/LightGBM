@@ -48,7 +48,7 @@ By default, the package will be built with [Visual Studio Build Tools](https://v
 
 **MinGW (R 3.x)**
 
-If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://www.mingw.org/). This should work with the tools already bundled in `Rtools` 3.5.
+If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://mingw-w64.org/doku.php). This should work with the tools already bundled in `Rtools` 3.5.
 
 If you want to force `LightGBM` to use MinGW (for any R version), open `R-package/src/install.libs.R` and change `use_mingw`:
 
@@ -56,14 +56,14 @@ If you want to force `LightGBM` to use MinGW (for any R version), open `R-packag
 use_mingw <- TRUE
 ```
 
-**MSYS (R 4.x)**
+**MSYS2 (R 4.x)**
 
-If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS](http://www.mingw.org/wiki/msys). This should work with the tools already bundled in `Rtools` 4.0.
+If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS](https://www.msys2.org/). This should work with the tools already bundled in `Rtools` 4.0.
 
-If you want to force `LightGBM` to use MSYS (for any R version), open `R-package/src/install.libs.R` and change `use_msys`:
+If you want to force `LightGBM` to use MSYS2 (for any R version), open `R-package/src/install.libs.R` and change `use_msys`:
 
 ```r
-use_msys <- TRUE
+use_msys2 <- TRUE
 ```
 
 #### Mac OS Preparation

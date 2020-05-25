@@ -50,8 +50,15 @@ function(create_rlib_for_msvc)
 
   set(LIBR_MSVC_CORE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib filepath")
 
+  get_filename_component(
+    LIBR_RSCRIPT_EXECUTABLE_DIR
+    ${LIBR_EXECUTABLE}
+    DIRECTORY
+  )
+  set(LIBR_RSCRIPT_EXECUTABLE "${LIBR_RSCRIPT_EXECUTABLE_DIR}/Rscript")
+
   execute_process(
-    COMMAND "${LIBR_HOME}/bin/Rscript"
+    COMMAND ${LIBR_RSCRIPT_EXECUTABLE}
     "${CMAKE_CURRENT_BINARY_DIR}/make-r-def.R"
     "${LIBR_CORE_LIBRARY}" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
   )

@@ -4,10 +4,10 @@ use_gpu <- FALSE
 
 # Package will be built with Visual Studio unless you set one of these to TRUE
 use_mingw <- FALSE
-use_msys <- FALSE
+use_msys2 <- FALSE
 
-if (use_mingw && use_msys) {
-  stop("Cannot use both MinGW and MSYS. Please choose only one.")
+if (use_mingw && use_msys2) {
+  stop("Cannot use both MinGW and MSYS2. Please choose only one.")
 }
 
 if (.Machine$sizeof.pointer != 8L) {
@@ -117,7 +117,7 @@ if (!use_precompile) {
   )
   setwd(build_dir)
 
-  use_visual_studio <- !(use_mingw || use_msys)
+  use_visual_studio <- !(use_mingw || use_msys2)
 
   # If using MSVC to build, pull in the script used
   # to create R.def from R.dll
@@ -143,7 +143,7 @@ if (!use_precompile) {
       build_tool = "mingw32-make.exe"
       , makefile_generator = "MinGW Makefiles"
     )
-    , "MSYS" = c(
+    , "MSYS2" = c(
       build_tool = "make.exe"
       , makefile_generator = "MSYS Makefiles"
     )
@@ -151,14 +151,14 @@ if (!use_precompile) {
 
   if (use_mingw) {
     windows_toolchain <- "MinGW"
-  } else if (use_msys) {
-    windows_toolchain <- "MSYS"
+  } else if (use_msys2) {
+    windows_toolchain <- "MSYS2"
   } else {
     # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
     # Visual Studio install but that fails, fall back to the toolchain
     # supported in Rtools
     if (R_ver >= 4.0) {
-      windows_toolchain <- "MSYS"
+      windows_toolchain <- "MSYS2"
     } else {
       windows_toolchain <- "MinGW"
     }
