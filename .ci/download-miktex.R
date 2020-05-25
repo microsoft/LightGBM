@@ -9,7 +9,7 @@ args <- commandArgs(trailingOnly = TRUE)
 DESTFILE <- args[[1L]]
 MIRROR <- "https://ctan.math.illinois.edu/systems/win32/miktex/setup/windows-x64/"
 mirror_contents <- httr::content(
-    httr::RETRY("GET", mirror)
+    httr::RETRY("GET", MIRROR)
     , as = "text"
 )
 content_lines <- strsplit(mirror_contents, "\n")[[1L]]
