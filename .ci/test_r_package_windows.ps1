@@ -18,7 +18,6 @@ $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
-$env:MIKTEX_ZIP = "https://ctan.math.illinois.edu/systems/win32/miktex/setup/windows-x64/miktexsetup-2.9.7442-x64.zip"
 
 if ($env:COMPILER -eq "MINGW") {
   $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
@@ -53,7 +52,7 @@ Write-Output "Done installing Rtools"
 # build the package documentation for those
 if ($env:COMPILER -eq "MINGW") {
     Write-Output "Downloading MiKTeX"
-    Download-File-With-Retries -url "$env:MIKTEX_ZIP" -destfile "miktexsetup-x64.zip"
+    Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
@@ -96,22 +95,7 @@ if ($env:COMPILER -ne "MSVC") {
   }
 
   $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
-  Write-Output "note_str:"
-  Write-Output $note_str
-  Write-Output "---- stuff ----"
-  $stuff = Get-Content "${LOG_FILE_NAME}"
-  Write-Output $stuff
-  $stuff2 = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String
-  Write-Output "---- stuff2 ----"
-  Write-Output $stuff2
   $relevant_line = $note_str -match '(\d+) NOTE'
-  Write-Output "----- matches -----"
-  Write-Output $matches
-  Write-Output "----- Matches ----"
-  Write-Output $Matches
-  Write-Output "-----------"
-  Write-Output "----- relevant_line -----"
-  Write-Output $relevant_line
   $NUM_CHECK_NOTES = $matches[1]
   $ALLOWED_CHECK_NOTES = 3
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
