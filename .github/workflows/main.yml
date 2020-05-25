@@ -85,16 +85,3 @@ jobs:
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
           conda init powershell
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
-
-# references
-# * https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_iddefaultsrun
-# * https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners
-# * https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
-# * https://github.com/marketplace/actions/setup-miniconda
-# * https://help.github.com/en/actions/reference/virtual-environments-for-github-hosted-runners#supported-runners-and-hardware-resources
-# * https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md
-# * https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide/2095623#2095623
-# * https://stackoverflow.com/a/11826589/3986677
-# * https://github.com/marketplace/actions/setup-miniconda
-# * https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions
-# * see "fail-fast behavior" in https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions

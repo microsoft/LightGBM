@@ -57,7 +57,6 @@ Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.pac
 if ($env:COMPILER -eq "MINGW") {
     Write-Output "Downloading MiKTeX"
     Rscript $env:BUILD_SOURCESDIRECTORY\.ci\download-miktex.R "miktexsetup-x64.zip"
-    #Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
