@@ -68,6 +68,7 @@ elseif ($env:TASK -eq "bdist") {
     echo "OpenCL install failed, aborting"
     exit 1
   }
+  RefreshEnv
   $env:OCL_ROOT = "C:\Program Files (x86)\OCL_SDK_Light"
   $env:LGBM_GPU = "1"
   $env:LGBM_BOOST_ROOT = "$env:BOOST_ROOT_1_72_0"
