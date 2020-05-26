@@ -2,7 +2,8 @@
 use_precompile <- FALSE
 use_gpu <- FALSE
 
-# Package will be built with Visual Studio unless you set one of these to TRUE
+# For Windows, the package will be built with Visual Studio
+# unless you set one of these to TRUE
 use_mingw <- FALSE
 use_msys2 <- FALSE
 
@@ -246,7 +247,7 @@ if (!use_precompile) {
   }
 
   # build the library
-  message("building lib_lightgbm")
+  message("Building lib_lightgbm")
   .run_shell_command(build_cmd, build_args)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 

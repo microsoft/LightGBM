@@ -24,8 +24,12 @@ Installing a 64-bit version of [Rtools](https://cran.r-project.org/bin/windows/R
 
 After installing `Rtools` and `CMake`, be sure the following paths are added to the environment variable `PATH`. These may have been automatically added when installing other software.
 
-* `Rtools` MinGW bin:
-    - example: `C:\Rtools\mingw_64\bin`
+* `Rtools`
+    - If you have `Rtools` 3.x, example:
+        - `C:\Rtools\mingw_64\bin`
+    - If you have `Rtools` 4.0, example:
+        - `C:\rtools40\mingw64\bin`
+        - `C:\rtools40\usr\bin`
 * `CMake`
     - example: `C:\Program Files\CMake\bin`
 * `R`
@@ -48,7 +52,7 @@ By default, the package will be built with [Visual Studio Build Tools](https://v
 
 **MinGW (R 3.x)**
 
-If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://mingw-w64.org/doku.php). This should work with the tools already bundled in `Rtools` 3.5.
+If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://mingw-w64.org/doku.php) bundled with `Rtools`.
 
 If you want to force `LightGBM` to use MinGW (for any R version), open `R-package/src/install.libs.R` and change `use_mingw`:
 
