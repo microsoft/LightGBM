@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   test:
-    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.subtitle }})
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -13,29 +13,21 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            subtitle: gcc
           - os: ubuntu-latest
             task: r-package
             compiler: clang
-            subtitle: clang
           - os: macOS-latest
             task: r-package
             compiler: gcc
-            subtitle: gcc
           - os: macOS-latest
             task: r-package
             compiler: clang
-            subtitle: clang
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            subtitle: MINGW
           - os: windows-latest
             task: r-package
             compiler: MSVC
-            subtitle: MSVC
-          - os: ubuntu-latest
-            task: lint
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
@@ -74,8 +66,6 @@ jobs:
           auto-update-conda: false
       - name: Setup and run tests on Windows
         if: matrix.os == 'windows-latest'
-        # have to use this explicit command to override the GitHub Actions
-        # default, where any command writing to stderr causes build failures
         shell: pwsh -NonInteractive -ExecutionPolicy Bypass -Command "& '{0}'"
         env:
           COMPILER: "${{ matrix.compiler }}"
