@@ -53,28 +53,26 @@ elseif ($env:TASK -eq "bdist") {
   cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif ($env:TASK -eq "bdist_opencl") {
-  # This SDK seems like the easiest/fastest way to get a OpenCL 2.0 SDK. Because OpenCL is generic, the resulting
-  # extension can still be used with other OpenCL engines.
-  curl -o OCL_SDK_LIGHT_AMD.exe https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases/download/1.0/OCL_SDK_Light_AMD.exe
-  .\OCL_SDK_LIGHT_AMD.exe /silent
+  # Get the OpenCL headers
+  curl -o opencl_headers.zip https://github.com/KhronosGroup/OpenCL-Headers/archive/v2020.03.13.zip
+  Expand-Archive opencl_headers.zip
   # The Intel CPU runtime, so we can run OpenCL code
   curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
   $msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
   $return = Start-Process msiexec -ArgumentList $msiarglist -Wait -passthru
-  cat msi.log
+  Get-Content msi.log
   If (@(0,3010) -contains $return.exitcode) {
-    echo "OpenCL install successful"
+    Write-Output "OpenCL install successful"
   } else {
-    echo "OpenCL install failed, aborting"
+    Write-Output "OpenCL install failed, aborting"
     exit 1
   }
-  RefreshEnv
-  $env:OCL_ROOT = "C:\Program Files (x86)\OCL_SDK_Light"
+  Write-Output "Current OpenCL drivers:"
+  Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
   $env:LGBM_GPU = "1"
   $env:LGBM_BOOST_ROOT = "$env:BOOST_ROOT_1_72_0"
   echo "BOOST: $env:LGBM_BOOST_ROOT"
-  $env:LGBM_OPENCL_LIBRARY_DIR = "$env:OCL_ROOT\lib\x86_64\opencl.lib"
-  $env:LGBM_OPENCL_INCLUDE_DIR = "$env:OCL_ROOT\include"
+  $env:LGBM_OPENCL_INCLUDE_DIR = "$pwd\opencl_headers\OpenCL-Headers-2020.03.13\CL\include"
   # Set default device to GPU:
   cd $env:BUILD_SOURCESDIRECTORY
   (Get-Content include\LightGBM\config.h).replace('std::string device_type = "cpu";', 'std::string device_type = "gpu";') | Set-Content include\LightGBM\config.h
