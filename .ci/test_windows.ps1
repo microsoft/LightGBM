@@ -66,7 +66,14 @@ elseif ($env:TASK -eq "bdist") {
   cd build
   cmake -G "Visual Studio 15 2017" ..
   cd ..
-  msbuild /p:Configuration=Release build\OpenCL.vcxproj
+  $msbuildarglist = "/p:Configuration=Release build\OpenCL.vcxproj"
+  $return = Start-Process C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin\msbuild -ArgumentList $msbuildarglist -Wait -passthru
+  If (@(0,3010) -contains $return.exitcode) {
+    Write-Output "OpenCL ICD build successful"
+  } else {
+    Write-Output "OpenCL ICD build failed, aborting"
+    exit 1
+  }
   cd ..
 
   # The Intel CPU runtime, so we can run OpenCL code
