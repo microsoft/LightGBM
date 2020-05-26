@@ -210,7 +210,7 @@ class CustomInstall(install):
         self.boost_include_dir = environ.get("LGBM_BOOST_INCLUDE_DIR", None)
         self.boost_librarydir = environ.get("LGBM_BOOST_LIBRARY_DIR", None)
         self.opencl_include_dir = environ.get("LGBM_OPENCL_INCLUDE_DIR", None)
-        self.opencl_library = environ.get("LGBM_OPENCL_LIBRARY_DIR", None)
+        self.opencl_library = environ.get("LGBM_OPENCL_LIBRARY", None)
         self.mpi = environ.get("LGBM_MPI", 0)
         self.hdfs = environ.get("LGBM_HDFS", 0)
         self.precompile = environ.get("LGBM_PRECOMPILE", 0)

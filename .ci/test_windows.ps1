@@ -56,6 +56,19 @@ elseif ($env:TASK -eq "bdist") {
   # Get the OpenCL headers
   curl -o opencl_headers.zip https://github.com/KhronosGroup/OpenCL-Headers/archive/v2020.03.13.zip
   Expand-Archive opencl_headers.zip
+  
+  # Build the OpenCL ICD so we have a OpenCL.lib
+  git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader
+  cd OpenCL-ICD-Loader
+  git checkout v2020.03.13
+  cp -r ..\opencl_headers\OpenCL-Headers-2020.03.13\CL inc
+  mkdir build
+  cd build
+  cmake -G "Visual Studio 15 2017" ..
+  cd ..
+  msbuild /p:Configuration=Release build\OpenCL.vcxproj
+  cd ..
+
   # The Intel CPU runtime, so we can run OpenCL code
   curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
   $msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
@@ -72,7 +85,8 @@ elseif ($env:TASK -eq "bdist") {
   $env:LGBM_GPU = "1"
   $env:LGBM_BOOST_ROOT = "$env:BOOST_ROOT_1_72_0"
   echo "BOOST: $env:LGBM_BOOST_ROOT"
-  $env:LGBM_OPENCL_INCLUDE_DIR = "$pwd\opencl_headers\OpenCL-Headers-2020.03.13\CL\include"
+  $env:LGBM_OPENCL_INCLUDE_DIR = "$pwd\opencl_headers\OpenCL-Headers-2020.03.13\"
+  $env:LGBM_OPENCL_LIBRARY = "$PWD\OpenCL-ICD-Loader\build\Release\OpenCL.lib"
   # Set default device to GPU:
   cd $env:BUILD_SOURCESDIRECTORY
   (Get-Content include\LightGBM\config.h).replace('std::string device_type = "cpu";', 'std::string device_type = "gpu";') | Set-Content include\LightGBM\config.h
