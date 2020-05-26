@@ -70,11 +70,10 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   objective_function_ = objective_function;
   num_tree_per_iteration_ = num_class_;
   if (objective_function_ != nullptr) {
-    is_constant_hessian_ = objective_function_->IsConstantHessian();
     num_tree_per_iteration_ = objective_function_->NumModelPerIteration();
-  } else {
-    is_constant_hessian_ = false;
   }
+
+  is_constant_hessian_ = GetIsConstHessian(objective_function);
 
   tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type, config_.get()));
 
@@ -653,11 +652,9 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
   objective_function_ = objective_function;
   if (objective_function_ != nullptr) {
-    is_constant_hessian_ = objective_function_->IsConstantHessian();
     CHECK_EQ(num_tree_per_iteration_, objective_function_->NumModelPerIteration());
-  } else {
-    is_constant_hessian_ = false;
   }
+  is_constant_hessian_ = GetIsConstHessian(objective_function);
 
   // push training metrics
   training_metrics_.clear();

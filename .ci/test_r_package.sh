@@ -14,11 +14,11 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 # This only needs to get run on Travis because R environment for Linux
 # used by Azure pipelines is set up in https://github.com/guolinke/lightgbm-ci-docker
 if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
-    sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+    sudo add-apt-repository \
+        "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
@@ -82,9 +82,21 @@ export _R_CHECK_FORCE_SUGGESTS_=0
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
-R CMD check ${PKG_TARBALL} \
-    --as-cran \
-|| check_succeeded="no"
+(
+    R CMD check ${PKG_TARBALL} \
+        --as-cran \
+    || check_succeeded="no"
+) &
+
+# R CMD check suppresses output, some CIs kill builds after
+# a few minutes with no output. This trick gives R CMD check more time
+#     * https://github.com/travis-ci/travis-ci/issues/4190#issuecomment-169987525
+#     * https://stackoverflow.com/a/29890106/3986677
+CHECK_PID=$!
+while kill -0 ${CHECK_PID} >/dev/null 2>&1; do
+    echo -n -e " \b"
+    sleep 5
+done
 
 echo "R CMD check build logs:"
 cat ${BUILD_DIRECTORY}/lightgbm.Rcheck/00install.out
@@ -98,7 +110,7 @@ if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     exit -1
 fi
 
-ALLOWED_CHECK_NOTES=2
+ALLOWED_CHECK_NOTES=3
 NUM_CHECK_NOTES=$(
     cat ${LOG_FILE_NAME} \
         | grep -e '^Status: .* NOTE.*' \

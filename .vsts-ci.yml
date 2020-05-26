@@ -37,7 +37,6 @@ jobs:
       mpi_source:
         TASK: mpi
         METHOD: source
-        PYTHON_VERSION: 2.7
       gpu_source:
         TASK: gpu
         METHOD: source
@@ -121,7 +120,7 @@ jobs:
     matrix:
       #r_package:
       #  TASK: r-package
-      #  COMPILER: MINGW
+      #  COMPILER: MSVC
       #regular:
       #  TASK: regular
       #  PYTHON_VERSION: 3.6

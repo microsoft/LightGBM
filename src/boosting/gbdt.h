@@ -375,6 +375,13 @@ class GBDT : public GBDTBase {
   const char* SubModelName() const override { return "tree"; }
 
  protected:
+  virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {
+    if (objective_function != nullptr) {
+      return objective_function->IsConstantHessian();
+    } else {
+      return false;
+    }
+  }
   /*!
   * \brief Print eval result and check early stopping
   */

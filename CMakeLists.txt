@@ -316,7 +316,11 @@ if(WIN32 AND (MINGW OR CYGWIN))
 endif()
 
 if(BUILD_FOR_R)
+  if(MSVC)
+    TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_MSVC_CORE_LIBRARY})
+  else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
+  endif(MSVC)
 endif(BUILD_FOR_R)
 
 install(TARGETS lightgbm _lightgbm
