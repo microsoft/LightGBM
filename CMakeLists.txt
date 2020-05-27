@@ -237,7 +237,7 @@ file(GLOB SOURCES
 )
 
 if(BUILD_PROFILING_TESTS)
-    # For profiling builds (use -DDEBUG=ON)
+    # For profiling builds with valgrind/callgrind use -DDEBUG=ON
     add_executable(lightgbm_profile_single_row_predict profiling/profile_single_row_predict.cpp ${SOURCES} src/c_api.cpp)
     add_executable(lightgbm_profile_single_row_predict_fast profiling/profile_single_row_predict_fast.cpp ${SOURCES} src/c_api.cpp)
 endif(BUILD_PROFILING_TESTS)

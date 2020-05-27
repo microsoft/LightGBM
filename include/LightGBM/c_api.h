@@ -708,7 +708,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
  * \brief Release FastConfig object.
  *
  * \param fastConfig Handle to the FastConfig object acquired with a `*FastInit()` method.
- * \return LIGHTGBM_C_EXPORT LGBM_FastConfigFree
+ * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);
 
@@ -860,7 +860,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
  *
  * \param handle Booster handle
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param ncol Number of columns
+ * \param num_col Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_fastConfig FastConfig object with which you can call `LGBM_BoosterPredictForMatSingleRowFast`
  * \return 0 when it succeeds, -1 when failure happens
