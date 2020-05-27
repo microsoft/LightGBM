@@ -1,4 +1,6 @@
-if(USE_GPU OR APPLE)
+if(__OPENCL_PYTHON_PACKAGE)
+  cmake_minimum_required(VERSION 3.11)
+elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 else()
   cmake_minimum_required(VERSION 2.8)
@@ -19,6 +21,11 @@ OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R packag
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif(APPLE)
+
+if(__OPENCL_PYTHON_PACKAGE)
+  set(USE_GPU OFF CACHE BOOL "" FORCE)
+  message(WARNING "\nWARNING: building integrated OpenCL enabled components intended for Python package")
+endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
@@ -127,6 +134,11 @@ if(USE_GPU)
     ADD_DEFINITIONS(-DUSE_GPU)
 endif(USE_GPU)
 
+if(__OPENCL_PYTHON_PACKAGE)
+    include(CMakeOpenCLPythonPackage.txt)
+    ADD_DEFINITIONS(-DUSE_GPU)
+endif()
+
 if(USE_HDFS)
     find_package(JNI REQUIRED)
     find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
@@ -224,7 +236,7 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif(USE_MPI)
 
-file(GLOB SOURCES
+file(GLOB SHARED_SOURCES
     src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
@@ -234,19 +246,27 @@ file(GLOB SOURCES
     src/treelearner/*.cpp
 )
 
-add_executable(lightgbm src/main.cpp ${SOURCES})
-list(APPEND SOURCES "src/c_api.cpp")
+add_library(L OBJECT ${SHARED_SOURCES})
 
+add_executable(lightgbm src/main.cpp $<TARGET_OBJECTS:L>)
+
+list(APPEND LIBRARY_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
 # use with the R package
 if(BUILD_FOR_R)
-  list(APPEND SOURCES "src/lightgbm_R.cpp")
+  list(APPEND LIBRARY_SOURCES "src/lightgbm_R.cpp")
 endif(BUILD_FOR_R)
 
-add_library(_lightgbm SHARED ${SOURCES})
+add_library(_lightgbm SHARED ${LIBRARY_SOURCES} $<TARGET_OBJECTS:L>)
 
 if(MSVC)
-    set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
+  set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
+  # TODO: use uniquely named dll (in setup.py, lightgbm/libpath.py) to avoid runtime conflicts
+  #if(__OPENCL_PYTHON_PACKAGE)
+  #  set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm-${OPENCL_PYTHON_PACKAGE_STAMP}")
+  #else()
+  #  set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
+  #endif()
 endif(MSVC)
 
 if(USE_SWIG)
@@ -303,16 +323,34 @@ if(USE_GPU)
   TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif(USE_GPU)
 
+if(__OPENCL_PYTHON_PACKAGE)
+  # targets OpenCL and Boost are added in CMakeOpenCLPythonPackage.txt
+  add_dependencies(L OpenCL Boost)
+  add_dependencies(lightgbm L)
+  add_dependencies(_lightgbm L)
+  # variables OPENCL_PYTHON_PACKAGE_* are set in CMakeOpenCLPythonPackage.txt
+  target_include_directories(L PRIVATE ${OPENCL_PYTHON_PACKAGE_INCLUDES})
+  target_compile_definitions(L PRIVATE ${OPENCL_PYTHON_PACKAGE_DEFINITIONS})
+  target_link_libraries(lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_LIBRARIES})
+  target_link_libraries(_lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_LIBRARIES})
+endif()
+
 if(USE_HDFS)
   TARGET_LINK_LIBRARIES(lightgbm ${HDFS_CXX_LIBRARIES})
   TARGET_LINK_LIBRARIES(_lightgbm ${HDFS_CXX_LIBRARIES})
 endif(USE_HDFS)
 
-if(WIN32 AND (MINGW OR CYGWIN))
-    TARGET_LINK_LIBRARIES(lightgbm Ws2_32)
-    TARGET_LINK_LIBRARIES(_lightgbm Ws2_32)
-    TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
-    TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
+if(WIN32)
+    if (MINGW OR CYGWIN)
+      TARGET_LINK_LIBRARIES(lightgbm Ws2_32)
+      TARGET_LINK_LIBRARIES(_lightgbm Ws2_32)
+      TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
+      TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
+    endif()
+else()
+    if(__OPENCL_PYTHON_PACKAGE)
+      target_link_libraries(lightgbm PRIVATE pthread dl)
+    endif()
 endif()
 
 if(BUILD_FOR_R)

@@ -1,0 +1,110 @@
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BOOST_VERSION_DOT "1.73")
+string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION_DOT})
+
+set(OPENCL_HEADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-Headers.git")
+set(OPENCL_HEADER_TAG "3f7c1f77f8e1a3c9b48765c713ca19013e95b91e")
+#set(OPENCL_LOADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-ICD-Loader.git")
+#set(OPENCL_LOADER_TAG "bbdf079426d859fb8a68c332b41b714f9c87d6ad")
+set(OPENCL_LOADER_REPOSITORY "https://github.com/tpboudreau/OpenCL-ICD-Loader.git")
+set(OPENCL_LOADER_TAG "e42b3464e63f30cb0b818d88b836dd9e02ddbd7b")
+set(BOOST_REPOSITORY "https://github.com/boostorg/boost.git")
+set(BOOST_TAG "boost-${BOOST_VERSION_DOT}.0")
+execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} OUTPUT_VARIABLE LIGHTGBM_TAG OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+string(SHA1 OPENCL_PYTHON_PACKAGE_STAMP "${OPENCL_HEADER_REPOSITORY}@${OPENCL_HEADER_TAG};${OPENCL_LOADER_REPOSITORY}@${OPENCL_LOADER_TAG};${BOOST_REPOSITORY}@${BOOST_TAG};lightgbm@${LIGHTGBM_TAG}")
+message(STATUS "OpenCL Python package build stamp: ${OPENCL_PYTHON_PACKAGE_STAMP}")
+
+# Build Independent OpenCL library
+include(FetchContent)
+FetchContent_Declare(OpenCL-Headers GIT_REPOSITORY ${OPENCL_HEADER_REPOSITORY} GIT_TAG ${OPENCL_HEADER_TAG})
+FetchContent_GetProperties(OpenCL-Headers)
+if(NOT OpenCL-Headers_POPULATED)
+  FetchContent_Populate(OpenCL-Headers)
+  message(STATUS "Populated OpenCL Headers")
+endif()
+set(OPENCL_ICD_LOADER_HEADERS_DIR ${opencl-headers_SOURCE_DIR} CACHE PATH "") # for OpenCL ICD Loader
+set(OpenCL_INCLUDE_DIR ${opencl-headers_SOURCE_DIR} CACHE PATH "") # for Boost::Compute
+
+FetchContent_Declare(OpenCL-ICD-Loader GIT_REPOSITORY ${OPENCL_LOADER_REPOSITORY} GIT_TAG ${OPENCL_LOADER_TAG})
+FetchContent_GetProperties(OpenCL-ICD-Loader)
+if(NOT OpenCL-ICD-Loader_POPULATED)
+  FetchContent_Populate(OpenCL-ICD-Loader)
+  if(WIN32)
+    set(USE_DYNAMIC_VCXX_RUNTIME ON)
+  else()
+    set(OPENCL_ICD_LOADER_PIC ON)
+  endif()
+  add_subdirectory(${opencl-icd-loader_SOURCE_DIR} ${opencl-icd-loader_BINARY_DIR} EXCLUDE_FROM_ALL)
+  message(STATUS "Populated OpenCL ICD Loader")
+endif()
+list(APPEND OPENCL_PYTHON_PACKAGE_INCLUDES ${OPENCL_ICD_LOADER_HEADERS_DIR})
+if(WIN32)
+  list(APPEND OPENCL_PYTHON_PACKAGE_LIBRARIES ${opencl-icd-loader_BINARY_DIR}/Release/OpenCL.lib cfgmgr32.lib runtimeobject.lib)
+else()
+  list(APPEND OPENCL_PYTHON_PACKAGE_LIBRARIES ${opencl-icd-loader_BINARY_DIR}/libOpenCL.a)
+endif()
+list(APPEND OPENCL_PYTHON_PACKAGE_DEFINITIONS CL_TARGET_OPENCL_VERSION=220)
+
+# Build Independent Boost libraries
+include(ExternalProject)
+include(ProcessorCount)
+ProcessorCount(J)
+set(BOOST_BASE "${PROJECT_BINARY_DIR}/Boost")
+if(WIN32)
+  set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.bat")
+  set(BOOST_BUILD "${BOOST_BASE}/source/b2.exe")
+  set(BOOST_FLAGS "")
+  list(APPEND BOOST_SUBMODULES "libs/*" "tools/*")
+else()
+  set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.sh")
+  set(BOOST_BUILD "${BOOST_BASE}/source/b2")
+  set(BOOST_FLAGS -fPIC)
+  list(APPEND BOOST_SUBMODULES "libs/compute" "libs/chrono" "libs/config" "libs/filesystem" "libs/headers" "libs/io" "libs/predef" "libs/system" "libs/uuid" "tools/*")
+endif()
+ExternalProject_Add(Boost
+  TMP_DIR "${BOOST_BASE}/tmp"
+  STAMP_DIR "${BOOST_BASE}/stamp"
+  DOWNLOAD_DIR "${BOOST_BASE}/download"
+  SOURCE_DIR "${BOOST_BASE}/source"
+  BINARY_DIR "${BOOST_BASE}/source"
+  INSTALL_DIR "${BOOST_BASE}/install"
+  GIT_REPOSITORY ${BOOST_REPOSITORY}
+  GIT_TAG ${BOOST_TAG}
+  GIT_SUBMODULES ${BOOST_SUBMODULES}
+  GIT_SHALLOW ON
+  UPDATE_COMMAND ""
+  PATCH_COMMAND ""
+  CONFIGURE_COMMAND ${BOOST_BOOTSTRAP}
+  BUILD_COMMAND ${BOOST_BUILD} -sBOOST_ROOT=${BOOST_BASE}/source -a -q -j ${J} --with-headers --with-chrono --with-filesystem --with-system link=static runtime-link=shared variant=release threading=multi cxxflags="${BOOST_FLAGS}"
+  INSTALL_COMMAND ""
+)
+set(BOOST_INCLUDE ${BOOST_BASE}/source CACHE PATH "")
+set(BOOST_LIBRARY ${BOOST_BASE}/source/stage/lib CACHE PATH "")
+list(APPEND OPENCL_PYTHON_PACKAGE_INCLUDES ${BOOST_INCLUDE})
+if(WIN32)
+  if(MSVC)
+    if(${MSVC_VERSION} GREATER 1929)
+      set(MSVC_TOOLCHAIN_ID "unknown")
+    elseif(${MSVC_VERSION} GREATER 1919)
+      set(MSVC_TOOLCHAIN_ID "142")
+    elseif(${MSVC_VERSION} GREATER 1909)
+      set(MSVC_TOOLCHAIN_ID "141")
+    elseif(${MSVC_VERSION} GREATER 1899)
+      set(MSVC_TOOLCHAIN_ID "140")
+    else()
+      set(MSVC_TOOLCHAIN_ID "unknown")
+    endif()
+    list(APPEND OPENCL_PYTHON_PACKAGE_LIBRARIES ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib)
+    list(APPEND OPENCL_PYTHON_PACKAGE_LIBRARIES ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib)
+    list(APPEND OPENCL_PYTHON_PACKAGE_LIBRARIES ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib)
+  else()
+    message(WARNING "MinGW Boost library names not yet specified")
+  endif()
+else()
+  list(APPEND OPENCL_PYTHON_PACKAGE_LIBRARIES ${BOOST_LIBRARY}/libboost_filesystem.a)
+  list(APPEND OPENCL_PYTHON_PACKAGE_LIBRARIES ${BOOST_LIBRARY}/libboost_system.a)
+endif()
+
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+
