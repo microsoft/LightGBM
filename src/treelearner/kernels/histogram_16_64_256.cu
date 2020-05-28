@@ -21,7 +21,7 @@ if (b == gtid && t == ltid) { \
 }
 
 // atomic add for float number in local memory
-inline __device__ void atomic_local_add_f(acc_type *addr, const float val)
+inline __device__ void atomic_local_add_f(acc_type *addr, const acc_type val)
 {
     atomicAdd(addr, static_cast<acc_type>(val));
 }
