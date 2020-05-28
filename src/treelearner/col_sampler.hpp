@@ -161,7 +161,7 @@ class ColSampler {
         allowed_valid_feature_indices = &valid_feature_indices_;
       } else {
         for (int i = 0; i < static_cast<int>(valid_feature_indices_.size()); ++i) {
-          if (allowed_features.count(valid_feature_indices_[valid_feature_indices_[i]]) == 1) {
+          if (allowed_features.count(valid_feature_indices_[i]) == 1) {
             filtered_feature_indices.push_back(i);
           }
         }
