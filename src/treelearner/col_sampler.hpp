@@ -108,7 +108,7 @@ class ColSampler {
           if (constraint.count(feat) == 0) { break; }
           ++num_feat_found;
         }
-        if (num_feat_found == branch_features.size()) {
+        if (num_feat_found == static_cast<int>(branch_features.size())) {
           allowed_features.insert(constraint.begin(), constraint.end());
         }
       }
@@ -134,7 +134,7 @@ class ColSampler {
         allowed_used_feature_indices = &used_feature_indices_;
       } else {
         std::vector<int> filtered_feature_indices;
-        for (int i = 0; i < used_feature_indices_.size(); ++i) {
+        for (int i = 0; i < static_cast<int>(used_feature_indices_.size()); ++i) {
           if (allowed_features.count(valid_feature_indices_[used_feature_indices_[i]]) == 1) {
             filtered_feature_indices.push_back(i);
           }
@@ -160,7 +160,7 @@ class ColSampler {
         allowed_valid_feature_indices = &valid_feature_indices_;
       } else {
         std::vector<int> filtered_feature_indices;
-        for (int i = 0; i < valid_feature_indices_.size(); ++i) {
+        for (int i = 0; i < static_cast<int>(valid_feature_indices_.size()); ++i) {
           if (allowed_features.count(valid_feature_indices_[valid_feature_indices_[i]]) == 1) {
             filtered_feature_indices.push_back(i);
           }
