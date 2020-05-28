@@ -130,10 +130,10 @@ class ColSampler {
     if (need_reset_bytree_) {
       auto used_feature_cnt = GetCnt(used_feature_indices_.size(), fraction_bynode_);
       std::vector<int>* allowed_used_feature_indices;
+      std::vector<int> filtered_feature_indices;
       if (interaction_constraints_.empty()) {
         allowed_used_feature_indices = &used_feature_indices_;
       } else {
-        std::vector<int> filtered_feature_indices;
         for (int i = 0; i < static_cast<int>(used_feature_indices_.size()); ++i) {
           if (allowed_features.count(valid_feature_indices_[used_feature_indices_[i]]) == 1) {
             filtered_feature_indices.push_back(i);
@@ -156,10 +156,10 @@ class ColSampler {
       auto used_feature_cnt =
           GetCnt(valid_feature_indices_.size(), fraction_bynode_);
       std::vector<int>* allowed_valid_feature_indices;
+      std::vector<int> filtered_feature_indices;
       if (interaction_constraints_.empty()) {
         allowed_valid_feature_indices = &valid_feature_indices_;
       } else {
-        std::vector<int> filtered_feature_indices;
         for (int i = 0; i < static_cast<int>(valid_feature_indices_.size()); ++i) {
           if (allowed_features.count(valid_feature_indices_[valid_feature_indices_[i]]) == 1) {
             filtered_feature_indices.push_back(i);
