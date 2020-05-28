@@ -230,6 +230,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "cegb_penalty_feature_lazy",
   "cegb_penalty_feature_coupled",
   "path_smooth",
+  "interaction_constraints",
   "verbosity",
   "input_model",
   "output_model",
@@ -454,6 +455,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "path_smooth", &path_smooth);
   CHECK_GE(path_smooth,  0.0);
 
+  GetString(params, "interaction_constraints", &interaction_constraints);
+
   GetInt(params, "verbosity", &verbosity);
 
   GetString(params, "input_model", &input_model);
@@ -659,6 +662,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[path_smooth: " << path_smooth << "]\n";
+  str_buf << "[interaction_constraints: " << interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";

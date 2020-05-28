@@ -23,6 +23,10 @@ class ColSampler {
         fraction_bynode_(config->feature_fraction_bynode),
         seed_(config->feature_fraction_seed),
         random_(config->feature_fraction_seed) {
+    for (auto constraint : config->interaction_constraints_vector) {
+      std::unordered_set<int> constraint_set(constraint.begin(), constraint.end());
+      interaction_constraints_.push_back(constraint_set);
+    }
   }
 
   static int GetCnt(size_t total_cnt, double fraction) {
@@ -35,6 +39,7 @@ class ColSampler {
     train_data_ = train_data;
     is_feature_used_.resize(train_data_->num_features(), 1);
     valid_feature_indices_ = train_data->ValidFeatureIndices();
+
     if (fraction_bytree_ >= 1.0f) {
       need_reset_bytree_ = false;
       used_cnt_bytree_ = static_cast<int>(valid_feature_indices_.size());
@@ -83,32 +88,92 @@ class ColSampler {
     }
   }
 
-  std::vector<int8_t> GetByNode() {
-    if (fraction_bynode_ >= 1.0f) {
-      return std::vector<int8_t>(train_data_->num_features(), 1);
+  std::vector<int8_t> GetByNode(const Tree* tree, int leaf) {
+    // get interaction constraints for current branch
+    std::unordered_set<int> allowed_features;
+    std::vector<int> allowed_features_vector;
+    if (!interaction_constraints_.empty()) {
+      std::vector<int> branch_features;
+      int node = tree->leaf_parent(leaf);
+      while (node >= 0) {
+        branch_features.push_back(tree->split_feature(node));
+        node = tree->internal_parent(node);
+      }
+      for (auto feat : branch_features) {
+        allowed_features.insert(feat);
+      }
+      for (auto constraint : interaction_constraints_) {
+        int num_feat_found = 0;
+        for (int feat : branch_features ) {
+          if (constraint.count(feat) == 0) { break; }
+          ++num_feat_found;
+        }
+        if (num_feat_found == branch_features.size()) {
+          allowed_features.insert(constraint.begin(), constraint.end());
+        }
+      }
+    allowed_features_vector.assign(allowed_features.begin(), allowed_features.end());
     }
     std::vector<int8_t> ret(train_data_->num_features(), 0);
+
+    if (fraction_bynode_ >= 1.0f) {
+      if (interaction_constraints_.empty()) {
+        return std::vector<int8_t>(train_data_->num_features(), 1);
+      } else {
+        for (int feat: allowed_features_vector) {
+          int inner_feat = train_data_->InnerFeatureIndex(feat);
+          ret[inner_feat] = 1;
+        }
+        return ret;
+      }     
+    }
     if (need_reset_bytree_) {
       auto used_feature_cnt = GetCnt(used_feature_indices_.size(), fraction_bynode_);
+      std::vector<int>* allowed_used_feature_indices;
+      if (interaction_constraints_.empty()) {
+        allowed_used_feature_indices = &used_feature_indices_;
+      } else {
+        std::vector<int> filtered_feature_indices;
+        for (int i = 0; i < used_feature_indices_.size(); ++i) {
+          if (allowed_features.count(valid_feature_indices_[used_feature_indices_[i]]) == 1) {
+            filtered_feature_indices.push_back(i);
+          }
+        }
+        used_feature_cnt = std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
+        allowed_used_feature_indices = &filtered_feature_indices;
+      }
       auto sampled_indices = random_.Sample(
-          static_cast<int>(used_feature_indices_.size()), used_feature_cnt);
+          static_cast<int>((*allowed_used_feature_indices).size()), used_feature_cnt);
       int omp_loop_size = static_cast<int>(sampled_indices.size());
 #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
       for (int i = 0; i < omp_loop_size; ++i) {
         int used_feature =
-            valid_feature_indices_[used_feature_indices_[sampled_indices[i]]];
+            valid_feature_indices_[(*allowed_used_feature_indices)[sampled_indices[i]]];
         int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
         ret[inner_feature_index] = 1;
       }
     } else {
       auto used_feature_cnt =
           GetCnt(valid_feature_indices_.size(), fraction_bynode_);
+      std::vector<int>* allowed_valid_feature_indices;
+      if (interaction_constraints_.empty()) {
+        allowed_valid_feature_indices = &valid_feature_indices_;
+      } else {
+        std::vector<int> filtered_feature_indices;
+        for (int i = 0; i < valid_feature_indices_.size(); ++i) {
+          if (allowed_features.count(valid_feature_indices_[valid_feature_indices_[i]]) == 1) {
+            filtered_feature_indices.push_back(i);
+          }
+        }
+        allowed_valid_feature_indices = &filtered_feature_indices;
+        used_feature_cnt = std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
+      }
       auto sampled_indices = random_.Sample(
-          static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
+          static_cast<int>((*allowed_valid_feature_indices).size()), used_feature_cnt);
       int omp_loop_size = static_cast<int>(sampled_indices.size());
 #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
       for (int i = 0; i < omp_loop_size; ++i) {
-        int used_feature = valid_feature_indices_[sampled_indices[i]];
+        int used_feature = (*allowed_valid_feature_indices)[sampled_indices[i]];
         int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
         ret[inner_feature_index] = 1;
       }
@@ -135,6 +200,8 @@ class ColSampler {
   std::vector<int8_t> is_feature_used_;
   std::vector<int> used_feature_indices_;
   std::vector<int> valid_feature_indices_;
+  /*! \brief interaction constraints index in original (raw data) features */
+  std::vector<std::unordered_set<int>> interaction_constraints_;
 };
 
 }  // namespace LightGBM

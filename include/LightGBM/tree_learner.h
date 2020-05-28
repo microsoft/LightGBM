@@ -99,6 +99,7 @@ class TreeLearner {
   static TreeLearner* CreateTreeLearner(const std::string& learner_type,
     const std::string& device_type,
     const Config* config);
+
 };
 
 }  // namespace LightGBM

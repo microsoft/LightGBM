@@ -66,7 +66,7 @@ class GPUTreeLearner: public SerialTreeLearner {
  protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
-  void FindBestSplits() override;
+  void FindBestSplits(const* Tree tree) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 

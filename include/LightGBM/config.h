@@ -505,6 +505,13 @@ struct Config {
   // descl2 = note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
   double path_smooth = 0;
 
+  // desc = controls which features can appear in the same branch
+  // desc = for CLI, specify as lists separated by commas, e.g. ``[0,1,2],[2,3]``
+  // desc = for Python, specify as list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+  // desc = for R, specify as a string similar to the CLI format (ensuring there are no spaces), e.g. ``"[0,1,2],[2,3]"``
+  // desc = any two features can only appear in the same branch only if there exists a constraint containing both feaures
+  std::string interaction_constraints = "";
+
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
@@ -958,12 +965,14 @@ struct Config {
   static const std::unordered_map<std::string, std::string>& alias_table();
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
+  std::vector<std::vector<int>> interaction_constraints_vector;
 
  private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();
+  void GetInteractionConstraints();
 };
 
 inline bool Config::GetString(

@@ -179,7 +179,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     // some initial works before finding best split
     if (BeforeFindBestSplit(tree_prt, left_leaf, right_leaf)) {
       // find best threshold for every feature
-      FindBestSplits();
+      FindBestSplits(tree_prt);
     }
     // Get a leaf with max split gain
     int best_leaf = static_cast<int>(ArrayArgs<SplitInfo>::ArgMax(best_split_per_leaf_));
@@ -310,7 +310,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
   return true;
 }
 
-void SerialTreeLearner::FindBestSplits() {
+void SerialTreeLearner::FindBestSplits(const Tree* tree) {
   std::vector<int8_t> is_feature_used(num_features_, 0);
   #pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
@@ -324,7 +324,7 @@ void SerialTreeLearner::FindBestSplits() {
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
   ConstructHistograms(is_feature_used, use_subtract);
-  FindBestSplitsFromHistograms(is_feature_used, use_subtract);
+  FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
 }
 
 void SerialTreeLearner::ConstructHistograms(
@@ -353,13 +353,13 @@ void SerialTreeLearner::ConstructHistograms(
 }
 
 void SerialTreeLearner::FindBestSplitsFromHistograms(
-    const std::vector<int8_t>& is_feature_used, bool use_subtract) {
+    const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree* tree) {
   Common::FunctionTimer fun_timer(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
   std::vector<SplitInfo> smaller_best(share_state_->num_threads);
   std::vector<SplitInfo> larger_best(share_state_->num_threads);
-  std::vector<int8_t> smaller_node_used_features = col_sampler_.GetByNode();
-  std::vector<int8_t> larger_node_used_features = col_sampler_.GetByNode();
+  std::vector<int8_t> smaller_node_used_features = col_sampler_.GetByNode(tree, smaller_leaf_splits_->leaf_index());
+  std::vector<int8_t> larger_node_used_features = col_sampler_.GetByNode(tree, larger_leaf_splits_->leaf_index());
   OMP_INIT_EX();
 // find splits
 #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
@@ -437,7 +437,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
     // before processing next node from queue, store info for current left/right leaf
     // store "best split" for left and right, even if they might be overwritten by forced split
     if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
-      FindBestSplits();
+      FindBestSplits(tree);
     }
     // then, compute own splits
     SplitInfo left_split;

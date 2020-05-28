@@ -2185,3 +2185,34 @@ class TestEngine(unittest.TestCase):
                     'split_gain', 'threshold', 'decision_type', 'missing_direction',
                     'missing_type', 'weight', 'count'):
             self.assertIsNone(tree_df.loc[0, col])
+
+    def test_interaction_constraints(self):
+        X, y = load_boston(True)
+        num_features = X.shape[1]
+        train_data = lgb.Dataset(X, label=y)
+        # check that constraint containing all features is equivalent to no constraint
+        params = {'verbose': -1,
+                  'seed': 0}
+        est = lgb.train(params, train_data)
+        pred1 = est.predict(X)
+        params = {'interaction_constraints': [list(range(num_features))],
+                  'verbose': -1,
+                  'seed': 0}
+        est = lgb.train(params, train_data)
+        pred2 = est.predict(X)
+        np.testing.assert_allclose(pred1, pred2)
+        # check that constraint partitioning the features reduces train accuracy
+        params = {'interaction_constraints': [list(range(num_features // 2)),
+                                              list(range(num_features // 2, num_features))],
+                  'verbose': -1,
+                  'seed': 0}
+        est = lgb.train(params, train_data)
+        pred3 = est.predict(X)
+        self.assertLess(mean_squared_error(y, pred1), mean_squared_error(y, pred3))
+        # check that constraints consisting of single features reduce accuracy further
+        params = {'interaction_constraints': [[i] for i in range(num_features)],
+                  'verbose': -1,
+                  'seed': 0}
+        est = lgb.train(params, train_data)
+        pred4 = est.predict(X)
+        self.assertLess(mean_squared_error(y, pred3), mean_squared_error(y, pred4))
