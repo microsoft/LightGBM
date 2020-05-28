@@ -39,7 +39,6 @@ class ColSampler {
     train_data_ = train_data;
     is_feature_used_.resize(train_data_->num_features(), 1);
     valid_feature_indices_ = train_data->ValidFeatureIndices();
-
     if (fraction_bytree_ >= 1.0f) {
       need_reset_bytree_ = false;
       used_cnt_bytree_ = static_cast<int>(valid_feature_indices_.size());
