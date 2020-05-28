@@ -32,6 +32,8 @@ matrix:
     - os: osx
       env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - os: osx
+      env: TASK=lint
+    - os: osx
       env: TASK=check-docs
 
 before_install:
