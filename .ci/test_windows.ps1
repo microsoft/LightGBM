@@ -13,7 +13,7 @@ if (Test-Path env:APPVEYOR) {
 }
 
 if ($env:TASK -eq "r-package") {
-  & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 | Out-String -Stream ; Check-Output $?
+  & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 ; Check-Output $?
   Exit 0
 }
 

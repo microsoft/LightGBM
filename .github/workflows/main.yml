@@ -22,12 +22,6 @@ jobs:
           - os: macOS-latest
             task: r-package
             compiler: clang
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-          - os: windows-latest
-            task: r-package
-            compiler: MSVC
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
@@ -59,19 +53,3 @@ jobs:
           export LGB_VER=$(head -n 1 VERSION.txt)
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
-      - name: Use conda on Windows
-        if: matrix.os == 'windows-latest'
-        uses: goanpeca/setup-miniconda@v1
-        with:
-          auto-update-conda: false
-      - name: Setup and run tests on Windows
-        if: matrix.os == 'windows-latest'
-        shell: pwsh -NonInteractive -ExecutionPolicy Bypass -Command "& '{0}'"
-        env:
-          COMPILER: "${{ matrix.compiler }}"
-          GITHUB_ACTIONS: "true"
-          TASK: "${{ matrix.task }}"
-        run: |
-          $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
-          conda init powershell
-          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"

@@ -48,15 +48,11 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'httr', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" | Out-String -Stream
-
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
 if ($env:COMPILER -eq "MINGW") {
     Write-Output "Downloading MiKTeX"
-    Rscript $env:BUILD_SOURCESDIRECTORY\.ci\download-miktex.R "miktexsetup-x64.zip"
+    Download-File-With-Retries -url "https://miktex.org/download/win/miktexsetup-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
@@ -65,9 +61,13 @@ if ($env:COMPILER -eq "MINGW") {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    initexmf --set-config-value [MPM]AutoInstall=1 | Out-String -Stream
+    initexmf --set-config-value [MPM]AutoInstall=1
     conda install -q -y --no-deps pandoc
 }
+
+Write-Output "Installing dependencies"
+$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
 
@@ -94,8 +94,8 @@ if ($env:COMPILER -ne "MSVC") {
       Check-Output $False
   }
 
-  $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
-  $relevant_line = $note_str -match '(\d+) NOTE'
+  $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
+  $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
   $NUM_CHECK_NOTES = $matches[1]
   $ALLOWED_CHECK_NOTES = 3
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
