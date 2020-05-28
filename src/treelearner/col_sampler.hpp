@@ -13,6 +13,7 @@
 #include <LightGBM/utils/random.h>
 
 #include <algorithm>
+#include <unordered_set>
 #include <vector>
 
 namespace LightGBM {
@@ -103,7 +104,7 @@ class ColSampler {
       }
       for (auto constraint : interaction_constraints_) {
         int num_feat_found = 0;
-        for (int feat : branch_features ) {
+        for (int feat : branch_features) {
           if (constraint.count(feat) == 0) { break; }
           ++num_feat_found;
         }
@@ -119,12 +120,12 @@ class ColSampler {
       if (interaction_constraints_.empty()) {
         return std::vector<int8_t>(train_data_->num_features(), 1);
       } else {
-        for (int feat: allowed_features_vector) {
+        for (int feat : allowed_features_vector) {
           int inner_feat = train_data_->InnerFeatureIndex(feat);
           ret[inner_feat] = 1;
         }
         return ret;
-      }     
+      }
     }
     if (need_reset_bytree_) {
       auto used_feature_cnt = GetCnt(used_feature_indices_.size(), fraction_bynode_);
