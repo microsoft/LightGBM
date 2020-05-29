@@ -134,9 +134,9 @@ class ColSampler {
       if (interaction_constraints_.empty()) {
         allowed_used_feature_indices = &used_feature_indices_;
       } else {
-        for (int i = 0; i < static_cast<int>(used_feature_indices_.size()); ++i) {
-          if (allowed_features.count(valid_feature_indices_[used_feature_indices_[i]]) == 1) {
-            filtered_feature_indices.push_back(i);
+        for (int feat_ind : used_feature_indices_) {
+          if (allowed_features.count(valid_feature_indices_[feat_ind]) == 1) {
+            filtered_feature_indices.push_back(feat_ind);
           }
         }
         used_feature_cnt = std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
@@ -160,9 +160,9 @@ class ColSampler {
       if (interaction_constraints_.empty()) {
         allowed_valid_feature_indices = &valid_feature_indices_;
       } else {
-        for (int i = 0; i < static_cast<int>(valid_feature_indices_.size()); ++i) {
-          if (allowed_features.count(valid_feature_indices_[i]) == 1) {
-            filtered_feature_indices.push_back(i);
+        for (int feat : valid_feature_indices_) {
+          if (allowed_features.count(feat) == 1) {
+            filtered_feature_indices.push_back(feat);
           }
         }
         allowed_valid_feature_indices = &filtered_feature_indices;
