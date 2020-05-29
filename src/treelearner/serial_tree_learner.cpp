@@ -359,7 +359,10 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   std::vector<SplitInfo> smaller_best(share_state_->num_threads);
   std::vector<SplitInfo> larger_best(share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features = col_sampler_.GetByNode(tree, smaller_leaf_splits_->leaf_index());
-  std::vector<int8_t> larger_node_used_features = col_sampler_.GetByNode(tree, larger_leaf_splits_->leaf_index());
+  std::vector<int8_t> larger_node_used_features;
+  if (larger_leaf_splits_->leaf_index() >= 0) {
+    larger_node_used_features = col_sampler_.GetByNode(tree, larger_leaf_splits_->leaf_index());
+  }
   OMP_INIT_EX();
 // find splits
 #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)

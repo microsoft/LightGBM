@@ -91,36 +91,36 @@ class ColSampler {
   std::vector<int8_t> GetByNode(const Tree* tree, int leaf) {
     // get interaction constraints for current branch
     std::unordered_set<int> allowed_features;
-    std::vector<int> allowed_features_vector;
     if (!interaction_constraints_.empty()) {
-      std::vector<int> branch_features;
+      std::unordered_set<int> branch_features;
       int node = tree->leaf_parent(leaf);
       while (node >= 0) {
-        branch_features.push_back(tree->split_feature(node));
+        branch_features.insert(tree->split_feature(node));
         node = tree->internal_parent(node);
       }
-      for (auto feat : branch_features) {
-        allowed_features.insert(feat);
-      }
+      allowed_features.insert(branch_features.begin(), branch_features.end());
       for (auto constraint : interaction_constraints_) {
         int num_feat_found = 0;
+        if (branch_features.size() == 0) {
+          allowed_features.insert(constraint.begin(), constraint.end());
+        }
         for (int feat : branch_features) {
           if (constraint.count(feat) == 0) { break; }
           ++num_feat_found;
-        }
-        if (num_feat_found == static_cast<int>(branch_features.size())) {
-          allowed_features.insert(constraint.begin(), constraint.end());
+          if (num_feat_found == static_cast<int>(branch_features.size())) {
+            allowed_features.insert(constraint.begin(), constraint.end());
+            break;
+          }
         }
       }
-    allowed_features_vector.assign(allowed_features.begin(), allowed_features.end());
     }
-    std::vector<int8_t> ret(train_data_->num_features(), 0);
 
+    std::vector<int8_t> ret(train_data_->num_features(), 0);
     if (fraction_bynode_ >= 1.0f) {
       if (interaction_constraints_.empty()) {
         return std::vector<int8_t>(train_data_->num_features(), 1);
       } else {
-        for (int feat : allowed_features_vector) {
+        for (int feat : allowed_features) {
           int inner_feat = train_data_->InnerFeatureIndex(feat);
           ret[inner_feat] = 1;
         }
