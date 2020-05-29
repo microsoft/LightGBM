@@ -5,7 +5,6 @@ from __future__ import absolute_import, print_function
 import copy
 import ctypes
 import os
-import sys
 import warnings
 from tempfile import NamedTemporaryFile
 from collections import OrderedDict
@@ -538,8 +537,8 @@ class _InnerPredictor(object):
 
         Returns
         -------
-        result : numpy array or scipy.sparse or list[scipy.sparse]
-            Prediction result, can be sparse for feature contributions (when pred_contrib=True).
+        result : numpy array, scipy.sparse or list of scipy.sparse
+            Prediction result, can be sparse for feature contributions (when ``pred_contrib=True``).
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
@@ -703,7 +702,7 @@ class _InnerPredictor(object):
                 cs_output_matrices.append(scipy.sparse.csr_matrix((cs_data, cs_indices, cs_indptr), cs_shape))
             else:
                 cs_output_matrices.append(scipy.sparse.csc_matrix((cs_data, cs_indices, cs_indptr), cs_shape))
-            # free the temporary native indptr, indices, and data
+        # free the temporary native indptr, indices, and data
         _safe_call(_LIB.LGBM_BoosterFreePredictSparse(out_ptr_indptr, out_ptr_indices, out_ptr_data,
                                                       ctypes.c_int(indptr_type), ctypes.c_int(data_type)))
         if len(cs_output_matrices) == 1:
@@ -2816,8 +2815,8 @@ class Booster(object):
 
         Returns
         -------
-        result : numpy array
-            Prediction result.
+        result : numpy array, scipy.sparse or list of scipy.sparse
+            Prediction result, can be sparse for feature contributions (when ``pred_contrib=True``).
         """
         predictor = self._to_predictor(copy.deepcopy(kwargs))
         if num_iteration is None:

@@ -687,7 +687,9 @@ void Tree::TreeSHAP(const double *feature_values, double *phi,
                     double parent_one_fraction, int parent_feature_index) const {
   // extend the unique path
   PathElement* unique_path = parent_unique_path + unique_depth;
-  if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  if (unique_depth > 0) {
+    std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  }
   ExtendPath(unique_path, unique_depth, parent_zero_fraction,
              parent_one_fraction, parent_feature_index);
 
@@ -737,7 +739,9 @@ void Tree::TreeSHAPByMap(const std::unordered_map<int, double>& feature_values, 
                          double parent_one_fraction, int parent_feature_index) const {
   // extend the unique path
   PathElement* unique_path = parent_unique_path + unique_depth;
-  if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  if (unique_depth > 0) {
+    std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  }
   ExtendPath(unique_path, unique_depth, parent_zero_fraction,
              parent_one_fraction, parent_feature_index);
 
@@ -749,7 +753,7 @@ void Tree::TreeSHAPByMap(const std::unordered_map<int, double>& feature_values, 
       (*phi)[el.feature_index] += w*(el.one_fraction - el.zero_fraction)*leaf_value_[~node];
     }
 
-    // internal node
+  // internal node
   } else {
     const int hot_index = Decision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
     const int cold_index = (hot_index == left_child_[node] ? right_child_[node] : left_child_[node]);

@@ -454,9 +454,9 @@ class Booster {
     OMP_THROW_EX();
     // calculate the nonzero data and indices size
     int elements_size = 0;
-    for (int i = 0; i < static_cast<int>(agg.size()); i++) {
+    for (int i = 0; i < static_cast<int>(agg.size()); ++i) {
       auto row_vector = agg[i];
-      for (int j = 0; j < static_cast<int>(row_vector.size()); j++) {
+      for (int j = 0; j < static_cast<int>(row_vector.size()); ++j) {
         elements_size += row_vector[j].size();
       }
     }
@@ -503,8 +503,8 @@ class Booster {
     std::vector<int> row_sizes(num_matrices * nrow);
     std::vector<int> row_matrix_offsets(num_matrices * nrow);
     int row_vector_cnt = 0;
-    for (int m = 0; m < num_matrices; m++) {
-      for (int i = 0; i < static_cast<int>(agg.size()); i++) {
+    for (int m = 0; m < num_matrices; ++m) {
+      for (int i = 0; i < static_cast<int>(agg.size()); ++i) {
         auto row_vector = agg[i];
         auto row_vector_size = row_vector[m].size();
         // keep track of the row_vector sizes for parallelization
@@ -519,7 +519,7 @@ class Booster {
     }
     // copy vector results to output for each row
     int indptr_index = 0;
-    for (int m = 0; m < num_matrices; m++) {
+    for (int m = 0; m < num_matrices; ++m) {
       if (is_indptr_int32) {
         (reinterpret_cast<int32_t*>(*out_indptr))[indptr_index] = 0;
       } else {
@@ -529,7 +529,7 @@ class Booster {
       int matrix_start_index = m * agg.size();
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static)
-      for (int i = 0; i < static_cast<int>(agg.size()); i++) {
+      for (int i = 0; i < static_cast<int>(agg.size()); ++i) {
         OMP_LOOP_EX_BEGIN();
         auto row_vector = agg[i];
         int row_start_index = matrix_start_index + i;
@@ -591,9 +591,9 @@ class Booster {
     // calculate number of elements per column to construct
     // the CSC matrix with random access
     std::vector<std::vector<int>> column_sizes(num_matrices);
-    for (int m = 0; m < num_matrices; m++) {
+    for (int m = 0; m < num_matrices; ++m) {
       column_sizes[m] = std::vector<int>(num_output_cols, 0);
-      for (int i = 0; i < static_cast<int>(agg.size()); i++) {
+      for (int i = 0; i < static_cast<int>(agg.size()); ++i) {
         auto row_vector = agg[i];
         for (auto it = row_vector[m].begin(); it != row_vector[m].end(); ++it) {
           column_sizes[m][it->first] += 1;
@@ -607,7 +607,7 @@ class Booster {
     // keep track of beginning index for each matrix
     std::vector<int> matrix_start_indices(num_matrices, 0);
     int col_ptr_index = 0;
-    for (int m = 0; m < num_matrices; m++) {
+    for (int m = 0; m < num_matrices; ++m) {
       int col_ptr_value = 0;
       column_start_indices[m] = std::vector<int>(num_output_cols, 0);
       column_counts[m] = std::vector<int>(num_output_cols, 0);
@@ -617,7 +617,7 @@ class Booster {
         (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = col_ptr_value;
       }
       col_ptr_index++;
-      for (int i = 1; i < static_cast<int>(column_sizes[m].size()); i++) {
+      for (int i = 1; i < static_cast<int>(column_sizes[m].size()); ++i) {
         column_start_indices[m][i] = column_sizes[m][i - 1] + column_start_indices[m][i - 1];
         if (is_col_ptr_int32) {
           (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = column_start_indices[m][i];
@@ -640,8 +640,8 @@ class Booster {
           last_column_size;
       }
     }
-    for (int m = 0; m < num_matrices; m++) {
-      for (int i = 0; i < static_cast<int>(agg.size()); i++) {
+    for (int m = 0; m < num_matrices; ++m) {
+      for (int i = 0; i < static_cast<int>(agg.size()); ++i) {
         auto row_vector = agg[i];
         for (auto it = row_vector[m].begin(); it != row_vector[m].end(); ++it) {
           int col_idx = it->first;

@@ -746,13 +746,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
- * \brief Make sparse prediction for a new dataset in CSR or CSC format.  Currently only used for feature contributions.
+ * \brief Make sparse prediction for a new dataset in CSR or CSC format. Currently only used for feature contributions.
  * \note
  * The outputs are pre-allocated, as they can vary for each invocation, but the shape should be the same:
  *   - for feature contributions, the shape of sparse matrix will be ``num_class * num_data * (num_feature + 1)``.
  * The output indptr_type for the sparse matrix will be the same as the given input indptr_type.
+ * Call ``LGBM_BoosterFreePredictSparse`` to deallocate resources.
  * \param handle Handle of booster
- * \param indptr Pointer to row headers for CSR or col headers for CSC
+ * \param indptr Pointer to row headers for CSR or column headers for CSC
  * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
  * \param indices Pointer to column indices for CSR or row indices for CSC
  * \param data Pointer to the data space
@@ -764,9 +765,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
- * \param matrix_type The type of matrix that is input and output, 0 for CSR and 1 for CSC
+ * \param matrix_type Type of matrix input and output, can be ``C_API_MATRIX_TYPE_CSR`` or ``C_API_MATRIX_TYPE_CSC``
  * \param[out] out_len Length of output indices and data
- * \param[out] out_indptr Pointer to output row headers for CSR or col headers for CSC
+ * \param[out] out_indptr Pointer to output row headers for CSR or column headers for CSC
  * \param[out] out_indices Pointer to sparse column indices for CSR or row indices for CSC
  * \param[out] out_data Pointer to sparse data space
  * \return 0 when succeed, -1 when failure happens
@@ -790,8 +791,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
                                                       void** out_data);
 
 /*!
- * \brief Method corresponding to LGBM_BoosterPredictSparseForCSR to free the allocated data.
- * \param indptr Pointer to output row headers or col headers to be deallocated
+ * \brief Method corresponding to ``LGBM_BoosterPredictSparseOutput`` to free the allocated data.
+ * \param indptr Pointer to output row headers or column headers to be deallocated
  * \param indices Pointer to sparse indices to be deallocated
  * \param data Pointer to sparse data space to be deallocated
  * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``

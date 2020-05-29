@@ -11,10 +11,9 @@ import lightgbm as lgb
 import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris, load_svmlight_file)
+                              load_iris, load_svmlight_file, make_multilabel_classification)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
-from sklearn.datasets import make_multilabel_classification
 
 try:
     import cPickle as pickle
@@ -974,7 +973,7 @@ class TestEngine(unittest.TestCase):
         gbm = lgb.train(params, lgb_train, num_boost_round=20)
         contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
         # validate the values are the same
-        np.testing.assert_allclose(contribs_csr.toarray(), contribs_csc.toarray())
+        np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
 
     def test_sliced_data(self):
         def train_and_get_predictions(features, labels):
