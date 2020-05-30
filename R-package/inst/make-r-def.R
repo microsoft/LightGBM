@@ -16,15 +16,47 @@ DLL_BASE_NAME <- basename(IN_DLL_FILE)
 
 message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
 
+# system() will not raise an R exception if the process called
+# fails. Wrapping it here to get that behavior.
+#
+# system() introduces a lot of overhead, at least on Windows,
+# so trying processx if it is available
+.pipe_shell_command_to_stdout <- function(cmd, args, out_file) {
+    has_processx <- suppressMessages({
+      suppressWarnings({
+        require("processx")  # nolint
+      })
+    })
+    if (has_processx) {
+        p <- processx::process$new(
+            command = cmd
+            , args = args
+            , stdout = out_file
+        )$wait()
+    } else {
+        message(paste0(
+          "Using system2() to run shell commands. Installing "
+          , "'processx' with install.packages('processx') might "
+          , "make this faster."
+        ))
+        exit_code <- system2(
+            command = cmd
+            , args = args
+            , stdout = out_file
+        )
+        if (exit_code != 0L) {
+            stop(paste0("Command failed with exit code: ", exit_code))
+        }
+    }
+    return(invisible(NULL))
+}
+
 # use objdump to dump all the symbols
 OBJDUMP_FILE <- "objdump-out.txt"
-exit_code <- system2(
+.pipe_shell_command_to_stdout(
     command = "objdump"
-    , args = c(
-        "-p"
-        , shQuote(IN_DLL_FILE)
-    )
-    , stdout = OBJDUMP_FILE
+    , args = c("-p", shQuote(IN_DLL_FILE))
+    , out_file = OBJDUMP_FILE
 )
 
 objdump_results <- readLines(OBJDUMP_FILE)
