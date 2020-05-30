@@ -20,12 +20,12 @@ function Download-File-With-Retries {
 # given mirror and download it
 function Download-Miktex-Setup {
     param(
+        [string]$archive,
         [string]$destfile
     )
-    $ARCHIVE_URL = "https://ctan.math.illinois.edu/systems/win32/miktex/setup/windows-x64"
-    $PageContent = Invoke-WebRequest -Uri $ARCHIVE_URL -Method Get
+    $PageContent = Invoke-WebRequest -Uri $archive -Method Get
     $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup.*'
-    $FileToDownload = "${ARCHIVE_URL}/${SetupExeFile}"
+    $FileToDownload = "${archive}/${SetupExeFile}"
     Download-File-With-Retries $FileToDownload $destfile
 }
 
@@ -35,7 +35,7 @@ $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
-$env:CTAN_MIKTEX_ARCHIVE = "$env:CTAN_MIRROR/setup/windows-x64"
+$env:CTAN_MIKTEX_ARCHIVE = "$env:CTAN_MIRROR/setup/windows-x64/"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
 if ($env:COMPILER -eq "MINGW") {
