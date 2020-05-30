@@ -22,7 +22,7 @@ function Download-Miktex-Setup {
     param(
         [string]$destfile
     )
-    $ARCHIVE_URL = "https://ctan.math.illinois.edu/systems/win32/miktex/setup/windows-x64/"
+    $ARCHIVE_URL = "https://ctan.math.illinois.edu/systems/win32/miktex/setup/windows-x64"
     $PageContent = Invoke-WebRequest -Uri $ARCHIVE_URL -Method Get
     $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup.*'
     $FileToDownload = "${ARCHIVE_URL}/${SetupExeFile}"
