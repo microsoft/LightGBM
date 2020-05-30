@@ -21,7 +21,7 @@ message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
 #
 # system() introduces a lot of overhead, at least on Windows,
 # so trying processx if it is available
-.pipe_shell_command_to_stdout <- function(cmd, args, out_file) {
+.pipe_shell_command_to_stdout <- function(command, args, out_file) {
     has_processx <- suppressMessages({
       suppressWarnings({
         require("processx")  # nolint
