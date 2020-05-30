@@ -685,7 +685,7 @@ class LGBMModel(_LGBMModelBase):
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
     @property
-    def n_features_(self):
+    def n_features_in_(self):
         """Get the number of features of fitted model."""
         if self._n_features is None:
             raise LGBMNotFittedError('No n_features found. Need to call fit beforehand.')
