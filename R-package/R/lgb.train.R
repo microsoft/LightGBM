@@ -127,7 +127,7 @@ lgb.train <- function(params = list(),
   # Convert interaction constraints to feature numbers
   if (!is.null(params[["interaction_constraints"]])) {
 
-      string_constraints = list()
+      string_constraints <- list()
 
       # Get feature names
       cnames <- NULL
@@ -138,7 +138,7 @@ lgb.train <- function(params = list(),
       }
 
       for (constraint in params[["interaction_constraints"]]) {
-      
+
         # Check for character name
         if (is.character(constraint)) {
 
@@ -171,11 +171,11 @@ lgb.train <- function(params = list(),
           }
 
           # Convert constraint to string
-          constraint_string <- paste0("[", paste0(constraint_indices, collapse=","),"]")
+          constraint_string <- paste0("[", paste0(constraint_indices, collapse = ","), "]")
           string_constraints <- append(string_constraints, constraint_string)
       }
 
-      params[["interaction_constraints"]] = string_constraints
+      params[["interaction_constraints"]] <- string_constraints
   }
 
   # Update parameters with parsed parameters
