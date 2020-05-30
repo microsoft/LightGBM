@@ -42,7 +42,7 @@ jobs:
               export R_MAC_VERSION=3.6.3
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
-              export R_TRAVIS_LINUX_VERSION=3.6.3-1bionic;
+              export R_LINUX_VERSION=3.6.3-1bionic;
           fi
           if [ -z ${{ matrix.compiler }} ]; then
               export COMPILER=${{ matrix.compiler }}

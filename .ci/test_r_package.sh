@@ -23,7 +23,7 @@ if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
     sudo apt-get install \
         --no-install-recommends \
         -y \
-            r-base-dev=${R_TRAVIS_LINUX_VERSION} \
+            r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-recommended \
             texlive-fonts-recommended \
