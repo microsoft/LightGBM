@@ -13,7 +13,7 @@ source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
 
-if [[ $TASK == "check-docs" ]]; then
+if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     cd $BUILD_DIRECTORY/docs
     conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
     pip install --user -r requirements.txt rstcheck
@@ -40,7 +40,7 @@ if [[ $TASK == "check-docs" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "lint" ]]; then
+if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
         pydocstyle \
