@@ -12,12 +12,31 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
+# mirrors that host miktexsetup.zip do so only with explicitly-named
+# files like miktexsetup-2.4.5.zip, so hard-coding a link to an archive as a
+# way to peg to one mirror does not work
+#
+# this function will find the specific version of miktexsetup.zip at a given
+# given mirror and download it
+function Download-Miktex-Setup {
+    param(
+        [string]$destfile
+    )
+    $ARCHIVE_URL = "https://ctan.math.illinois.edu/systems/win32/miktex/setup/windows-x64/"
+    $PageContent = Invoke-WebRequest -Uri $ARCHIVE_URL -Method Get
+    $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup.*'
+    $FileToDownload = "${ARCHIVE_URL}/${SetupExeFile}"
+    Download-File-With-Retries $FileToDownload $destfile
+}
+
 $env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
-$env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex/tm/packages/"
+$env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
+$env:CTAN_MIKTEX_ARCHIVE = "$env:CTAN_MIRROR/setup/windows-x64"
+$env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
 if ($env:COMPILER -eq "MINGW") {
   $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
@@ -49,20 +68,19 @@ Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'httr', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 # MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
 # build the package documentation for those
 if ($env:COMPILER -eq "MINGW") {
-    Write-Output "Downloading MiKTeX"
-    Rscript $env:BUILD_SOURCESDIRECTORY\.ci\download-miktex.R "miktexsetup-x64.zip"
+    Download-Miktex-Setup "$env:CTAN_MIKTEX_ARCHIVE" "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
-    .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
+    .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
     Write-Output "Installing MiKTeX"
-    .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_MIRROR" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
+    .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
     initexmf --set-config-value [MPM]AutoInstall=1
