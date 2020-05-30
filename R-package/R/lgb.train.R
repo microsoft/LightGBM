@@ -124,6 +124,60 @@ lgb.train <- function(params = list(),
     end_iteration <- begin_iteration + nrounds - 1L
   }
 
+  # Convert interaction constraints to feature numbers
+  if (!is.null(params[["interaction_constraints"]])) {
+
+      string_constraints = list()
+
+      # Get feature names
+      cnames <- NULL
+      if (!is.null(colnames)) {
+        cnames <- colnames
+      } else if (!is.null(data$get_colnames())) {
+        cnames <- data$get_colnames()
+      }
+
+      for (constraint in params[["interaction_constraints"]]) {
+      
+        # Check for character name
+        if (is.character(constraint)) {
+
+            constraint_indices <- as.list(match(constraint, cnames) - 1L)
+
+            # Provided indices, but some indices are not existing?
+            if (sum(is.na(constraint_indices)) > 0L) {
+              stop(
+                "lgb.train: supplied an unknown feature in interaction_constraints "
+                , sQuote(constraint[is.na(constraint_indices)])
+              )
+            }
+
+          } else {
+
+            # Check that constraint indices are at most number of features
+            if (max(constraint) > length(cnames)) {
+              stop(
+                "lgb.train: supplied a too large value in interaction_constraints: "
+                , max(constraint)
+                , " but only "
+                , length(cnames)
+                , " features"
+              )
+            }
+
+            # Store indices as [0, n-1] indexed instead of [1, n] indexed
+            constraint_indices <- as.list(constraint - 1L)
+
+          }
+
+          # Convert constraint to string
+          constraint_string <- paste0("[", paste0(constraint_indices, collapse=","),"]")
+          string_constraints <- append(string_constraints, constraint_string)
+      }
+
+      params[["interaction_constraints"]] = string_constraints
+  }
+
   # Update parameters with parsed parameters
   data$update_params(params)
 

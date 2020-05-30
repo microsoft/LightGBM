@@ -546,7 +546,7 @@ Learning Control Parameters
 
    -  for Python, specify as list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
 
-   -  for R, specify as a string similar to the CLI format (ensuring there are no spaces), e.g. ``"[0,1,2],[2,3]"``
+   -  for R, specify as a list of character vectors, where each vector is a list of feature names, e.g. ``list(c("f1", "f2"), c("f3"))``
 
    -  any two features can only appear in the same branch only if there exists a constraint containing both feaures
 
