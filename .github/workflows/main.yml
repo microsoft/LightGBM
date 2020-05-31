@@ -37,12 +37,10 @@ jobs:
       - name: Setup and run tests on Linux and macOS
         if: matrix.os != 'windows-latest'
         shell: bash
-        env:
-          COMPILER: "${{ matrix.compiler }}"
-          CONDA_ENV: "test-env"
-          GITHUB_ACTIONS: "true"
-          TASK: "${{ matrix.task }}"
         run: |
+          export TASK="${{ matrix.task }}"
+          export COMPILER="${{ matrix.compiler }}"
+          export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
               export R_MAC_VERSION=3.6.3
@@ -50,10 +48,8 @@ jobs:
               export OS_NAME="linux"
               export R_LINUX_VERSION=3.6.3-1bionic;
           fi
-          if [ -z ${{ matrix.compiler }} ]; then
-              export COMPILER=${{ matrix.compiler }}
-          fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export CONDA_ENV="test-env"
           export CONDA="$HOME/miniconda"
           export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
           export LGB_VER=$(head -n 1 VERSION.txt)
