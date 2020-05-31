@@ -17,7 +17,7 @@ function Download-File-With-Retries {
 # way to peg to one mirror does not work
 #
 # this function will find the specific version of miktexsetup.zip at a given
-# given mirror and download it
+# mirror and download it
 function Download-Miktex-Setup {
     param(
         [string]$archive,
