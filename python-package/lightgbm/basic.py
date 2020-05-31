@@ -137,7 +137,7 @@ def param_dict_to_str(data):
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
             def to_string(x):
                 if isinstance(x, list):
-                    return '[' + ','.join(map(str, x)) + ']'
+                    return "[{}]".format(','.join(map(str, x)))
                 else:
                     return str(x)
             pairs.append(str(key) + '=' + ','.join(map(to_string, val)))
