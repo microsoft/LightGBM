@@ -2,7 +2,12 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+
 #include "gbdt.h"
+
+#include <chrono>
+#include <ctime>
+#include <sstream>
 
 #include <LightGBM/metric.h>
 #include <LightGBM/network.h>
@@ -10,10 +15,6 @@
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
-
-#include <chrono>
-#include <ctime>
-#include <sstream>
 
 namespace LightGBM {
 

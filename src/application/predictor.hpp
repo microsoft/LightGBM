@@ -5,12 +5,6 @@
 #ifndef LIGHTGBM_PREDICTOR_HPP_
 #define LIGHTGBM_PREDICTOR_HPP_
 
-#include <LightGBM/boosting.h>
-#include <LightGBM/dataset.h>
-#include <LightGBM/meta.h>
-#include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/text_reader.h>
-
 #include <string>
 #include <cstdio>
 #include <cstring>
@@ -20,6 +14,12 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <LightGBM/boosting.h>
+#include <LightGBM/dataset.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/text_reader.h>
 
 namespace LightGBM {
 
