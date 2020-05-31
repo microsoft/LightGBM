@@ -563,6 +563,8 @@ class LGBMModel(_LGBMModelBase):
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
         self._n_features = _X.shape[1]
+        # set public attribute for consistency
+        self.n_features_in_ = self._n_features
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params,
                                categorical_feature='auto'):
@@ -678,14 +680,14 @@ class LGBMModel(_LGBMModelBase):
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
-                             "match the input. Model n_features_in_ is %s and "
+                             "match the input. Model n_features_ is %s and "
                              "input n_features is %s "
                              % (self._n_features, n_features))
         return self._Booster.predict(X, raw_score=raw_score, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
     @property
-    def n_features_in_(self):
+    def n_features_(self):
         """Get the number of features of fitted model."""
         if self._n_features is None:
             raise LGBMNotFittedError('No n_features found. Need to call fit beforehand.')
