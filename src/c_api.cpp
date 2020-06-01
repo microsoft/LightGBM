@@ -433,7 +433,7 @@ class Booster {
     *out_len = num_pred_in_one_row * nrow;
   }
 
-  void PredictSparse(int num_iteration, int predict_type, int nrow, int ncol,
+  void PredictSparse(int num_iteration, int predict_type, int64_t nrow, int ncol,
                      std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                      const Config& config, int* out_elements_size,
                      std::vector<std::vector<std::unordered_map<int, double>>>* agg_ptr,
@@ -475,7 +475,7 @@ class Booster {
     *out_indices = new int32_t[elements_size];
   }
 
-  void PredictSparseCSR(int num_iteration, int predict_type, int nrow, int ncol,
+  void PredictSparseCSR(int num_iteration, int predict_type, int64_t nrow, int ncol,
                         std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                         const Config& config,
                         int64_t* out_len, void** out_indptr, int indptr_type,
@@ -485,7 +485,7 @@ class Booster {
     int num_matrices = boosting_->NumModelPerIteration();
     bool is_indptr_int32 = false;
     bool is_data_float32 = false;
-    int indptr_size = (nrow + 1) * num_matrices;
+    int64_t indptr_size = (nrow + 1) * num_matrices;
     if (indptr_type == C_API_DTYPE_INT32) {
       *out_indptr = new int32_t[indptr_size];
       is_indptr_int32 = true;
@@ -560,7 +560,7 @@ class Booster {
   }
 
 
-  void PredictSparseCSC(int num_iteration, int predict_type, int nrow, int ncol,
+  void PredictSparseCSC(int num_iteration, int predict_type, int64_t nrow, int ncol,
                         std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                         const Config& config,
                         int64_t* out_len, void** out_col_ptr, int col_ptr_type,
@@ -1801,7 +1801,7 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
       Log::Fatal("The number of columns should be smaller than INT32_MAX.");
     }
     auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-    int nrow = static_cast<int>(nindptr - 1);
+    int64_t nrow = nindptr - 1;
     ref_booster->PredictSparseCSR(num_iteration, predict_type, nrow, static_cast<int>(num_col_or_row), get_row_fun,
                                   config, out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
   } else if (matrix_type == C_API_MATRIX_TYPE_CSC) {
@@ -1826,7 +1826,7 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
       }
       return one_row;
     };
-    ref_booster->PredictSparseCSC(num_iteration, predict_type, static_cast<int>(num_col_or_row), ncol, get_row_fun, config,
+    ref_booster->PredictSparseCSC(num_iteration, predict_type, num_col_or_row, ncol, get_row_fun, config,
                                   out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
   } else {
     Log::Fatal("Unknown matrix type in LGBM_BoosterPredictSparseOutput");
