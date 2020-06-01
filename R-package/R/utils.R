@@ -167,6 +167,61 @@ lgb.params2str <- function(params, ...) {
 
 }
 
+lgb.check_interaction_constraints <- function(interaction_constraints, column_names) {
+
+    # validation
+    if (!methods::is(interaction_constraints, "list")) {
+        stop("interaction_constraints must be a list")
+    }
+    if (!all(sapply(interaction_constraints, function(x){is.character(x) || is.numeric(x)}))) {
+        stop("every element in interaction_constraints must be a character vector or numeric vector")
+    }
+
+  # Convert interaction constraints to feature numbers
+  string_constraints <- list()
+
+  for (constraint in interaction_constraints) {
+
+    # Check for character name
+    if (is.character(constraint)) {
+
+        constraint_indices <- as.integer(match(constraint, column_names) - 1L)
+
+        # Provided indices, but some indices are not existing?
+        if (sum(is.na(constraint_indices)) > 0L) {
+          stop(
+            "lgb.train: supplied an unknown feature in interaction_constraints "
+            , sQuote(constraint[is.na(constraint_indices)])
+          )
+        }
+
+      } else {
+
+        # Check that constraint indices are at most number of features
+        if (max(constraint) > length(column_names)) {
+          stop(
+            "lgb.train: supplied a too large value in interaction_constraints: "
+            , max(constraint)
+            , " but only "
+            , length(column_names)
+            , " features"
+          )
+        }
+
+        # Store indices as [0, n-1] indexed instead of [1, n] indexed
+        constraint_indices <- as.integer(constraint - 1L)
+
+      }
+
+      # Convert constraint to string
+      constraint_string <- paste0("[", paste0(constraint_indices, collapse = ","), "]")
+      string_constraints <- append(string_constraints, constraint_string)
+  }
+
+  return(string_constraints)
+
+}
+
 lgb.c_str <- function(x) {
 
   # Perform character to raw conversion
