@@ -1021,3 +1021,73 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
   expect_identical(bst$best_iter, which.max(auc_scores))
   expect_identical(bst$best_score, auc_scores[which.max(auc_scores)])
 })
+
+test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", interaction_constraints="[1,2],[3]")
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2
+      )
+    }, "interaction_constraints must be a list")
+})
+
+test_that("lgb.train() throws an informative error if the members of interaction_constraints are not character or numeric vectors", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", interaction_constraints=list(list(1L, 2L), list(3L)))
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2
+      )
+    }, "every element in interaction_constraints must be a character vector or numeric vector")
+})
+
+test_that("lgb.train() throws an informative error if interaction_constraints contains a too large index", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression",
+                 interaction_constraints=list(list(1L, length(colnames(train$data)) + 1), list(3L)))
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2
+      )
+    }, "every element in interaction_constraints must be a character vector or numeric vector")
+})
+
+test_that("lgb.train() gives same result when interaction_constraints is specific as a list of character vectors, numeric vectors, or a combination", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+
+  params <- list(objective = "regression", list(c(1L, 2L), c(3L)))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2
+  )
+  pred1 <- bst$predict(test$data)
+
+  cnames = colnames(train$data)
+  params <- list(objective = "regression", list(c(cnames[[1]], cnames[[2]]), c(cnames[[3]])))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2
+  )
+  pred2 <- bst$predict(test$data)
+
+  params <- list(objective = "regression", list(c(cnames[[1]], cnames[[2]]), c(3L)))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2
+  )
+  pred3 <- bst$predict(test$data)
+
+  expect_equal(pred1, pred2)
+  expect_equal(pred2, pred3)
+
+})
