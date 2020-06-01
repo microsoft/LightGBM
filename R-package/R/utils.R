@@ -190,7 +190,7 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
         # Provided indices, but some indices are not existing?
         if (sum(is.na(constraint_indices)) > 0L) {
           stop(
-            "lgb.train: supplied an unknown feature in interaction_constraints "
+            "supplied an unknown feature in interaction_constraints "
             , sQuote(constraint[is.na(constraint_indices)])
           )
         }
@@ -200,7 +200,7 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
         # Check that constraint indices are at most number of features
         if (max(constraint) > length(column_names)) {
           stop(
-            "lgb.train: supplied a too large value in interaction_constraints: "
+            "supplied a too large value in interaction_constraints: "
             , max(constraint)
             , " but only "
             , length(column_names)
