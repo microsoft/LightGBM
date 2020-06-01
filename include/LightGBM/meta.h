@@ -5,9 +5,9 @@
 #ifndef LIGHTGBM_META_H_
 #define LIGHTGBM_META_H_
 
-#include <limits>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <unordered_map>
 #include <utility>
