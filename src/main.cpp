@@ -2,9 +2,10 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#include <LightGBM/application.h>
 
 #include <iostream>
+
+#include <LightGBM/application.h>
 
 #include "network/linkers.h"
 

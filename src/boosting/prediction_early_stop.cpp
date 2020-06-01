@@ -2,14 +2,15 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#include <LightGBM/prediction_early_stop.h>
-
-#include <LightGBM/utils/log.h>
 
 #include <limits>
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+#include <LightGBM/prediction_early_stop.h>
+
+#include <LightGBM/utils/log.h>
 
 namespace LightGBM {
 

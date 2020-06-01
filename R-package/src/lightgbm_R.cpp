@@ -5,19 +5,19 @@
 
 #include "lightgbm_R.h"
 
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/log.h>
-#include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/text_reader.h>
-
-#include <R_ext/Rdynload.h>
-
 #include <string>
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <utility>
 #include <vector>
+
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/text_reader.h>
+
+#include <R_ext/Rdynload.h>
 
 #define COL_MAJOR (0)
 
