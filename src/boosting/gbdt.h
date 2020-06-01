@@ -5,12 +5,6 @@
 #ifndef LIGHTGBM_BOOSTING_GBDT_H_
 #define LIGHTGBM_BOOSTING_GBDT_H_
 
-#include <LightGBM/boosting.h>
-#include <LightGBM/objective_function.h>
-#include <LightGBM/prediction_early_stop.h>
-#include <LightGBM/utils/json11.h>
-#include <LightGBM/utils/threading.h>
-
 #include <string>
 #include <algorithm>
 #include <cstdio>
@@ -22,11 +16,17 @@
 #include <utility>
 #include <vector>
 
+#include <LightGBM/boosting.h>
+#include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/json11.h>
+#include <LightGBM/utils/threading.h>
+
+#include "score_updater.hpp"
+
 #ifdef USE_CUDA
 #include <LightGBM/cuda/vector_cudahost.h> //LGBM_CUDA
 #endif
-
-#include "score_updater.hpp"
 
 namespace LightGBM {
 

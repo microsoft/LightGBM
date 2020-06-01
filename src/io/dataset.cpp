@@ -3,12 +3,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#include <LightGBM/dataset.h>
-
-#include <LightGBM/feature_group.h>
-#include <LightGBM/utils/array_args.h>
-#include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/threading.h>
 
 #ifdef USE_CUDA
 #include <LightGBM/cuda/vector_cudahost.h>
@@ -19,6 +13,13 @@
 #include <limits>
 #include <sstream>
 #include <unordered_map>
+
+#include <LightGBM/dataset.h>
+
+#include <LightGBM/feature_group.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/threading.h>
 
 namespace LightGBM {
 

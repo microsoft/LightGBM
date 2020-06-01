@@ -2,6 +2,15 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+
+#include <string>
+#include <cstdio>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <vector>
+
 #include <LightGBM/c_api.h>
 
 #include <LightGBM/boosting.h>
@@ -18,10 +27,6 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
 
-#ifdef USE_CUDA
-#include <LightGBM/cuda/vector_cudahost.h>
-#endif
-
 #include <string>
 #include <cstdio>
 #include <functional>
@@ -31,6 +36,10 @@
 #include <vector>
 
 #include "application/predictor.hpp"
+
+#ifdef USE_CUDA
+#include <LightGBM/cuda/vector_cudahost.h>
+#endif
 
 namespace LightGBM {
 

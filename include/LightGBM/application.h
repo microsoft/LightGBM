@@ -5,11 +5,11 @@
 #ifndef LIGHTGBM_APPLICATION_H_
 #define LIGHTGBM_APPLICATION_H_
 
-#include <LightGBM/config.h>
-#include <LightGBM/meta.h>
-
 #include <memory>
 #include <vector>
+
+#include <LightGBM/config.h>
+#include <LightGBM/meta.h>
 
 namespace LightGBM {
 

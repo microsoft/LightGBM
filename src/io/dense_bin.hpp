@@ -6,8 +6,6 @@
 #ifndef LIGHTGBM_IO_DENSE_BIN_HPP_
 #define LIGHTGBM_IO_DENSE_BIN_HPP_
 
-#include <LightGBM/bin.h>
-
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -17,6 +15,8 @@
 #endif
 
 #include <LightGBM/utils/openmp_wrapper.h> // LGBM_CUDA
+
+#include <LightGBM/bin.h>
 
 namespace LightGBM {
 
