@@ -508,7 +508,7 @@ struct Config {
   // desc = controls which features can appear in the same branch
   // desc = for CLI, specify as lists separated by commas, e.g. ``[0,1,2],[2,3]``
   // desc = for Python, specify as list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
-  // desc = not yet supported for R
+  // desc = for R, specify as a list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``
   // desc = any two features can only appear in the same branch only if there exists a constraint containing both feaures
   std::string interaction_constraints = "";
 
