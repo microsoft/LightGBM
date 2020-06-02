@@ -14,10 +14,6 @@ branches:
 environment:
   matrix:
     - TASK: r-package
-      R_VERSION: 3.6
-      COMPILER: MINGW
-      TOOLCHAIN: MINGW
-    - TASK: r-package
       R_VERSION: 4.0
       COMPILER: MINGW
       TOOLCHAIN: MSYS
