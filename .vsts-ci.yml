@@ -111,11 +111,11 @@ jobs:
   strategy:
     maxParallel: 5
     matrix:
-      r_package:
+      r_package_msvc:
         TASK: r-package
         COMPILER: MSVC
         R_VERSION: 3.6
-      r_package:
+      r_package_mingw:
         TASK: r-package
         COMPILER: MINGW
         TOOLCHAIN: MINGW
