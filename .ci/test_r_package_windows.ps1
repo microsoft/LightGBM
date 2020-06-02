@@ -36,7 +36,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   Check-Output $false
 }
 
-if ($env:COMPILER -ne "MINGW") {
+if ($env:COMPILER -eq "MINGW") {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
 }
