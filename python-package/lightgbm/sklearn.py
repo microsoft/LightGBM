@@ -257,7 +257,7 @@ class LGBMModel(_LGBMModelBase):
         ----------
         n_features_ : int
             The number of features of fitted model.
-        n_features_in_: int
+        n_features_in_ : int
             The number of features of fitted model.
         classes_ : array of shape = [n_classes]
             The class label array (only for classification problem).
