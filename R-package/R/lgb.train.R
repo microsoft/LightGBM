@@ -125,17 +125,13 @@ lgb.train <- function(params = list(),
   }
 
   # Check interaction constraints
-  if (!is.null(params[["interaction_constraints"]])) {
-
-    cnames <- NULL
-    if (!is.null(colnames)) {
-      cnames <- colnames
-    } else if (!is.null(data$get_colnames())) {
-      cnames <- data$get_colnames()
-    }
-    params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params[["interaction_constraints"]], cnames)
-
+  cnames <- NULL
+  if (!is.null(colnames)) {
+    cnames <- colnames
+  } else if (!is.null(data$get_colnames())) {
+    cnames <- data$get_colnames()
   }
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params, cnames)
 
   # Update parameters with parsed parameters
   data$update_params(params)

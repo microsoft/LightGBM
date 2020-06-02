@@ -1029,7 +1029,7 @@ test_that("lgb.train() throws an informative error if interaction_constraints is
       bst <- lightgbm(
         data = dtrain
         , params = params
-        , nrounds = 2
+        , nrounds = 2L
       )
     }, "interaction_constraints must be a list")
 })
@@ -1041,7 +1041,7 @@ test_that("lgb.train() throws an informative error if the members of interaction
       bst <- lightgbm(
         data = dtrain
         , params = params
-        , nrounds = 2
+        , nrounds = 2L
       )
     }, "every element in interaction_constraints must be a character vector or numeric vector")
 })
@@ -1049,33 +1049,34 @@ test_that("lgb.train() throws an informative error if the members of interaction
 test_that("lgb.train() throws an informative error if interaction_constraints contains a too large index", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression",
-                 interaction_constraints=list(list(1L, length(colnames(train$data)) + 1), list(3L)))
+                 interaction_constraints=list(c(1L, length(colnames(train$data)) + 1), c(3L)))
     expect_error({
       bst <- lightgbm(
         data = dtrain
         , params = params
-        , nrounds = 2
+        , nrounds = 2L
       )
-    }, "every element in interaction_constraints must be a character vector or numeric vector")
+    }, "supplied a too large value in interaction_constraints")
 })
 
-test_that("lgb.train() gives same result when interaction_constraints is specific as a list of character vectors, numeric vectors, or a combination", {
+test_that("lgb.train() gives same result when interaction_constraints is specified as a list of character vectors, numeric vectors, or a combination", {
+  set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
 
   params <- list(objective = "regression", list(c(1L, 2L), c(3L)))
   bst <- lightgbm(
     data = dtrain
     , params = params
-    , nrounds = 2
+    , nrounds = 2L
   )
   pred1 <- bst$predict(test$data)
 
-  cnames = colnames(train$data)
+  cnames <- colnames(train$data)
   params <- list(objective = "regression", list(c(cnames[[1]], cnames[[2]]), c(cnames[[3]])))
   bst <- lightgbm(
     data = dtrain
     , params = params
-    , nrounds = 2
+    , nrounds = 2L
   )
   pred2 <- bst$predict(test$data)
 
@@ -1083,7 +1084,7 @@ test_that("lgb.train() gives same result when interaction_constraints is specifi
   bst <- lightgbm(
     data = dtrain
     , params = params
-    , nrounds = 2
+    , nrounds = 2L
   )
   pred3 <- bst$predict(test$data)
 
