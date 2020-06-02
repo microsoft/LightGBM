@@ -15,20 +15,39 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        r_version: [3.6, 4.0]
         include:
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
+            r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
           - os: ubuntu-latest
             task: r-package
             compiler: clang
+            r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
           - os: macOS-latest
             task: r-package
             compiler: gcc
+            r_version: 3.6
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
           - os: macOS-latest
             task: r-package
             compiler: clang
+            r_version: 3.6
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
