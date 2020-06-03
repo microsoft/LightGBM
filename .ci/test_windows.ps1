@@ -48,6 +48,11 @@ elseif ($env:TASK -eq "sdist") {
   cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
 }
 elseif ($env:TASK -eq "bdist") {
+  # Install the Intel CPU runtime, so we can run tests against OpenCL
+  choco install opencl-intel-cpu-runtime -y
+  Write-Output "Current OpenCL drivers:"
+  Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
+
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py bdist_wheel --opencl-python-package --plat-name=win-amd64 --universal ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
@@ -59,6 +64,11 @@ elseif ($env:TASK -eq "bdist") {
   } else {
     python setup.py install ; Check-Output $?
   }
+}
+
+if ($env:TASK -eq "bdist") {
+  # Also run GPU tests; see tests/python_package_test/test_dual.py
+  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
 }
 
 if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
