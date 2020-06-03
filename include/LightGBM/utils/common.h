@@ -26,6 +26,11 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#pragma intrinsic(_BitScanReverse)
+#endif
+
 #if defined(_MSC_VER)
 #include <malloc.h>
 #elif MM_MALLOC
