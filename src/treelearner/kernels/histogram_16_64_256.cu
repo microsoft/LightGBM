@@ -986,13 +986,10 @@ printf("KERNEL CONST_HESSIAN\n");
              #endif
 
              bin = feature;
-
              grad_bin = grad;
              hess_bin = hess;
          }
          else {
-
-
              grad_bin += grad;
              hess_bin += hess;
          }

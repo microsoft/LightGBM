@@ -102,9 +102,7 @@ class RF : public GBDT {
 
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
     // bagging logic
-fprintf(stderr, "calling Bagging in TrainOneIter\n"); fflush(stderr);
     Bagging(iter_);
-fprintf(stderr, "back from Bagging in TrainOneIter\n"); fflush(stderr);
     CHECK_EQ(gradients, nullptr);
     CHECK_EQ(hessians, nullptr);
 

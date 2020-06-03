@@ -1312,11 +1312,11 @@ void Dataset::ConstructHistogramsInner(
     TrainingShareStates* share_state, hist_t* hist_data) const {
 
   if (!share_state->is_colwise) {
-fprintf(stderr, "CPU ('multival') hist_data = %p\n", hist_data); fflush(stderr);
+//fprintf(stderr, "CPU ('multival') hist_data = %p\n", hist_data); fflush(stderr);
     return ConstructHistogramsMultiVal<USE_INDICES, false>(
         data_indices, num_data, gradients, hessians, share_state, hist_data);
   }
-fprintf(stderr, "CPU (not 'multival')\n"); fflush(stderr);
+//fprintf(stderr, "CPU (not 'multival')\n"); fflush(stderr);
 
   std::vector<int> used_dense_group;
   int multi_val_groud_id = -1;
