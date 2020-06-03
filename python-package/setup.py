@@ -275,13 +275,13 @@ class CustomBdistWheel(bdist_wheel):
         ('opencl-python-package', None, 'Compile integrated OpenCL version'),
     ]
 
-     def initialize_options(self):
+    def initialize_options(self):
         bdist_wheel.initialize_options(self)
         self.opencl_python_package = False
     
     def run(self):
         install = self.distribution.get_command_obj('install')
-        install.opencl_python_package = opencl_python_package
+        install.opencl_python_package = self.opencl_python_package
         bdist_wheel.run(self)
 
 
