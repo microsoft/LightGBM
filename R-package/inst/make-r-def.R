@@ -29,7 +29,7 @@ message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
     })
     if (has_processx) {
         p <- processx::process$new(
-            command = cmd
+            command = command
             , args = args
             , stdout = out_file
         )$wait()
@@ -40,7 +40,7 @@ message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
           , "make this faster."
         ))
         exit_code <- system2(
-            command = cmd
+            command = command
             , args = args
             , stdout = out_file
         )
