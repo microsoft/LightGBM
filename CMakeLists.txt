@@ -236,7 +236,7 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif(USE_MPI)
 
-file(GLOB SHARED_SOURCES
+file(GLOB SOURCES
     src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
@@ -246,18 +246,16 @@ file(GLOB SHARED_SOURCES
     src/treelearner/*.cpp
 )
 
-add_library(L OBJECT ${SHARED_SOURCES})
+add_executable(lightgbm src/main.cpp ${SOURCES})
+list(APPEND SOURCES "src/c_api.cpp")
 
-add_executable(lightgbm src/main.cpp $<TARGET_OBJECTS:L>)
-
-list(APPEND LIBRARY_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
 # use with the R package
 if(BUILD_FOR_R)
-  list(APPEND LIBRARY_SOURCES "src/lightgbm_R.cpp")
+  list(APPEND SOURCES "src/lightgbm_R.cpp")
 endif(BUILD_FOR_R)
 
-add_library(_lightgbm SHARED ${LIBRARY_SOURCES} $<TARGET_OBJECTS:L>)
+add_library(_lightgbm SHARED ${SOURCES})
 
 if(MSVC)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
@@ -325,12 +323,13 @@ endif(USE_GPU)
 
 if(__OPENCL_PYTHON_PACKAGE)
   # targets OpenCL and Boost are added in CMakeOpenCLPythonPackage.txt
-  add_dependencies(L OpenCL Boost)
-  add_dependencies(lightgbm L)
-  add_dependencies(_lightgbm L)
+  add_dependencies(lightgbm OpenCL Boost)
+  add_dependencies(_lightgbm OpenCL Boost)
   # variables OPENCL_PYTHON_PACKAGE_* are set in CMakeOpenCLPythonPackage.txt
-  target_include_directories(L PRIVATE ${OPENCL_PYTHON_PACKAGE_INCLUDES})
-  target_compile_definitions(L PRIVATE ${OPENCL_PYTHON_PACKAGE_DEFINITIONS})
+  target_include_directories(lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_INCLUDES})
+  target_include_directories(_lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_INCLUDES})
+  target_compile_definitions(lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_DEFINITIONS})
+  target_compile_definitions(_lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_DEFINITIONS})
   target_link_libraries(lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_LIBRARIES})
   target_link_libraries(_lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_LIBRARIES})
 endif()
