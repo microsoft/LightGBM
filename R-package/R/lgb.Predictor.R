@@ -142,7 +142,7 @@ Predictor <- R6::R6Class(
 
         # Check if data is a matrix
         if (is.matrix(data)) {
-        # Check whether matrix is the correct type first ("double")
+          # Check whether matrix is the correct type first ("double")
           if (storage.mode(data) != "double") {
             storage.mode(data) <- "double"
           }
