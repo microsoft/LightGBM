@@ -759,9 +759,7 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
     const ushort ltid = threadIdx.x;
-//#ifdef IGNORE_INDICES
-//    const uint gtid = blockIdx.x * blockDim.x + threadIdx.x;
-//#endif
+
     // TODO: try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
@@ -774,10 +772,6 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
       cont_bin = local_cnt[ltid];
     }
     ushort i;
-
-//#ifdef IGNORE_INDICES
-//if (gtid == 1) printf("   skip_id = %d, grad_bin = %7.4lf\n", skip_id, grad_bin);
-//#endif
 
     if (power_feature_workgroups != 0) {
         // add all sub-histograms for feature
@@ -792,14 +786,12 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
         p += 3 * NUM_BINS;  
 
         for (i = i + 1; i < num_sub_hist; ++i) {
-//#ifdef IGNORE_INDICES
-//if (gtid == 1) printf("   adding %7.4lf\n", *p);
-//#endif
             grad_bin += *p;          p += NUM_BINS;
             hess_bin += *p;          p += NUM_BINS;
             cont_bin += as_acc_int_type(*p); p += NUM_BINS;
         }
     }
+
     __syncthreads();
 
     output_buf[ltid * 2 + 0] = grad_bin;
@@ -808,13 +800,6 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
 #else
     output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
 #endif
-
-//#ifdef IGNORE_INDICES
-//__syncthreads();
-//if (gtid == 1) printf("KERNEL returning %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf\n", output_buf[0], output_buf[1], output_buf[2], output_buf[3], output_buf[4], output_buf[5]);
-//__syncthreads();
-//#endif
-
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -859,7 +844,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
 
-if (gtid == 5503) {
+if (gtid == 2048) {
 #if USE_CONSTANT_BUF == 1
 #ifdef IGNORE_INDICES
 #if CONST_HESSIAN == 0
@@ -877,17 +862,13 @@ printf("KERNEL USE_CONSTANT_BUF CONST_HESSIAN\n");
 #else
 #ifdef IGNORE_INDICES
 #if CONST_HESSIAN == 0
-printf("KERNEL IGNORE_INDICES (exp = %d)\n", (int) power_feature_workgroups); 
+printf("KERNEL IGNORE_INDICES (exp = %d) (feature_size = %d)\n", (int) power_feature_workgroups, (int) feature_size); 
 #else
 printf("KERNEL IGNORE_INDICES CONST_HESSIAN\n"); 
 #endif
 #else
 #if CONST_HESSIAN == 0
-printf("KERNEL (exp = %d)\n", (int) power_feature_workgroups); 
-//for (int i=0; i<5000; ++i) if (feature_data_base[i] == 1) printf("found '1' in feature_data_base array, at index %d\n", i);
-//printf("   data_indices = %3d %3d %3d %3d %3d %3d %3d %3d\n", (int) data_indices[0], (int) data_indices[1], (int) data_indices[2], (int) data_indices[3], (int) data_indices[4], (int) data_indices[5], (int) data_indices[6], (int) data_indices[7]);
-//printf("   gradients = %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf\n", ordered_gradients[data_indices[0]], ordered_gradients[data_indices[1]], ordered_gradients[data_indices[2]], ordered_gradients[data_indices[3]], ordered_gradients[data_indices[4]], ordered_gradients[data_indices[5]], ordered_gradients[data_indices[6]], ordered_gradients[data_indices[7]]);
-//printf("   hessians = %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf %7.4lf\n", ordered_hessians[data_indices[0]], ordered_hessians[data_indices[1]], ordered_hessians[data_indices[2]], ordered_hessians[data_indices[3]], ordered_hessians[data_indices[4]], ordered_hessians[data_indices[5]], ordered_hessians[data_indices[6]], ordered_hessians[data_indices[7]]);
+printf("KERNEL (exp = %d) (feature_size = %d)\n", (int) power_feature_workgroups, (int) feature_size); 
 #else
 printf("KERNEL CONST_HESSIAN\n"); 
 #endif
@@ -923,9 +904,6 @@ printf("KERNEL CONST_HESSIAN\n");
      // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
      // feature_size is the number of examples per feature
      const uchar *feature_data = feature_data_base + feature_id * feature_size;
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503) printf("feature_id = %d, feature_size = %d\n", feature_id, feature_size);
-//#endif
 
      // size of threads that process this feature4
      const uint subglobal_size = lsize * (1 << power_feature_workgroups);
@@ -933,16 +911,10 @@ printf("KERNEL CONST_HESSIAN\n");
      // equavalent thread ID in this subgroup for this feature4
      const uint subglobal_tid  = gtid - feature_id * subglobal_size;
 
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503) for (int i=0; i<5600; ++i) if(feature_data_base[i] == 1) printf("found 1 at %d in feature_data_BASE\n", i); 
-//if (gtid == 5503) for (int i=0; i<5600; ++i) if(feature_data[i] == 1) printf("found 1 at %d in feature_data\n", i); 
-//#endif
-
      data_size_t ind;
      data_size_t ind_next;
      #ifdef IGNORE_INDICES
      ind = subglobal_tid;
-//if (gtid == 5503) printf("gtid = %d (0x%08x), subglobal_tid = %d (0x%08x), ind = %d (0x%08x)\n", gtid, gtid, subglobal_tid, subglobal_tid, ind, ind);
      #else
      ind = data_indices[subglobal_tid];
      #endif
@@ -965,11 +937,7 @@ printf("KERNEL CONST_HESSIAN\n");
      ushort bin;
 
      feature = feature_data[ind >> feature_mask];
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503) printf("gtid = %d (0x%08x), ind = %d (0x%08x), feature_mask = %d,       feature = %d\n", gtid, gtid, ind, ind, feature_mask, feature_data[ind >> feature_mask]);
-//if (gtid == 5503) printf("gtid = %d (0x%08x), ind = %d (0x%08x), feature_mask = %d, BASE  feature = %d\n", gtid, gtid, ind, ind, feature_mask, feature_data_base[ind >> feature_mask]);
-//#endif
-     if (feature_mask) {
+	     if (feature_mask) {
         feature = (feature >> ((ind & 1) << 2)) & 0xf;
      }
      bin = feature;
@@ -980,14 +948,10 @@ printf("KERNEL CONST_HESSIAN\n");
      score_t grad, hess;
      score_t grad_next, hess_next;
      // LGBM_CUDA v5.1
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503) printf("gtid = %d (0x%08x), gradient by 'i': %lf, gradient by 'subglobal_tid': %lf\n", gtid, gtid, ordered_gradients[gtid], ordered_gradients[subglobal_tid]);
-//#endif
      grad = ordered_gradients[ind];
      #if CONST_HESSIAN == 0
      hess = ordered_hessians[ind];
      #endif
-
 
      // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
      for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
@@ -997,7 +961,6 @@ printf("KERNEL CONST_HESSIAN\n");
          #ifdef IGNORE_INDICES
          // we need to check to bounds here
          ind_next = i_next < num_data ? i_next : i;
-//if (gtid == 5503) printf("gtid = %d (0x%08x), i = %d (0x%08x), i_next = %d (0x%08x), ind_next = %d (0x%08x)\n", gtid, gtid, i, i, i_next, i_next, ind_next, ind_next);
          #else
          ind_next = data_indices[i_next];
          #endif
@@ -1007,17 +970,10 @@ printf("KERNEL CONST_HESSIAN\n");
          #if CONST_HESSIAN == 0
          hess_next = ordered_hessians[ind_next];
          #endif
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503) printf("gtid = %d (0x%08x), i = %d (0x%08x), i_next = %d (0x%08x), grad_next = %lf\n", gtid, gtid, i, i, i_next, i_next, grad_next);
-//#endif
-
          // STAGE 2: accumulate gradient and hessian
          if (bin != feature) {
              addr_bin = gh_hist + bin * 2 + is_hessian_first;
              #if CONST_HESSIAN == 0
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && bin == 1) printf("gtid = %d (0x%08x), prepping to accumulate: is_hessian_first = %d\n", gtid, gtid, is_hessian_first);
-//#endif
              acc_type acc_bin = is_hessian_first? hess_bin : grad_bin;
              atomic_local_add_f(addr_bin, acc_bin);
 
@@ -1030,71 +986,42 @@ printf("KERNEL CONST_HESSIAN\n");
              #endif
 
              bin = feature;
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && bin == 1) printf("gtid = %d (0x%08x), setting bin = feature 1, grad = %lf, grad_bin = %lf\n", gtid, gtid, grad, grad_bin);
-//#endif
+
              grad_bin = grad;
              hess_bin = hess;
          }
          else {
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && bin == 1) printf("gtid = %d (0x%08x),                          grad = %lf, grad_bin = %lf\n", gtid, gtid, grad, grad_bin);
-//#endif
+
+
              grad_bin += grad;
              hess_bin += hess;
          }
 
          // prefetch the next iteration variables
          feature_next = feature_data[ind_next >> feature_mask];
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503) printf("gtid = %d (0x%08x), ind_next = %d (0x%08x), feature_mask = %d,       feature = %d\n", gtid, gtid, ind_next, ind_next, feature_mask, feature_data[ind_next >> feature_mask]);
-//if (gtid == 5503) printf("gtid = %d (0x%08x), ind_next = %d (0x%08x), feature_mask = %d, BASE  feature = %d\n", gtid, gtid, ind_next, ind_next, feature_mask, feature_data_base[ind_next >> feature_mask]);
-//#endif
 
          // STAGE 3: accumulate counter
          atomicAdd(cnt_hist + feature, 1);
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && feature == 1) printf("gtid = %d (0x%08x), adding feature 1 to cnt_hist!\n", gtid, gtid);
-//#endif
 
          // STAGE 4: update next stat
          grad = grad_next;
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && feature == 1) printf("gtid = %d (0x%08x), moved grad_next to grad = %lf\n", gtid, gtid, grad);
-//#endif
          hess = hess_next;
          // LGBM_CUDA: v4.2
          if (!feature_mask) {
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && feature_next == 1) printf("gtid = %d (0x%08x), moving feature_next 1 into feature 1!\n", gtid, gtid);
-//#endif
              feature = feature_next;
          } else {
              feature = (feature_next >> ((ind_next & 1) << 2)) & 0xf;
          }
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503) printf("gtid = %d (0x%08x), at end of loop, i = %d, num_data = %d, subglobal_size = %d, feature = %d\n", gtid, gtid, i, num_data, subglobal_size, feature);
-//#endif
      }
-
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && bin == 1) printf("gtid = %d (0x%08x), grad = %lf\n", gtid, gtid, grad);
-//#endif
 
      addr_bin = gh_hist + bin * 2 + is_hessian_first;
      #if CONST_HESSIAN == 0
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && bin == 1) printf("gtid = %d (0x%08x), prepping to accumulate: is_hessian_first = %d\n", gtid, gtid, is_hessian_first);
-//#endif
      acc_type acc_bin = is_hessian_first? hess_bin : grad_bin;
      atomic_local_add_f(addr_bin, acc_bin);
 
      addr_bin = addr_bin + 1 - 2 * is_hessian_first;
      acc_bin = is_hessian_first? grad_bin : hess_bin;
 
-//#ifdef IGNORE_INDICES
-//if (gtid == 5503 && bin == 1) printf("gtid = %d (0x%08x), adding %lf to offset %d\n", gtid, gtid, acc_bin, (int) (addr_bin - gh_hist));
-//#endif
      atomic_local_add_f(addr_bin, acc_bin);
 
      #elif CONST_HESSIAN == 1
@@ -1183,8 +1110,6 @@ printf("KERNEL CONST_HESSIAN\n");
          uint skip_id = group_id - output_offset;
          // locate output histogram location for this feature4
          acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
-
-         
          within_kernel_reduction256x4(feature_subhists, skip_id, old_val, 1 << power_feature_workgroups, hist_buf, (acc_type *)shared_array, power_feature_workgroups);
      }
 }

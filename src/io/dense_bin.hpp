@@ -109,12 +109,9 @@ class DenseBin : public Bin {
     hist_t* grad = out;
     hist_t* hess = out + 1;
     hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(hess);
-//fprintf(stderr, "      inside ConstructHistogramInnerDebug, i = %d\n", i); fflush(stderr);
-//fprintf(stderr, "      DEBUG: data(5503) = %d\n", data(5503));
     for (; i < end; ++i) {
       const auto idx = i;
       const auto ti = static_cast<uint32_t>(data(idx)) << 1;
-//if (ti == 2) fprintf(stderr, "      data(%4d) = %4d, adding %7.4lf\n", idx, data(idx), ordered_gradients[i]); fflush(stderr);
       if (USE_HESSIAN) {
         grad[ti] += ordered_gradients[i];
         hess[ti] += ordered_hessians[i];
@@ -123,7 +120,6 @@ class DenseBin : public Bin {
         ++cnt[ti];
       }
     }
-//fprintf(stderr, "      leaving ConstructHistogramInnerDebug, out[2/3] = %7.4lf %7.4lf\n", out[2], out[3]);
   }
 
   template <bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
@@ -175,10 +171,8 @@ class DenseBin : public Bin {
                           data_size_t end, const score_t* ordered_gradients,
                           const score_t* ordered_hessians,
                           hist_t* out) const {
-//fprintf(stderr, "      calling ConstructHistogramInnerDebug\n"); fflush(stderr);
     ConstructHistogramInnerDebug<true, true, true>(
         start, end, ordered_gradients, ordered_hessians, out);
-//fprintf(stderr, "      back from ConstructHistogramInnerDebug\n"); fflush(stderr);
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
@@ -424,7 +418,6 @@ class DenseBin : public Bin {
       const void* memory,
       const std::vector<data_size_t>& local_used_indices) override {
     const VAL_T* mem_data = reinterpret_cast<const VAL_T*>(memory);
-fprintf(stderr, "inside LoadFromMemory (in src/io/dense_bin.hpp), updating the FEATURE DATA, num_data_ = %d\n", (int) num_data_);
     if (!local_used_indices.empty()) {
       if (IS_4BIT) {
         const data_size_t rest = num_data_ & 1;
@@ -468,7 +461,6 @@ fprintf(stderr, "inside LoadFromMemory (in src/io/dense_bin.hpp), updating the F
   void CopySubrow(const Bin* full_bin, const data_size_t* used_indices,
                   data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const DenseBin<VAL_T, IS_4BIT>*>(full_bin);
-fprintf(stderr, "inside CopySubrow (in src/io/dense_bin.hpp), updating the FEATURE DATA, num_used_indices = %d\n", (int) num_used_indices);
     if (IS_4BIT) {
       const data_size_t rest = num_used_indices & 1;
       for (int i = 0; i < num_used_indices - rest; i += 2) {

@@ -76,8 +76,6 @@ void CUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, 
 
   // Initialize GPU buffers and kernels & LGBM_CUDA: get device info
   InitGPU(config_->num_gpu); // LGBM_CUDA
-
-
 }
 
 // some functions used for debugging the GPU histogram construction
@@ -238,18 +236,17 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
     size_t output_size = num_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
     size_t host_output_offset = offset_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
 
-    //CUDASUCCESS_OR_FATAL(cudaMemcpyAsync((char*)host_histogram_outputs_ + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost, stream_[device_id]));
-    CUDASUCCESS_OR_FATAL(cudaMemcpy((char*)host_histogram_outputs_ + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost));
+    CUDASUCCESS_OR_FATAL(cudaMemcpyAsync((char*)host_histogram_outputs_ + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost, stream_[device_id]));
     CUDASUCCESS_OR_FATAL(cudaEventRecord(histograms_wait_obj_[device_id], stream_[device_id]));
   }
 }
 
 
 template <typename HistType>
-void CUDATreeLearner::WaitAndGetHistograms(hist_t* histograms) {
+void CUDATreeLearner::WaitAndGetHistograms(FeatureHistogram* leaf_histogram_array) {
   HistType* hist_outputs = (HistType*) host_histogram_outputs_;
 
-  //#pragma omp parallel for schedule(static, num_gpu_)
+  #pragma omp parallel for schedule(static, num_gpu_)
   for(int device_id = 0; device_id < num_gpu_; ++device_id) {
 
 //    auto start_time = std::chrono::steady_clock::now();
@@ -265,7 +262,8 @@ void CUDATreeLearner::WaitAndGetHistograms(hist_t* histograms) {
       continue;
     }
     int dense_group_index = dense_feature_group_map_[i];
-    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
+    //auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
+    auto old_histogram_array = leaf_histogram_array[dense_group_index].RawData() - kHistOffset;
     int bin_size = train_data_->FeatureGroupNumBin(dense_group_index); 
 
     for (int j = 0; j < bin_size; ++j) {
@@ -644,7 +642,7 @@ void CUDATreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_
 
   int old_num_feature_groups = num_dense_feature_groups_;
   CountDenseFeatureGroups();
-  if ((old_num_data < num_data_) && (old_num_feature_groups < num_dense_feature_groups_)) {
+  if ((old_num_data < num_data_) || (old_num_feature_groups < num_dense_feature_groups_)) {
     prevAllocateGPUMemory();
     AllocateGPUMemory();
   } else {
@@ -863,22 +861,13 @@ bool CUDATreeLearner::ConstructGPUHistogramsAsync(
     return false;
   }
 
-#if GPU_DEBUG >= 1
-  printf("CudaTreeLearner::ConstructGPUHistogramsAsync() Feature masks: ");
-  for (unsigned int i = 0; i < feature_masks_.size(); ++i) {
-    printf("%d ", feature_masks_[i]);
-  }
-  printf("\n");
-  printf("CudaTreeLearner::ConstructGPUHistogramsAsync() %d feature groups, %d used, %d use_all_features\n", num_dense_feature_groups_, used_dense_feature_groups, use_all_features);
-#endif
-
   // if not all feature groups are used, we need to transfer the feature mask to GPU
   // otherwise, we will use a specialized GPU kernel with all feature groups enabled
   // LGBM_CUDA FIXME: No waiting mark for feature mask
 
   // LGBM_CUDA We now copy even if all features are used.
 
-    //#pragma omp parallel for schedule(static, num_gpu_)
+    #pragma omp parallel for schedule(static, num_gpu_)
     for(int device_id = 0; device_id < num_gpu_; ++device_id) {
       int offset = offset_gpu_feature_groups_[device_id];
       CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_feature_masks_[device_id], ptr_pinned_feature_masks_ + offset, num_gpu_feature_groups_[device_id] , cudaMemcpyHostToDevice, stream_[device_id]));
@@ -919,14 +908,12 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset; 
 
   // Check workgroups per feature4 tuple..
-// GCF Let's try this!!!
-//  int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(smaller_leaf_splits_->num_data_in_leaf());
+  int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(smaller_leaf_splits_->num_data_in_leaf());
 
   // if the workgroup per feature is 1 (2^0), return as the work is too small for a GPU
-// GCF Let's try this!!!
-//  if (exp_workgroups_per_feature == 0){
-//    return SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
-//  }
+  if (exp_workgroups_per_feature == 0){
+    return SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
+  }
 
   // ConstructGPUHistogramsAsync will return true if there are availabe feature gourps dispatched to GPU
   bool is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
@@ -954,11 +941,11 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   if (is_gpu_used) {
     if (config_->gpu_use_dp) {
       // use double precision
-      WaitAndGetHistograms<hist_t>(ptr_smaller_leaf_hist_data);
+      WaitAndGetHistograms<hist_t>(smaller_leaf_histogram_array_);
     }
     else {
       // use single precision
-      WaitAndGetHistograms<gpu_hist_t>(ptr_smaller_leaf_hist_data);
+      WaitAndGetHistograms<gpu_hist_t>(smaller_leaf_histogram_array_);
     }
   }
 
@@ -1072,11 +1059,11 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     if (is_gpu_used) {
       if (config_->gpu_use_dp) {
         // use double precision
-        WaitAndGetHistograms<hist_t>(ptr_larger_leaf_hist_data);
+        WaitAndGetHistograms<hist_t>(larger_leaf_histogram_array_);
       }
       else {
         // use single precision
-        WaitAndGetHistograms<gpu_hist_t>(ptr_larger_leaf_hist_data);
+        WaitAndGetHistograms<gpu_hist_t>(larger_leaf_histogram_array_);
       }
     }
   }
@@ -1119,8 +1106,6 @@ void CUDATreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* righ
         Log::Fatal("1 Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
       }
     } else {
-      smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian, best_split_info.right_output);
-      larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian, best_split_info.left_output);
       if ((best_split_info.left_count != larger_leaf_splits_->num_data_in_leaf()) ||
           (best_split_info.right_count!= smaller_leaf_splits_->num_data_in_leaf())) {
         Log::Fatal("2 Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());

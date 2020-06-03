@@ -243,10 +243,8 @@ data_size_t GBDT::BalancedBaggingHelper(data_size_t start, data_size_t cnt,
 void GBDT::Bagging(int iter) {
   Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
   // if need bagging
-fprintf(stderr, "inside GBDT::Bagging, iter = %d\n", iter); fflush(stderr);
   if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0) ||
       need_re_bagging_) {
-fprintf(stderr, "inside GBDT::Bagging, past first hurdle\n"); fflush(stderr);
     need_re_bagging_ = false;
     auto left_cnt = bagging_runner_.Run<true>(
         num_data_,
@@ -265,9 +263,7 @@ fprintf(stderr, "inside GBDT::Bagging, past first hurdle\n"); fflush(stderr);
     bag_data_cnt_ = left_cnt;
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
-fprintf(stderr, "inside GBDT::Bagging, past second hurdle\n"); fflush(stderr);
     if (!is_use_subset_) {
-fprintf(stderr, "inside GBDT::Bagging, calling SetBaggingData\n"); fflush(stderr);
       tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
     } else { // LGBM_CUDA
       // NEW get subset
@@ -279,21 +275,11 @@ fprintf(stderr, "inside GBDT::Bagging, calling SetBaggingData\n"); fflush(stderr
         tmp_hessians_.resize(total_size);
       }
 
-fprintf(stderr, "CopySubrow CP2, bag_data_cnt_ = %d\n", bag_data_cnt_); fflush(stderr);
-//char *temp_bag = (char *) bag_data_indices_.data();
-//for (int i=0; i<bag_data_cnt_; i+=1000) {
-//fprintf(stderr, "bag_data[%6d] = %d\n", i, (int) temp_bag[i]); 
-//}
-//fflush(stderr);
-
       tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
 
-//fprintf(stderr, "CopySubrow CP2, calling tree_learner_->ResetTrainingData\n"); fflush(stderr);
       tree_learner_->ResetTrainingData(tmp_subset_.get(), is_constant_hessian_);
-//fprintf(stderr, "CopySubrow CP2, back from tree_learner_->ResetTrainingData\n"); fflush(stderr);
     }
   }
-fprintf(stderr, "returning from GBDT::Bagging!\n"); fflush(stderr);
 }
 
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
@@ -396,16 +382,12 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 // LGBM_CUDA
 bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
 
-fprintf(stderr, "inside TrainOneIterCUDA, iter_ = %d\n", iter_); fflush(stderr);
-
  // LGBM_CUDA invoke baggging during the first iteration
  if (config_->device_type == std::string("cuda")) {
 
 //    auto start_time = std::chrono::steady_clock::now();
 
-fprintf(stderr, "calling Bagging CP104\n"); fflush(stderr);
     Bagging(iter_); 
-fprintf(stderr, "back from Bagging CP104\n"); fflush(stderr);
   }
 
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
@@ -425,9 +407,8 @@ fprintf(stderr, "back from Bagging CP104\n"); fflush(stderr);
     hessians = hessians_.data();
   }
 
-//fprintf(stderr, "inside TrainOneIterCUDA CP105, bagging commented out\n"); fflush(stderr);
   // LGBM_CUDA  bagging logic
-  // Bagging(iter_); // GCF trial and error
+  // Bagging(iter_); 
 
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -466,10 +447,8 @@ fprintf(stderr, "back from Bagging CP104\n"); fflush(stderr);
       // LGBM_CUDA
       new_tree.reset(tree_learner_->Train(tmp_grad, tmp_hess, is_constant_hessian_, forced_splits_json_));
     }
-//fprintf(stderr, "inside TrainOneIterCUDA, num_leaves = %d\n", new_tree->num_leaves()); fflush(stderr);
 
     if (new_tree->num_leaves() > 1) {
-//fprintf(stderr, "inside TrainOneIterCUDA CP106, this clause doesn't do bagging\n"); fflush(stderr);
       should_continue = true;
       auto score_ptr = train_score_updater_->score() + offset;
       auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
@@ -502,16 +481,13 @@ fprintf(stderr, "back from Bagging CP104\n"); fflush(stderr);
       }
 
     // LGBM_CUDA: moved for overlapping data copy w/ other operations
-//fprintf(stderr, "inside TrainOneIterCUDA CP107\n"); fflush(stderr);
     int iter_next = iter_ + 1;
       if (iter_next < config_->num_iterations) {
 
 //       auto start_time = std::chrono::steady_clock::now();
 
        // bagging logic
-fprintf(stderr, "calling Bagging CP105\n"); fflush(stderr);
        Bagging(iter_next);
-fprintf(stderr, "back from Bagging CP105\n"); fflush(stderr);
 
       }
     }
@@ -551,9 +527,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     hessians = hessians_.data();
   }
   // bagging logic
-fprintf(stderr, "calling Bagging CP106\n"); fflush(stderr);
   Bagging(iter_);
-fprintf(stderr, "back from Bagging CP106\n"); fflush(stderr);
 
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {

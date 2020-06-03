@@ -153,7 +153,7 @@ private:
    * \param histograms Destination of histogram results from GPU.
   */
   template <typename HistType>
-  void WaitAndGetHistograms(hist_t* histograms);
+  void WaitAndGetHistograms(FeatureHistogram* leaf_histogram_array);
 
   /*!
    * \brief Construct GPU histogram asynchronously. 

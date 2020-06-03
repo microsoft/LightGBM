@@ -93,7 +93,6 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
 void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
                                                bool is_constant_hessian,
                                                bool reset_multi_val_bin) {
-//fprintf(stderr, "inside SerialTreeLearner::ResetTrainingDataInner\n"); fflush(stderr);
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   CHECK_EQ(num_features_, train_data_->num_features());
@@ -153,9 +152,6 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
 
 Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, Json& forced_split_json) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
-
-fprintf(stderr, "in SerialTreeLearner::Train\n"); fflush(stderr);
-fprintf(stderr, "first few gradients: %lf %lf %lf %lf\n", (double) gradients[0], (double) gradients[1], (double) gradients[2], (double) gradients[3]);
   gradients_ = gradients;
   hessians_ = hessians;
   is_constant_hessian_ = is_constant_hessian;
@@ -185,14 +181,13 @@ fprintf(stderr, "first few gradients: %lf %lf %lf %lf\n", (double) gradients[0],
   int init_splits = 0;
   bool aborted_last_force_split = false;
   if (!forced_split_json.is_null()) {
-//fprintf(stderr, "we're calling ForceSplits\n"); fflush(stderr);
     init_splits = ForceSplits(tree.get(), forced_split_json, &left_leaf,
                               &right_leaf, &cur_depth, &aborted_last_force_split);
   }
 
-//fprintf(stderr, "loop start value = %d, loop end value = %d\n", init_splits, config_->num_leaves - 1); fflush(stderr);
   for (int split = init_splits; split < config_->num_leaves - 1; ++split) {
     // some initial works before finding best split
+
     if (BeforeFindBestSplit(tree_prt, left_leaf, right_leaf)) {
       // find best threshold for every feature
       FindBestSplits(tree_prt);
@@ -207,27 +202,10 @@ fprintf(stderr, "first few gradients: %lf %lf %lf %lf\n", (double) gradients[0],
       break;
     }
     // split tree with best leaf
-
-//fprintf(stderr, "%3d ", best_split_per_leaf_[0].feature);
-//fprintf(stderr, "%3d ", best_split_per_leaf_[0].threshold);
-//fprintf(stderr, "%3d ", best_split_per_leaf_[0].left_count);
-//fprintf(stderr, "%3d ", best_split_per_leaf_[0].right_count);
-//fprintf(stderr, "%3d ", best_split_per_leaf_[0].num_cat_threshold);
-//fprintf(stderr, "%8.5lf ", best_split_per_leaf_[0].left_output);
-//fprintf(stderr, "%8.5lf ", best_split_per_leaf_[0].right_output);
-//fprintf(stderr, "%8.5lf ", best_split_per_leaf_[0].gain);
-//fprintf(stderr, "%8.5lf ", best_split_per_leaf_[0].left_sum_gradient);
-//fprintf(stderr, "%8.5lf ", best_split_per_leaf_[0].left_sum_hessian);
-//fprintf(stderr, "%8.5lf ", best_split_per_leaf_[0].right_sum_gradient);
-//fprintf(stderr, "%8.5lf ", best_split_per_leaf_[0].right_sum_hessian);
-//fprintf(stderr, "\n"); 
-
-//fprintf(stderr, "Calling Split, best_leaf = %d\n", best_leaf);
     Split(tree_prt, best_leaf, &left_leaf, &right_leaf);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
   Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
-fprintf(stderr, "Leaving SerialTreeLearner::Train\n"); fflush(stderr);
   return tree.release();
 }
 
@@ -345,7 +323,6 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
 
 void SerialTreeLearner::FindBestSplits(const Tree* tree) {
   std::vector<int8_t> is_feature_used(num_features_, 0);
-//fprintf(stderr, "in FindBestSplits, num_features_ = %d\n", num_features_); fflush(stderr);
   #pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
@@ -357,23 +334,16 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
     is_feature_used[feature_index] = 1;
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
-//for (int i=0; i<num_features_; ++i) fprintf(stderr, "%d ", is_feature_used[i]);
-//fprintf(stderr, "\n"); 
-//fprintf(stderr, "use_subtract = %d\n", use_subtract); 
-fprintf(stderr, "at the fork between CPU and CUDA\n");
 
 #ifdef USE_CUDA
   if (LGBM_config_::current_learner == use_cpu_learner){
       Log::Info("LightGBM-CUDA using CPU ConstructHistograms()");
-fprintf(stderr, "calling CPU ConstructHistograms\n"); 
       SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract); 
   }
   else{
-fprintf(stderr, "calling CUDA ConstructHistograms\n"); 
       ConstructHistograms(is_feature_used, use_subtract);
   }
 #else
-fprintf(stderr, "calling CPU ConstructHistograms\n"); 
   ConstructHistograms(is_feature_used, use_subtract);
 #endif
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
@@ -385,24 +355,20 @@ void SerialTreeLearner::ConstructHistograms(
                                   global_timer);
   // construct smaller leaf
   hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
-//fprintf(stderr, "calling train_data_->ConstructHistograms(smaller)\n"); fflush(stderr);
   train_data_->ConstructHistograms(
       is_feature_used, smaller_leaf_splits_->data_indices(),
       smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(), share_state_.get(),
       ptr_smaller_leaf_hist_data);
-//fprintf(stderr, "back from train_data_->ConstructHistograms(smaller)\n"); fflush(stderr);
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
     hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - kHistOffset;
-//fprintf(stderr, "calling train_data_->ConstructHistograms(larger)\n"); fflush(stderr);
     train_data_->ConstructHistograms(
         is_feature_used, larger_leaf_splits_->data_indices(),
         larger_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
         ordered_gradients_.data(), ordered_hessians_.data(), share_state_.get(),
         ptr_larger_leaf_hist_data);
-//fprintf(stderr, "back from train_data_->ConstructHistograms(larger)\n"); fflush(stderr);
   }
 }
 
@@ -410,9 +376,6 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree* tree) {
   Common::FunctionTimer fun_timer(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
-fflush(stdout);
-fflush(stderr);
-//fprintf(stderr, "inside FindBestSplitsFromHistograms, num_threads = %d\n", (int) share_state_->num_threads); fflush(stderr);
   std::vector<SplitInfo> smaller_best(share_state_->num_threads);
   std::vector<SplitInfo> larger_best(share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features = col_sampler_.GetByNode(tree, smaller_leaf_splits_->leaf_index());
@@ -429,6 +392,7 @@ fflush(stderr);
       continue;
     }
     const int tid = omp_get_thread_num();
+
     train_data_->FixHistogram(
         feature_index, smaller_leaf_splits_->sum_gradients(),
         smaller_leaf_splits_->sum_hessians(),
@@ -462,12 +426,12 @@ fflush(stderr);
                                larger_node_used_features[feature_index],
                                larger_leaf_splits_->num_data_in_leaf(),
                                larger_leaf_splits_.get(), &larger_best[tid]);
-
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
   int leaf = smaller_leaf_splits_->leaf_index();
+
   best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];
 
   if (larger_leaf_splits_ != nullptr &&
@@ -476,7 +440,6 @@ fflush(stderr);
     auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best);
     best_split_per_leaf_[leaf] = larger_best[larger_best_idx];
   }
-//fprintf(stderr, "leaving FindBestSplitsFromHistograms\n"); fflush(stderr);
 }
 
 int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
@@ -682,7 +645,6 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   CHECK(*right_leaf == next_leaf_id);
 #endif
 
-fprintf(stderr, "arrived at the assert, leaves = %d %d, sum = %d\n", best_split_info.left_count, best_split_info.right_count, best_split_info.left_count + best_split_info.right_count); fflush(stderr);
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
     CHECK_GT(best_split_info.left_count, 0);
@@ -760,6 +722,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     FeatureHistogram* histogram_array_, int feature_index, int real_fidx,
     bool is_feature_used, int num_data, const LeafSplits* leaf_splits,
     SplitInfo* best_split) {
+
   if (!is_feature_used) {
     return;
   }
@@ -774,9 +737,11 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   } else {
     parent_output = leaf_splits->weight();
   }
+
   histogram_array_[feature_index].FindBestThreshold(
       leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), num_data,
       constraints_->Get(leaf_splits->leaf_index()),  parent_output, &new_split);
+
   new_split.feature = real_fidx;
   if (cegb_ != nullptr) {
     new_split.gain -=
