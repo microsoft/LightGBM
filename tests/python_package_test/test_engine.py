@@ -975,6 +975,20 @@ class TestEngine(unittest.TestCase):
         # validate the values are the same
         np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
 
+    def test_int32_max_sparse_contribs(self):
+        params = {
+            'objective': 'binary'
+        }
+        train_features = np.random.rand(100, 1000)
+        train_targets = [0] * 50 + [1] * 50
+        lgb_train = lgb.Dataset(train_features, train_targets)
+        gbm = lgb.train(params, lgb_train, num_boost_round=5)
+        test_features = csr_matrix((3000000, 1000))
+        for i in range(0, 3000000, 500000):
+            for j in range(0, 1000, 100):
+                test_features[i, j] = random.random()
+        gbm.predict(test_features, pred_contrib=True)
+
     def test_sliced_data(self):
         def train_and_get_predictions(features, labels):
             dataset = lgb.Dataset(features, label=labels)
