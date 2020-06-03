@@ -9,7 +9,8 @@ test_that("predictions do not fail for integer input", {
         , objective = "regression"
         , verbose = -1L
     )
-    X_double <- X_integer <- X[c(1L, 51L, 101L), , drop = FALSE]
+    X_double <- X[c(1L, 51L, 101L), , drop = FALSE]
+    X_integer <- X_double
     storage.mode(X_double) <- "double"
     pred_integer <- predict(fit, X_integer)
     pred_double <- predict(fit, X_double)
