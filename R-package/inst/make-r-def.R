@@ -32,7 +32,9 @@ message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
             command = command
             , args = args
             , stdout = out_file
-        )$wait()
+            , windows_verbatim_args = FALSE
+        )
+        invisible(p$wait())
     } else {
         message(paste0(
           "Using system2() to run shell commands. Installing "
@@ -55,7 +57,7 @@ message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
 OBJDUMP_FILE <- "objdump-out.txt"
 .pipe_shell_command_to_stdout(
     command = "objdump"
-    , args = c("-p", shQuote(IN_DLL_FILE))
+    , args = c("-p", IN_DLL_FILE)
     , out_file = OBJDUMP_FILE
 )
 
