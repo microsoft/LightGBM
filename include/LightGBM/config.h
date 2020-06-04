@@ -956,7 +956,11 @@ struct Config {
 
   // desc = number of gpus (CUDA implementation only) LGBM_CUDA
   // desc = default value is 4
+#ifdef USE_CUDA
   int num_gpu = 4;
+#else
+  int num_gpu = 1;
+#endif
 
   #pragma endregion
 
