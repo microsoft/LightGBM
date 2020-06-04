@@ -206,7 +206,7 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
     if (num_workgroups > preallocd_max_num_wg_[device_id]) {
       preallocd_max_num_wg_.at(device_id) = num_workgroups;
       CUDASUCCESS_OR_FATAL(cudaFree(device_subhistograms_[device_id]));
-      cudaMalloc(&(device_subhistograms_[device_id]), (size_t) num_workgroups * dword_features_ * device_bin_size_ * (3 * hist_bin_entry_sz_ / 2));
+      CUDASUCCESS_OR_FATAL(cudaMalloc(&(device_subhistograms_[device_id]), (size_t) num_workgroups * dword_features_ * device_bin_size_ * (3 * hist_bin_entry_sz_ / 2)));
     }
     //set thread_data
     SetThreadData(thread_data, device_id, histogram_size_, leaf_num_data, use_all_features,
@@ -396,7 +396,7 @@ void CUDATreeLearner::AllocateGPUMemory() {
 
       // copy indices to the device
 
-     if (device_feature_masks_[device_id] != NULL){
+     if (device_data_indices_[device_id] != NULL){
         CUDASUCCESS_OR_FATAL(cudaFree(device_data_indices_[device_id])); 
      }
 
@@ -453,6 +453,7 @@ void CUDATreeLearner::copyDenseFeature() {
   // set device info 
   int device_id = 0;
   uint8_t* device_features = device_features_[device_id];
+  CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
   Log::Debug("Started copying dense features from CPU to GPU - 1");
 
   for (int i = 0; i < num_feature_groups_; ++i) {
@@ -499,6 +500,9 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
   printf("bin_size: ");
   #endif
   for (int i = 0; i < num_feature_groups_; ++i) {
+    if (train_data_->IsMultiGroup(i)) {
+      continue;
+    }
     #if GPU_DEBUG >= 1
     printf("%d, ", train_data_->FeatureGroupNumBin(i));
     #endif
