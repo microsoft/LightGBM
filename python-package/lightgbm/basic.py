@@ -591,7 +591,8 @@ class _InnerPredictor(object):
             preds, nrow = self.__pred_for_csr(csr, num_iteration, predict_type)
         if pred_leaf:
             preds = preds.astype(np.int32)
-        if is_reshape and preds.size != nrow:
+        is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
+        if is_reshape and not is_sparse and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
