@@ -844,7 +844,8 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
 
-if (gtid == 2048) {
+#if 0
+if (gtid == 0) {
 #if USE_CONSTANT_BUF == 1
 #ifdef IGNORE_INDICES
 #if CONST_HESSIAN == 0
@@ -875,6 +876,7 @@ printf("KERNEL CONST_HESSIAN\n");
 #endif
 #endif
 }
+#endif
 
      // local memory per workgroup is 3 KB
      // clear local memory

@@ -98,37 +98,6 @@ class SparseBin : public Bin {
   hist[ti] += g;                            \
   hist[ti + 1] += h;
 
-  void ConstructHistogramDebug(data_size_t start,
-                          data_size_t end, const score_t* ordered_gradients,
-                          const score_t* ordered_hessians,
-                          hist_t* out) const {
-    data_size_t i_delta, cur_pos;
-    InitIndex(start, &i_delta, &cur_pos);
-    data_size_t i = start;
-    for (;;) {
-      if (cur_pos < i) {
-        cur_pos += deltas_[++i_delta];
-        if (i_delta >= num_vals_) {
-          break;
-        }
-      } else if (cur_pos > i) {
-        if (++i >= end) {
-          break;
-        }
-      } else {
-        const VAL_T bin = vals_[i_delta];
-        ACC_GH(out, bin, ordered_gradients[i], ordered_hessians[i]);
-        if (++i >= end) {
-          break;
-        }
-        cur_pos += deltas_[++i_delta];
-        if (i_delta >= num_vals_) {
-          break;
-        }
-      }
-    }
-  }
-
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
                           data_size_t end, const score_t* ordered_gradients,
                           const score_t* ordered_hessians,

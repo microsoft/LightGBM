@@ -101,28 +101,6 @@ class DenseBin : public Bin {
                            uint32_t most_freq_bin) const override;
 
   template <bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
-  void ConstructHistogramInnerDebug(data_size_t start, data_size_t end,
-                               const score_t* ordered_gradients,
-                               const score_t* ordered_hessians,
-                               hist_t* out) const {
-    data_size_t i = start;
-    hist_t* grad = out;
-    hist_t* hess = out + 1;
-    hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(hess);
-    for (; i < end; ++i) {
-      const auto idx = i;
-      const auto ti = static_cast<uint32_t>(data(idx)) << 1;
-      if (USE_HESSIAN) {
-        grad[ti] += ordered_gradients[i];
-        hess[ti] += ordered_hessians[i];
-      } else {
-        grad[ti] += ordered_gradients[i];
-        ++cnt[ti];
-      }
-    }
-  }
-
-  template <bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
   void ConstructHistogramInner(const data_size_t* data_indices,
                                data_size_t start, data_size_t end,
                                const score_t* ordered_gradients,
@@ -165,14 +143,6 @@ class DenseBin : public Bin {
         ++cnt[ti];
       }
     }
-  }
-
-  void ConstructHistogramDebug(data_size_t start,
-                          data_size_t end, const score_t* ordered_gradients,
-                          const score_t* ordered_hessians,
-                          hist_t* out) const {
-    ConstructHistogramInnerDebug<true, true, true>(
-        start, end, ordered_gradients, ordered_hessians, out);
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start,

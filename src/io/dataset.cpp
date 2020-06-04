@@ -1382,14 +1382,8 @@ void Dataset::ConstructHistogramsInner(
               data_indices, 0, num_data, ptr_ordered_grad, ptr_ordered_hess,
               data_ptr);
         } else {
-          if (gi == 0) {
-             feature_groups_[group]->bin_data_->ConstructHistogramDebug(
-                 0, num_data, ptr_ordered_grad, ptr_ordered_hess, data_ptr);
-          }
-          else {
-             feature_groups_[group]->bin_data_->ConstructHistogram(
-                 0, num_data, ptr_ordered_grad, ptr_ordered_hess, data_ptr);
-          }
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+              0, num_data, ptr_ordered_grad, ptr_ordered_hess, data_ptr);
         }
       } else {
         if (USE_INDICES) {

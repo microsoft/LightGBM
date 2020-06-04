@@ -337,7 +337,6 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
 
 #ifdef USE_CUDA
   if (LGBM_config_::current_learner == use_cpu_learner){
-      Log::Info("LightGBM-CUDA using CPU ConstructHistograms()");
       SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract); 
   }
   else{
