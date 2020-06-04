@@ -71,7 +71,7 @@ if ($env:TOOLCHAIN -eq "MINGW") {
 } elseif ($env:TOOLCHAIN -eq "MSYS") {
   Write-Output "Telling R to use MSYS"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
-  ((Get-Content -path $install_libs -Raw) -replace 'use_msys <- FALSE','use_msys <- TRUE') | Set-Content -Path $install_libs
+  ((Get-Content -path $install_libs -Raw) -replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
 }
 
 # download R and RTools
