@@ -2,6 +2,9 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+
+#include <fstream>
+
 #include <LightGBM/dataset_loader.h>
 
 #include <LightGBM/network.h>
@@ -9,8 +12,6 @@
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
-
-#include <fstream>
 
 namespace LightGBM {
 

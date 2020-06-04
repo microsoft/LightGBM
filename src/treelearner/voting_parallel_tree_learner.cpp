@@ -2,11 +2,12 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#include <LightGBM/utils/common.h>
 
 #include <cstring>
 #include <tuple>
 #include <vector>
+
+#include <LightGBM/utils/common.h>
 
 #include "parallel_tree_learner.h"
 
@@ -37,6 +38,10 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   }
   // calculate buffer size
   size_t buffer_size = 2 * top_k_ * std::max(max_bin * kHistEntrySize, sizeof(LightSplitInfo) * num_machines_);
+  auto max_cat_threshold = this->config_->max_cat_threshold;
+  // need to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
+  size_t split_info_size = static_cast<size_t>(SplitInfo::Size(max_cat_threshold) * 2);
+  buffer_size = std::max(buffer_size, split_info_size);
   // left and right on same time, so need double size
   input_buffer_.resize(buffer_size);
   output_buffer_.resize(buffer_size);

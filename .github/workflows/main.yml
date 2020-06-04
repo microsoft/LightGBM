@@ -1,0 +1,57 @@
+name: GitHub Actions
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  test:
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Setup and run tests on Linux and macOS
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          export TASK="${{ matrix.task }}"
+          export COMPILER="${{ matrix.compiler }}"
+          export GITHUB_ACTIONS="true"
+          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+              export OS_NAME="macos"
+              export R_MAC_VERSION=3.6.3
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              export OS_NAME="linux"
+              export R_LINUX_VERSION=3.6.3-1bionic;
+          fi
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export CONDA_ENV="test-env"
+          export CONDA="$HOME/miniconda"
+          export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
+          export LGB_VER=$(head -n 1 VERSION.txt)
+          $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/test.sh

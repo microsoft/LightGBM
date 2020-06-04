@@ -13,7 +13,7 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 #
 # This only needs to get run on Travis because R environment for Linux
 # used by Azure pipelines is set up in https://github.com/guolinke/lightgbm-ci-docker
-if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
+if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
@@ -23,7 +23,7 @@ if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
     sudo apt-get install \
         --no-install-recommends \
         -y \
-            r-base-dev=${R_TRAVIS_LINUX_VERSION} \
+            r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-recommended \
             texlive-fonts-recommended \

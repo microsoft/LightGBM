@@ -2,7 +2,6 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#include "parser.hpp"
 
 #include <string>
 #include <algorithm>
@@ -10,6 +9,8 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+
+#include "parser.hpp"
 
 namespace LightGBM {
 

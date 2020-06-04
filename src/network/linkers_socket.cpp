@@ -4,10 +4,6 @@
  */
 #ifdef USE_SOCKET
 
-#include <LightGBM/config.h>
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/text_reader.h>
-
 #include <string>
 #include <chrono>
 #include <cstring>
@@ -15,6 +11,10 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include <LightGBM/config.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/text_reader.h>
 
 #include "linkers.h"
 
