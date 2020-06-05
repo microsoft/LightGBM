@@ -67,11 +67,6 @@ elseif ($env:TASK -eq "bdist") {
   }
 }
 
-if ($env:TASK -eq "bdist") {
-  # Also run GPU tests; see tests/python_package_test/test_dual.py
-  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
-}
-
 if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
 } else {
@@ -80,6 +75,13 @@ if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq 
 }
 pytest $tests ; Check-Output $?
 
+if ($env:TASK -eq "bdist") {
+  # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
+  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "cpu"
+  pytest -k test_both_cpu_and_gpu ; Check-Output $?
+  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "gpu"
+  pytest -k test_both_cpu_and_gpu ; Check-Output $?
+}
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
