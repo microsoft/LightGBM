@@ -5,15 +5,15 @@
 #ifndef LIGHTGBM_BOOSTING_RF_H_
 #define LIGHTGBM_BOOSTING_RF_H_
 
+#include <LightGBM/boosting.h>
+#include <LightGBM/metric.h>
+
 #include <string>
 #include <cstdio>
 #include <fstream>
 #include <memory>
 #include <utility>
 #include <vector>
-
-#include <LightGBM/boosting.h>
-#include <LightGBM/metric.h>
 
 #include "gbdt.h"
 #include "score_updater.hpp"

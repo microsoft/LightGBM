@@ -2,15 +2,6 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-
-#include <string>
-#include <chrono>
-#include <cstdio>
-#include <ctime>
-#include <fstream>
-#include <sstream>
-#include <utility>
-
 #include <LightGBM/application.h>
 
 #include <LightGBM/boosting.h>
@@ -23,6 +14,14 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
+
+#include <string>
+#include <chrono>
+#include <cstdio>
+#include <ctime>
+#include <fstream>
+#include <sstream>
+#include <utility>
 
 #include "predictor.hpp"
 

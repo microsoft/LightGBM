@@ -5,6 +5,9 @@
 #ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
 #define LIGHTGBM_UTILS_COMMON_FUN_H_
 
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+
 #include <limits>
 #include <string>
 #include <algorithm>

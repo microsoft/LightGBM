@@ -18,15 +18,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include <LightGBM/utils/json11.h>
+
+#include <LightGBM/utils/log.h>
 
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
-
-#include <LightGBM/utils/json11.h>
-
-#include <LightGBM/utils/log.h>
 
 namespace json11 {
 

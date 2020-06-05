@@ -5,18 +5,18 @@
 #ifndef LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 
+#include <LightGBM/dataset.h>
+#include <LightGBM/feature_group.h>
+#include <LightGBM/tree.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/random.h>
+
 #include <string>
 #include <cmath>
 #include <cstdio>
 #include <memory>
 #include <random>
 #include <vector>
-
-#include <LightGBM/dataset.h>
-#include <LightGBM/feature_group.h>
-#include <LightGBM/tree.h>
-#include <LightGBM/utils/array_args.h>
-#include <LightGBM/utils/random.h>
 
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"

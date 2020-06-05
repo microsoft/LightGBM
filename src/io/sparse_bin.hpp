@@ -6,16 +6,16 @@
 #ifndef LIGHTGBM_IO_SPARSE_BIN_HPP_
 #define LIGHTGBM_IO_SPARSE_BIN_HPP_
 
+#include <LightGBM/bin.h>
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <limits>
 #include <utility>
 #include <vector>
-
-#include <LightGBM/bin.h>
-#include <LightGBM/utils/log.h>
-#include <LightGBM/utils/openmp_wrapper.h>
 
 namespace LightGBM {
 

@@ -5,13 +5,13 @@
 #ifndef LIGHTGBM_NETWORK_H_
 #define LIGHTGBM_NETWORK_H_
 
-#include <functional>
-#include <memory>
-#include <vector>
-
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/log.h>
+
+#include <functional>
+#include <memory>
+#include <vector>
 
 namespace LightGBM {
 

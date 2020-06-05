@@ -5,14 +5,14 @@
 #ifndef LIGHTGBM_METRIC_RANK_METRIC_HPP_
 #define LIGHTGBM_METRIC_RANK_METRIC_HPP_
 
-#include <string>
-#include <sstream>
-#include <vector>
-
 #include <LightGBM/metric.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <string>
+#include <sstream>
+#include <vector>
 
 namespace LightGBM {
 

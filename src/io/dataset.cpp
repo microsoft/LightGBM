@@ -4,9 +4,12 @@
  * license information.
  */
 
-#ifdef USE_CUDA
-#include <LightGBM/cuda/vector_cudahost.h>
-#endif
+#include <LightGBM/dataset.h>
+
+#include <LightGBM/feature_group.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/threading.h>
 
 #include <chrono>
 #include <cstdio>
@@ -14,12 +17,9 @@
 #include <sstream>
 #include <unordered_map>
 
-#include <LightGBM/dataset.h>
-
-#include <LightGBM/feature_group.h>
-#include <LightGBM/utils/array_args.h>
-#include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/threading.h>
+#ifdef USE_CUDA
+#include <LightGBM/cuda/vector_cudahost.h>
+#endif
 
 namespace LightGBM {
 

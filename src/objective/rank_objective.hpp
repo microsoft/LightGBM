@@ -6,6 +6,9 @@
 #ifndef LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 
+#include <LightGBM/metric.h>
+#include <LightGBM/objective_function.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -13,9 +16,6 @@
 #include <limits>
 #include <string>
 #include <vector>
-
-#include <LightGBM/metric.h>
-#include <LightGBM/objective_function.h>
 
 namespace LightGBM {
 

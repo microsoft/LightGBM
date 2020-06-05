@@ -13,11 +13,11 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
 
+#include <LightGBM/export.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-
-#include <LightGBM/export.h>
 
 
 typedef void* DatasetHandle;  /*!< \brief Handle of dataset. */

@@ -5,15 +5,15 @@
 #ifndef LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 
+#include <LightGBM/network.h>
+#include <LightGBM/objective_function.h>
+
 #include <string>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <memory>
 #include <vector>
-
-#include <LightGBM/network.h>
-#include <LightGBM/objective_function.h>
 
 #include "binary_objective.hpp"
 

@@ -5,13 +5,13 @@
 #ifndef LIGHTGBM_FEATURE_GROUP_H_
 #define LIGHTGBM_FEATURE_GROUP_H_
 
-#include <cstdio>
-#include <memory>
-#include <vector>
-
 #include <LightGBM/bin.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/random.h>
+
+#include <cstdio>
+#include <memory>
+#include <vector>
 
 namespace LightGBM {
 

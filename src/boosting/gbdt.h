@@ -5,6 +5,12 @@
 #ifndef LIGHTGBM_BOOSTING_GBDT_H_
 #define LIGHTGBM_BOOSTING_GBDT_H_
 
+#include <LightGBM/boosting.h>
+#include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/json11.h>
+#include <LightGBM/utils/threading.h>
+
 #include <string>
 #include <algorithm>
 #include <cstdio>
@@ -15,12 +21,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <LightGBM/boosting.h>
-#include <LightGBM/objective_function.h>
-#include <LightGBM/prediction_early_stop.h>
-#include <LightGBM/utils/json11.h>
-#include <LightGBM/utils/threading.h>
 
 #include "score_updater.hpp"
 

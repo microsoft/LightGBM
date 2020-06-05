@@ -5,16 +5,16 @@
 #ifndef LIGHTGBM_BIN_H_
 #define LIGHTGBM_BIN_H_
 
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/file_io.h>
+
 #include <limits>
 #include <string>
 #include <functional>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-
-#include <LightGBM/meta.h>
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/file_io.h>
 
 namespace LightGBM {
 
