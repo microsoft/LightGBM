@@ -50,6 +50,7 @@ elseif ($env:TASK -eq "sdist") {
 elseif ($env:TASK -eq "bdist") {
   # Install the Intel CPU runtime, so we can run tests against OpenCL
   choco install opencl-intel-cpu-runtime -y
+  RefreshEnv
   Write-Output "Current OpenCL drivers:"
   Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
