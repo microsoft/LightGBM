@@ -975,6 +975,7 @@ class TestEngine(unittest.TestCase):
         # validate the values are the same
         np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
 
+    @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
     def test_int32_max_sparse_contribs(self):
         params = {
             'objective': 'binary'
@@ -983,11 +984,15 @@ class TestEngine(unittest.TestCase):
         train_targets = [0] * 50 + [1] * 50
         lgb_train = lgb.Dataset(train_features, train_targets)
         gbm = lgb.train(params, lgb_train, num_boost_round=5)
-        test_features = csr_matrix((3000000, 1000))
+        csr_input_shape = (3000000, 1000)
+        test_features = csr_matrix(csr_input_shape)
         for i in range(0, 3000000, 500000):
             for j in range(0, 1000, 100):
                 test_features[i, j] = random.random()
-        gbm.predict(test_features, pred_contrib=True)
+        y_pred = gbm.predict(test_features, pred_contrib=True)
+        # Note there is an extra column added to the output for the expected value
+        csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
+        self.assertTupleEqual(y_pred.shape, csr_output_shape)
 
     def test_sliced_data(self):
         def train_and_get_predictions(features, labels):

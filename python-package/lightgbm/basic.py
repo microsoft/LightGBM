@@ -538,7 +538,8 @@ class _InnerPredictor(object):
         Returns
         -------
         result : numpy array, scipy.sparse or list of scipy.sparse
-            Prediction result, can be sparse for feature contributions (when ``pred_contrib=True``).
+            Prediction result.
+            Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
@@ -2817,7 +2818,8 @@ class Booster(object):
         Returns
         -------
         result : numpy array, scipy.sparse or list of scipy.sparse
-            Prediction result, can be sparse for feature contributions (when ``pred_contrib=True``).
+            Prediction result.
+            Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
         predictor = self._to_predictor(copy.deepcopy(kwargs))
         if num_iteration is None:
