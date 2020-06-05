@@ -3,19 +3,18 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-
-#include <chrono>
-#include <cstdio>
-#include <limits>
-#include <sstream>
-#include <unordered_map>
-
 #include <LightGBM/dataset.h>
 
 #include <LightGBM/feature_group.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
+
+#include <chrono>
+#include <cstdio>
+#include <limits>
+#include <sstream>
+#include <unordered_map>
 
 namespace LightGBM {
 

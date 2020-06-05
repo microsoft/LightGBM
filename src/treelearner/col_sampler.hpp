@@ -6,14 +6,14 @@
 #ifndef LIGHTGBM_TREELEARNER_COL_SAMPLER_HPP_
 #define LIGHTGBM_TREELEARNER_COL_SAMPLER_HPP_
 
-#include <algorithm>
-#include <vector>
-
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
+
+#include <algorithm>
+#include <vector>
 
 namespace LightGBM {
 class ColSampler {
