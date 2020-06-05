@@ -6,13 +6,13 @@
 #ifndef LIGHTGBM_UTILS_THREADING_H_
 #define LIGHTGBM_UTILS_THREADING_H_
 
-#include <algorithm>
-#include <functional>
-#include <vector>
-
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <algorithm>
+#include <functional>
+#include <vector>
 
 namespace LightGBM {
 

@@ -5,12 +5,12 @@
 #ifndef LIGHTGBM_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
 #define LIGHTGBM_TREELEARNER_COST_EFFECTIVE_GRADIENT_BOOSTING_HPP_
 
-#include <vector>
-
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
+
+#include <vector>
 
 #include "data_partition.hpp"
 #include "serial_tree_learner.h"
