@@ -5,15 +5,15 @@
 #ifndef LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 
+#include <LightGBM/meta.h>
+#include <LightGBM/objective_function.h>
+#include <LightGBM/utils/common.h>
+
 #include <string>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <vector>
-
-#include <LightGBM/meta.h>
-#include <LightGBM/objective_function.h>
-#include <LightGBM/utils/common.h>
 
 /*
  * Implements gradients and hessians for the following point losses.
