@@ -919,26 +919,19 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     return SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
   }
 
-  // ConstructGPUHistogramsAsync will return true if there are availabe feature gourps dispatched to GPU
+  // ConstructGPUHistogramsAsync will return true if there are availabe feature groups dispatched to GPU
   bool is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
     nullptr, smaller_leaf_splits_->num_data_in_leaf());
 
   // then construct sparse features on CPU
   // We set data_indices to null to avoid rebuilding ordered gradients/hessians
   if (num_sparse_features > 0){
-//  train_data_->ConstructHistograms(is_sparse_feature_used,
-//    nullptr, smaller_leaf_splits_->num_data_in_leaf(),
-//    smaller_leaf_splits_->leaf_index(),
-//    ordered_bins_, gradients_, hessians_,
-//    ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-//    ptr_smaller_leaf_hist_data);
-  train_data_->ConstructHistograms(is_sparse_feature_used,
+    train_data_->ConstructHistograms(is_sparse_feature_used,
     smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
     gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(),
     share_state_.get(),
     ptr_smaller_leaf_hist_data);
-
   }
 
   // wait for GPU to finish, only if GPU is actually used

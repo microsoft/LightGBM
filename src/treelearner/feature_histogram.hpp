@@ -1202,7 +1202,6 @@ class HistogramPool {
       OMP_LOOP_EX_BEGIN();
       pool_[i].reset(new FeatureHistogram[train_data->num_features()]);
       data_[i].resize(num_total_bin * 2);
-      //data_[i].resize(num_total_bin * 3); // GCF HACK to avoid mysterious core dumps
       for (int j = 0; j < train_data->num_features(); ++j) {
         pool_[i][j].Init(data_[i].data() + offsets[j] * 2, &feature_metas_[j]);
       }
