@@ -382,8 +382,8 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 // LGBM_CUDA
 bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
 
- // LGBM_CUDA invoke baggging during the first iteration
- if (config_->device_type == std::string("cuda")) {
+ // LGBM_CUDA invoke bagging during the first iteration
+ if (config_->device_type == std::string("cuda") && (iter_ == 0)) {
 
 //    auto start_time = std::chrono::steady_clock::now();
 
