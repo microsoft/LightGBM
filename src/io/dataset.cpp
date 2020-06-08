@@ -627,10 +627,6 @@ TrainingShareStates* Dataset::GetShareStates(
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   }
-#ifdef USE_CUDA
-  force_colwise = 1;
-  force_rowwise = 0;
-#endif
   if (force_colwise) {
     TrainingShareStates* share_state = new TrainingShareStates();
     share_state->SetMultiValBin(GetMultiBinFromSparseFeatures());
