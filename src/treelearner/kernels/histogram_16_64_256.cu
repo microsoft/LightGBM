@@ -844,40 +844,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      const ushort lsize = NUM_BINS; // get_local_size(0);
      const ushort group_id = blockIdx.x;
 
-#if 0
-if (gtid == 0) {
-#if USE_CONSTANT_BUF == 1
-#ifdef IGNORE_INDICES
-#if CONST_HESSIAN == 0
-printf("KERNEL USE_CONSTANT_BUF IGNORE_INDICES\n"); 
-#else
-printf("KERNEL USE_CONSTANT_BUF IGNORE_INDICES CONST_HESSIAN\n"); 
-#endif
-#else
-#if CONST_HESSIAN == 0
-printf("KERNEL USE_CONSTANT_BUF \n"); 
-#else
-printf("KERNEL USE_CONSTANT_BUF CONST_HESSIAN\n"); 
-#endif
-#endif
-#else
-#ifdef IGNORE_INDICES
-#if CONST_HESSIAN == 0
-printf("KERNEL IGNORE_INDICES (exp = %d) (feature_size = %d)\n", (int) power_feature_workgroups, (int) feature_size); 
-#else
-printf("KERNEL IGNORE_INDICES CONST_HESSIAN\n"); 
-#endif
-#else
-#if CONST_HESSIAN == 0
-printf("KERNEL (exp = %d) (feature_size = %d)\n", (int) power_feature_workgroups, (int) feature_size); 
-#else
-printf("KERNEL CONST_HESSIAN\n"); 
-#endif
-#endif
-#endif
-}
-#endif
-
      // local memory per workgroup is 3 KB
      // clear local memory
      uint *ptr = (uint *) shared_array;
