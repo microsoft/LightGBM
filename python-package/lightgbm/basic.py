@@ -842,11 +842,11 @@ class _InnerPredictor(object):
             nrow = csc.shape[0]
             return matrices, nrow
 
-        if predict_type == C_API_PREDICT_CONTRIB:
-            return inner_predict_sparse(csc, num_iteration, predict_type)
         nrow = csc.shape[0]
         if nrow > MAX_INT32:
             return self.__pred_for_csr(csc.tocsr(), num_iteration, predict_type)
+        if predict_type == C_API_PREDICT_CONTRIB:
+            return inner_predict_sparse(csc, num_iteration, predict_type)
         n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
         preds = np.zeros(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)

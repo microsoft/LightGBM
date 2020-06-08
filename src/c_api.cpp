@@ -546,7 +546,7 @@ class Booster {
         }
         int64_t indptr_value = row_matrix_offsets[row_start_index] + row_sizes[row_start_index];
         if (is_indptr_int32) {
-          (reinterpret_cast<int32_t*>(*out_indptr))[indptr_loop_index] = indptr_value;
+          (reinterpret_cast<int32_t*>(*out_indptr))[indptr_loop_index] = static_cast<int32_t>(indptr_value);
         } else {
           (reinterpret_cast<int64_t*>(*out_indptr))[indptr_loop_index] = indptr_value;
         }
@@ -611,7 +611,7 @@ class Booster {
       column_start_indices[m] = std::vector<int64_t>(num_output_cols, 0);
       column_counts[m] = std::vector<int64_t>(num_output_cols, 0);
       if (is_col_ptr_int32) {
-        (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = col_ptr_value;
+        (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(col_ptr_value);
       } else {
         (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = col_ptr_value;
       }
@@ -619,7 +619,7 @@ class Booster {
       for (int64_t i = 1; i < static_cast<int64_t>(column_sizes[m].size()); ++i) {
         column_start_indices[m][i] = column_sizes[m][i - 1] + column_start_indices[m][i - 1];
         if (is_col_ptr_int32) {
-          (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = column_start_indices[m][i];
+          (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(column_start_indices[m][i]);
         } else {
           (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = column_start_indices[m][i];
         }
@@ -629,7 +629,7 @@ class Booster {
       int64_t last_column_start_index = column_start_indices[m][last_elem_index];
       int64_t last_column_size = column_sizes[m][last_elem_index];
       if (is_col_ptr_int32) {
-        (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = last_column_start_index + last_column_size;
+        (reinterpret_cast<int32_t*>(*out_col_ptr))[col_ptr_index] = static_cast<int32_t>(last_column_start_index + last_column_size);
       } else {
         (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = last_column_start_index + last_column_size;
       }
@@ -648,7 +648,7 @@ class Booster {
             matrix_start_indices[m] +
             column_counts[m][col_idx];
           // store the row index
-          (*out_indices)[element_index] = i;
+          (*out_indices)[element_index] = static_cast<int32_t>(i);
           // update column count
           column_counts[m][col_idx]++;
           if (is_data_float32) {
@@ -1819,7 +1819,7 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
       one_row.reserve(ncol);
       const int tid = omp_get_thread_num();
       for (int j = 0; j < ncol; ++j) {
-        auto val = iterators[tid][j].Get(i);
+        auto val = iterators[tid][j].Get(static_cast<int>(i));
         if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
           one_row.emplace_back(j, val);
         }

@@ -9,7 +9,7 @@ import unittest
 
 import lightgbm as lgb
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file, make_multilabel_classification)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
@@ -954,12 +954,12 @@ class TestEngine(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'binary',
-            'metric': 'binary_logloss',
             'verbose': -1,
         }
         lgb_train = lgb.Dataset(X_train, y_train)
         gbm = lgb.train(params, lgb_train, num_boost_round=20)
         contribs_csr = gbm.predict(X_test, pred_contrib=True)
+        self.assertTrue(isspmatrix_csr(contribs_csr))
         # convert data to dense and get back same contribs
         contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
         # validate the values are the same
@@ -967,11 +967,9 @@ class TestEngine(unittest.TestCase):
         self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
                                        - np.sum(contribs_dense, axis=1)), 1e-4)
         # validate using CSC matrix
-        X_train_csc = X_train.tocsc()
         X_test_csc = X_test.tocsc()
-        lgb_train = lgb.Dataset(X_train_csc, y_train)
-        gbm = lgb.train(params, lgb_train, num_boost_round=20)
         contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
+        self.assertTrue(isspmatrix_csc(contribs_csc))
         # validate the values are the same
         np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
 
@@ -986,7 +984,7 @@ class TestEngine(unittest.TestCase):
         gbm = lgb.train(params, lgb_train, num_boost_round=5)
         csr_input_shape = (3000000, 1000)
         test_features = csr_matrix(csr_input_shape)
-        for i in range(0, 3000000, 500000):
+        for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
             for j in range(0, 1000, 100):
                 test_features[i, j] = random.random()
         y_pred = gbm.predict(test_features, pred_contrib=True)
