@@ -297,7 +297,7 @@ void CUDATreeLearner::prevAllocateGPUMemory() {
   // leave some safe margin for prefetching
   // 256 work-items per workgroup. Each work-item prefetches one tuple for that feature
 
-  allocated_num_data_ = num_data_ + 256 * (1 << kMaxLogWorkgroupsPerFeature);
+  allocated_num_data_ = std::max(num_data_ + 256 * (1 << kMaxLogWorkgroupsPerFeature), allocated_num_data_);
 
   // clear sparse/dense maps
 
@@ -594,6 +594,7 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
     CUDASUCCESS_OR_FATAL(cudaEventCreate(&(histograms_wait_obj_[i])));
   }
 
+  allocated_num_data_ = 0;
   prevAllocateGPUMemory();
 
   AllocateGPUMemory();
@@ -626,7 +627,7 @@ Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians,
 void CUDATreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {
 
   // LGBM_CUDA: check data size
-  data_size_t old_num_data = num_data_;  
+  data_size_t old_allocated_num_data = allocated_num_data_;  
 
   SerialTreeLearner::ResetTrainingDataInner(train_data, is_constant_hessian, reset_multi_val_bin);
 
@@ -646,7 +647,7 @@ void CUDATreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_
 
   int old_num_feature_groups = num_dense_feature_groups_;
   CountDenseFeatureGroups();
-  if ((old_num_data < num_data_) || (old_num_feature_groups < num_dense_feature_groups_)) {
+  if ((old_allocated_num_data < (num_data_ + 256 * (1 << kMaxLogWorkgroupsPerFeature))) || (old_num_feature_groups < num_dense_feature_groups_)) {
     prevAllocateGPUMemory();
     AllocateGPUMemory();
   } else {
