@@ -60,9 +60,6 @@ def copy_files(opencl_python_package=False, use_gpu=False):
             distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeOpenCLPythonPackage.txt"),
                                           os.path.join(CURRENT_DIR, "compile", "CMakeOpenCLPythonPackage.txt"),
                                           verbose=0)
-            distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeOpenCLPythonPackageCache.txt"),
-                                          os.path.join(CURRENT_DIR, "compile", "CMakeOpenCLPythonPackageCache.txt"),
-                                          verbose=0)
         if use_gpu:
             copy_files_helper('compute')
 
@@ -112,7 +109,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
         use_mpi = False
         nomp = False
         use_hdfs = False
-        cmake_cmd.append("-C../compile/CMakeOpenCLPythonPackageCache.txt")
+        cmake_cmd.append("-D__OPENCL_PYTHON_PACKAGE=ON")
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
         if boost_root:
