@@ -62,7 +62,7 @@ OBJDUMP_FILE <- "objdump-out.txt"
 )
 
 objdump_results <- readLines(OBJDUMP_FILE)
-result <- file.remove(OBJDUMP_FILE)
+invisible(file.remove(OBJDUMP_FILE))
 
 # Only one table in the objdump results matters for our purposes,
 # see https://www.cs.colorado.edu/~main/cs1300/doc/mingwfaq.html
