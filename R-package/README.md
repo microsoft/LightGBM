@@ -33,7 +33,7 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
 * `CMake`
     - example: `C:\Program Files\CMake\bin`
 * `R`
-    - example: `C\Program Files\R\R-3.6.1\bin`
+    - example: `C:\Program Files\R\R-3.6.1\bin`
 
 As of `Rtools` 4.0, some common paths changed and software was removed from `Rtools`. If you are using `R` 4.0 or later and the corresponding `Rtools`, you need to add one additional path to `PATH`.
 
@@ -62,9 +62,9 @@ use_mingw <- TRUE
 
 **MSYS2 (R 4.x)**
 
-If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS](https://www.msys2.org/). This should work with the tools already bundled in `Rtools` 4.0.
+If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS2](https://www.msys2.org/). This should work with the tools already bundled in `Rtools` 4.0.
 
-If you want to force `LightGBM` to use MSYS2 (for any R version), open `R-package/src/install.libs.R` and change `use_msys`:
+If you want to force `LightGBM` to use MSYS2 (for any R version), open `R-package/src/install.libs.R` and change `use_msys2`:
 
 ```r
 use_msys2 <- TRUE

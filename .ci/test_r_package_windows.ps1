@@ -41,7 +41,7 @@ $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 #
 # NOTES:
 #    * some paths and file names are different on R4.0
-$env:R_MAJOR_VERSION=$env:R_VERSION.split('.')[0]
+$env:R_MAJOR_VERSION = $env:R_VERSION.split('.')[0]
 if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw_64/bin"
   $env:RTOOLS_EXE_FILE = "Rtools35.exe"
@@ -67,11 +67,11 @@ tzutil /s "GMT Standard Time"
 if ($env:TOOLCHAIN -eq "MINGW") {
   Write-Output "Telling R to use MinGW"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
-  ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
+  ((Get-Content -Path $install_libs -Raw) -Replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
 } elseif ($env:TOOLCHAIN -eq "MSYS") {
   Write-Output "Telling R to use MSYS"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
-  ((Get-Content -path $install_libs -Raw) -replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
+  ((Get-Content -Path $install_libs -Raw) -Replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
 }
 
 # download R and RTools
