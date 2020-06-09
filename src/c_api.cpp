@@ -668,6 +668,8 @@ void AdditionalConfig(Config *config)
       if (config->bagging_fraction == 1.0){config->bagging_fraction = 0.8;}
       if (config->bagging_freq == 0) {config->bagging_freq = 1;}
   }
+#else
+  (void)(config);	// UNUSED
 #endif
 }
 
