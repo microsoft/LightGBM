@@ -86,9 +86,7 @@ pytest $tests ; Check-Output $?
 
 if ($env:TASK -eq "bdist") {
   # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
-  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "cpu"
-  pytest $env:BUILD_SOURCESDIRECTORY\tests\python_package_test\test_dual.py ; Check-Output $?
-  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "gpu"
+  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
   pytest $env:BUILD_SOURCESDIRECTORY\tests\python_package_test\test_dual.py ; Check-Output $?
 }
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
