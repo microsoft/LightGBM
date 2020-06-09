@@ -2,16 +2,15 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-
-#include <functional>
-#include <iomanip>
-#include <sstream>
-
 #include <LightGBM/tree.h>
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/threading.h>
+
+#include <functional>
+#include <iomanip>
+#include <sstream>
 
 namespace LightGBM {
 
@@ -586,7 +585,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("leaf_weight")) {
-    leaf_weight_ = Common::StringToArrayFast<double>(key_vals["leaf_weight"], num_leaves_);
+    leaf_weight_ = Common::StringToArray<double>(key_vals["leaf_weight"], num_leaves_);
   } else {
     leaf_weight_.resize(num_leaves_);
   }

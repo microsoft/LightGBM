@@ -257,6 +257,8 @@ class LGBMModel(_LGBMModelBase):
         ----------
         n_features_ : int
             The number of features of fitted model.
+        n_features_in_ : int
+            The number of features of fitted model.
         classes_ : array of shape = [n_classes]
             The class label array (only for classification problem).
         n_classes_ : int
@@ -563,6 +565,8 @@ class LGBMModel(_LGBMModelBase):
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
         self._n_features = _X.shape[1]
+        # set public attribute for consistency
+        self.n_features_in_ = self._n_features
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params,
                                categorical_feature='auto'):

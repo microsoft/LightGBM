@@ -6,12 +6,12 @@
 #define LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #ifdef USE_SOCKET
 
+#include <LightGBM/utils/log.h>
+
 #include <string>
 #include <cerrno>
 #include <cstdlib>
 #include <unordered_set>
-
-#include <LightGBM/utils/log.h>
 
 #if defined(_WIN32)
 

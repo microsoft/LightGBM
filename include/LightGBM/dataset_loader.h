@@ -5,11 +5,11 @@
 #ifndef LIGHTGBM_DATASET_LOADER_H_
 #define LIGHTGBM_DATASET_LOADER_H_
 
+#include <LightGBM/dataset.h>
+
 #include <string>
 #include <unordered_set>
 #include <vector>
-
-#include <LightGBM/dataset.h>
 
 namespace LightGBM {
 

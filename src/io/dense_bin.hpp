@@ -6,11 +6,11 @@
 #ifndef LIGHTGBM_IO_DENSE_BIN_HPP_
 #define LIGHTGBM_IO_DENSE_BIN_HPP_
 
+#include <LightGBM/bin.h>
+
 #include <cstdint>
 #include <cstring>
 #include <vector>
-
-#include <LightGBM/bin.h>
 
 namespace LightGBM {
 

@@ -5,6 +5,11 @@
 #ifndef LIGHTGBM_NETWORK_LINKERS_H_
 #define LIGHTGBM_NETWORK_LINKERS_H_
 
+#include <LightGBM/config.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/network.h>
+#include <LightGBM/utils/common.h>
+
 #include <string>
 #include <algorithm>
 #include <chrono>
@@ -12,11 +17,6 @@
 #include <memory>
 #include <thread>
 #include <vector>
-
-#include <LightGBM/config.h>
-#include <LightGBM/meta.h>
-#include <LightGBM/network.h>
-#include <LightGBM/utils/common.h>
 
 #ifdef USE_SOCKET
 #include "socket_wrapper.hpp"
