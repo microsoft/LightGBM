@@ -43,6 +43,22 @@ inline int LGBM_APIHandleException(const std::string& ex) {
   return -1;
 }
 
+//LGBM_CUDA
+inline void AdditionalConfig(Config *config)
+{
+#ifdef USE_CUDA
+  if (config->device_type == std::string("cuda")){
+      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
+
+      config->is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
+      if (config->bagging_fraction == 1.0){config->bagging_fraction = 0.8;}
+      if (config->bagging_freq == 0) {config->bagging_freq = 1;}
+  }
+#else
+  (void)(config);       // UNUSED
+#endif
+}
+
 #define API_BEGIN() try {
 #define API_END() } \
 catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
@@ -120,15 +136,9 @@ class Booster {
     if (train_data->num_data() < 2048){
        config_.device_type = std::string("cpu");
     }
-  
-    if (config_.device_type == std::string("cuda")){
-           LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-  
-            config_.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-            if (config_.bagging_fraction == 1.0){config_.bagging_fraction = 0.8;}
-            if (config_.bagging_freq == 0) {config_.bagging_freq = 1;}
-    }
 #endif
+
+    AdditionalConfig(&config_);
 
     // create boosting
     if (config_.input_model.size() > 0) {
@@ -323,16 +333,7 @@ class Booster {
       omp_set_num_threads(config_.num_threads);
     }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-    if (config_.device_type == std::string("cuda")){
-        LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-  
-        config_.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-        if (config_.bagging_fraction == 1.0){config_.bagging_fraction = 0.8;}
-        if (config_.bagging_freq == 0) {config_.bagging_freq = 1;}
-    }
-#endif
+    AdditionalConfig(&config_);
 
     if (param.count("objective")) {
       // create objective function
@@ -654,22 +655,6 @@ int LGBM_GetDeviceType() {
   return 2;
 #else
   return 0;     // CPU
-#endif
-}
-
-//LGBM_CUDA
-void AdditionalConfig(Config *config)
-{
-#ifdef USE_CUDA
-  if (config->device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config->is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config->bagging_fraction == 1.0){config->bagging_fraction = 0.8;}
-      if (config->bagging_freq == 0) {config->bagging_freq = 1;}
-  }
-#else
-  (void)(config);	// UNUSED
 #endif
 }
 
