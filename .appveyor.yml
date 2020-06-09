@@ -13,13 +13,14 @@ branches:
 
 environment:
   matrix:
-    - TASK: r-package
+    - COMPILER: MINGW
+      TASK: r-package
+      R_VERSION: 3.6
+      TOOLCHAIN: MINGW
+    - COMPILER: MSVC 
+      TASK: r-package
       R_VERSION: 4.0
-      COMPILER: MINGW
-      TOOLCHAIN: MSYS
-    - TASK: r-package
-      R_VERSION: 4.0
-      COMPILER: MSVC
+      TOOLCHAIN: MSVC
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - COMPILER: MSVC
       TASK: python

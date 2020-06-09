@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }})
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

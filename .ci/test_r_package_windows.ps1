@@ -51,7 +51,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
   $env:R_WINDOWS_VERSION = "4.0.0"
 } else {
-  Write-Output "Unrecognized R version: $env:R_VERSION"
+  Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
 }
 
@@ -72,6 +72,10 @@ if ($env:TOOLCHAIN -eq "MINGW") {
   Write-Output "Telling R to use MSYS"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
   ((Get-Content -Path $install_libs -Raw) -Replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
+} elseif ($env:TOOLCHAIN -eq "MSVC") {
+  # no customization for MSVC
+} else {
+  Write-Output "[ERROR] Unrecognized coompiler: $env:TOOLCHAIN"
 }
 
 # download R and RTools

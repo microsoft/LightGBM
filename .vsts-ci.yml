@@ -115,11 +115,12 @@ jobs:
         TASK: r-package
         COMPILER: MSVC
         R_VERSION: 3.6
+        TOOLCHAIN: MSVC
       r_package_mingw:
         TASK: r-package
         COMPILER: MINGW
-        TOOLCHAIN: MINGW
-        R_VERSION: 3.6
+        R_VERSION: 4.0
+        TOOLCHAIN: MSYS
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6
