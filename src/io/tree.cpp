@@ -585,7 +585,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("leaf_weight")) {
-    leaf_weight_ = Common::StringToArrayFast<double>(key_vals["leaf_weight"], num_leaves_);
+    leaf_weight_ = Common::StringToArray<double>(key_vals["leaf_weight"], num_leaves_);
   } else {
     leaf_weight_.resize(num_leaves_);
   }
