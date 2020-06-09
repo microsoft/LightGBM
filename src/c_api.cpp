@@ -657,6 +657,20 @@ int LGBM_GetDeviceType() {
 #endif
 }
 
+//LGBM_CUDA
+void AdditionalConfig(Config *config)
+{
+#ifdef USE_CUDA
+  if (config->device_type == std::string("cuda")){
+      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
+
+      config->is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
+      if (config->bagging_fraction == 1.0){config->bagging_fraction = 0.8;}
+      if (config->bagging_freq == 0) {config->bagging_freq = 1;}
+  }
+#endif
+}
+
 int LGBM_DatasetCreateFromFile(const char* filename,
                                const char* parameters,
                                const DatasetHandle reference,
@@ -669,16 +683,7 @@ int LGBM_DatasetCreateFromFile(const char* filename,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   DatasetLoader loader(config, nullptr, 1, filename);
   if (reference == nullptr) {
@@ -711,16 +716,7 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   DatasetLoader loader(config, nullptr, 1, nullptr);
   *out = loader.CostructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
@@ -834,16 +830,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
@@ -937,16 +924,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
@@ -1016,16 +994,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   std::unique_ptr<Dataset> ret;
   int32_t nrow = num_rows;
@@ -1099,16 +1068,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   std::unique_ptr<Dataset> ret;
   int32_t nrow = static_cast<int32_t>(num_row);
@@ -1194,16 +1154,7 @@ int LGBM_DatasetGetSubset(
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
   CHECK_GT(num_used_row_indices, 0);
@@ -1601,16 +1552,7 @@ int LGBM_BoosterPredictForFile(BoosterHandle handle,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->Predict(num_iteration, predict_type, data_filename, data_has_header,
@@ -1657,16 +1599,7 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
@@ -1703,16 +1636,7 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
@@ -1744,16 +1668,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   int num_threads = OMP_NUM_THREADS();
   int ncol = static_cast<int>(ncol_ptr - 1);
@@ -1800,16 +1715,7 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
@@ -1836,16 +1742,7 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, is_row_major);
@@ -1872,16 +1769,7 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
     omp_set_num_threads(config.num_threads);
   }
 
-//LGBM_CUDA
-#ifdef USE_CUDA
-  if (config.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
-
-      config.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config.bagging_fraction == 1.0){config.bagging_fraction = 0.8;}
-      if (config.bagging_freq == 0) {config.bagging_freq = 1;}
-  }
-#endif
+  AdditionalConfig(&config);
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseRows(data, ncol, data_type);
