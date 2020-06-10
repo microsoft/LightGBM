@@ -92,6 +92,236 @@ struct BasicConstraintEntry : ConstraintEntry,
   FeatureConstraint *GetFeatureConstraint(int) final { return this; }
 };
 
+struct FeatureMinOrMaxConstraints {
+  std::vector<double> constraints;
+  // the constraint number i is valid on the slice
+  // [thresholds[i]:threshold[i+1])
+  // if threshold[i+1] does not exist, then it is valid for thresholds following
+  // threshold[i]
+  std::vector<uint32_t> thresholds;
+
+  FeatureMinOrMaxConstraints() {
+    constraints.reserve(32);
+    thresholds.reserve(32);
+  }
+
+  size_t Size() const { return thresholds.size(); }
+
+  FeatureMinOrMaxConstraints(double extremum) {
+    constraints.reserve(32);
+    thresholds.reserve(32);
+
+    constraints.push_back(extremum);
+    thresholds.push_back(0);
+  }
+
+  void Reset(double extremum) {
+    constraints.resize(1);
+    constraints[0] = extremum;
+    thresholds.resize(1);
+    thresholds[0] = 0;
+  }
+
+  void UpdateMin(double min) {
+    for (unsigned int j = 0; j < constraints.size(); j++) {
+      if (min > constraints[j]) {
+        constraints[j] = min;
+      }
+    }
+  }
+
+  void UpdateMax(double max) {
+    for (unsigned int j = 0; j < constraints.size(); j++) {
+      if (max < constraints[j]) {
+        constraints[j] = max;
+      }
+    }
+  }
+};
+
+struct CumulativeFeatureConstraint {
+  std::vector<uint32_t> thresholds_min_constraints;
+  std::vector<uint32_t> thresholds_max_constraints;
+  std::vector<double> cumulative_min_constraints_left_to_right;
+  std::vector<double> cumulative_min_constraints_right_to_left;
+  std::vector<double> cumulative_max_constraints_left_to_right;
+  std::vector<double> cumulative_max_constraints_right_to_left;
+  unsigned int index_min_constraints_left_to_right;
+  unsigned int index_min_constraints_right_to_left;
+  unsigned int index_max_constraints_left_to_right;
+  unsigned int index_max_constraints_right_to_left;
+
+  static void CumulativeExtremum(
+      const double &(*extremum_function)(const double &, const double &),
+      bool is_direction_from_left_to_right,
+      std::vector<double> &cumulative_extremum) {
+    if (cumulative_extremum.size() == 1) {
+      return;
+    }
+
+#ifdef DEBUG
+    CHECK(cumulative_extremum.size() != 0);
+#endif
+
+    std::size_t n_exts = cumulative_extremum.size();
+    int step = is_direction_from_left_to_right ? 1 : -1;
+    std::size_t start = is_direction_from_left_to_right ? 0 : n_exts - 1;
+    std::size_t end = is_direction_from_left_to_right ? n_exts - 1 : 0;
+
+    for (auto i = start; i != end; i = i + step) {
+      cumulative_extremum[i + step] = extremum_function(
+          cumulative_extremum[i + step], cumulative_extremum[i]);
+    }
+  }
+
+  CumulativeFeatureConstraint() = default;
+
+  CumulativeFeatureConstraint(FeatureMinOrMaxConstraints min_constraints,
+                              FeatureMinOrMaxConstraints max_constraints,
+                              bool REVERSE) {
+    thresholds_min_constraints = min_constraints.thresholds;
+    thresholds_max_constraints = max_constraints.thresholds;
+    cumulative_min_constraints_left_to_right = min_constraints.constraints;
+    cumulative_min_constraints_right_to_left = min_constraints.constraints;
+    cumulative_max_constraints_left_to_right = max_constraints.constraints;
+    cumulative_max_constraints_right_to_left = max_constraints.constraints;
+
+    const double &(*min)(const double &, const double &) = std::min<double>;
+    const double &(*max)(const double &, const double &) = std::max<double>;
+    CumulativeExtremum(max, true, cumulative_min_constraints_left_to_right);
+    CumulativeExtremum(max, false, cumulative_min_constraints_right_to_left);
+    CumulativeExtremum(min, true, cumulative_max_constraints_left_to_right);
+    CumulativeExtremum(min, false, cumulative_max_constraints_right_to_left);
+
+    if (REVERSE) {
+      index_min_constraints_left_to_right =
+          thresholds_min_constraints.size() - 1;
+      index_min_constraints_right_to_left =
+          thresholds_min_constraints.size() - 1;
+      index_max_constraints_left_to_right =
+          thresholds_max_constraints.size() - 1;
+      index_max_constraints_right_to_left =
+          thresholds_max_constraints.size() - 1;
+    } else {
+      index_min_constraints_left_to_right = 0;
+      index_min_constraints_right_to_left = 0;
+      index_max_constraints_left_to_right = 0;
+      index_max_constraints_right_to_left = 0;
+    }
+  }
+
+  void Update(int threshold) {
+    while (
+        static_cast<int>(
+            thresholds_min_constraints[index_min_constraints_left_to_right]) >
+        threshold - 1) {
+      index_min_constraints_left_to_right -= 1;
+    }
+    while (
+        static_cast<int>(
+            thresholds_min_constraints[index_min_constraints_right_to_left]) >
+        threshold) {
+      index_min_constraints_right_to_left -= 1;
+    }
+    while (
+        static_cast<int>(
+            thresholds_max_constraints[index_max_constraints_left_to_right]) >
+        threshold - 1) {
+      index_max_constraints_left_to_right -= 1;
+    }
+    while (
+        static_cast<int>(
+            thresholds_max_constraints[index_max_constraints_right_to_left]) >
+        threshold) {
+      index_max_constraints_right_to_left -= 1;
+    }
+  }
+
+  double GetRightMin() const {
+    return cumulative_min_constraints_right_to_left
+        [index_min_constraints_right_to_left];
+  }
+  double GetRightMax() const {
+    return cumulative_max_constraints_right_to_left
+        [index_max_constraints_right_to_left];
+  }
+  double GetLeftMin() const {
+    return cumulative_min_constraints_left_to_right
+        [index_min_constraints_left_to_right];
+  }
+  double GetLeftMax() const {
+    return cumulative_max_constraints_left_to_right
+        [index_max_constraints_left_to_right];
+  }
+};
+
+struct AdvancedFeatureConstraints : FeatureConstraint {
+  FeatureMinOrMaxConstraints min_constraints;
+  FeatureMinOrMaxConstraints max_constraints;
+  CumulativeFeatureConstraint cumulative_feature_constraint;
+  bool min_constraints_to_be_recomputed = false;
+  bool max_constraints_to_be_recomputed = false;
+
+  void InitCumulativeConstraints(bool REVERSE) final {
+    cumulative_feature_constraint =
+        CumulativeFeatureConstraint(min_constraints, max_constraints, REVERSE);
+  }
+
+  void Update(int threshold) final {
+    cumulative_feature_constraint.Update(threshold);
+  }
+
+  FeatureMinOrMaxConstraints &GetMinConstraints() { return min_constraints; }
+
+  FeatureMinOrMaxConstraints &GetMaxConstraints() { return max_constraints; }
+
+  bool ConstraintDifferentDependingOnThreshold() const final {
+    return min_constraints.Size() > 1 || max_constraints.Size() > 1;
+  }
+
+  BasicConstraint RightToBasicConstraint() const final {
+    return BasicConstraint(cumulative_feature_constraint.GetRightMin(),
+                           cumulative_feature_constraint.GetRightMax());
+  }
+
+  BasicConstraint LeftToBasicConstraint() const final {
+    return BasicConstraint(cumulative_feature_constraint.GetLeftMin(),
+                           cumulative_feature_constraint.GetLeftMax());
+  }
+
+  void Reset() {
+    min_constraints.Reset(-std::numeric_limits<double>::max());
+    max_constraints.Reset(std::numeric_limits<double>::max());
+  }
+
+  void UpdateMax(double new_max, bool trigger_a_recompute) {
+    if (trigger_a_recompute) {
+      max_constraints_to_be_recomputed = true;
+    }
+    max_constraints.UpdateMax(new_max);
+  }
+
+  bool FeatureMaxConstraintsToBeUpdated() {
+    return max_constraints_to_be_recomputed;
+  }
+
+  bool FeatureMinConstraintsToBeUpdated() {
+    return min_constraints_to_be_recomputed;
+  }
+
+  void ResetUpdates() {
+    min_constraints_to_be_recomputed = false;
+    max_constraints_to_be_recomputed = false;
+  }
+
+  void UpdateMin(double new_min, bool trigger_a_recompute) {
+    if (trigger_a_recompute) {
+      min_constraints_to_be_recomputed = true;
+    }
+    min_constraints.UpdateMin(new_min);
+  }
+};
+
 class LeafConstraintsBase {
  public:
   virtual ~LeafConstraintsBase() {}
@@ -105,6 +335,14 @@ class LeafConstraintsBase {
       int leaf, int new_leaf, int8_t monotone_type, double right_output,
       double left_output, int split_feature, const SplitInfo& split_info,
       const std::vector<SplitInfo>& best_split_per_leaf) = 0;
+
+  virtual void GoUpToFindConstrainingLeaves(
+      int, int,
+      std::vector<int> &,
+      std::vector<uint32_t> &,
+      std::vector<bool> &,
+      FeatureMinOrMaxConstraints &, bool ,
+      uint32_t, uint32_t, uint32_t) {}
 
   virtual void RecomputeConstraintsIfNeeded(
       LeafConstraintsBase *constraints_,
@@ -129,6 +367,95 @@ class LeafConstraintsBase {
 
  protected:
   const Tree* tree_;
+};
+
+// used by AdvancedLeafConstraints
+struct AdvancedConstraintEntry : ConstraintEntry {
+  std::vector<AdvancedFeatureConstraints> constraints;
+
+  AdvancedConstraintEntry *clone() const final {
+    return new AdvancedConstraintEntry(*this);
+  };
+
+  void RecomputeConstraintsIfNeeded(LeafConstraintsBase *constraints_,
+                                    int feature_for_constraint, int leaf_idx,
+                                    uint32_t it_end) final {
+    if (constraints[feature_for_constraint]
+            .FeatureMinConstraintsToBeUpdated() ||
+        constraints[feature_for_constraint]
+            .FeatureMaxConstraintsToBeUpdated()) {
+      FeatureMinOrMaxConstraints &constraints_to_be_updated =
+          constraints[feature_for_constraint].FeatureMinConstraintsToBeUpdated()
+              ? constraints[feature_for_constraint].GetMinConstraints()
+              : constraints[feature_for_constraint].GetMaxConstraints();
+
+      constraints_to_be_updated.Reset(
+          constraints[feature_for_constraint].FeatureMinConstraintsToBeUpdated()
+              ? -std::numeric_limits<double>::max()
+              : std::numeric_limits<double>::max());
+
+      std::vector<int> features_of_splits_going_up_from_original_leaf =
+          std::vector<int>();
+      std::vector<uint32_t> thresholds_of_splits_going_up_from_original_leaf =
+          std::vector<uint32_t>();
+      std::vector<bool> was_original_leaf_right_child_of_split =
+          std::vector<bool>();
+      constraints_->GoUpToFindConstrainingLeaves(
+          feature_for_constraint, leaf_idx,
+          features_of_splits_going_up_from_original_leaf,
+          thresholds_of_splits_going_up_from_original_leaf,
+          was_original_leaf_right_child_of_split, constraints_to_be_updated,
+          constraints[feature_for_constraint]
+              .FeatureMinConstraintsToBeUpdated(),
+          0, it_end, it_end);
+      constraints[feature_for_constraint].ResetUpdates();
+    }
+  }
+
+  // for each feature, an array of constraints needs to be stored
+  AdvancedConstraintEntry(unsigned int num_features) {
+    constraints.resize(num_features);
+  }
+
+  void Reset() final {
+    for (unsigned int i = 0; i < constraints.size(); i++) {
+      constraints[i].Reset();
+    }
+  }
+
+  void UpdateMin(double new_min) final {
+    for (unsigned int i = 0; i < constraints.size(); i++) {
+      constraints[i].UpdateMin(new_min, false);
+    }
+  }
+
+  void UpdateMax(double new_max) final {
+    for (unsigned int i = 0; i < constraints.size(); i++) {
+      constraints[i].UpdateMax(new_max, false);
+    }
+  }
+
+  bool UpdateMinAndReturnBoolIfChanged(double new_min) final {
+    for (unsigned int i = 0; i < constraints.size(); i++) {
+      constraints[i].UpdateMin(new_min, true);
+    }
+    // even if nothing changed, this could have been unconstrained so it needs
+    // to be recomputed from the beginning
+    return true;
+  }
+
+  bool UpdateMaxAndReturnBoolIfChanged(double new_max) final {
+    for (unsigned int i = 0; i < constraints.size(); i++) {
+      constraints[i].UpdateMax(new_max, true);
+    }
+    // even if nothing changed, this could have been unconstrained so it needs
+    // to be recomputed from the beginning
+    return true;
+  }
+
+  FeatureConstraint *GetFeatureConstraint(int feature_index) final {
+    return &constraints[feature_index];
+  }
 };
 
 class BasicLeafConstraints : public LeafConstraintsBase {
@@ -526,10 +853,329 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
   std::vector<bool> leaf_is_in_monotone_subtree_;
 };
 
+class AdvancedLeafConstraints : public IntermediateLeafConstraints {
+public:
+  AdvancedLeafConstraints(const Config *config, int num_leaves,
+                          int num_features)
+      : IntermediateLeafConstraints(config, num_leaves) {
+    for (int i = 0; i < num_leaves; i++) {
+      entries_[i] = new AdvancedConstraintEntry(num_features);
+    }
+  }
+
+  // at any point in time, for an index i, the constraint constraint[i] has to
+  // be valid on [threshold[i]: threshold[i + 1]) (or [threshold[i]: +inf) if i
+  // is the last index of the array)
+  void UpdateConstraints(FeatureMinOrMaxConstraints &feature_constraint,
+                         double extremum, uint32_t it_start, uint32_t it_end,
+                         bool use_max_operator, uint32_t last_threshold) {
+    bool start_done = false;
+    bool end_done = false;
+    // previous constraint have to be tracked
+    // for example when adding a constraints cstr2 on thresholds [1:2),
+    // on an existing constraints cstr1 on thresholds [0, +inf),
+    // the thresholds and constraints must become
+    // [0, 1, 2] and  [cstr1, cstr2, cstr1]
+    // so since we loop through thresholds only once,
+    // the previous constraint that still applies needs to be recorded
+    double previous_constraint;
+    double current_constraint;
+    for (unsigned int i = 0; i < feature_constraint.thresholds.size();) {
+      current_constraint = feature_constraint.constraints[i];
+      // easy case when the thresholds match
+      if (feature_constraint.thresholds[i] == it_start) {
+        feature_constraint.constraints[i] =
+            (use_max_operator)
+                ? std::max(extremum, feature_constraint.constraints[i])
+                : std::min(extremum, feature_constraint.constraints[i]);
+        start_done = true;
+      }
+      if (feature_constraint.thresholds[i] > it_start) {
+        // existing constraint is updated if there is a need for it
+        if (feature_constraint.thresholds[i] < it_end) {
+          feature_constraint.constraints[i] =
+              (use_max_operator)
+                  ? std::max(extremum, feature_constraint.constraints[i])
+                  : std::min(extremum, feature_constraint.constraints[i]);
+        }
+        // when thresholds don't match, a new threshold
+        // and a new constraint may need to be inserted
+        if (!start_done) {
+          start_done = true;
+          if ((use_max_operator && extremum > previous_constraint) ||
+              (!use_max_operator && extremum < previous_constraint)) {
+            feature_constraint.constraints.insert(
+                feature_constraint.constraints.begin() + i, extremum);
+            feature_constraint.thresholds.insert(
+                feature_constraint.thresholds.begin() + i, it_start);
+            i += 1;
+          }
+        }
+      }
+      // easy case when the end thresholds match
+      if (feature_constraint.thresholds[i] == it_end) {
+        end_done = true;
+        i += 1;
+        break;
+      }
+      // if they don't then, the previous constraint needs to be added back
+      // where the current one ends
+      if (feature_constraint.thresholds[i] > it_end) {
+        if (i != 0 &&
+            previous_constraint != feature_constraint.constraints[i - 1]) {
+          feature_constraint.constraints.insert(
+              feature_constraint.constraints.begin() + i, previous_constraint);
+          feature_constraint.thresholds.insert(
+              feature_constraint.thresholds.begin() + i, it_end);
+        }
+        end_done = true;
+        i += 1;
+        break;
+      }
+      // If 2 successive constraints are the same then the second one may as
+      // well be deleted
+      if (i != 0 && feature_constraint.constraints[i] ==
+                        feature_constraint.constraints[i - 1]) {
+        feature_constraint.constraints.erase(
+            feature_constraint.constraints.begin() + i);
+        feature_constraint.thresholds.erase(
+            feature_constraint.thresholds.begin() + i);
+        previous_constraint = current_constraint;
+        i -= 1;
+      }
+      previous_constraint = current_constraint;
+      i += 1;
+    }
+    // if the loop didn't get to an index greater than it_start, it needs to be
+    // added at the end
+    if (!start_done) {
+      if ((use_max_operator &&
+           extremum > feature_constraint.constraints.back()) ||
+          (!use_max_operator &&
+           extremum < feature_constraint.constraints.back())) {
+        feature_constraint.constraints.push_back(extremum);
+        feature_constraint.thresholds.push_back(it_start);
+      } else {
+        end_done = true;
+      }
+    }
+    // if we didn't get to an index after it_end, then the previous constraint
+    // needs to be set back, unless it_end goes up to the last bin of the feature
+    if (!end_done && it_end != last_threshold &&
+        previous_constraint != feature_constraint.constraints.back()) {
+      feature_constraint.constraints.push_back(previous_constraint);
+      feature_constraint.thresholds.push_back(it_end);
+    }
+  }
+
+  // this function is called only when computing constraints when the monotone
+  // precise mode is set to true
+  // it makes sure that it is worth it to visit a branch, as it could
+  // not contain any relevant constraint (for example if the a branch
+  // with bigger values is also constraining the original leaf, then
+  // it is useless to visit the branch with smaller values)
+  std::pair<bool, bool>
+  LeftRightContainsRelevantInformation(bool min_constraints_to_be_updated,
+                                       int feature,
+                                       bool split_feature_is_inner_feature) {
+    if (split_feature_is_inner_feature) {
+      return std::pair<bool, bool>(true, true);
+    }
+    int8_t monotone_type = config_->monotone_constraints[feature];
+    if (monotone_type == 0) {
+      return std::pair<bool, bool>(true, true);
+    }
+    if ((monotone_type == -1 && min_constraints_to_be_updated) ||
+        (monotone_type == 1 && !min_constraints_to_be_updated)) {
+      return std::pair<bool, bool>(true, false);
+    }
+    if ((monotone_type == 1 && min_constraints_to_be_updated) ||
+        (monotone_type == -1 && !min_constraints_to_be_updated)) {
+      return std::pair<bool, bool>(false, true);
+    }
+  }
+
+  // this function goes down in a subtree to find the
+  // constraints that would apply on the original leaf
+  void GoDownToFindConstrainingLeaves(
+      int feature_for_constraint, int root_monotone_feature, int node_idx,
+      bool min_constraints_to_be_updated, uint32_t it_start, uint32_t it_end,
+      const std::vector<int> &features_of_splits_going_up_from_original_leaf,
+      const std::vector<uint32_t> &
+          thresholds_of_splits_going_up_from_original_leaf,
+      const std::vector<bool> &was_original_leaf_right_child_of_split,
+      FeatureMinOrMaxConstraints &feature_constraint, uint32_t last_threshold) {
+    double extremum;
+    // if leaf, then constraints need to be updated according to its value
+    if (node_idx < 0) {
+      extremum = tree_->LeafOutput(~node_idx);
+#ifdef DEBUG
+      CHECK(it_start < it_end);
+#endif
+      UpdateConstraints(feature_constraint, extremum, it_start, it_end,
+                        min_constraints_to_be_updated, last_threshold);
+    } else { // if node, keep going down the tree
+      // check if the children are contiguous to the original leaf and therefore
+      // potentially constraining
+      std::pair<bool, bool> keep_going_left_right = ShouldKeepGoingLeftRight(
+          node_idx, features_of_splits_going_up_from_original_leaf,
+          thresholds_of_splits_going_up_from_original_leaf,
+          was_original_leaf_right_child_of_split);
+      int inner_feature = tree_->split_feature_inner(node_idx);
+      int feature = tree_->split_feature(node_idx);
+      uint32_t threshold = tree_->threshold_in_bin(node_idx);
+
+      bool split_feature_is_inner_feature =
+          (inner_feature == feature_for_constraint);
+      bool split_feature_is_monotone_feature =
+          (root_monotone_feature == feature_for_constraint);
+      // make sure that both children contain values that could
+      // potentially help determine the true constraints for the original leaf
+      std::pair<bool, bool> left_right_contain_relevant_information =
+          LeftRightContainsRelevantInformation(
+              min_constraints_to_be_updated, feature,
+              split_feature_is_inner_feature &&
+                  !split_feature_is_monotone_feature);
+      // if both children are contiguous to the original leaf
+      // but one contains values greater than the other
+      // then no need to go down in both
+      if (keep_going_left_right.first &&
+          (left_right_contain_relevant_information.first ||
+           !keep_going_left_right.second)) {
+        // update thresholds based on going left
+        uint32_t new_it_end = split_feature_is_inner_feature
+                                  ? std::min(threshold + 1, it_end)
+                                  : it_end;
+        GoDownToFindConstrainingLeaves(
+            feature_for_constraint, root_monotone_feature,
+            tree_->left_child(node_idx), min_constraints_to_be_updated,
+            it_start, new_it_end,
+            features_of_splits_going_up_from_original_leaf,
+            thresholds_of_splits_going_up_from_original_leaf,
+            was_original_leaf_right_child_of_split, feature_constraint,
+            last_threshold);
+      }
+      if (keep_going_left_right.second &&
+          (left_right_contain_relevant_information.second ||
+           !keep_going_left_right.first)) {
+        // update thresholds based on going right
+        uint32_t new_it_start = split_feature_is_inner_feature
+                                    ? std::max(threshold + 1, it_start)
+                                    : it_start;
+        GoDownToFindConstrainingLeaves(
+            feature_for_constraint, root_monotone_feature,
+            tree_->right_child(node_idx), min_constraints_to_be_updated,
+            new_it_start, it_end,
+            features_of_splits_going_up_from_original_leaf,
+            thresholds_of_splits_going_up_from_original_leaf,
+            was_original_leaf_right_child_of_split, feature_constraint,
+            last_threshold);
+      }
+    }
+  }
+
+  // this function is only used if the monotone precise mode is enabled
+  // it recursively goes up the tree then down to find leaf that
+  // are constraining the current leaf
+  void GoUpToFindConstrainingLeaves(
+      int feature_for_constraint, int node_idx,
+      std::vector<int> &features_of_splits_going_up_from_original_leaf,
+      std::vector<uint32_t> &thresholds_of_splits_going_up_from_original_leaf,
+      std::vector<bool> &was_original_leaf_right_child_of_split,
+      FeatureMinOrMaxConstraints &feature_constraint,
+      bool min_constraints_to_be_updated, uint32_t it_start, uint32_t it_end,
+      uint32_t last_threshold) final {
+    int parent_idx =
+        (node_idx < 0) ? tree_->leaf_parent(~node_idx) : node_parent_[node_idx];
+    // if not at the root
+    if (parent_idx != -1) {
+      int inner_feature = tree_->split_feature_inner(parent_idx);
+      int feature = tree_->split_feature(parent_idx);
+      int8_t monotone_type = config_->monotone_constraints[feature];
+      bool is_in_right_child = tree_->right_child(parent_idx) == node_idx;
+      bool is_split_numerical = tree_->IsNumericalSplit(parent_idx);
+      uint32_t threshold = tree_->threshold_in_bin(parent_idx);
+
+      // by going up, more information about the position of the
+      // original leaf  are gathered so the starting and ending
+      // thresholds can be updated, which will save some time later
+      if ((feature_for_constraint == inner_feature) && is_split_numerical) {
+        if (is_in_right_child) {
+          it_start = std::max(threshold, it_start);
+        } else {
+          it_end = std::min(threshold + 1, it_end);
+        }
+#ifdef DEBUG
+        CHECK(it_start < it_end);
+#endif
+      }
+
+      // this is just an optimisation not to waste time going down in subtrees
+      // where there won't be any new constraining leaf
+      bool opposite_child_necessary_to_update_constraints =
+          OppositeChildShouldBeUpdated(
+              is_split_numerical,
+              features_of_splits_going_up_from_original_leaf, inner_feature,
+              was_original_leaf_right_child_of_split, is_in_right_child);
+
+      if (opposite_child_necessary_to_update_constraints) {
+        // if there is no monotone constraint on a split,
+        // then there is no relationship between its left and right leaves'
+        // values
+        if (monotone_type != 0) {
+          int left_child_idx = tree_->left_child(parent_idx);
+          int right_child_idx = tree_->right_child(parent_idx);
+          bool left_child_is_curr_idx = (left_child_idx == node_idx);
+
+          bool update_min_constraints_in_curr_child_leaf =
+              (monotone_type < 0) ? left_child_is_curr_idx
+                                  : !left_child_is_curr_idx;
+          if (update_min_constraints_in_curr_child_leaf ==
+              min_constraints_to_be_updated) {
+            int opposite_child_idx =
+                (left_child_is_curr_idx) ? right_child_idx : left_child_idx;
+
+            // go down in the opposite branch to find potential
+            // constraining leaves
+            GoDownToFindConstrainingLeaves(
+                feature_for_constraint, inner_feature, opposite_child_idx,
+                min_constraints_to_be_updated, it_start, it_end,
+                features_of_splits_going_up_from_original_leaf,
+                thresholds_of_splits_going_up_from_original_leaf,
+                was_original_leaf_right_child_of_split, feature_constraint,
+                last_threshold);
+          }
+        }
+        // if opposite_child_should_be_updated, then it means the path to come
+        // up there was relevant,
+        // i.e. that it will be helpful going down to determine which leaf
+        // is actually contiguous to the original leaf and constraining
+        // so the variables associated with the split need to be recorded
+        was_original_leaf_right_child_of_split.push_back(is_in_right_child);
+        thresholds_of_splits_going_up_from_original_leaf.push_back(threshold);
+        features_of_splits_going_up_from_original_leaf.push_back(inner_feature);
+      }
+
+      // since current node is not the root, keep going up
+      if (parent_idx != 0) {
+        GoUpToFindConstrainingLeaves(
+            feature_for_constraint, parent_idx,
+            features_of_splits_going_up_from_original_leaf,
+            thresholds_of_splits_going_up_from_original_leaf,
+            was_original_leaf_right_child_of_split, feature_constraint,
+            min_constraints_to_be_updated, it_start, it_end, last_threshold);
+      }
+    }
+  }
+};
+
 LeafConstraintsBase* LeafConstraintsBase::Create(const Config* config,
                                                  int num_leaves, int num_features) {
   if (config->monotone_constraints_method == "intermediate") {
     return new IntermediateLeafConstraints(config, num_leaves);
+  }
+  if (config->monotone_constraints_method == "advanced") {
+    return new AdvancedLeafConstraints(config, num_leaves, num_features);
   }
   return new BasicLeafConstraints(num_leaves);
 }
