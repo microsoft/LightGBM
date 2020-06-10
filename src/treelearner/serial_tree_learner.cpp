@@ -715,9 +715,9 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   double parent_output;
   if (leaf_splits->leaf_index() == 0) {
     // for root leaf the "parent" output is its own output because we don't apply any smoothing to the root
-    parent_output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, true, false>(
+    parent_output = FeatureHistogram::CalculateSplittedLeafOutput<false, true, true, false>(
         leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), config_->lambda_l1,
-        config_->lambda_l2, config_->max_delta_step, constraints_->Get(leaf_splits->leaf_index()),
+        config_->lambda_l2, config_->max_delta_step, ConstraintEntry(),
         config_->path_smooth, static_cast<data_size_t>(num_data), 0);
   } else {
     parent_output = leaf_splits->weight();
