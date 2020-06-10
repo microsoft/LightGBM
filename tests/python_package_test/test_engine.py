@@ -1202,7 +1202,7 @@ class TestEngine(unittest.TestCase):
 
         for test_with_categorical_variable in [True, False]:
             trainset = self.generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
-            for monotone_constraints_method in ["basic", "intermediate"]:
+            for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
                 params = {
                     'min_data': 20,
                     'num_leaves': 20,
@@ -1236,7 +1236,7 @@ class TestEngine(unittest.TestCase):
         monotone_constraints = [1, -1, 0]
         penalization_parameter = 2.0
         trainset = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
-        for monotone_constraints_method in ["basic", "intermediate"]:
+        for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
                 'max_depth': max_depth,
                 'monotone_constraints': monotone_constraints,
@@ -1275,7 +1275,7 @@ class TestEngine(unittest.TestCase):
         unconstrained_model_predictions = unconstrained_model.\
             predict(x3_negatively_correlated_with_y.reshape(-1, 1))
 
-        for monotone_constraints_method in ["basic", "intermediate"]:
+        for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params_constrained_model["monotone_constraints_method"] = monotone_constraints_method
             # The penalization is so high that the first 2 features should not be used here
             constrained_model = lgb.train(params_constrained_model, trainset_constrained_model, 10)
