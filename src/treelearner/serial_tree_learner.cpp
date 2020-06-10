@@ -46,7 +46,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 
   // push split information for all leaves
   best_split_per_leaf_.resize(config_->num_leaves);
-  constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves));
+  constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 
   // initialize splits for leaf
   smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));
@@ -146,7 +146,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     }
     cegb_->Init();
   }
-  constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves));
+  constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 }
 
 Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
@@ -711,20 +711,29 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     FeatureHistogram* histogram_array_, int feature_index, int real_fidx,
     bool is_feature_used, int num_data, const LeafSplits* leaf_splits,
     SplitInfo* best_split) {
+
+  bool is_feature_numerical = train_data_->FeatureBinMapper(feature_index)
+                                  ->bin_type() == BinType::NumericalBin;
+  if (is_feature_numerical) {
+    constraints_->RecomputeConstraintsIfNeeded(
+        constraints_.get(), feature_index, ~(leaf_splits->leaf_index()),
+        train_data_->FeatureNumBin(feature_index));
+  }
+  
   SplitInfo new_split;
   double parent_output;
   if (leaf_splits->leaf_index() == 0) {
     // for root leaf the "parent" output is its own output because we don't apply any smoothing to the root
     parent_output = FeatureHistogram::CalculateSplittedLeafOutput<false, true, true, false>(
         leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), config_->lambda_l1,
-        config_->lambda_l2, config_->max_delta_step, ConstraintEntry(),
+        config_->lambda_l2, config_->max_delta_step, BasicConstraint(),
         config_->path_smooth, static_cast<data_size_t>(num_data), 0);
   } else {
     parent_output = leaf_splits->weight();
   }
   histogram_array_[feature_index].FindBestThreshold(
       leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), num_data,
-      constraints_->Get(leaf_splits->leaf_index()),  parent_output, &new_split);
+      constraints_->GetFeatureConstraint(leaf_splits->leaf_index(), feature_index),  parent_output, &new_split);
   new_split.feature = real_fidx;
   if (cegb_ != nullptr) {
     new_split.gain -=

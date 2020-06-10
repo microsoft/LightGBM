@@ -16,22 +16,60 @@
 
 namespace LightGBM {
 
-struct ConstraintEntry {
+class LeafConstraintsBase;
+
+struct BasicConstraint {
   double min = -std::numeric_limits<double>::max();
   double max = std::numeric_limits<double>::max();
 
-  ConstraintEntry() {}
+  BasicConstraint(double min, double max) : min(min), max(max) {}
 
-  void Reset() {
+  BasicConstraint() = default;
+};
+
+struct FeatureConstraint {
+  virtual void InitCumulativeConstraints(bool) {};
+  virtual void Update(int) {};
+  virtual BasicConstraint LeftToBasicConstraint() const = 0;
+  virtual BasicConstraint RightToBasicConstraint() const = 0;
+  virtual bool ConstraintDifferentDependingOnThreshold() const = 0;
+};
+
+struct ConstraintEntry {
+  virtual void Reset() = 0;
+  virtual void UpdateMin(double new_min) = 0;
+  virtual void UpdateMax(double new_max) = 0;
+  virtual bool UpdateMinAndReturnBoolIfChanged(double new_min) = 0;
+  virtual bool UpdateMaxAndReturnBoolIfChanged(double new_max) = 0;
+  virtual ConstraintEntry *clone() const = 0;
+
+  virtual void RecomputeConstraintsIfNeeded(LeafConstraintsBase *, int, int,
+                                            uint32_t) {};
+
+  virtual FeatureConstraint *GetFeatureConstraint(int feature_index) = 0;
+};
+
+// used by both BasicLeafConstraints and IntermediateLeafConstraints
+struct BasicConstraintEntry : ConstraintEntry,
+                              FeatureConstraint,
+                              BasicConstraint {
+
+  bool ConstraintDifferentDependingOnThreshold() const final { return false; }
+
+  BasicConstraintEntry *clone() const final {
+    return new BasicConstraintEntry(*this);
+  };
+
+  void Reset() final {
     min = -std::numeric_limits<double>::max();
     max = std::numeric_limits<double>::max();
   }
 
-  void UpdateMin(double new_min) { min = std::max(new_min, min); }
+  void UpdateMin(double new_min) final { min = std::max(new_min, min); }
 
-  void UpdateMax(double new_max) { max = std::min(new_max, max); }
+  void UpdateMax(double new_max) final { max = std::min(new_max, max); }
 
-  bool UpdateMinAndReturnBoolIfChanged(double new_min) {
+  bool UpdateMinAndReturnBoolIfChanged(double new_min) final {
     if (new_min > min) {
       min = new_min;
       return true;
@@ -39,19 +77,26 @@ struct ConstraintEntry {
     return false;
   }
 
-  bool UpdateMaxAndReturnBoolIfChanged(double new_max) {
+  bool UpdateMaxAndReturnBoolIfChanged(double new_max) final {
     if (new_max < max) {
       max = new_max;
       return true;
     }
     return false;
   }
+
+  BasicConstraint LeftToBasicConstraint() const final { return *this; }
+
+  BasicConstraint RightToBasicConstraint() const final { return *this; }
+
+  FeatureConstraint *GetFeatureConstraint(int) final { return this; }
 };
 
 class LeafConstraintsBase {
  public:
   virtual ~LeafConstraintsBase() {}
-  virtual const ConstraintEntry& Get(int leaf_idx) const = 0;
+  virtual const ConstraintEntry* Get(int leaf_idx) = 0;
+  virtual FeatureConstraint* GetFeatureConstraint(int leaf_idx, int feature_index) = 0;
   virtual void Reset() = 0;
   virtual void BeforeSplit(int leaf, int new_leaf,
                            int8_t monotone_type) = 0;
@@ -61,7 +106,11 @@ class LeafConstraintsBase {
       double left_output, int split_feature, const SplitInfo& split_info,
       const std::vector<SplitInfo>& best_split_per_leaf) = 0;
 
-  inline static LeafConstraintsBase* Create(const Config* config, int num_leaves);
+  virtual void RecomputeConstraintsIfNeeded(
+      LeafConstraintsBase *constraints_,
+      int feature_for_constraint, int leaf_idx, uint32_t it_end) = 0;
+
+  inline static LeafConstraintsBase* Create(const Config* config, int num_leaves, int num_features);
 
   double ComputeMonotoneSplitGainPenalty(int leaf_index, double penalization) {
     int depth = tree_->leaf_depth(leaf_index);
@@ -85,13 +134,21 @@ class LeafConstraintsBase {
 class BasicLeafConstraints : public LeafConstraintsBase {
  public:
   explicit BasicLeafConstraints(int num_leaves) : num_leaves_(num_leaves) {
-    entries_.resize(num_leaves_);
+    for (int i = 0; i < num_leaves; i++) {
+      entries_.push_back(new BasicConstraintEntry());
+    }
   }
 
   void Reset() override {
-    for (auto& entry : entries_) {
-      entry.Reset();
+    for (auto entry : entries_) {
+      entry->Reset();
     }
+  }
+
+  void RecomputeConstraintsIfNeeded(
+      LeafConstraintsBase* constraints_,
+      int feature_for_constraint, int leaf_idx, uint32_t it_end) {
+    entries_[~leaf_idx]->RecomputeConstraintsIfNeeded(constraints_, feature_for_constraint, leaf_idx, it_end);
   }
 
   void BeforeSplit(int, int, int8_t) override {}
@@ -100,25 +157,29 @@ class BasicLeafConstraints : public LeafConstraintsBase {
                           int8_t monotone_type, double right_output,
                           double left_output, int, const SplitInfo& ,
                           const std::vector<SplitInfo>&) override {
-    entries_[new_leaf] = entries_[leaf];
+    entries_[new_leaf] = entries_[leaf]->clone();
     if (is_numerical_split) {
       double mid = (left_output + right_output) / 2.0f;
       if (monotone_type < 0) {
-        entries_[leaf].UpdateMin(mid);
-        entries_[new_leaf].UpdateMax(mid);
+        entries_[leaf]->UpdateMin(mid);
+        entries_[new_leaf]->UpdateMax(mid);
       } else if (monotone_type > 0) {
-        entries_[leaf].UpdateMax(mid);
-        entries_[new_leaf].UpdateMin(mid);
+        entries_[leaf]->UpdateMax(mid);
+        entries_[new_leaf]->UpdateMin(mid);
       }
     }
     return std::vector<int>();
   }
 
-  const ConstraintEntry& Get(int leaf_idx) const override { return entries_[leaf_idx]; }
+  const ConstraintEntry* Get(int leaf_idx) override { return entries_[leaf_idx]; }
+
+  FeatureConstraint* GetFeatureConstraint(int leaf_idx, int feature_index) {
+    return entries_[leaf_idx]->GetFeatureConstraint(feature_index);
+  }
 
  protected:
   int num_leaves_;
-  std::vector<ConstraintEntry> entries_;
+  std::vector<ConstraintEntry*> entries_;
 };
 
 class IntermediateLeafConstraints : public BasicLeafConstraints {
@@ -153,14 +214,14 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
   void UpdateConstraintsWithOutputs(bool is_numerical_split, int leaf,
                                     int new_leaf, int8_t monotone_type,
                                     double right_output, double left_output) {
-    entries_[new_leaf] = entries_[leaf];
+    entries_[new_leaf] = entries_[leaf]->clone();
     if (is_numerical_split) {
       if (monotone_type < 0) {
-        entries_[leaf].UpdateMin(right_output);
-        entries_[new_leaf].UpdateMax(left_output);
+        entries_[leaf]->UpdateMin(right_output);
+        entries_[new_leaf]->UpdateMax(left_output);
       } else if (monotone_type > 0) {
-        entries_[leaf].UpdateMax(right_output);
-        entries_[new_leaf].UpdateMin(left_output);
+        entries_[leaf]->UpdateMax(right_output);
+        entries_[new_leaf]->UpdateMin(left_output);
       }
     }
   }
@@ -169,7 +230,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
                           int new_leaf, int8_t monotone_type,
                           double right_output, double left_output,
                           int split_feature, const SplitInfo& split_info,
-                          const std::vector<SplitInfo>& best_split_per_leaf) override {
+                          const std::vector<SplitInfo>& best_split_per_leaf) final {
     leaves_to_update_.clear();
     if (leaf_is_in_monotone_subtree_[leaf]) {
       UpdateConstraintsWithOutputs(is_numerical_split, leaf, new_leaf,
@@ -353,10 +414,10 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       // depending on which split made the current leaf and the original leaves contiguous,
       // either the min constraint or the max constraint of the current leaf need to be updated
       if (!update_max_constraints) {
-        something_changed = entries_[leaf_idx].UpdateMinAndReturnBoolIfChanged(
+        something_changed = entries_[leaf_idx]->UpdateMinAndReturnBoolIfChanged(
             min_max_constraints.second);
       } else {
-        something_changed = entries_[leaf_idx].UpdateMaxAndReturnBoolIfChanged(
+        something_changed = entries_[leaf_idx]->UpdateMaxAndReturnBoolIfChanged(
             min_max_constraints.first);
       }
       // If constraints were not updated, then there is no need to update the leaf
@@ -456,7 +517,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
     return std::pair<bool, bool>(keep_going_left, keep_going_right);
   }
 
- private:
+ protected:
   const Config* config_;
   std::vector<int> leaves_to_update_;
   // add parent node information
@@ -466,7 +527,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
 };
 
 LeafConstraintsBase* LeafConstraintsBase::Create(const Config* config,
-                                                 int num_leaves) {
+                                                 int num_leaves, int num_features) {
   if (config->monotone_constraints_method == "intermediate") {
     return new IntermediateLeafConstraints(config, num_leaves);
   }
