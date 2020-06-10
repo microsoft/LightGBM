@@ -561,7 +561,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   auto next_leaf_id = tree->NextLeafId();
 
   // update before tree split
-  constraints_->BeforeSplit(tree, best_leaf, next_leaf_id,
+  constraints_->BeforeSplit(best_leaf, next_leaf_id,
                             best_split_info.monotone_type);
 
   bool is_numerical_split =
@@ -657,7 +657,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                               best_split_info.left_output);
   }
   auto leaves_need_update = constraints_->Update(
-      tree, is_numerical_split, *left_leaf, *right_leaf,
+      is_numerical_split, *left_leaf, *right_leaf,
       best_split_info.monotone_type, best_split_info.right_output,
       best_split_info.left_output, inner_feature_index, best_split_info,
       best_split_per_leaf_);
