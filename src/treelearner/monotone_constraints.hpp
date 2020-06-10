@@ -202,7 +202,6 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       int inner_feature,
       const std::vector<bool>& was_original_leaf_right_child_of_split,
       bool is_in_right_child) {
-    bool opposite_child_should_be_updated = true;
 
     // if the split is categorical, it is not handled by this optimisation,
     // so the code will have to go down in the other child subtree to see if
@@ -220,12 +219,14 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
                 inner_feature &&
             (was_original_leaf_right_child_of_split[split_idx] ==
              is_in_right_child)) {
-          opposite_child_should_be_updated = false;
-          break;
+          return false;
         }
       }
+      return true;
     }
-    return opposite_child_should_be_updated;
+    else {
+      return false;
+    }
   }
 
   // Recursive function that goes up the tree, and then down to find leaves that
@@ -248,7 +249,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       int feature = tree_->split_feature(parent_idx);
       int8_t monotone_type = config_->monotone_constraints[feature];
       bool is_in_right_child = tree_->right_child(parent_idx) == node_idx;
-      bool is_split_numerical = tree_->IsNumericalSplit(node_idx);
+      bool is_split_numerical = tree_->IsNumericalSplit(parent_idx);
 
       // this is just an optimisation not to waste time going down in subtrees
       // where there won't be any leaf to update
