@@ -27,6 +27,7 @@ Biarch: false
 Suggests:
     ggplot2 (>= 1.0.1),
     knitr,
+    processx,
     rmarkdown,
     testthat
 Depends:

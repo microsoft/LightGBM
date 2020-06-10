@@ -33,6 +33,7 @@ test_that("train and predict binary classification", {
 
 
 test_that("train and predict softmax", {
+  set.seed(708L)
   lb <- as.numeric(iris$Species) - 1L
 
   bst <- lightgbm(
@@ -42,7 +43,7 @@ test_that("train and predict softmax", {
     , learning_rate = 0.1
     , nrounds = 20L
     , min_data = 20L
-    , min_hess = 20.0
+    , min_hessian = 20.0
     , objective = "multiclass"
     , metric = "multi_error"
     , num_class = 3L
@@ -50,7 +51,7 @@ test_that("train and predict softmax", {
 
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "multi_error")
-  expect_lt(min(record_results), 0.03)
+  expect_lt(min(record_results), 0.05)
 
   pred <- predict(bst, as.matrix(iris[, -5L]))
   expect_equal(length(pred), nrow(iris) * 3L)
@@ -125,11 +126,11 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   set.seed(708L)
   dvalid1 <- lgb.Dataset(
     data = train$data
-    , labels = train$label
+    , label = train$label
   )
   dvalid2 <- lgb.Dataset(
     data = train$data
-    , labels = train$label
+    , label = train$label
   )
   nrounds <- 10L
   bst <- lightgbm(
@@ -138,7 +139,10 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
     , num_leaves = 5L
     , nrounds = nrounds
     , objective = "binary"
-    , metric = "binary_error"
+    , metric = c(
+      "binary_error"
+      , "auc"
+    )
     , valids = list(
       "valid1" = dvalid1
       , "valid2" = dvalid2
@@ -156,8 +160,8 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
     expect_length(eval_results[["eval"]], nrounds)
   }
   expect_true(abs(bst$record_evals[["train"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
-  expect_true(abs(bst$record_evals[["valid1"]][["binary_error"]][["eval"]][[1L]] - 0.4825733) < TOLERANCE)
-  expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.4825733) < TOLERANCE)
+  expect_true(abs(bst$record_evals[["valid1"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
+  expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
 })
 
 
@@ -533,6 +537,73 @@ test_that("lgb.train() works with early stopping for classification", {
 
 })
 
+test_that("lgb.train() works with early stopping for classification with a metric that should be maximized", {
+  set.seed(708L)
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  dvalid <- lgb.Dataset(
+    data = test$data
+    , label = test$label
+  )
+  nrounds <- 10L
+
+  #############################
+  # train with early stopping #
+  #############################
+  early_stopping_rounds <- 5L
+  # the harsh max_depth guarantees that AUC improves over at least the first few iterations
+  bst_auc  <- lgb.train(
+    params = list(
+      objective = "binary"
+      , metric = "auc"
+      , max_depth = 3L
+      , early_stopping_rounds = early_stopping_rounds
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+  bst_binary_error  <- lgb.train(
+    params = list(
+      objective = "binary"
+      , metric = "binary_error"
+      , max_depth = 3L
+      , early_stopping_rounds = early_stopping_rounds
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # early stopping should have been hit for binary_error (higher_better = FALSE)
+  eval_info <- bst_binary_error$.__enclos_env__$private$get_eval_info()
+  expect_identical(eval_info, "binary_error")
+  expect_identical(
+    unname(bst_binary_error$.__enclos_env__$private$higher_better_inner_eval)
+    , FALSE
+  )
+  expect_identical(bst_binary_error$best_iter, 1L)
+  expect_identical(bst_binary_error$current_iter(), early_stopping_rounds + 1L)
+  expect_true(abs(bst_binary_error$best_score - 0.01613904) < TOLERANCE)
+
+  # early stopping should not have been hit for AUC (higher_better = TRUE)
+  eval_info <- bst_auc$.__enclos_env__$private$get_eval_info()
+  expect_identical(eval_info, "auc")
+  expect_identical(
+    unname(bst_auc$.__enclos_env__$private$higher_better_inner_eval)
+    , TRUE
+  )
+  expect_identical(bst_auc$best_iter, 9L)
+  expect_identical(bst_auc$current_iter(), nrounds)
+  expect_true(abs(bst_auc$best_score - 0.9999969) < TOLERANCE)
+})
+
 test_that("lgb.train() works with early stopping for regression", {
   set.seed(708L)
   trainDF <- data.frame(
@@ -602,6 +673,67 @@ test_that("lgb.train() works with early stopping for regression", {
     , early_stopping_rounds + 1L
   )
 })
+
+test_that("lgb.train() works with early stopping for regression with a metric that should be minimized", {
+  set.seed(708L)
+  trainDF <- data.frame(
+    "feat1" = rep(c(10.0, 100.0), 500L)
+    , "target" = rep(c(-50.0, 50.0), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = rep(50.0, 4L)
+    , "target" = rep(50.0, 4L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid <- lgb.Dataset(
+    data = as.matrix(validDF[["feat1"]], drop = FALSE)
+    , label = validDF[["target"]]
+  )
+  nrounds <- 10L
+
+  #############################
+  # train with early stopping #
+  #############################
+  early_stopping_rounds <- 5L
+  bst  <- lgb.train(
+    params = list(
+      objective = "regression"
+      , metric = c(
+          "mape"
+          , "rmse"
+          , "mae"
+      )
+      , min_data_in_bin = 5L
+      , early_stopping_rounds = early_stopping_rounds
+    )
+    , data = dtrain
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = dvalid
+    )
+  )
+
+  # the best model should be from the first iteration, and only 6 rounds
+  # should have happened (1 with improvement, 5 consecutive with no improvement)
+  expect_equal(bst$best_score, 1.1)
+  expect_equal(bst$best_iter, 1L)
+  expect_equal(
+    length(bst$record_evals[["valid1"]][["mape"]][["eval"]])
+    , early_stopping_rounds + 1L
+  )
+
+  # Booster should understand thatt all three of these metrics should be minimized
+  eval_info <- bst$.__enclos_env__$private$get_eval_info()
+  expect_identical(eval_info, c("mape", "rmse", "l1"))
+  expect_identical(
+    unname(bst$.__enclos_env__$private$higher_better_inner_eval)
+    , rep(FALSE, 3L)
+  )
+})
+
 
 test_that("lgb.train() supports non-ASCII feature names", {
   testthat::skip("UTF-8 feature names are not fully supported in the R package")

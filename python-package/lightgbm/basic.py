@@ -1,6 +1,6 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import copy
 import ctypes
@@ -21,6 +21,11 @@ from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
 from .libpath import find_lib_path
 
 
+def _log_callback(msg):
+    """Redirect logs from native library into Python console."""
+    print("{0:s}".format(decode_string(msg)), end='')
+
+
 def _load_lib():
     """Load LightGBM library."""
     lib_path = find_lib_path()
@@ -28,6 +33,10 @@ def _load_lib():
         return None
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
+    callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
+    lib.callback = callback(_log_callback)
+    if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
+        raise LightGBMError(decode_string(lib.LGBM_GetLastError()))
     return lib
 
 
@@ -2165,6 +2174,7 @@ class Booster(object):
                 hess : list or numpy 1-D array
                     The value of the second order derivative (Hessian) for each sample point.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2213,6 +2223,7 @@ class Booster(object):
 
         .. note::
 
+            For binary task, the score is probability of positive class (or margin in case of custom objective).
             For multi-class task, the score is group by class_id first, then group by row_id.
             If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2353,6 +2364,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2399,6 +2411,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2430,6 +2443,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
