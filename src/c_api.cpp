@@ -642,12 +642,6 @@ const char* LGBM_GetLastError() {
   return LastErrorMsg();
 }
 
-int LGBM_RegisterLogCallback(void (*callback)(const char*)) {
-  API_BEGIN();
-  Log::ResetCallBack(callback);
-  API_END();
-}
-
 int LGBM_GetDeviceType() {
 #ifdef USE_GPU
   return 1;
