@@ -75,7 +75,8 @@ if ($env:TOOLCHAIN -eq "MINGW") {
 } elseif ($env:TOOLCHAIN -eq "MSVC") {
   # no customization for MSVC
 } else {
-  Write-Output "[ERROR] Unrecognized coompiler: $env:TOOLCHAIN"
+  Write-Output "[ERROR] Unrecognized compiler: $env:TOOLCHAIN"
+  Check-Output $false
 }
 
 # download R and RTools

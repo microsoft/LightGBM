@@ -116,7 +116,7 @@ jobs:
         COMPILER: MSVC
         R_VERSION: 3.6
         TOOLCHAIN: MSVC
-      r_package_mingw:
+      r_package_msys:
         TASK: r-package
         COMPILER: MINGW
         R_VERSION: 4.0

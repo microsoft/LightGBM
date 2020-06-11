@@ -117,7 +117,7 @@ for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
 
 result <- file.copy(
   from = file.path("R-package", "inst", "make-r-def.R")
-  , to = file.path("lightgbm_r", "inst", "bin/")
+  , to = file.path(TEMP_R_DIR, "inst", "bin/")
   , overwrite = TRUE
 )
 .handle_result(result)
