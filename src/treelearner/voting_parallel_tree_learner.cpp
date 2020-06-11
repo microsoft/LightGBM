@@ -37,6 +37,10 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   }
   // calculate buffer size
   size_t buffer_size = 2 * top_k_ * std::max(max_bin * kHistEntrySize, sizeof(LightSplitInfo) * num_machines_);
+  auto max_cat_threshold = this->config_->max_cat_threshold;
+  // need to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
+  size_t split_info_size = static_cast<size_t>(SplitInfo::Size(max_cat_threshold) * 2);
+  buffer_size = std::max(buffer_size, split_info_size);
   // left and right on same time, so need double size
   input_buffer_.resize(buffer_size);
   output_buffer_.resize(buffer_size);
@@ -63,20 +67,15 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
   larger_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
-  auto num_total_bin = train_data->NumTotalBin();
-  smaller_leaf_histogram_data_.resize(num_total_bin);
-  larger_leaf_histogram_data_.resize(num_total_bin);
+  std::vector<int> offsets;
+  int num_total_bin = HistogramPool::GetNumTotalHistogramBins(
+      train_data, this->share_state_->is_colwise, &offsets);
+  smaller_leaf_histogram_data_.resize(num_total_bin * 2);
+  larger_leaf_histogram_data_.resize(num_total_bin * 2);
   HistogramPool::SetFeatureInfo<true, true>(train_data, this->config_, &feature_metas_);
-  uint64_t offset = 0;
   for (int j = 0; j < train_data->num_features(); ++j) {
-    offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
-    smaller_leaf_histogram_array_global_[j].Init(smaller_leaf_histogram_data_.data() + offset, &feature_metas_[j]);
-    larger_leaf_histogram_array_global_[j].Init(larger_leaf_histogram_data_.data() + offset, &feature_metas_[j]);
-    auto num_bin = train_data->FeatureNumBin(j);
-    if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-      num_bin -= 1;
-    }
-    offset += static_cast<uint64_t>(num_bin);
+    smaller_leaf_histogram_array_global_[j].Init(smaller_leaf_histogram_data_.data() + offsets[j] * 2, &feature_metas_[j]);
+    larger_leaf_histogram_array_global_[j].Init(larger_leaf_histogram_data_.data() + offsets[j] * 2, &feature_metas_[j]);
   }
 }
 
@@ -436,17 +435,21 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, 
   if (best_split_info.left_count < best_split_info.right_count) {
     smaller_leaf_splits_global_->Init(*left_leaf, this->data_partition_.get(),
       best_split_info.left_sum_gradient,
-      best_split_info.left_sum_hessian);
+      best_split_info.left_sum_hessian,
+      best_split_info.left_output);
     larger_leaf_splits_global_->Init(*right_leaf, this->data_partition_.get(),
       best_split_info.right_sum_gradient,
-      best_split_info.right_sum_hessian);
+      best_split_info.right_sum_hessian,
+      best_split_info.right_output);
   } else {
     smaller_leaf_splits_global_->Init(*right_leaf, this->data_partition_.get(),
       best_split_info.right_sum_gradient,
-      best_split_info.right_sum_hessian);
+      best_split_info.right_sum_hessian,
+      best_split_info.right_output);
     larger_leaf_splits_global_->Init(*left_leaf, this->data_partition_.get(),
       best_split_info.left_sum_gradient,
-      best_split_info.left_sum_hessian);
+      best_split_info.left_sum_hessian,
+      best_split_info.left_output);
   }
 }
 

@@ -1857,7 +1857,6 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])), 4)
         iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
         iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
-        iter_min = min([iter_min_l1, iter_min_l2])
         iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
 
         iter_cv_l1 = 4
@@ -2114,6 +2113,23 @@ class TestEngine(unittest.TestCase):
         predicted = est.predict(X)
         err = mean_squared_error(y, predicted)
         params['extra_trees'] = True
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted_new = est.predict(X)
+        err_new = mean_squared_error(y, predicted_new)
+        self.assertLess(err, err_new)
+
+    def test_path_smoothing(self):
+        # check path smoothing increases regularization
+        X, y = load_boston(True)
+        lgb_x = lgb.Dataset(X, label=y)
+        params = {'objective': 'regression',
+                  'num_leaves': 32,
+                  'verbose': -1,
+                  'seed': 0}
+        est = lgb.train(params, lgb_x, num_boost_round=10)
+        predicted = est.predict(X)
+        err = mean_squared_error(y, predicted)
+        params['path_smooth'] = 1
         est = lgb.train(params, lgb_x, num_boost_round=10)
         predicted_new = est.predict(X)
         err_new = mean_squared_error(y, predicted_new)

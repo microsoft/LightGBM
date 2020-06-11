@@ -49,7 +49,7 @@ struct SplitInfo {
   bool default_left = true;
   int8_t monotone_type = 0;
   inline static int Size(int max_cat_threshold) {
-    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 9 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t);
+    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t);
   }
 
   inline void CopyTo(char* buffer) const {

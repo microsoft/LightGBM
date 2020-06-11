@@ -29,7 +29,7 @@ class ScoreUpdater {
     int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration;
     score_.resize(total_size);
     // default start score is zero
-    std::memset(score_.data(), '0', total_size * sizeof(double));
+    std::memset(score_.data(), 0, total_size * sizeof(double));
     has_init_score_ = false;
     const double* init_score = data->metadata().init_score();
     // if exists initial score, will start from it

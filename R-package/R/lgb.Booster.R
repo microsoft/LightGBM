@@ -5,7 +5,7 @@ Booster <- R6::R6Class(
   public = list(
 
     best_iter = -1L,
-    best_score = NA,
+    best_score = NA_real_,
     record_evals = list(),
 
     # Finalize will free up the handles
@@ -596,7 +596,11 @@ Booster <- R6::R6Class(
           # Parse and store privately names
           names <- strsplit(names, "\t")[[1L]]
           private$eval_names <- names
-          private$higher_better_inner_eval <- grepl("^ndcg|^map|^auc", names)
+
+          # some metrics don't map cleanly to metric names, for example "ndcg@1" is just the
+          # ndcg metric evaluated at the first "query result" in learning-to-rank
+          metric_names <- gsub("@.*", "", names)
+          private$higher_better_inner_eval <- .METRICS_HIGHER_BETTER()[metric_names]
 
         }
 
@@ -989,11 +993,11 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
   }
 
   # Create result
-  result <- booster$record_evals[[data_name]][[eval_name]]$eval
+  result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_KEY()]]
 
   # Check if error is requested
   if (is_err) {
-    result <- booster$record_evals[[data_name]][[eval_name]]$eval_err
+    result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_ERR_KEY()]]
   }
 
   # Check if iteration is non existant

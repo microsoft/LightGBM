@@ -135,12 +135,6 @@ To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usua
 If it says ``mingw_64`` then you need the 64-bit version (PATH with ``c:\Rtools\bin;c:\Rtools\mingw_64\bin``),
 otherwise you need the 32-bit version (``c:\Rtools\bin;c:\Rtools\mingw_32\bin``), the latter being a very rare and untested case.
 
-Quick installation of LightGBM can be done using:
-
-.. code:: r
-
-    devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
-    
 --------------
 
 Download the prebuilt Boost
@@ -317,7 +311,7 @@ Installing CMake requires one download first and then a lot of configuration for
 
        Looking for CL_VERSION_2_0
        Looking for CL_VERSION_2_0 - found
-       Found OpenCL: C:/Windows/System32/OpenCL.dll (found version "2.0") 
+       Found OpenCL: C:/Windows/System32/OpenCL.dll (found version "2.0")
        OpenCL include directory:C:/Program Files (x86)/AMD APP SDK/3.0/include
        Boost version: 1.63.0
        Found the following Boost libraries:
@@ -404,7 +398,7 @@ Now that you compiled LightGBM, you try it... and you always see a segmentation 
    :align: center
    :target: ./_static/images/screenshot-segmentation-fault.png
 
-Please check if you are using the right device (``Using GPU device: ...``). You can find a list of your OpenCL devices using `GPUCapsViewer`_, and make sure you are using a discrete (AMD/NVIDIA) GPU if you have both integrated (Intel) and discrete GPUs installed. 
+Please check if you are using the right device (``Using GPU device: ...``). You can find a list of your OpenCL devices using `GPUCapsViewer`_, and make sure you are using a discrete (AMD/NVIDIA) GPU if you have both integrated (Intel) and discrete GPUs installed.
 Also, try to set ``gpu_device_id = 0`` and ``gpu_platform_id = 0`` or ``gpu_device_id = -1`` and ``gpu_platform_id = -1`` to use the first platform and device or the default platform and device.
 If it still does not work, then you should follow all the steps below.
 
@@ -459,7 +453,7 @@ You will probably get something similar to this:
 
     Program received signal SIGSEGV, Segmentation fault.
     0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
-    (gdb) 
+    (gdb)
 
 There, write ``backtrace`` and press the Enter key as many times as gdb requests two choices:
 
@@ -543,7 +537,7 @@ Right-click the command prompt, click "Mark", and select all the text from the f
     [New Thread 105220.0x1a62c]
     [LightGBM] [Info] Using GPU Device: Oland, Vendor: Advanced Micro Devices, Inc.
     [LightGBM] [Info] Compiling OpenCL Kernel with 256 bins...
-    
+
     Program received signal SIGSEGV, Segmentation fault.
     0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
     (gdb) backtrace

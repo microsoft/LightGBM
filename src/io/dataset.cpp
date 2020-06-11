@@ -47,7 +47,7 @@ std::vector<std::vector<int>> NoGroup(const std::vector<int>& used_features) {
   return features_in_group;
 }
 
-int GetConfilctCount(const std::vector<bool>& mark, const int* indices,
+int GetConflictCount(const std::vector<bool>& mark, const int* indices,
                      int num_indices, data_size_t max_cnt) {
   int ret = 0;
   for (int i = 0; i < num_indices; ++i) {
@@ -148,7 +148,7 @@ std::vector<std::vector<int>> FindGroups(
       const data_size_t cnt =
           is_filtered_feature
               ? 0
-              : GetConfilctCount(conflict_marks[gid], sample_indices[fidx],
+              : GetConflictCount(conflict_marks[gid], sample_indices[fidx],
                                  num_per_col[fidx], rest_max_cnt);
       if (cnt >= 0 && cnt <= rest_max_cnt && cnt <= cur_non_zero_cnt / 2) {
         best_gid = gid;
@@ -217,7 +217,7 @@ std::vector<std::vector<int>> FindGroups(
       if (!is_multi_val) {
         const int rest_max_cnt = single_val_max_conflict_cnt - conflict_cnt;
         const auto cnt =
-            GetConfilctCount(conflict_marks.back(), sample_indices[fidx],
+            GetConflictCount(conflict_marks.back(), sample_indices[fidx],
                              num_per_col[fidx], rest_max_cnt);
         conflict_cnt += cnt;
         if (cnt < 0 || conflict_cnt > single_val_max_conflict_cnt) {

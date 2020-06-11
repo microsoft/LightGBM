@@ -36,12 +36,12 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-    if [[ $TRAVIS == "true" ]]; then
+    if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi
 fi
 
-if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
+if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
     sh conda.sh -b -p $CONDA
 fi
 conda config --set always_yes yes --set changeps1 no

@@ -1,6 +1,6 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import copy
 import ctypes
@@ -21,6 +21,11 @@ from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
 from .libpath import find_lib_path
 
 
+def _log_callback(msg):
+    """Redirect logs from native library into Python console."""
+    print("{0:s}".format(decode_string(msg)), end='')
+
+
 def _load_lib():
     """Load LightGBM library."""
     lib_path = find_lib_path()
@@ -28,6 +33,10 @@ def _load_lib():
         return None
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
+    callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
+    lib.callback = callback(_log_callback)
+    if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
+        raise LightGBMError(decode_string(lib.LGBM_GetLastError()))
     return lib
 
 
@@ -1544,6 +1553,38 @@ class Dataset(object):
             self.set_field('group', group)
         return self
 
+    def get_feature_name(self):
+        """Get the names of columns (features) in the Dataset.
+
+        Returns
+        -------
+        feature_names : list
+            The names of columns (features) in the Dataset.
+        """
+        if self.handle is None:
+            raise LightGBMError("Cannot get feature_name before construct dataset")
+        num_feature = self.num_feature()
+        tmp_out_len = ctypes.c_int(0)
+        reserved_string_buffer_size = 255
+        required_string_buffer_size = ctypes.c_size_t(0)
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(num_feature)]
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+        _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
+            self.handle,
+            num_feature,
+            ctypes.byref(tmp_out_len),
+            reserved_string_buffer_size,
+            ctypes.byref(required_string_buffer_size),
+            ptr_string_buffers))
+        if num_feature != tmp_out_len.value:
+            raise ValueError("Length of feature names doesn't equal with num_feature")
+        if reserved_string_buffer_size < required_string_buffer_size.value:
+            raise BufferError(
+                "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
+                .format(reserved_string_buffer_size, required_string_buffer_size.value)
+            )
+        return [string_buffers[i].value.decode('utf-8') for i in range_(num_feature)]
+
     def get_label(self):
         """Get the label of the Dataset.
 
@@ -2198,6 +2239,7 @@ class Booster(object):
                 hess : list or numpy 1-D array
                     The value of the second order derivative (Hessian) for each sample point.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2246,6 +2288,7 @@ class Booster(object):
 
         .. note::
 
+            For binary task, the score is probability of positive class (or margin in case of custom objective).
             For multi-class task, the score is group by class_id first, then group by row_id.
             If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2386,6 +2429,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2432,6 +2476,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2463,6 +2508,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
