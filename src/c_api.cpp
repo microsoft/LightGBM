@@ -1110,15 +1110,23 @@ int LGBM_DatasetSetFeatureNames(
 }
 
 int LGBM_DatasetGetFeatureNames(
-  DatasetHandle handle,
-  char** feature_names,
-  int* num_feature_names) {
+    DatasetHandle handle,
+    const int len,
+    int* num_feature_names,
+    const size_t buffer_len,
+    size_t* out_buffer_len,
+    char** feature_names) {
   API_BEGIN();
+  *out_buffer_len = 0;
   auto dataset = reinterpret_cast<Dataset*>(handle);
   auto inside_feature_name = dataset->feature_names();
   *num_feature_names = static_cast<int>(inside_feature_name.size());
   for (int i = 0; i < *num_feature_names; ++i) {
-    std::memcpy(feature_names[i], inside_feature_name[i].c_str(), inside_feature_name[i].size() + 1);
+    if (i < len) {
+      std::memcpy(feature_names[i], inside_feature_name[i].c_str(), std::min(inside_feature_name[i].size() + 1, buffer_len));
+      feature_names[i][buffer_len - 1] = '\0';
+    }
+    *out_buffer_len = std::max(inside_feature_name[i].size() + 1, *out_buffer_len);
   }
   API_END();
 }
