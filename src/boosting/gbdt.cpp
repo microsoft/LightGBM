@@ -68,11 +68,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   if (config_->device_type == std::string("cuda")) {
     // LGBM_config_::current_device=lgbm_device_cuda; moved to application.cpp
      LGBM_config_::current_learner=use_cuda_learner;
-
-  /* Following are needed to ensure bagging required by the CUDA implementation */
-//  if (config_->bagging_fraction == 1.0){config_->bagging_fraction = 0.8;} moved to application.cpp
-//  if (config_->bagging_freq == 0) {config_->bagging_freq = 1;} moved to application.cpp
-
   }
 #endif
 

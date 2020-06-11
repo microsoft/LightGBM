@@ -173,9 +173,6 @@ if(USE_CUDA)
      -DIGNORE_INDICES
     )
 
-    #string(REPLACE ";" " " BASE_DEFINES "${BASE_DEFINES}")
-    #string(REPLACE ";" " " ALLFEATS_DEFINES "${ALLFEATS_DEFINES}")
-    #string(REPLACE ";" " " FULLDATA_DEFINES "${FULLDATA_DEFINES}")
     message(STATUS ALLFEATS_DEFINES: ${ALLFEATS_DEFINES})
     message(STATUS FULLDATA_DEFINES: ${FULLDATA_DEFINES})
 
@@ -193,7 +190,6 @@ if(USE_CUDA)
       )
     endfunction()
 
-    #foreach (hsize 16 64 256)
     foreach (hsize _16_64_256)
       add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
       add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
@@ -310,9 +306,9 @@ file(GLOB SOURCES
     src/objective/*.cpp
     src/network/*.cpp
     src/treelearner/*.cpp
-#ifdef USE_CUDA
+if(USE_CUDA)
     src/treelearner/*.cu
-#endif
+endif(USE_CUDA)
 )
 
 add_executable(lightgbm src/main.cpp ${SOURCES})
