@@ -2,15 +2,6 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-
-#include <string>
-#include <cstdio>
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <stdexcept>
-#include <vector>
-
 #include <LightGBM/c_api.h>
 
 #include <LightGBM/boosting.h>
@@ -26,6 +17,14 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
+
+#include <string>
+#include <cstdio>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <vector>
 
 #include "application/predictor.hpp"
 
@@ -1111,15 +1110,23 @@ int LGBM_DatasetSetFeatureNames(
 }
 
 int LGBM_DatasetGetFeatureNames(
-  DatasetHandle handle,
-  char** feature_names,
-  int* num_feature_names) {
+    DatasetHandle handle,
+    const int len,
+    int* num_feature_names,
+    const size_t buffer_len,
+    size_t* out_buffer_len,
+    char** feature_names) {
   API_BEGIN();
+  *out_buffer_len = 0;
   auto dataset = reinterpret_cast<Dataset*>(handle);
   auto inside_feature_name = dataset->feature_names();
   *num_feature_names = static_cast<int>(inside_feature_name.size());
   for (int i = 0; i < *num_feature_names; ++i) {
-    std::memcpy(feature_names[i], inside_feature_name[i].c_str(), inside_feature_name[i].size() + 1);
+    if (i < len) {
+      std::memcpy(feature_names[i], inside_feature_name[i].c_str(), std::min(inside_feature_name[i].size() + 1, buffer_len));
+      feature_names[i][buffer_len - 1] = '\0';
+    }
+    *out_buffer_len = std::max(inside_feature_name[i].size() + 1, *out_buffer_len);
   }
   API_END();
 }

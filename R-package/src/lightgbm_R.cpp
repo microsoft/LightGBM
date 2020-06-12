@@ -5,19 +5,19 @@
 
 #include "lightgbm_R.h"
 
-#include <string>
-#include <cstdio>
-#include <cstring>
-#include <memory>
-#include <utility>
-#include <vector>
-
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
 
 #include <R_ext/Rdynload.h>
+
+#include <string>
+#include <cstdio>
+#include <cstring>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #define COL_MAJOR (0)
 
@@ -158,16 +158,23 @@ LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   R_API_BEGIN();
   int len = 0;
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &len));
+  const size_t reserved_string_size = 256;
   std::vector<std::vector<char>> names(len);
   std::vector<char*> ptr_names(len);
   for (int i = 0; i < len; ++i) {
-    names[i].resize(256);
+    names[i].resize(reserved_string_size);
     ptr_names[i] = names[i].data();
   }
   int out_len;
-  CHECK_CALL(LGBM_DatasetGetFeatureNames(R_GET_PTR(handle),
-    ptr_names.data(), &out_len));
+  size_t required_string_size;
+  CHECK_CALL(
+    LGBM_DatasetGetFeatureNames(
+      R_GET_PTR(handle),
+      len, &out_len,
+      reserved_string_size, &required_string_size,
+      ptr_names.data()));
   CHECK_EQ(len, out_len);
+  CHECK_GE(reserved_string_size, required_string_size);
   auto merge_str = Join<char*>(ptr_names, "\t");
   EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len, merge_str.size() + 1);
   R_API_END();

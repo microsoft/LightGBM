@@ -271,15 +271,20 @@ class TestBasic(unittest.TestCase):
             self.assertTrue(np.all(np.isclose([data.label[0], data.weight[0], data.init_score[0]],
                                               data.label[0])))
             self.assertAlmostEqual(data.label[1], data.weight[1])
+            self.assertListEqual(data.feature_name, data.get_feature_name())
 
         X, y = load_breast_cancer(True)
         sequence = np.ones(y.shape[0])
         sequence[0] = np.nan
         sequence[1] = np.inf
-        lgb_data = lgb.Dataset(X, sequence, weight=sequence, init_score=sequence).construct()
+        feature_names = ['f{0}'.format(i) for i in range(X.shape[1])]
+        lgb_data = lgb.Dataset(X, sequence,
+                               weight=sequence, init_score=sequence,
+                               feature_name=feature_names).construct()
         check_asserts(lgb_data)
         lgb_data = lgb.Dataset(X, y).construct()
         lgb_data.set_label(sequence)
         lgb_data.set_weight(sequence)
         lgb_data.set_init_score(sequence)
+        lgb_data.set_feature_name(feature_names)
         check_asserts(lgb_data)

@@ -5,12 +5,12 @@
 #ifndef LIGHTGBM_TREE_LEARNER_H_
 #define LIGHTGBM_TREE_LEARNER_H_
 
-#include <string>
-#include <vector>
-
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/json11.h>
+
+#include <string>
+#include <vector>
 
 namespace LightGBM {
 

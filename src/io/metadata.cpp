@@ -2,12 +2,11 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+#include <LightGBM/dataset.h>
+#include <LightGBM/utils/common.h>
 
 #include <string>
 #include <vector>
-
-#include <LightGBM/dataset.h>
-#include <LightGBM/utils/common.h>
 
 namespace LightGBM {
 

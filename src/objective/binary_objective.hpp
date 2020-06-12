@@ -5,14 +5,14 @@
 #ifndef LIGHTGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
 
+#include <LightGBM/network.h>
+#include <LightGBM/objective_function.h>
+
 #include <string>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <vector>
-
-#include <LightGBM/network.h>
-#include <LightGBM/objective_function.h>
 
 namespace LightGBM {
 /*!

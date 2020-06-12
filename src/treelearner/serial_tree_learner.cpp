@@ -4,15 +4,15 @@
  */
 #include "serial_tree_learner.h"
 
-#include <algorithm>
-#include <queue>
-#include <unordered_map>
-#include <utility>
-
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
+
+#include <algorithm>
+#include <queue>
+#include <unordered_map>
+#include <utility>
 
 #include "cost_effective_gradient_boosting.hpp"
 

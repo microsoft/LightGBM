@@ -5,13 +5,13 @@
 #ifndef LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
 #define LIGHTGBM_IO_MULTI_VAL_DENSE_BIN_HPP_
 
+#include <LightGBM/bin.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <vector>
-
-#include <LightGBM/bin.h>
-#include <LightGBM/utils/openmp_wrapper.h>
 
 namespace LightGBM {
 

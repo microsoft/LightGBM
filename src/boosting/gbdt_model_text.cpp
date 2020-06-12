@@ -2,16 +2,15 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-
-#include <string>
-#include <sstream>
-#include <vector>
-
 #include <LightGBM/config.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
+
+#include <string>
+#include <sstream>
+#include <vector>
 
 #include "gbdt.h"
 

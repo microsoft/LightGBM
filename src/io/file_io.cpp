@@ -3,14 +3,13 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
+#include <LightGBM/utils/file_io.h>
+
+#include <LightGBM/utils/log.h>
 
 #include <algorithm>
 #include <sstream>
 #include <unordered_map>
-
-#include <LightGBM/utils/file_io.h>
-
-#include <LightGBM/utils/log.h>
 
 #ifdef USE_HDFS
 #include <hdfs.h>

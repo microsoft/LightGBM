@@ -1553,6 +1553,38 @@ class Dataset(object):
             self.set_field('group', group)
         return self
 
+    def get_feature_name(self):
+        """Get the names of columns (features) in the Dataset.
+
+        Returns
+        -------
+        feature_names : list
+            The names of columns (features) in the Dataset.
+        """
+        if self.handle is None:
+            raise LightGBMError("Cannot get feature_name before construct dataset")
+        num_feature = self.num_feature()
+        tmp_out_len = ctypes.c_int(0)
+        reserved_string_buffer_size = 255
+        required_string_buffer_size = ctypes.c_size_t(0)
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(num_feature)]
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+        _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
+            self.handle,
+            num_feature,
+            ctypes.byref(tmp_out_len),
+            reserved_string_buffer_size,
+            ctypes.byref(required_string_buffer_size),
+            ptr_string_buffers))
+        if num_feature != tmp_out_len.value:
+            raise ValueError("Length of feature names doesn't equal with num_feature")
+        if reserved_string_buffer_size < required_string_buffer_size.value:
+            raise BufferError(
+                "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
+                .format(reserved_string_buffer_size, required_string_buffer_size.value)
+            )
+        return [string_buffers[i].value.decode('utf-8') for i in range_(num_feature)]
+
     def get_label(self):
         """Get the label of the Dataset.
 

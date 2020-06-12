@@ -6,16 +6,16 @@
 #ifndef LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 #define LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 
+#include <LightGBM/bin.h>
+#include <LightGBM/dataset.h>
+#include <LightGBM/utils/array_args.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <memory>
 #include <utility>
 #include <vector>
-
-#include <LightGBM/bin.h>
-#include <LightGBM/dataset.h>
-#include <LightGBM/utils/array_args.h>
 
 #include "monotone_constraints.hpp"
 #include "split_info.hpp"
