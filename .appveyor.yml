@@ -15,8 +15,12 @@ environment:
   matrix:
     - COMPILER: MINGW
       TASK: r-package
-    - COMPILER: MSVC
+      R_VERSION: 3.6
+      TOOLCHAIN: MINGW
+    - COMPILER: MSVC 
       TASK: r-package
+      R_VERSION: 4.0
+      TOOLCHAIN: MSVC
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - COMPILER: MSVC
       TASK: python
