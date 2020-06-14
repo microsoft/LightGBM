@@ -13,7 +13,8 @@ from sklearn.base import clone
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.exceptions import SkipTestWarning
-from sklearn.metrics import log_loss, mean_squared_error
+from sklearn.metrics import (log_loss, mean_squared_error,
+                             recall_score, precision_score)
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
@@ -56,6 +57,14 @@ def decreasing_metric(y_true, y_pred):
 
 def mse(y_true, y_pred):
     return 'custom MSE', mean_squared_error(y_true, y_pred), False
+
+
+def custom_recall(y_true, y_pred):
+    return 'custom_recall', recall_score(y_true, y_pred > 0.5), True
+
+
+def custom_precision(y_true, y_pred):
+    return 'custom_precision', precision_score(y_true, y_pred > 0.5), True
 
 
 def binary_error(y_true, y_pred):
@@ -450,6 +459,41 @@ class TestSklearn(unittest.TestCase):
         self.assertEqual(len(gbm.evals_result_['valid_1']), 1)
         self.assertIn('l2', gbm.evals_result_['valid_1'])
 
+    def test_lgbmclassifier_eval_metrics(self):
+
+        X, y = load_breast_cancer(True)
+
+        params = {'n_estimators': 2, 'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
+        params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
+
+        # Verify that LGBMClassifier can receive a list of string metrics
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=['fair', 'error'], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('fair', gbm.evals_result_['training'])
+        self.assertIn('binary_error', gbm.evals_result_['training'])
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+
+        # Verify that LGBMClassifier can receive a custom metric
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=custom_recall, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('custom_recall', gbm.evals_result_['training'])
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+
+        # Verify that LGBMClassifier can receive a list of custom metrics
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[custom_recall, custom_precision], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('custom_recall', gbm.evals_result_['training'])
+        self.assertIn('custom_precision', gbm.evals_result_['training'])
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+
+        # Verify that LGBMClassifier can receive a list of custom and string metrics
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[custom_recall, custom_precision, "fair"], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 4)
+        self.assertIn('custom_recall', gbm.evals_result_['training'])
+        self.assertIn('custom_precision', gbm.evals_result_['training'])
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+        self.assertIn('fair', gbm.evals_result_['training'])
+
     def test_metrics(self):
         X, y = load_boston(True)
         params = {'n_estimators': 2, 'verbose': -1}
@@ -642,7 +686,7 @@ class TestSklearn(unittest.TestCase):
         # custom metric for custom objective
         gbm = lgb.LGBMRegressor(objective=custom_dummy_obj,
                                 **params).fit(eval_metric=constant_metric, **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('error', gbm.evals_result_['training'])
 
         # non-default regression metric with custom metric for custom objective

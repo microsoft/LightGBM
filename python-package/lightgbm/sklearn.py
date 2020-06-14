@@ -412,9 +412,10 @@ class LGBMModel(_LGBMModelBase):
             Init score of eval data.
         eval_group : list of arrays or None, optional (default=None)
             Group data of eval data.
-        eval_metric : string, list of strings, callable or None, optional (default=None)
+        eval_metric : string, callable, list of strings, list of callable or None, optional (default=None)
             If string, it should be a built-in evaluation metric to use.
             If callable, it should be a custom evaluation metric, see note below for more details.
+            If list, it can be a list of only strings, only callable functions, or a mix of both.
             In either case, the ``metric`` from the model parameters will be evaluated and used as well.
             Default: 'l2' for LGBMRegressor, 'logloss' for LGBMClassifier, 'ndcg' for LGBMRanker.
         early_stopping_rounds : int or None, optional (default=None)
@@ -524,29 +525,34 @@ class LGBMModel(_LGBMModelBase):
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
-        if callable(eval_metric):
-            feval = _EvalFunctionWrapper(eval_metric)
-        else:
-            feval = None
-            # register default metric for consistency with callable eval_metric case
-            original_metric = self._objective if isinstance(self._objective, string_type) else None
-            if original_metric is None:
-                # try to deduce from class instance
-                if isinstance(self, LGBMRegressor):
-                    original_metric = "l2"
-                elif isinstance(self, LGBMClassifier):
-                    original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
-                elif isinstance(self, LGBMRanker):
-                    original_metric = "ndcg"
-            # overwrite default metric by explicitly set metric
-            for metric_alias in _ConfigAliases.get("metric"):
-                if metric_alias in params:
-                    original_metric = params.pop(metric_alias)
-            # concatenate metric from params (or default if not provided in params) and eval_metric
-            original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
-            eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
-            params['metric'] = [e for e in eval_metric if e not in original_metric] + original_metric
-            params['metric'] = [metric for metric in params['metric'] if metric is not None]
+        if isinstance(eval_metric, (string_type, type(None))) or callable(eval_metric):
+            eval_metric = [eval_metric]
+
+        eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric if callable(f)]
+        eval_metrics_internal = [m for m in eval_metric if isinstance(m, (string_type, type(None)))]
+
+        # register default metric for consistency with callable eval_metric case
+        original_metric = self._objective if isinstance(self._objective, string_type) else None
+        if original_metric is None:
+            # try to deduce from class instance
+            if isinstance(self, LGBMRegressor):
+                original_metric = "l2"
+            elif isinstance(self, LGBMClassifier):
+                original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
+            elif isinstance(self, LGBMRanker):
+                original_metric = "ndcg"
+
+        # overwrite default metric by explicitly set metric
+        for metric_alias in _ConfigAliases.get("metric"):
+            if metric_alias in params:
+                original_metric = params.pop(metric_alias)
+
+        # concatenate metric from params (or default if not provided in params) and eval_metric
+        if isinstance(original_metric, (string_type, type(None))):
+            original_metric = [original_metric]
+
+        params['metric'] = [e for e in eval_metrics_internal if e not in original_metric] + original_metric
+        params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
@@ -619,7 +625,7 @@ class LGBMModel(_LGBMModelBase):
         self._Booster = train(params, train_set,
                               self.n_estimators, valid_sets=valid_sets, valid_names=eval_names,
                               early_stopping_rounds=early_stopping_rounds,
-                              evals_result=evals_result, fobj=self._fobj, feval=feval,
+                              evals_result=evals_result, fobj=self._fobj, feval=eval_metrics_callable,
                               verbose_eval=verbose, feature_name=feature_name,
                               callbacks=callbacks, init_model=init_model)
 

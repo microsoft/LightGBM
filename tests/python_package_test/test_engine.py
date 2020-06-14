@@ -12,7 +12,8 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
-from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.metrics import (log_loss, mean_absolute_error, mean_squared_error,
+                             roc_auc_score, precision_score, recall_score)
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
 
 try:
@@ -49,6 +50,16 @@ def decreasing_metric(preds, train_data):
 
 def categorize(continuous_x):
     return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
+
+
+def custom_recall(preds, train_data):
+    y_true = train_data.get_label()
+    return 'custom_recall', recall_score(y_true, preds > 0.5), True
+
+
+def custom_precision(preds, train_data):
+    y_true = train_data.get_label()
+    return 'custom_precision', precision_score(y_true, preds > 0.5), True
 
 
 class TestEngine(unittest.TestCase):
@@ -1704,6 +1715,51 @@ class TestEngine(unittest.TestCase):
         # binary metric with non-default num_class for custom objective
         self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
                           params_class_3_verbose, metrics='binary_error', fobj=dummy_obj)
+
+    def test_multiple_feval_train(self):
+        X, y = load_breast_cancer(True)
+
+        params = {'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
+
+        X_train, X_validation, y_train, y_validation = train_test_split(X, y, test_size=0.2)
+
+        train_dataset = lgb.Dataset(data=X_train, label=y_train, silent=True)
+        validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset, silent=True)
+        evals_result = {}
+        _ = lgb.train(
+            params=params,
+            train_set=train_dataset,
+            valid_sets=validation_dataset,
+            num_boost_round=5,
+            feval=[custom_recall, custom_precision],
+            evals_result=evals_result)
+
+        self.assertEqual(len(evals_result['valid_0']), 3)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('custom_recall', evals_result['valid_0'])
+        self.assertIn('custom_precision', evals_result['valid_0'])
+
+    def test_multiple_feval_cv(self):
+        X, y = load_breast_cancer(True)
+
+        params = {'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
+
+        train_dataset = lgb.Dataset(data=X, label=y, silent=True)
+
+        cv_results = lgb.cv(
+            params=params,
+            train_set=train_dataset,
+            num_boost_round=5,
+            feval=[custom_recall, custom_precision])
+
+        # Expect three metrics but mean and stdv for each metric
+        self.assertEqual(len(cv_results), 6)
+        self.assertIn('binary_logloss-mean', cv_results)
+        self.assertIn('custom_recall-mean', cv_results)
+        self.assertIn('custom_precision-mean', cv_results)
+        self.assertIn('binary_logloss-stdv', cv_results)
+        self.assertIn('custom_recall-stdv', cv_results)
+        self.assertIn('custom_precision-stdv', cv_results)
 
     @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
     def test_model_size(self):

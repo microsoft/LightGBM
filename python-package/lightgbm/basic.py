@@ -2348,9 +2348,9 @@ class Booster(object):
             Data for the evaluating.
         name : string
             Name of the data.
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable functions, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, eval_data,
+            Each evaluation function should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : list or numpy 1-D array
@@ -2395,9 +2395,9 @@ class Booster(object):
 
         Parameters
         ----------
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable functions, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, train_data,
+            Each evaluation function should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : list or numpy 1-D array
@@ -2427,9 +2427,9 @@ class Booster(object):
 
         Parameters
         ----------
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable functions, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, valid_data,
+            Each evaluation function should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : list or numpy 1-D array
@@ -2913,6 +2913,8 @@ class Booster(object):
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
+        if callable(feval):
+            feval = [feval]
         self.__get_eval_info()
         ret = []
         if self.__num_inner_eval > 0:
@@ -2933,13 +2935,14 @@ class Booster(object):
                 cur_data = self.train_set
             else:
                 cur_data = self.valid_sets[data_idx - 1]
-            feval_ret = feval(self.__inner_predict(data_idx), cur_data)
-            if isinstance(feval_ret, list):
-                for eval_name, val, is_higher_better in feval_ret:
+            for eval_function in feval:
+                feval_ret = eval_function(self.__inner_predict(data_idx), cur_data)
+                if isinstance(feval_ret, list):
+                    for eval_name, val, is_higher_better in feval_ret:
+                        ret.append((data_name, eval_name, val, is_higher_better))
+                else:
+                    eval_name, val, is_higher_better = feval_ret
                     ret.append((data_name, eval_name, val, is_higher_better))
-            else:
-                eval_name, val, is_higher_better = feval_ret
-                ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
     def __inner_predict(self, data_idx):
