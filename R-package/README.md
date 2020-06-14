@@ -35,10 +35,7 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
 * `R`
     - example: `C:\Program Files\R\R-3.6.1\bin`
 
-As of `Rtools` 4.0, some common paths changed and software was removed from `Rtools`. If you are using `R` 4.0 or later and the corresponding `Rtools`, you need to add one additional path to `PATH`.
-
-* `Rtools` usr bin:
-    - example: `C:\Rtools\usr\bin`
+NOTE: Two `Rtools` paths are required from `Rtools` 4.0 onwards because paths and the list of included software was changed in `Rtools` 4.0.
 
 #### Windows Toolchain Options
 

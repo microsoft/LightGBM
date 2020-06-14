@@ -41,9 +41,12 @@ message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
           , "'processx' with install.packages('processx') might "
           , "make this faster."
         ))
+        # shQuote() is necessary here since one of the arguments
+        # is a file-path to R.dll, which may have spaces. processx
+        # does such quoting but system2() does not
         exit_code <- system2(
             command = command
-            , args = args
+            , args = shoQuote(args)
             , stdout = out_file
         )
         if (exit_code != 0L) {
