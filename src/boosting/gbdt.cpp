@@ -270,7 +270,10 @@ void GBDT::Bagging(int iter) {
         tmp_hessians_.resize(total_size);
       }
 
-      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
+      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
+                             bag_data_cnt_, false);
+      tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
+                                    bag_data_cnt_);
 
       tree_learner_->ResetTrainingData(tmp_subset_.get(), is_constant_hessian_);
     }
