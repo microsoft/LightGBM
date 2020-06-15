@@ -7,6 +7,9 @@
 #include <random>
 #include <cmath>
 #include <memory>
+#ifdef USE_CUDA
+#include <cuda_runtime.h>
+#endif
 
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/array_args.h>
@@ -20,10 +23,8 @@
 #include "leaf_splits.hpp"
 
 #ifdef USE_CUDA
-
 #include <LightGBM/cuda/vector_cudahost.h>
-#include "cuda_kernel_launcher.h" // LGBM_CUDA
-#include <cuda_runtime.h>
+#include "cuda_kernel_launcher.h"  // LGBM_CUDA
 
 
 using namespace json11;
@@ -34,7 +35,7 @@ namespace LightGBM {
 * \brief CUDA-based parallel learning algorithm.
 */
 class CUDATreeLearner: public SerialTreeLearner {
-  public:
+ public:
     explicit CUDATreeLearner(const Config* tree_config);
     ~CUDATreeLearner();
     // LGBM_CUDA: is_use_subset is used by CUDA only
@@ -53,21 +54,20 @@ class CUDATreeLearner: public SerialTreeLearner {
           return;
         }
       }
-      use_bagging_ = false; 
+      use_bagging_ = false;
     }
 
-  protected:
+ protected:
     void BeforeTrain() override;
     bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
     void FindBestSplits() override;
     void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
     void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
-  private:
+ private:
     /*! \brief 4-byte feature tuple used by GPU kernels */
-    //struct Feature4 {
+    // struct Feature4 {
     //    uint8_t s[4];
-    //};
-  
+    // };
     typedef float gpu_hist_t;
 
     /*!
@@ -109,7 +109,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     void GPUHistogram(data_size_t leaf_num_data, bool use_all_features);
   
     void SetThreadData(ThreadData* thread_data, int device_id, int histogram_size,
-                int leaf_num_data, bool use_all_features, 
+                int leaf_num_data, bool use_all_features,
                 int num_workgroups, int exp_workgroups_per_feature) {
       ThreadData* td = &thread_data[device_id];
       td->device_id             = device_id;
@@ -171,7 +171,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     // LGBM_CUDA v5.2
     bool ConstructGPUHistogramsAsync(
       const std::vector<int8_t>& is_feature_used,
-      const data_size_t* data_indices, data_size_t num_data); 
+      const data_size_t* data_indices, data_size_t num_data);
 
     /*! brief Log2 of max number of workgroups per feature*/
     const int kMaxLogWorkgroupsPerFeature = 10;  // 2^10
@@ -215,12 +215,12 @@ class CUDATreeLearner: public SerialTreeLearner {
     /*! \brief Indices of all sparse feature-groups */
     std::vector<int> sparse_feature_group_map_;
     /*! \brief Multipliers of all dense feature-groups, used for redistributing bins */
-    //std::vector<int> device_bin_mults_;
+    // std::vector<int> device_bin_mults_;
     /*! \brief GPU memory object holding the training data */
-    //uint8_t *device_features_;
+    // uint8_t *device_features_;
     std::vector<uint8_t*> device_features_;
     /*! \brief GPU memory object holding the ordered gradient */
-    //score_t *device_gradients_;
+    // score_t *device_gradients_;
     std::vector<score_t*> device_gradients_;
     /*! \brief Pointer to pinned memory of ordered gradient */
     void * ptr_pinned_gradients_ = nullptr;
@@ -230,10 +230,10 @@ class CUDATreeLearner: public SerialTreeLearner {
     /*! \brief Pointer to pinned memory of ordered hessian */
     void * ptr_pinned_hessians_ = nullptr;
     /*! \brief A vector of feature mask. 1 = feature used, 0 = feature not used */
-    // std::vector<char, CHAllocator<char>> feature_masks_; 
+    // std::vector<char, CHAllocator<char>> feature_masks_;
     std::vector<char> feature_masks_;
     /*! \brief GPU memory object holding the feature masks */
-    //void *device_feature_masks_;
+    // void *device_feature_masks_;
     std::vector<char*> device_feature_masks_;
     /*! \brief Pointer to pinned memory of feature masks */
     char* ptr_pinned_feature_masks_ = nullptr;
@@ -293,7 +293,7 @@ class CUDATreeLearner: public SerialTreeLearner {
 namespace LightGBM {
     
 class CUDATreeLearner: public SerialTreeLearner {
-  public:
+ public:
     #pragma warning(disable : 4702)
     explicit CUDATreeLearner(const Config* tree_config) : SerialTreeLearner(tree_config) {
       Log::Fatal("CUDA Tree Learner was not enabled in this build.\n"

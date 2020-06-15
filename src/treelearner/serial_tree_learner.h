@@ -209,7 +209,7 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
-#elif USE_CUDA // LGBM_CUDA
+#elif USE_CUDA  // LGBM_CUDA
   /*! \brief gradients of current iteration, ordered for cache optimized */
   std::vector<score_t, CHAllocator<score_t>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */

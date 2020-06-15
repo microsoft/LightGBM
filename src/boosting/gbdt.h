@@ -478,8 +478,8 @@ class GBDT : public GBDTBase {
 
 #ifdef USE_CUDA
   /*! \brief First order derivative of training data */
-  std::vector<score_t,CHAllocator<score_t>> gradients_;  // LGBM_CUDA
-  std::vector<score_t,CHAllocator<score_t>> tmp_gradients_;  // LGBM_CUDA
+  std::vector<score_t, CHAllocator<score_t>> gradients_;  // LGBM_CUDA
+  std::vector<score_t, CHAllocator<score_t>> tmp_gradients_;  // LGBM_CUDA
   /*! \brief Second order derivative of training data */
   std::vector<score_t, CHAllocator<score_t>> hessians_;  // LGBM_CUDA
   std::vector<score_t, CHAllocator<score_t>> tmp_hessians_;  // LGBM_CUDA

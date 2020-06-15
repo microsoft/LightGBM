@@ -132,7 +132,7 @@ class Booster {
 
 #ifdef USE_CUDA
     // Only use CUDA when the data is large (2048 == 256 bins each with at least 8 elements)
-    if (train_data->num_data() < 2048){
+    if (train_data->num_data() < 2048) {
        config_.device_type = std::string("cpu");
     }
 #endif

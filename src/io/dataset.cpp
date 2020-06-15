@@ -239,14 +239,14 @@ std::vector<std::vector<int>> FindGroups(
 }
 
 std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-                                                  int** sample_indices, 
-                                                  double** sample_values, 
+                                                  int** sample_indices,
+                                                  double** sample_values,
                                                   const int* num_per_col,
-                                                  int num_sample_col, 
+                                                  int num_sample_col,
                                                   data_size_t total_sample_cnt,
-                                                  const std::vector<int>& used_features, 
+                                                  const std::vector<int>& used_features,
                                                   data_size_t num_data,
-                                                  bool is_sparse, 
+                                                  bool is_sparse,
                                                   std::vector<int8_t>* multi_val_group,
                                                   bool is_use_gpu) {
   Common::FunctionTimer fun_timer("Dataset::FastFeatureBundling", global_timer);
@@ -355,15 +355,15 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
     bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");  // LGBM_CUDA
-    features_in_group = FastFeatureBundling(*bin_mappers, 
-                                            sample_non_zero_indices, 
-                                            sample_values, 
+    features_in_group = FastFeatureBundling(*bin_mappers,
+                                            sample_non_zero_indices,
+                                            sample_values,
                                             num_per_col,
-                                            num_sample_col, 
+                                            num_sample_col,
                                             static_cast<data_size_t>(total_sample_cnt),
-                                            used_features, 
-                                            num_data_, 
-                                            io_config.is_enable_sparse, 
+                                            used_features,
+                                            num_data_,
+                                            io_config.is_enable_sparse,
                                             &group_is_multi_val,
                                             lgbm_is_gpu_used);
   }

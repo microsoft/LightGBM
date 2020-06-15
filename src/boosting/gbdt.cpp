@@ -128,8 +128,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   if (config_->device_type == std::string("cuda")) {
     if (is_use_subset_) {
       tree_learner_->Init(tmp_subset_.get(), is_constant_hessian_, is_use_subset_);
-    }
-    else {
+    } else {
       tree_learner_->Init(train_data_, is_constant_hessian_, is_use_subset_);
     }
   } else {
@@ -262,7 +261,7 @@ void GBDT::Bagging(int iter) {
       tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
     } else {  // LGBM_CUDA
       // NEW get subset
-      bool resized= tmp_subset_->ReSize(bag_data_cnt_);
+      bool resized = tmp_subset_->ReSize(bag_data_cnt_);
 
      if (resized && (config_->device_type == std::string("cuda"))) {
         size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
@@ -284,7 +283,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   Common::FunctionTimer fun_timer("GBDT::Train", global_timer);
   bool is_finished = false;
 
- // LGBM_CUDA
+  // LGBM_CUDA
   auto start_time = std::chrono::steady_clock::now();
 
   for (int iter = 0; iter < config_->num_iterations && !is_finished; ++iter) {
@@ -379,13 +378,11 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 
 // LGBM_CUDA
 bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
+  // LGBM_CUDA invoke bagging during the first iteration
+  if (config_->device_type == std::string("cuda") && (iter_ == 0)) {
+    // auto start_time = std::chrono::steady_clock::now();
 
- // LGBM_CUDA invoke bagging during the first iteration
- if (config_->device_type == std::string("cuda") && (iter_ == 0)) {
-
-//    auto start_time = std::chrono::steady_clock::now();
-
-    Bagging(iter_); 
+    Bagging(iter_);
   }
 
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
@@ -397,7 +394,7 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
     }
 
     // LGBM_CUDA
-//    auto start_time = std::chrono::steady_clock::now();
+    // auto start_time = std::chrono::steady_clock::now();
 
     Boosting();
 
@@ -406,11 +403,10 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
   }
 
   // LGBM_CUDA  bagging logic
-  // Bagging(iter_); 
+  // Bagging(iter_);
 
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-
     // LGBM_CUDA
 //    auto start_time = std::chrono::steady_clock::now();
 
@@ -418,7 +414,6 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
     std::unique_ptr<Tree> new_tree(new Tree(2));
 
     if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
-
       auto grad = gradients + offset;
       auto hess = hessians + offset;
 
@@ -434,8 +429,7 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
 
       // need to copy gradients for bagging subset.
       if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-      
-        #pragma omp parallel for schedule(static) // LGBM_CUDA
+        #pragma omp parallel for schedule(static)  // LGBM_CUDA
         for (int i = 0; i < bag_data_cnt_; ++i) {
           tmp_grad[i] = grad[bag_data_indices_[i]];  // LGBM_CUDA
           tmp_hess[i] = hess[bag_data_indices_[i]];  // LGBM_CUDA
@@ -482,11 +476,10 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
     int iter_next = iter_ + 1;
       if (iter_next < config_->num_iterations) {
 
-//       auto start_time = std::chrono::steady_clock::now();
+      // auto start_time = std::chrono::steady_clock::now();
 
        // bagging logic
        Bagging(iter_next);
-
       }
     }
     // add model
@@ -508,7 +501,6 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
-
   if (config_->device_type == std::string("cuda")) {  // LGBM_CUDA
      return TrainOneIterCUDA(gradients, hessians);
   }
@@ -966,17 +958,16 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   } else {
     bag_data_cnt_ = num_data_;
     if (config_->device_type == std::string("cuda")) {  // LGBM_CUDA
-       if (tmp_subset_ == nullptr){
-          tmp_subset_.reset(new Dataset(bag_data_cnt_));
-          tmp_subset_->CopyFeatureMapperFrom(train_data_);
-          size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-          tmp_gradients_.resize(total_size);
-          tmp_hessians_.resize(total_size);
-          is_use_subset_ = false;
-          bag_data_indices_.clear();
-       }
-    }
-    else {
+      if (tmp_subset_ == nullptr){
+        tmp_subset_.reset(new Dataset(bag_data_cnt_));
+        tmp_subset_->CopyFeatureMapperFrom(train_data_);
+        size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+        tmp_gradients_.resize(total_size);
+        tmp_hessians_.resize(total_size);
+        is_use_subset_ = false;
+        bag_data_indices_.clear();
+      }
+    } else {
       bag_data_indices_.clear();
       bagging_runner_.ReSize(0);
       is_use_subset_ = false;

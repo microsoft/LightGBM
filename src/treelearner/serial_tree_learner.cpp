@@ -336,11 +336,10 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
 
 #ifdef USE_CUDA
-  if (LGBM_config_::current_learner == use_cpu_learner){
-      SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract); 
-  }
-  else{
-      ConstructHistograms(is_feature_used, use_subtract);
+  if (LGBM_config_::current_learner == use_cpu_learner) {
+    SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
+  } else {
+    ConstructHistograms(is_feature_used, use_subtract);
   }
 #else
   ConstructHistograms(is_feature_used, use_subtract);

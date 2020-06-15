@@ -618,9 +618,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   /* LGBM_CUDA get number of GPUs */
   GetInt(params, "num_gpu", &num_gpu);
-  CHECK(num_gpu > 0);
+  CHECK_GT(num_gpu, 0);
 #endif
-
 }
 
 std::string Config::SaveMembersToString() const {

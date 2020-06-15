@@ -3,12 +3,13 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifdef USE_CUDA
+#include "cuda_tree_learner.h"
+
 #include <algorithm>
 #include <vector>
 
 #include <pthread.h>
 
-#include "cuda_tree_learner.h"
 #include "../io/dense_bin.hpp"
 
 #include <LightGBM/utils/array_args.h>
@@ -58,8 +59,11 @@ CUDATreeLearner::CUDATreeLearner(const Config* config)
   :SerialTreeLearner(config) {
   use_bagging_ = false;
   nthreads_ = 0;
-  if (config->gpu_use_dp && USE_DP_FLOAT) Log::Info("LightGBM-CUDA using CUDA trainer with DP float!!");
-  else Log::Info("LightGBM-CUDA using CUDA trainer with SP float!!");
+  if (config->gpu_use_dp && USE_DP_FLOAT) {
+    Log::Info("LightGBM-CUDA using CUDA trainer with DP float!!");
+  } else {
+    Log::Info("LightGBM-CUDA using CUDA trainer with SP float!!");
+  }
 }
 
 CUDATreeLearner::~CUDATreeLearner() {
@@ -67,13 +71,11 @@ CUDATreeLearner::~CUDATreeLearner() {
 
 
 void CUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
-
   // initialize SerialTreeLearner
   SerialTreeLearner::Init(train_data, is_constant_hessian, is_use_subset);
 
   // some additional variables needed for GPU trainer
   num_feature_groups_ = train_data_->num_feature_groups();
-
  
   // LGBM_CUDA: use subset of training data for bagging
   is_use_subset_ = is_use_subset;  
@@ -107,11 +109,11 @@ union Float_t {
 int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int dp_flag, int const_flag) {
   int i;
   int retval = 0;
-  printf("Comparing Histograms, feature_id = %d, size = %d\n", feature_id, (int) size);
+  printf("Comparing Histograms, feature_id = %d, size = %d\n", feature_id, static_cast<int>(size));
   if (dp_flag) {  // double precision
     double af, bf;
-    long long int ai, bi;
-    for (i = 0; i < (int) size; ++i) {
+    int64 ai, bi;
+    for (i = 0; i < static_cast<int>(size); ++i) {
       af = GET_GRAD(h1, i);
       bf = GET_GRAD(h2, i);
       if ((((std::fabs(af - bf))/af) >= 1e-6) && ((std::fabs(af - bf)) >= 1e-6)) {
@@ -119,8 +121,8 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
         ++retval;
       }
       if (const_flag) {
-        ai = GET_HESS(((long long int *) h1), i);
-        bi = GET_HESS(((long long int *) h2), i);
+        ai = GET_HESS(((int64 *) h1), i);
+        bi = GET_HESS(((int64 *) h2), i);
         if (ai != bi) {
           printf("i = %5d, h1.hess %lld, h2.hess %lld\n", i, ai, bi);
           ++retval;
@@ -137,7 +139,7 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
   } else {  // single precision
     float af, bf;
     int ai, bi;
-    for (i = 0; i < (int) size; ++i) {
+    for (i = 0; i < static_cast<int>(size); ++i) {
       af = GET_GRAD(h1, i);
       bf = GET_GRAD(h2, i);
       if ((((std::fabs(af - bf))/af) >= 1e-6) && ((std::fabs(af - bf)) >= 1e-6)) {
@@ -167,7 +169,6 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
 #endif
 
 int CUDATreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
-
   // we roughly want 256 workgroups per device, and we have num_dense_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
 
@@ -177,9 +178,9 @@ int CUDATreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   double t = leaf_num_data / 1024.0;
 
   Log::Debug("We can have at most %d workgroups per feature4 for efficiency reasons"
-         "Best workgroup size per feature for full utilization is %d\n", (int)ceil(t), (1 << exp_workgroups_per_feature));
+         "Best workgroup size per feature for full utilization is %d\n", static_cast<int>(ceil(t)), (1 << exp_workgroups_per_feature));
 
-  exp_workgroups_per_feature = std::min(exp_workgroups_per_feature, (int)ceil(log((double)t)/log(2.0)));
+  exp_workgroups_per_feature = std::min(exp_workgroups_per_feature, static_cast<int>(ceil(log((double)t)/log(2.0))));
   if (exp_workgroups_per_feature < 0)
       exp_workgroups_per_feature = 0;
   if (exp_workgroups_per_feature > kMaxLogWorkgroupsPerFeature)
@@ -189,7 +190,6 @@ int CUDATreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
 }
 
 void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_features) {
-
   // we have already copied ordered gradients, ordered hessians and indices to GPU
   // decide the best number of workgroups working on one feature4 tuple
   // set work group size based on feature size
@@ -198,7 +198,7 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
 
   int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(leaf_num_data);
   std::vector<int> num_gpu_workgroups;
-  ThreadData *thread_data = (ThreadData*)malloc(sizeof(ThreadData) * num_gpu_);
+  ThreadData *thread_data = reinterpret_cast<ThreadData*>(malloc(sizeof(ThreadData) * num_gpu_));
 
   for (int device_id = 0; device_id < num_gpu_; ++device_id) {
     int num_gpu_feature_groups = num_gpu_feature_groups_[device_id];
@@ -209,13 +209,13 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
       CUDASUCCESS_OR_FATAL(cudaFree(device_subhistograms_[device_id]));
       CUDASUCCESS_OR_FATAL(cudaMalloc(&(device_subhistograms_[device_id]), (size_t) num_workgroups * dword_features_ * device_bin_size_ * (3 * hist_bin_entry_sz_ / 2)));
     }
-    //set thread_data
+    // set thread_data
     SetThreadData(thread_data, device_id, histogram_size_, leaf_num_data, use_all_features,
                   num_workgroups, exp_workgroups_per_feature);
   }
- 
+
   for (int device_id = 0; device_id < num_gpu_; ++device_id) {
-    if (pthread_create(cpu_threads_[device_id], NULL, launch_cuda_histogram, (void *)(&thread_data[device_id]))) {
+    if (pthread_create(cpu_threads_[device_id], NULL, launch_cuda_histogram, reinterpret_cast<void *>(&thread_data[device_id]))) {
         fprintf(stderr, "Error in creating threads. Exiting\n");
         exit(0);
     }
@@ -231,13 +231,12 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
   }
 
   for (int device_id = 0; device_id < num_gpu_; ++device_id) {
-
     // copy the results asynchronously. Size depends on if double precision is used
 
     size_t output_size = num_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
     size_t host_output_offset = offset_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
 
-    CUDASUCCESS_OR_FATAL(cudaMemcpyAsync((char*)host_histogram_outputs_ + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost, stream_[device_id]));
+    CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(reinterpret_cast<char*>(host_histogram_outputs_) + host_output_offset, device_histogram_outputs_[device_id], output_size, cudaMemcpyDeviceToHost, stream_[device_id]));
     CUDASUCCESS_OR_FATAL(cudaEventRecord(histograms_wait_obj_[device_id], stream_[device_id]));
   }
 }
@@ -245,12 +244,11 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
 
 template <typename HistType>
 void CUDATreeLearner::WaitAndGetHistograms(FeatureHistogram* leaf_histogram_array) {
-  HistType* hist_outputs = (HistType*) host_histogram_outputs_;
+  HistType* hist_outputs = reinterpret_cast<HistType*>(host_histogram_outputs_);
 
   #pragma omp parallel for schedule(static, num_gpu_)
   for (int device_id = 0; device_id < num_gpu_; ++device_id) {
-
-//    auto start_time = std::chrono::steady_clock::now();
+    // auto start_time = std::chrono::steady_clock::now();
 
     // when the output is ready, the computation is done
     CUDASUCCESS_OR_FATAL(cudaEventSynchronize(histograms_wait_obj_[device_id]));
@@ -263,9 +261,9 @@ void CUDATreeLearner::WaitAndGetHistograms(FeatureHistogram* leaf_histogram_arra
       continue;
     }
     int dense_group_index = dense_feature_group_map_[i];
-    //auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
+    // auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
     auto old_histogram_array = leaf_histogram_array[dense_group_index].RawData() - kHistOffset;
-    int bin_size = train_data_->FeatureGroupNumBin(dense_group_index); 
+    int bin_size = train_data_->FeatureGroupNumBin(dense_group_index);
 
     for (int j = 0; j < bin_size; ++j) {
       GET_GRAD(old_histogram_array, j) = GET_GRAD(hist_outputs, i * device_bin_size_+ j);
@@ -276,7 +274,6 @@ void CUDATreeLearner::WaitAndGetHistograms(FeatureHistogram* leaf_histogram_arra
 
 // LGBM_CUDA
 void CUDATreeLearner::CountDenseFeatureGroups() {
-
   num_dense_feature_groups_ = 0;
 
   for (int i = 0; i < num_feature_groups_; ++i) {
@@ -291,7 +288,6 @@ void CUDATreeLearner::CountDenseFeatureGroups() {
 
 // LGBM_CUDA
 void CUDATreeLearner::prevAllocateGPUMemory() {
-
   // how many feature-group tuples we have
   // leave some safe margin for prefetching
   // 256 work-items per workgroup. Each work-item prefetches one tuple for that feature
@@ -325,12 +321,12 @@ void CUDATreeLearner::prevAllocateGPUMemory() {
 #if 0
   // allocate feature mask, for disabling some feature-groups' histogram calculation
   if (feature_masks_.data() != NULL) {
-     cudaPointerAttributes attributes;
-     cudaPointerGetAttributes (&attributes, feature_masks_.data());
-    
-     if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) { 
-        CUDASUCCESS_OR_FATAL(cudaHostUnregister(feature_masks_.data()));
-     }
+    cudaPointerAttributes attributes;
+    cudaPointerGetAttributes(&attributes, feature_masks_.data());
+
+    if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) { 
+      CUDASUCCESS_OR_FATAL(cudaHostUnregister(feature_masks_.data()));
+    }
   }
 #endif
 

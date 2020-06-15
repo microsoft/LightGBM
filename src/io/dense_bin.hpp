@@ -464,16 +464,16 @@ class DenseBin : public Bin {
   DenseBin<VAL_T, IS_4BIT>* Clone() override;
 
  private:
-   data_size_t num_data_;
+  data_size_t num_data_;
 #ifdef USE_CUDA
-   std::vector<VAL_T, CHAllocator<VAL_T>> data_; // LGBM_CUDA
+  std::vector<VAL_T, CHAllocator<VAL_T>> data_; // LGBM_CUDA
 #else
-   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
+  std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
 #endif
-   std::vector<uint8_t> buf_;
+  std::vector<uint8_t> buf_;
 
-   DenseBin<VAL_T, IS_4BIT>(const DenseBin<VAL_T, IS_4BIT>& other)
-       : num_data_(other.num_data_), data_(other.data_) {}
+  DenseBin<VAL_T, IS_4BIT>(const DenseBin<VAL_T, IS_4BIT>& other)
+      : num_data_(other.num_data_), data_(other.data_) {}
 };
 
 template <typename VAL_T, bool IS_4BIT>

@@ -1,13 +1,17 @@
-   #ifdef USE_CUDA
-   
-   #include "cuda_kernel_launcher.h"
-   #include <cuda_runtime.h>
-   #include <cstdio>
-   #include <LightGBM/utils/log.h>
-   
-   using namespace LightGBM;
-   
-   void cuda_histogram(
+/*!
+ * Copyright (c) 2020 IBM Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
+#ifdef USE_CUDA
+
+#include "cuda_kernel_launcher.h"
+#include <cstdio>
+#include <cuda_runtime.h>
+#include <LightGBM/utils/log.h>
+
+using namespace LightGBM;
+
+void cuda_histogram(
                 int             histogram_size,
                 data_size_t     leaf_num_data,
                 data_size_t     num_data,
@@ -28,147 +32,136 @@
                 void*           arg9,
                 size_t          exp_workgroups_per_feature) {
    
-   if (histogram_size == 16) {
-      if (leaf_num_data == num_data) {
-         if (use_all_features) {
-            if (!is_constant_hessian) 
-               histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
+  if (histogram_size == 16) {
+    if (leaf_num_data == num_data) {
+      if (use_all_features) {
+        if (!is_constant_hessian) 
+          histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
-               histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
+        else 
+           histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
-         else {   
-            if (!is_constant_hessian) 
-               histogram16_fulldata<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
+      } else {   
+        if (!is_constant_hessian) 
+           histogram16_fulldata<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
-               histogram16_fulldata<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
+        else 
+           histogram16_fulldata<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
       }
-      else {
-         if (use_all_features) {
-            // seems all features is always enabled, so this should be the same as fulldata
-            if (!is_constant_hessian) 
-               histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
+    } else {
+      if (use_all_features) {
+        // seems all features is always enabled, so this should be the same as fulldata
+        if (!is_constant_hessian) 
+          histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else  
-               histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
+        else  
+          histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
-         else {
-            if (!is_constant_hessian) 
-               histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
+      } else {
+        if (!is_constant_hessian) 
+          histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
+        else 
                histogram16<<<16*num_workgroups, 16, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
       }
-   }
-   else if (histogram_size == 64) {
-      if (leaf_num_data == num_data) {
-         if (use_all_features) {
-            if (!is_constant_hessian) 
-               histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
+    }
+  } else if (histogram_size == 64) {
+    if (leaf_num_data == num_data) {
+      if (use_all_features) {
+        if (!is_constant_hessian) 
+          histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
-               histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
+        else 
+          histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
-         else {   
-            if (!is_constant_hessian) 
-               histogram64_fulldata<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
+      } else {   
+        if (!is_constant_hessian) 
+          histogram64_fulldata<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
-               histogram64_fulldata<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
+        else 
+          histogram64_fulldata<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
       }
-      else {
-         if (use_all_features) {
-            // seems all features is always enabled, so this should be the same as fulldata
-            if (!is_constant_hessian)
-               histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
+    } else {
+      if (use_all_features) {
+        // seems all features is always enabled, so this should be the same as fulldata
+        if (!is_constant_hessian)
+          histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else  
-               histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
+        else  
+          histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
-         else {
-            if (!is_constant_hessian) 
-               histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
+      } else {
+        if (!is_constant_hessian) 
+          histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
-               histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
+        else 
+          histogram64<<<4*num_workgroups, 64, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
       }
-   }
-   else {
-      if (leaf_num_data == num_data) {
-         if (use_all_features) {
-            if (!is_constant_hessian) 
-               histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
+    }
+  } else {
+    if (leaf_num_data == num_data) {
+      if (use_all_features) {
+        if (!is_constant_hessian) 
+          histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
-               histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
+        else 
+          histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
-         else {   
-            if (!is_constant_hessian) 
-               histogram256_fulldata<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
+      } else {   
+        if (!is_constant_hessian) 
+          histogram256_fulldata<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
-               histogram256_fulldata<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
+        else 
+          histogram256_fulldata<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
       }
-      else {
-         if (use_all_features) {
-            // seems all features is always enabled, so this should be the same as fulldata
-            if (!is_constant_hessian)
-               histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
+    } else {
+      if (use_all_features) {
+        // seems all features is always enabled, so this should be the same as fulldata
+        if (!is_constant_hessian)
+          histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else  
-               histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
+        else  
+          histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
-         else {
-            if (!is_constant_hessian) 
-               histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
+      } else {
+        if (!is_constant_hessian) 
+          histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   static_cast<float*>(arg6), arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-            else 
-               histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
+         else 
+          histogram256<<<num_workgroups, 256, 0, stream>>>( arg0, arg1, arg2,
                   reinterpret_cast<const uint*>(arg3), arg4, arg5,
                   arg6_const, arg7, arg8, static_cast<acc_type*>(arg9), exp_workgroups_per_feature);
-         }
       }
-   }
+    }
+  }
 }
      
 #endif // USE_CUDA

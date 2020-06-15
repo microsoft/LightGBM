@@ -22,9 +22,9 @@ namespace LightGBM {
 #define use_cuda_learner 2
 
 class LGBM_config_ {
-  public:
-    static int current_device;  // Default: lgbm_device_cpu 
-    static int current_learner;  // Default: use_cpu_learner
+ public:
+  static int current_device;  // Default: lgbm_device_cpu
+  static int current_learner;  // Default: use_cpu_learner
 };
 
 }  // namespace LightGBM
@@ -48,9 +48,9 @@ struct CHAllocator {
       } else {
         ptr = reinterpret_cast<T*>(malloc(n*sizeof(T)));
       }
-   #else
+    #else
       ptr = reinterpret_cast<T*>(malloc(n*sizeof(T)));
-   #endif
+    #endif
     return ptr;
   }
 
@@ -60,17 +60,17 @@ struct CHAllocator {
     #ifdef USE_CUDA
       if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
-        cudaPointerGetAttributes (&attributes, p);
+        cudaPointerGetAttributes(&attributes, p);
         if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
           cudaFreeHost(p);
         }
-      } else { 
+      } else {
         free(p);
       }
     #else
       free(p);
     #endif
- }
+  }
 };
 template <class T, class U>
 bool operator==(const CHAllocator<T>&, const CHAllocator<U>&);
