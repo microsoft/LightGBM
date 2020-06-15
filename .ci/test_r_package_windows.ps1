@@ -29,34 +29,60 @@ function Download-Miktex-Setup {
     Download-File-With-Retries $FileToDownload $destfile
 }
 
-$env:R_WINDOWS_VERSION = "3.6.3"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/Rtools/usr/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_MIKTEX_ARCHIVE = "$env:CTAN_MIRROR/setup/windows-x64/"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
+# Get details needed for installing R components
+#
+# NOTES:
+#    * some paths and file names are different on R4.0
+$env:R_MAJOR_VERSION = $env:R_VERSION.split('.')[0]
+if ($env:R_MAJOR_VERSION -eq "3") {
+  $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw_64/bin"
+  $env:RTOOLS_EXE_FILE = "Rtools35.exe"
+  $env:R_WINDOWS_VERSION = "3.6.3"
+} elseif ($env:R_MAJOR_VERSION -eq "4") {
+  $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw64/bin"
+  $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
+  $env:R_WINDOWS_VERSION = "4.0.0"
+} else {
+  Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
+  Check-Output $false
+}
+
 if ($env:COMPILER -eq "MINGW") {
-  $env:CXX = "$env:R_LIB_PATH/Rtools/mingw_64/bin/g++.exe"
-  $env:CC = "$env:R_LIB_PATH/Rtools/mingw_64/bin/gcc.exe"
+  $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
+  $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
 }
 
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
-if ($env:COMPILER -eq "MINGW") {
+if ($env:TOOLCHAIN -eq "MINGW") {
   Write-Output "Telling R to use MinGW"
   $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
-  ((Get-Content -path $install_libs -Raw) -replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
+  ((Get-Content -Path $install_libs -Raw) -Replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
+} elseif ($env:TOOLCHAIN -eq "MSYS") {
+  Write-Output "Telling R to use MSYS"
+  $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
+  ((Get-Content -Path $install_libs -Raw) -Replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
+} elseif ($env:TOOLCHAIN -eq "MSVC") {
+  # no customization for MSVC
+} else {
+  Write-Output "[ERROR] Unrecognized compiler: $env:TOOLCHAIN"
+  Check-Output $false
 }
 
 # download R and RTools
 Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe" -destfile "Rtools.exe"
+Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 # Install R
 Write-Output "Installing R"
@@ -67,9 +93,9 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
-# MiKTeX and pandoc can be skipped on non-MINGW builds, since we don't
+# MiKTeX and pandoc can be skipped on MSVC builds, since we don't
 # build the package documentation for those
-if ($env:COMPILER -eq "MINGW") {
+if ($env:COMPILER -ne "MSVC") {
     Download-Miktex-Setup "$env:CTAN_MIKTEX_ARCHIVE" "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
@@ -115,12 +141,13 @@ if ($env:COMPILER -ne "MSVC") {
   $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
   $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
   $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 3
+  $ALLOWED_CHECK_NOTES = 4
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
       Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
       Check-Output $False
   }
 } else {
+  $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
   Rscript build_r.R *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
@@ -136,6 +163,16 @@ $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for wor
 if ($checks.Matches.length -eq 0) {
   Write-Output "The wrong compiler was used. Check the build logs."
   Check-Output $False
+}
+
+# Checking that we got the right toolchain for MinGW. If using MinGW, both
+# MinGW and MSYS toolchains are supported
+if ($env:COMPILER -eq "MINGW") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Trying to build with.*$env:TOOLCHAIN"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "The wrong toolchain was used. Check the build logs."
+    Check-Output $False
+  }
 }
 
 if ($env:COMPILER -eq "MSVC") {

@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }})
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -19,15 +19,35 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
+            r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
           - os: ubuntu-latest
             task: r-package
             compiler: clang
+            r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
           - os: macOS-latest
             task: r-package
             compiler: gcc
+            r_version: 3.6
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
           - os: macOS-latest
             task: r-package
             compiler: clang
+            r_version: 3.6
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
@@ -53,5 +73,6 @@ jobs:
           export CONDA="$HOME/miniconda"
           export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
           export LGB_VER=$(head -n 1 VERSION.txt)
+          export R_VERSION="${{ matrix.r_version }}"
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh

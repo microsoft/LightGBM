@@ -13,11 +13,11 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
 
+#include <LightGBM/export.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-
-#include <LightGBM/export.h>
 
 
 typedef void* DatasetHandle;  /*!< \brief Handle of dataset. */
@@ -280,13 +280,21 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetFeatureNames(DatasetHandle handle,
 /*!
  * \brief Get feature names of dataset.
  * \param handle Handle of dataset
- * \param[out] feature_names Feature names, should pre-allocate memory
+ * \param len Number of ``char*`` pointers stored at ``out_strs``.
+ *            If smaller than the max size, only this many strings are copied
  * \param[out] num_feature_names Number of feature names
+ * \param buffer_len Size of pre-allocated strings.
+ *                   Content is copied up to ``buffer_len - 1`` and null-terminated
+ * \param[out] out_buffer_len String sizes required to do the full string copies
+ * \param[out] feature_names Feature names, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNames(DatasetHandle handle,
-                                                  char** feature_names,
-                                                  int* num_feature_names);
+                                                  const int len,
+                                                  int* num_feature_names,
+                                                  const size_t buffer_len,
+                                                  size_t* out_buffer_len,
+                                                  char** feature_names);
 
 /*!
  * \brief Free space for dataset.

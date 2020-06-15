@@ -6,15 +6,15 @@
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 #ifdef _OPENMP
 
+#include <LightGBM/utils/log.h>
+
+#include <omp.h>
+
 #include <exception>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <vector>
-
-#include <omp.h>
-
-#include <LightGBM/utils/log.h>
 
 inline int OMP_NUM_THREADS() {
   int ret = 1;
