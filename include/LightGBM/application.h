@@ -38,7 +38,7 @@ class Application {
 
   // LGBM_CUDA
   /*! \brief call to get configuration */
-  Config GetConfig() {return config_ ;} ;
+  Config GetConfig() {return config_ ;}
 
  private:
   /*! \brief Load parameters from command line and config file*/

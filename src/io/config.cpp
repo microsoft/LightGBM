@@ -126,7 +126,7 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
       *device_type = "cpu";
     } else if (value == std::string("gpu")) {
       *device_type = "gpu";
-    } else if (value == std::string("cuda")) { // LGBM_CUDA
+    } else if (value == std::string("cuda")) {  // LGBM_CUDA
       *device_type = "cuda";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());

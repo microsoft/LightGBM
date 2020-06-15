@@ -57,7 +57,7 @@ class TreeLearner {
   * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian, Json& forced_split_json) = 0;
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian, const Json& forced_split_json) = 0;
 
   /*!
   * \brief use an existing tree to fit the new gradients and hessians.

@@ -43,17 +43,16 @@ Application::Application(int argc, char** argv) {
     Log::Fatal("No training/prediction data, application quit");
   }
 
-//LGBM_CUDA
+// LGBM_CUDA
 #ifdef USE_CUDA
-  if (config_.device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
+  if (config_.device_type == std::string("cuda")) {
+      LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
 
       config_.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config_.bagging_fraction == 1.0){config_.bagging_fraction = 0.8;}
-      if (config_.bagging_freq == 0) {config_.bagging_freq = 1;}
+      if (config_.bagging_fraction == 1.0) { config_.bagging_fraction = 0.8; }
+      if (config_.bagging_freq == 0) { config_.bagging_freq = 1; }
   }
 #endif
-
 }
 
 Application::~Application() {

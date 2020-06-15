@@ -25,9 +25,9 @@ SerialTreeLearner::SerialTreeLearner(const Config* config)
 SerialTreeLearner::~SerialTreeLearner() {
 }
 
-//LGBM_CUDA
+// LGBM_CUDA
 void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
-  (void)is_use_subset;	// UNUSED
+  (void)is_use_subset;  // UNUSED
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   num_features_ = train_data_->num_features();
@@ -150,7 +150,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves));
 }
 
-Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, Json& forced_split_json) {
+Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian, const Json& forced_split_json) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
@@ -441,7 +441,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   }
 }
 
-int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
                                        int* right_leaf, int *cur_depth,
                                        bool *aborted_last_force_split) {
   (void)aborted_last_force_split;

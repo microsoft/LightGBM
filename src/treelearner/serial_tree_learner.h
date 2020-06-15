@@ -80,7 +80,7 @@ class SerialTreeLearner: public TreeLearner {
   }
 
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
-              Json& forced_split_json) override;
+              const Json& forced_split_json) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
@@ -163,7 +163,7 @@ class SerialTreeLearner: public TreeLearner {
                   bool update_cnt);
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
-  virtual int32_t ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+  virtual int32_t ForceSplits(Tree* tree, const Json& forced_split_json, int* left_leaf,
                               int* right_leaf, int* cur_depth,
                               bool *aborted_last_force_split);
 
@@ -209,11 +209,11 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
-#elif USE_CUDA //LGBM_CUDA
+#elif USE_CUDA // LGBM_CUDA
   /*! \brief gradients of current iteration, ordered for cache optimized */
-  std::vector<score_t,CHAllocator<score_t>> ordered_gradients_;
+  std::vector<score_t, CHAllocator<score_t>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
-  std::vector<score_t,CHAllocator<score_t>> ordered_hessians_;
+  std::vector<score_t, CHAllocator<score_t>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_gradients_;

@@ -1,8 +1,8 @@
-/*
+/*!
  * ibmGBT: IBM CUDA Accelerated LightGBM
  *
  * IBM Confidential
- * (C) Copyright IBM Corp. 2019. All Rights Reserved.
+ * Copyright (c) 2019 IBM Corporation. All rights reserved.
  *
  * The source code for this program is not published or otherwise
  * divested of its trade secrets, irrespective of what has been
@@ -15,7 +15,7 @@
 #include "histogram_16_64_256.hu"
 #include "stdio.h"
 
-#define PRINT(b,t,fmt,...) \
+#define PRINT(b, t, fmt, ...) \
 if (b == gtid && t == ltid) { \
   printf(fmt, __VA_ARGS__); \
 }
@@ -132,7 +132,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
      const uint gtid = blockIdx.x * blockDim.x + threadIdx.x;
      const ushort ltid = threadIdx.x;
-     const ushort lsize = NUM_BINS; // get_local_size(0);
+     const ushort lsize = NUM_BINS;  // get_local_size(0);
      const ushort group_id = blockIdx.x;
 
      // local memory per workgroup is 3 KB
@@ -185,7 +185,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      if (!feature_mask) {
          return;
      } else {
-         feature_mask = feature_mask - 1; // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
+         feature_mask = feature_mask - 1;  // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
      }
 
      // STAGE 1: read feature data, and gradient and hessian
@@ -291,7 +291,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #if CONST_HESSIAN == 1
      // make a final reduction
      gh_hist[ltid * 2] += gh_hist[ltid * 2 + 1];
-     gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid]; // LGBM_CUDA: counter move to this position 
+     gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // LGBM_CUDA: counter move to this position 
      __syncthreads();
      #endif
 
@@ -358,7 +358,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // only 1 work group, no need to increase counter
      // the reduction will become a simple copy
      if (1) {
-         uint old_val; // dummy
+         uint old_val;  // dummy
  #endif
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
@@ -486,7 +486,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
      const uint gtid = blockIdx.x * blockDim.x + threadIdx.x;
      const ushort ltid = threadIdx.x;
-     const ushort lsize = NUM_BINS; // get_local_size(0);
+     const ushort lsize = NUM_BINS;  // get_local_size(0);
      const ushort group_id = blockIdx.x;
 
      // local memory per workgroup is 3 KB
@@ -539,7 +539,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      if (!feature_mask) {
          return;
      } else {
-         feature_mask = feature_mask - 1; // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
+         feature_mask = feature_mask - 1;  // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
      }
 
      // STAGE 1: read feature data, and gradient and hessian
@@ -645,7 +645,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #if CONST_HESSIAN == 1
      // make a final reduction
      gh_hist[ltid * 2] += gh_hist[ltid * 2 + 1];
-     gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid]; // LGBM_CUDA: counter move to this position 
+     gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // LGBM_CUDA: counter move to this position 
      __syncthreads();
      #endif
 
@@ -712,7 +712,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // only 1 work group, no need to increase counter
      // the reduction will become a simple copy
      if (1) {
-         uint old_val; // dummy
+         uint old_val;  // dummy
  #endif
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);
@@ -841,7 +841,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
      const uint gtid = blockIdx.x * blockDim.x + threadIdx.x;
      const ushort ltid = threadIdx.x;
-     const ushort lsize = NUM_BINS; // get_local_size(0);
+     const ushort lsize = NUM_BINS;  // get_local_size(0);
      const ushort group_id = blockIdx.x;
 
      // local memory per workgroup is 3 KB
@@ -893,7 +893,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      if (!feature_mask) {
          return;
      } else {
-         feature_mask = feature_mask - 1; // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
+         feature_mask = feature_mask - 1;  // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
      }
 
      // STAGE 1: read feature data, and gradient and hessian
@@ -905,7 +905,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      ushort bin;
 
      feature = feature_data[ind >> feature_mask];
-	     if (feature_mask) {
+             if (feature_mask) {
         feature = (feature >> ((ind & 1) << 2)) & 0xf;
      }
      bin = feature;
@@ -997,7 +997,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      #if CONST_HESSIAN == 1
      // make a final reduction
      gh_hist[ltid * 2] += gh_hist[ltid * 2 + 1];
-     gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid]; // LGBM_CUDA: counter move to this position 
+     gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // LGBM_CUDA: counter move to this position 
      __syncthreads();
      #endif
 
@@ -1064,7 +1064,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
      // only 1 work group, no need to increase counter
      // the reduction will become a simple copy
      if (1) {
-         uint old_val; // dummy
+         uint old_val;  // dummy
  #endif
          // locate our feature's block in output memory
          uint output_offset = (feature_id << power_feature_workgroups);

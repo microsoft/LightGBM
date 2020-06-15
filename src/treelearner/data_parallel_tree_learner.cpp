@@ -20,9 +20,9 @@ DataParallelTreeLearner<TREELEARNER_T>::~DataParallelTreeLearner() {
 }
 
 template <typename TREELEARNER_T>
-void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) { //LGBM_CUDA
+void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {  // LGBM_CUDA
   // initialize SerialTreeLearner
-  TREELEARNER_T::Init(train_data, is_constant_hessian, is_use_subset); //LGBM_CUDA
+  TREELEARNER_T::Init(train_data, is_constant_hessian, is_use_subset);  // LGBM_CUDA
   // Get local rank and global machine size
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
@@ -256,7 +256,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, in
 }
 
 // instantiate template classes, otherwise linker cannot find the code
-template class DataParallelTreeLearner<CUDATreeLearner>; // LGBM_CUDA
+template class DataParallelTreeLearner<CUDATreeLearner>;  // LGBM_CUDA
 template class DataParallelTreeLearner<GPUTreeLearner>;
 template class DataParallelTreeLearner<SerialTreeLearner>;
 

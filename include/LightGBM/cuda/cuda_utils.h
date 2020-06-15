@@ -5,7 +5,7 @@
 #ifndef LGBM_CUDA_UTILS_H
 #define LGBM_CUDA_UTILS_H
 
-//LGBM_CUDA
+// LGBM_CUDA
 
 #ifdef USE_CUDA
 
@@ -14,13 +14,11 @@
 #include <stdio.h>
 
 #define CUDASUCCESS_OR_FATAL(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-   if (code != cudaSuccess)
-   {
-      LightGBM::Log::Fatal("CUDA_RUNTIME: %s %s %d\n", cudaGetErrorString(code), file, line);
-      if (abort) exit(code);
-   }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
+  if (code != cudaSuccess) {
+    LightGBM::Log::Fatal("CUDA_RUNTIME: %s %s %d\n", cudaGetErrorString(code), file, line);
+    if (abort) exit(code);
+  }
 }
 
 #endif /* USE_CUDA */

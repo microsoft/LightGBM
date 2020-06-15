@@ -8,7 +8,7 @@
    using namespace LightGBM;
    
    void cuda_histogram(
-     		int		histogram_size,
+                int             histogram_size,
                 data_size_t     leaf_num_data,
                 data_size_t     num_data,
                 bool            use_all_features,
@@ -25,7 +25,7 @@
                 score_t         arg6_const,
                 char*           arg7,
                 volatile int*   arg8,
-                void*		arg9,
+                void*           arg9,
                 size_t          exp_workgroups_per_feature) {
    
    if (histogram_size == 16) {

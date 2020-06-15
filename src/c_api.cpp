@@ -43,16 +43,15 @@ inline int LGBM_APIHandleException(const std::string& ex) {
   return -1;
 }
 
-//LGBM_CUDA
-inline void AdditionalConfig(Config *config)
-{
+// LGBM_CUDA
+inline void AdditionalConfig(Config *config) {
 #ifdef USE_CUDA
-  if (config->device_type == std::string("cuda")){
-      LightGBM::LGBM_config_::current_device=lgbm_device_cuda;
+  if (config->device_type == std::string("cuda")) {
+      LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
 
       config->is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config->bagging_fraction == 1.0){config->bagging_fraction = 0.8;}
-      if (config->bagging_freq == 0) {config->bagging_freq = 1;}
+      if (config->bagging_fraction == 1.0) { config->bagging_fraction = 0.8; }
+      if (config->bagging_freq == 0) { config->bagging_freq = 1; }
   }
 #else
   (void)(config);       // UNUSED

@@ -18,8 +18,8 @@
 namespace LightGBM {
 
 #ifdef USE_CUDA
-int LGBM_config_::current_device=lgbm_device_cpu;
-int LGBM_config_::current_learner=use_cpu_learner;
+int LGBM_config_::current_device = lgbm_device_cpu;
+int LGBM_config_::current_learner = use_cpu_learner;
 #endif
 
 GBDT::GBDT()
@@ -66,8 +66,8 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 // LGBM_CUDA
 #ifdef USE_CUDA
   if (config_->device_type == std::string("cuda")) {
-    // LGBM_config_::current_device=lgbm_device_cuda; moved to application.cpp
-     LGBM_config_::current_learner=use_cuda_learner;
+    // LGBM_config_::current_device = lgbm_device_cuda; moved to application.cpp
+    LGBM_config_::current_learner = use_cuda_learner;
   }
 #endif
 
@@ -260,7 +260,7 @@ void GBDT::Bagging(int iter) {
     // set bagging data to tree learner
     if (!is_use_subset_) {
       tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
-    } else { // LGBM_CUDA
+    } else {  // LGBM_CUDA
       // NEW get subset
       bool resized= tmp_subset_->ReSize(bag_data_cnt_);
 
@@ -284,7 +284,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   Common::FunctionTimer fun_timer("GBDT::Train", global_timer);
   bool is_finished = false;
 
- //LGBM_CUDA
+ // LGBM_CUDA
   auto start_time = std::chrono::steady_clock::now();
 
   for (int iter = 0; iter < config_->num_iterations && !is_finished; ++iter) {
@@ -437,8 +437,8 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
       
         #pragma omp parallel for schedule(static) // LGBM_CUDA
         for (int i = 0; i < bag_data_cnt_; ++i) {
-          tmp_grad[i] = grad[bag_data_indices_[i]]; // LGBM_CUDA
-          tmp_hess[i] = hess[bag_data_indices_[i]]; // LGBM_CUDA
+          tmp_grad[i] = grad[bag_data_indices_[i]];  // LGBM_CUDA
+          tmp_hess[i] = hess[bag_data_indices_[i]];  // LGBM_CUDA
         }
       }
 
@@ -509,7 +509,7 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 
-  if (config_->device_type == std::string("cuda")){ //LGBM_CUDA
+  if (config_->device_type == std::string("cuda")) {  // LGBM_CUDA
      return TrainOneIterCUDA(gradients, hessians);
   }
 
@@ -965,7 +965,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     }
   } else {
     bag_data_cnt_ = num_data_;
-    if (config_->device_type == std::string("cuda")){ // LGBM_CUDA
+    if (config_->device_type == std::string("cuda")) {  // LGBM_CUDA
        if (tmp_subset_ == nullptr){
           tmp_subset_.reset(new Dataset(bag_data_cnt_));
           tmp_subset_->CopyFeatureMapperFrom(train_data_);

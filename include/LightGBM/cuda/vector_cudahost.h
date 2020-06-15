@@ -9,7 +9,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-//LGBM_CUDA
+// LGBM_CUDA
 
 namespace LightGBM {
 
@@ -22,60 +22,55 @@ namespace LightGBM {
 #define use_cuda_learner 2
 
 class LGBM_config_ {
- public:
-  static int current_device; // Default: lgbm_device_cpu 
-  static int current_learner; // Default: use_cpu_learner
+  public:
+    static int current_device;  // Default: lgbm_device_cpu 
+    static int current_learner;  // Default: use_cpu_learner
 };
 
-} // namespace LightGBM
+}  // namespace LightGBM
 
 
 template <class T>
 struct CHAllocator {
- typedef T value_type;
- CHAllocator() {}
- template <class U> CHAllocator(const CHAllocator<U>& other);
- T* allocate(std::size_t n)
- {
-   T* ptr;
-   if (n == 0) return NULL;
-   #ifdef USE_CUDA
-      if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda){
-          cudaError_t ret= cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
-          if (ret != cudaSuccess){
-fprintf(stderr, "   TROUBLE: defaulting to malloc in CHAllocator!!!\n"); fflush(stderr);
-             ptr = (T*) malloc(n*sizeof(T));
-          }
-      }
-      else{
-            ptr = (T*) malloc(n*sizeof(T));
+  typedef T value_type;
+  CHAllocator() {}
+  template <class U> CHAllocator(const CHAllocator<U>& other);
+  T* allocate(std::size_t n) {
+    T* ptr;
+    if (n == 0) return NULL;
+    #ifdef USE_CUDA
+      if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda) {
+        cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
+        if (ret != cudaSuccess) {
+          fprintf(stderr, "   TROUBLE: defaulting to malloc in CHAllocator!!!\n"); fflush(stderr);
+          ptr = reinterpret_cast<T*>(malloc(n*sizeof(T)));
+        }
+      } else {
+        ptr = reinterpret_cast<T*>(malloc(n*sizeof(T)));
       }
    #else
-      ptr = (T*) malloc(n*sizeof(T));
+      ptr = reinterpret_cast<T*>(malloc(n*sizeof(T)));
    #endif
-   return ptr;
- }
+    return ptr;
+  }
 
- void deallocate(T* p, std::size_t n)
- {
+  void deallocate(T* p, std::size_t n) {
     (void)n;  // UNUSED
-    if (p==NULL) return;
+    if (p == NULL) return;
     #ifdef USE_CUDA
-      if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda){
-          cudaPointerAttributes attributes;
-          cudaPointerGetAttributes (&attributes, p);
-          if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)){
-              cudaFreeHost(p);
-          }
-      } 
-      else{
+      if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda) {
+        cudaPointerAttributes attributes;
+        cudaPointerGetAttributes (&attributes, p);
+        if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+          cudaFreeHost(p);
+        }
+      } else { 
         free(p);
       }
     #else
-        free(p);
+      free(p);
     #endif
  }
-
 };
 template <class T, class U>
 bool operator==(const CHAllocator<T>&, const CHAllocator<U>&);

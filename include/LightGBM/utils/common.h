@@ -30,8 +30,6 @@
 #include <intrin.h>
 #pragma intrinsic(_BitScanReverse)
 #endif
-#include <LightGBM/utils/log.h>
-#include <LightGBM/utils/openmp_wrapper.h>
 
 #if defined(_MSC_VER)
 #include <malloc.h>
