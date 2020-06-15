@@ -115,6 +115,13 @@ for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
   .handle_result(result)
 }
 
+result <- file.copy(
+  from = file.path("R-package", "inst", "make-r-def.R")
+  , to = file.path(TEMP_R_DIR, "inst", "bin/")
+  , overwrite = TRUE
+)
+.handle_result(result)
+
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
