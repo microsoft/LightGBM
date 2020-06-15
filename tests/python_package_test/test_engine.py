@@ -991,7 +991,7 @@ class TestEngine(unittest.TestCase):
                 'min_data': 5,
             }
             if lgb.get_device_type() == 2:
-               lgb_params["device"] = "cuda"
+                lgb_params["device"] = "cuda"
             gbm = lgb.train(
                 params=lgb_params,
                 train_set=dataset,
@@ -1723,10 +1723,10 @@ class TestEngine(unittest.TestCase):
                 params_obj_class_3_verbose["device"] = "cuda"
             params_obj_class_1_verbose = {'objective': obj_multi_alias, 'num_class': 1, 'verbose': -1}
             if lgb.get_device_type() == 2:
-               params_obj_class_1_verbose["device"] = "cuda"
+                params_obj_class_1_verbose["device"] = "cuda"
             params_obj_verbose = {'objective': obj_multi_alias, 'verbose': -1}
             if lgb.get_device_type() == 2:
-               params_obj_verbose["device"] = "cuda"
+                params_obj_verbose["device"] = "cuda"
             # multiclass default metric
             res = get_cv_result(params_obj_class_3_verbose)
             self.assertEqual(len(res), 2)
