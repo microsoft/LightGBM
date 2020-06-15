@@ -1429,6 +1429,7 @@ class TestEngine(unittest.TestCase):
 
         def get_cv_result(params=params_obj_verbose, **kwargs):
             return lgb.cv(params, lgb_train, num_boost_round=2, verbose_eval=False, **kwargs)
+
         def train_booster(params=params_obj_verbose, **kwargs):
             lgb.train(params, lgb_train,
                       num_boost_round=2,

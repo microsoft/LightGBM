@@ -225,7 +225,7 @@ class CustomInstall(install):
         self.openmp_library = None
         self.mpi = 0
         self.hdfs = 0
-        #self.precompile = 0 #TODO: revert this
+        # self.precompile = 0 # TODO: revert this
         self.precompile = 1
         self.nomp = 0
         self.bit32 = 0
