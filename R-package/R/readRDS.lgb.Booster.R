@@ -7,6 +7,7 @@
 #' @return \code{lgb.Booster}.
 #'
 #' @examples
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -27,7 +28,7 @@
 #' )
 #' saveRDS.lgb.Booster(model, "model.rds")
 #' new_model <- readRDS.lgb.Booster("model.rds")
-#'
+#' }
 #' @export
 readRDS.lgb.Booster <- function(file = "", refhook = NULL) {
 

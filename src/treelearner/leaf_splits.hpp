@@ -21,7 +21,7 @@ class LeafSplits {
  public:
   explicit LeafSplits(data_size_t num_data)
     :num_data_in_leaf_(num_data), num_data_(num_data),
-    data_indices_(nullptr) {
+    data_indices_(nullptr), weight_(0) {
   }
   void ResetNumData(data_size_t num_data) {
     num_data_ = num_data;
@@ -37,11 +37,13 @@ class LeafSplits {
   * \param sum_gradients
   * \param sum_hessians
   */
-  void Init(int leaf, const DataPartition* data_partition, double sum_gradients, double sum_hessians) {
+  void Init(int leaf, const DataPartition* data_partition, double sum_gradients,
+            double sum_hessians, double weight) {
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians;
+    weight_ = weight;
   }
 
   /*!
@@ -135,6 +137,10 @@ class LeafSplits {
   /*! \brief Get indices of data of current leaf */
   const data_size_t* data_indices() const { return data_indices_; }
 
+  /*! \brief Get weight of current leaf */
+  double weight() const { return weight_; }
+
+
 
  private:
   /*! \brief current leaf index */
@@ -149,6 +155,8 @@ class LeafSplits {
   double sum_hessians_;
   /*! \brief indices of data of current leaf */
   const data_size_t* data_indices_;
+  /*! \brief weight of current leaf */
+  double weight_;
 };
 
 }  // namespace LightGBM

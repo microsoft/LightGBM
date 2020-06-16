@@ -470,6 +470,14 @@ Learning Control Parameters
 
       -  ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
 
+-  ``monotone_penalty`` :raw-html:`<a id="monotone_penalty" title="Permalink to this parameter" href="#monotone_penalty">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``monotone_splits_penalty``, ``ms_penalty``, ``mc_penalty``, constraints: ``monotone_penalty >= 0.0``
+
+   -  used only if ``monotone_constraints`` is set
+
+   -  `monotone penalty <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+
+   -  if ``0.0`` (the default), no penalization is applied
+
 -  ``feature_contri`` :raw-html:`<a id="feature_contri" title="Permalink to this parameter" href="#feature_contri">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double, aliases: ``feature_contrib``, ``fc``, ``fp``, ``feature_penalty``
 
    -  used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to replace the split gain of i-th feature
@@ -513,6 +521,22 @@ Learning Control Parameters
    -  cost-effective gradient boosting penalty for using a feature
 
    -  applied once per forest
+
+-  ``path_smooth`` :raw-html:`<a id="path_smooth" title="Permalink to this parameter" href="#path_smooth">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = double, constraints: ``path_smooth >=  0.0``
+
+   -  controls smoothing applied to tree nodes
+
+   -  helps prevent overfitting on leaves with few samples
+
+   -  if set to zero, no smoothing is applied
+
+   -  if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
+
+   -  larger values give stronger regularisation
+
+      -  the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
+
+      -  note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
 
 -  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
 

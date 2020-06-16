@@ -165,6 +165,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves));
   auto tree_prt = tree.get();
+  constraints_->ShareTreePointer(tree_prt);
+
   // root leaf
   int left_leaf = 0;
   int cur_depth = 1;
@@ -212,9 +214,16 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
       sum_grad += gradients[idx];
       sum_hess += hessians[idx];
     }
-    double output = FeatureHistogram::CalculateSplittedLeafOutput<true, true>(
-        sum_grad, sum_hess, config_->lambda_l1, config_->lambda_l2,
-        config_->max_delta_step);
+    double output;
+    if ((config_->path_smooth > kEpsilon) & (i > 0)) {
+      output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, true>(
+          sum_grad, sum_hess, config_->lambda_l1, config_->lambda_l2,
+          config_->max_delta_step, config_->path_smooth, cnt_leaf_data, tree->leaf_parent(i));
+    } else {
+      output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, false>(
+          sum_grad, sum_hess, config_->lambda_l1, config_->lambda_l2,
+          config_->max_delta_step, config_->path_smooth, cnt_leaf_data, 0);
+    }
     auto old_leaf_output = tree->LeafOutput(i);
     auto new_leaf_output = output * tree->shrinkage();
     tree->SetLeafOutput(i, config_->refit_decay_rate * old_leaf_output + (1.0 - config_->refit_decay_rate) * new_leaf_output);
@@ -447,6 +456,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
               left_leaf_splits->sum_hessians(),
               left_threshold,
               left_leaf_splits->num_data_in_leaf(),
+              left_leaf_splits->weight(),
               &left_split);
       left_split.feature = left_feature;
       forceSplitMap[*left_leaf] = left_split;
@@ -468,6 +478,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
         right_leaf_splits->sum_hessians(),
         right_threshold,
         right_leaf_splits->num_data_in_leaf(),
+        right_leaf_splits->weight(),
         &right_split);
       right_split.feature = right_feature;
       forceSplitMap[*right_leaf] = right_split;
@@ -611,18 +622,22 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     CHECK_GT(best_split_info.left_count, 0);
     smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                                best_split_info.left_sum_gradient,
-                               best_split_info.left_sum_hessian);
+                               best_split_info.left_sum_hessian,
+                               best_split_info.left_output);
     larger_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                               best_split_info.right_sum_gradient,
-                              best_split_info.right_sum_hessian);
+                              best_split_info.right_sum_hessian,
+                              best_split_info.right_output);
   } else {
     CHECK_GT(best_split_info.right_count, 0);
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                best_split_info.right_sum_gradient,
-                               best_split_info.right_sum_hessian);
+                               best_split_info.right_sum_hessian,
+                               best_split_info.right_output);
     larger_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                               best_split_info.left_sum_gradient,
-                              best_split_info.left_sum_hessian);
+                              best_split_info.left_sum_hessian,
+                              best_split_info.left_output);
   }
   auto leaves_need_update = constraints_->Update(
       tree, is_numerical_split, *left_leaf, *right_leaf,
@@ -683,14 +698,29 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     return;
   }
   SplitInfo new_split;
+  double parent_output;
+  if (leaf_splits->leaf_index() == 0) {
+    // for root leaf the "parent" output is its own output because we don't apply any smoothing to the root
+    parent_output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, true, false>(
+        leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), config_->lambda_l1,
+        config_->lambda_l2, config_->max_delta_step, constraints_->Get(leaf_splits->leaf_index()),
+        config_->path_smooth, static_cast<data_size_t>(num_data), 0);
+  } else {
+    parent_output = leaf_splits->weight();
+  }
   histogram_array_[feature_index].FindBestThreshold(
       leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), num_data,
-      constraints_->Get(leaf_splits->leaf_index()), &new_split);
+      constraints_->Get(leaf_splits->leaf_index()),  parent_output, &new_split);
   new_split.feature = real_fidx;
   if (cegb_ != nullptr) {
     new_split.gain -=
         cegb_->DetlaGain(feature_index, real_fidx, leaf_splits->leaf_index(),
                          num_data, new_split);
+  }
+  if (new_split.monotone_type != 0) {
+    double penalty = constraints_->ComputeMonotoneSplitGainPenalty(
+        leaf_splits->leaf_index(), config_->monotone_penalty);
+    new_split.gain *= penalty;
   }
   if (new_split > *best_split) {
     *best_split = new_split;

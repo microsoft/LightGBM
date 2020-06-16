@@ -121,7 +121,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
 
-    if system() in ('Windows', 'Microsoft'):
+    if system() in {'Windows', 'Microsoft'}:
         if use_mingw:
             if use_mpi:
                 raise Exception('MPI version cannot be compiled by MinGW due to the miss of MPI library in it')
@@ -276,7 +276,7 @@ if __name__ == "__main__":
           install_requires=[
               'numpy',
               'scipy',
-              'scikit-learn<=0.21.3'
+              'scikit-learn!=0.22.0'
           ],
           maintainer='Guolin Ke',
           maintainer_email='guolin.ke@microsoft.com',
@@ -304,4 +304,5 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.5',
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
+                       'Programming Language :: Python :: 3.8',
                        'Topic :: Scientific/Engineering :: Artificial Intelligence'])

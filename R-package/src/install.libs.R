@@ -67,6 +67,7 @@ if (!use_precompile) {
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
+      print("Trying to build with MinGW")
       cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
       build_cmd <- "mingw32-make.exe _lightgbm"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools

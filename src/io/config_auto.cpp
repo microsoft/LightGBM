@@ -87,6 +87,9 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"monotone_constraint", "monotone_constraints"},
   {"monotone_constraining_method", "monotone_constraints_method"},
   {"mc_method", "monotone_constraints_method"},
+  {"monotone_splits_penalty", "monotone_penalty"},
+  {"ms_penalty", "monotone_penalty"},
+  {"mc_penalty", "monotone_penalty"},
   {"feature_contrib", "feature_contri"},
   {"fc", "feature_contri"},
   {"fp", "feature_contri"},
@@ -218,6 +221,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "top_k",
   "monotone_constraints",
   "monotone_constraints_method",
+  "monotone_penalty",
   "feature_contri",
   "forcedsplits_filename",
   "refit_decay_rate",
@@ -225,6 +229,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "cegb_penalty_split",
   "cegb_penalty_feature_lazy",
   "cegb_penalty_feature_coupled",
+  "path_smooth",
   "verbosity",
   "input_model",
   "output_model",
@@ -419,6 +424,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "monotone_constraints_method", &monotone_constraints_method);
 
+  GetDouble(params, "monotone_penalty", &monotone_penalty);
+  CHECK_GE(monotone_penalty, 0.0);
+
   if (GetString(params, "feature_contri", &tmp_str)) {
     feature_contri = Common::StringToArray<double>(tmp_str, ',');
   }
@@ -442,6 +450,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   if (GetString(params, "cegb_penalty_feature_coupled", &tmp_str)) {
     cegb_penalty_feature_coupled = Common::StringToArray<double>(tmp_str, ',');
   }
+
+  GetDouble(params, "path_smooth", &path_smooth);
+  CHECK_GE(path_smooth,  0.0);
 
   GetInt(params, "verbosity", &verbosity);
 
@@ -639,6 +650,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[top_k: " << top_k << "]\n";
   str_buf << "[monotone_constraints: " << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints), ",") << "]\n";
   str_buf << "[monotone_constraints_method: " << monotone_constraints_method << "]\n";
+  str_buf << "[monotone_penalty: " << monotone_penalty << "]\n";
   str_buf << "[feature_contri: " << Common::Join(feature_contri, ",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
   str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";
@@ -646,6 +658,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_split: " << cegb_penalty_split << "]\n";
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
+  str_buf << "[path_smooth: " << path_smooth << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";

@@ -2133,6 +2133,7 @@ class Booster(object):
                 hess : list or numpy 1-D array
                     The value of the second order derivative (Hessian) for each sample point.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2181,6 +2182,7 @@ class Booster(object):
 
         .. note::
 
+            For binary task, the score is probability of positive class (or margin in case of custom objective).
             For multi-class task, the score is group by class_id first, then group by row_id.
             If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2321,6 +2323,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2367,6 +2370,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2398,6 +2402,7 @@ class Booster(object):
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
+            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2536,7 +2541,7 @@ class Booster(object):
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        ret = string_buffer.value.decode()
+        ret = string_buffer.value.decode('utf-8')
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
@@ -2582,7 +2587,7 @@ class Booster(object):
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        ret = json.loads(string_buffer.value.decode())
+        ret = json.loads(string_buffer.value.decode('utf-8'))
         ret['pandas_categorical'] = json.loads(json.dumps(self.pandas_categorical,
                                                           default=json_default_with_numpy))
         return ret
@@ -2754,7 +2759,7 @@ class Booster(object):
                 "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
                 .format(reserved_string_buffer_size, required_string_buffer_size.value)
             )
-        return [string_buffers[i].value.decode() for i in range_(num_feature)]
+        return [string_buffers[i].value.decode('utf-8') for i in range_(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
         """Get feature importances.
@@ -2954,7 +2959,7 @@ class Booster(object):
                         .format(reserved_string_buffer_size, required_string_buffer_size.value)
                     )
                 self.__name_inner_eval = \
-                    [string_buffers[i].value.decode() for i in range_(self.__num_inner_eval)]
+                    [string_buffers[i].value.decode('utf-8') for i in range_(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \
                     [name.startswith(('auc', 'ndcg@', 'map@')) for name in self.__name_inner_eval]
 

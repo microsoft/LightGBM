@@ -127,7 +127,27 @@ class GOSS: public GBDT {
     bag_data_cnt_ = num_data_;
     // not subsample for first iterations
     if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
-    GBDT::Bagging(iter);
+    auto left_cnt = bagging_runner_.Run<true>(
+        num_data_,
+        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
+            data_size_t*) {
+          data_size_t cur_left_count = 0;
+          cur_left_count = BaggingHelper(cur_start, cur_cnt, left);
+          return cur_left_count;
+        },
+        bag_data_indices_.data());
+    bag_data_cnt_ = left_cnt;
+    // set bagging data to tree learner
+    if (!is_use_subset_) {
+      tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+    } else {
+      // get subset
+      tmp_subset_->ReSize(bag_data_cnt_);
+      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
+                              bag_data_cnt_, false);
+      tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
+                                    bag_data_cnt_);
+    }
   }
 };
 

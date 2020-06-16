@@ -6,7 +6,7 @@ trigger:
     include:
     - v*
 variables:
-  PYTHON_VERSION: 3.7
+  PYTHON_VERSION: 3.8
   CONDA_ENV: test-env
 resources:
   containers:
@@ -22,7 +22,7 @@ jobs:
     vmImage: 'ubuntu-latest'
   container: ubuntu1404
   strategy:
-    maxParallel: 6
+    maxParallel: 7
     matrix:
       regular:
         TASK: regular
@@ -31,13 +31,12 @@ jobs:
         PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.6
+        PYTHON_VERSION: 3.7
       inference:
         TASK: if-else
       mpi_source:
         TASK: mpi
         METHOD: source
-        PYTHON_VERSION: 2.7
       gpu_source:
         TASK: gpu
         METHOD: source
@@ -76,11 +75,11 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
   strategy:
-    maxParallel: 3
+    maxParallel: 4
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.6
+        PYTHON_VERSION: 3.7
       sdist:
         TASK: sdist
         PYTHON_VERSION: 3.5
@@ -99,7 +98,7 @@ jobs:
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
-      echo "##vso[task.setvariable variable=R_MAC_VERSION]3.6.1"
+      echo "##vso[task.setvariable variable=R_MAC_VERSION]3.6.3"
     displayName: 'Set variables'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
@@ -117,17 +116,19 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
-    maxParallel: 3
+    maxParallel: 4
     matrix:
+      r_package:
+        TASK: r-package
+        COMPILER: MINGW
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: 3.6
       sdist:
         TASK: sdist
         PYTHON_VERSION: 2.7
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.5
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"

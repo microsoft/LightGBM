@@ -20,9 +20,6 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const 
     if (tmp_strs.size() == 2) {
       value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
     }
-    if (!Common::CheckASCII(key) || !Common::CheckASCII(value)) {
-      Log::Fatal("Do not support non-ASCII characters in config.");
-    }
     if (key.size() > 0) {
       auto value_search = params->find(key);
       if (value_search == params->end()) {  // not set
@@ -317,6 +314,14 @@ void Config::CheckParamConflict() {
     force_col_wise = true;
     force_row_wise = false;
   }
+  // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the split is calculated
+  // the count is calculated using the proportion of hessian in the leaf which is rounded up to nearest int, so it can
+  // be 1 when there is actually no data in the leaf. In rare cases this can cause a bug because with path smoothing the
+  // calculated split gain can be positive even with zero gradient and hessian.
+  if (path_smooth > kEpsilon && min_data_in_leaf < 2) {
+    min_data_in_leaf = 2;
+    Log::Warning("min_data_in_leaf has been increased to 2 because this is required when path smoothing is active.");
+  }
   if (is_parallel && monotone_constraints_method == std::string("intermediate")) {
     // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
     Log::Warning("Cannot use \"intermediate\" monotone constraints in parallel learning, auto set to \"basic\" method.");
@@ -327,6 +332,9 @@ void Config::CheckParamConflict() {
     // split initially, then the sampling needs to be recorded or done once again, which is currently not supported
     Log::Warning("Cannot use \"intermediate\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
     monotone_constraints_method = "basic";
+  }
+  if (max_depth > 0 && monotone_penalty >= max_depth) {
+    Log::Warning("Monotone penalty greater than tree depth. Monotone features won't be used.");
   }
 }
 

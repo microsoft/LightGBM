@@ -447,6 +447,13 @@ struct Config {
   // descl2 = ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
   std::string monotone_constraints_method = "basic";
 
+  // alias = monotone_splits_penalty, ms_penalty, mc_penalty
+  // check = >=0.0
+  // desc = used only if ``monotone_constraints`` is set
+  // desc = `monotone penalty <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+  // desc = if ``0.0`` (the default), no penalization is applied
+  double monotone_penalty = 0.0;
+
   // type = multi-double
   // alias = feature_contrib, fc, fp, feature_penalty
   // default = None
@@ -487,6 +494,16 @@ struct Config {
   // desc = cost-effective gradient boosting penalty for using a feature
   // desc = applied once per forest
   std::vector<double> cegb_penalty_feature_coupled;
+
+  // check = >= 0.0
+  // desc = controls smoothing applied to tree nodes
+  // desc = helps prevent overfitting on leaves with few samples
+  // desc = if set to zero, no smoothing is applied
+  // desc = if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
+  // desc = larger values give stronger regularisation
+  // descl2 = the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
+  // descl2 = note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
+  double path_smooth = 0;
 
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
