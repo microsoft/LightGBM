@@ -475,11 +475,10 @@ bool GBDT::TrainOneIterCUDA(const score_t* gradients, const score_t* hessians) {
     // LGBM_CUDA: moved for overlapping data copy w/ other operations
     int iter_next = iter_ + 1;
       if (iter_next < config_->num_iterations) {
+        // auto start_time = std::chrono::steady_clock::now();
 
-      // auto start_time = std::chrono::steady_clock::now();
-
-       // bagging logic
-       Bagging(iter_next);
+        // bagging logic
+        Bagging(iter_next);
       }
     }
     // add model
@@ -958,7 +957,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   } else {
     bag_data_cnt_ = num_data_;
     if (config_->device_type == std::string("cuda")) {  // LGBM_CUDA
-      if (tmp_subset_ == nullptr){
+      if (tmp_subset_ == nullptr) {
         tmp_subset_.reset(new Dataset(bag_data_cnt_));
         tmp_subset_->CopyFeatureMapperFrom(train_data_);
         size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;

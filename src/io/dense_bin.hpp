@@ -466,7 +466,7 @@ class DenseBin : public Bin {
  private:
   data_size_t num_data_;
 #ifdef USE_CUDA
-  std::vector<VAL_T, CHAllocator<VAL_T>> data_; // LGBM_CUDA
+  std::vector<VAL_T, CHAllocator<VAL_T>> data_;  // LGBM_CUDA
 #else
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
 #endif

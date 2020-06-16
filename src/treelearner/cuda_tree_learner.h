@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2020 IBM Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #pragma once
 #ifndef LGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
 #define LGBM_TREELEARNET_CUDA_TREE_LEARNER_H_
@@ -27,7 +31,7 @@
 #include "cuda_kernel_launcher.h"  // LGBM_CUDA
 
 
-using namespace json11;
+using json11::Json;
 
 namespace LightGBM {
 
@@ -63,6 +67,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     void FindBestSplits() override;
     void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
     void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
+
  private:
     /*! \brief 4-byte feature tuple used by GPU kernels */
     // struct Feature4 {
@@ -76,7 +81,7 @@ class CUDATreeLearner: public SerialTreeLearner {
      * \return Log2 of the best number for workgroups per feature, in range 0...kMaxLogWorkgroupsPerFeature
      */
     int GetNumWorkgroupsPerFeature(data_size_t leaf_num_data);
-  
+
     /*!
      * \brief Initialize GPU device
      * \LGBM_CUDA: param num_gpu: number of maximum gpus
@@ -107,7 +112,7 @@ class CUDATreeLearner: public SerialTreeLearner {
      * \param use_all_features Set to true to not use feature masks, with a faster kernel
      */
     void GPUHistogram(data_size_t leaf_num_data, bool use_all_features);
-  
+
     void SetThreadData(ThreadData* thread_data, int device_id, int histogram_size,
                 int leaf_num_data, bool use_all_features,
                 int num_workgroups, int exp_workgroups_per_feature) {
@@ -130,7 +135,7 @@ class CUDATreeLearner: public SerialTreeLearner {
       td->sync_counters         = sync_counters_[device_id];
       td->device_histogram_outputs   = device_histogram_outputs_[device_id];
       td->exp_workgroups_per_feature = exp_workgroups_per_feature;
-    
+
       td->kernel_start           = &(kernel_start_[device_id]);
       td->kernel_wait_obj        = &(kernel_wait_obj_[device_id]);
       td->kernel_input_wait_time = &(kernel_input_wait_time_[device_id]);
@@ -138,14 +143,14 @@ class CUDATreeLearner: public SerialTreeLearner {
       size_t output_size = num_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
       size_t host_output_offset = offset_gpu_feature_groups_[device_id] * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
       td->output_size           = output_size;
-      td->host_histogram_output = (char*)host_histogram_outputs_ + host_output_offset;
+      td->host_histogram_output = reinterpret_cast<char*>(host_histogram_outputs_) + host_output_offset;
       td->histograms_wait_obj   = &(histograms_wait_obj_[device_id]);
     }
 
     // LGBM_CUDA: thread work
     // typedef void * (*THREADFUNCPTR)(void *);
     // void* launch_gpu_kernel(void *td);
- 
+
     /*!
      * \brief Wait for GPU kernel execution and read histogram
      * \param histograms Destination of histogram results from GPU.
@@ -285,13 +290,14 @@ class CUDATreeLearner: public SerialTreeLearner {
     int allocated_num_data_;  // allocated data instances
     pthread_t **cpu_threads_;  // pthread, 1 cpu thread / gpu
 };
+
 }  // namespace LightGBM
-#else // USE_CUDA
+#else  // USE_CUDA
 
 // When GPU support is not compiled in, quit with an error message
 
 namespace LightGBM {
-    
+
 class CUDATreeLearner: public SerialTreeLearner {
  public:
     #pragma warning(disable : 4702)
@@ -301,7 +307,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     }
 };
 
-}
+}  // namespace LightGBM
 
-#endif // USE_CUDA
-#endif // LGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
+#endif  // USE_CUDA
+#endif  // LGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
