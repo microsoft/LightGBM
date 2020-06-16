@@ -33,7 +33,7 @@ function Download-Miktex-Setup {
 # status information) can cause failures in GitHub Actions PowerShell jobs.
 # See https://github.community/t/powershell-steps-fail-nondeterministically/115496
 #
-# Using standard Powershell redirection does not work to avoid these errors.
+# Using standard PowerShell redirection does not work to avoid these errors.
 # This function uses R's built-in redirection mechanism, sink(). Any place where
 # this function is used is a command that writes harmless messages to stderr
 function Run-R-Code-Redirect-Stderr {
@@ -140,7 +140,7 @@ if ($env:COMPILER -ne "MSVC") {
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
-  Run-R-Code-Redirect-Stderr "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE)" ; $check_succeeded=$?
+  Run-R-Code-Redirect-Stderr "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
