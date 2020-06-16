@@ -29,6 +29,21 @@ function Download-Miktex-Setup {
     Download-File-With-Retries $FileToDownload $destfile
 }
 
+# External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
+# status information) can cause failures in GitHub Actions PowerShell jobs.
+# See https://github.community/t/powershell-steps-fail-nondeterministically/115496
+#
+# Using standard Powershell redirection does not work to avoid these errors.
+# This function uses R's built-in redirection mechanism, sink(). Any place where
+# this function is used is a command that writes harmless messages to stderr
+function Run-R-Code-Redirect-Stderr {
+  param(
+    [string]$rcode
+  )
+  $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode; sink()"
+  Rscript --vanilla -e $decorated_code
+}
+
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:R_LIB_PATH/Rtools/bin;" + "$env:R_LIB_PATH/Rtools/usr/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
@@ -93,6 +108,10 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/Rtools" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
+Write-Output "Installing dependencies"
+$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+
 # MiKTeX and pandoc can be skipped on MSVC builds, since we don't
 # build the package documentation for those
 if ($env:COMPILER -ne "MSVC") {
@@ -105,26 +124,23 @@ if ($env:COMPILER -ne "MSVC") {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    initexmf --set-config-value [MPM]AutoInstall=1
+    Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), windows_verbatim_args = TRUE)" ; Check-Output $?
     conda install -q -y --no-deps pandoc
 }
-
-Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Rscript --vanilla -e "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
 
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
-  Rscript build_r.R --skip-install ; Check-Output $?
+  Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
 
   $PKG_FILE_NAME = Get-Item *.tar.gz
+  $PKG_FILE_NAME = $PKG_FILE_NAME -replace '[\\]', '/'
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
-  R.exe CMD check --no-multiarch --as-cran ${PKG_FILE_NAME} ; $check_succeeded = $?
+  Run-R-Code-Redirect-Stderr "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE)" ; $check_succeeded=$?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
@@ -138,8 +154,8 @@ if ($env:COMPILER -ne "MSVC") {
       Check-Output $False
   }
 
-  $note_str = Get-Content "${LOG_FILE_NAME}" | Select-String -Pattern ' NOTE' | Out-String ; Check-Output $?
-  $relevant_line = $note_str -match '.*Status: (\d+) NOTE.*'
+  $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
+  $relevant_line = $note_str -match '(\d+) NOTE'
   $NUM_CHECK_NOTES = $matches[1]
   $ALLOWED_CHECK_NOTES = 4
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
@@ -149,7 +165,7 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript build_r.R *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Run-R-Code-Redirect-Stderr "source('build_r.R')" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
@@ -178,7 +194,7 @@ if ($env:COMPILER -eq "MINGW") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  Rscript testthat.R ; Check-Output $?
+  Run-R-Code-Redirect-Stderr "source('testthat.R')" ; Check-Output $?
 }
 
 Write-Output "No issues were found checking the R package"
