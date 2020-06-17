@@ -441,7 +441,6 @@ class Dataset {
     return ret;
   }
 
-  /* LGBM_CUDA  void ReSize(data_size_t num_data); */
   // LGBM_CUDA ReSize() returns true if resized
   bool ReSize(data_size_t num_data);
 

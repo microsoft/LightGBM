@@ -181,7 +181,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   int init_splits = 0;
   bool aborted_last_force_split = false;
   if (!forced_split_json.is_null()) {
-    init_splits = ForceSplits(tree.get(), forced_split_json, &left_leaf,
+    init_splits = ForceSplits(tree_prt, forced_split_json, &left_leaf,
                               &right_leaf, &cur_depth, &aborted_last_force_split);
   }
 
@@ -456,7 +456,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, const Json& forced_split_json
   Json right;
   bool left_smaller = true;
   std::unordered_map<int, SplitInfo> forceSplitMap;
-  q.push(std::make_pair(forced_split_json, *left_leaf));
+  q.push(std::make_pair(left, *left_leaf));
   while (!q.empty()) {
     // before processing next node from queue, store info for current left/right leaf
     // store "best split" for left and right, even if they might be overwritten by forced split
