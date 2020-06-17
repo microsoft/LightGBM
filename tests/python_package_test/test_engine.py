@@ -981,16 +981,19 @@ class TestEngine(unittest.TestCase):
         train_features = np.random.rand(100, 1000)
         train_targets = [0] * 50 + [1] * 50
         lgb_train = lgb.Dataset(train_features, train_targets)
-        gbm = lgb.train(params, lgb_train, num_boost_round=5)
+        gbm = lgb.train(params, lgb_train, num_boost_round=2)
         csr_input_shape = (3000000, 1000)
         test_features = csr_matrix(csr_input_shape)
         for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
             for j in range(0, 1000, 100):
                 test_features[i, j] = random.random()
-        y_pred = gbm.predict(test_features, pred_contrib=True)
+        y_pred_csr = gbm.predict(test_features, pred_contrib=True)
         # Note there is an extra column added to the output for the expected value
         csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
-        self.assertTupleEqual(y_pred.shape, csr_output_shape)
+        self.assertTupleEqual(y_pred_csr.shape, csr_output_shape)
+        y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
+        # Note output CSC shape should be same as CSR output shape
+        self.assertTupleEqual(y_pred_csc.shape, csr_output_shape)
 
     def test_sliced_data(self):
         def train_and_get_predictions(features, labels):
