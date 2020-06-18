@@ -164,6 +164,8 @@ class TestSklearn(unittest.TestCase):
         self.assertGreaterEqual(score, 0.8)
         self.assertLessEqual(score, 1.)
 
+    # sklearn <0.22 does not have a stacking classifier
+    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
     def test_stacking_classifier(self):
         X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -176,6 +178,8 @@ class TestSklearn(unittest.TestCase):
             # test number of input features
             self.assertEqual(clf.n_features_in_, 4)
 
+    # sklearn <0.22 does not have a stacking regressor
+    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
     def test_stacking_regressor(self):
         X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
