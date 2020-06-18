@@ -34,7 +34,7 @@ Tree::Tree(int max_leaves, bool track_branch_features)
   leaf_depth_.resize(max_leaves_);
   if (track_branch_features_) {
     branch_features_ = std::vector<std::vector<int>>(max_leaves_);
-  };
+  }
   // root is in the depth 0
   leaf_depth_[0] = 0;
   num_leaves_ = 1;
