@@ -12,7 +12,6 @@ from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
-from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.exceptions import SkipTestWarning
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -167,6 +166,8 @@ class TestSklearn(unittest.TestCase):
     # sklearn <0.22 does not have a stacking classifier
     @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
     def test_stacking_classifier(self):
+        from sklearn.ensemble import StackingClassifier
+
         X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         classifiers = [('gbm1', lgb.LGBMClassifier()),
@@ -181,6 +182,8 @@ class TestSklearn(unittest.TestCase):
     # sklearn <0.22 does not have a stacking regressor
     @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
     def test_stacking_regressor(self):
+        from sklearn.ensemble import StackingRegressor
+
         X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         regressors = [('gbm1', lgb.LGBMRegressor()),
