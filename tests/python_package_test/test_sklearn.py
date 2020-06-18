@@ -12,6 +12,7 @@ from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
+from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.exceptions import SkipTestWarning
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -162,6 +163,28 @@ class TestSklearn(unittest.TestCase):
         score = gbm.score(X_test, y_test)
         self.assertGreaterEqual(score, 0.8)
         self.assertLessEqual(score, 1.)
+
+    def test_stacking_classifier(self):
+        X, y = load_iris(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        classifiers = [('gbm1', lgb.LGBMClassifier()),
+                       ('gbm2', lgb.LGBMClassifier())]
+        clf = StackingClassifier(estimators=classifiers,
+                                 final_estimator=lgb.LGBMClassifier())
+        clf.fit(X_train, y_train).score(X_test, y_test)
+        # test number of input features
+        self.assertEqual(clf.n_features_in_, 4)
+
+    def test_stacking_regressor(self):
+        X, y = load_boston(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        regressors = [('gbm1', lgb.LGBMRegressor()),
+                      ('gbm2', lgb.LGBMRegressor())]
+        reg = StackingRegressor(estimators=regressors,
+                                final_estimator=lgb.LGBMRegressor())
+        reg.fit(X_train, y_train).score(X_test, y_test)
+        # test number of input features
+        self.assertEqual(reg.n_features_in_, 13)
 
     def test_grid_search(self):
         X, y = load_iris(True)
