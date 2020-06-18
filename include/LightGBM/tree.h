@@ -27,8 +27,9 @@ class Tree {
   /*!
   * \brief Constructor
   * \param max_leaves The number of max leaves
+  * \param track_branch_features Whether to keep track of ancestors of leaf nodes
   */
-  explicit Tree(int max_leaves);
+  explicit Tree(int max_leaves, bool track_branch_features);
 
   /*!
   * \brief Constructor, from a string
@@ -439,6 +440,8 @@ class Tree {
   std::vector<int> internal_count_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
+  /*! \brief whether to keep track of ancestor nodes for each leaf (only needed when feature interactions are restricted) */
+  bool track_branch_features_;
   /*! \brief Features on leaf's branch, original index */
   std::vector<std::vector<int>> branch_features_;
   double shrinkage_;
@@ -482,10 +485,11 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   // update leaf depth
   leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
   leaf_depth_[leaf]++;
-  // calculate branch features
-  branch_features_[num_leaves_] = branch_features_[leaf];
-  branch_features_[num_leaves_].push_back(split_feature_[new_node_idx]);
-  branch_features_[leaf].push_back(split_feature_[new_node_idx]);
+  if (track_branch_features_) {
+    branch_features_[num_leaves_] = branch_features_[leaf];
+    branch_features_[num_leaves_].push_back(split_feature_[new_node_idx]);
+    branch_features_[leaf].push_back(split_feature_[new_node_idx]);
+  }
 }
 
 inline double Tree::Predict(const double* feature_values) const {
