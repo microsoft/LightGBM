@@ -172,8 +172,9 @@ class TestSklearn(unittest.TestCase):
         clf = StackingClassifier(estimators=classifiers,
                                  final_estimator=lgb.LGBMClassifier())
         clf.fit(X_train, y_train).score(X_test, y_test)
-        # test number of input features
-        self.assertEqual(clf.n_features_in_, 4)
+        if hasattr(self, 'n_features_in_'):
+            # test number of input features
+            self.assertEqual(clf.n_features_in_, 4)
 
     def test_stacking_regressor(self):
         X, y = load_boston(return_X_y=True)
@@ -183,8 +184,9 @@ class TestSklearn(unittest.TestCase):
         reg = StackingRegressor(estimators=regressors,
                                 final_estimator=lgb.LGBMRegressor())
         reg.fit(X_train, y_train).score(X_test, y_test)
-        # test number of input features
-        self.assertEqual(reg.n_features_in_, 13)
+        if hasattr(self, 'n_features_in_'):
+            # test number of input features
+            self.assertEqual(reg.n_features_in_, 13)
 
     def test_grid_search(self):
         X, y = load_iris(True)
