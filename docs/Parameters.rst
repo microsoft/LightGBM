@@ -542,13 +542,15 @@ Learning Control Parameters
 
    -  controls which features can appear in the same branch
 
-   -  for CLI, specify as lists separated by commas, e.g. ``[0,1,2],[2,3]``
+   -  by default interaction constraints are disabled, to enable them you can specify
 
-   -  for Python, specify as list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+      -  for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
 
-   -  not yet supported for R
+      -  for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
 
-   -  any two features can only appear in the same branch only if there exists a constraint containing both feaures
+      -  for R-package, **not yet supported**
+
+   -  any two features can only appear in the same branch only if there exists a constraint containing both features
 
 -  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
 

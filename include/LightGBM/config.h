@@ -506,10 +506,11 @@ struct Config {
   double path_smooth = 0;
 
   // desc = controls which features can appear in the same branch
-  // desc = for CLI, specify as lists separated by commas, e.g. ``[0,1,2],[2,3]``
-  // desc = for Python, specify as list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
-  // desc = not yet supported for R
-  // desc = any two features can only appear in the same branch only if there exists a constraint containing both feaures
+  // desc = by default interaction constraints are disabled, to enable them you can specify
+  // descl2 = for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
+  // descl2 = for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+  // descl2 = for R-package, **not yet supported**
+  // desc = any two features can only appear in the same branch only if there exists a constraint containing both features
   std::string interaction_constraints = "";
 
   // alias = verbose
