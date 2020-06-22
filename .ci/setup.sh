@@ -26,7 +26,7 @@ else  # Linux
     if [[ $TASK == "gpu" ]]; then
         sudo add-apt-repository ppa:mhier/libboost-latest -y
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libboost1.70-dev ocl-icd-opencl-dev
+        sudo apt-get install --no-install-recommends -y libboost1.73-dev ocl-icd-opencl-dev
         cd $BUILD_DIRECTORY  # to avoid permission errors
         wget -q https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         tar -xjf AMD-APP-SDK*.tar.bz2
