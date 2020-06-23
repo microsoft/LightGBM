@@ -538,6 +538,20 @@ Learning Control Parameters
 
       -  note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
 
+-  ``interaction_constraints`` :raw-html:`<a id="interaction_constraints" title="Permalink to this parameter" href="#interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  controls which features can appear in the same branch
+
+   -  by default interaction constraints are disabled, to enable them you can specify
+
+      -  for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
+
+      -  for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+
+      -  for R-package, **not yet supported**
+
+   -  any two features can only appear in the same branch only if there exists a constraint containing both features
+
 -  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
 
    -  controls the level of LightGBM's verbosity
