@@ -25,9 +25,7 @@ SerialTreeLearner::SerialTreeLearner(const Config* config)
 SerialTreeLearner::~SerialTreeLearner() {
 }
 
-// LGBM_CUDA
-void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
-  (void)is_use_subset;  // UNUSED
+void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   num_features_ = train_data_->num_features();

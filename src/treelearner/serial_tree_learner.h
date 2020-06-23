@@ -53,8 +53,7 @@ class SerialTreeLearner: public TreeLearner {
 
   ~SerialTreeLearner();
 
-  // LGBM_CUDA is_use_subset is used by CUDA only
-  void Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
   void ResetTrainingData(const Dataset* train_data,
                          bool is_constant_hessian) override {

@@ -70,15 +70,12 @@ CUDATreeLearner::~CUDATreeLearner() {
 }
 
 
-void CUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
+void CUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
   // initialize SerialTreeLearner
-  SerialTreeLearner::Init(train_data, is_constant_hessian, is_use_subset);
+  SerialTreeLearner::Init(train_data, is_constant_hessian);
 
   // some additional variables needed for GPU trainer
   num_feature_groups_ = train_data_->num_feature_groups();
-
-  // LGBM_CUDA: use subset of training data for bagging
-  is_use_subset_ = is_use_subset;
 
   // Initialize GPU buffers and kernels & LGBM_CUDA: get device info
   InitGPU(config_->num_gpu);  // LGBM_CUDA
@@ -580,16 +577,11 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
 
   AllocateGPUMemory();
 
-  // LGBM_CUDA: copy dense feature data from cpu to gpu only when we use entire training data for training
-
-  if (!is_use_subset_) {
-    Log::Debug("copyDenseFeature at the initialization\n");
-    copyDenseFeature();  // LGBM_CUDA
-  }
+  copyDenseFeature(); // LGBM_CUDA
 }
 
 Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            bool is_constant_hessian, const Json& forced_split_json) {
+                            bool is_constant_hessian, Json& forced_split_json) {
   // check if we need to recompile the GPU kernel (is_constant_hessian changed)
   // this should rarely occur
 

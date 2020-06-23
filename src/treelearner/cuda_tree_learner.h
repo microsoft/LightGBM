@@ -39,19 +39,15 @@ namespace LightGBM {
 * \brief CUDA-based parallel learning algorithm.
 */
 class CUDATreeLearner: public SerialTreeLearner {
- public:
+public:
     explicit CUDATreeLearner(const Config* tree_config);
     ~CUDATreeLearner();
-    // LGBM_CUDA: is_use_subset is used by CUDA only
-    void Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) override;
+    void Init(const Dataset* train_data, bool is_constant_hessian) override;
     void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
     Tree* Train(const score_t* gradients, const score_t *hessians,
-                bool is_constant_hessian, const Json& forced_split_json) override;
-
+                bool is_constant_hessian, Json& forced_split_json);
     void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
       SerialTreeLearner::SetBaggingData(subset, used_indices, num_data);
-      // determine if we are using bagging before we construct the data partition
-      // thus we can start data movement to GPU earlier
       if (subset == nullptr && used_indices != nullptr) {
         if (num_data != num_data_) {
           use_bagging_ = true;
@@ -146,10 +142,6 @@ class CUDATreeLearner: public SerialTreeLearner {
       td->host_histogram_output = reinterpret_cast<char*>(host_histogram_outputs_) + host_output_offset;
       td->histograms_wait_obj   = &(histograms_wait_obj_[device_id]);
     }
-
-    // LGBM_CUDA: thread work
-    // typedef void * (*THREADFUNCPTR)(void *);
-    // void* launch_gpu_kernel(void *td);
 
     /*!
      * \brief Wait for GPU kernel execution and read histogram
@@ -275,9 +267,6 @@ class CUDATreeLearner: public SerialTreeLearner {
     // LGBM_CUDA:\brief Asynchronous waiting object for copying dense features
     // cudaEvent_t features_future_;
     std::vector<cudaEvent_t> features_future_;
-
-    // LGBM_CUDA: use subset of training data for bagging
-    bool is_use_subset_;
 
     // LGBM_CUDA: host-side buffer for converting feature data into featre4 data
     // std::vector<uint8_t*> host_vecs_;

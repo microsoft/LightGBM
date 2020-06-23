@@ -36,9 +36,9 @@ GPUTreeLearner::~GPUTreeLearner() {
   }
 }
 
-void GPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
+void GPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
   // initialize SerialTreeLearner
-  SerialTreeLearner::Init(train_data, is_constant_hessian, is_use_subset);
+  SerialTreeLearner::Init(train_data, is_constant_hessian);
   // some additional variables needed for GPU trainer
   num_feature_groups_ = train_data_->num_feature_groups();
   // Initialize GPU buffers and kernels

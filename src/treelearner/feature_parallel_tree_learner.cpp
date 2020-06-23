@@ -19,9 +19,9 @@ template <typename TREELEARNER_T>
 FeatureParallelTreeLearner<TREELEARNER_T>::~FeatureParallelTreeLearner() {
 }
 
-template <typename TREELEARNER_T>  // LGBM_CUDA
-void FeatureParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian, bool is_use_subset) {
-  TREELEARNER_T::Init(train_data, is_constant_hessian, is_use_subset);  // LGBM_CUDA
+template <typename TREELEARNER_T>
+void FeatureParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian) {
+  TREELEARNER_T::Init(train_data, is_constant_hessian);
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
 

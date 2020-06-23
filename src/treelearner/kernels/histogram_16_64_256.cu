@@ -83,13 +83,8 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
     }
     __syncthreads();
 
-
     output_buf[ltid * 2 + 0] = grad_bin;
-#if CONST_HESSIAN == 0
     output_buf[ltid * 2 + 1] = hess_bin;
-#else
-    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
-#endif
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -434,13 +429,8 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
     }
     __syncthreads();
 
-
     output_buf[ltid * 2 + 0] = grad_bin;
-#if CONST_HESSIAN == 0
     output_buf[ltid * 2 + 1] = hess_bin;
-#else
-    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
-#endif
 }
 
 #if USE_CONSTANT_BUF == 1
@@ -785,11 +775,7 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
     __syncthreads();
 
     output_buf[ltid * 2 + 0] = grad_bin;
-#if CONST_HESSIAN == 0
     output_buf[ltid * 2 + 1] = hess_bin;
-#else
-    output_buf[ltid * 2 + 1] = as_acc_type((acc_int_type)cont_bin);
-#endif
 }
 
 #if USE_CONSTANT_BUF == 1
