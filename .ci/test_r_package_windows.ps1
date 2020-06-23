@@ -124,7 +124,7 @@ if ($env:COMPILER -ne "MSVC") {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    Run-R-Code-Redirect-Stderr "processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), windows_verbatim_args = TRUE)" ; Check-Output $?
+    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE)" ; Check-Output $?
     conda install -q -y --no-deps pandoc
 }
 
@@ -140,7 +140,7 @@ if ($env:COMPILER -ne "MSVC") {
 
   $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
-  Run-R-Code-Redirect-Stderr "processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), windows_verbatim_args = FALSE)" ; $check_succeeded = $?
+  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\lightgbm.Rcheck\00install.out"
@@ -157,7 +157,7 @@ if ($env:COMPILER -ne "MSVC") {
   $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
   $relevant_line = $note_str -match '(\d+) NOTE'
   $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 4
+  $ALLOWED_CHECK_NOTES = 3
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
       Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
       Check-Output $False
