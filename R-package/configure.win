@@ -1,0 +1,91 @@
+# Script used to generate `Makevars.win` froom `Makevars.win.in`
+# on Windows
+
+###########################
+# find compiler and flags #
+###########################
+
+R_SCRIPT="${R_HOME}/bin${R_ARCH_BIN}/Rscript"
+R_EXE="${R_HOME}/bin${R_ARCH_BIN}/R"
+CC=`"${R_EXE}" CMD config CC`
+
+################
+# LGB_CPPFLAGS #
+################
+
+LGB_CPPFLAGS=""
+
+ac_pkg_r35=no
+R_35_OR_ABOVE=$(
+    ${R_SCRIPT} -e "
+        R_ver <- as.double(R.version['major']) + as.double(R.version['minor']) / 10.0;
+        cat(as.character(R_ver > 3.5))
+    "
+)
+
+if test ${R_35_OR_ABOVE} = "TRUE";
+then
+    ac_pkg_r35=yes
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DR_VER_ABOVE_35"
+fi
+echo "checking whether using R version 3.5.0 or later...${ac_pkg_r35}"
+
+# Compile for GPU?
+# Check whether environment variable LGB_USE_GPU has been set to true
+if test ${LGB_USE_GPU};
+then
+    if ${LGB_USE_GPU} = "true";
+    then
+        LGB_CPPFLAGS="${LGB_CPPFLAGS} -DUSE_GPU"
+    fi
+fi
+
+###############
+# MM_PREFETCH #
+###############
+
+ac_mm_prefetch="no"
+
+cat > conftest.c <<EOL
+#include <xmmintrin.h>
+int main() {
+  int a = 0;
+  _mm_prefetch(&a, _MM_HINT_NTA);
+  return 0;
+}
+EOL
+
+${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
+echo "checking whether MM_PREFETCH works...${ac_mm_prefetch}"
+
+if test "${ac_mm_prefetch}" = "yes"
+then
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_PREFETCH=1"
+fi
+
+############
+# MM_ALLOC #
+############
+ac_mm_malloc="no"
+
+cat > conftest.c <<EOL
+#include <mm_malloc.h>
+int main() {
+    char *a = (char*)_mm_malloc(8, 16);
+    _mm_free(a);
+    return 0;
+}
+EOL
+
+${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_malloc="yes"
+echo "checking whether MM_MALLOC works...${ac_mm_malloc}"
+
+if test "${ac_mm_malloc}" = "yes";
+then
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
+fi
+
+# Generate Makevars.win from Makevars.win.in
+sed -e \
+    "s/@LGB_CPPFLAGS@/$LGB_CPPFLAGS/" \
+    < src/Makevars.win.in > src/Makevars.win

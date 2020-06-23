@@ -403,9 +403,11 @@ R-package/src/lib_lightgbm.so.dSYM/
 R-package/src/src/
 R-package/src-x64
 R-package/src-i386
+**/Makevars.win
 lightgbm_r/*
 lightgbm*.tar.gz
 lightgbm.Rcheck/
+**/autom4te.cache/
 *.def
 
 # Files created by R examples and tests

@@ -14,6 +14,7 @@
 ^src/CMakeLists.txt$
 ^Makefile$
 ^src/build/.*$
+^autom4te.cache/.*$
 
 # unnecessary files from submodules
 ^src/compute/.appveyor.yml$

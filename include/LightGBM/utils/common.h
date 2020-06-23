@@ -36,9 +36,17 @@
 #elif MM_MALLOC
 #include <mm_malloc.h>
 #elif defined(__GNUC__)
-#include <malloc.h>
-#define _mm_malloc(a, b) memalign(b, a)
-#define _mm_free(a) free(a)
+  // https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+  // https://www.oreilly.com/library/view/mac-os-x/0596003560/ch05s01s02.html
+  #ifdef HAVE_MALLOC_H
+    #include <malloc.h>
+    #define _mm_malloc(a, b) memalign(b, a)
+    #define _mm_free(a) free(a)
+  #else
+    #include <stdlib.h>
+    #define _mm_malloc(a, b) malloc(a)
+    #define _mm_free(a) free(a)
+  #endif
 #else
 #include <stdlib.h>
 #define _mm_malloc(a, b) malloc(a)

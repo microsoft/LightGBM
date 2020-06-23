@@ -143,6 +143,104 @@ Rscript -e " \
     "
 ```
 
+Preparing a CRAN package and installing it
+------------------------------------------
+
+This section is primarily for maintainers, but may help users and contributors to understand the structure of the R package.
+
+Most of `LightGBM` uses `CMake` to handle tasks like setting compiler and linker flags, including header file locations, and linking to other libraries. Because CRAN packages typically do not assume the presence of `CMake`, the R package uses an alternative method that is in the CRAN-supported toolchain for building R packages with C++ code: `Autoconf`.
+
+For more information on this approach, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup).
+
+### Build a CRAN package
+
+From the root of the repository, run the following.
+
+```shell
+sh build-cran-package.sh
+```
+
+This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
+
+### Standard Installation from CRAN package
+
+After building the package, install it with a command like the following:
+
+```shell
+R CMD install lightgbm_*.tar.gz
+```
+
+#### Custom Installation (Linux, Mac)
+
+You can use `--configure-args` to build a GPU-enabled version of the package.
+
+```shell
+Rscript build_r.R --skip-install
+R CMD INSTALL \
+    --configure-args='--enable-gpu' \
+    lightgbm_2.3.2.tar.gz
+```
+
+To change the compiler used when installing the package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler). For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
+
+```make
+# ~/.R/Makevars
+CC=gcc-8
+CXX=g++-8
+CXX11=g++-8
+```
+
+#### Custom Installation (Windows)
+
+Since R on Windows does not support the use of `--configure-args`, building a GPU-enabled version of the package on Windows requires the use of an environment variable.
+
+To install from source with GPU on Windows, set environment variable `LGB_USE_GPU` to `true`.
+
+```shell
+setx LGB_USE_GPU "true"
+```
+
+Restart CMD, then check that it was set:
+
+```shell
+echo %LGB_USE_GPU%
+```
+
+If it shows `true`, you should see the flag `-DUSE_GPU` in the compiler messages.
+
+```shell
+R CMD install lightgbm_*.tar.gz
+```
+
+### Changing the CRAN package
+
+A lot of details are handled automatically by `R CMD build` and `R CMD install`, so it can be difficult to understand how the files in the R package are related to each other. An extensive treatment of those details is available in ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
+
+This section briefly explains the key files for building a CRAN package. To update the package, edit the files relevant to your change and re-run the steps in `Build a CRAN package`.
+
+**Linux or Mac**
+
+At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
+
+1. Edit `configure.ac`
+2. Create `configure` with `autoconf`. Do not edit it by hand.
+
+```shell
+autoconf \
+  --verbose \
+  --output configure \
+    configure.ac
+```
+
+3. Edit `src/Makevars.in`
+
+**Configuring for Windows**
+
+At build time, `configure.win` will be run and used to create a file `Makevars.win`, using `Makevars.win.in` as a template.
+
+1. Edit `configure.win` directly
+2. Edit `src/Makevars.win.in`
+
 External (Unofficial) Repositories
 ----------------------------------
 

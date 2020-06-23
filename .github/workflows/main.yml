@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }})
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -20,57 +20,92 @@ jobs:
             task: r-package
             compiler: gcc
             r_version: 3.6
+            build_type: cmake
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
             r_version: 4.0
+            build_type: cmake
           - os: ubuntu-latest
             task: r-package
             compiler: clang
             r_version: 3.6
+            build_type: cmake
           - os: ubuntu-latest
             task: r-package
             compiler: clang
             r_version: 4.0
+            build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: gcc
             r_version: 3.6
+            build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: gcc
             r_version: 4.0
+            build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: clang
             r_version: 3.6
+            build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: clang
             r_version: 4.0
+            build_type: cmake
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MINGW
             r_version: 3.6
+            build_type: cmake
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MSYS
             r_version: 4.0
+            build_type: cmake
           # Visual Studio 2017
           - os: windows-2016
             task: r-package
             compiler: MSVC
             toolchain: MSVC
             r_version: 3.6
+            build_type: cmake
           # Visual Studio 2019
           - os: windows-2019
             task: r-package
             compiler: MSVC
             toolchain: MSVC
             r_version: 4.0
+            build_type: cmake
+          ###############
+          # CRAN builds #
+          ###############
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MSYS
+            r_version: 4.0
+            build_type: cran
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+            build_type: cran
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+            build_type: cran
     steps:
+      - name: prevent conversion of line endings on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh
+        run: git config --global core.autocrlf false
       - name: Checkout repository
         uses: actions/checkout@v1
         with:
@@ -96,6 +131,7 @@ jobs:
           export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
           export LGB_VER=$(head -n 1 VERSION.txt)
           export R_VERSION="${{ matrix.r_version }}"
+          export R_BUILD_TYPE="${{ matrix.build_type }}"
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
       - name: Use conda on Windows
@@ -110,6 +146,7 @@ jobs:
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
           $env:TOOLCHAIN = "${{ matrix.toolchain }}"
           $env:R_VERSION = "${{ matrix.r_version }}"
+          $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
           $env:COMPILER = "${{ matrix.compiler }}"
           $env:GITHUB_ACTIONS = "true"
           $env:TASK = "${{ matrix.task }}"
