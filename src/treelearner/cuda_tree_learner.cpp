@@ -1016,8 +1016,8 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   }
 }
 
-void CUDATreeLearner::FindBestSplits() {
-  SerialTreeLearner::FindBestSplits();
+void CUDATreeLearner::FindBestSplits(const Tree* tree) {
+  SerialTreeLearner::FindBestSplits(tree);
 
 #if GPU_DEBUG >= 3
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
