@@ -178,7 +178,7 @@ lgb.check_interaction_constraints <- function(params, column_names) {
     if (!methods::is(params[["interaction_constraints"]], "list")) {
         stop("interaction_constraints must be a list")
     }
-    if (!all(sapply(params[["interaction_constraints"]], function(x){is.character(x) || is.numeric(x)}))) {
+    if (!all(sapply(params[["interaction_constraints"]], function(x) {is.character(x) || is.numeric(x)}))) {
         stop("every element in interaction_constraints must be a character vector or numeric vector")
     }
 
