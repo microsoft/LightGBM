@@ -135,7 +135,12 @@ def param_dict_to_str(data):
     pairs = []
     for key, val in data.items():
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
-            pairs.append(str(key) + '=' + ','.join(map(str, val)))
+            def to_string(x):
+                if isinstance(x, list):
+                    return "[{}]".format(','.join(map(str, x)))
+                else:
+                    return str(x)
+            pairs.append(str(key) + '=' + ','.join(map(to_string, val)))
         elif isinstance(val, string_type) or isinstance(val, numeric_types) or is_numeric(val):
             pairs.append(str(key) + '=' + str(val))
         elif val is not None:

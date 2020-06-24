@@ -124,6 +124,10 @@ lgb.train <- function(params = list(),
     end_iteration <- begin_iteration + nrounds - 1L
   }
 
+  if (!is.null(params[["interaction_constraints"]])) {
+    stop("lgb.train: interaction_constraints is not implemented")
+  }
+
   # Update parameters with parsed parameters
   data$update_params(params)
 
