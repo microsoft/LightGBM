@@ -728,8 +728,9 @@ Dataset <- R6::R6Class(
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.save(dtrain, "lgb.Dataset.data")
-#' dtrain <- lgb.Dataset("lgb.Dataset.data")
+#' data_file <- tempfile(fileext = ".data")
+#' lgb.Dataset.save(dtrain, data_file)
+#' dtrain <- lgb.Dataset(data_file)
 #' lgb.Dataset.construct(dtrain)
 #'
 #' @export
@@ -1073,8 +1074,9 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.save(dtrain, "lgb-Dataset.data")
-#' dtrain <- lgb.Dataset("lgb-Dataset.data")
+#' data_file <- tempfile(fileext = ".data")
+#' lgb.Dataset.save(dtrain, data_file)
+#' dtrain <- lgb.Dataset(data_file)
 #' lgb.Dataset.set.categorical(dtrain, 1L:2L)
 #'
 #' @rdname lgb.Dataset.set.categorical
@@ -1134,7 +1136,7 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.save(dtrain, "data.bin")
+#' lgb.Dataset.save(dtrain, tempfile(fileext = ".bin"))
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
 

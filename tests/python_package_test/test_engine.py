@@ -2193,26 +2193,20 @@ class TestEngine(unittest.TestCase):
         # check that constraint containing all features is equivalent to no constraint
         params = {'verbose': -1,
                   'seed': 0}
-        est = lgb.train(params, train_data)
+        est = lgb.train(params, train_data, num_boost_round=10)
         pred1 = est.predict(X)
-        params = {'interaction_constraints': [list(range(num_features))],
-                  'verbose': -1,
-                  'seed': 0}
-        est = lgb.train(params, train_data)
+        est = lgb.train(dict(params, interation_constraints=[list(range(num_features))]), train_data,
+                        num_boost_round=10)
         pred2 = est.predict(X)
         np.testing.assert_allclose(pred1, pred2)
         # check that constraint partitioning the features reduces train accuracy
-        params = {'interaction_constraints': [list(range(num_features // 2)),
-                                              list(range(num_features // 2, num_features))],
-                  'verbose': -1,
-                  'seed': 0}
-        est = lgb.train(params, train_data)
+        est = lgb.train(dict(params, interaction_constraints=[list(range(num_features // 2)),
+                                                              list(range(num_features // 2, num_features))]),
+                        train_data, num_boost_round=10)
         pred3 = est.predict(X)
         self.assertLess(mean_squared_error(y, pred1), mean_squared_error(y, pred3))
         # check that constraints consisting of single features reduce accuracy further
-        params = {'interaction_constraints': [[i] for i in range(num_features)],
-                  'verbose': -1,
-                  'seed': 0}
-        est = lgb.train(params, train_data)
+        est = lgb.train(dict(params, interaction_constraints=[[i] for i in range(num_features)]), train_data,
+                        num_boost_round=10)
         pred4 = est.predict(X)
         self.assertLess(mean_squared_error(y, pred3), mean_squared_error(y, pred4))

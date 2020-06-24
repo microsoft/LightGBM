@@ -1,0 +1,117 @@
+name: GitHub Actions
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  test:
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 3.6
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 3.6
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MINGW
+            r_version: 3.6
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MSYS
+            r_version: 4.0
+          # Visual Studio 2017
+          - os: windows-2016
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 3.6
+          # Visual Studio 2019
+          - os: windows-2019
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 4.0
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Setup and run tests on Linux and macOS
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          export TASK="${{ matrix.task }}"
+          export COMPILER="${{ matrix.compiler }}"
+          export GITHUB_ACTIONS="true"
+          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+              export OS_NAME="macos"
+              export R_MAC_VERSION=3.6.3
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              export OS_NAME="linux"
+              export R_LINUX_VERSION=3.6.3-1bionic
+          fi
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export CONDA_ENV="test-env"
+          export CONDA="$HOME/miniconda"
+          export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
+          export LGB_VER=$(head -n 1 VERSION.txt)
+          export R_VERSION="${{ matrix.r_version }}"
+          $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/test.sh
+      - name: Use conda on Windows
+        if: startsWith(matrix.os, 'windows')
+        uses: goanpeca/setup-miniconda@v1
+        with:
+          auto-update-conda: false
+      - name: Setup and run tests on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh -command ". {0}"
+        run: |
+          $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
+          $env:TOOLCHAIN = "${{ matrix.toolchain }}"
+          $env:R_VERSION = "${{ matrix.r_version }}"
+          $env:COMPILER = "${{ matrix.compiler }}"
+          $env:GITHUB_ACTIONS = "true"
+          $env:TASK = "${{ matrix.task }}"
+          conda init powershell
+          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"

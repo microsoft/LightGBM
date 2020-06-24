@@ -14,8 +14,8 @@
 
 namespace LightGBM {
 
-Tree::Tree(int max_leaves)
-  :max_leaves_(max_leaves) {
+Tree::Tree(int max_leaves, bool track_branch_features)
+  :max_leaves_(max_leaves), track_branch_features_(track_branch_features) {
   left_child_.resize(max_leaves_ - 1);
   right_child_.resize(max_leaves_ - 1);
   split_feature_inner_.resize(max_leaves_ - 1);
@@ -33,6 +33,9 @@ Tree::Tree(int max_leaves)
   internal_weight_.resize(max_leaves_ - 1);
   internal_count_.resize(max_leaves_ - 1);
   leaf_depth_.resize(max_leaves_);
+  if (track_branch_features_) {
+    branch_features_ = std::vector<std::vector<int>>(max_leaves_);
+  }
   // root is in the depth 0
   leaf_depth_[0] = 0;
   num_leaves_ = 1;
@@ -587,7 +590,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("leaf_weight")) {
-    leaf_weight_ = Common::StringToArrayFast<double>(key_vals["leaf_weight"], num_leaves_);
+    leaf_weight_ = Common::StringToArray<double>(key_vals["leaf_weight"], num_leaves_);
   } else {
     leaf_weight_.resize(num_leaves_);
   }

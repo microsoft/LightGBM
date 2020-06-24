@@ -92,12 +92,7 @@ class ColSampler {
     // get interaction constraints for current branch
     std::unordered_set<int> allowed_features;
     if (!interaction_constraints_.empty()) {
-      std::unordered_set<int> branch_features;
-      int node = tree->leaf_parent(leaf);
-      while (node >= 0) {
-        branch_features.insert(tree->split_feature(node));
-        node = tree->internal_parent(node);
-      }
+      std::vector<int> branch_features = tree->branch_features(leaf);
       allowed_features.insert(branch_features.begin(), branch_features.end());
       for (auto constraint : interaction_constraints_) {
         int num_feat_found = 0;

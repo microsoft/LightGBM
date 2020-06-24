@@ -24,8 +24,13 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, 
   TREELEARNER_T::Init(train_data, is_constant_hessian);
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
-  input_buffer_.resize((sizeof(SplitInfo) + sizeof(uint32_t) * this->config_->max_cat_threshold) * 2);
-  output_buffer_.resize((sizeof(SplitInfo) + sizeof(uint32_t) * this->config_->max_cat_threshold) * 2);
+
+  auto max_cat_threshold = this->config_->max_cat_threshold;
+  // need to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
+  int split_info_size = SplitInfo::Size(max_cat_threshold) * 2;
+
+  input_buffer_.resize(split_info_size);
+  output_buffer_.resize(split_info_size);
 }
 
 

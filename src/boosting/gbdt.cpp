@@ -352,7 +352,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
-    std::unique_ptr<Tree> new_tree(new Tree(2));
+    std::unique_ptr<Tree> new_tree(new Tree(2, false));
     if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;

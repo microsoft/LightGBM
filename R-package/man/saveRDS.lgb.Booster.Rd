@@ -61,6 +61,7 @@ model <- lgb.train(
     , learning_rate = 1.0
     , early_stopping_rounds = 5L
 )
-saveRDS.lgb.Booster(model, "lgb-model.rds")
+model_file <- tempfile(fileext = ".rds")
+saveRDS.lgb.Booster(model, model_file)
 }
 }

@@ -7,23 +7,43 @@ mkdir -p $R_LIB_PATH
 echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
+# Get details needed for installing R components
+#
+# NOTES:
+#    * Linux builds on Azure use a container and don't need these details
+if ! { [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]]; }; then
+    R_MAJOR_VERSION=( ${R_VERSION//./ } )
+    if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+        export R_MAC_VERSION=3.6.3
+        export R_LINUX_VERSION="3.6.3-1bionic"
+        export R_APT_REPO="bionic-cran35/"
+    elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
+        export R_MAC_VERSION=4.0.0
+        export R_LINUX_VERSION="4.0.0-1.1804.0"
+        export R_APT_REPO="bionic-cran40/"
+    else
+        echo "Unrecognized R version: ${R_VERSION}"
+        exit -1
+    fi
+fi
+
 # installing precompiled R for Ubuntu
 # https://cran.r-project.org/bin/linux/ubuntu/#installation
 # adding steps from https://stackoverflow.com/a/56378217/3986677 to get latest version
 #
 # This only needs to get run on Travis because R environment for Linux
 # used by Azure pipelines is set up in https://github.com/guolinke/lightgbm-ci-docker
-if [[ $TRAVIS == "true" ]] && [[ $OS_NAME == "linux" ]]; then
+if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
     sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
+        "deb https://cloud.r-project.org/bin/linux/ubuntu ${R_APT_REPO}"
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
         -y \
-            r-base-dev=${R_TRAVIS_LINUX_VERSION} \
+            r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-recommended \
             texlive-fonts-recommended \
