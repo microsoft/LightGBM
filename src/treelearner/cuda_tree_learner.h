@@ -39,13 +39,13 @@ namespace LightGBM {
 * \brief CUDA-based parallel learning algorithm.
 */
 class CUDATreeLearner: public SerialTreeLearner {
-public:
+ public:
     explicit CUDATreeLearner(const Config* tree_config);
     ~CUDATreeLearner();
     void Init(const Dataset* train_data, bool is_constant_hessian) override;
     void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
     Tree* Train(const score_t* gradients, const score_t *hessians,
-                bool is_constant_hessian, Json& forced_split_json);
+                bool is_constant_hessian, const Json& forced_split_json);
     void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
       SerialTreeLearner::SetBaggingData(subset, used_indices, num_data);
       if (subset == nullptr && used_indices != nullptr) {

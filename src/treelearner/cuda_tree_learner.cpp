@@ -577,11 +577,11 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
 
   AllocateGPUMemory();
 
-  copyDenseFeature(); // LGBM_CUDA
+  copyDenseFeature();  // LGBM_CUDA
 }
 
 Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            bool is_constant_hessian, Json& forced_split_json) {
+                            bool is_constant_hessian, const Json& forced_split_json) {
   // check if we need to recompile the GPU kernel (is_constant_hessian changed)
   // this should rarely occur
 
