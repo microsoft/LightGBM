@@ -1046,7 +1046,7 @@ test_that("lgb.train() throws an informative error if interaction_constraints is
 test_that(paste0("lgb.train() throws an informative error if the members of interaction_constraints ",
                  "are not character or numeric vectors"), {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", interaction_constraints=list(list(1L, 2L), list(3L)))
+  params <- list(objective = "regression", interaction_constraints = list(list(1L, 2L), list(3L)))
     expect_error({
       bst <- lightgbm(
         data = dtrain
