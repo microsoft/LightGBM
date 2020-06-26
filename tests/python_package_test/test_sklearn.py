@@ -191,9 +191,9 @@ class TestSklearn(unittest.TestCase):
         reg.fit(X_train, y_train).score(X_test, y_test)
         self.assertEqual(reg.n_features_in_, 13)  # test number of input features
 
-    # sklearn < 0.23 does not have n_features_in_ attribute
+    # sklearn < 0.23 does not have n_features_in_
     @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
-    def test_n_features_in_():
+    def test_n_features_in(self):
         from sklearn.utils.estimator_checks import check_n_features_in
 
         X, y = load_iris(return_X_y=True)
