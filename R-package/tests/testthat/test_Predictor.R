@@ -8,6 +8,7 @@ test_that("predictions do not fail for integer input", {
         data = dtrain
         , objective = "regression"
         , verbose = -1L
+        , nrounds = 3L
     )
     X_double <- X[c(1L, 51L, 101L), , drop = FALSE]
     X_integer <- X_double

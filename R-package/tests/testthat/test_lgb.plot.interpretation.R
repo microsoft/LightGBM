@@ -32,7 +32,7 @@ test_that("lgb.plot.interepretation works as expected for binary classification"
     model <- lgb.train(
         params = params
         , data = dtrain
-        , nrounds = 10L
+        , nrounds = 3L
     )
     num_trees <- 5L
     tree_interpretation <- lgb.interprete(
@@ -80,7 +80,7 @@ test_that("lgb.plot.interepretation works as expected for multiclass classificat
     model <- lgb.train(
         params = params
         , data = dtrain
-        , nrounds = 10L
+        , nrounds = 3L
         , min_data = 1L
     )
     num_trees <- 5L
