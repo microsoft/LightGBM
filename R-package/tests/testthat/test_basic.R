@@ -1074,7 +1074,7 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
 
-  params <- list(objective = "regression", list(c(1L, 2L), 3L))
+  params <- list(objective = "regression", interaction_constraints = list(c(1L, 2L), 3L))
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -1083,7 +1083,7 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   pred1 <- bst$predict(test$data)
 
   cnames <- colnames(train$data)
-  params <- list(objective = "regression", list(c(cnames[[1L]], cnames[[2L]]), cnames[[3L]]))
+  params <- list(objective = "regression", interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), cnames[[3L]]))
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -1091,7 +1091,7 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   )
   pred2 <- bst$predict(test$data)
 
-  params <- list(objective = "regression", list(c(cnames[[1L]], cnames[[2L]]), 3L))
+  params <- list(objective = "regression", interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), 3L))
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -1101,5 +1101,32 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
 
   expect_equal(pred1, pred2)
   expect_equal(pred2, pred3)
+
+})
+
+test_that(paste0("lgb.train() gives same results when using interaction_constraints and specifying colnames"), {
+  set.seed(1L)
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+
+  params <- list(objective = "regression", interaction_constraints = list(c(1L, 2L), 3L))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2L
+  )
+  pred1 <- bst$predict(test$data)
+
+  new_colnames = paste0(colnames(train$data), "_x")
+  params <- list(objective = "regression"
+                 , interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L]))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2L
+    , colnames = new_colnames
+  )
+  pred2 <- bst$predict(test$data)
+
+  expect_equal(pred1, pred2)
 
 })
