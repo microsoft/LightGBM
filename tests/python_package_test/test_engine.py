@@ -2216,4 +2216,4 @@ class TestEngine(unittest.TestCase):
         train_data = lgb.Dataset(X, label=y)
         est = lgb.train(dict(params, interaction_constraints=[[0] + list(range(2, num_features)),
                                                               [1] + list(range(2, num_features))]),
-              train_data, num_boost_round=10)
+                        train_data, num_boost_round=10)
