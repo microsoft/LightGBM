@@ -163,6 +163,40 @@ class TestSklearn(unittest.TestCase):
         self.assertGreaterEqual(score, 0.8)
         self.assertLessEqual(score, 1.)
 
+    # sklearn < 0.23 does not have a stacking classifier and n_features_in_ attribute
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    def test_stacking_classifier(self):
+        from sklearn.ensemble import StackingClassifier
+        from sklearn.utils.estimator_checks import check_n_features_in
+
+        X, y = load_iris(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        classifiers = [('gbm1', lgb.LGBMClassifier()),
+                       ('gbm2', lgb.LGBMClassifier())]
+        clf = StackingClassifier(estimators=classifiers,
+                                 final_estimator=lgb.LGBMClassifier())
+        clf.fit(X_train, y_train).score(X_test, y_test)
+        self.assertEqual(clf.n_features_in_, 4) # test number of input features
+        name = clf.__class__.__name__
+        check_n_features_in(name, clf) # test sklearn API compatibility
+
+    # sklearn < 0.23 does not have a stacking regressor and n_features_in_ attribute
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    def test_stacking_regressor(self):
+        from sklearn.ensemble import StackingRegressor
+        from sklearn.utils.estimator_checks import check_n_features_in
+
+        X, y = load_boston(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        regressors = [('gbm1', lgb.LGBMRegressor()),
+                      ('gbm2', lgb.LGBMRegressor())]
+        reg = StackingRegressor(estimators=regressors,
+                                final_estimator=lgb.LGBMRegressor())
+        reg.fit(X_train, y_train).score(X_test, y_test)
+        self.assertEqual(reg.n_features_in_, 13) # test number of input features
+        name = reg.__class__.__name__
+        check_n_features_in(name, reg) # test sklearn API compatibility
+
     def test_grid_search(self):
         X, y = load_iris(True)
         y = np.array(list(map(str, y)))  # utilize label encoder at it's max power
