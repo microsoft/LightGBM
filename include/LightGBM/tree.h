@@ -146,9 +146,6 @@ class Tree {
   /*! \brief Get parent of specific leaf*/
   inline int leaf_parent(int leaf_idx) const {return leaf_parent_[leaf_idx]; }
 
-  /*! \brief Get parent of internal node */
-  inline int internal_parent(int node_idx) const { return internal_parent_[node_idx]; }
-
   /*! \brief Get feature of specific split*/
   inline int split_feature(int split_idx) const { return split_feature_[split_idx]; }
 
@@ -435,8 +432,6 @@ class Tree {
   std::vector<double> leaf_weight_;
   /*! \brief DataCount of leaves */
   std::vector<int> leaf_count_;
-  /*! \brief parent of non-leaf nodes */
-  std::vector<int> internal_parent_;
   /*! \brief Output of non-leaf nodes */
   std::vector<double> internal_value_;
   /*! \brief weight of non-leaf nodes */
@@ -477,7 +472,6 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   // update new leaves
   leaf_parent_[leaf] = new_node_idx;
   leaf_parent_[num_leaves_] = new_node_idx;
-  internal_parent_[new_node_idx] = parent;
   // save current leaf value to internal node before change
   internal_weight_[new_node_idx] = leaf_weight_[leaf];
   internal_value_[new_node_idx] = leaf_value_[leaf];

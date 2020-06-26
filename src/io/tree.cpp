@@ -28,7 +28,6 @@ Tree::Tree(int max_leaves, bool track_branch_features)
   leaf_value_.resize(max_leaves_);
   leaf_weight_.resize(max_leaves_);
   leaf_count_.resize(max_leaves_);
-  internal_parent_.resize(max_leaves - 1);
   internal_value_.resize(max_leaves_ - 1);
   internal_weight_.resize(max_leaves_ - 1);
   internal_count_.resize(max_leaves_ - 1);
@@ -42,7 +41,6 @@ Tree::Tree(int max_leaves, bool track_branch_features)
   leaf_value_[0] = 0.0f;
   leaf_weight_[0] = 0.0f;
   leaf_parent_[0] = -1;
-  internal_parent_[0] = -1;
   shrinkage_ = 1.0f;
   num_cat_ = 0;
   cat_boundaries_.push_back(0);
