@@ -253,11 +253,6 @@ class LGBMModel(_LGBMModelBase):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Attributes
-        ----------
-        n_features_in_ : int
-            The number of features of fitted model.
-
         Note
         ----
         A custom objective function can be provided for the ``objective`` parameter.
@@ -678,7 +673,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def n_features_in_(self):
-        """Get the number of features of fitted model."""
+        """:obj:`int`: The number of features of fitted model."""
         if self._n_features_in is None:
             raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
         return self._n_features_in
