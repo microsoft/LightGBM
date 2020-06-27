@@ -182,7 +182,6 @@ class TestSklearn(unittest.TestCase):
                          clf.named_estimators_['gbm2'].n_features_in_)
         self.assertEqual(clf.final_estimator_.n_features_in_, 10)  # number of concatenated features
         self.assertEqual(len(clf.final_estimator_.feature_importances_), 10)
-        self.assertEqual(clf.classes_, np.array([0, 1, 2]))
         self.assertEqual(clf.named_estimators_['gbm1'].classes_,
                          clf.named_estimators_['gbm2'].classes_)
 
