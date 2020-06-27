@@ -163,8 +163,8 @@ class TestSklearn(unittest.TestCase):
         self.assertGreaterEqual(score, 0.8)
         self.assertLessEqual(score, 1.)
 
-    # sklearn <0.22 does not have a stacking classifier
-    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    # sklearn <0.23 does not have a stacking classifier and n_features_in_ property
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
     def test_stacking_classifier(self):
         from sklearn.ensemble import StackingClassifier
 
@@ -182,11 +182,12 @@ class TestSklearn(unittest.TestCase):
                          clf.named_estimators_['gbm2'].n_features_in_)
         self.assertEqual(clf.final_estimator_.n_features_in_, 10)  # number of concatenated features
         self.assertEqual(len(clf.final_estimator_.feature_importances_), 10)
+        self.assertEqual(clf.classes_, np.array([0, 1, 2]))
         self.assertEqual(clf.named_estimators_['gbm1'].classes_,
                          clf.named_estimators_['gbm2'].classes_)
 
-    # sklearn <0.22 does not have a stacking regressor
-    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    # sklearn <0.23 does not have a stacking regressor and n_features_in_ property
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
     def test_stacking_regressor(self):
         from sklearn.ensemble import StackingRegressor
 
