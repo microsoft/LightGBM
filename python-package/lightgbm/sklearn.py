@@ -253,11 +253,6 @@ class LGBMModel(_LGBMModelBase):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Attributes
-        ----------
-        n_features_in_ : int
-            The number of features of fitted model.
-
         Note
         ----
         A custom objective function can be provided for the ``objective`` parameter.
@@ -313,6 +308,7 @@ class LGBMModel(_LGBMModelBase):
         self._class_weight = None
         self._class_map = None
         self._n_features = None
+        self._n_features_in = None
         self._classes = None
         self._n_classes = None
         self.set_params(**kwargs)
@@ -545,8 +541,8 @@ class LGBMModel(_LGBMModelBase):
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
         self._n_features = _X.shape[1]
-        # set public attribute for consistency
-        self.n_features_in_ = self._n_features
+        # copy for consistency
+        self._n_features_in = self._n_features
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params,
                                categorical_feature='auto'):
@@ -674,6 +670,13 @@ class LGBMModel(_LGBMModelBase):
         if self._n_features is None:
             raise LGBMNotFittedError('No n_features found. Need to call fit beforehand.')
         return self._n_features
+
+    @property
+    def n_features_in_(self):
+        """:obj:`int`: The number of features of fitted model."""
+        if self._n_features_in is None:
+            raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
+        return self._n_features_in
 
     @property
     def best_score_(self):
