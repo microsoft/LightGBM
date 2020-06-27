@@ -14,7 +14,7 @@ OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not earlier than 3.5" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
-option(BUILD_STATIC_LIB "Build static library" OFF)
+OPTION(BUILD_STATIC_LIB "Build static library" OFF)
 OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 
 if(APPLE)
