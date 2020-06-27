@@ -64,7 +64,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
   $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw64/bin"
   $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.0"
+  $env:R_WINDOWS_VERSION = "4.0.2"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
