@@ -16,78 +16,55 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: gcc
-          #   r_version: 3.6
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: gcc
-          #   r_version: 4.0
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: clang
-          #   r_version: 3.6
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: clang
-          #   r_version: 4.0
-          # - os: macOS-latest
-          #   task: r-package
-          #   compiler: gcc
-          #   r_version: 3.6
-          # - os: macOS-latest
-          #   task: r-package
-          #   compiler: gcc
-          #   r_version: 4.0
-          # - os: macOS-latest
-          #   task: r-package
-          #   compiler: clang
-          #   r_version: 3.6
-          # - os: macOS-latest
-          #   task: r-package
-          #   compiler: clang
-          #   r_version: 4.0
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MINGW
-          #   toolchain: MINGW
-          #   r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 3.6
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 3.6
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 3.6
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MINGW
+            r_version: 3.6
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MSYS
             r_version: 4.0
           # Visual Studio 2017
-          # - os: windows-2016
-          #   task: r-package
-          #   compiler: MSVC
-          #   toolchain: MSVC
-          #   r_version: 3.6
+          - os: windows-2016
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 3.6
           # Visual Studio 2019
-          - os: windows-2019
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 4.0
-          ###############
-          # COPIED JOBS #
-          ###############
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.0
-          - os: windows-2019
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 4.0
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.0
           - os: windows-2019
             task: r-package
             compiler: MSVC
