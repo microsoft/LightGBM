@@ -182,11 +182,10 @@ class TestSklearn(unittest.TestCase):
                          clf.named_estimators_['gbm2'].n_features_in_)
         self.assertEqual(clf.final_estimator_.n_features_in_, 10)  # number of concatenated features
         self.assertEqual(len(clf.final_estimator_.feature_importances_), 10)
-        matching_classes = all(clf.named_estimators_['gbm1'].classes_ ==\
-                               clf.named_estimators_['gbm2'].classes_)
-        self.assertEqual(matching_classes, True)
-        matching_classes = all(clf.classes_ == clf.named_estimators_['gbm1'].classes_)
-        self.assertEqual(matching_classes, True)
+        classes = clf.named_estimators_['gbm1'].classes_ == clf.named_estimators_['gbm2'].classes_
+        self.assertEqual(all(classes), True)
+        classes = clf.classes_ == clf.named_estimators_['gbm1'].classes_
+        self.assertEqual(all(classes), True)
 
     # sklearn <0.23 does not have a stacking regressor and n_features_in_ property
     @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
