@@ -9,9 +9,9 @@ import unittest
 
 import lightgbm as lgb
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris, load_svmlight_file)
+                              load_iris, load_svmlight_file, make_multilabel_classification)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
 
@@ -940,6 +940,60 @@ class TestEngine(unittest.TestCase):
 
         self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
                                        - np.sum(gbm.predict(X_test, pred_contrib=True), axis=1)), 1e-4)
+
+    def test_contribs_sparse(self):
+        n_features = 20
+        n_samples = 100
+        # generate CSR sparse dataset
+        X, y = make_multilabel_classification(n_samples=n_samples,
+                                              sparse=True,
+                                              n_features=n_features,
+                                              n_classes=1,
+                                              n_labels=2)
+        y = y.flatten()
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'verbose': -1,
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20)
+        contribs_csr = gbm.predict(X_test, pred_contrib=True)
+        self.assertTrue(isspmatrix_csr(contribs_csr))
+        # convert data to dense and get back same contribs
+        contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
+        # validate the values are the same
+        np.testing.assert_allclose(contribs_csr.toarray(), contribs_dense)
+        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
+                                       - np.sum(contribs_dense, axis=1)), 1e-4)
+        # validate using CSC matrix
+        X_test_csc = X_test.tocsc()
+        contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
+        self.assertTrue(isspmatrix_csc(contribs_csc))
+        # validate the values are the same
+        np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
+
+    @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
+    def test_int32_max_sparse_contribs(self):
+        params = {
+            'objective': 'binary'
+        }
+        train_features = np.random.rand(100, 1000)
+        train_targets = [0] * 50 + [1] * 50
+        lgb_train = lgb.Dataset(train_features, train_targets)
+        gbm = lgb.train(params, lgb_train, num_boost_round=2)
+        csr_input_shape = (3000000, 1000)
+        test_features = csr_matrix(csr_input_shape)
+        for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
+            for j in range(0, 1000, 100):
+                test_features[i, j] = random.random()
+        y_pred_csr = gbm.predict(test_features, pred_contrib=True)
+        # Note there is an extra column added to the output for the expected value
+        csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
+        self.assertTupleEqual(y_pred_csr.shape, csr_output_shape)
+        y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
+        # Note output CSC shape should be same as CSR output shape
+        self.assertTupleEqual(y_pred_csc.shape, csr_output_shape)
 
     def test_sliced_data(self):
         def train_and_get_predictions(features, labels):
