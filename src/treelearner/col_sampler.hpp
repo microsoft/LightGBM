@@ -117,7 +117,9 @@ class ColSampler {
       } else {
         for (int feat : allowed_features) {
           int inner_feat = train_data_->InnerFeatureIndex(feat);
-          ret[inner_feat] = 1;
+          if (inner_feat >= 0) {
+            ret[inner_feat] = 1;
+          }
         }
         return ret;
       }
