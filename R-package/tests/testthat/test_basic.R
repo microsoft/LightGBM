@@ -1116,7 +1116,7 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   )
   pred1 <- bst$predict(test$data)
 
-  new_colnames = paste0(colnames(train$data), "_x")
+  new_colnames <- paste0(colnames(train$data), "_x")
   params <- list(objective = "regression"
                  , interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L]))
   bst <- lightgbm(
