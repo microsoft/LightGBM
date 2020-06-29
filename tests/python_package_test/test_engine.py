@@ -2210,3 +2210,24 @@ class TestEngine(unittest.TestCase):
                         num_boost_round=10)
         pred4 = est.predict(X)
         self.assertLess(mean_squared_error(y, pred3), mean_squared_error(y, pred4))
+
+    def test_linear(self):
+        # check that setting boosting=gbdt_linear fits better than boosting=gbdt when data has linear relationship
+        x = np.arange(0, 100, 0.1)
+        y = 2 * x + np.random.normal(0, 0.1, len(x))
+        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        params = {'verbose': -1,
+                  'seed': 0}
+        est = lgb.train(params, lgb_train, num_boost_round=10)
+        pred1 = est.predict(x[:, np.newaxis])
+        est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10)
+        pred2 = est.predict(x[:, np.newaxis])
+        self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
+        # test again with nans in data
+        x[:10] = np.nan
+        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        est = lgb.train(params, lgb_train, num_boost_round=10)
+        pred1 = est.predict(x[:, np.newaxis])
+        est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10)
+        pred2 = est.predict(x[:, np.newaxis])
+        self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
