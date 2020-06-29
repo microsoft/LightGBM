@@ -163,6 +163,56 @@ class TestSklearn(unittest.TestCase):
         self.assertGreaterEqual(score, 0.8)
         self.assertLessEqual(score, 1.)
 
+    # sklearn <0.23 does not have a stacking classifier and n_features_in_ property
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    def test_stacking_classifier(self):
+        from sklearn.ensemble import StackingClassifier
+
+        X, y = load_iris(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        classifiers = [('gbm1', lgb.LGBMClassifier(n_estimators=3)),
+                       ('gbm2', lgb.LGBMClassifier(n_estimators=3))]
+        clf = StackingClassifier(estimators=classifiers,
+                                 final_estimator=lgb.LGBMClassifier(n_estimators=3),
+                                 passthrough=True)
+        clf.fit(X_train, y_train)
+        score = clf.score(X_test, y_test)
+        self.assertGreaterEqual(score, 0.8)
+        self.assertLessEqual(score, 1.)
+        self.assertEqual(clf.n_features_in_, 4)  # number of input features
+        self.assertEqual(len(clf.named_estimators_['gbm1'].feature_importances_), 4)
+        self.assertEqual(clf.named_estimators_['gbm1'].n_features_in_,
+                         clf.named_estimators_['gbm2'].n_features_in_)
+        self.assertEqual(clf.final_estimator_.n_features_in_, 10)  # number of concatenated features
+        self.assertEqual(len(clf.final_estimator_.feature_importances_), 10)
+        classes = clf.named_estimators_['gbm1'].classes_ == clf.named_estimators_['gbm2'].classes_
+        self.assertTrue(all(classes))
+        classes = clf.classes_ == clf.named_estimators_['gbm1'].classes_
+        self.assertTrue(all(classes))
+
+    # sklearn <0.23 does not have a stacking regressor and n_features_in_ property
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    def test_stacking_regressor(self):
+        from sklearn.ensemble import StackingRegressor
+
+        X, y = load_boston(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
+                      ('gbm2', lgb.LGBMRegressor(n_estimators=3))]
+        reg = StackingRegressor(estimators=regressors,
+                                final_estimator=lgb.LGBMRegressor(n_estimators=3),
+                                passthrough=True)
+        reg.fit(X_train, y_train)
+        score = reg.score(X_test, y_test)
+        self.assertGreaterEqual(score, 0.2)
+        self.assertLessEqual(score, 1.)
+        self.assertEqual(reg.n_features_in_, 13)  # number of input features
+        self.assertEqual(len(reg.named_estimators_['gbm1'].feature_importances_), 13)
+        self.assertEqual(reg.named_estimators_['gbm1'].n_features_in_,
+                         reg.named_estimators_['gbm2'].n_features_in_)
+        self.assertEqual(reg.final_estimator_.n_features_in_, 15)  # number of concatenated features
+        self.assertEqual(len(reg.final_estimator_.feature_importances_), 15)
+
     def test_grid_search(self):
         X, y = load_iris(True)
         y = np.array(list(map(str, y)))  # utilize label encoder at it's max power

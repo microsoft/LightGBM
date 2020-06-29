@@ -64,7 +64,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
   $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw64/bin"
   $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.0"
+  $env:R_WINDOWS_VERSION = "4.0.2"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -165,7 +165,7 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Run-R-Code-Redirect-Stderr "source('build_r.R')" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Run-R-Code-Redirect-Stderr "source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
