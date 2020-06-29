@@ -36,11 +36,22 @@ class LinearTreeLearner: public SerialTreeLearner {
         iter[feat_num].reset(train_data_->FeatureIterator(feat));
       }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        out_score[tmp_idx[j]] += leaf_const;
+        double add_score = leaf_const;
+        bool nan_found = false;
         for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
           int feat = tree->LeafFeaturesInner(i)[feat_num];
           double feat_val = train_data_->get_data(tmp_idx[j], feat);
-          out_score[tmp_idx[j]] += feat_val * tree->LeafCoeffs(i)[feat_num];
+          if (isnan(feat_val) || isinf(feat_val)) {
+            nan_found = true;
+            break;
+          } else {
+            add_score += feat_val * tree->LeafCoeffs(i)[feat_num];
+          }
+        }
+        if (nan_found) {
+          out_score[tmp_idx[j]] += tree->LeafOutput(i);
+        } else {
+          out_score[tmp_idx[j]] += add_score;
         }
       }
     }

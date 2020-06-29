@@ -568,11 +568,22 @@ inline double Tree::Predict(const double* feature_values) const {
     if (num_leaves_ > 1){
       int leaf = GetLeaf(feature_values);
       double output = leaf_const_[leaf];
+      bool nan_found = false;
       for (int i = 0; i < leaf_features_[leaf].size(); ++i) {
         int feat_raw = leaf_features_[leaf][i];
-        output += leaf_coeff_[leaf][i] * feature_values[feat_raw];
+        double feat_val = feature_values[feat_raw];
+        if (isnan(feat_val) || isinf(feat_val)) {
+          nan_found = true;
+          break;
+        } else {
+          output += leaf_coeff_[leaf][i] * feat_val;
+        }
       }
-      return output;
+      if (nan_found) {
+        return leaf_value_[leaf];
+      } else {
+        return output;
+      }
     } else {
       return leaf_value_[0];
     }

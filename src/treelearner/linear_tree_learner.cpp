@@ -104,42 +104,58 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     int idx = data_partition_->leaf_begin(leaf_num);
     int num_data = data_partition_->leaf_count(leaf_num);
     // refer to Eq 3 of https://arxiv.org/pdf/1802.05640.pdf
-    Eigen::MatrixXd X(num_data, split_features.size() + 1);  // matrix of feature values
+    auto nan_row = std::vector<bool>(num_data, false);
+    auto num_nan_rows = 0;
+    Eigen::MatrixXd X_full(num_data, split_features.size() + 1);  // matrix of feature values
     for (int feat_num = 0; feat_num < split_features.size(); ++feat_num) {
       int feat = split_features[feat_num];
       for (int i = 0; i < num_data; ++i) {
         int row_idx = ind[idx + i];
-        X(i, feat_num) = train_data_->get_data(row_idx, feat);
+        double val = train_data_->get_data(row_idx, feat);
+        if (nan_row[i]) {
+          continue;
+        }
+        if (isnan(val) || isinf(val)) {
+          nan_row[i] = true;
+          ++num_nan_rows;
+        } else {
+          X_full(i, feat_num) = val;
+        }
+      }
+    }
+    int num_valid_data = num_data - num_nan_rows;
+    Eigen::MatrixXd X(num_valid_data, split_features.size() + 1);
+    int curr_row = 0;
+    for (int i = 0; i < num_data; ++i) {
+      if (!nan_row[i]) {
+        X.row(curr_row) = X_full.row(i);
+        ++curr_row;
       }
     }
     // final column is all ones
-    for (int i = 0; i < num_data; ++i) {
+    for (int i = 0; i < num_valid_data; ++i) {
       X(i, split_features.size()) = 1;
     }
-
-    Eigen::VectorXd h(num_data, 1);
-    for (int i = 0; i < num_data; ++i) { h(i, 0) = hessians_[ind[idx + i]]; }
+    Eigen::VectorXd h(num_valid_data, 1);
+    curr_row = 0;
+    for (int i = 0; i < num_data; ++i) {
+      if (!nan_row[i]) {
+        h(curr_row, 0) = hessians_[ind[idx + i]];
+        ++curr_row;
+      }
+    }
     Eigen::MatrixXd XTHX(split_features.size() + 1, split_features.size() + 1);
     XTHX = X.transpose() * h.asDiagonal() * X;
     for (int i = 0; i < split_features.size(); ++i) {
       XTHX(i, i) += config_->linear_lambda;
     }
-    /*
-    for (int i = 0; i < split_features.size() + 1; ++i) {
-      for (int j = i; j < split_features.size() + 1; ++j ) {
-        XTHX(i, j) = ((X.col(i).array() * h).matrix().transpose() * X.col(j)).sum();
-        if (i == j && i < split_features.size()) {
-          XTHX(i, j) += config_->linear_lambda;
-        } else {
-          XTHX(j, i) = XTHX(i, j);
-        }
-      }
-    }
-    */
-
-    Eigen::MatrixXd grad(num_data, 1);
+    Eigen::MatrixXd grad(num_valid_data, 1);
+    curr_row = 0;
     for (int i = 0; i < num_data; ++i) {
-      grad(i) = gradients_[ind[idx + i]];
+      if (!nan_row[i]) {
+        grad(curr_row) = gradients_[ind[idx + i]];
+        ++curr_row;
+      }
     }
     Eigen::MatrixXd coeffs = - XTHX.fullPivLu().inverse() * X.transpose() * grad;
     // remove features with very small coefficients

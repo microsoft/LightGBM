@@ -115,7 +115,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
 
 
 #define PredictionFunLinear(niter, fidx_in_iter, start_pos, decision_fun,   \
-                            iter_idx, data_idx)                               \
+                            iter_idx, data_idx)                             \
 std::vector<int> nodes(end - start);                                        \
 for (data_size_t i = start; i < end; ++i) {                                 \
   int node = 0;                                                             \
@@ -123,15 +123,23 @@ for (data_size_t i = start; i < end; ++i) {                                 \
     double feat_val = data->get_data((data_idx), (iter_idx));               \
     node = decision_fun(feat_val, node);                                    \
   }                                                                         \
-  score[(data_idx)] += leaf_const_[~node];                                  \
+  double add_score = leaf_const_[~node];                                    \
+  bool nan_found = false;                                                   \
   for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {            \
      int feat_num = leaf_features_inner_[~node][j];                         \
      double feat_val = data->get_data((data_idx), (feat_num));              \
-     score[(data_idx)] += leaf_coeff_[~node][j] * feat_val;                 \
+     if (isnan(feat_val) || isinf(feat_val)) {                              \
+        nan_found = true;                                                   \
+        break;                                                              \
+     }                                                                      \
+     add_score += leaf_coeff_[~node][j] * feat_val;                         \
+  }                                                                         \
+  if (nan_found) {                                                          \
+     score[(data_idx)] += leaf_value_[~node];                               \
+  } else {                                                                  \
+    score[(data_idx)] += add_score;                                         \
   }                                                                         \
 }
-
-
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
   if (!is_linear_ && num_leaves_ <= 1) {
