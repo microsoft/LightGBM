@@ -146,6 +146,8 @@ struct Config {
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
   // desc = ``gbdt_linear``, piecewise linear gradient boosting tree, only works with cpu and serial tree learner
+  // descl2 = missing values must be encoded as np.nan (Python) or NA (cli)
+  // descl2 = not yet supported in R-package
   std::string boosting = "gbdt";
 
   // alias = train, train_data, train_data_file, data_filename

@@ -117,6 +117,10 @@ Core Parameters
 
    -  ``gbdt_linear``, piecewise linear gradient boosting tree, only works with cpu and serial tree learner
 
+      -  missing values must be encoded as np.nan (Python) or NA (cli)
+
+      -  not yet supported in R-package
+
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data
