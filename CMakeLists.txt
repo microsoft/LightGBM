@@ -67,6 +67,9 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
+SET(EIGEN_DIR ${PROJECT_SOURCE_DIR}/src/eigen)
+include_directories(${EIGEN_DIR})
+
 if(USE_R35)
     ADD_DEFINITIONS(-DR_VER_ABOVE_35)
 endif(USE_R35)
@@ -227,6 +230,7 @@ endif(USE_MPI)
 file(GLOB SOURCES
     src/application/*.cpp
     src/boosting/*.cpp
+    src/eigen/*.cpp
     src/io/*.cpp
     src/metric/*.cpp
     src/objective/*.cpp

@@ -94,10 +94,12 @@ class TreeLearner {
   * \brief Create object of tree learner
   * \param learner_type Type of tree learner
   * \param device_type Type of tree learner
+  * \param booster_type Type of boosting
   * \param config config of tree
   */
   static TreeLearner* CreateTreeLearner(const std::string& learner_type,
     const std::string& device_type,
+    const std::string& booster_type,
     const Config* config);
 };
 

@@ -381,19 +381,23 @@ class Dataset {
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
     if (is_finish_load_) { return; }
+    std::vector<double> raw_row(num_features_, 0.0f);
     for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
       int feature_idx = used_feature_map_[i];
       if (feature_idx >= 0) {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
+        raw_row[feature_idx] = feature_values[i];
       }
     }
+    raw_data_[row_idx] = raw_row;
   }
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     if (is_finish_load_) { return; }
     std::vector<bool> is_feature_added(num_features_, false);
+    std::vector<double> raw_row(num_features_, 0.0f);
     for (auto& inner_data : feature_values) {
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
@@ -402,8 +406,10 @@ class Dataset {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
+        raw_row[feature_idx] = inner_data.second;
       }
     }
+    raw_data_[row_idx] = raw_row;
     FinishOneRow(tid, row_idx, is_feature_added);
   }
 
@@ -674,6 +680,15 @@ class Dataset {
 
   void AddFeaturesFrom(Dataset* other);
 
+  /*! \brief Get raw data */
+  inline double get_data(int idx, int feat_num) const { return raw_data_[idx][feat_num]; }
+
+  /*! \brief Get size of raw data */
+  inline data_size_t get_raw_size() const { return raw_data_.size(); }
+
+  /*! \brief Resize raw_data_ */
+  inline void ResizeRaw(int num_rows) {raw_data_.resize(num_rows); }
+
  private:
   std::string data_filename_;
   /*! \brief Store used features */
@@ -710,6 +725,7 @@ class Dataset {
   bool use_missing_;
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
+  std::vector<std::vector<double>> raw_data_;
 };
 
 }  // namespace LightGBM

@@ -75,7 +75,8 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
-  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type, config_.get()));
+  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
+                                                                              config_->boosting, config_.get()));
 
   // init tree learner
   tree_learner_->Init(train_data_, is_constant_hessian_);

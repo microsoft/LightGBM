@@ -145,6 +145,7 @@ struct Config {
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
+  // desc = ``gbdt_linear``, piecewise linear gradient boosting tree, only works with cpu and serial tree learner
   std::string boosting = "gbdt";
 
   // alias = train, train_data, train_data_file, data_filename
@@ -355,6 +356,10 @@ struct Config {
   // check = >=0.0
   // desc = L2 regularization
   double lambda_l2 = 0.0;
+
+  // check = >=0.0
+  // desc = Linear tree regularisation, the parameter `lambda` in Eq 3 of <https://arxiv.org/pdf/1802.05640.pdf>
+  double linear_lambda = 0.0;
 
   // alias = min_split_gain
   // check = >=0.0

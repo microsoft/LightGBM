@@ -31,6 +31,7 @@ Dataset::Dataset(data_size_t num_data) {
   CHECK_GT(num_data, 0);
   data_filename_ = "noname";
   num_data_ = num_data;
+  raw_data_.resize(num_data);
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
   group_bin_boundaries_.push_back(0);
