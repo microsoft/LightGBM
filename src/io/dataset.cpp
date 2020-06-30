@@ -25,6 +25,7 @@ Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
   is_finish_load_ = false;
+  has_raw_ = false;
 }
 
 Dataset::Dataset(data_size_t num_data) {
@@ -35,6 +36,7 @@ Dataset::Dataset(data_size_t num_data) {
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
   group_bin_boundaries_.push_back(0);
+  has_raw_ = false;
 }
 
 Dataset::~Dataset() {}
@@ -418,6 +420,8 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
   use_missing_ = io_config.use_missing;
   zero_as_missing_ = io_config.zero_as_missing;
+  has_raw_ = false;
+  if (io_config.boosting == "gbdt_linear") { has_raw_ = true; }
 }
 
 void Dataset::FinishLoad() {
@@ -688,6 +692,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = dataset->num_groups_;
+  has_raw_ = dataset->has_raw();
   // copy feature bin mapper data
   for (int i = 0; i < num_groups_; ++i) {
     feature_groups_.emplace_back(
@@ -714,6 +719,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   num_groups_ = num_features_;
   feature2group_.clear();
   feature2subfeature_.clear();
+  has_raw_ = dataset->has_raw();
   // copy feature bin mapper data
   feature_need_push_zeros_.clear();
   for (int i = 0; i < num_features_; ++i) {

@@ -22,6 +22,10 @@ DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& pre
   weight_idx_ = NO_SPECIFIC;
   group_idx_ = NO_SPECIFIC;
   SetHeader(filename);
+  store_raw_ = false;
+  if (io_config.boosting == "gbdt_linear") {
+    store_raw_ = true;
+  }
 }
 
 DatasetLoader::~DatasetLoader() {
@@ -173,6 +177,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
+  if (store_raw_) {
+    dataset->SetRaw(true);
+  }
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto bin_filename = CheckCanLoadFromBin(filename);
@@ -188,7 +195,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
-      dataset->raw_data_.resize(dataset->num_data_);
+      if (dataset->has_raw()) {
+        dataset->raw_data_.resize(dataset->num_data_);
+      }
       // sample data
       auto sample_data = SampleTextDataFromMemory(text_data);
       // construct feature bin mappers
@@ -232,6 +241,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
+  if (store_raw_) {
+    dataset->SetRaw(true);
+  }
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
@@ -245,7 +257,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
-      dataset->raw_data_.resize(dataset->num_data_);
+      if (dataset->has_raw()) {
+        dataset->raw_data_.resize(dataset->num_data_);
+      }
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       dataset->CreateValid(train_data);
@@ -256,7 +270,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       TextReader<data_size_t> text_reader(filename, config_.header);
       // Get number of lines of data file
       dataset->num_data_ = static_cast<data_size_t>(text_reader.CountLine());
-      dataset->raw_data_.resize(dataset->num_data_);
+      if (dataset->has_raw()) {
+        dataset->raw_data_.resize(dataset->num_data_);
+      }
       num_global_data = dataset->num_data_;
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
@@ -278,6 +294,9 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
                                         int rank, int num_machines, int* num_global_data,
                                         std::vector<data_size_t>* used_data_indices) {
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
+  if (store_raw_) {
+    dataset->SetRaw(true);
+  }
   auto reader = VirtualFileReader::Make(bin_filename);
   dataset->data_filename_ = data_filename;
   if (!reader->Init()) {
@@ -675,6 +694,10 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
+  if (store_raw_) {
+    dataset->SetRaw(true);
+    dataset->ResizeRaw(num_data);
+  }
   dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
@@ -1025,7 +1048,10 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       std::vector<bool> is_feature_added(dataset->num_features_, false);
-      std::vector<double> feature_row(dataset->num_features_, 0.0f);
+      std::vector<double> feature_row;
+      if (dataset->has_raw()) {
+        feature_row = std::vector<double>(dataset->num_features_, 0.0f);
+      }
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
@@ -1036,7 +1062,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
           dataset->feature_groups_[group]->PushData(tid, sub_feature, i, inner_data.second);
-          feature_row[feature_idx] = inner_data.second;
+          if (dataset->has_raw()) {
+            feature_row[feature_idx] = inner_data.second;
+          }
         } else {
           if (inner_data.first == weight_idx_) {
             dataset->metadata_.SetWeightAt(i, static_cast<label_t>(inner_data.second));
@@ -1045,7 +1073,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           }
         }
       }
-      dataset->raw_data_[i] = feature_row;
+      if (dataset->has_raw()) {
+        dataset->raw_data_[i] = feature_row;
+      }
       dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }
@@ -1074,7 +1104,10 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
-      std::vector<double> feature_row(dataset->num_features_, 0.0f);
+      std::vector<double> feature_row;
+      if (dataset->has_raw()) {
+        feature_row = std::vector<double>(dataset->num_features_, 0.0f);
+      }
       std::vector<bool> is_feature_added(dataset->num_features_, false);
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
@@ -1085,7 +1118,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
           dataset->feature_groups_[group]->PushData(tid, sub_feature, i, inner_data.second);
-          feature_row[feature_idx] = inner_data.second;
+          if (dataset->has_raw()) {
+            feature_row[feature_idx] = inner_data.second;
+          }
         } else {
           if (inner_data.first == weight_idx_) {
             dataset->metadata_.SetWeightAt(i, static_cast<label_t>(inner_data.second));
@@ -1095,7 +1130,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
         }
       }
       dataset->FinishOneRow(tid, i, is_feature_added);
-      dataset->raw_data_[i] = feature_row;
+      if (dataset->has_raw()) {
+        dataset->raw_data_[i] = feature_row;
+      }
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -1138,7 +1175,10 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       // set label
       dataset->metadata_.SetLabelAt(start_idx + i, static_cast<label_t>(tmp_label));
       std::vector<bool> is_feature_added(dataset->num_features_, false);
-      std::vector<double> feature_row(dataset->num_features(), 0.0f);
+      std::vector<double> feature_row;
+      if (dataset->has_raw()) {
+        feature_row = std::vector<double>(dataset->num_features(), 0.0f);
+      }
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
@@ -1149,7 +1189,9 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           int group = dataset->feature2group_[feature_idx];
           int sub_feature = dataset->feature2subfeature_[feature_idx];
           dataset->feature_groups_[group]->PushData(tid, sub_feature, start_idx + i, inner_data.second);
-          feature_row[feature_idx] = inner_data.second;
+          if (dataset->has_raw()) {
+            feature_row[feature_idx] = inner_data.second;
+          }
         } else {
           if (inner_data.first == weight_idx_) {
             dataset->metadata_.SetWeightAt(start_idx + i, static_cast<label_t>(inner_data.second));
@@ -1158,7 +1200,9 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           }
         }
       }
-      dataset->raw_data_[i] = feature_row;
+      if (dataset->has_raw()) {
+        dataset->raw_data_[i] = feature_row;
+      }
       dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }

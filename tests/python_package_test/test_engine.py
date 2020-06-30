@@ -2220,6 +2220,7 @@ class TestEngine(unittest.TestCase):
                   'seed': 0}
         est = lgb.train(params, lgb_train, num_boost_round=10)
         pred1 = est.predict(x[:, np.newaxis])
+        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
         est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10)
         pred2 = est.predict(x[:, np.newaxis])
         self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
@@ -2228,6 +2229,7 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
         est = lgb.train(params, lgb_train, num_boost_round=10)
         pred1 = est.predict(x[:, np.newaxis])
+        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
         est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10)
         pred2 = est.predict(x[:, np.newaxis])
         self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))

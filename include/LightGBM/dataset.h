@@ -381,23 +381,33 @@ class Dataset {
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
     if (is_finish_load_) { return; }
-    std::vector<double> raw_row(num_features_, 0.0f);
+    std::vector<double> raw_row;
+    if (has_raw_) {
+      raw_row = std::vector<double>(num_features_, 0.0f);
+    }
     for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
       int feature_idx = used_feature_map_[i];
       if (feature_idx >= 0) {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
-        raw_row[feature_idx] = feature_values[i];
+        if (has_raw_) {
+          raw_row[feature_idx] = feature_values[i];
+        }
       }
     }
-    raw_data_[row_idx] = raw_row;
+    if (has_raw_) {
+      raw_data_[row_idx] = raw_row;
+    }
   }
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     if (is_finish_load_) { return; }
     std::vector<bool> is_feature_added(num_features_, false);
-    std::vector<double> raw_row(num_features_, 0.0f);
+    std::vector<double> raw_row;
+    if (has_raw_) {
+      raw_row = std::vector<double>(num_features_, 0.0f);
+    }
     for (auto& inner_data : feature_values) {
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
@@ -406,10 +416,14 @@ class Dataset {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
-        raw_row[feature_idx] = inner_data.second;
+        if (has_raw_) {
+          raw_row[feature_idx] = inner_data.second;
+        }
       }
     }
-    raw_data_[row_idx] = raw_row;
+    if (has_raw_) {
+      raw_data_[row_idx] = raw_row;
+    }
     FinishOneRow(tid, row_idx, is_feature_added);
   }
 
@@ -680,6 +694,12 @@ class Dataset {
 
   void AddFeaturesFrom(Dataset* other);
 
+  /*! \brief Get has_raw_ */
+  inline double has_raw() const { return has_raw_; }
+
+  /*! \brief Set has_raw_ */
+  inline void SetRaw(bool has_raw) { has_raw_ = has_raw; }
+
   /*! \brief Get raw data */
   inline double get_data(int idx, int feat_num) const { return raw_data_[idx][feat_num]; }
 
@@ -726,6 +746,7 @@ class Dataset {
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
   std::vector<std::vector<double>> raw_data_;
+  bool has_raw_;
 };
 
 }  // namespace LightGBM
