@@ -215,7 +215,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       } else {
         dataset->num_data_ = num_global_data;
       }
-      dataset->raw_data_.resize(dataset->num_data_);
+      if (dataset->has_raw()) {
+        dataset->raw_data_.resize(dataset->num_data_);
+      }
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
@@ -294,9 +296,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
                                         int rank, int num_machines, int* num_global_data,
                                         std::vector<data_size_t>* used_data_indices) {
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
-  if (store_raw_) {
-    dataset->SetRaw(true);
-  }
   auto reader = VirtualFileReader::Make(bin_filename);
   dataset->data_filename_ = data_filename;
   if (!reader->Init()) {
@@ -694,10 +693,6 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  if (store_raw_) {
-    dataset->SetRaw(true);
-    dataset->ResizeRaw(num_data);
-  }
   dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   dataset->set_feature_names(feature_names_);
   return dataset.release();
