@@ -33,6 +33,9 @@ typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
 #define C_API_PREDICT_LEAF_INDEX (2)  /*!< \brief Predict leaf index. */
 #define C_API_PREDICT_CONTRIB    (3)  /*!< \brief Predict feature contributions (SHAP values). */
 
+#define C_API_MATRIX_TYPE_CSR (0)  /*!< \brief CSR sparse matrix type. */
+#define C_API_MATRIX_TYPE_CSC (1)  /*!< \brief CSC sparse matrix type. */
+
 /*!
  * \brief Get string message of the last error.
  * \return Error information
@@ -280,13 +283,21 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetFeatureNames(DatasetHandle handle,
 /*!
  * \brief Get feature names of dataset.
  * \param handle Handle of dataset
- * \param[out] feature_names Feature names, should pre-allocate memory
+ * \param len Number of ``char*`` pointers stored at ``out_strs``.
+ *            If smaller than the max size, only this many strings are copied
  * \param[out] num_feature_names Number of feature names
+ * \param buffer_len Size of pre-allocated strings.
+ *                   Content is copied up to ``buffer_len - 1`` and null-terminated
+ * \param[out] out_buffer_len String sizes required to do the full string copies
+ * \param[out] feature_names Feature names, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNames(DatasetHandle handle,
-                                                  char** feature_names,
-                                                  int* num_feature_names);
+                                                  const int len,
+                                                  int* num_feature_names,
+                                                  const size_t buffer_len,
+                                                  size_t* out_buffer_len,
+                                                  char** feature_names);
 
 /*!
  * \brief Free space for dataset.
@@ -733,6 +744,62 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 const char* parameter,
                                                 int64_t* out_len,
                                                 double* out_result);
+
+/*!
+ * \brief Make sparse prediction for a new dataset in CSR or CSC format. Currently only used for feature contributions.
+ * \note
+ * The outputs are pre-allocated, as they can vary for each invocation, but the shape should be the same:
+ *   - for feature contributions, the shape of sparse matrix will be ``num_class * num_data * (num_feature + 1)``.
+ * The output indptr_type for the sparse matrix will be the same as the given input indptr_type.
+ * Call ``LGBM_BoosterFreePredictSparse`` to deallocate resources.
+ * \param handle Handle of booster
+ * \param indptr Pointer to row headers for CSR or column headers for CSC
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indices Pointer to column indices for CSR or row indices for CSC
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nindptr Number of rows in the matrix + 1
+ * \param nelem Number of nonzero elements in the matrix
+ * \param num_col_or_row Number of columns for CSR or number of rows for CSC
+ * \param predict_type What should be predicted, only feature contributions supported currently
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param num_iteration Number of iterations for prediction, <= 0 means no limit
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
+ * \param matrix_type Type of matrix input and output, can be ``C_API_MATRIX_TYPE_CSR`` or ``C_API_MATRIX_TYPE_CSC``
+ * \param[out] out_len Length of output indices and data
+ * \param[out] out_indptr Pointer to output row headers for CSR or column headers for CSC
+ * \param[out] out_indices Pointer to sparse column indices for CSR or row indices for CSC
+ * \param[out] out_data Pointer to sparse data space
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
+                                                      const void* indptr,
+                                                      int indptr_type,
+                                                      const int32_t* indices,
+                                                      const void* data,
+                                                      int data_type,
+                                                      int64_t nindptr,
+                                                      int64_t nelem,
+                                                      int64_t num_col_or_row,
+                                                      int predict_type,
+                                                      int num_iteration,
+                                                      const char* parameter,
+                                                      int matrix_type,
+                                                      int64_t* out_len,
+                                                      void** out_indptr,
+                                                      int32_t** out_indices,
+                                                      void** out_data);
+
+/*!
+ * \brief Method corresponding to ``LGBM_BoosterPredictSparseOutput`` to free the allocated data.
+ * \param indptr Pointer to output row headers or column headers to be deallocated
+ * \param indices Pointer to sparse indices to be deallocated
+ * \param data Pointer to sparse data space to be deallocated
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterFreePredictSparse(void* indptr, int32_t* indices, void* data, int indptr_type, int data_type);
 
 /*!
  * \brief Make prediction for a new dataset in CSR format. This method re-uses the internal predictor structure

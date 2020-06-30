@@ -20,13 +20,52 @@ Note: 32-bit (i386) R/Rtools is currently not supported.
 
 #### Windows Preparation
 
-Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version. It requires to add to PATH the Rtools MinGW64 folder, if it was not done automatically during installation.
+Installing a 64-bit version of [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory.
 
-The default compiler is Visual Studio (or [VS Build Tools](https://visualstudio.microsoft.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
+After installing `Rtools` and `CMake`, be sure the following paths are added to the environment variable `PATH`. These may have been automatically added when installing other software.
 
-To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
+* `Rtools`
+    - If you have `Rtools` 3.x, example:
+        - `C:\Rtools\mingw_64\bin`
+    - If you have `Rtools` 4.0, example:
+        - `C:\rtools40\mingw64\bin`
+        - `C:\rtools40\usr\bin`
+* `CMake`
+    - example: `C:\Program Files\CMake\bin`
+* `R`
+    - example: `C:\Program Files\R\R-3.6.1\bin`
+
+NOTE: Two `Rtools` paths are required from `Rtools` 4.0 onwards because paths and the list of included software was changed in `Rtools` 4.0.
+
+#### Windows Toolchain Options
+
+A "toolchain" refers to the collection of software used to build the library. The R package can be built with three different toolchains.
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
+
+**Visual Studio (default)**
+
+By default, the package will be built with [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/).
+
+**MinGW (R 3.x)**
+
+If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://mingw-w64.org/doku.php) bundled with `Rtools`.
+
+If you want to force `LightGBM` to use MinGW (for any R version), open `R-package/src/install.libs.R` and change `use_mingw`:
+
+```r
+use_mingw <- TRUE
+```
+
+**MSYS2 (R 4.x)**
+
+If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS2](https://www.msys2.org/). This should work with the tools already bundled in `Rtools` 4.0.
+
+If you want to force `LightGBM` to use MSYS2 (for any R version), open `R-package/src/install.libs.R` and change `use_msys2`:
+
+```r
+use_msys2 <- TRUE
+```
 
 #### Mac OS Preparation
 

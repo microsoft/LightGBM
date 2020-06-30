@@ -406,6 +406,7 @@ R-package/src-i386
 lightgbm_r/*
 lightgbm*.tar.gz
 lightgbm.Rcheck/
+*.def
 
 # Files created by R examples and tests
 **/lgb-Dataset.data

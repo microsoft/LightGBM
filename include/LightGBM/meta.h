@@ -5,10 +5,11 @@
 #ifndef LIGHTGBM_META_H_
 #define LIGHTGBM_META_H_
 
-#include <limits>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -57,6 +58,9 @@ typedef int32_t comm_size_t;
 
 using PredictFunction =
 std::function<void(const std::vector<std::pair<int, double>>&, double* output)>;
+
+using PredictSparseFunction =
+std::function<void(const std::vector<std::pair<int, double>>&, std::vector<std::unordered_map<int, double>>* output)>;
 
 typedef void(*ReduceFunction)(const char* input, char* output, int type_size, comm_size_t array_size);
 
