@@ -24,7 +24,7 @@ function Download-Miktex-Setup {
         [string]$destfile
     )
     $PageContent = Invoke-WebRequest -Uri $archive -Method Get
-    $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup.*'
+    $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup-4.*'
     $FileToDownload = "${archive}/${SetupExeFile}"
     Download-File-With-Retries $FileToDownload $destfile
 }
