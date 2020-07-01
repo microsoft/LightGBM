@@ -2233,3 +2233,6 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10)
         pred2 = est.predict(x[:, np.newaxis])
         self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
+        # test again with bagging
+        est = lgb.train(dict(params, boosting='gbdt_linear', subsample=0.8, bagging_freq=1), lgb_train,
+                        num_boost_round=10)

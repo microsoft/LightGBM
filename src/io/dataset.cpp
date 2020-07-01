@@ -768,6 +768,9 @@ void Dataset::CreateValid(const Dataset* dataset) {
 void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
+    if (has_raw_) {
+      raw_data_.resize(num_data);
+    }
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
