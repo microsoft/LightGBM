@@ -321,7 +321,6 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-
   // force col-wise for gpu
   if (device_type == std::string("gpu")) {
     force_col_wise = true;

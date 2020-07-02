@@ -485,11 +485,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
 
-  /* Hard-code to address the sparse layout issue. ONLY FOR CUDA IMPLEMENTATION */
-#if 0
-  is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-#endif
-
   GetBool(params, "enable_bundle", &enable_bundle);
 
   GetBool(params, "use_missing", &use_missing);

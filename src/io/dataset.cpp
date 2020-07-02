@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-
 #include <LightGBM/dataset.h>
 
 #include <LightGBM/feature_group.h>
@@ -238,17 +237,12 @@ std::vector<std::vector<int>> FindGroups(
   return features_in_group;
 }
 
-std::vector<std::vector<int>> FastFeatureBundling(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-                                                  int** sample_indices,
-                                                  double** sample_values,
-                                                  const int* num_per_col,
-                                                  int num_sample_col,
-                                                  data_size_t total_sample_cnt,
-                                                  const std::vector<int>& used_features,
-                                                  data_size_t num_data,
-                                                  bool is_sparse,
-                                                  std::vector<int8_t>* multi_val_group,
-                                                  bool is_use_gpu) {
+std::vector<std::vector<int>> FastFeatureBundling(
+    const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+    int** sample_indices, double** sample_values, const int* num_per_col,
+    int num_sample_col, data_size_t total_sample_cnt,
+    const std::vector<int>& used_features, data_size_t num_data,
+    bool is_use_gpu, bool is_sparse, std::vector<int8_t>* multi_val_group) {
   Common::FunctionTimer fun_timer("Dataset::FastFeatureBundling", global_timer);
   std::vector<size_t> feature_non_zero_cnt;
   feature_non_zero_cnt.reserve(used_features.size());
@@ -355,17 +349,11 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
     bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");  // LGBM_CUDA
-    features_in_group = FastFeatureBundling(*bin_mappers,
-                                            sample_non_zero_indices,
-                                            sample_values,
-                                            num_per_col,
-                                            num_sample_col,
-                                            static_cast<data_size_t>(total_sample_cnt),
-                                            used_features,
-                                            num_data_,
-                                            io_config.is_enable_sparse,
-                                            &group_is_multi_val,
-                                            lgbm_is_gpu_used);
+    features_in_group = FastFeatureBundling(
+        *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
+        num_sample_col, static_cast<data_size_t>(total_sample_cnt),
+        used_features, num_data_, lgbm_is_gpu_used,
+        io_config.is_enable_sparse, &group_is_multi_val);
   }
 
   num_features_ = 0;
@@ -804,7 +792,6 @@ void Dataset::CopySubrow(const Dataset* fullset,
   CHECK_EQ(num_used_indices, num_data_);
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
-
   for (int group = 0; group < num_groups_; ++group) {
     OMP_LOOP_EX_BEGIN();
     feature_groups_[group]->CopySubrow(fullset->feature_groups_[group].get(),
@@ -1282,6 +1269,7 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
   }
   OMP_THROW_EX();
   global_timer.Stop("Dataset::sparse_bin_histogram");
+
   global_timer.Start("Dataset::sparse_bin_histogram_merge");
   int n_bin_block = 1;
   int bin_block_size = num_bin;
@@ -1311,12 +1299,10 @@ void Dataset::ConstructHistogramsInner(
     data_size_t num_data, const score_t* gradients, const score_t* hessians,
     score_t* ordered_gradients, score_t* ordered_hessians,
     TrainingShareStates* share_state, hist_t* hist_data) const {
-
   if (!share_state->is_colwise) {
     return ConstructHistogramsMultiVal<USE_INDICES, false>(
         data_indices, num_data, gradients, hessians, share_state, hist_data);
   }
-
   std::vector<int> used_dense_group;
   int multi_val_groud_id = -1;
   used_dense_group.reserve(num_groups_);
@@ -1338,7 +1324,6 @@ void Dataset::ConstructHistogramsInner(
       }
     }
   }
-
   int num_used_dense_group = static_cast<int>(used_dense_group.size());
   global_timer.Start("Dataset::dense_bin_histogram");
   auto ptr_ordered_grad = gradients;
@@ -1361,7 +1346,6 @@ void Dataset::ConstructHistogramsInner(
         ptr_ordered_grad = ordered_gradients;
       }
     }
-
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
     for (int gi = 0; gi < num_used_dense_group; ++gi) {
