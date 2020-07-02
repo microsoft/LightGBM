@@ -17,7 +17,7 @@ if test -d ${TEMP_R_DIR}; then
 fi
 mkdir -p ${TEMP_R_DIR}
 
- # move relevant files
+# move relevant files
 cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
@@ -63,7 +63,7 @@ cd ${TEMP_R_DIR}
     # you're guaranteed to get a shared library called
     #  <packagename>.so/dll. The package source code expects
     # 'lib_lightgbm.so', not 'lightgbm.so', to comply with the way
-    # this project has historically handled installatioon
+    # this project has historically handled installation
     echo "Changing lib_lightgbm to lightgbm"
     for file in R/*.R; do
         sed \

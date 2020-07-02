@@ -153,7 +153,7 @@ if ($env:COMPILER -ne "MSVC") {
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
     # like ../../CMakeLists.txt that would only work if you are in the repoo
-    $R_CMD_CHECK_DIR="tmp-r-cmd-check"
+    $R_CMD_CHECK_DIR = "tmp-r-cmd-check"
     New-Item -Path "C:\" -Name $R_CMD_CHECK_DIR -ItemType "directory" > $null
     Move-Item -Path "$PKG_FILE_NAME" -Destination "C:\$R_CMD_CHECK_DIR\" > $null
     cd "C:\$R_CMD_CHECK_DIR\"

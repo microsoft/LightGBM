@@ -1,4 +1,4 @@
-# Script used to generate `Makevars.win` froom `Makevars.win.in`
+# Script used to generate `Makevars.win` from `Makevars.win.in`
 # on Windows
 
 ###########################
