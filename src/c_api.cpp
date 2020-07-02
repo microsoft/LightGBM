@@ -826,6 +826,9 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(total_nrow);
+    }
   }
   int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
@@ -902,6 +905,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(nrow);
+    }
   }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
@@ -970,6 +976,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(nrow);
+    }
   }
 
   OMP_INIT_EX();

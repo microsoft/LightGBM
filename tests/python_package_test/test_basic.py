@@ -97,6 +97,17 @@ class TestBasic(unittest.TestCase):
         train_data.construct()
         valid_data.construct()
 
+    def test_chunked_dataset_linear(self):
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        chunk_size = X_train.shape[0] // 10 + 1
+        X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
+        X_test = [X_test[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_test.shape[0] // chunk_size + 1)]
+        params = {"bin_construct_sample_cnt": 100, 'boosting': 'gbdt_linear'}
+        train_data = lgb.Dataset(X_train, label=y_train, params=params)
+        valid_data = train_data.create_valid(X_test, label=y_test, params=params)
+        train_data.construct()
+        valid_data.construct()
+
     def test_subset_group(self):
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                            '../../examples/lambdarank/rank.train'))

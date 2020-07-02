@@ -423,7 +423,6 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   has_raw_ = false;
   if (io_config.boosting == "gbdt_linear") {
     has_raw_ = true;
-    raw_data_.resize(total_sample_cnt);
   }
 }
 
