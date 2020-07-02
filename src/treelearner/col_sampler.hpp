@@ -31,7 +31,7 @@ class ColSampler {
   }
 
   static int GetCnt(size_t total_cnt, double fraction) {
-    const int min = std::min(2, static_cast<int>(total_cnt));
+    const int min = std::min(1, static_cast<int>(total_cnt));
     int used_feature_cnt = static_cast<int>(Common::RoundInt(total_cnt * fraction));
     return std::max(used_feature_cnt, min);
   }
