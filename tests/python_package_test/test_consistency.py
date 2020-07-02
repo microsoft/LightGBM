@@ -78,6 +78,18 @@ class TestEngine(unittest.TestCase):
         fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
         fd.file_load_check(lgb_train, '.train')
 
+    def test_binary_linear(self):
+        fd = FileLoader('../../examples/binary_classification', 'binary', 'train_linear.conf')
+        X_train, y_train, _ = fd.load_dataset('.train')
+        X_test, _, X_test_fn = fd.load_dataset('.test')
+        weight_train = fd.load_field('.train.weight')
+        lgb_train = lgb.Dataset(X_train, y_train, params=fd.params, weight=weight_train)
+        gbm = lgb.LGBMClassifier(**fd.params)
+        gbm.fit(X_train, y_train, sample_weight=weight_train)
+        sk_pred = gbm.predict_proba(X_test)[:, 1]
+        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
+        fd.file_load_check(lgb_train, '.train')
+
     def test_multiclass(self):
         fd = FileLoader('../../examples/multiclass_classification', 'multiclass')
         X_train, y_train, _ = fd.load_dataset('.train')

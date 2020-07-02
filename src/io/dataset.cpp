@@ -26,13 +26,13 @@ Dataset::Dataset() {
   num_data_ = 0;
   is_finish_load_ = false;
   has_raw_ = false;
+  printf("hello1\n");
 }
 
 Dataset::Dataset(data_size_t num_data) {
   CHECK_GT(num_data, 0);
   data_filename_ = "noname";
   num_data_ = num_data;
-  raw_data_.resize(num_data);
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
   group_bin_boundaries_.push_back(0);
@@ -421,7 +421,10 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   use_missing_ = io_config.use_missing;
   zero_as_missing_ = io_config.zero_as_missing;
   has_raw_ = false;
-  if (io_config.boosting == "gbdt_linear") { has_raw_ = true; }
+  if (io_config.boosting == "gbdt_linear") {
+    has_raw_ = true;
+    raw_data_.resize(total_sample_cnt);
+  }
 }
 
 void Dataset::FinishLoad() {
@@ -799,6 +802,12 @@ void Dataset::CopySubrow(const Dataset* fullset,
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }
   is_finish_load_ = true;
+  if (has_raw_) {
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < num_used_indices; ++i) {
+      raw_data_[i] = fullset->raw_data_[used_indices[i]];
+    }
+  }
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
