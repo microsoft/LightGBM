@@ -577,7 +577,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
         static_cast<data_size_t>(best_split_info.right_count),
         static_cast<double>(best_split_info.left_sum_hessian),
         static_cast<double>(best_split_info.right_sum_hessian),
-        static_cast<float>(best_split_info.gain),
+        // store the true split gain in tree model
+        static_cast<float>(best_split_info.gain + config_->min_gain_to_split),
         train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
         best_split_info.default_left);
   } else {
@@ -613,7 +614,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
         static_cast<data_size_t>(best_split_info.right_count),
         static_cast<double>(best_split_info.left_sum_hessian),
         static_cast<double>(best_split_info.right_sum_hessian),
-        static_cast<float>(best_split_info.gain),
+        // store the true split gain in tree model
+        static_cast<float>(best_split_info.gain + config_->min_gain_to_split),
         train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
   }
 
