@@ -762,7 +762,7 @@ class TestEngine(unittest.TestCase):
         # fold averaging
         avg_pred = np.mean(preds, axis=0)
         ret = log_loss(y_test, avg_pred)
-        self.assertLess(ret, 0.10)
+        self.assertLess(ret, 0.11)
         # without early stopping
         cv_res = lgb.cv(params, lgb_train,
                         num_boost_round=20,
@@ -774,7 +774,7 @@ class TestEngine(unittest.TestCase):
         preds = cvb.predict(X_test)
         avg_pred = np.mean(preds, axis=0)
         ret = log_loss(y_test, avg_pred)
-        self.assertLess(ret, 0.14)
+        self.assertLess(ret, 0.15)
 
     def test_feature_name(self):
         X_train, y_train = load_boston(True)
