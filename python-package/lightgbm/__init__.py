@@ -8,7 +8,7 @@ from __future__ import absolute_import
 from .basic import Booster, Dataset
 from .callback import (early_stopping, print_evaluation, record_evaluation,
                        reset_parameter)
-from .engine import cv, train
+from .engine import cv, train, CVBooster
 
 import os
 

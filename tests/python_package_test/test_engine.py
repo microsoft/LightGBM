@@ -735,6 +735,47 @@ class TestEngine(unittest.TestCase):
                                    verbose_eval=False)
         np.testing.assert_allclose(cv_res_lambda['ndcg@3-mean'], cv_res_lambda_obj['ndcg@3-mean'])
 
+    def test_cvbooster(self):
+        X, y = load_breast_cancer(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        # with early stopping
+        cv_res = lgb.cv(params, lgb_train,
+                        num_boost_round=100,
+                        early_stopping_rounds=10,
+                        verbose_eval=False,
+                        nfold=3,
+                        return_cvbooster=True)
+        self.assertIn('cvbooster', cv_res)
+        cvb = cv_res['cvbooster']
+        self.assertIsInstance(cvb, lgb.engine.CVBooster)
+        self.assertGreater(cvb.best_iteration, 0)
+        # predict by each fold booster
+        preds = cvb.predict(X_test, num_iteration=cvb.best_iteration)
+        self.assertIsInstance(preds, list)
+        self.assertEqual(len(preds), 3)
+        # fold averaging
+        avg_pred = np.mean(preds, axis=0)
+        ret = log_loss(y_test, avg_pred)
+        self.assertLess(ret, 0.10)
+        # without early stopping
+        cv_res = lgb.cv(params, lgb_train,
+                        num_boost_round=20,
+                        verbose_eval=False,
+                        nfold=3,
+                        return_cvbooster=True)
+        cvb = cv_res['cvbooster']
+        self.assertEqual(cvb.best_iteration, -1)
+        preds = cvb.predict(X_test)
+        avg_pred = np.mean(preds, axis=0)
+        ret = log_loss(y_test, avg_pred)
+        self.assertLess(ret, 0.14)
+
     def test_feature_name(self):
         X_train, y_train = load_boston(True)
         params = {'verbose': -1}
