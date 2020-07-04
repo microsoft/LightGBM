@@ -1,5 +1,5 @@
 #' @name lgb.importance
-#' @title Compute feature importance in a model
+#' @title Compute feature importance in a model (testing)
 #' @description Creates a \code{data.table} of feature importances in a model.
 #' @param model object of class \code{lgb.Booster}.
 #' @param percentage whether to show importance in relative percentage.

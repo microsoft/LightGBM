@@ -69,7 +69,7 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "r-package" ]]; then
+if [[ $TASK == "r-package" ]] || [[ $TASK == "check-r-docs" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi
