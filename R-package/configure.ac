@@ -116,7 +116,7 @@ fi
 if test `uname -s` = "Darwin"
 then
     OPENMP_CXXFLAGS='-Xclang -fopenmp'
-    OPENMP_LIB='/usr/local/lib/libomp.dylib'
+    OPENMP_LIB='-lomp'
     ac_pkg_openmp=no
     AC_MSG_CHECKING([whether OpenMP will work in a package])
     AC_LANG_CONFTEST(
