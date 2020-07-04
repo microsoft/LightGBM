@@ -103,7 +103,7 @@ if [[ $TASK == "check-r-docs" ]]; then
         echo "    Rscript build_r.R"
         echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
         echo ""
-        exit  -1
+        exit -1
     fi
     exit 0
 fi
