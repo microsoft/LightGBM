@@ -114,7 +114,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
-    # like ../../CMakeLists.txt that would only work if you are in the repoo
+    # like ../../CMakeLists.txt that would only work if you are in the repo
     R_CMD_CHECK_DIR="${HOME}/tmp-r-cmd-check/"
     mkdir -p ${R_CMD_CHECK_DIR}
     mv ${PKG_TARBALL} ${R_CMD_CHECK_DIR}

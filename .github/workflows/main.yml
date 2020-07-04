@@ -17,6 +17,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+          ################
+          # CMake builds #
+          ################
             task: r-package
             compiler: gcc
             r_version: 3.6
@@ -102,7 +105,7 @@ jobs:
             r_version: 4.0
             build_type: cran
     steps:
-      - name: prevent conversion of line endings on Windows
+      - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
         shell: pwsh
         run: git config --global core.autocrlf false
