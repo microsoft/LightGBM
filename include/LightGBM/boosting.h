@@ -166,10 +166,11 @@ class LIGHTGBM_EXPORT Boosting {
   * \brief Feature contributions for the model's prediction of one record
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
-  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
-  virtual void PredictContrib(const double* features, double* output,
-                              const PredictionEarlyStopInstance* early_stop) const = 0;
+  virtual void PredictContrib(const double* features, double* output) const = 0;
+
+  virtual void PredictContribByMap(const std::unordered_map<int, double>& features,
+                                   std::vector<std::unordered_map<int, double>>* output) const = 0;
 
   /*!
   * \brief Dump model to json format string

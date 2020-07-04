@@ -509,7 +509,7 @@ struct Config {
   // desc = by default interaction constraints are disabled, to enable them you can specify
   // descl2 = for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
   // descl2 = for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
-  // descl2 = for R-package, **not yet supported**
+  // descl2 = for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
   // desc = any two features can only appear in the same branch only if there exists a constraint containing both features
   std::string interaction_constraints = "";
 

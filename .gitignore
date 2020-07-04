@@ -397,6 +397,7 @@ python-package/compile/
 python-package/lightgbm/VERSION.txt
 
 # R build artefacts
+**/autom4te.cache/
 R-package/docs
 R-package/src/CMakeLists.txt
 R-package/src/lib_lightgbm.so.dSYM/
@@ -407,7 +408,7 @@ R-package/src-i386
 lightgbm_r/*
 lightgbm*.tar.gz
 lightgbm.Rcheck/
-**/autom4te.cache/
+miktex*.zip
 *.def
 
 # Files created by R examples and tests
