@@ -277,7 +277,10 @@ def train(params, train_set, num_boost_round=100,
 
 
 class CVBooster(object):
-    """Auxiliary data struct to hold all boosters of CV."""
+    """CVBooster in LightGBM.
+
+    Auxiliary data struct to hold and redirect all boosters of CV.
+    """
 
     def __init__(self):
         """Initialize the CVBooster.
