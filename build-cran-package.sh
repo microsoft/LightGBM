@@ -22,15 +22,15 @@ cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
 
-cd ${TEMP_R_DIR}
+# recreate configure script if autoconf is available,
+# otherwise skip it 
+echo "Creating 'configure' script with Autoconf"
+autoconf \
+    --output R-package/configure \
+    R-package/configure.ac \
+    || echo "warning: not recreating configure from configure.ac"
 
-    # recreate configure script if autoconf is available,
-    # otherwise skip it 
-    echo "Creating 'configure' script with Autoconf"
-    autoconf \
-        --output configure \
-        configure.ac \
-        || echo "warning: not recreating configure from configure.ac"
+cd ${TEMP_R_DIR}
 
     rm -r autom4te.cache || echo "no autoconf cache found"
 
