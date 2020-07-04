@@ -30,16 +30,6 @@ then
 fi
 echo "checking whether using R version 3.5.0 or later...${ac_pkg_r35}"
 
-# Compile for GPU?
-# Check whether environment variable LGB_USE_GPU has been set to true
-if test ${LGB_USE_GPU};
-then
-    if ${LGB_USE_GPU} = "true";
-    then
-        LGB_CPPFLAGS="${LGB_CPPFLAGS} -DUSE_GPU"
-    fi
-fi
-
 ###############
 # MM_PREFETCH #
 ###############

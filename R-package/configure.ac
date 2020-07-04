@@ -46,18 +46,6 @@ then
 fi
 AC_MSG_RESULT([${ac_pkg_r35}])
 
-# Compile for GPU?
-AC_ARG_ENABLE(
-    [gpu],
-    AS_HELP_STRING(
-        [--enable-gpu],
-        [Pass this flag to install the R package for usage with GPU]
-    ),
-    [
-        LGB_CPPFLAGS+=" -DUSE_GPU"
-    ]
-)
-
 ###############
 # MM_PREFETCH #
 ###############

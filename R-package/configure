@@ -627,7 +627,6 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_gpu
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1237,13 +1236,6 @@ if test -n "$ac_init_help"; then
    esac
   cat <<\_ACEOF
 
-Optional Features:
-  --disable-option-checking  ignore unrecognized --enable/--with options
-  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
-  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-gpu            Pass this flag to install the R package for usage
-                          with GPU
-
 Report bugs to the package provider.
 _ACEOF
 ac_status=$?
@@ -1684,10 +1676,10 @@ $as_echo "${R_HOME}" >&6; }
 
 # set up CPP flags
 # find the compiler and compiler flags used by R.
-: ${R_HOME=`R RHOME`}
+: ${R_HOME=`R HOME`}
 if test -z "${R_HOME}"; then
-  echo "could not determine R_HOME"
-  exit 1
+    echo "could not determine R_HOME"
+    exit 1
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CXX=`"${R_HOME}/bin/R" CMD config CXX11`
@@ -1716,16 +1708,6 @@ then
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_pkg_r35}" >&5
 $as_echo "${ac_pkg_r35}" >&6; }
-
-# Compile for GPU?
-# Check whether --enable-gpu was given.
-if test "${enable_gpu+set}" = set; then :
-  enableval=$enable_gpu;
-        LGB_CPPFLAGS+=" -DUSE_GPU"
-
-
-fi
-
 
 ###############
 # MM_PREFETCH #
@@ -1761,7 +1743,7 @@ ${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mmprefetch=yes
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_mmprefetch}" >&5
 $as_echo "${ac_mmprefetch}" >&6; }
 if test "${ac_mmprefetch}" = yes; then
-     LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
+    LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
 fi
 
 ############
@@ -1798,7 +1780,7 @@ ${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_malloc=yes
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_mm_malloc}" >&5
 $as_echo "${ac_mm_malloc}" >&6; }
 if test "${ac_mm_malloc}" = yes; then
-     LGB_CPPFLAGS+=" -DMM_MALLOC=1"
+    LGB_CPPFLAGS+=" -DMM_MALLOC=1"
 fi
 
 ##########
@@ -1838,15 +1820,16 @@ main ()
 
 
 _ACEOF
-    ${CC} -o conftest conftest.c /usr/local/lib/libomp.dylib -Xclang  -fopenmp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    ${CC} -o conftest conftest.c ${OPENMP_LIB} ${OPENMP_CXXFLAGS} 2>/dev/null && ./conftest && ac_pkg_openmp=yes
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_pkg_openmp}" >&5
 $as_echo "${ac_pkg_openmp}" >&6; }
     if test "${ac_pkg_openmp}" = no; then
         OPENMP_CXXFLAGS=''
         OPENMP_LIB=''
         echo '***********************************************************************************************'
-        echo ' OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result.'
-        echo ' To use all CPU cores for training jobs, you should  install OpenMP by running\n'
+        echo ' OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result'
+        echo ' To use all CPU cores for training jobs, you should install OpenMP by running'
+        echo ''
         echo '     brew install libomp'
         echo '***********************************************************************************************'
     fi

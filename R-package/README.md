@@ -172,15 +172,6 @@ R CMD install lightgbm_*.tar.gz
 
 #### Custom Installation (Linux, Mac)
 
-You can use `--configure-args` to build a GPU-enabled version of the package.
-
-```shell
-Rscript build_r.R --skip-install
-R CMD INSTALL \
-    --configure-args='--enable-gpu' \
-    lightgbm_2.3.2.tar.gz
-```
-
 To change the compiler used when installing the package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler). For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
 
 ```make
@@ -188,28 +179,6 @@ To change the compiler used when installing the package, you can create a file `
 CC=gcc-8
 CXX=g++-8
 CXX11=g++-8
-```
-
-#### Custom Installation (Windows)
-
-Since R on Windows does not support the use of `--configure-args`, building a GPU-enabled version of the package on Windows requires the use of an environment variable.
-
-To install from source with GPU on Windows, set environment variable `LGB_USE_GPU` to `true`.
-
-```shell
-setx LGB_USE_GPU "true"
-```
-
-Restart CMD, then check that it was set:
-
-```shell
-echo %LGB_USE_GPU%
-```
-
-If it shows `true`, you should see the flag `-DUSE_GPU` in the compiler messages.
-
-```shell
-R CMD install lightgbm_*.tar.gz
 ```
 
 ### Changing the CRAN package
