@@ -4,7 +4,7 @@
 CRAN_MIRROR="https://cloud.r-project.org/"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
-echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
+export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
 # Get details needed for installing R components
