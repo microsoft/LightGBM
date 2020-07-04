@@ -880,9 +880,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle h
  * initializing the config only once, instead of once per call.
  *
  * \note
- *   Setting up #threads is only done once at `LGBM_BoosterPredictForCSRSingleRowFastInit`
+ *   Setting up the number of threads is only done once at `LGBM_BoosterPredictForCSRSingleRowFastInit`
  *   instead of at each prediction.
- *   If you use a different #threads in other calls, you need to start the setup process over,
+ *   If you use a different number of threads in other calls, you need to start the setup process over,
  *   or that number of threads will be used for this calls as well.
  *
  * \note
@@ -1060,9 +1060,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
  * initializing the config only once, instead of once per call.
  *
  * \note
- *   Setting up #threads is only done once at `LGBM_BoosterPredictForMatSingleRowFastInit`
+ *   Setting up the number of threads is only done once at `LGBM_BoosterPredictForMatSingleRowFastInit`
  *   instead of at each prediction.
- *   If you use a different #threads in other calls, you need to start the setup process over,
+ *   If you use a different number of threads in other calls, you need to start the setup process over,
  *   or that number of threads will be used for this calls as well.
  *
  * \param fastConfig_handle FastConfig object handle returned by `LGBM_BoosterPredictForMatSingleRowFastInit`
