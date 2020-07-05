@@ -356,6 +356,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(dataset->use_missing_);
   dataset->zero_as_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
   mem_ptr += sizeof(dataset->zero_as_missing_);
+  dataset->has_raw_ = *(reinterpret_cast<const bool*>(mem_ptr));
+  mem_ptr += sizeof(dataset->has_raw_);
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
   for (int i = 0; i < dataset->num_total_features_; ++i) {
@@ -541,6 +543,31 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
                        *used_data_indices)));
   }
   dataset->feature_groups_.shrink_to_fit();
+
+  // raw data
+  if (dataset->has_raw()) {
+    dataset->SetRaw(true);
+    dataset->ResizeRaw(dataset->num_data());
+      size_t row_size = dataset->num_features() * sizeof(double);
+      if (row_size > buffer_size) {
+        buffer_size = row_size;
+        buffer.resize(buffer_size);
+      }
+    for (int i = 0; i < dataset->num_data(); ++i) {
+      read_cnt = reader->Read(buffer.data(), row_size);
+      if (read_cnt != row_size) {
+        Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %d", i, read_cnt);
+      }
+      const double* tmp_ptr_raw_row = reinterpret_cast<const double*>(mem_ptr);
+      std::vector<double> curr_row(0, dataset->num_features());
+      for (int j = 0; j < dataset->num_data(); ++j) {
+        curr_row[j] = tmp_ptr_raw_row[j];
+      }
+      mem_ptr += row_size;
+      dataset->raw_data_[i] = curr_row;
+    } 
+  }
+
   dataset->is_finish_load_ = true;
   return dataset.release();
 }
