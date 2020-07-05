@@ -90,7 +90,7 @@ if [[ $OS_NAME == "macos" ]]; then
 fi
 Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
-if [[ $TASK == "check-r-docs" ]]; then
+if [[ $TASK == "r-package-check-docs" ]]; then
     Rscript build_r.R || exit -1
     Rscript --vanilla -e "install.packages('roxygen2', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
     Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
