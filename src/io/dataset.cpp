@@ -26,7 +26,6 @@ Dataset::Dataset() {
   num_data_ = 0;
   is_finish_load_ = false;
   has_raw_ = false;
-  printf("hello1\n");
 }
 
 Dataset::Dataset(data_size_t num_data) {

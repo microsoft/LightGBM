@@ -546,7 +546,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 
   // raw data
   if (dataset->has_raw()) {
-    dataset->SetRaw(true);
     dataset->ResizeRaw(dataset->num_data());
       size_t row_size = dataset->num_features() * sizeof(double);
       if (row_size > buffer_size) {
@@ -558,9 +557,10 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       if (read_cnt != row_size) {
         Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %d", i, read_cnt);
       }
+      mem_ptr = buffer.data();
       const double* tmp_ptr_raw_row = reinterpret_cast<const double*>(mem_ptr);
-      std::vector<double> curr_row(0, dataset->num_features());
-      for (int j = 0; j < dataset->num_data(); ++j) {
+      std::vector<double> curr_row(dataset->num_features(), 0);
+      for (int j = 0; j < dataset->num_features(); ++j) {
         curr_row[j] = tmp_ptr_raw_row[j];
       }
       mem_ptr += row_size;
