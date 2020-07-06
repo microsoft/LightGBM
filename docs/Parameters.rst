@@ -117,7 +117,9 @@ Core Parameters
 
    -  ``gbdt_linear``, piecewise linear gradient boosting tree, only works with cpu and serial tree learner
 
-      -  missing values must be encoded as np.nan (Python) or NA (cli)
+      -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+
+      -  missing values must be encoded as np.nan (Python) or NA (cli), not 0
 
       -  not yet supported in R-package
 

@@ -336,6 +336,9 @@ void Config::CheckParamConflict() {
       tree_learner = "serial";
       Log::Warning("Linear tree learner must be serial.");
       }
+    if (zero_as_missing) {
+      Log::Fatal("zero_as_missing must be false when using linear tree learner.");
+    }
   }
 
   // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the split is calculated
