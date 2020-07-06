@@ -108,6 +108,18 @@ class TestBasic(unittest.TestCase):
         train_data.construct()
         valid_data.construct()
 
+    def test_save_and_load_linear(self):
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        params = {'boosting': 'gbdt_linear'}
+        train_data = lgb.Dataset(X_train, label=y_train, params=params)
+        est = lgb.train(params, train_data, num_boost_round=10)
+        pred1 = est.predict(X_train)
+        train_data.save_binary('temp_dataset.bin')
+        train_data_2 = lgb.Dataset('temp_dataset.bin')
+        est = lgb.train(params, train_data_2, num_boost_round=10)
+        pred2 = est.predict(X_train)
+        np.testing.assert_allclose(pred1, pred2)
+
     def test_subset_group(self):
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                            '../../examples/lambdarank/rank.train'))
