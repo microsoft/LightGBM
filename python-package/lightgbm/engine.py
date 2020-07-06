@@ -280,6 +280,8 @@ class CVBooster(object):
     """CVBooster in LightGBM.
 
     Auxiliary data struct to hold and redirect all boosters of CV.
+    This class has the same methods as Booster class.
+    All method calls are actually performed for underlying Boosters and then all returned results are returned in a list.
     """
 
     def __init__(self):
@@ -290,7 +292,7 @@ class CVBooster(object):
         self.boosters = []
         self.best_iteration = -1
 
-    def append(self, booster):
+    def _append(self, booster):
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
@@ -361,7 +363,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
         if eval_train_metric:
             cvbooster.add_valid(train_set, 'train')
         cvbooster.add_valid(valid_set, 'valid')
-        ret.append(cvbooster)
+        ret._append(cvbooster)
     return ret
 
 
@@ -505,6 +507,7 @@ def cv(params, train_set, num_boost_round=100,
         {'metric1-mean': [values], 'metric1-stdv': [values],
         'metric2-mean': [values], 'metric2-stdv': [values],
         ...}.
+        If ``return_cvbooster=True``, also returns trained boosters via ``cvbooster`` key.
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")

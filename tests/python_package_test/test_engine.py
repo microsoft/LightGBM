@@ -746,14 +746,14 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X_train, y_train)
         # with early stopping
         cv_res = lgb.cv(params, lgb_train,
-                        num_boost_round=100,
-                        early_stopping_rounds=10,
+                        num_boost_round=25,
+                        early_stopping_rounds=5,
                         verbose_eval=False,
                         nfold=3,
                         return_cvbooster=True)
         self.assertIn('cvbooster', cv_res)
         cvb = cv_res['cvbooster']
-        self.assertIsInstance(cvb, lgb.engine.CVBooster)
+        self.assertIsInstance(cvb, lgb.CVBooster)
         self.assertGreater(cvb.best_iteration, 0)
         # predict by each fold booster
         preds = cvb.predict(X_test, num_iteration=cvb.best_iteration)
@@ -762,7 +762,7 @@ class TestEngine(unittest.TestCase):
         # fold averaging
         avg_pred = np.mean(preds, axis=0)
         ret = log_loss(y_test, avg_pred)
-        self.assertLess(ret, 0.11)
+        self.assertLess(ret, 0.13)
         # without early stopping
         cv_res = lgb.cv(params, lgb_train,
                         num_boost_round=20,
