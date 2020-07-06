@@ -252,14 +252,14 @@ void CUDATreeLearner::WaitAndGetHistograms(FeatureHistogram* leaf_histogram_arra
     // LGBM_CUDA
   }
 
+  HistType* histograms = reinterpret_cast<HistType*>(leaf_histogram_array[0].RawData() - kHistOffset);
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < num_dense_feature_groups_; ++i) {
     if (!feature_masks_[i]) {
       continue;
     }
     int dense_group_index = dense_feature_group_map_[i];
-    // auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
-    auto old_histogram_array = leaf_histogram_array[dense_group_index].RawData() - kHistOffset;
+    auto old_histogram_array = histograms + train_data_->GroupBinBoundary(dense_group_index) * 2;
     int bin_size = train_data_->FeatureGroupNumBin(dense_group_index);
 
     for (int j = 0; j < bin_size; ++j) {
@@ -580,18 +580,8 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
   copyDenseFeature();  // LGBM_CUDA
 }
 
-Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                            bool is_constant_hessian, const Json& forced_split_json) {
-  // check if we need to recompile the GPU kernel (is_constant_hessian changed)
-  // this should rarely occur
-
-  if (is_constant_hessian != is_constant_hessian_) {
-    Log::Debug("Recompiling GPU kernel because hessian is %sa constant now", is_constant_hessian ? "" : "not ");
-    is_constant_hessian_ = is_constant_hessian;
-  }
-
-  Tree *ret = SerialTreeLearner::Train(gradients, hessians, is_constant_hessian, forced_split_json);
-
+Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians) {
+  Tree *ret = SerialTreeLearner::Train(gradients, hessians);
   return ret;
 }
 
@@ -666,7 +656,7 @@ void CUDATreeLearner::BeforeTrain() {
       Log::Debug("CudaTreeLearner::BeforeTrain() No baggings, dense_feature_groups_=%d", num_dense_feature_groups_);
 
       for (int device_id = 0; device_id < num_gpu_; ++device_id) {
-        if (!is_constant_hessian_) {
+        if (!(share_state_->is_constant_hessian)) {
           Log::Debug("CUDATreeLearner::BeforeTrain(): Starting hessians_ -> device_hessians_");
 
           #if cudaMemcpy_DEBUG == 1  // LGBM_CUDA
@@ -721,7 +711,7 @@ void CUDATreeLearner::BeforeTrain() {
         CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_data_indices_[device_id], indices, cnt * sizeof(*indices), cudaMemcpyHostToDevice, stream_[device_id]));
         CUDASUCCESS_OR_FATAL(cudaEventRecord(indices_future_[device_id], stream_[device_id]));
 
-        if (!is_constant_hessian_) {
+        if (!(share_state_->is_constant_hessian)) {
           CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(device_hessians_[device_id], const_cast<void*>(reinterpret_cast<const void*>(&(hessians_[0]))), num_data_ * sizeof(score_t), cudaMemcpyHostToDevice, stream_[device_id]));
           CUDASUCCESS_OR_FATAL(cudaEventRecord(hessians_future_[device_id], stream_[device_id]));
         }
@@ -920,7 +910,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
       continue;
     }
     if (num_data == num_data_) {
-      if (is_constant_hessian_) {
+      if (share_state_->is_constant_hessian) {
         printf("ConstructHistogram(): num_data == num_data_ is_constant_hessian_\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             0,
@@ -936,7 +926,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
             current_histogram);
       }
     } else {
-      if (is_constant_hessian_) {
+      if (share_state_->is_constant_hessian) {
         printf("ConstructHistogram(): is_constant_hessian_\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             smaller_leaf_splits_->data_indices(),
@@ -956,11 +946,11 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     }
     int retval;
     if ((num_data != num_data_) && compare) {
-        retval = CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, is_constant_hessian_);
+        retval = CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, share_state_->is_constant_hessian);
         printf("CompareHistograms reports %d errors\n", retval);
         compare = false;
     }
-    retval = CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, is_constant_hessian_);
+    retval = CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index, config_->gpu_use_dp, share_state_->is_constant_hessian);
     if (num_data == num_data_) {
         printf("CompareHistograms reports %d errors\n", retval);
     } else {

@@ -8,7 +8,6 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
-#include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/threading.h>
 
 #include <string>
@@ -22,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include <LightGBM/utils/json11.h>
 #include "score_updater.hpp"
 
 #ifdef USE_CUDA
@@ -147,14 +147,6 @@ class GBDT : public GBDTBase {
   * \return True if cannot train any more
   */
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
-
-  /*!
-  * \brief Training logic
-  * \param gradients nullptr for using default objective, otherwise use self-defined boosting
-  * \param hessians nullptr for using default objective, otherwise use self-defined boosting
-  * \return True if cannot train any more
-  */
-  bool TrainOneIterCUDA(const score_t* gradients, const score_t* hessians);  // LGBM_CUDA
 
   /*!
   * \brief Rollback one iteration

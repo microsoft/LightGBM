@@ -734,9 +734,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   SetupKernelArguments();
 }
 
-Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
-                           bool is_constant_hessian, const Json& forced_split_json) {
-  return SerialTreeLearner::Train(gradients, hessians, is_constant_hessian, forced_split_json);
+Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
+  return SerialTreeLearner::Train(gradients, hessians);
 }
 
 void GPUTreeLearner::ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) {

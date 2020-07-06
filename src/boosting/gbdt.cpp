@@ -378,8 +378,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         grad = gradients_.data() + offset;
         hess = hessians_.data() + offset;
       }
-      // LGBM_CUDA
-      new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
+      new_tree.reset(tree_learner_->Train(grad, hess));
     }
 
     if (new_tree->num_leaves() > 1) {
