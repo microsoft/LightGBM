@@ -117,7 +117,7 @@ class CUDATreeLearner: public SerialTreeLearner {
       td->leaf_num_data         = leaf_num_data;
       td->num_data              = num_data_;
       td->use_all_features      = use_all_features;
-      td->is_constant_hessian   = is_constant_hessian_;
+      td->is_constant_hessian   = share_state_->is_constant_hessian;
       td->num_workgroups        = num_workgroups;
       td->stream                = stream_[device_id];
       td->device_features       = device_features_[device_id];

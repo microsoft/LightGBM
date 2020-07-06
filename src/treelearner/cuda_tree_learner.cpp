@@ -911,7 +911,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     }
     if (num_data == num_data_) {
       if (share_state_->is_constant_hessian) {
-        printf("ConstructHistogram(): num_data == num_data_ is_constant_hessian_\n");
+        printf("ConstructHistogram(): num_data == num_data_ is_constant_hessian\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             0,
             num_data,
@@ -927,7 +927,7 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
       }
     } else {
       if (share_state_->is_constant_hessian) {
-        printf("ConstructHistogram(): is_constant_hessian_\n");
+        printf("ConstructHistogram(): is_constant_hessian\n");
         train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
             smaller_leaf_splits_->data_indices(),
             0,
@@ -978,12 +978,6 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
     // We set data_indices to null to avoid rebuilding ordered gradients/hessians
 
     if (num_sparse_features > 0) {
-    // train_data_->ConstructHistograms(is_sparse_feature_used,
-    //  nullptr, larger_leaf_splits_->num_data_in_leaf(),
-    //  larger_leaf_splits_->leaf_index(),
-    //  ordered_bins_, gradients_, hessians_,
-    //  ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
-    //  ptr_larger_leaf_hist_data);
     train_data_->ConstructHistograms(is_sparse_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,

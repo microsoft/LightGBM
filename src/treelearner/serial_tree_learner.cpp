@@ -29,7 +29,6 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   train_data_ = train_data;
   num_data_ = train_data_->num_data();
   num_features_ = train_data_->num_features();
-  is_constant_hessian_ = is_constant_hessian;
   int max_cache_size = 0;
   // Get the max size of pool
   if (config_->histogram_pool_size <= 0) {
