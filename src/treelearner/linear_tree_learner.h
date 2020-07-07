@@ -30,11 +30,6 @@ class LinearTreeLearner: public SerialTreeLearner {
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       int num_feat = tree->LeafFeaturesInner(i).size();
-      std::vector<std::unique_ptr<BinIterator>> iter(num_feat);
-      for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
-        int feat = tree->LeafFeaturesInner(i)[feat_num];
-        iter[feat_num].reset(train_data_->FeatureIterator(feat));
-      }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
         double add_score = leaf_const;
         bool nan_found = false;
