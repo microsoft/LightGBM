@@ -135,7 +135,7 @@ To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usua
 If it says ``mingw_64`` then you need the 64-bit version (PATH with ``c:\Rtools\bin;c:\Rtools\mingw_64\bin``),
 otherwise you need the 32-bit version (``c:\Rtools\bin;c:\Rtools\mingw_32\bin``), the latter being a very rare and untested case.
 
---------------
+NOTE: If you are using `Rtools` 4.0 or later, the path will have `mingw64` instead of `mingw_64` (PATH with `C:\rtools40\mingw64\bin`), and `mingw32` instead of `mingw_32` (`C:\rtools40\mingw32\bin`). The 32-bit version remains an unsupported solution under Rtools 4.0.
 
 Download the prebuilt Boost
 ---------------------------
@@ -581,9 +581,9 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _Boost: https://www.boost.org/users/history/
 
-.. _Prebuilt Boost x86_64: https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.66.0-2.fc29.noarch.rpm
+.. _Prebuilt Boost x86_64: https://mirror.linux-ia64.org/fedora/linux/releases/32/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.66.0-6.fc32.noarch.rpm
 
-.. _Prebuilt Boost i686: https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.66.0-2.fc29.noarch.rpm
+.. _Prebuilt Boost i686: https://mirror.linux-ia64.org/fedora/linux/releases/32/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.66.0-6.fc32.noarch.rpm
 
 .. _7zip: https://www.7-zip.org/download.html
 

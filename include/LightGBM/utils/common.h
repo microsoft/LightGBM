@@ -103,6 +103,30 @@ inline static std::vector<std::string> Split(const char* c_str, char delimiter) 
   return ret;
 }
 
+inline static std::vector<std::string> SplitBrackets(const char* c_str, char left_delimiter, char right_delimiter) {
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = 0;
+  bool open = false;
+  while (pos < str.length()) {
+    if (str[pos] == left_delimiter) {
+      open = true;
+      ++pos;
+      i = pos;
+    } else if (str[pos] == right_delimiter && open) {
+      if (i < pos) {
+        ret.push_back(str.substr(i, pos - i));
+      }
+      open = false;
+      ++pos;
+    } else {
+      ++pos;
+    }
+  }
+  return ret;
+}
+
 inline static std::vector<std::string> SplitLines(const char* c_str) {
   std::vector<std::string> ret;
   std::string str(c_str);
@@ -499,6 +523,17 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
   __StringToTHelper<T, std::is_floating_point<T>::value> helper;
   for (const auto& s : strs) {
     ret.push_back(helper(s));
+  }
+  return ret;
+}
+
+template<typename T>
+inline static std::vector<std::vector<T>> StringToArrayofArrays(
+    const std::string& str, char left_bracket, char right_bracket, char delimiter) {
+  std::vector<std::string> strs = SplitBrackets(str.c_str(), left_bracket, right_bracket);
+  std::vector<std::vector<T>> ret;
+  for (const auto& s : strs) {
+    ret.push_back(StringToArray<T>(s, delimiter));
   }
   return ret;
 }

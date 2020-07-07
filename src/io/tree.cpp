@@ -14,8 +14,8 @@
 
 namespace LightGBM {
 
-Tree::Tree(int max_leaves)
-  :max_leaves_(max_leaves) {
+Tree::Tree(int max_leaves, bool track_branch_features)
+  :max_leaves_(max_leaves), track_branch_features_(track_branch_features) {
   left_child_.resize(max_leaves_ - 1);
   right_child_.resize(max_leaves_ - 1);
   split_feature_inner_.resize(max_leaves_ - 1);
@@ -32,6 +32,9 @@ Tree::Tree(int max_leaves)
   internal_weight_.resize(max_leaves_ - 1);
   internal_count_.resize(max_leaves_ - 1);
   leaf_depth_.resize(max_leaves_);
+  if (track_branch_features_) {
+    branch_features_ = std::vector<std::vector<int>>(max_leaves_);
+  }
   // root is in the depth 0
   leaf_depth_[0] = 0;
   num_leaves_ = 1;
@@ -684,7 +687,9 @@ void Tree::TreeSHAP(const double *feature_values, double *phi,
                     double parent_one_fraction, int parent_feature_index) const {
   // extend the unique path
   PathElement* unique_path = parent_unique_path + unique_depth;
-  if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  if (unique_depth > 0) {
+    std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  }
   ExtendPath(unique_path, unique_depth, parent_zero_fraction,
              parent_one_fraction, parent_feature_index);
 
@@ -724,6 +729,58 @@ void Tree::TreeSHAP(const double *feature_values, double *phi,
 
     TreeSHAP(feature_values, phi, cold_index, unique_depth + 1, unique_path,
              cold_zero_fraction*incoming_zero_fraction, 0, split_feature_[node]);
+  }
+}
+
+// recursive sparse computation of SHAP values for a decision tree
+void Tree::TreeSHAPByMap(const std::unordered_map<int, double>& feature_values, std::unordered_map<int, double>* phi,
+                         int node, int unique_depth,
+                         PathElement *parent_unique_path, double parent_zero_fraction,
+                         double parent_one_fraction, int parent_feature_index) const {
+  // extend the unique path
+  PathElement* unique_path = parent_unique_path + unique_depth;
+  if (unique_depth > 0) {
+    std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  }
+  ExtendPath(unique_path, unique_depth, parent_zero_fraction,
+             parent_one_fraction, parent_feature_index);
+
+  // leaf node
+  if (node < 0) {
+    for (int i = 1; i <= unique_depth; ++i) {
+      const double w = UnwoundPathSum(unique_path, unique_depth, i);
+      const PathElement &el = unique_path[i];
+      (*phi)[el.feature_index] += w*(el.one_fraction - el.zero_fraction)*leaf_value_[~node];
+    }
+
+  // internal node
+  } else {
+    const int hot_index = Decision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
+    const int cold_index = (hot_index == left_child_[node] ? right_child_[node] : left_child_[node]);
+    const double w = data_count(node);
+    const double hot_zero_fraction = data_count(hot_index) / w;
+    const double cold_zero_fraction = data_count(cold_index) / w;
+    double incoming_zero_fraction = 1;
+    double incoming_one_fraction = 1;
+
+    // see if we have already split on this feature,
+    // if so we undo that split so we can redo it for this node
+    int path_index = 0;
+    for (; path_index <= unique_depth; ++path_index) {
+      if (unique_path[path_index].feature_index == split_feature_[node]) break;
+    }
+    if (path_index != unique_depth + 1) {
+      incoming_zero_fraction = unique_path[path_index].zero_fraction;
+      incoming_one_fraction = unique_path[path_index].one_fraction;
+      UnwindPath(unique_path, unique_depth, path_index);
+      unique_depth -= 1;
+    }
+
+    TreeSHAPByMap(feature_values, phi, hot_index, unique_depth + 1, unique_path,
+                  hot_zero_fraction*incoming_zero_fraction, incoming_one_fraction, split_feature_[node]);
+
+    TreeSHAPByMap(feature_values, phi, cold_index, unique_depth + 1, unique_path,
+                  cold_zero_fraction*incoming_zero_fraction, 0, split_feature_[node]);
   }
 }
 
