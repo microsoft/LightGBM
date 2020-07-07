@@ -173,7 +173,11 @@ if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     exit -1
 fi
 
-ALLOWED_CHECK_NOTES=4
+if [[ $OS_NAME == "linux" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
+    ALLOWED_CHECK_NOTES=3
+else
+    ALLOWED_CHECK_NOTES=2
+fi
 NUM_CHECK_NOTES=$(
     cat ${LOG_FILE_NAME} \
         | grep -e '^Status: .* NOTE.*' \

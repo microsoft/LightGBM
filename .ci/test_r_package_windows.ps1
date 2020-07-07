@@ -148,7 +148,7 @@ if ($env:COMPILER -ne "MSVC") {
   if ($env:R_BUILD_TYPE -eq "cmake") {
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
-    sh build-cran-package.sh ; Check-Output $?
+    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh'), echo = TRUE, windows_verbatim_args = FALSE)" ; Check-Output $?
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
