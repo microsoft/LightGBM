@@ -1544,16 +1544,20 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
     feature_names_set.emplace(val);
   }
   for (const auto& val : other->feature_names_) {
-    if (feature_names_set.count(val)) {
-      std::string new_name = "D2_" + val;
-      feature_names_.push_back(new_name);
-      Log::Warning(
-          "Find the same feature name (%s) in Dataset::AddFeaturesFrom, change "
-          "its name to (%s)",
-          val.c_str(), new_name.c_str());
-    } else {
-      feature_names_.push_back(val);
+    std::string new_name = val;
+    int cnt = 2;
+    while (feature_names_set.count(new_name)) {
+      new_name = "D" + std::to_string(cnt) + "_" + val;
+      ++cnt;
     }
+    if (new_name != val) {
+      Log::Warning(
+        "Find the same feature name (%s) in Dataset::AddFeaturesFrom, change "
+        "its name to (%s)",
+        val.c_str(), new_name.c_str());
+    }
+    feature_names_set.emplace(new_name);
+    feature_names_.push_back(new_name);
   }
   PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
   PushClearIfEmpty(&max_bin_by_feature_, num_total_features_,
