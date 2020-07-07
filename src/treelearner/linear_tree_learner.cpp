@@ -58,8 +58,8 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
 
-  tree_prt->SetLinear(true);
   CalculateLinear(tree_prt);
+  tree_prt->SetLinear(true);
 
   Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
@@ -124,59 +124,64 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
       }
     }
     int num_valid_data = num_data - num_nan_rows;
-    Eigen::MatrixXd X(num_valid_data, split_features.size() + 1);
-    int curr_row = 0;
-    for (int i = 0; i < num_data; ++i) {
-      if (!nan_row[i]) {
-        X.row(curr_row) = X_full.row(i);
-        ++curr_row;
+    if (num_valid_data < split_features.size() + 1) {
+      tree->SetLeafConst(leaf_num, tree->LeafOutput(leaf_num));
+    } else {
+
+      Eigen::MatrixXd X(num_valid_data, split_features.size() + 1);
+      int curr_row = 0;
+      for (int i = 0; i < num_data; ++i) {
+        if (!nan_row[i]) {
+          X.row(curr_row) = X_full.row(i);
+          ++curr_row;
+        }
       }
-    }
-    // final column is all ones
-    for (int i = 0; i < num_valid_data; ++i) {
-      X(i, split_features.size()) = 1;
-    }
-    Eigen::VectorXd h(num_valid_data, 1);
-    curr_row = 0;
-    for (int i = 0; i < num_data; ++i) {
-      if (!nan_row[i]) {
-        h(curr_row, 0) = hessians_[ind[idx + i]];
-        ++curr_row;
+      // final column is all ones
+      for (int i = 0; i < num_valid_data; ++i) {
+        X(i, split_features.size()) = 1;
       }
-    }
-    Eigen::MatrixXd XTHX(split_features.size() + 1, split_features.size() + 1);
-    XTHX = X.transpose() * h.asDiagonal() * X;
-    for (int i = 0; i < split_features.size(); ++i) {
-      XTHX(i, i) += config_->linear_lambda;
-    }
-    Eigen::MatrixXd grad(num_valid_data, 1);
-    curr_row = 0;
-    for (int i = 0; i < num_data; ++i) {
-      if (!nan_row[i]) {
-        grad(curr_row) = gradients_[ind[idx + i]];
-        ++curr_row;
+      Eigen::VectorXd h(num_valid_data, 1);
+      curr_row = 0;
+      for (int i = 0; i < num_data; ++i) {
+        if (!nan_row[i]) {
+          h(curr_row, 0) = hessians_[ind[idx + i]];
+          ++curr_row;
+        }
       }
-    }
-    Eigen::MatrixXd coeffs = - XTHX.fullPivLu().inverse() * X.transpose() * grad;
-    // remove features with very small coefficients
-    std::vector<double> coeffs_vec;
-    std::vector<int> split_features_new;
-    for (int i = 0; i < split_features.size(); ++i) {
-      if (coeffs(i) < -kZeroThreshold || coeffs(i) > kZeroThreshold) {
-        coeffs_vec.push_back(coeffs(i));
-        split_features_new.push_back(split_features[i]);
+      Eigen::MatrixXd XTHX(split_features.size() + 1, split_features.size() + 1);
+      XTHX = X.transpose() * h.asDiagonal() * X;
+      for (int i = 0; i < split_features.size(); ++i) {
+        XTHX(i, i) += config_->linear_lambda;
       }
+      Eigen::MatrixXd grad(num_valid_data, 1);
+      curr_row = 0;
+      for (int i = 0; i < num_data; ++i) {
+        if (!nan_row[i]) {
+          grad(curr_row) = gradients_[ind[idx + i]];
+          ++curr_row;
+        }
+      }
+      Eigen::MatrixXd coeffs = - XTHX.fullPivLu().inverse() * X.transpose() * grad;
+      // remove features with very small coefficients
+      std::vector<double> coeffs_vec;
+      std::vector<int> split_features_new;
+      for (int i = 0; i < split_features.size(); ++i) {
+        if (coeffs(i) < -kZeroThreshold || coeffs(i) > kZeroThreshold) {
+          coeffs_vec.push_back(coeffs(i));
+          split_features_new.push_back(split_features[i]);
+        }
+      }
+      // update the tree properties
+      tree->SetLeafFeaturesInner(leaf_num, split_features_new);
+      std::vector<int> split_features_raw(split_features_new.size());
+      for (int i = 0; i < split_features_new.size(); ++i) {
+        split_features_raw[i] = train_data_->RealFeatureIndex(split_features_new[i]);
+      }
+      tree->SetLeafFeatures(leaf_num, split_features_raw);
+      tree->SetLeafCoeffs(leaf_num, coeffs_vec);
+      double const_term = coeffs(split_features.size());
+      tree->SetLeafConst(leaf_num, const_term);
     }
-    // update the tree properties
-    tree->SetLeafFeaturesInner(leaf_num, split_features_new);
-    std::vector<int> split_features_raw(split_features_new.size());
-    for (int i = 0; i < split_features_new.size(); ++i) {
-      split_features_raw[i] = train_data_->RealFeatureIndex(split_features_new[i]);
-    }
-    tree->SetLeafFeatures(leaf_num, split_features_raw);
-    tree->SetLeafCoeffs(leaf_num, coeffs_vec);
-    double const_term = coeffs(split_features.size());
-    tree->SetLeafConst(leaf_num, const_term);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
