@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 
-Tree::Tree(int max_leaves, bool track_branch_features)
+Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
   :max_leaves_(max_leaves), track_branch_features_(track_branch_features) {
   left_child_.resize(max_leaves_ - 1);
   right_child_.resize(max_leaves_ - 1);
@@ -48,11 +48,13 @@ Tree::Tree(int max_leaves, bool track_branch_features)
   cat_boundaries_.push_back(0);
   cat_boundaries_inner_.push_back(0);
   max_depth_ = -1;
-  leaf_coeff_.resize(max_leaves_);
-  leaf_const_.resize(max_leaves_);
-  leaf_features_.resize(max_leaves_);
-  leaf_features_inner_.resize(max_leaves_);
-  is_linear_ = false;
+  is_linear_ = is_linear;
+  if (is_linear_) {
+    leaf_coeff_.resize(max_leaves_);
+    leaf_const_.resize(max_leaves_);
+    leaf_features_.resize(max_leaves_);
+    leaf_features_inner_.resize(max_leaves_);
+  }
 }
 
 Tree::~Tree() {
@@ -305,32 +307,40 @@ std::string Tree::ToString() const {
       << Common::ArrayToStringFast(cat_threshold_, cat_threshold_.size()) << '\n';
   }
   str_buf << "is_linear=" << is_linear_ << '\n';
-  str_buf << "leaf_const="
-    << Common::ArrayToStringFast(leaf_const_, num_leaves_) << '\n';
-  std::vector<int> num_feat(num_leaves_);
-  for (int i = 0; i < num_leaves_; ++i) {
-    num_feat[i] = leaf_coeff_[i].size();
-  }
-  str_buf << "num_features="
-    << Common::ArrayToStringFast(num_feat, num_leaves_) << '\n'; 
-  str_buf << "leaf_features=";
-  for (int i = 0; i < num_leaves_; ++i) {
-    if (num_feat[i] > 0){
-      str_buf << Common::ArrayToStringFast(leaf_features_[i], leaf_features_[i].size()) << ' ';
+
+  if (is_linear_) {
+    str_buf << "leaf_const="
+      << Common::ArrayToStringFast(leaf_const_, num_leaves_) << '\n';
+
+    std::vector<int> num_feat(num_leaves_);
+    for (int i = 0; i < num_leaves_; ++i) {
+      num_feat[i] = leaf_coeff_[i].size();
     }
-    str_buf << ' ';
-  }
-  str_buf << '\n';
-  str_buf << "leaf_coeff=";
-  for (int i = 0; i < num_leaves_; ++i) {
-    if (num_feat[i] > 0){
-      str_buf << Common::ArrayToStringFast(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
+    str_buf << "num_features="
+      << Common::ArrayToStringFast(num_feat, num_leaves_) << '\n';
+
+    str_buf << "leaf_features=";
+    for (int i = 0; i < num_leaves_; ++i) {
+      if (num_feat[i] > 0){
+        str_buf << Common::ArrayToStringFast(leaf_features_[i], leaf_features_[i].size()) << ' ';
+      }
+      str_buf << ' ';
     }
-    str_buf << ' ';
+    str_buf << '\n';
+
+    str_buf << "leaf_coeff=";
+    for (int i = 0; i < num_leaves_; ++i) {
+      if (num_feat[i] > 0){
+        str_buf << Common::ArrayToStringFast(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
+      }
+      str_buf << ' ';
+    }
+    str_buf << '\n';
   }
-  str_buf << '\n';
+
   str_buf << "shrinkage=" << shrinkage_ << '\n';
   str_buf << '\n';
+
   return str_buf.str();
 }
 
@@ -612,7 +622,11 @@ Tree::Tree(const char* str, size_t* used_len) {
     shrinkage_ = 1.0f;
   }
 
-  if (num_leaves_ <= 1) { return; }
+  if (key_vals.count("is_linear")) {
+    Common::Atoi(key_vals["is_linear"].c_str(), &is_linear_);
+  }
+
+  if ((num_leaves_ <= 1) && !is_linear_) { return; }
 
   if (key_vals.count("left_child")) {
     left_child_ = Common::StringToArrayFast<int>(key_vals["left_child"], num_leaves_ - 1);
@@ -680,43 +694,44 @@ Tree::Tree(const char* str, size_t* used_len) {
     decision_type_ = std::vector<int8_t>(num_leaves_ - 1, 0);
   }
 
-  if (key_vals.count("is_linear")) {
-    Common::Atoi(key_vals["is_linear"].c_str(), &is_linear_);
-  }
-  if (key_vals.count("leaf_const")) {
-    leaf_const_ = Common::StringToArrayFast<double>(key_vals["leaf_const"], num_leaves_);
-  }
-  std::vector<int> num_feat;
-  if (key_vals.count("num_features")) {
-    num_feat = Common::StringToArrayFast<int>(key_vals["num_features"], num_leaves_);
-  }
+  if (is_linear_) {
 
-  if (num_feat.size() > 0) {
-    int total_num_feat = 0;
-    for (int i = 0; i < num_feat.size(); ++i) { total_num_feat += num_feat[i]; }
-    std::vector<int> all_leaf_features;
-    if (key_vals.count("leaf_features")) {
-      all_leaf_features = Common::StringToArrayFast<int>(key_vals["leaf_features"], total_num_feat);
+    if (key_vals.count("leaf_const")) {
+      leaf_const_ = Common::StringToArrayFast<double>(key_vals["leaf_const"], num_leaves_);
+    } else {
+      leaf_const_.resize(num_leaves_);
     }
-    std::vector<double> all_leaf_coeff;
-    if (key_vals.count("leaf_coeff")) {
-      all_leaf_coeff = Common::StringToArrayFast<double>(key_vals["leaf_coeff"], total_num_feat);
-    }
-    int sum_num_feat = 0;
-    for (int i = 0; i < num_leaves_; ++i) {
-      leaf_features_.push_back(std::vector<int>());
-      leaf_coeff_.push_back(std::vector<double>());
-      if (num_feat[i] > 0) {
-        if (key_vals.count("leaf_features"))  {
-          leaf_features_[i].assign(all_leaf_features.begin() + sum_num_feat, all_leaf_features.begin() + sum_num_feat + num_feat[i]);
-        }
-        if (key_vals.count("leaf_coeff")) {
-          leaf_coeff_[i].assign(all_leaf_coeff.begin() + sum_num_feat, all_leaf_coeff.begin() + sum_num_feat + num_feat[i]);
-        }
+    std::vector<int> num_feat;
+    if (key_vals.count("num_features")) {
+      num_feat = Common::StringToArrayFast<int>(key_vals["num_features"], num_leaves_);
+    } 
+    leaf_coeff_.resize(num_leaves_);
+    leaf_features_.resize(num_leaves_);
+    leaf_features_inner_.resize(num_leaves_);
+    if (num_feat.size() > 0) {
+      int total_num_feat = 0;
+      for (int i = 0; i < num_feat.size(); ++i) { total_num_feat += num_feat[i]; }
+      std::vector<int> all_leaf_features;
+      if (key_vals.count("leaf_features")) {
+        all_leaf_features = Common::StringToArrayFast<int>(key_vals["leaf_features"], total_num_feat);
       }
-      sum_num_feat += num_feat[i];
+      std::vector<double> all_leaf_coeff;
+      if (key_vals.count("leaf_coeff")) {
+        all_leaf_coeff = Common::StringToArrayFast<double>(key_vals["leaf_coeff"], total_num_feat);
+      }
+      int sum_num_feat = 0;
+      for (int i = 0; i < num_leaves_; ++i) {
+        if (num_feat[i] > 0) {
+          if (key_vals.count("leaf_features"))  {
+            leaf_features_[i].assign(all_leaf_features.begin() + sum_num_feat, all_leaf_features.begin() + sum_num_feat + num_feat[i]);
+          }
+          if (key_vals.count("leaf_coeff")) {
+            leaf_coeff_[i].assign(all_leaf_coeff.begin() + sum_num_feat, all_leaf_coeff.begin() + sum_num_feat + num_feat[i]);
+          }
+        }
+        sum_num_feat += num_feat[i];
+      }
     }
-
   }
 
   if (num_cat_ > 0) {

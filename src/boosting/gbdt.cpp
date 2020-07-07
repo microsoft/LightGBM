@@ -248,6 +248,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   bool is_finished = false;
   auto start_time = std::chrono::steady_clock::now();
   for (int iter = 0; iter < config_->num_iterations && !is_finished; ++iter) {
+
     is_finished = TrainOneIter(nullptr, nullptr);
     if (!is_finished) {
       is_finished = EvalAndCheckEarlyStopping();
@@ -353,7 +354,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
-    std::unique_ptr<Tree> new_tree(new Tree(2, false));
+    std::unique_ptr<Tree> new_tree(new Tree(2, false, false));
     if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;

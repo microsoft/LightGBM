@@ -28,8 +28,9 @@ class Tree {
   * \brief Constructor
   * \param max_leaves The number of max leaves
   * \param track_branch_features Whether to keep track of ancestors of leaf nodes
+  * \param is_linear Whether the tree has linear models at each leaf
   */
-  explicit Tree(int max_leaves, bool track_branch_features);
+  explicit Tree(int max_leaves, bool track_branch_features, bool is_linear);
 
   /*!
   * \brief Constructor, from a string
@@ -309,7 +310,8 @@ class Tree {
   }
 
   inline bool GetLinear() { return is_linear_; }
-    inline void SetLinear(bool is_linear) {
+
+  inline void SetLinear(bool is_linear) {
     is_linear_ = is_linear;
   }
 
@@ -565,7 +567,6 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
 
 inline double Tree::Predict(const double* feature_values) const {
   if (is_linear_) {
-    if (num_leaves_ > 1){
       int leaf = GetLeaf(feature_values);
       double output = leaf_const_[leaf];
       bool nan_found = false;
@@ -580,13 +581,10 @@ inline double Tree::Predict(const double* feature_values) const {
         }
       }
       if (nan_found) {
-        return leaf_value_[leaf];
+        return LeafOutput(leaf);
       } else {
         return output;
       }
-    } else {
-      return leaf_value_[0];
-    }
   } else {
     if (num_leaves_ > 1) {
       int leaf = GetLeaf(feature_values);
@@ -601,14 +599,25 @@ inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_
   if (is_linear_) {
     int leaf = GetLeafByMap(feature_values);
     double output = leaf_const_[leaf];
-    for (int i=0; i<leaf_features_[leaf].size(); ++i) {
+    bool nan_found = false;
+    for (int i=0; i < leaf_features_[leaf].size(); ++i) {
       int feat = leaf_features_[leaf][i];
       auto val_it = feature_values.find(feat);
       if (val_it != feature_values.end()) {
-        output += leaf_coeff_[leaf][i] * val_it->second;
+        double feat_val = val_it->second;
+        if (isnan(feat_val) || isinf(feat_val)) {
+          nan_found = true;
+          break;
+        } else {
+          output += leaf_coeff_[leaf][i] * feat_val;
+        }
       }
     }
-    return output;
+    if (nan_found) {
+      return LeafOutput(leaf);
+    } else {
+      return output;
+    } 
   } else {
     if (num_leaves_ > 1) {
       int leaf = GetLeafByMap(feature_values);

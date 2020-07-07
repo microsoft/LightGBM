@@ -164,7 +164,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   BeforeTrain();
 
   bool track_branch_features = !(config_->interaction_constraints_vector.empty());
-  auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features));
+  auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, false));
   auto tree_prt = tree.get();
   constraints_->ShareTreePointer(tree_prt);
 
