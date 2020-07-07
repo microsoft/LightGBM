@@ -440,9 +440,7 @@ class Dataset {
     }
     return ret;
   }
-
-  // LGBM_CUDA ReSize() returns true if resized
-  bool ReSize(data_size_t num_data);
+  void ReSize(data_size_t num_data);
 
   void CopySubrow(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 

@@ -771,8 +771,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
-// LGBM_CUDA Resize() returns boolean
-bool Dataset::ReSize(data_size_t num_data) {
+void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
     OMP_INIT_EX();
