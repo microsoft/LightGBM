@@ -602,7 +602,7 @@ class LGBMModel(_LGBMModelBase):
         if evals_result:
             self._evals_result = evals_result
 
-        if early_stopping_rounds is not None:
+        if early_stopping_rounds is not None and early_stopping_rounds > 0:
             self._best_iteration = self._Booster.best_iteration
 
         self._best_score = self._Booster.best_score
