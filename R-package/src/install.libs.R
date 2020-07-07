@@ -1,7 +1,15 @@
 # User options
 use_precompile <- FALSE
 use_gpu <- FALSE
+
+# For Windows, the package will be built with Visual Studio
+# unless you set one of these to TRUE
 use_mingw <- FALSE
+use_msys2 <- FALSE
+
+if (use_mingw && use_msys2) {
+  stop("Cannot use both MinGW and MSYS2. Please choose only one.")
+}
 
 if (.Machine$sizeof.pointer != 8L) {
   stop("LightGBM only supports 64-bit R, please check the version of R and Rtools.")
@@ -110,11 +118,54 @@ if (!use_precompile) {
   )
   setwd(build_dir)
 
+  use_visual_studio <- !(use_mingw || use_msys2)
+
+  # If using MSVC to build, pull in the script used
+  # to create R.def from R.dll
+  if (WINDOWS && use_visual_studio) {
+    write_succeeded <- file.copy(
+      "../../inst/make-r-def.R"
+      , file.path(build_dir, "make-r-def.R")
+      , overwrite = TRUE
+    )
+    if (!write_succeeded) {
+      stop("Copying make-r-def.R failed")
+    }
+  }
+
   # Prepare installation steps
   cmake_args <- NULL
   build_cmd <- "make"
   build_args <- "_lightgbm"
   lib_folder <- file.path(source_dir, fsep = "/")
+
+  WINDOWS_BUILD_TOOLS <- list(
+    "MinGW" = c(
+      build_tool = "mingw32-make.exe"
+      , makefile_generator = "MinGW Makefiles"
+    )
+    , "MSYS2" = c(
+      build_tool = "make.exe"
+      , makefile_generator = "MSYS Makefiles"
+    )
+  )
+
+  if (use_mingw) {
+    windows_toolchain <- "MinGW"
+  } else if (use_msys2) {
+    windows_toolchain <- "MSYS2"
+  } else {
+    # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
+    # Visual Studio install but that fails, fall back to the toolchain
+    # supported in Rtools
+    if (R_ver >= 4.0) {
+      windows_toolchain <- "MSYS2"
+    } else {
+      windows_toolchain <- "MinGW"
+    }
+  }
+  windows_build_tool <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["build_tool"]]
+  windows_makefile_generator <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["makefile_generator"]]
 
   if (use_gpu) {
     cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
@@ -139,21 +190,21 @@ if (!use_precompile) {
 
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
-    if (use_mingw) {
-      message("Trying to build with MinGW")
+    if (!use_visual_studio) {
+      message(sprintf("Trying to build with %s", windows_toolchain))
       # Must build twice for Windows due sh.exe in Rtools
-      cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+      cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-      build_cmd <- "mingw32-make.exe"
+      build_cmd <- windows_build_tool
       build_args <- "_lightgbm"
     } else {
       visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
       if (!isTRUE(visual_studio_succeeded)) {
-        warning("Building with Visual Studio failed. Attempting with MinGW")
+        warning(sprintf("Building with Visual Studio failed. Attempting with %s", windows_toolchain))
         # Must build twice for Windows due sh.exe in Rtools
-        cmake_args <- c(cmake_args, "-G", shQuote("MinGW Makefiles"))
+        cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
         .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-        build_cmd <- "mingw32-make.exe"
+        build_cmd <- windows_build_tool
         build_args <- "_lightgbm"
       } else {
         build_cmd <- "cmake"
@@ -196,6 +247,7 @@ if (!use_precompile) {
   }
 
   # build the library
+  message("Building lib_lightgbm")
   .run_shell_command(build_cmd, build_args)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 

@@ -104,6 +104,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
         , learning_rate = 1.0
         , nrounds = 2L
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
 
     # you have to give model_str or filename
@@ -115,9 +116,9 @@ test_that("lgb.load() gives the expected error messages given different incorrec
     }, regexp = "either filename or model_str must be given")
 
     # if given, filename should be a string that points to an existing file
-    out_file <- "lightgbm.model"
+    model_file <- tempfile(fileext = ".model")
     expect_error({
-        lgb.load(filename = list(out_file))
+        lgb.load(filename = list(model_file))
     }, regexp = "filename should be character")
     file_to_check <- paste0("a.model")
     while (file.exists(file_to_check)) {
@@ -147,11 +148,13 @@ test_that("Loading a Booster from a file works", {
         , learning_rate = 1.0
         , nrounds = 2L
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
     pred <- predict(bst, test$data)
-    lgb.save(bst, "lightgbm.model")
+    model_file <- tempfile(fileext = ".model")
+    lgb.save(bst, model_file)
 
     # finalize the booster and destroy it so you know we aren't cheating
     bst$finalize()
@@ -159,7 +162,7 @@ test_that("Loading a Booster from a file works", {
     rm(bst)
 
     bst2 <- lgb.load(
-        filename = "lightgbm.model"
+        filename = model_file
     )
     pred2 <- predict(bst2, test$data)
     expect_identical(pred, pred2)
@@ -178,6 +181,7 @@ test_that("Loading a Booster from a string works", {
         , learning_rate = 1.0
         , nrounds = 2L
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -209,11 +213,13 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
         , learning_rate = 1.0
         , nrounds = 2L
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
     pred <- predict(bst, test$data)
-    lgb.save(bst, "lightgbm.model")
+    model_file <- tempfile(fileext = ".model")
+    lgb.save(bst, model_file)
 
     # finalize the booster and destroy it so you know we aren't cheating
     bst$finalize()
@@ -221,7 +227,7 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
     rm(bst)
 
     bst2 <- lgb.load(
-        filename = "lightgbm.model"
+        filename = model_file
         , model_str = 4.0
     )
     pred2 <- predict(bst2, test$data)
@@ -261,6 +267,7 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
         , learning_rate = 1.0
         , nrounds = nrounds
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
     data(agaricus.test, package = "lightgbm")
     dtest <- Dataset$new(
@@ -294,6 +301,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
         , learning_rate = 1.0
         , nrounds = nrounds
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
     expect_equal(bst$current_iter(), nrounds)
     expect_true(lgb.is.Booster(bst))
@@ -325,6 +333,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         , learning_rate = 1.0
         , nrounds = nrounds
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
@@ -345,6 +354,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         , learning_rate = 1.0
         , nrounds = nrounds +  1L
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst2))
     expect_equal(bst2$current_iter(), nrounds +  1L)
@@ -367,6 +377,7 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
         , learning_rate = 1.0
         , nrounds = nrounds
         , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
     )
     expect_error({
         bst$update(

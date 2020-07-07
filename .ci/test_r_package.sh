@@ -4,8 +4,28 @@
 CRAN_MIRROR="https://cloud.r-project.org/"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
-echo "R_LIBS=$R_LIB_PATH" > ${HOME}/.Renviron
+export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
+
+# Get details needed for installing R components
+#
+# NOTES:
+#    * Linux builds on Azure use a container and don't need these details
+if ! { [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]]; }; then
+    R_MAJOR_VERSION=( ${R_VERSION//./ } )
+    if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+        export R_MAC_VERSION=3.6.3
+        export R_LINUX_VERSION="3.6.3-1bionic"
+        export R_APT_REPO="bionic-cran35/"
+    elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
+        export R_MAC_VERSION=4.0.0
+        export R_LINUX_VERSION="4.0.0-1.1804.0"
+        export R_APT_REPO="bionic-cran40/"
+    else
+        echo "Unrecognized R version: ${R_VERSION}"
+        exit -1
+    fi
+fi
 
 # installing precompiled R for Ubuntu
 # https://cran.r-project.org/bin/linux/ubuntu/#installation
@@ -18,7 +38,7 @@ if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
     sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/"
+        "deb https://cloud.r-project.org/bin/linux/ubuntu ${R_APT_REPO}"
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
@@ -69,6 +89,24 @@ if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
 fi
 Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+
+if [[ $TASK == "r-package-check-docs" ]]; then
+    Rscript build_r.R || exit -1
+    Rscript --vanilla -e "install.packages('roxygen2', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+    Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
+    num_doc_files_changed=$(
+        git diff --name-only | grep -E "\.Rd|NAMESPACE" | wc -l
+    )
+    if [[ ${num_doc_files_changed} -gt 0 ]]; then
+        echo "Some R documentation files have changed. Please re-generate them and commit those changes."
+        echo ""
+        echo "    Rscript build_r.R"
+        echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
+        echo ""
+        exit -1
+    fi
+    exit 0
+fi
 
 cd ${BUILD_DIRECTORY}
 Rscript build_r.R --skip-install || exit -1

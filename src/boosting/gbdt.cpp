@@ -352,7 +352,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
-    std::unique_ptr<Tree> new_tree(new Tree(2));
+    std::unique_ptr<Tree> new_tree(new Tree(2, false));
     if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;
@@ -570,8 +570,7 @@ const double* GBDT::GetTrainingScore(int64_t* out_len) {
   return train_score_updater_->score();
 }
 
-void GBDT::PredictContrib(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
-  int early_stop_round_counter = 0;
+void GBDT::PredictContrib(const double* features, double* output) const {
   // set zero
   const int num_features = max_feature_idx_ + 1;
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_ * (num_features + 1));
@@ -580,13 +579,16 @@ void GBDT::PredictContrib(const double* features, double* output, const Predicti
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       models_[i * num_tree_per_iteration_ + k]->PredictContrib(features, num_features, output + k*(num_features + 1));
     }
-    // check early stopping
-    ++early_stop_round_counter;
-    if (early_stop->round_period == early_stop_round_counter) {
-      if (early_stop->callback_function(output, num_tree_per_iteration_)) {
-        return;
-      }
-      early_stop_round_counter = 0;
+  }
+}
+
+void GBDT::PredictContribByMap(const std::unordered_map<int, double>& features,
+                               std::vector<std::unordered_map<int, double>>* output) const {
+  const int num_features = max_feature_idx_ + 1;
+  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+    // predict all the trees for one iteration
+    for (int k = 0; k < num_tree_per_iteration_; ++k) {
+      models_[i * num_tree_per_iteration_ + k]->PredictContribByMap(features, num_features, &((*output)[k]));
     }
   }
 }

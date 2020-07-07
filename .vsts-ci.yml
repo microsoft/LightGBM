@@ -109,11 +109,8 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
-    maxParallel: 4
+    maxParallel: 3
     matrix:
-      r_package:
-        TASK: r-package
-        COMPILER: MSVC
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6
