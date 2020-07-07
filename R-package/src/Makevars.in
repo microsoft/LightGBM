@@ -22,14 +22,15 @@ PKG_LIBS = \
     @OPENMP_LIB@ \
     -pthread
 
-SOURCES = $(wildcard *.cpp) \
-          $(wildcard application/*.cpp) \
-          $(wildcard boosting/*.cpp) \
-          $(wildcard include/*.cpp) \
-          $(wildcard io/*.cpp) \
-          $(wildcard metric/*.cpp) \
-          $(wildcard network/*.cpp) \
-          $(wildcard objective/*.cpp) \
-          $(wildcard treelearner/*.cpp)
+SOURCES = $(wildcard *.cpp) $(wildcard */*.cpp)
+
+          # $(wildcard application/*.cpp) \
+          # $(wildcard boosting/*.cpp) \
+          # $(wildcard include/*.cpp) \
+          # $(wildcard io/*.cpp) \
+          # $(wildcard metric/*.cpp) \
+          # $(wildcard network/*.cpp) \
+          # $(wildcard objective/*.cpp) \
+          # $(wildcard treelearner/*.cpp)
 
 OBJECTS = $(SOURCES:.cpp=.o)

@@ -25,14 +25,5 @@ PKG_LIBS = \
     -lws2_32 \
     -lIphlpapi
 
-SOURCES = $(wildcard *.cpp) \
-          $(wildcard application/*.cpp) \
-          $(wildcard boosting/*.cpp) \
-          $(wildcard include/*.cpp) \
-          $(wildcard io/*.cpp) \
-          $(wildcard metric/*.cpp) \
-          $(wildcard network/*.cpp) \
-          $(wildcard objective/*.cpp) \
-          $(wildcard treelearner/*.cpp)
-
+SOURCES = $(wildcard *.cpp) $(wildcard */*.cpp)
 OBJECTS = $(SOURCES:.cpp=.o)
