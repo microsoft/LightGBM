@@ -119,6 +119,10 @@ class TestBasic(unittest.TestCase):
         est = lgb.train(params, train_data_2, num_boost_round=10)
         pred2 = est.predict(X_train)
         np.testing.assert_allclose(pred1, pred2)
+        est.save_model('temp_model.txt')
+        est2 = lgb.Booster(model_file='temp_model.txt')
+        pred3 = est2.predict(X_train)
+        np.testing.assert_allclose(pred2, pred3)
 
     def test_subset_group(self):
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
