@@ -803,9 +803,6 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
       if (tmp_subset_ == nullptr) {
         tmp_subset_.reset(new Dataset(bag_data_cnt_));
         tmp_subset_->CopyFeatureMapperFrom(train_data_);
-        size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-        tmp_gradients_.resize(total_size);
-        tmp_hessians_.resize(total_size);
         is_use_subset_ = false;
         bag_data_indices_.clear();
       }
