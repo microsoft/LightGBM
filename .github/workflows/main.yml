@@ -16,10 +16,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
           ################
           # CMake builds #
           ################
+          - os: ubuntu-latest
             task: r-package
             compiler: gcc
             r_version: 3.6
