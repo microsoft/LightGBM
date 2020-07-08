@@ -754,6 +754,9 @@ class TestEngine(unittest.TestCase):
         self.assertIn('cvbooster', cv_res)
         cvb = cv_res['cvbooster']
         self.assertIsInstance(cvb, lgb.CVBooster)
+        self.assertIsInstance(cvb.boosters, list)
+        self.assertEqual(len(cvb.boosters), 3)
+        self.assertTrue(all(isinstance(bst, lgb.Booster) for bst in cvb.boosters))
         self.assertGreater(cvb.best_iteration, 0)
         # predict by each fold booster
         preds = cvb.predict(X_test, num_iteration=cvb.best_iteration)
