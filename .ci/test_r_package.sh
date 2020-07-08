@@ -6,6 +6,7 @@ R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
+export AUTOCONF_VERSION="2.69"
 
 # Get details needed for installing R components
 #
@@ -56,6 +57,7 @@ if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
+                autoconf==${AUTOCONF_VERSION} \
                 devscripts
     fi
 fi
@@ -64,7 +66,7 @@ fi
 if [[ $OS_NAME == "macos" ]]; then
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         brew install \
-            automake \
+            autoconf@${AUTOCONF_VERSION} \
             checkbashisms
     fi
     brew install qpdf
