@@ -67,6 +67,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         brew install \
             autoconf@${AUTOCONF_VERSION} \
+            automake \
             checkbashisms
     fi
     brew install qpdf
@@ -113,8 +114,10 @@ if [[ $TASK == "r-package-check-docs" ]]; then
         git diff --name-only | grep -E "\.Rd|NAMESPACE" | wc -l
     )
     if [[ ${num_doc_files_changed} -gt 0 ]]; then
-        git diff --compact-summary
         echo "Some R documentation files have changed. Please re-generate them and commit those changes."
+        echo "changed files:"
+        git diff --compact-summary
+        echo "run this command:"
         echo ""
         echo "    Rscript build_r.R"
         echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
