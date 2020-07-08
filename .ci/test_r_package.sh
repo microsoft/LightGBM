@@ -113,6 +113,7 @@ if [[ $TASK == "r-package-check-docs" ]]; then
         git diff --name-only | grep -E "\.Rd|NAMESPACE" | wc -l
     )
     if [[ ${num_doc_files_changed} -gt 0 ]]; then
+        git diff --compact-summary
         echo "Some R documentation files have changed. Please re-generate them and commit those changes."
         echo ""
         echo "    Rscript build_r.R"
