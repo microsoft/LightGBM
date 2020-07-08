@@ -129,6 +129,18 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R --skip-install || exit -1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
     ./build-cran-package.sh || exit -1
+
+    num_files_changed=$(
+        git diff --name-only | wc -l
+    )
+    if [[ ${num_files_changed} -gt 0 ]]; then
+        echo "'configure' in the R package has changed. Please recreate it and commit the changes."
+        echo ""
+        echo "    autoconf --output R-package/configure R-package/configure.ac"
+        echo ""
+        exit -1
+    fi
+
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths

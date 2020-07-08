@@ -21,6 +21,7 @@ mkdir -p ${TEMP_R_DIR}
 cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
+cp VERSION.txt ${TEMP_R_DIR}/
 
 # recreate configure script if autoconf is available,
 # otherwise skip it 

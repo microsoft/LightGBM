@@ -15,6 +15,7 @@
 ^Makefile$
 ^src/build/.*$
 ^autom4te.cache/.*$
+^VERSION.txt$
 
 # unnecessary files from submodules
 ^src/compute/.appveyor.yml$
