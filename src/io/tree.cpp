@@ -162,7 +162,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
+    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score]
     (int, data_size_t start, data_size_t end) {
       PredictionFunLinear(data->num_features(), i, start, Decision, split_feature_inner_[node], i);
     });
@@ -216,7 +216,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices]
     (int, data_size_t start, data_size_t end) {
       PredictionFunLinear(data->num_features(), i, used_data_indices[start], Decision, split_feature_inner_[node], used_data_indices[i]);
     });
