@@ -1,11 +1,11 @@
 Installation Guide
 ==================
 
-This is a guide for building various versions of the LightGBM Command Line Interface (CLI). If you want to build the Python-package or R-package please refer to `Python-package`_ and `R-package`_ folders respectively.
+This is a guide for building the LightGBM Command Line Interface (CLI). If you want to build the Python-package or R-package please refer to `Python-package`_ and `R-package`_ folders respectively.
 
 All instructions below are aimed at compiling the 64-bit version of LightGBM.
 It is worth compiling the 32-bit version only in very rare special cases involving environmental limitations.
-The 32-bit version is slow and untested, so use it on your own risk and don't forget to adjust some of the commands below when installing.
+The 32-bit version is slow and untested, so use it at your own risk and don't forget to adjust some of the commands below when installing.
 
 If you need to build a static library instead of a shared one, you can add ``-DBUILD_STATIC_LIB=ON`` to CMake flags.
 
@@ -189,7 +189,7 @@ Build Threadless Version (not Recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The default build version of LightGBM is based on OpenMP.
-You can build the LightGBM without OpenMP support but it is **strongly not recommended**.
+You can build LightGBM without OpenMP support but it is **strongly not recommended**.
 
 Windows
 ^^^^^^^
