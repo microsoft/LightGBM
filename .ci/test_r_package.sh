@@ -6,7 +6,6 @@ R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
-export AUTOCONF_VERSION="2.69"
 
 # Get details needed for installing R components
 #
@@ -26,6 +25,15 @@ if ! { [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]]; }; then
         echo "Unrecognized R version: ${R_VERSION}"
         exit -1
     fi
+fi
+
+# get details for Autoconf. Version numbers are slightly different
+# on Mac vs Linux for the same software
+if [[ $OS_NAME == "linux" ]]; then
+    # https://packages.ubuntu.com/search?keywords=autoconf
+    export AUTOCONF_VERSION="2.69-11"
+elif [[ $OS_NAME == "macos" ]]; then
+    export AUTOCONF_VERSION="2.69"
 fi
 
 # installing precompiled R for Ubuntu
@@ -57,8 +65,9 @@ if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
-                autoconf==${AUTOCONF_VERSION} \
-                devscripts
+                autoconf=${AUTOCONF_VERSION} \
+                devscripts \
+                || exit -1
     fi
 fi
 
