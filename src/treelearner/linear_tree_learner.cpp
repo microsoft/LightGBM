@@ -27,8 +27,7 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
   // some initial works before training
   BeforeTrain();
 
-  bool track_branch_features = !(config_->interaction_constraints_vector.empty());
-  auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, true));
+  auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, true, true));
   auto tree_prt = tree.get();
   // root leaf
   int left_leaf = 0;
@@ -67,33 +66,19 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
 void LinearTreeLearner::CalculateLinear(Tree* tree) {
 
-  /*
-  auto split_features = std::vector<int>();
-  for (int j = 0; j < train_data_->num_features(); ++j) {
-    auto bin_mapper = train_data_->FeatureBinMapper(j);
-    if (bin_mapper->bin_type() == BinType::NumericalBin) {
-      split_features.push_back(j);
-    }
-  }
-  */
-
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
     OMP_LOOP_EX_BEGIN();
-
-  
     // get split features
-    int node = tree->leaf_parent(leaf_num);
-    auto split_features = std::vector<int>();
-    while (node >= 0) {
-      int feat = tree->split_feature_inner(node);
-      int feat_raw = tree->split_feature(node);
+    std::vector<int> split_features_original = tree->branch_features(leaf_num);
+    std::vector<int> split_features;
+    for (int i = 0; i < split_features_original.size(); ++i) {
+      int feat = train_data_->InnerFeatureIndex(split_features_original[i]);
       auto bin_mapper = train_data_->FeatureBinMapper(feat);
       if (bin_mapper->bin_type() == BinType::NumericalBin) {
         split_features.push_back(feat);
       }
-      node = tree->internal_parent(node);
     }
     std::sort(split_features.begin(), split_features.end());
     auto new_end = std::unique(split_features.begin(), split_features.end());
