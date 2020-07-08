@@ -115,9 +115,6 @@ if [[ $TASK == "r-package-check-docs" ]]; then
     )
     if [[ ${num_doc_files_changed} -gt 0 ]]; then
         echo "Some R documentation files have changed. Please re-generate them and commit those changes."
-        echo "changed files:"
-        git diff --compact-summary
-        echo "run this command:"
         echo ""
         echo "    Rscript build_r.R"
         echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
@@ -141,6 +138,9 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     )
     if [[ ${num_files_changed} -gt 0 ]]; then
         echo "'configure' in the R package has changed. Please recreate it and commit the changes."
+        echo "changed files:"
+        git diff --compact-summary
+        echo "run this command:"
         echo ""
         echo "    autoconf --output R-package/configure R-package/configure.ac"
         echo ""
