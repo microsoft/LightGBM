@@ -282,6 +282,13 @@ class CVBooster(object):
     Auxiliary data struct to hold and redirect all boosters of CV.
     This class has the same methods as Booster class.
     All method calls are actually performed for underlying Boosters and then all returned results are returned in a list.
+
+    Attributes
+    ----------
+    boosters : list of Booster
+        The list of underlying fitted models.
+    best_iteration : int
+        The best iteration of fitted model.
     """
 
     def __init__(self):
