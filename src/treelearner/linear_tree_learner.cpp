@@ -117,26 +117,21 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     if (num_valid_data < split_features.size() + 1) {
       tree->SetLeafConst(leaf_num, tree->LeafOutput(leaf_num));
     } else {
-      Eigen::VectorXd h(num_valid_data, 1);
+      Eigen::MatrixXd grad(num_valid_data, 1);
+      Eigen::VectorXd hess(num_valid_data, 1);
       int curr_row = 0;
       for (int i = 0; i < num_data; ++i) {
         if (!nan_row[i]) {
-          h(curr_row, 0) = hessians_[ind[idx + i]];
+          int row_idx = ind[idx + 1];
+          grad(curr_row) = gradients_[row_idx];
+          hess(curr_row, 0) = hessians_[row_idx];
           ++curr_row;
         }
       }
       Eigen::MatrixXd XTHX(split_features.size() + 1, split_features.size() + 1);
-      XTHX = X.transpose() * h.asDiagonal() * X;
+      XTHX = X.transpose() * hess.asDiagonal() * X;
       for (int i = 0; i < split_features.size(); ++i) {
         XTHX(i, i) += config_->linear_lambda;
-      }
-      Eigen::MatrixXd grad(num_valid_data, 1);
-      curr_row = 0;
-      for (int i = 0; i < num_data; ++i) {
-        if (!nan_row[i]) {
-          grad(curr_row) = gradients_[ind[idx + i]];
-          ++curr_row;
-        }
       }
       Eigen::MatrixXd coeffs = - XTHX.fullPivLu().inverse() * X.transpose() * grad;
       // remove features with very small coefficients
