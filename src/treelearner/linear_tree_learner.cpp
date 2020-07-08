@@ -67,7 +67,7 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
 void LinearTreeLearner::CalculateLinear(Tree* tree) {
 
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(dynamic)
   for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
     OMP_LOOP_EX_BEGIN();
     // get split features

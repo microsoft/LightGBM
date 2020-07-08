@@ -116,31 +116,35 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   }\
 
 
-#define PredictionFunLinear(niter, fidx_in_iter, start_pos, decision_fun,   \
-                            iter_idx, data_idx)                             \
-std::vector<int> nodes(end - start);                                        \
-for (data_size_t i = start; i < end; ++i) {                                 \
-  int node = 0;                                                             \
-  while (node >= 0) {                                                       \
-    double feat_val = data->get_data((data_idx), (iter_idx));               \
-    node = decision_fun(feat_val, node);                                    \
-  }                                                                         \
-  double add_score = leaf_const_[~node];                                    \
-  bool nan_found = false;                                                   \
-  for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {            \
-     int feat_num = leaf_features_inner_[~node][j];                         \
-     double feat_val = data->get_data((data_idx), (feat_num));              \
-     if (isnan(feat_val) || isinf(feat_val)) {                              \
-        nan_found = true;                                                   \
-        break;                                                              \
-     }                                                                      \
-     add_score += leaf_coeff_[~node][j] * feat_val;                         \
-  }                                                                         \
-  if (nan_found) {                                                          \
-     score[(data_idx)] += leaf_value_[~node];                               \
-  } else {                                                                  \
-    score[(data_idx)] += add_score;                                         \
-  }                                                                         \
+#define PredictionFunLinear(niter, fidx_in_iter, start_pos, decision_fun,     \
+                            decision_fun_inner, iter_idx, data_idx)           \
+  std::vector<std::unique_ptr<BinIterator>> iter((niter));                    \
+  for (int i = 0; i < (niter); ++i) {                                         \
+    iter[i].reset(data->FeatureIterator((fidx_in_iter)));                     \
+    iter[i]->Reset((start_pos));                                              \
+  }                                                                           \
+  for (data_size_t i = start; i < end; ++i) {                                 \
+    int node = 0;                                                             \
+    while (node >= 0) {                                                       \
+      node = decision_fun_inner(iter[(iter_idx)]->Get((data_idx)), node,      \
+                                default_bins[node], max_bins[node]);          \
+    }                                                                         \
+  double add_score = leaf_const_[~node];                                      \
+  bool nan_found = false;                                                     \
+  for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {              \
+     int feat_num = leaf_features_inner_[~node][j];                           \
+     double feat_val = data->get_data((data_idx), (feat_num));                \
+     if (isnan(feat_val) || isinf(feat_val)) {                                \
+        nan_found = true;                                                     \
+        break;                                                                \
+     }                                                                        \
+     add_score += leaf_coeff_[~node][j] * feat_val;                           \
+  }                                                                           \
+  if (nan_found) {                                                            \
+     score[(data_idx)] += leaf_value_[~node];                                 \
+  } else {                                                                    \
+    score[(data_idx)] += add_score;                                           \
+  }                                                                           \
 }
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
@@ -162,9 +166,9 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score]
+    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
     (int, data_size_t start, data_size_t end) {
-      PredictionFunLinear(data->num_features(), i, start, Decision, split_feature_inner_[node], i);
+      PredictionFunLinear(data->num_features(), i, start, Decision, DecisionInner, split_feature_inner_[node], i);
     });
   } else {
     if (num_cat_ > 0) {
@@ -216,9 +220,9 @@ void Tree::AddPredictionToScore(const Dataset* data,
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices]
+    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
     (int, data_size_t start, data_size_t end) {
-      PredictionFunLinear(data->num_features(), i, used_data_indices[start], Decision, split_feature_inner_[node], used_data_indices[i]);
+      PredictionFunLinear(data->num_features(), i, used_data_indices[start], Decision, DecisionInner, split_feature_inner_[node], used_data_indices[i]);
     });
   } else {
     if (num_cat_ > 0) {
