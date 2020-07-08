@@ -90,43 +90,35 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     int num_data = data_partition_->leaf_count(leaf_num);
     // refer to Eq 3 of https://arxiv.org/pdf/1802.05640.pdf
     auto nan_row = std::vector<bool>(num_data, false);
-    auto num_nan_rows = 0;
-    Eigen::MatrixXd X_full(num_data, split_features.size() + 1);  // matrix of feature values
-    for (int feat_num = 0; feat_num < split_features.size(); ++feat_num) {
-      int feat = split_features[feat_num];
-      for (int i = 0; i < num_data; ++i) {
+    int num_valid_data = 0;
+    Eigen::MatrixXd X(num_data, split_features.size() + 1);  // matrix of feature values
+    for (int i = 0; i < num_data; ++i) {
+      Eigen::MatrixXd curr_row(1, split_features.size() + 1);
+      for (int feat_num = 0; feat_num < split_features.size(); ++feat_num) {
+        int feat = split_features[feat_num];
+        if (nan_row[i]) {
+          break;
+        }
         int row_idx = ind[idx + i];
         double val = train_data_->get_data(row_idx, feat);
-        if (nan_row[i]) {
-          continue;
-        }
         if (isnan(val) || isinf(val)) {
           nan_row[i] = true;
-          ++num_nan_rows;
         } else {
-          X_full(i, feat_num) = val;
+          curr_row(0, feat_num) = val;
         }
       }
+      if (!nan_row[i]) {
+        curr_row(0, split_features.size()) = 1;
+        X.row(num_valid_data) = curr_row;
+        num_valid_data++;
+      }
     }
-    int num_valid_data = num_data - num_nan_rows;
+    X.resize(num_valid_data, split_features.size() + 1);
     if (num_valid_data < split_features.size() + 1) {
       tree->SetLeafConst(leaf_num, tree->LeafOutput(leaf_num));
     } else {
-
-      Eigen::MatrixXd X(num_valid_data, split_features.size() + 1);
-      int curr_row = 0;
-      for (int i = 0; i < num_data; ++i) {
-        if (!nan_row[i]) {
-          X.row(curr_row) = X_full.row(i);
-          ++curr_row;
-        }
-      }
-      // final column is all ones
-      for (int i = 0; i < num_valid_data; ++i) {
-        X(i, split_features.size()) = 1;
-      }
       Eigen::VectorXd h(num_valid_data, 1);
-      curr_row = 0;
+      int curr_row = 0;
       for (int i = 0; i < num_data; ++i) {
         if (!nan_row[i]) {
           h(curr_row, 0) = hessians_[ind[idx + i]];
