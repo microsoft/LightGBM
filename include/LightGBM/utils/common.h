@@ -935,7 +935,7 @@ inline static bool CheckDoubleEqualOrdered(double a, double b) {
 }
 
 inline static double GetDoubleUpperBound(double a) {
-  return std::nextafter(a, INFINITY);;
+  return std::nextafter(a, INFINITY);
 }
 
 inline static size_t GetLine(const char* str) {
