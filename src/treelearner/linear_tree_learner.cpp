@@ -113,7 +113,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
         num_valid_data++;
       }
     }
-    X.resize(num_valid_data, split_features.size() + 1);
+    X.conservativeResize(num_valid_data, split_features.size() + 1);
     if (num_valid_data < split_features.size() + 1) {
       tree->SetLeafConst(leaf_num, tree->LeafOutput(leaf_num));
     } else {
@@ -122,7 +122,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
       int curr_row = 0;
       for (int i = 0; i < num_data; ++i) {
         if (!nan_row[i]) {
-          int row_idx = ind[idx + 1];
+          int row_idx = ind[idx + i];
           grad(curr_row) = gradients_[row_idx];
           hess(curr_row, 0) = hessians_[row_idx];
           ++curr_row;
