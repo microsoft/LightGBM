@@ -192,14 +192,24 @@ This section briefly explains the key files for building a CRAN package. To upda
 At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
 
 1. Edit `configure.ac`
-2. Create `configure` with `autoconf`. Do not edit it by hand.
+2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 18.04.
+
+If you have an Ubuntu 18.04 environment available, run the provided script from the root of the `LightGBM` repository.
 
 ```shell
-autoconf \
-  --verbose \
-  --output configure \
-    configure.ac
+./R-package/recreate-configure.sh
 ```
+
+If you do not have easy access to an Ubuntu 18.04 environment, the `coonfigure` script can be generated using Docker.
+
+```shell
+docker run \
+    -v $(pwd):/opt/LightGBM \
+    -t ubuntu:18.04 \
+    /bin/bash -c "cd /opt/LightGBM && ./R-package/recreate-configure.sh"
+```
+
+The version of `autoconf` used by this project is stored in `R-package/AUTOCONF_UBUNTU_VERSION`. To update that version, update that file and run the commands above. To see available versions, see https://packages.ubuntu.com/search?keywords=autoconf.
 
 3. Edit `src/Makevars.in`
 

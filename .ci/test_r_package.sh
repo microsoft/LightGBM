@@ -27,15 +27,6 @@ if ! { [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]]; }; then
     fi
 fi
 
-# get details for Autoconf. Version numbers are slightly different
-# on Mac vs Linux for the same software
-if [[ $OS_NAME == "linux" ]]; then
-    # https://packages.ubuntu.com/search?keywords=autoconf
-    export AUTOCONF_VERSION="2.69-11"
-elif [[ $OS_NAME == "macos" ]]; then
-    export AUTOCONF_VERSION="2.69"
-fi
-
 # installing precompiled R for Ubuntu
 # https://cran.r-project.org/bin/linux/ubuntu/#installation
 # adding steps from https://stackoverflow.com/a/56378217/3986677 to get latest version
@@ -65,7 +56,7 @@ if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
-                autoconf=${AUTOCONF_VERSION} \
+                autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
                 devscripts \
                 || exit -1
     fi
@@ -75,8 +66,6 @@ fi
 if [[ $OS_NAME == "macos" ]]; then
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         brew install \
-            autoconf@${AUTOCONF_VERSION} \
-            automake \
             checkbashisms
     fi
     brew install qpdf
@@ -149,9 +138,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
         echo "'configure' in the R package has changed. Please recreate it and commit the changes."
         echo "changed files:"
         git diff --compact-summary
-        echo "run this command:"
-        echo ""
-        echo "    autoconf --output R-package/configure R-package/configure.ac"
+        echo "See R-package/README.md for details on how to recreate this script."
         echo ""
         exit -1
     fi
