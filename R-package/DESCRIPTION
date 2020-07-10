@@ -31,7 +31,7 @@ Suggests:
     rmarkdown,
     testthat
 Depends:
-    R (>= 3.4),
+    R (>= 3.5),
     R6 (>= 2.0)
 Imports:
     data.table (>= 1.9.6),
