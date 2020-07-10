@@ -19,7 +19,7 @@
 
 # files only used during development
 AUTOCONF_UBUNTU_VERSION
-^recreate-configure/.sh$
+^recreate-configure\.sh$
 
 # unnecessary files from submodules
 ^src/compute/.appveyor.yml$
