@@ -1975,7 +1975,7 @@ int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
                                            double* out_result) {
   API_BEGIN();
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
-  auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, fastConfig->data_type, nindptr, nelem);
+  auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, fastConfig->data_type, nindptr, nelem);
   fastConfig->booster->PredictSingleRow(num_iteration, predict_type, static_cast<int32_t>(fastConfig->ncol.int64),
                                         get_row_fun, fastConfig->config, out_result, out_len);
   API_END();
