@@ -12,7 +12,7 @@ apt-get install \
     -y \
         autoconf=${AUTOCONF_VERSION}
 
-cp VERSION.txt R-package/
+cp VERSION.txt R-package/inst/
 autoconf \
     --output R-package/configure \
     R-package/configure.ac

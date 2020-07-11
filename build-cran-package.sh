@@ -21,7 +21,7 @@ mkdir -p ${TEMP_R_DIR}
 cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
-cp VERSION.txt ${TEMP_R_DIR}/
+cp VERSION.txt ${TEMP_R_DIR}/inst/
 
 cd ${TEMP_R_DIR}
 
@@ -31,6 +31,8 @@ cd ${TEMP_R_DIR}
     rm -r src/cmake/
     rm -r inst/
     rm -r pkgdown/
+    rm AUTOCONF_UBUNTU_VERSION
+    rm recreate-configure.sh
 
     # main.cpp is used to make the lightgbm CLI, unnecessary
     # for the R package
