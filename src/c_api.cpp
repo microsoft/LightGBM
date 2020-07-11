@@ -407,7 +407,7 @@ class Booster {
     *out_len = single_row_predictor->num_pred_in_one_row;
   }
 
-  Predictor CreatePredictor(int num_iteration, int predict_type, int ncol, const Config& config) {
+  Predictor CreatePredictor(int num_iteration, int predict_type, int ncol, const Config& config) const {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
@@ -1915,7 +1915,8 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  ref_booster->PredictSingleRow(num_iteration, predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
+  ref_booster->SetSingleRowPredictor(num_iteration, predict_type, config);
+  ref_booster->PredictSingleRow(predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);  
   API_END();
 }
 
