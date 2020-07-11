@@ -210,18 +210,18 @@ class GBDT : public GBDTBase {
   * \return number of prediction
   */
   inline int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const override {
-    int num_preb_in_one_row = num_class_;
+    int num_pred_in_one_row = num_class_;
     if (is_pred_leaf) {
       int max_iteration = GetCurrentIteration();
       if (num_iteration > 0) {
-        num_preb_in_one_row *= static_cast<int>(std::min(max_iteration, num_iteration));
+        num_pred_in_one_row *= static_cast<int>(std::min(max_iteration, num_iteration));
       } else {
-        num_preb_in_one_row *= max_iteration;
+        num_pred_in_one_row *= max_iteration;
       }
     } else if (is_pred_contrib) {
-      num_preb_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2);  // +1 for 0-based indexing, +1 for baseline
+      num_pred_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2);  // +1 for 0-based indexing, +1 for baseline
     }
-    return num_preb_in_one_row;
+    return num_pred_in_one_row;
   }
 
   void PredictRaw(const double* features, double* output,
@@ -240,8 +240,10 @@ class GBDT : public GBDTBase {
 
   void PredictLeafIndexByMap(const std::unordered_map<int, double>& features, double* output) const override;
 
-  void PredictContrib(const double* features, double* output,
-                      const PredictionEarlyStopInstance* earlyStop) const override;
+  void PredictContrib(const double* features, double* output) const override;
+
+  void PredictContribByMap(const std::unordered_map<int, double>& features,
+                           std::vector<std::unordered_map<int, double>>* output) const override;
 
   /*!
   * \brief Dump model to json format string
@@ -375,6 +377,13 @@ class GBDT : public GBDTBase {
   const char* SubModelName() const override { return "tree"; }
 
  protected:
+  virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {
+    if (objective_function != nullptr) {
+      return objective_function->IsConstantHessian();
+    } else {
+      return false;
+    }
+  }
   /*!
   * \brief Print eval result and check early stopping
   */

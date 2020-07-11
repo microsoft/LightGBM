@@ -22,7 +22,6 @@ Note: since \code{nrow} and \code{ncol} internally use \code{dim}, they can also
 be directly used with an \code{lgb.Dataset} object.
 }
 \examples{
-library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

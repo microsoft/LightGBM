@@ -14,6 +14,7 @@ OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not earlier than 3.5" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
+OPTION(BUILD_STATIC_LIB "Build static library" OFF)
 OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 OPTION(USE_CPP17 "Enable C++17" OFF)
 
@@ -253,7 +254,11 @@ if(BUILD_FOR_R)
   list(APPEND SOURCES "src/lightgbm_R.cpp")
 endif(BUILD_FOR_R)
 
-add_library(_lightgbm SHARED ${SOURCES})
+if (BUILD_STATIC_LIB)
+  add_library(_lightgbm STATIC ${SOURCES})
+else()
+  add_library(_lightgbm SHARED ${SOURCES})
+endif(BUILD_STATIC_LIB)
 
 if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
@@ -326,7 +331,11 @@ if(WIN32 AND (MINGW OR CYGWIN))
 endif()
 
 if(BUILD_FOR_R)
+  if(MSVC)
+    TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_MSVC_CORE_LIBRARY})
+  else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
+  endif(MSVC)
 endif(BUILD_FOR_R)
 
 install(TARGETS lightgbm _lightgbm

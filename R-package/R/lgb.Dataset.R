@@ -725,12 +725,12 @@ Dataset <- R6::R6Class(
 #' @return constructed dataset
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.save(dtrain, "lgb.Dataset.data")
-#' dtrain <- lgb.Dataset("lgb.Dataset.data")
+#' data_file <- tempfile(fileext = ".data")
+#' lgb.Dataset.save(dtrain, data_file)
+#' dtrain <- lgb.Dataset(data_file)
 #' lgb.Dataset.construct(dtrain)
 #'
 #' @export
@@ -770,7 +770,6 @@ lgb.Dataset <- function(data,
 #' @return constructed dataset
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -797,7 +796,6 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 #' @param dataset Object of class \code{lgb.Dataset}
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -828,7 +826,6 @@ lgb.Dataset.construct <- function(dataset) {
 #' be directly used with an \code{lgb.Dataset} object.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -863,7 +860,6 @@ dim.lgb.Dataset <- function(x, ...) {
 #' Since row names are irrelevant, it is recommended to use \code{colnames} directly.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -936,7 +932,6 @@ dimnames.lgb.Dataset <- function(x) {
 #' @return constructed sub dataset
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -983,7 +978,6 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' }
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1037,7 +1031,6 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #' }
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1078,12 +1071,12 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' @return passed dataset
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.save(dtrain, "lgb.Dataset.data")
-#' dtrain <- lgb.Dataset("lgb.Dataset.data")
+#' data_file <- tempfile(fileext = ".data")
+#' lgb.Dataset.save(dtrain, data_file)
+#' dtrain <- lgb.Dataset(data_file)
 #' lgb.Dataset.set.categorical(dtrain, 1L:2L)
 #'
 #' @rdname lgb.Dataset.set.categorical
@@ -1109,7 +1102,6 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #' @return passed dataset
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package ="lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1141,11 +1133,10 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @return passed dataset
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.save(dtrain, "data.bin")
+#' lgb.Dataset.save(dtrain, tempfile(fileext = ".bin"))
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
 

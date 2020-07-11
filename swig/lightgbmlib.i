@@ -233,11 +233,6 @@
 %pointer_cast(int32_t *, void *, int32_t_to_voidp_ptr)
 %pointer_cast(int64_t *, void *, int64_t_to_voidp_ptr)
 
-%array_functions(double, doubleArray)
-%array_functions(float, floatArray)
-%array_functions(int, intArray)
-%array_functions(long, longArray)
-
 /* Custom pointer manipulation template */
 %define %pointer_manipulation(TYPE, NAME)
 %{
@@ -277,6 +272,36 @@ TYPE NAME##_value(TYPE *self);
 TYPE *NAME##_handle();
 
 %enddef
+
+%define %long_array_functions(TYPE,NAME)
+%{
+  static TYPE *new_##NAME(int64_t nelements) { %}
+  %{  return new TYPE[nelements](); %}
+  %{}
+
+  static void delete_##NAME(TYPE *ary) { %}
+  %{  delete [] ary; %}
+  %{}
+
+  static TYPE NAME##_getitem(TYPE *ary, int64_t index) {
+    return ary[index];
+  }
+  static void NAME##_setitem(TYPE *ary, int64_t index, TYPE value) {
+    ary[index] = value;
+  }
+  %}
+
+TYPE *new_##NAME(int64_t nelements);
+void delete_##NAME(TYPE *ary);
+TYPE NAME##_getitem(TYPE *ary, int64_t index);
+void NAME##_setitem(TYPE *ary, int64_t index, TYPE value);
+
+%enddef
+
+%long_array_functions(double, doubleArray)
+%long_array_functions(float, floatArray)
+%long_array_functions(int, intArray)
+%long_array_functions(long, longArray)
 
 %pointer_manipulation(void*, voidpp)
 

@@ -40,12 +40,12 @@ Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
              or local file (that was created previously by saving an \code{lgb.Dataset}).
 }
 \examples{
-library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
-lgb.Dataset.save(dtrain, "lgb.Dataset.data")
-dtrain <- lgb.Dataset("lgb.Dataset.data")
+data_file <- tempfile(fileext = ".data")
+lgb.Dataset.save(dtrain, data_file)
+dtrain <- lgb.Dataset(data_file)
 lgb.Dataset.construct(dtrain)
 
 }

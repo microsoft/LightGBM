@@ -52,7 +52,6 @@ For regression or binary classification, it returns a vector of length \code{nro
 Predicted values based on class \code{lgb.Booster}
 }
 \examples{
-library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -64,11 +63,10 @@ valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
-  , nrounds = 10L
+  , nrounds = 5L
   , valids = valids
   , min_data = 1L
   , learning_rate = 1.0
-  , early_stopping_rounds = 5L
 )
 preds <- predict(model, test$data)
 }

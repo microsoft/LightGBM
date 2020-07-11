@@ -10,14 +10,11 @@
 *    @guolinke @StrikerRUS @jameslamb @Laurae2
 
 # main C++ code
-include/    @guolinke @chivee
-src/    @guolinke @chivee
-CmakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12
+include/    @guolinke @chivee @btrotta
+src/    @guolinke @chivee @btrotta
+CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta
 
 # R code
-include/LightGBM/lightgbm_R.h    @Laurae2 @jameslamb
-include/LightGBM/R_object_helper.h    @Laurae2 @jameslamb
-src/lightgbm_R.cpp    @Laurae2 @jameslamb
 R-package/    @Laurae2 @jameslamb
 *.R    @Laurae2 @jameslamb
 
