@@ -15,10 +15,10 @@
 ^Makefile$
 ^src/build/.*$
 ^autom4te.cache/.*$
-^VERSION/.txt$
+^VERSION\.txt$
 
 # files only used during development
-AUTOCONF_UBUNTU_VERSION
+^AUTOCONF_UBUNTU_VERSION$
 ^recreate-configure\.sh$
 
 # unnecessary files from submodules

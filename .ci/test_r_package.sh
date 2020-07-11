@@ -66,6 +66,7 @@ fi
 if [[ $OS_NAME == "macos" ]]; then
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         brew install \
+            automake \
             checkbashisms
     fi
     brew install qpdf
