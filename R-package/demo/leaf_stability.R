@@ -59,7 +59,6 @@ new_data$binned <- .bincode(
     , include.lowest = TRUE
 )
 new_data$binned[is.na(new_data$binned)] <- 0L
-new_data$binned <- as.factor(new_data$binned)
 
 # We can check the binned content
 table(new_data$binned)
@@ -67,18 +66,54 @@ table(new_data$binned)
 # We can plot the binned content
 # On the second plot, we clearly notice the lower the bin (the lower the leaf value), the higher the loss
 # On the third plot, it is smooth!
+.plot_binned <- function(new_data){
+  .diverging_palette <- c(
+    "#A50026"
+    , "#D73027"
+    , "#F46D43"
+    , "#FDAE61"
+    , "#FEE08B"
+    , "#D9EF8B"
+    , "#A6D96A"
+    , "#66BD63"
+    , "#1A9850"
+    , "#006837"
+  )
+  plot(
+    x = new_data$X
+    , y = new_data$Y
+    , type = "p"
+    , main = "Prediction Depth"
+    , xlab = "Leaf Bin"
+    , ylab = "Prediction Probability"
+    , pch = 19
+    , col = .diverging_palette[new_data$binned + 1]
+  )
+  legend(
+    "topright"
+    , legend = sort(unique(new_data$binned))
+    , pch = 19
+    , col = .diverging_palette[sort(unique(new_data$binned + 1))]
+    , cex = 0.7
+  )
+}
+
 ggplot(
     data = new_data
     , mapping = aes(x = X, y = Y, color = binned)
 ) + geom_point() +
   theme_bw() +
   labs(title = "Prediction Depth", x = "Leaf Bin", y = "Prediction Probability")
+
+
+
 ggplot(
     data = new_data
     , mapping = aes(x = binned, y = Z, fill = binned, group = binned)
 ) + geom_boxplot() +
   theme_bw() +
   labs(title = "Prediction Depth Spread", x = "Leaf Bin", y = "Logloss")
+
 ggplot(
     data = new_data
     , mapping = aes(x = Y, y = ..count.., fill = binned)
