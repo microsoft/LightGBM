@@ -12,8 +12,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -30,8 +30,8 @@
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
-#include "yamc_rwlock_sched.hpp"
 
+#include "yamc_rwlock_sched.hpp"
 
 namespace yamc {
 
@@ -49,13 +49,12 @@ namespace detail {
 
 template <typename RwLockPolicy>
 class shared_mutex_base {
-protected:
+ protected:
   typename RwLockPolicy::state state_;
   std::condition_variable cv_;
   std::mutex mtx_;
 
-  void lock()
-  {
+  void lock() {
     std::unique_lock<decltype(mtx_)> lk(mtx_);
     RwLockPolicy::before_wait_wlock(state_);
     while (RwLockPolicy::wait_wlock(state_)) {
@@ -65,24 +64,20 @@ protected:
     RwLockPolicy::acquire_wlock(state_);
   }
 
-  bool try_lock()
-  {
+  bool try_lock() {
     std::lock_guard<decltype(mtx_)> lk(mtx_);
-    if (RwLockPolicy::wait_wlock(state_))
-      return false;
+    if (RwLockPolicy::wait_wlock(state_)) return false;
     RwLockPolicy::acquire_wlock(state_);
     return true;
   }
 
-  void unlock()
-  {
+  void unlock() {
     std::lock_guard<decltype(mtx_)> lk(mtx_);
     RwLockPolicy::release_wlock(state_);
     cv_.notify_all();
   }
 
-  void lock_shared()
-  {
+  void lock_shared() {
     std::unique_lock<decltype(mtx_)> lk(mtx_);
     while (RwLockPolicy::wait_rlock(state_)) {
       cv_.wait(lk);
@@ -90,17 +85,14 @@ protected:
     RwLockPolicy::acquire_rlock(state_);
   }
 
-  bool try_lock_shared()
-  {
+  bool try_lock_shared() {
     std::lock_guard<decltype(mtx_)> lk(mtx_);
-    if (RwLockPolicy::wait_rlock(state_))
-      return false;
+    if (RwLockPolicy::wait_rlock(state_)) return false;
     RwLockPolicy::acquire_rlock(state_);
     return true;
   }
 
-  void unlock_shared()
-  {
+  void unlock_shared() {
     std::lock_guard<decltype(mtx_)> lk(mtx_);
     if (RwLockPolicy::release_rlock(state_)) {
       cv_.notify_all();
@@ -108,14 +100,13 @@ protected:
   }
 };
 
-} // namespace detail
-
+}  // namespace detail
 
 template <typename RwLockPolicy>
 class basic_shared_mutex : private detail::shared_mutex_base<RwLockPolicy> {
   using base = detail::shared_mutex_base<RwLockPolicy>;
 
-public:
+ public:
   basic_shared_mutex() = default;
   ~basic_shared_mutex() = default;
 
@@ -133,18 +124,17 @@ public:
 
 using shared_mutex = basic_shared_mutex<YAMC_RWLOCK_SCHED_DEFAULT>;
 
-
 template <typename RwLockPolicy>
-class basic_shared_timed_mutex : private detail::shared_mutex_base<RwLockPolicy> {
+class basic_shared_timed_mutex
+    : private detail::shared_mutex_base<RwLockPolicy> {
   using base = detail::shared_mutex_base<RwLockPolicy>;
 
-  using base::state_;
   using base::cv_;
   using base::mtx_;
+  using base::state_;
 
-  template<typename Clock, typename Duration>
-  bool do_try_lockwait(const std::chrono::time_point<Clock, Duration>& tp)
-  {
+  template <typename Clock, typename Duration>
+  bool do_try_lockwait(const std::chrono::time_point<Clock, Duration>& tp) {
     std::unique_lock<decltype(mtx_)> lk(mtx_);
     RwLockPolicy::before_wait_wlock(state_);
     while (RwLockPolicy::wait_wlock(state_)) {
@@ -160,9 +150,9 @@ class basic_shared_timed_mutex : private detail::shared_mutex_base<RwLockPolicy>
     return true;
   }
 
-  template<typename Clock, typename Duration>
-  bool do_try_lock_sharedwait(const std::chrono::time_point<Clock, Duration>& tp)
-  {
+  template <typename Clock, typename Duration>
+  bool do_try_lock_sharedwait(
+      const std::chrono::time_point<Clock, Duration>& tp) {
     std::unique_lock<decltype(mtx_)> lk(mtx_);
     while (RwLockPolicy::wait_rlock(state_)) {
       if (cv_.wait_until(lk, tp) == std::cv_status::timeout) {
@@ -175,7 +165,7 @@ class basic_shared_timed_mutex : private detail::shared_mutex_base<RwLockPolicy>
     return true;
   }
 
-public:
+ public:
   basic_shared_timed_mutex() = default;
   ~basic_shared_timed_mutex() = default;
 
@@ -186,16 +176,14 @@ public:
   using base::try_lock;
   using base::unlock;
 
-  template<typename Rep, typename Period>
-  bool try_lock_for(const std::chrono::duration<Rep, Period>& duration)
-  {
+  template <typename Rep, typename Period>
+  bool try_lock_for(const std::chrono::duration<Rep, Period>& duration) {
     const auto tp = std::chrono::steady_clock::now() + duration;
     return do_try_lockwait(tp);
   }
 
-  template<typename Clock, typename Duration>
-  bool try_lock_until(const std::chrono::time_point<Clock, Duration>& tp)
-  {
+  template <typename Clock, typename Duration>
+  bool try_lock_until(const std::chrono::time_point<Clock, Duration>& tp) {
     return do_try_lockwait(tp);
   }
 
@@ -203,23 +191,22 @@ public:
   using base::try_lock_shared;
   using base::unlock_shared;
 
-  template<typename Rep, typename Period>
-  bool try_lock_shared_for(const std::chrono::duration<Rep, Period>& duration)
-  {
+  template <typename Rep, typename Period>
+  bool try_lock_shared_for(const std::chrono::duration<Rep, Period>& duration) {
     const auto tp = std::chrono::steady_clock::now() + duration;
     return do_try_lock_sharedwait(tp);
   }
 
-  template<typename Clock, typename Duration>
-  bool try_lock_shared_until(const std::chrono::time_point<Clock, Duration>& tp)
-  {
+  template <typename Clock, typename Duration>
+  bool try_lock_shared_until(
+      const std::chrono::time_point<Clock, Duration>& tp) {
     return do_try_lock_sharedwait(tp);
   }
 };
 
 using shared_timed_mutex = basic_shared_timed_mutex<YAMC_RWLOCK_SCHED_DEFAULT>;
 
-} // namespace alternate
-} // namespace yamc
+}  // namespace alternate
+}  // namespace yamc
 
 #endif

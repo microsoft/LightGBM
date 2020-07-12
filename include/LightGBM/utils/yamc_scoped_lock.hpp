@@ -12,8 +12,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -30,7 +30,6 @@
 #include <tuple>
 #include <type_traits>
 
-
 /*
  * std::scoped_lock in C++17 Standard Library
  *
@@ -45,41 +44,29 @@ class scoped_lock {
   invoke_unlock() {}
 
   template <std::size_t I = 0>
-  typename std::enable_if<I < sizeof...(MutexTypes), void>::type
-  invoke_unlock()
-  {
+      typename std::enable_if <
+      I<sizeof...(MutexTypes), void>::type invoke_unlock() {
     std::get<I>(pm_).unlock();
     invoke_unlock<I + 1>();
   }
 
-public:
-  explicit scoped_lock(MutexTypes&... m)
-    : pm_(m...)
-  {
-    std::lock(m...);
-  }
+ public:
+  explicit scoped_lock(MutexTypes&... m) : pm_(m...) { std::lock(m...); }
 
-  explicit scoped_lock(std::adopt_lock_t, MutexTypes&... m)
-    : pm_(m...)
-  {
-  }
+  explicit scoped_lock(std::adopt_lock_t, MutexTypes&... m) : pm_(m...) {}
 
-  ~scoped_lock()
-  {
-    invoke_unlock<>();
-  }
+  ~scoped_lock() { invoke_unlock<>(); }
 
   scoped_lock(const scoped_lock&) = delete;
   scoped_lock& operator=(const scoped_lock&) = delete;
 
-private:
+ private:
   std::tuple<MutexTypes&...> pm_;
 };
 
-
 template <>
 class scoped_lock<> {
-public:
+ public:
   explicit scoped_lock() = default;
   explicit scoped_lock(std::adopt_lock_t) {}
   ~scoped_lock() = default;
@@ -88,36 +75,24 @@ public:
   scoped_lock& operator=(const scoped_lock&) = delete;
 };
 
-
 template <typename Mutex>
 class scoped_lock<Mutex> {
-public:
+ public:
   using mutex_type = Mutex;
 
-  explicit scoped_lock(Mutex& m)
-    : m_(m)
-  {
-    m.lock();
-  }
+  explicit scoped_lock(Mutex& m) : m_(m) { m.lock(); }
 
-  explicit scoped_lock(std::adopt_lock_t, Mutex& m)
-    : m_(m)
-  {
-  }
+  explicit scoped_lock(std::adopt_lock_t, Mutex& m) : m_(m) {}
 
-  ~scoped_lock()
-  {
-    m_.unlock();
-  }
+  ~scoped_lock() { m_.unlock(); }
 
   scoped_lock(const scoped_lock&) = delete;
   scoped_lock& operator=(const scoped_lock&) = delete;
 
-private:
+ private:
   Mutex& m_;
 };
 
-
-} // namespace yamc
+}  // namespace yamc
 
 #endif
