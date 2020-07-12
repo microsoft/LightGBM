@@ -21,7 +21,7 @@ mkdir -p ${TEMP_R_DIR}
 cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
-cp VERSION.txt ${TEMP_R_DIR}/inst/
+cp VERSION.txt ${TEMP_R_DIR}/src/
 
 cd ${TEMP_R_DIR}
 
