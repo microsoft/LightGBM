@@ -533,7 +533,7 @@ struct Config {
   std::string output_model = "LightGBM_model.txt";
 
   // desc = the feature importance type in the saved model file
-  // desc = ```0```: count-based feature importance; ```1```: gain-based feature importance.
+  // desc = ``0``: count-based feature importance; ``1``: gain-based feature importance
   int saved_feature_importance_type = 0;
 
   // [no-save]
