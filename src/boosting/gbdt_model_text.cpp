@@ -95,7 +95,9 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   }
   str_buf << "]," << '\n';
 
-  std::vector<double> feature_importances = FeatureImportance(num_iteration, config_->saved_feature_importance_type);
+  std::vector<double> feature_importances = FeatureImportance(
+      num_iteration,
+      config_ == nullptr ? 0 : config_->saved_feature_importance_type);
   // store the importance first
   std::vector<std::pair<size_t, std::string>> pairs;
   for (size_t i = 0; i < feature_importances.size(); ++i) {
@@ -363,8 +365,9 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) cons
     tree_strs[i].clear();
   }
   ss << "end of trees" << "\n";
-
-  std::vector<double> feature_importances = FeatureImportance(num_iteration, config_->saved_feature_importance_type);
+  std::vector<double> feature_importances = FeatureImportance(
+      num_iteration,
+      config_ == nullptr ? 0 : config_->saved_feature_importance_type);
   // store the importance first
   std::vector<std::pair<size_t, std::string>> pairs;
   for (size_t i = 0; i < feature_importances.size(); ++i) {
