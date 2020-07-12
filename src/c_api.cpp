@@ -1736,17 +1736,6 @@ int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
 }
 
 /*!
- * \brief Union to hold different int type values.
- *
- * Introduced with FastConfig to support multiple num_col types
- * that show up in the rest of the C API prediction methods.
- */
-union IntUnion {
-  int32_t int32;
-  int64_t int64;
-};
-
-/*!
  * \brief Object to store resources meant for single-row Fast Predict methods.
  *
  * Meant to be used as a basic struct by the *Fast* predict methods only.
@@ -1760,23 +1749,14 @@ struct FastConfig {
   FastConfig(Booster *const booster_ptr,
              const char *parameter,
              const int data_type_,
-             const int32_t num_cols) : booster(booster_ptr), data_type(data_type_) {
-    ncol.int32 = num_cols;
-    config.Set(Config::Str2Map(parameter));
-  }
-
-  FastConfig(Booster *const booster_ptr,
-             const char *parameter,
-             const int data_type_,
-             const int64_t num_cols) : booster(booster_ptr), data_type(data_type_) {
-    ncol.int64 = num_cols;
+             const int32_t num_cols) : booster(booster_ptr), data_type(data_type_), ncol(num_cols) {
     config.Set(Config::Str2Map(parameter));
   }
 
   Booster* const booster;
   Config config;
   const int data_type;
-  IntUnion ncol;
+  const int32_t ncol;
 };
 
 int LGBM_FastConfigFree(FastConfigHandle fastConfig) {
@@ -1952,7 +1932,7 @@ int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
     reinterpret_cast<Booster*>(handle),
     parameter,
     data_type,
-    num_col));
+    static_cast<int32_t>(num_col)));
 
   if (fastConfig_ptr->config.num_threads > 0) {
     omp_set_num_threads(fastConfig_ptr->config.num_threads);
@@ -1976,7 +1956,7 @@ int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
   API_BEGIN();
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, fastConfig->data_type, nindptr, nelem);
-  fastConfig->booster->PredictSingleRow(num_iteration, predict_type, static_cast<int32_t>(fastConfig->ncol.int64),
+  fastConfig->booster->PredictSingleRow(num_iteration, predict_type, fastConfig->ncol,
                                         get_row_fun, fastConfig->config, out_result, out_len);
   API_END();
 }
@@ -2107,8 +2087,8 @@ int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fastConfig_handle,
   API_BEGIN();
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   // Single row in row-major format:
-  auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, fastConfig->ncol.int32, fastConfig->data_type, 1);
-  fastConfig->booster->PredictSingleRow(num_iteration, predict_type, fastConfig->ncol.int32,
+  auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, fastConfig->ncol, fastConfig->data_type, 1);
+  fastConfig->booster->PredictSingleRow(num_iteration, predict_type, fastConfig->ncol,
                                         get_row_fun, fastConfig->config,
                                         out_result, out_len);
   API_END();
