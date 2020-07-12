@@ -27,9 +27,9 @@
 #include <vector>
 
 #include "application/predictor.hpp"
-#include <LightGBM/utils/alternate_shared_mutex.hpp>
-#include <LightGBM/utils/yamc_shared_lock.hpp>
-#include <LightGBM/utils/yamc_scoped_lock.hpp>
+#include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
+#include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
+#include <LightGBM/utils/yamc/yamc_scoped_lock.hpp>
 
 namespace LightGBM {
 
