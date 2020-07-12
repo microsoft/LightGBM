@@ -25,10 +25,7 @@ CXX=`"${R_HOME}/bin/R" CMD config CXX11`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
-################
-# LGB_CPPFLAGS #
-################
-
+# LightGBM-specific flags
 LGB_CPPFLAGS=""
 
 ###############
