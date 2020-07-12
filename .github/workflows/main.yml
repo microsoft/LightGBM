@@ -106,7 +106,7 @@ jobs:
             build_type: cran
           - os: macOS-latest
             task: r-package
-            compiler: gcc
+            compiler: clang
             r_version: 4.0
             build_type: cran
     steps:

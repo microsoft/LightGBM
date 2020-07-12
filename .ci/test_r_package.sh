@@ -177,7 +177,8 @@ while kill -0 ${CHECK_PID} >/dev/null 2>&1; do
 done
 
 echo "R CMD check build logs:"
-cat lightgbm.Rcheck/00install.out
+BUILD_LOG_FILE=lightgbm.Rcheck/00install.out
+cat ${BUILD_LOG_FILE}
 
 if [[ $check_succeeded == "no" ]]; then
     exit -1
@@ -201,4 +202,18 @@ NUM_CHECK_NOTES=$(
 if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
     echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
     exit -1
+fi
+
+# this check makes sure that CI builds of the CRAN package on Mac
+# actually use OpenMP
+if [[ $OS_NAME == "macos" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
+    omp_working=$(
+        cat $BUILD_LOG_FILE \
+        | grep -E "checking whether OpenMP will work .*yes" \
+        | wc -l
+    )
+    if [[ $omp_working -ne 1 ]]; then
+        echo "OpenMP was not found, and should be when testing the CRAN package on macOS"
+        exit -1
+    fi
 fi
