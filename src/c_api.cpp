@@ -4,6 +4,14 @@
  */
 #include <LightGBM/c_api.h>
 
+#include <string>
+#include <cstdio>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <vector>
+
 #include <LightGBM/boosting.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
@@ -20,14 +28,6 @@
 #include <LightGBM/utils/threading.h>
 #include <LightGBM/utils/yamc_shared_lock.hpp>
 #include <LightGBM/utils/yamc_scoped_lock.hpp>
-
-#include <string>
-#include <cstdio>
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <stdexcept>
-#include <vector>
 
 #include "application/predictor.hpp"
 
