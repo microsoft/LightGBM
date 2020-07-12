@@ -12,12 +12,12 @@
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/utils/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc_shared_lock.hpp>
 #include <LightGBM/utils/yamc_scoped_lock.hpp>
 
@@ -1902,7 +1902,7 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   ref_booster->SetSingleRowPredictor(num_iteration, predict_type, config);
-  ref_booster->PredictSingleRow(predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);  
+  ref_booster->PredictSingleRow(predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
   API_END();
 }
 
