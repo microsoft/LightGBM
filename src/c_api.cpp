@@ -17,16 +17,15 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
+#include <LightGBM/utils/alternate_shared_mutex.hpp>
+#include <LightGBM/utils/yamc_shared_lock.hpp>
+#include <LightGBM/utils/yamc_scoped_lock.hpp>
 
 #include <string>
 #include <cstdio>
 #include <functional>
 #include <memory>
-#ifdef USE_CPP17
-#include <shared_mutex>
-#else
 #include <mutex>
-#endif
 #include <stdexcept>
 #include <vector>
 
@@ -50,21 +49,12 @@ catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
 catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
 
-#ifdef USE_CPP17
 #define UNIQUE_LOCK(mtx) \
-std::unique_lock<std::shared_mutex> lock(mtx);
-#else
-#define UNIQUE_LOCK(mtx) \
-std::lock_guard<std::mutex> lock(mtx);
-#endif
+yamc::scoped_lock<yamc::alternate::shared_mutex> lock(mtx);
 
-#ifdef USE_CPP17
 #define SHARED_LOCK(mtx) \
-std::shared_lock<std::shared_mutex> lock(mtx);
-#else
-#define SHARED_LOCK(mtx) \
-std::lock_guard<std::mutex> lock(mtx);
-#endif
+yamc::shared_lock<yamc::alternate::shared_mutex> lock(mtx);
+
 
 const int PREDICTOR_TYPES = 4;
 
@@ -817,11 +807,7 @@ class Booster {
   /*! \brief Training objective function */
   std::unique_ptr<ObjectiveFunction> objective_fun_;
   /*! \brief mutex for threading safe call */
-#ifdef USE_CPP17
-  mutable std::shared_mutex mutex_;
-#else
-  mutable std::mutex mutex_;
-#endif
+  mutable yamc::alternate::shared_mutex mutex_;
 };
 
 }  // namespace LightGBM
