@@ -4,14 +4,6 @@
  */
 #include <LightGBM/c_api.h>
 
-#include <string>
-#include <cstdio>
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <stdexcept>
-#include <vector>
-
 #include <LightGBM/boosting.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
@@ -20,14 +12,23 @@
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
-#include <LightGBM/utils/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
+
+#include <LightGBM/utils/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc_shared_lock.hpp>
 #include <LightGBM/utils/yamc_scoped_lock.hpp>
+
+#include <string>
+#include <cstdio>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <vector>
 
 #include "application/predictor.hpp"
 
@@ -54,7 +55,6 @@ yamc::scoped_lock<yamc::alternate::shared_mutex> lock(mtx);
 
 #define SHARED_LOCK(mtx) \
 yamc::shared_lock<yamc::alternate::shared_mutex> lock(mtx);
-
 
 const int PREDICTOR_TYPES = 4;
 
