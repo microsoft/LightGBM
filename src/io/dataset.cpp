@@ -1262,7 +1262,7 @@ void Dataset::ConstructHistogramsInner(
   int multi_val_groud_id = -1;
   used_dense_group.reserve(num_groups_);
   for (int group = 0; group < num_groups_; ++group) {
-    const int f_start = group_feature_start_[group]; 
+    const int f_start = group_feature_start_[group];
     const int f_cnt = group_feature_cnt_[group];
     bool is_group_used = false;
     for (int j = 0; j < f_cnt; ++j) {
