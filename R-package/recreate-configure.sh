@@ -13,9 +13,10 @@ apt-get install \
         autoconf=${AUTOCONF_VERSION}
 
 cp VERSION.txt R-package/src/
+cd R-package
 autoconf \
-    --output R-package/configure \
-    R-package/configure.ac
+    --output configure \
+    configure.ac
 
 rm -r autom4te.cache || echo "no autoconf cache found"
 

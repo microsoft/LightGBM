@@ -1704,23 +1704,6 @@ CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
 LGB_CPPFLAGS=""
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether using R version 3.5.0 or later" >&5
-$as_echo_n "checking whether using R version 3.5.0 or later... " >&6; }
-ac_pkg_r35=no
-R_35_OR_ABOVE=$(
-    ${R_HOME}/bin/Rscript -e "
-        R_ver <- as.double(R.version['major']) + as.double(R.version['minor']) / 10.0;
-        cat(as.character(R_ver > 3.5))
-    "
-)
-if test ${R_35_OR_ABOVE} = "TRUE"
-then
-    ac_pkg_r35=yes
-    LGB_CPPFLAGS+=" -DR_VER_ABOVE_35"
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_pkg_r35}" >&5
-$as_echo "${ac_pkg_r35}" >&6; }
-
 ###############
 # MM_PREFETCH #
 ###############
