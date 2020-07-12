@@ -574,6 +574,12 @@ Learning Control Parameters
 
    -  **Note**: can be used only in CLI version
 
+-  ``saved_feature_importance_type`` :raw-html:`<a id="saved_feature_importance_type" title="Permalink to this parameter" href="#saved_feature_importance_type">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+
+   -  the feature importance type in the saved model file
+
+   -  ```0```: count-based feature importance; ```1```: gain-based feature importance.
+
 -  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
 
    -  frequency of saving model file snapshot
