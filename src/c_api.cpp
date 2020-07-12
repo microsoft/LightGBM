@@ -53,7 +53,7 @@ return 0;
 yamc::scoped_lock<yamc::alternate::shared_mutex> lock(mtx);
 
 #define SHARED_LOCK(mtx) \
-yamc::shared_lock<yamc::alternate::shared_mutex> lock(mtx);
+yamc::shared_lock<yamc::alternate::shared_mutex> lock(&mtx);
 
 const int PREDICTOR_TYPES = 4;
 

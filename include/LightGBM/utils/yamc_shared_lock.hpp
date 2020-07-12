@@ -57,9 +57,9 @@ class shared_lock {
 
   shared_lock() noexcept = default;
 
-  explicit shared_lock(mutex_type& m) {
-    m.lock_shared();
-    pm_ = &m;
+  explicit shared_lock(mutex_type* m) {
+    m->lock_shared();
+    pm_ = m;
     owns_ = true;
   }
 

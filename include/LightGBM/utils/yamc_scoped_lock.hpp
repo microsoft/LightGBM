@@ -67,7 +67,7 @@ class scoped_lock {
 template <>
 class scoped_lock<> {
  public:
-  explicit scoped_lock() = default;
+  scoped_lock() = default;
   explicit scoped_lock(std::adopt_lock_t) {}
   ~scoped_lock() = default;
 
