@@ -18,10 +18,6 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
 
-#include <LightGBM/utils/alternate_shared_mutex.hpp>
-#include <LightGBM/utils/yamc_shared_lock.hpp>
-#include <LightGBM/utils/yamc_scoped_lock.hpp>
-
 #include <string>
 #include <cstdio>
 #include <functional>
@@ -31,6 +27,9 @@
 #include <vector>
 
 #include "application/predictor.hpp"
+#include <LightGBM/utils/alternate_shared_mutex.hpp>
+#include <LightGBM/utils/yamc_shared_lock.hpp>
+#include <LightGBM/utils/yamc_scoped_lock.hpp>
 
 namespace LightGBM {
 

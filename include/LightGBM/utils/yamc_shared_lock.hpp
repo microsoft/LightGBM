@@ -63,30 +63,30 @@ class shared_lock {
     owns_ = true;
   }
 
-  shared_lock(mutex_type& m, std::defer_lock_t) noexcept {
+  shared_lock(const mutex_type& m, std::defer_lock_t) noexcept {
     pm_ = &m;
     owns_ = false;
   }
 
-  shared_lock(mutex_type& m, std::try_to_lock_t) {
+  shared_lock(const mutex_type& m, std::try_to_lock_t) {
     pm_ = &m;
     owns_ = m.try_lock_shared();
   }
 
-  shared_lock(mutex_type& m, std::adopt_lock_t) {
+  shared_lock(const mutex_type& m, std::adopt_lock_t) {
     pm_ = &m;
     owns_ = true;
   }
 
   template <typename Clock, typename Duration>
-  shared_lock(mutex_type& m,
+  shared_lock(const mutex_type& m,
               const std::chrono::time_point<Clock, Duration>& abs_time) {
     pm_ = &m;
     owns_ = m.try_lock_shared_until(abs_time);
   }
 
   template <typename Rep, typename Period>
-  shared_lock(mutex_type& m,
+  shared_lock(const mutex_type& m,
               const std::chrono::duration<Rep, Period>& rel_time) {
     pm_ = &m;
     owns_ = m.try_lock_shared_for(rel_time);

@@ -59,31 +59,31 @@ struct ReaderPrefer {
     std::size_t rwcount = 0;
   };
 
-  static void before_wait_wlock(state&) {}
-  static void after_wait_wlock(state&) {}
+  static void before_wait_wlock(const state&) {}
+  static void after_wait_wlock(const state&) {}
 
-  static bool wait_wlock(state& s) { return (s.rwcount != 0); }
+  static bool wait_wlock(const state& s) { return (s.rwcount != 0); }
 
-  static void acquire_wlock(state& s) {
-    assert(!(s.rwcount & writer_mask));
-    s.rwcount |= writer_mask;
+  static void acquire_wlock(state* s) {
+    assert(!(s->rwcount & writer_mask));
+    s->rwcount |= writer_mask;
   }
 
-  static void release_wlock(state& s) {
-    assert(s.rwcount & writer_mask);
-    s.rwcount &= ~writer_mask;
+  static void release_wlock(state* s) {
+    assert(s->rwcount & writer_mask);
+    s->rwcount &= ~writer_mask;
   }
 
-  static bool wait_rlock(state& s) { return (s.rwcount & writer_mask) != 0; }
+  static bool wait_rlock(const state& s) { return (s.rwcount & writer_mask) != 0; }
 
-  static void acquire_rlock(state& s) {
-    assert((s.rwcount & reader_mask) < reader_mask);
-    ++s.rwcount;
+  static void acquire_rlock(state* s) {
+    assert((s->rwcount & reader_mask) < reader_mask);
+    ++(s->rwcount);
   }
 
-  static bool release_rlock(state& s) {
-    assert(0 < (s.rwcount & reader_mask));
-    return (--s.rwcount == 0);
+  static bool release_rlock(state* s) {
+    assert(0 < (s->rwcount & reader_mask));
+    return (--(s->rwcount) == 0);
   }
 };
 
@@ -106,40 +106,40 @@ struct WriterPrefer {
     std::size_t nreader = 0;
   };
 
-  static void before_wait_wlock(state& s) {
-    assert((s.nwriter & wait_mask) < wait_mask);
-    ++s.nwriter;
+  static void before_wait_wlock(state* s) {
+    assert((s->nwriter & wait_mask) < wait_mask);
+    ++(s->nwriter);
   }
 
-  static bool wait_wlock(state& s) {
+  static bool wait_wlock(const state& s) {
     return ((s.nwriter & locked) || 0 < s.nreader);
   }
 
-  static void after_wait_wlock(state& s) {
-    assert(0 < (s.nwriter & wait_mask));
-    --s.nwriter;
+  static void after_wait_wlock(state* s) {
+    assert(0 < (s->nwriter & wait_mask));
+    --(s->nwriter);
   }
 
-  static void acquire_wlock(state& s) {
-    assert(!(s.nwriter & locked));
-    s.nwriter |= locked;
+  static void acquire_wlock(state* s) {
+    assert(!(s->nwriter & locked));
+    s->nwriter |= locked;
   }
 
-  static void release_wlock(state& s) {
-    assert(s.nwriter & locked);
-    s.nwriter &= ~locked;
+  static void release_wlock(state* s) {
+    assert(s->nwriter & locked);
+    s->nwriter &= ~locked;
   }
 
-  static bool wait_rlock(state& s) { return (s.nwriter != 0); }
+  static bool wait_rlock(const state& s) { return (s.nwriter != 0); }
 
-  static void acquire_rlock(state& s) {
-    assert(!(s.nwriter & locked));
-    ++s.nreader;
+  static void acquire_rlock(state* s) {
+    assert(!(s->nwriter & locked));
+    ++(s->nreader);
   }
 
-  static bool release_rlock(state& s) {
-    assert(0 < s.nreader);
-    return (--s.nreader == 0);
+  static bool release_rlock(state* s) {
+    assert(0 < s->nreader);
+    return (--(s->nreader) == 0);
   }
 };
 

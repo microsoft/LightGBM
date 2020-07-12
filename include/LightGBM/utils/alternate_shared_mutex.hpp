@@ -61,7 +61,7 @@ class shared_mutex_base {
       cv_.wait(lk);
     }
     RwLockPolicy::after_wait_wlock(state_);
-    RwLockPolicy::acquire_wlock(state_);
+    RwLockPolicy::acquire_wlock(&state_);
   }
 
   bool try_lock() {
@@ -73,7 +73,7 @@ class shared_mutex_base {
 
   void unlock() {
     std::lock_guard<decltype(mtx_)> lk(mtx_);
-    RwLockPolicy::release_wlock(state_);
+    RwLockPolicy::release_wlock(&state_);
     cv_.notify_all();
   }
 
@@ -82,7 +82,7 @@ class shared_mutex_base {
     while (RwLockPolicy::wait_rlock(state_)) {
       cv_.wait(lk);
     }
-    RwLockPolicy::acquire_rlock(state_);
+    RwLockPolicy::acquire_rlock(&state_);
   }
 
   bool try_lock_shared() {
@@ -94,7 +94,7 @@ class shared_mutex_base {
 
   void unlock_shared() {
     std::lock_guard<decltype(mtx_)> lk(mtx_);
-    if (RwLockPolicy::release_rlock(state_)) {
+    if (RwLockPolicy::release_rlock(&state_)) {
       cv_.notify_all();
     }
   }
