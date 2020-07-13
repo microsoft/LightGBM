@@ -2,9 +2,7 @@
 # Obviously, we are in a controlled environment, without issues (real rules).
 # Do not do this in a real scenario.
 
-# First, we load our libraries
 library(lightgbm)
-library(ggplot2)
 
 # Second, we load our data
 data(agaricus.train, package = "lightgbm")
