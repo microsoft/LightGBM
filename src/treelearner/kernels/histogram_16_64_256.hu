@@ -12,8 +12,8 @@
  * disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
  */
 
-#ifndef _HISTOGRAM_16_64_256_KERNEL_
-#define _HISTOGRAM_16_64_256_KERNEL_
+#ifndef LIGHTGBM_TREELEARNER_KERNELS_HISTOGRAM_16_64_256_HU_
+#define LIGHTGBM_TREELEARNER_KERNELS_HISTOGRAM_16_64_256_HU_
 
 //#pragma once
 

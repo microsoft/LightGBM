@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #pragma once
-#ifndef LGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
-#define LGBM_TREELEARNET_CUDA_TREE_LEARNER_H_
+#ifndef LIGHTGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
+#define LIGHTGBM_TREELEARNET_CUDA_TREE_LEARNER_H_
 
 #include <cstdio>
 #include <vector>
@@ -64,10 +64,6 @@ class CUDATreeLearner: public SerialTreeLearner {
     void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 
  private:
-    /*! \brief 4-byte feature tuple used by GPU kernels */
-    // struct Feature4 {
-    //    uint8_t s[4];
-    // };
     typedef float gpu_hist_t;
 
     /*!
@@ -297,4 +293,4 @@ class CUDATreeLearner: public SerialTreeLearner {
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // LGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
+#endif  // LIGHTGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
