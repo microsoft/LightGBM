@@ -90,7 +90,6 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
                 use_hdfs=False, boost_root=None, boost_dir=None,
                 boost_include_dir=None, boost_librarydir=None,
                 opencl_include_dir=None, opencl_library=None,
-                openmp_include_dir=None, openmp_library=None,
                 nomp=False, bit32=False):
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
@@ -117,10 +116,6 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
             cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
     elif use_cuda:
         cmake_cmd.append("-DUSE_CUDA=ON")
-        if openmp_include_dir:
-            cmake_cmd.append("-DOpenMP_INCLUDE_DIR={0}".format(openmp_include_dir))
-        if openmp_library:
-            cmake_cmd.append("-DOpenMP_LIBRARY={0}".format(openmp_library))
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if nomp:
@@ -205,9 +200,7 @@ class CustomInstall(install):
         ('boost-include-dir=', None, 'Directory containing Boost headers'),
         ('boost-librarydir=', None, 'Preferred Boost library directory'),
         ('opencl-include-dir=', None, 'OpenCL include directory'),
-        ('opencl-library=', None, 'Path to OpenCL library'),
-        ('openmp-include-dir=', None, 'OpenMP include directory'),
-        ('openmp-library=', None, 'Path to OpenMP library')
+        ('opencl-library=', None, 'Path to OpenCL library')
     ]
 
     def initialize_options(self):
@@ -221,12 +214,9 @@ class CustomInstall(install):
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
-        self.openmp_include_dir = None
-        self.openmp_library = None
         self.mpi = 0
         self.hdfs = 0
-        # self.precompile = 0 # TODO: revert this
-        self.precompile = 1
+        self.precompile = 0
         self.nomp = 0
         self.bit32 = 0
 
@@ -245,7 +235,6 @@ class CustomInstall(install):
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
-                        openmp_include_dir=self.openmp_include_dir, openmp_library=self.openmp_library,
                         nomp=self.nomp, bit32=self.bit32)
         install.run(self)
         if os.path.isfile(LOG_PATH):

@@ -294,9 +294,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "gpu_platform_id",
   "gpu_device_id",
   "gpu_use_dp",
-#ifdef USE_CUDA
-  "num_gpu", /* LGBM_CUDA */
-#endif
+  "num_gpu",
   });
   return params;
 }
@@ -610,11 +608,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
 #ifdef USE_CUDA
   gpu_use_dp = true;  /* LGBM_CUDA hard-coding gpu_use_dp to TRUE (default is false) */
+#endif
 
-  /* LGBM_CUDA get number of GPUs */
   GetInt(params, "num_gpu", &num_gpu);
   CHECK_GT(num_gpu, 0);
-#endif
 }
 
 std::string Config::SaveMembersToString() const {

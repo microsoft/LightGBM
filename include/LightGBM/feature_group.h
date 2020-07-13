@@ -228,12 +228,10 @@ class FeatureGroup {
     return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
   }
 
-  // LGBM_CUDA
   inline size_t FeatureGroupSizesInByte() {
     return bin_data_->SizesInByte();
   }
 
-  // LGBM_CUDA
   inline void* FeatureGroupData() {
     return bin_data_->get_data();
   }

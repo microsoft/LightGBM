@@ -5,7 +5,7 @@
 #include <LightGBM/tree_learner.h>
 
 #include "gpu_tree_learner.h"
-#include "cuda_tree_learner.h"  // LGBM_CUDA
+#include "cuda_tree_learner.h"
 #include "parallel_tree_learner.h"
 #include "serial_tree_learner.h"
 
@@ -32,7 +32,7 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     } else if (learner_type == std::string("voting")) {
       return new VotingParallelTreeLearner<GPUTreeLearner>(config);
     }
-  } else if (device_type == std::string("cuda")) {  // LGBM_CUDA
+  } else if (device_type == std::string("cuda")) {
     if (learner_type == std::string("serial")) {
       return new CUDATreeLearner(config);
     } else if (learner_type == std::string("feature")) {

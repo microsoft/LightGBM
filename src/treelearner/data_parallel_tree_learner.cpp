@@ -256,7 +256,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, in
 }
 
 // instantiate template classes, otherwise linker cannot find the code
-template class DataParallelTreeLearner<CUDATreeLearner>;  // LGBM_CUDA
+template class DataParallelTreeLearner<CUDATreeLearner>;
 template class DataParallelTreeLearner<GPUTreeLearner>;
 template class DataParallelTreeLearner<SerialTreeLearner>;
 

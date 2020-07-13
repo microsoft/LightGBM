@@ -408,7 +408,6 @@ class SparseBin : public Bin {
 
   data_size_t num_data() const override { return num_data_; }
 
-  // LGBM_CUDA
   void* get_data() override { return nullptr; }
 
   void FinishLoad() override {

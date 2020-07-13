@@ -5,8 +5,6 @@
 #ifndef LGBM_CUDA_UTILS_H
 #define LGBM_CUDA_UTILS_H
 
-// LGBM_CUDA
-
 #ifdef USE_CUDA
 
 #include <cuda.h>

@@ -10,6 +10,7 @@
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/threading.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <string>
 #include <algorithm>
@@ -23,10 +24,6 @@
 #include <vector>
 
 #include "score_updater.hpp"
-
-#ifdef USE_CUDA
-#include <LightGBM/cuda/vector_cudahost.h>  // LGBM_CUDA
-#endif
 
 namespace LightGBM {
 
@@ -470,9 +467,9 @@ class GBDT : public GBDTBase {
 
 #ifdef USE_CUDA
   /*! \brief First order derivative of training data */
-  std::vector<score_t, CHAllocator<score_t>> gradients_;  // LGBM_CUDA
+  std::vector<score_t, CHAllocator<score_t>> gradients_;
   /*! \brief Second order derivative of training data */
-  std::vector<score_t, CHAllocator<score_t>> hessians_;  // LGBM_CUDA
+  std::vector<score_t, CHAllocator<score_t>> hessians_;
 #else
   /*! \brief First order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> gradients_;

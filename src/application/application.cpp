@@ -14,6 +14,7 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <string>
 #include <chrono>
@@ -24,10 +25,6 @@
 #include <utility>
 
 #include "predictor.hpp"
-
-#ifdef USE_CUDA
-#include <LightGBM/cuda/vector_cudahost.h>
-#endif
 
 namespace LightGBM {
 
@@ -43,7 +40,6 @@ Application::Application(int argc, char** argv) {
     Log::Fatal("No training/prediction data, application quit");
   }
 
-// LGBM_CUDA
 #ifdef USE_CUDA
   if (config_.device_type == std::string("cuda")) {
       LightGBM::LGBM_config_::current_device = lgbm_device_cuda;

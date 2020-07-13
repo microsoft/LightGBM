@@ -17,6 +17,7 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <string>
 #include <cstdio>
@@ -27,10 +28,6 @@
 #include <vector>
 
 #include "application/predictor.hpp"
-
-#ifdef USE_CUDA
-#include <LightGBM/cuda/vector_cudahost.h>
-#endif
 
 namespace LightGBM {
 
@@ -43,7 +40,6 @@ inline int LGBM_APIHandleException(const std::string& ex) {
   return -1;
 }
 
-// LGBM_CUDA
 inline void AdditionalConfig(Config *config) {
 #ifdef USE_CUDA
   if (config->device_type == std::string("cuda")) {

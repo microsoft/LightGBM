@@ -589,12 +589,10 @@ class Dataset {
     return feature_groups_[i]->is_multi_val_;
   }
 
-  // LGBM_CUDA
   inline size_t FeatureGroupSizesInByte(int group) const {
     return feature_groups_[group]->FeatureGroupSizesInByte();
   }
 
-  // LGBM_CUDA
   inline void* FeatureGroupData(int group) const {
     return feature_groups_[group]->FeatureGroupData();
   }

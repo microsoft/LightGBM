@@ -5,11 +5,11 @@
 #ifndef LGBM_CUDA_VECTOR_CH_H
 #define LGBM_CUDA_VECTOR_CH_H
 
+#ifdef USE_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif
 #include <stdio.h>
-
-// LGBM_CUDA
 
 namespace LightGBM {
 

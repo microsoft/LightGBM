@@ -22,7 +22,7 @@ OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not earlier than 3.5" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
-OPTION(USE_CUDA "Enable CUDA-accelerated training" OFF)
+OPTION(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 

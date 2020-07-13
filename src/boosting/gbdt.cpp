@@ -63,10 +63,8 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-// LGBM_CUDA
 #ifdef USE_CUDA
   if (config_->device_type == std::string("cuda")) {
-    // LGBM_config_::current_device = lgbm_device_cuda; moved to application.cpp
     LGBM_config_::current_learner = use_cuda_learner;
   }
 #endif
@@ -799,7 +797,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     }
   } else {
     bag_data_cnt_ = num_data_;
-    if (config_->device_type == std::string("cuda")) {  // LGBM_CUDA
+    if (config_->device_type == std::string("cuda")) {
       if (tmp_subset_ == nullptr) {
         tmp_subset_.reset(new Dataset(bag_data_cnt_));
         tmp_subset_->CopyFeatureMapperFrom(train_data_);

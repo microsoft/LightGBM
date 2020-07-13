@@ -9,16 +9,13 @@
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <chrono>
 #include <cstdio>
 #include <limits>
 #include <sstream>
 #include <unordered_map>
-
-#ifdef USE_CUDA
-#include <LightGBM/cuda/vector_cudahost.h>
-#endif
 
 namespace LightGBM {
 
@@ -339,7 +336,6 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   }
   auto features_in_group = NoGroup(used_features);
 
-// LGBM_CUDA
 #ifdef USE_CUDA
   if (io_config.device_type == std::string("cuda")) {
       LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
@@ -348,7 +344,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
 
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
-    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");  // LGBM_CUDA
+    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");
     features_in_group = FastFeatureBundling(
         *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
         num_sample_col, static_cast<data_size_t>(total_sample_cnt),

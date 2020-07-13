@@ -7,16 +7,12 @@
 #define LIGHTGBM_IO_DENSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
+#include <LightGBM/cuda/vector_cudahost.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstdint>
 #include <cstring>
 #include <vector>
-
-#ifdef USE_CUDA
-#include <LightGBM/cuda/vector_cudahost.h>  // LGBM_CUDA
-#endif
-
-#include <LightGBM/utils/openmp_wrapper.h>  // LGBM_CUDA
 
 namespace LightGBM {
 
@@ -368,7 +364,6 @@ class DenseBin : public Bin {
 
   data_size_t num_data() const override { return num_data_; }
 
-  // LGBM_CUDA
   void* get_data() override { return data_.data(); }
 
   void FinishLoad() override {
@@ -466,7 +461,7 @@ class DenseBin : public Bin {
  private:
   data_size_t num_data_;
 #ifdef USE_CUDA
-  std::vector<VAL_T, CHAllocator<VAL_T>> data_;  // LGBM_CUDA
+  std::vector<VAL_T, CHAllocator<VAL_T>> data_;
 #else
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
 #endif
