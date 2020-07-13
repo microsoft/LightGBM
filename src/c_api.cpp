@@ -701,7 +701,7 @@ class Booster {
   std::string SaveModelToString(int start_iteration, int num_iteration,
                                 int feature_importance_type) {
     return boosting_->SaveModelToString(start_iteration,
-                                        feature_importance_type, num_iteration);
+                                        num_iteration, feature_importance_type);
   }
 
   std::string DumpModel(int start_iteration, int num_iteration,
