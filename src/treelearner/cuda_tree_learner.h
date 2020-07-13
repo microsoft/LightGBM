@@ -243,7 +243,6 @@ class CUDATreeLearner: public SerialTreeLearner {
     // char *device_subhistograms_;
     std::vector<char*> device_subhistograms_;
     /*! \brief Host memory object for histogram output (GPU will write to Host memory directly) */
-    // FIXME: is this cuda mapped
     // void *device_histogram_outputs_;
     std::vector<void*> device_histogram_outputs_;
     /*! \brief Host memory pointer for histogram outputs */

@@ -357,7 +357,7 @@ void CUDATreeLearner::AllocateGPUMemory() {
     if (num_gpu_feature_groups) {
       CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
 
-      // allocate memory for all features (FIXME: 4 GB barrier on some devices, need to split to multiple buffers)
+      // allocate memory for all features
       if ( device_features_[device_id] != NULL ) {
              CUDASUCCESS_OR_FATAL(cudaFree(device_features_[device_id]));
       }
@@ -814,7 +814,7 @@ bool CUDATreeLearner::ConstructGPUHistogramsAsync(
 
   // if not all feature groups are used, we need to transfer the feature mask to GPU
   // otherwise, we will use a specialized GPU kernel with all feature groups enabled
-  // LGBM_CUDA FIXME: No waiting mark for feature mask
+  // LGBM_CUDA 
 
   // LGBM_CUDA We now copy even if all features are used.
 

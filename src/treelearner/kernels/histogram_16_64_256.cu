@@ -105,7 +105,6 @@ __kernel void KERNEL_NAME(__global const uchar* restrict feature_data_base,
                       const size_t power_feature_workgroups) {
 #else
 __global__ void KERNEL_NAME(const uchar* feature_data_base,
-                      // FIXME: how to handle this __constant
                       const uchar* __restrict__ feature_masks,
                       const data_size_t feature_size,
                       const data_size_t* data_indices,
@@ -293,18 +292,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ ptr_f = output;
     for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
-        // FIXME: 2-way bank conflict
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-        // FIXME: 2-way bank conflict
         uint value = cnt_hist[i];
         ptr_i[i] = value;
     }
-    // FIXME: is this right
     __syncthreads();
     __threadfence();
     // To avoid the cost of an extra reducting kernel, we have to deal with some
@@ -312,19 +308,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // make the final reduction, and other threads will just quit.
     // This requires that the results written by other workgroups available to the
     // last workgroup (memory consistency)
-    #if NVIDIA == 1
     // this is equavalent to CUDA __threadfence();
     // ensure the writes above goes to main memory and other workgroups can see it
     asm volatile("{\n\tmembar.gl;\n\t}\n\t" :::"memory");
-    #else
-    // FIXME: how to do the above on AMD GPUs??
-    // GCN ISA says that the all writes will bypass L1 cache (write through),
-    // however when the last thread is reading sub-histogram data we have to
-    // make sure that no part of data is modified in local L1 cache of other workgroups.
-    // Otherwise reading can be a problem (atomic operations to get consistency).
-    // But in our case, the sub-histogram of this workgroup cannot be in the cache
-    // of another workgroup, so the following trick will work just fine.
-    #endif
     // Now, we want one workgroup to do the final reduction.
     // Other workgroups processing the same feature quit.
     // The is done by using an global atomic counter.
@@ -451,7 +437,6 @@ __kernel void KERNEL_NAME(__global const uchar* restrict feature_data_base,
                       const size_t power_feature_workgroups) {
 #else
 __global__ void KERNEL_NAME(const uchar* feature_data_base,
-                      // FIXME: how to handle this __constant
                       const uchar* __restrict__ feature_masks,
                       const data_size_t feature_size,
                       const data_size_t* data_indices,
@@ -637,18 +622,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ ptr_f = output;
     for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
-        // FIXME: 2-way bank conflict
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-        // FIXME: 2-way bank conflict
         uint value = cnt_hist[i];
         ptr_i[i] = value;
     }
-    // FIXME: is this right
     __syncthreads();
     __threadfence();
     // To avoid the cost of an extra reducting kernel, we have to deal with some
@@ -656,19 +638,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // make the final reduction, and other threads will just quit.
     // This requires that the results written by other workgroups available to the
     // last workgroup (memory consistency)
-    #if NVIDIA == 1
     // this is equavalent to CUDA __threadfence();
     // ensure the writes above goes to main memory and other workgroups can see it
     asm volatile("{\n\tmembar.gl;\n\t}\n\t" :::"memory");
-    #else
-    // FIXME: how to do the above on AMD GPUs??
-    // GCN ISA says that the all writes will bypass L1 cache (write through),
-    // however when the last thread is reading sub-histogram data we have to
-    // make sure that no part of data is modified in local L1 cache of other workgroups.
-    // Otherwise reading can be a problem (atomic operations to get consistency).
-    // But in our case, the sub-histogram of this workgroup cannot be in the cache
-    // of another workgroup, so the following trick will work just fine.
-    #endif
     // Now, we want one workgroup to do the final reduction.
     // Other workgroups processing the same feature quit.
     // The is done by using an global atomic counter.
@@ -796,7 +768,6 @@ __kernel void KERNEL_NAME(__global const uchar* restrict feature_data_base,
                       const size_t power_feature_workgroups) {
 #else
 __global__ void KERNEL_NAME(const uchar* feature_data_base,
-                      // FIXME: how to handle this __constant
                       const uchar* __restrict__ feature_masks,
                       const data_size_t feature_size,
                       const data_size_t* data_indices,
@@ -982,18 +953,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ ptr_f = output;
     for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
-        // FIXME: 2-way bank conflict
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
     for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-        // FIXME: 2-way bank conflict
         uint value = cnt_hist[i];
         ptr_i[i] = value;
     }
-    // FIXME: is this right
     __syncthreads();
     __threadfence();
     // To avoid the cost of an extra reducting kernel, we have to deal with some
@@ -1001,19 +969,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // make the final reduction, and other threads will just quit.
     // This requires that the results written by other workgroups available to the
     // last workgroup (memory consistency)
-    #if NVIDIA == 1
     // this is equavalent to CUDA __threadfence();
     // ensure the writes above goes to main memory and other workgroups can see it
     asm volatile("{\n\tmembar.gl;\n\t}\n\t" :::"memory");
-    #else
-    // FIXME: how to do the above on AMD GPUs??
-    // GCN ISA says that the all writes will bypass L1 cache (write through),
-    // however when the last thread is reading sub-histogram data we have to
-    // make sure that no part of data is modified in local L1 cache of other workgroups.
-    // Otherwise reading can be a problem (atomic operations to get consistency).
-    // But in our case, the sub-histogram of this workgroup cannot be in the cache
-    // of another workgroup, so the following trick will work just fine.
-    #endif
     // Now, we want one workgroup to do the final reduction.
     // Other workgroups processing the same feature quit.
     // The is done by using an global atomic counter.

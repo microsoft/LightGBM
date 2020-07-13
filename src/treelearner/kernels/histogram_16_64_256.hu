@@ -77,33 +77,13 @@ typedef uint acc_int_type;
 #define as_acc_int_type as_uint
 #endif
 
-// unroll the atomic operation for a few times. Takes more code space, 
-// but compiler can generate better code for faster atomics.
-#define UNROLL_ATOMIC 1
-
-// Options passed by compiler at run time:
-// IGNORE_INDICES will be set when the kernel does not 
-//#define IGNORE_INDICES
-//#define POWER_FEATURE_WORKGROUPS 10
-
-// detect Nvidia platforms
-#ifdef cl_nv_pragma_unroll
-#define NVIDIA 1
-#endif
-
 // use all features and do not use feature mask
 #ifndef ENABLE_ALL_FEATURES
 #define ENABLE_ALL_FEATURES 1
 #endif
 
-// use binary patching for AMD GCN 1.2 or newer
-#ifndef AMD_USE_DS_ADD_F32
-#define AMD_USE_DS_ADD_F32 0
-#endif
-
 typedef uint data_size_t;
 typedef float score_t;
-
 
 // define all of the different kernels
 
