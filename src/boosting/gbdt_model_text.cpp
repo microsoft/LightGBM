@@ -18,7 +18,7 @@ namespace LightGBM {
 
 const char* kModelVersion = "v3";
 
-std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
+std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_importance_type) const {
   std::stringstream str_buf;
 
   str_buf << "{";
@@ -96,8 +96,7 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   str_buf << "]," << '\n';
 
   std::vector<double> feature_importances = FeatureImportance(
-      num_iteration,
-      config_ == nullptr ? 0 : config_->saved_feature_importance_type);
+      num_iteration, feature_importance_type);
   // store the importance first
   std::vector<std::pair<size_t, std::string>> pairs;
   for (size_t i = 0; i < feature_importances.size(); ++i) {
@@ -304,7 +303,7 @@ bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
   return static_cast<bool>(output_file);
 }
 
-std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) const {
+std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int feature_importance_type) const {
   std::stringstream ss;
 
   // output model type
@@ -366,8 +365,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) cons
   }
   ss << "end of trees" << "\n";
   std::vector<double> feature_importances = FeatureImportance(
-      num_iteration,
-      config_ == nullptr ? 0 : config_->saved_feature_importance_type);
+      num_iteration, feature_importance_type);
   // store the importance first
   std::vector<std::pair<size_t, std::string>> pairs;
   for (size_t i = 0; i < feature_importances.size(); ++i) {
@@ -398,11 +396,11 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) cons
   return ss.str();
 }
 
-bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, const char* filename) const {
+bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, int feature_importance_type, const char* filename) const {
   /*! \brief File to write models */
   std::ofstream output_file;
   output_file.open(filename, std::ios::out | std::ios::binary);
-  std::string str_to_write = SaveModelToString(start_iteration, num_iteration);
+  std::string str_to_write = SaveModelToString(start_iteration, num_iteration, feature_importance_type);
   output_file.write(str_to_write.c_str(), str_to_write.size());
   output_file.close();
 

@@ -996,12 +996,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be saved
  * \param num_iteration Index of the iteration that should be saved, <= 0 means save all
+ * \param feature_importance_type type of feature importance, 0: count, 1:gain
  * \param filename The name of the file
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
                                             int start_iteration,
                                             int num_iteration,
+                                            int feature_importance_type,
                                             const char* filename);
 
 /*!
@@ -1009,6 +1011,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be saved
  * \param num_iteration Index of the iteration that should be saved, <= 0 means save all
+ * \param feature_importance_type type of feature importance, 0: count, 1:gain
  * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
  * \param[out] out_len Actual output length
  * \param[out] out_str String of model, should pre-allocate memory
@@ -1017,6 +1020,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                                     int start_iteration,
                                                     int num_iteration,
+                                                    int feature_importance_type,
                                                     int64_t buffer_len,
                                                     int64_t* out_len,
                                                     char* out_str);
@@ -1026,6 +1030,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be dumped
  * \param num_iteration Index of the iteration that should be dumped, <= 0 means dump all
+ * \param feature_importance_type type of feature importance, 0: count, 1:gain
  * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
  * \param[out] out_len Actual output length
  * \param[out] out_str JSON format string of model, should pre-allocate memory
@@ -1034,6 +1039,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
                                             int start_iteration,
                                             int num_iteration,
+                                            int feature_importance_type,
                                             int64_t buffer_len,
                                             int64_t* out_len,
                                             char* out_str);
