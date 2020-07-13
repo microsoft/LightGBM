@@ -211,7 +211,7 @@
       <Filter>src\treelearner</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp">
-      <Filter>include\LightGBM\utils</Filter>
+      <Filter>include\LightGBM\utils\yamc</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_rwlock_sched.hpp">
       <Filter>include\LightGBM\utils</Filter>
