@@ -216,9 +216,6 @@
     <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_rwlock_sched.hpp">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_scoped_lock.hpp">
-      <Filter>include\LightGBM\utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_shared_lock.hpp">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
