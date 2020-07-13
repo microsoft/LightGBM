@@ -217,7 +217,7 @@
       <Filter>include\LightGBM\utils\yamc</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_shared_lock.hpp">
-      <Filter>include\LightGBM\utils</Filter>
+      <Filter>include\LightGBM\utils\yamc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
