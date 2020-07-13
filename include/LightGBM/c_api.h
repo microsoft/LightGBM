@@ -36,6 +36,9 @@ typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
 #define C_API_MATRIX_TYPE_CSR (0)  /*!< \brief CSR sparse matrix type. */
 #define C_API_MATRIX_TYPE_CSC (1)  /*!< \brief CSC sparse matrix type. */
 
+#define C_API_FEATURE_IMPORTANCE_SPLIT (0)  /*!< \brief Split type of feature importance. */
+#define C_API_FEATURE_IMPORTANCE_GAIN  (1)  /*!< \brief Gain type of feature importance. */
+
 /*!
  * \brief Get string message of the last error.
  * \return Error information
@@ -996,7 +999,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be saved
  * \param num_iteration Index of the iteration that should be saved, <= 0 means save all
- * \param feature_importance_type type of feature importance, 0: count, 1:gain
+ * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
  * \param filename The name of the file
  * \return 0 when succeed, -1 when failure happens
  */
@@ -1011,7 +1014,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be saved
  * \param num_iteration Index of the iteration that should be saved, <= 0 means save all
- * \param feature_importance_type type of feature importance, 0: count, 1:gain
+ * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
  * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
  * \param[out] out_len Actual output length
  * \param[out] out_str String of model, should pre-allocate memory
@@ -1030,7 +1033,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be dumped
  * \param num_iteration Index of the iteration that should be dumped, <= 0 means dump all
- * \param feature_importance_type type of feature importance, 0: count, 1:gain
+ * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
  * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
  * \param[out] out_len Actual output length
  * \param[out] out_str JSON format string of model, should pre-allocate memory
@@ -1075,8 +1078,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
  * \param handle Handle of booster
  * \param num_iteration Number of iterations for which feature importance is calculated, <= 0 means use all
  * \param importance_type Method of importance calculation:
- *   - 0 for split, result contains numbers of times the feature is used in a model;
- *   - 1 for gain, result contains total gains of splits which use the feature
+ *   - ``C_API_FEATURE_IMPORTANCE_SPLIT``: result contains numbers of times the feature is used in a model;
+ *   - ``C_API_FEATURE_IMPORTANCE_GAIN``: result contains total gains of splits which use the feature
  * \param[out] out_results Result array with feature importance
  * \return 0 when succeed, -1 when failure happens
  */

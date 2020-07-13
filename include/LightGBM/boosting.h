@@ -176,7 +176,7 @@ class LIGHTGBM_EXPORT Boosting {
   * \brief Dump model to json format string
   * \param start_iteration The model will be saved start from
   * \param num_iteration Number of iterations that want to dump, -1 means dump all
-  * \param feature_importance_type type of feature importance, 0: count, 1: gain
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \return Json format string of model
   */
   virtual std::string DumpModel(int start_iteration, int num_iteration, int feature_importance_type) const = 0;
@@ -200,7 +200,7 @@ class LIGHTGBM_EXPORT Boosting {
   * \brief Save model to file
   * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
-  * \param feature_importance_type type of feature importance, 0: count, 1:gain
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \param filename Filename that want to save to
   * \return true if succeeded
   */
@@ -210,7 +210,7 @@ class LIGHTGBM_EXPORT Boosting {
   * \brief Save model to string
   * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
-  * \param feature_importance_type type of feature importance, 0: count, 1:gain
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \return Non-empty string if succeeded
   */
   virtual std::string SaveModelToString(int start_iteration, int num_iterations, int feature_importance_type) const = 0;

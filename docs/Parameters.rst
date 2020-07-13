@@ -578,7 +578,9 @@ Learning Control Parameters
 
    -  the feature importance type in the saved model file
 
-   -  ``0``: count-based feature importance; ``1``: gain-based feature importance
+   -  ``0``: count-based feature importance (numbers of splits are counted); ``1``: gain-based feature importance (values of gain are counted)
+
+   -  **Note**: can be used only in CLI version
 
 -  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
 

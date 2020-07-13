@@ -284,11 +284,19 @@ C_API_PREDICT_CONTRIB = 3
 C_API_MATRIX_TYPE_CSR = 0
 C_API_MATRIX_TYPE_CSC = 1
 
+"""Macro definition of feature importance type"""
+C_API_FEATURE_IMPORTANCE_SPLIT = 0
+C_API_FEATURE_IMPORTANCE_GAIN = 1
+
 """Data type of data field"""
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
                      "group": C_API_DTYPE_INT32}
+
+"""String name to int feature importance type mapper"""
+FEATURE_IMPORTANCE_TYPE_MAPPER = {"split": C_API_FEATURE_IMPORTANCE_SPLIT,
+                                  "gain": C_API_FEATURE_IMPORTANCE_GAIN}
 
 
 def convert_from_sliced_object(data):
@@ -2600,7 +2608,7 @@ class Booster(object):
         return [item for i in range_(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
-    def save_model(self, filename, num_iteration=None, start_iteration=0, feature_importance_type=0):
+    def save_model(self, filename, num_iteration=None, start_iteration=0, importance_type='split'):
         """Save Booster to file.
 
         Parameters
@@ -2613,8 +2621,10 @@ class Booster(object):
             If <= 0, all iterations are saved.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be saved.
-        feature_importance_type : int, optional (default=0)
-            0: count-based; 1: gain-based
+        importance_type : string, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
 
         Returns
         -------
@@ -2623,11 +2633,12 @@ class Booster(object):
         """
         if num_iteration is None:
             num_iteration = self.best_iteration
+        importance_type_int = FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
         _safe_call(_LIB.LGBM_BoosterSaveModel(
             self.handle,
             ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
-            ctypes.c_int(feature_importance_type),
+            ctypes.c_int(importance_type_int),
             c_str(filename)))
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
@@ -2688,7 +2699,7 @@ class Booster(object):
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
 
-    def model_to_string(self, num_iteration=None, start_iteration=0, feature_importance_type=0):
+    def model_to_string(self, num_iteration=None, start_iteration=0, importance_type='split'):
         """Save Booster to string.
 
         Parameters
@@ -2699,8 +2710,10 @@ class Booster(object):
             If <= 0, all iterations are saved.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be saved.
-        feature_importance_type : int, optional (default=0)
-            0: count-based; 1: gain-based
+        importance_type : string, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
 
         Returns
         -------
@@ -2709,6 +2722,7 @@ class Booster(object):
         """
         if num_iteration is None:
             num_iteration = self.best_iteration
+        importance_type_int = FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
@@ -2717,7 +2731,7 @@ class Booster(object):
             self.handle,
             ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
-            ctypes.c_int(feature_importance_type),
+            ctypes.c_int(importance_type_int),
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
             ptr_string_buffer))
@@ -2730,7 +2744,7 @@ class Booster(object):
                 self.handle,
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
-                ctypes.c_int(feature_importance_type),
+                ctypes.c_int(importance_type_int),
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
@@ -2738,7 +2752,7 @@ class Booster(object):
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
-    def dump_model(self, num_iteration=None, start_iteration=0, feature_importance_type=0):
+    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split'):
         """Dump Booster to JSON format.
 
         Parameters
@@ -2749,8 +2763,10 @@ class Booster(object):
             If <= 0, all iterations are dumped.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be dumped.
-        feature_importance_type : int, optional (default=0)
-            0: count-based; 1: gain-based
+        importance_type : string, optional (default="split")
+            What type of feature importance should be dumped.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
 
         Returns
         -------
@@ -2759,6 +2775,7 @@ class Booster(object):
         """
         if num_iteration is None:
             num_iteration = self.best_iteration
+        importance_type_int = FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
@@ -2767,7 +2784,7 @@ class Booster(object):
             self.handle,
             ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
-            ctypes.c_int(feature_importance_type),
+            ctypes.c_int(importance_type_int),
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
             ptr_string_buffer))
@@ -2780,7 +2797,7 @@ class Booster(object):
                 self.handle,
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
-                ctypes.c_int(feature_importance_type),
+                ctypes.c_int(importance_type_int),
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
@@ -2980,12 +2997,7 @@ class Booster(object):
         """
         if iteration is None:
             iteration = self.best_iteration
-        if importance_type == "split":
-            importance_type_int = 0
-        elif importance_type == "gain":
-            importance_type_int = 1
-        else:
-            importance_type_int = -1
+        importance_type_int = FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
         result = np.zeros(self.num_feature(), dtype=np.float64)
         _safe_call(_LIB.LGBM_BoosterFeatureImportance(
             self.handle,
