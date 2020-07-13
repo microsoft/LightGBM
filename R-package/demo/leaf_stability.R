@@ -66,37 +66,34 @@ table(new_data$binned)
 # We can plot the binned content
 # On the second plot, we clearly notice the lower the bin (the lower the leaf value), the higher the loss
 # On the third plot, it is smooth!
-.plot_binned <- function(new_data){
-  .diverging_palette <- c(
-    "#A50026"
-    , "#D73027"
-    , "#F46D43"
-    , "#FDAE61"
-    , "#FEE08B"
-    , "#D9EF8B"
-    , "#A6D96A"
-    , "#66BD63"
-    , "#1A9850"
-    , "#006837"
-  )
+.diverging_palette <- c(
+  "#A50026", "#D73027", "#F46D43", "#FDAE61", "#FEE08B"
+  , "#D9EF8B", "#A6D96A", "#66BD63", "#1A9850", "#006837"
+)
+
+.prediction_depth_plot <- function(df){
   plot(
-    x = new_data$X
-    , y = new_data$Y
+    x = df$X
+    , y = df$Y
     , type = "p"
     , main = "Prediction Depth"
     , xlab = "Leaf Bin"
     , ylab = "Prediction Probability"
     , pch = 19
-    , col = .diverging_palette[new_data$binned + 1]
+    , col = .diverging_palette[df$binned + 1]
   )
   legend(
     "topright"
-    , legend = sort(unique(new_data$binned))
+    , title = "bin"
+    , legend = sort(unique(df$binned))
     , pch = 19
-    , col = .diverging_palette[sort(unique(new_data$binned + 1))]
+    , col = .diverging_palette[sort(unique(df$binned + 1))]
     , cex = 0.7
   )
 }
+
+
+.prediction_depth_plot(df = new_data)
 
 ggplot(
     data = new_data
@@ -106,7 +103,30 @@ ggplot(
   labs(title = "Prediction Depth", x = "Leaf Bin", y = "Prediction Probability")
 
 
+.prediction_depth_spread_plot <- function(df){
+  plot(
+    x = df$binned
+    , xlim = c(0, 9)
+    , y = df$Z
+    , type = "p"
+    , main = "Prediction Depth Spread"
+    , xlab = "Leaf Bin"
+    , ylab = "Logloss"
+    , pch = 19
+    , col = .diverging_palette[df$binned + 1]
+  )
+  legend(
+    "topright"
+    , title = "bin"
+    , legend = sort(unique(df$binned))
+    , pch = 19
+    , col = .diverging_palette[sort(unique(df$binned + 1))]
+    , cex = 0.7
+  )
+}
 
+
+.prediction_depth_spread_plot(df = new_data)
 ggplot(
     data = new_data
     , mapping = aes(x = binned, y = Z, fill = binned, group = binned)
@@ -114,6 +134,30 @@ ggplot(
   theme_bw() +
   labs(title = "Prediction Depth Spread", x = "Leaf Bin", y = "Logloss")
 
+.depth_density_plot <- function(df){
+  plot(
+    x = density(df$Y)
+    , xlim = c(min(df$Y), max(df$Y))
+    , type = "p"
+    , main = "Depth Density"
+    , xlab = "Prediction Probability"
+    , ylab = "Bin Density"
+    , pch = 19
+    , col = .diverging_palette[df$binned + 1]
+  )
+  legend(
+    "topright"
+    , title = "bin"
+    , legend = sort(unique(df$binned))
+    , pch = 19
+    , pt.cex = 0.1
+    , col = .diverging_palette[sort(unique(df$binned + 1))]
+    , cex = 0.7
+  )
+}
+
+
+.depth_density_plot(df = new_data)
 ggplot(
     data = new_data
     , mapping = aes(x = Y, y = ..count.., fill = binned)
@@ -161,7 +205,6 @@ new_data2$binned <- .bincode(
     , include.lowest = TRUE
 )
 new_data2$binned[is.na(new_data2$binned)] <- 0L
-new_data2$binned <- as.factor(new_data2$binned)
 
 # We can check the binned content
 table(new_data2$binned)
@@ -171,18 +214,23 @@ table(new_data2$binned)
 # On the third plot, it is clearly not smooth! We are severely overfitting the data, but the rules are
 # real thus it is not an issue
 # However, if the rules were not true, the loss would explode.
+.prediction_depth_plot(df = new_data2)
 ggplot(
     data = new_data2
     , mapping = aes(x = X, y = Y, color = binned)
 ) + geom_point() +
   theme_bw() +
   labs(title = "Prediction Depth", x = "Leaf Bin", y = "Prediction Probability")
+
+.prediction_depth_spread_plot(df = new_data2)
 ggplot(
     data = new_data2
     , mapping = aes(x = binned, y = Z, fill = binned, group = binned)
 ) + geom_boxplot() +
   theme_bw() +
   labs(title = "Prediction Depth Spread", x = "Leaf Bin", y = "Logloss")
+
+.depth_density_plot(df = new_data2)
 ggplot(
     data = new_data2
     , mapping = aes(x = Y, y = ..count.., fill = binned)
@@ -230,7 +278,6 @@ new_data3$binned <- .bincode(
     , include.lowest = TRUE
 )
 new_data3$binned[is.na(new_data3$binned)] <- 0L
-new_data3$binned <- as.factor(new_data3$binned)
 
 # We can check the binned content
 table(new_data3$binned)
@@ -239,6 +286,7 @@ table(new_data3$binned)
 # On the third plot, it is clearly not smooth! We are severely overfitting the data, but the rules
 # are real thus it is not an issue.
 # However, if the rules were not true, the loss would explode. See the sudden spikes?
+.depth_density_plot(df = new_data3)
 ggplot(
     data = new_data3
     , mapping = aes(x = Y, y = ..count.., fill = binned)
@@ -248,6 +296,7 @@ ggplot(
   labs(title = "Depth Density", x = "Prediction Probability", y = "Bin Density")
 
 # Compare with our second model, the difference is severe. This is smooth.
+.depth_density_plot(df = new_data2)
 ggplot(
     data = new_data2
     , mapping = aes(x = Y, y = ..count.., fill = binned)
