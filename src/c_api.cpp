@@ -29,7 +29,6 @@
 #include "application/predictor.hpp"
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
-#include <LightGBM/utils/yamc/yamc_scoped_lock.hpp>
 
 namespace LightGBM {
 
@@ -50,7 +49,7 @@ catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
 
 #define UNIQUE_LOCK(mtx) \
-yamc::scoped_lock<yamc::alternate::shared_mutex> lock(mtx);
+std::unique_lock<yamc::alternate::shared_mutex> lock(mtx);
 
 #define SHARED_LOCK(mtx) \
 yamc::shared_lock<yamc::alternate::shared_mutex> lock(&mtx);
