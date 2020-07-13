@@ -542,10 +542,13 @@ class TestSklearn(unittest.TestCase):
 
         # non-default metric with multiple metrics in eval_metric for LGBMClassifier
         X_classification, y_classification = load_breast_cancer(True)
-        params_classification = {'n_estimators': 2, 'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
+        params_classification = {'n_estimators': 2, 'verbose': -1,
+                                 'objective': 'binary', 'metric': 'binary_logloss'}
         params_fit_classification = {'X': X_classification, 'y': y_classification,
-                      'eval_set': (X_classification, y_classification), 'verbose': False}
-        gbm = lgb.LGBMClassifier(**params_classification).fit(eval_metric=['fair', 'error'], **params_fit_classification)
+                                     'eval_set': (X_classification, y_classification),
+                                     'verbose': False}
+        gbm = lgb.LGBMClassifier(**params_classification).fit(eval_metric=['fair', 'error'],
+                                                              **params_fit_classification)
         self.assertEqual(len(gbm.evals_result_['training']), 3)
         self.assertIn('fair', gbm.evals_result_['training'])
         self.assertIn('binary_error', gbm.evals_result_['training'])
