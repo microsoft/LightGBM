@@ -2,11 +2,10 @@
  * Copyright (c) 2020 IBM Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LGBM_KERNEL_LAUNCHER
-#define LGBM_KERNEL_LAUNCHER
+#ifndef LIGHTGBM_TREELEARNER_CUDA_KERNEL_LAUNCHER_H_
+#define LIGHTGBM_TREELEARNER_CUDA_KERNEL_LAUNCHER_H_
 
 #ifdef USE_CUDA
-// what should I include??
 #include <chrono>
 #include "kernels/histogram_16_64_256.hu"  // kernel, acc_type, data_size_t, uchar, score_t
 
@@ -67,4 +66,4 @@ void cuda_histogram(
 
 
 #endif  // USE_CUDA
-#endif  // LGBM_KERNEL_LAUNCHER
+#endif  // LIGHTGBM_TREELEARNER_CUDA_KERNEL_LAUNCHER_H_
