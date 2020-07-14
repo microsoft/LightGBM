@@ -883,7 +883,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle h
  *   Setting up the number of threads is only done once at `LGBM_BoosterPredictForCSRSingleRowFastInit`
  *   instead of at each prediction.
  *   If you use a different number of threads in other calls, you need to start the setup process over,
- *   or that number of threads will be used for this calls as well.
+ *   or that number of threads will be used for these calls as well.
  *
  * \note
  * You should pre-allocate memory for ``out_result``:
