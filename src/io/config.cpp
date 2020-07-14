@@ -333,6 +333,11 @@ void Config::CheckParamConflict() {
     force_row_wise = false;
   }
 
+  // force gpu_use_dp for CUDA
+  if (device_type == std::string("cuda")) {
+    gpu_use_dp = true;
+  }
+
   // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the split is calculated
   // the count is calculated using the proportion of hessian in the leaf which is rounded up to nearest int, so it can
   // be 1 when there is actually no data in the leaf. In rare cases this can cause a bug because with path smoothing the

@@ -169,7 +169,6 @@ class CUDATreeLearner: public SerialTreeLearner {
     const int kMaxLogWorkgroupsPerFeature = 10;  // 2^10
     /*! brief Max total number of workgroups with preallocated workspace.
      *        If we use more than this number of workgroups, we have to reallocate subhistograms */
-    // int preallocd_max_num_wg_ = 1024;
     std::vector<int> preallocd_max_num_wg_;
 
     /*! \brief True if bagging is used */

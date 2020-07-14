@@ -606,9 +606,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "gpu_device_id", &gpu_device_id);
 
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
-#ifdef USE_CUDA
-  gpu_use_dp = true;  /* LGBM_CUDA hard-coding gpu_use_dp to TRUE (default is false) */
-#endif
 
   GetInt(params, "num_gpu", &num_gpu);
   CHECK_GT(num_gpu, 0);
@@ -715,6 +712,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[gpu_platform_id: " << gpu_platform_id << "]\n";
   str_buf << "[gpu_device_id: " << gpu_device_id << "]\n";
   str_buf << "[gpu_use_dp: " << gpu_use_dp << "]\n";
+  str_buf << "[num_gpu: " << num_gpu << "]\n";
   return str_buf.str();
 }
 
