@@ -175,8 +175,6 @@ class CUDATreeLearner: public SerialTreeLearner {
     /*! \brief True if bagging is used */
     bool use_bagging_;
 
-    /*! \brief GPU device object */
-    // int* dev_;
     /*! \brief GPU command queue object */
     std::vector<cudaStream_t> stream_;
 

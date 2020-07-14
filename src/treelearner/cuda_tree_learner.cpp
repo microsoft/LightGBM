@@ -163,7 +163,6 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
 int CUDATreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   // we roughly want 256 workgroups per device, and we have num_dense_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
-
   double x = 256.0 / num_dense_feature_groups_;
 
   int exp_workgroups_per_feature = static_cast<int>(ceil(log2(x)));
@@ -186,7 +185,6 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
   // decide the best number of workgroups working on one feature4 tuple
   // set work group size based on feature size
   // each 2^exp_workgroups_per_feature workgroups work on a feature4 tuple
-
   int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(leaf_num_data);
   std::vector<int> num_gpu_workgroups;
   ThreadData *thread_data = reinterpret_cast<ThreadData*>(malloc(sizeof(ThreadData) * num_gpu_));
@@ -213,7 +211,6 @@ void CUDATreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featu
   }
 
   /* Wait for the threads to finish */
-
   for (int device_id = 0; device_id < num_gpu_; ++device_id) {
     if (pthread_join(*(cpu_threads_[device_id]), NULL)) {
       fprintf(stderr, "Error in joining threads. Exiting\n");
@@ -439,7 +436,6 @@ void CUDATreeLearner::copyDenseFeature() {
 // LGBM_CUDA: InitGPU w/ num_gpu
 void CUDATreeLearner::InitGPU(int num_gpu) {
   // Get the max bin size, used for selecting best GPU kernel
-
   max_num_bin_ = 0;
 
   #if GPU_DEBUG >= 1
@@ -676,7 +672,6 @@ bool CUDATreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int r
   data_size_t num_data_in_left_child = GetGlobalDataCountInLeaf(left_leaf);
   data_size_t num_data_in_right_child = GetGlobalDataCountInLeaf(right_leaf);
 
-
   // only have root
   if (right_leaf < 0) {
     smaller_leaf = -1;
@@ -742,7 +737,6 @@ bool CUDATreeLearner::ConstructGPUHistogramsAsync(
   #pragma omp parallel for schedule(static, 1024) reduction(+:used_dense_feature_groups) if (num_dense_feature_groups_ >= 2048)
   for (int i = 0; i < num_dense_feature_groups_; ++i) {
     if (is_feature_group_used[dense_feature_group_map_[i]]) {
-      // feature_masks_[i] = 1;
       feature_masks_[i] = is_feature_group_used[dense_feature_group_map_[i]];
       ++used_dense_feature_groups;
     } else {
@@ -903,7 +897,6 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
-
     hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - kHistOffset;
 
     is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,

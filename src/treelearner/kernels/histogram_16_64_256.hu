@@ -1,15 +1,6 @@
 /*!
- * ibmGBT: IBM CUDA Accelerated LightGBM
- *
- * IBM Confidential
- * Copyright (c) 2019 IBM Corporation. All rights reserved.
- *
- * The source code for this program is not published or otherwise
- * divested of its trade secrets, irrespective of what has been
- * deposited with the U.S. Copyright Office.
- *
- * US Government Users Restricted Rights - Use, duplication or
- * disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+ * Copyright (c) 2020 IBM Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
 #ifndef LIGHTGBM_TREELEARNER_KERNELS_HISTOGRAM_16_64_256_HU_
