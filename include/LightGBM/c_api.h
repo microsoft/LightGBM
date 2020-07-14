@@ -1063,7 +1063,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
  *   Setting up the number of threads is only done once at `LGBM_BoosterPredictForMatSingleRowFastInit`
  *   instead of at each prediction.
  *   If you use a different number of threads in other calls, you need to start the setup process over,
- *   or that number of threads will be used for this calls as well.
+ *   or that number of threads will be used for these calls as well.
  *
  * \param fastConfig_handle FastConfig object handle returned by `LGBM_BoosterPredictForMatSingleRowFastInit`
  * \param data Single-row array data (no other way than row-major form).
