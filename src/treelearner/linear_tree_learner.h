@@ -15,11 +15,16 @@ namespace LightGBM {
 class LinearTreeLearner: public SerialTreeLearner {
  public:
 
-   explicit LinearTreeLearner(const Config* config) : SerialTreeLearner(config) {};
+  explicit LinearTreeLearner(const Config* config) : SerialTreeLearner(config) {};
+
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
    
   Tree* Train(const score_t* gradients, const score_t *hessians);
 
-  void CalculateLinear(Tree* tree);
+  void CalculateLinear(Tree* tree, int leaf,
+                       const std::vector<int>& parent_features,
+                       const std::vector<double>& parent_coeffs,
+                       const double& parent_const, const double& sum_grad, const double& sum_hess);
 
   void AddPredictionToScore(const Tree* tree,
                             double* out_score) const override {
@@ -51,7 +56,11 @@ class LinearTreeLearner: public SerialTreeLearner {
       }
     }
   }
-
+private:
+  /*! \brief Temporary storage for calculating additive linear model */
+  std::vector<double> curr_pred_;
+  /*! \brief Temporary storage for calculating additive linear model */
+  std::vector<int8_t> is_nan_;
 };
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_

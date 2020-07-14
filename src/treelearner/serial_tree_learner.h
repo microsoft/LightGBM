@@ -53,7 +53,7 @@ class SerialTreeLearner: public TreeLearner {
 
   ~SerialTreeLearner();
 
-  void Init(const Dataset* train_data, bool is_constant_hessian) override;
+  virtual void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
   void ResetTrainingData(const Dataset* train_data,
                          bool is_constant_hessian) override {
