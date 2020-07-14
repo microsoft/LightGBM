@@ -707,7 +707,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
 /*!
  * \brief Release FastConfig object.
  *
- * \param fastConfig Handle to the FastConfig object acquired with a `*FastInit()` method.
+ * \param fastConfig Handle to the FastConfig object acquired with a ``*FastInit()`` method.
  * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);
@@ -854,15 +854,15 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
                                                          double* out_result);
 
 /*!
- * \brief Initialize and return a `FastConfigHandle` for use with `LGBM_BoosterPredictForCSRSingleRowFast`.
+ * \brief Initialize and return a ``FastConfigHandle`` for use with ``LGBM_BoosterPredictForCSRSingleRowFast``.
  *
- * Release the `FastConfig` by passing its handle to `LGBM_FastConfigFree` when no longer needed.
+ * Release the ``FastConfig`` by passing its handle to ``LGBM_FastConfigFree`` when no longer needed.
  *
  * \param handle Booster handle
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param num_col Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
- * \param[out] out_fastConfig FastConfig object with which you can call `LGBM_BoosterPredictForCSRSingleRowFast`
+ * \param[out] out_fastConfig FastConfig object with which you can call ``LGBM_BoosterPredictForCSRSingleRowFast``
  * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
@@ -872,15 +872,15 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle h
                                                                  FastConfigHandle *out_fastConfig);
 
 /*!
- * \brief Faster variant of `LGBM_BoosterPredictForCSRSingleRow`.
+ * \brief Faster variant of ``LGBM_BoosterPredictForCSRSingleRow``.
  *
- * Score single rows after setup with `LGBM_BoosterPredictForCSRSingleRowFastInit`.
+ * Score single rows after setup with ``LGBM_BoosterPredictForCSRSingleRowFastInit``.
  *
  * By removing the setup steps from this call extra optimizations can be made like
  * initializing the config only once, instead of once per call.
  *
  * \note
- *   Setting up the number of threads is only done once at `LGBM_BoosterPredictForCSRSingleRowFastInit`
+ *   Setting up the number of threads is only done once at ``LGBM_BoosterPredictForCSRSingleRowFastInit``
  *   instead of at each prediction.
  *   If you use a different number of threads in other calls, you need to start the setup process over,
  *   or that number of threads will be used for these calls as well.
@@ -891,7 +891,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle h
  *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  *
- * \param fastConfig_handle FastConfig object handle returned by `LGBM_BoosterPredictForCSRSingleRowFastInit`
+ * \param fastConfig_handle FastConfig object handle returned by ``LGBM_BoosterPredictForCSRSingleRowFastInit``
  * \param indptr Pointer to row headers
  * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
  * \param indices Pointer to column indices
@@ -1034,15 +1034,15 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
                                                          double* out_result);
 
 /*!
- * \brief Initialize and return a `FastConfigHandle` for use with `LGBM_BoosterPredictForMatSingleRowFast`.
+ * \brief Initialize and return a ``FastConfigHandle`` for use with ``LGBM_BoosterPredictForMatSingleRowFast``.
  *
- * Release the `FastConfig` by passing its handle to `LGBM_FastConfigFree` when no longer needed.
+ * Release the ``FastConfig`` by passing its handle to ``LGBM_FastConfigFree`` when no longer needed.
  *
  * \param handle Booster handle
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param ncol Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
- * \param[out] out_fastConfig FastConfig object with which you can call `LGBM_BoosterPredictForMatSingleRowFast`
+ * \param[out] out_fastConfig FastConfig object with which you can call ``LGBM_BoosterPredictForMatSingleRowFast``
  * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
@@ -1052,20 +1052,20 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
                                                                  FastConfigHandle *out_fastConfig);
 
 /*!
- * \brief Faster variant of `LGBM_BoosterPredictForMatSingleRow`.
+ * \brief Faster variant of ``LGBM_BoosterPredictForMatSingleRow``.
  *
- * Score a single row after setup with `LGBM_BoosterPredictForMatSingleRowFastInit`.
+ * Score a single row after setup with ``LGBM_BoosterPredictForMatSingleRowFastInit``.
  *
  * By removing the setup steps from this call extra optimizations can be made like
  * initializing the config only once, instead of once per call.
  *
  * \note
- *   Setting up the number of threads is only done once at `LGBM_BoosterPredictForMatSingleRowFastInit`
+ *   Setting up the number of threads is only done once at ``LGBM_BoosterPredictForMatSingleRowFastInit``
  *   instead of at each prediction.
  *   If you use a different number of threads in other calls, you need to start the setup process over,
  *   or that number of threads will be used for these calls as well.
  *
- * \param fastConfig_handle FastConfig object handle returned by `LGBM_BoosterPredictForMatSingleRowFastInit`
+ * \param fastConfig_handle FastConfig object handle returned by ``LGBM_BoosterPredictForMatSingleRowFastInit``
  * \param data Single-row array data (no other way than row-major form).
  * \param predict_type What should be predicted
  *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
