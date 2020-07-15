@@ -35,23 +35,24 @@ class LinearTreeLearner: public SerialTreeLearner {
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       int num_feat = tree->LeafFeaturesInner(i).size();
-      for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        double add_score = leaf_const;
-        bool nan_found = false;
-        for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
-          int feat = tree->LeafFeaturesInner(i)[feat_num];
-          double feat_val = train_data_->get_data(tmp_idx[j], feat);
-          if (isnan(feat_val) || isinf(feat_val)) {
-            nan_found = true;
-            break;
+      for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
+        int feat = tree->LeafFeaturesInner(i)[feat_num];
+        const double* feat_ptr = train_data_->raw_index(feat);
+        for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
+          if (is_nan_[tmp_idx[j]]) {
+            if (feat_num == 0) {
+              out_score[tmp_idx[j]] += tree->LeafOutput(i);
+            }
+            continue;
           } else {
-            add_score += feat_val * tree->LeafCoeffs(i)[feat_num];
+            double feat_val = feat_ptr[tmp_idx[j]];
+            out_score[tmp_idx[j]] += feat_val * tree->LeafCoeffs(i)[feat_num];
           }
         }
-        if (nan_found) {
-          out_score[tmp_idx[j]] += tree->LeafOutput(i);
-        } else {
-          out_score[tmp_idx[j]] += add_score;
+      }
+      for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
+        if (!is_nan_[tmp_idx[j]]) {
+          out_score[tmp_idx[j]] += tree->LeafConst(i);
         }
       }
     }

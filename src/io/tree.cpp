@@ -133,7 +133,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   bool nan_found = false;                                                     \
   for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {              \
      int feat_num = leaf_features_inner_[~node][j];                           \
-     double feat_val = data->get_data((data_idx), (feat_num));                \
+     double feat_val = feat_ptr[(feat_num)][(data_idx)];                      \
      if (isnan(feat_val) || isinf(feat_val)) {                                \
         nan_found = true;                                                     \
         break;                                                                \
@@ -146,6 +146,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
     score[(data_idx)] += add_score;                                           \
   }                                                                           \
 }
+
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
   if (!is_linear_ && num_leaves_ <= 1) {
@@ -166,7 +167,11 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
+    std::vector<const double*> feat_ptr;
+    for (int i = 0; i < data->num_features(); ++i) {
+      feat_ptr.push_back(data->raw_index(i));
+    }
+    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
     (int, data_size_t start, data_size_t end) {
       PredictionFunLinear(data->num_features(), i, start, Decision, DecisionInner, split_feature_inner_[node], i);
     });
@@ -220,7 +225,11 @@ void Tree::AddPredictionToScore(const Dataset* data,
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+    std::vector<const double*> feat_ptr;
+    for (int i = 0; i < data->num_features(); ++i) {
+      feat_ptr.push_back(data->raw_index(i));
+    }
+    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
     (int, data_size_t start, data_size_t end) {
       PredictionFunLinear(data->num_features(), i, used_data_indices[start], Decision, DecisionInner, split_feature_inner_[node], used_data_indices[i]);
     });

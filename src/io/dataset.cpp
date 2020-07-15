@@ -770,7 +770,7 @@ void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
     if (has_raw_) {
-      raw_data_.resize(num_data);
+      ResizeRaw(num_data);
     }
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
@@ -803,7 +803,9 @@ void Dataset::CopySubrow(const Dataset* fullset,
   if (has_raw_) {
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < num_used_indices; ++i) {
-      raw_data_[i] = fullset->raw_data_[used_indices[i]];
+      for (int j = 0; j < num_features_; ++j) {
+        raw_data_[j][i] = fullset->raw_data_[j][used_indices[i]];
+      }
     }
   }
 }
@@ -1007,11 +1009,11 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       feature_groups_[i]->SaveBinaryToFile(writer.get());
     }
 
-    // write raw data
+    // write raw data; use row-major order so we can read row-by-row
     if (has_raw_) {
       for (int i = 0; i < num_data_; ++i) {
         for (int j = 0; j < num_features_; ++j) {
-          writer->Write(&raw_data_[i][j], sizeof(double));
+          writer->Write(&raw_data_[j][i], sizeof(double));
         }
       }
     }

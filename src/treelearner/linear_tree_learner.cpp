@@ -96,6 +96,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num,
   // the subscript _T denotes the transpose
   int idx = data_partition_->leaf_begin(leaf_num);
   const data_size_t* ind = data_partition_->indices();
+  const double* feat_ptr = train_data_->raw_index(feat);
   data_size_t num_data = data_partition_->leaf_count(leaf_num);
   auto features = parent_features;
   auto coeffs = parent_coeffs;
@@ -111,7 +112,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num,
 #pragma omp parallel for schedule(static, 512) reduction(+:XTHX_00,XTHX_01,XTHX_11,XTHy_0,XTHy_1,gTX_0,gTX_1) if (num_data > 1024)
     for (int i = 0; i < num_data; ++i) {
       int row_idx = ind[idx + i];
-      double x = train_data_->get_data(row_idx, feat);
+      double x = feat_ptr[row_idx];
       X[i] = x;
       if (std::isnan(x) || std::isinf(x)) {
         is_nan_[row_idx] = 1;

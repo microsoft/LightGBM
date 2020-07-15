@@ -397,7 +397,9 @@ class Dataset {
       }
     }
     if (has_raw_) {
-      raw_data_[row_idx] = raw_row;
+      for (int i = 0; i < raw_row.size(); ++i) {
+        raw_data_[i][row_idx] = raw_row[i];
+      }
     }
   }
 
@@ -422,7 +424,9 @@ class Dataset {
       }
     }
     if (has_raw_) {
-      raw_data_[row_idx] = raw_row;
+      for (int i = 0; i < raw_row.size(); ++i) {
+        raw_data_[i][row_idx] = raw_row[i];
+      }
     }
     FinishOneRow(tid, row_idx, is_feature_added);
   }
@@ -701,13 +705,32 @@ class Dataset {
   inline void SetRaw(bool has_raw) { has_raw_ = has_raw; }
 
   /*! \brief Get raw data */
-  inline double get_data(int idx, int feat_num) const { return raw_data_[idx][feat_num]; }
+  inline double get_data(int idx, int feat_num) const { return raw_data_[feat_num][idx]; }
 
   /*! \brief Get size of raw data */
-  inline data_size_t get_raw_size() const { return raw_data_.size(); }
+  inline data_size_t get_raw_size() const {
+    if (raw_data_.size() == 0) {
+      return 0;
+    } else {
+      return raw_data_[0].size();
+    }
+
+  }
 
   /*! \brief Resize raw_data_ */
-  inline void ResizeRaw(int num_rows) {raw_data_.resize(num_rows); }
+  inline void ResizeRaw(int num_rows) {
+    for (int i = 0; i < raw_data_.size(); ++i) {
+      raw_data_[i].resize(num_rows);
+    }
+    for (int i = 0; i < num_features_ - raw_data_.size(); ++i) {
+      raw_data_.push_back(std::vector<double>(num_rows, 0));
+    }
+  }
+
+  /*! \brief Get pointer to raw_data_ feature */
+  inline const double* raw_index(int feat_num) const {
+    return raw_data_[feat_num].data();
+  }
 
  private:
   std::string data_filename_;

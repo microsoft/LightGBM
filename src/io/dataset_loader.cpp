@@ -195,13 +195,14 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
-      if (dataset->has_raw()) {
-        dataset->raw_data_.resize(dataset->num_data_);
-      }
       // sample data
       auto sample_data = SampleTextDataFromMemory(text_data);
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      
+      if (dataset->has_raw()) {
+        dataset->ResizeRaw(dataset->num_data_);
+      }
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       // extract features
@@ -215,11 +216,11 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       } else {
         dataset->num_data_ = num_global_data;
       }
-      if (dataset->has_raw()) {
-        dataset->raw_data_.resize(dataset->num_data_);
-      }
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      if (dataset->has_raw()) {
+        dataset->ResizeRaw(dataset->num_data_);
+      }
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       Log::Debug("Making second pass...");
@@ -259,12 +260,12 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
-      if (dataset->has_raw()) {
-        dataset->raw_data_.resize(dataset->num_data_);
-      }
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       dataset->CreateValid(train_data);
+      if (dataset->has_raw()) {
+        dataset->ResizeRaw(dataset->num_data_);
+      }
       // extract features
       ExtractFeaturesFromMemory(&text_data, parser.get(), dataset.get());
       text_data.clear();
@@ -272,13 +273,13 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       TextReader<data_size_t> text_reader(filename, config_.header);
       // Get number of lines of data file
       dataset->num_data_ = static_cast<data_size_t>(text_reader.CountLine());
-      if (dataset->has_raw()) {
-        dataset->raw_data_.resize(dataset->num_data_);
-      }
       num_global_data = dataset->num_data_;
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       dataset->CreateValid(train_data);
+      if (dataset->has_raw()) {
+        dataset->ResizeRaw(dataset->num_data_);
+      }
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
@@ -564,7 +565,9 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
         curr_row[j] = tmp_ptr_raw_row[j];
       }
       mem_ptr += row_size;
-      dataset->raw_data_[i] = curr_row;
+      for (int k = 0; k < dataset->num_features(); ++k) {
+        dataset->raw_data_[k][i] = curr_row[k];
+      }
     } 
   }
 
@@ -1102,7 +1105,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
         }
       }
       if (dataset->has_raw()) {
-        dataset->raw_data_[i] = feature_row;
+        for (int j = 0; j < feature_row.size(); ++j) {
+          dataset->raw_data_[j][i] = feature_row[j];
+        }
       }
       dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
@@ -1159,7 +1164,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       }
       dataset->FinishOneRow(tid, i, is_feature_added);
       if (dataset->has_raw()) {
-        dataset->raw_data_[i] = feature_row;
+        for (int j = 0; j < feature_row.size(); ++j) {
+          dataset->raw_data_[j][i] = feature_row[j];
+        }
       }
       OMP_LOOP_EX_END();
     }
@@ -1229,7 +1236,9 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
         }
       }
       if (dataset->has_raw()) {
-        dataset->raw_data_[i] = feature_row;
+        for (int j = 0; j < feature_row.size(); ++j) {
+          dataset->raw_data_[j][i] = feature_row[j];
+        }
       }
       dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
