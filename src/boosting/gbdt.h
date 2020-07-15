@@ -249,9 +249,11 @@ class GBDT : public GBDTBase {
   * \brief Dump model to json format string
   * \param start_iteration The model will be saved start from
   * \param num_iteration Number of iterations that want to dump, -1 means dump all
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \return Json format string of model
   */
-  std::string DumpModel(int start_iteration, int num_iteration) const override;
+  std::string DumpModel(int start_iteration, int num_iteration,
+                        int feature_importance_type) const override;
 
   /*!
   * \brief Translate model to if-else statement
@@ -272,18 +274,22 @@ class GBDT : public GBDTBase {
   * \brief Save model to file
   * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \param filename Filename that want to save to
   * \return is_finish Is training finished or not
   */
-  bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const override;
+  bool SaveModelToFile(int start_iteration, int num_iterations,
+                       int feature_importance_type,
+                       const char* filename) const override;
 
   /*!
   * \brief Save model to string
   * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \return Non-empty string if succeeded
   */
-  std::string SaveModelToString(int start_iteration, int num_iterations) const override;
+  std::string SaveModelToString(int start_iteration, int num_iterations, int feature_importance_type) const override;
 
   /*!
   * \brief Restore from a serialized buffer

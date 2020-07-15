@@ -689,8 +689,8 @@ class Booster {
     boosting_->GetPredictAt(data_idx, out_result, out_len);
   }
 
-  void SaveModelToFile(int start_iteration, int num_iteration, const char* filename) {
-    boosting_->SaveModelToFile(start_iteration, num_iteration, filename);
+  void SaveModelToFile(int start_iteration, int num_iteration, int feature_importance_type, const char* filename) {
+    boosting_->SaveModelToFile(start_iteration, num_iteration, feature_importance_type, filename);
   }
 
   void LoadModelFromString(const char* model_str) {
@@ -698,12 +698,16 @@ class Booster {
     boosting_->LoadModelFromString(model_str, len);
   }
 
-  std::string SaveModelToString(int start_iteration, int num_iteration) {
-    return boosting_->SaveModelToString(start_iteration, num_iteration);
+  std::string SaveModelToString(int start_iteration, int num_iteration,
+                                int feature_importance_type) {
+    return boosting_->SaveModelToString(start_iteration,
+                                        num_iteration, feature_importance_type);
   }
 
-  std::string DumpModel(int start_iteration, int num_iteration) {
-    return boosting_->DumpModel(start_iteration, num_iteration);
+  std::string DumpModel(int start_iteration, int num_iteration,
+                        int feature_importance_type) {
+    return boosting_->DumpModel(start_iteration, num_iteration,
+                                feature_importance_type);
   }
 
   std::vector<double> FeatureImportance(int num_iteration, int importance_type) {
@@ -2010,22 +2014,26 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
 int LGBM_BoosterSaveModel(BoosterHandle handle,
                           int start_iteration,
                           int num_iteration,
+                          int feature_importance_type,
                           const char* filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->SaveModelToFile(start_iteration, num_iteration, filename);
+  ref_booster->SaveModelToFile(start_iteration, num_iteration,
+                               feature_importance_type, filename);
   API_END();
 }
 
 int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                   int start_iteration,
                                   int num_iteration,
+                                  int feature_importance_type,
                                   int64_t buffer_len,
                                   int64_t* out_len,
                                   char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  std::string model = ref_booster->SaveModelToString(start_iteration, num_iteration);
+  std::string model = ref_booster->SaveModelToString(
+      start_iteration, num_iteration, feature_importance_type);
   *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
     std::memcpy(out_str, model.c_str(), *out_len);
@@ -2036,12 +2044,14 @@ int LGBM_BoosterSaveModelToString(BoosterHandle handle,
 int LGBM_BoosterDumpModel(BoosterHandle handle,
                           int start_iteration,
                           int num_iteration,
+                          int feature_importance_type,
                           int64_t buffer_len,
                           int64_t* out_len,
                           char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  std::string model = ref_booster->DumpModel(start_iteration, num_iteration);
+  std::string model = ref_booster->DumpModel(start_iteration, num_iteration,
+                                             feature_importance_type);
   *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
     std::memcpy(out_str, model.c_str(), *out_len);
