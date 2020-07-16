@@ -732,8 +732,7 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
-    p_dataset->PushOneRow(tid,
-                          static_cast<data_size_t>(start_row + i), one_row);
+    p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();

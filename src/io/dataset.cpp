@@ -1528,6 +1528,7 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   num_features_ += other->num_features_;
   num_total_features_ += other->num_total_features_;
   num_groups_ += other->num_groups_;
+  ResizeRaw(num_data_, num_features_);
 }
 
 }  // namespace LightGBM

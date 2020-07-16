@@ -717,12 +717,26 @@ class Dataset {
 
   }
 
-  /*! \brief Resize raw_data_ */
+  /*! \brief Resize raw_data_, use current number of featurse */
   inline void ResizeRaw(int num_rows) {
     for (int i = 0; i < raw_data_.size(); ++i) {
       raw_data_[i].resize(num_rows);
     }
-    for (int i = 0; i < num_features_ - raw_data_.size(); ++i) {
+    int curr_size = raw_data_.size();
+    for (int i = 0; i < num_features_ - curr_size; ++i) {
+      raw_data_.push_back(std::vector<double>(num_rows, 0));
+    }
+  }
+
+  /*! \brief Resize raw_data_ */
+  inline void ResizeRaw(int num_rows, int num_features) {
+    for (int i = 0; i < raw_data_.size(); ++i) {
+      raw_data_[i].resize(num_rows);
+    }
+    if (num_features < num_features_) {
+      raw_data_.resize(num_features);
+    }
+    for (int i = 0; i < num_features - raw_data_.size(); ++i) {
       raw_data_.push_back(std::vector<double>(num_rows, 0));
     }
   }
