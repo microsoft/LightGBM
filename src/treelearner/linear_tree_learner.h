@@ -41,14 +41,14 @@ class LinearTreeLearner: public SerialTreeLearner {
         int feat = tree->LeafFeaturesInner(i)[feat_num];
         const double* feat_ptr = train_data_->raw_index(feat);
         for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-          if (!is_nan_[tmp_idx[j]]) {
+          if (is_nan_[tmp_idx[j]] == 0) {
             double feat_val = feat_ptr[tmp_idx[j]];
             out_score[tmp_idx[j]] += feat_val * leaf_coeffs[feat_num];
           }
         }
       }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        if (is_nan_[tmp_idx[j]]) {
+        if (is_nan_[tmp_idx[j]] == 1) {
           out_score[tmp_idx[j]] += leaf_output;
         } else {
           out_score[tmp_idx[j]] += leaf_const;

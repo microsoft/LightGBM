@@ -98,6 +98,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num,
   const data_size_t* ind = data_partition_->indices();
   const double* feat_ptr = train_data_->raw_index(feat);
   data_size_t num_data = data_partition_->leaf_count(leaf_num);
+  double leaf_output = tree->LeafOutput(leaf_num);
   auto features = parent_features;
   auto coeffs = parent_coeffs;
   double constant_term;
@@ -147,7 +148,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num,
         for (int i = 0; i < num_data; ++i) {
           int row_idx = ind[idx + i];
           if (is_nan_[row_idx] == 1) {
-            curr_pred_[row_idx] = tree->LeafOutput(leaf_num);
+            curr_pred_[row_idx] = leaf_output;
           } else {
             curr_pred_[row_idx] += constant_term + X[i] * feat_coeff;
             if (std::isnan(curr_pred_[row_idx])) {
@@ -159,7 +160,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num,
         for (int i = 0; i < num_data; ++i) {
           int row_idx = ind[idx + i];
           if (is_nan_[row_idx] == 1) {
-            curr_pred_[row_idx] = tree->LeafOutput(leaf_num);
+            curr_pred_[row_idx] = leaf_output;
           } else {
             curr_pred_[row_idx] += constant_term;
           }
@@ -185,13 +186,14 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num,
   if (!can_solve) {
     // just calculate an adjustment to the constant term
     double hy = 0;
+    double linear_lambda = config_->linear_lambda;
 #pragma omp parallel for schedule(static, 512) reduction(+:hy) if (num_data > 1024)
     for (int i = 0; i < num_data; ++i) {
       int row_idx = ind[idx + i];
       hy += hessians_[row_idx] * curr_pred_[row_idx];
     }
     if (sum_hess > kEpsilon) {
-      constant_term = -(hy + sum_grad) / (sum_hess + config_->linear_lambda);
+      constant_term = -(hy + sum_grad) / (sum_hess + linear_lambda);
     } else {
       constant_term = 0;
     }
@@ -201,7 +203,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num,
     for (int i = 0; i < num_data; ++i) {
       int row_idx = ind[idx + i];
       if (is_nan_[row_idx] == 1) {
-        curr_pred_[row_idx] = tree->LeafOutput(leaf_num);
+        curr_pred_[row_idx] = leaf_output;
       } else {
         curr_pred_[row_idx] += constant_term;
       }
