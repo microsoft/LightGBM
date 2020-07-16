@@ -151,8 +151,6 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num,
             curr_pred_[row_idx] = leaf_output;
           } else {
             curr_pred_[row_idx] += constant_term + X[i] * feat_coeff;
-            if (std::isnan(curr_pred_[row_idx])) {
-            }
           }
         }
       } else {
