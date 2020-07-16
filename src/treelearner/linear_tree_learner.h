@@ -31,28 +31,27 @@ class LinearTreeLearner: public SerialTreeLearner {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
-      double leaf_const = tree->LeafConst(i);
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       int num_feat = tree->LeafFeaturesInner(i).size();
+      double leaf_output = tree->LeafOutput(i);
+      double leaf_const = tree->LeafConst(i);
+      std::vector<double> leaf_coeffs = tree->LeafCoeffs(i);
       for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
         int feat = tree->LeafFeaturesInner(i)[feat_num];
         const double* feat_ptr = train_data_->raw_index(feat);
         for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-          if (is_nan_[tmp_idx[j]]) {
-            if (feat_num == 0) {
-              out_score[tmp_idx[j]] += tree->LeafOutput(i);
-            }
-            continue;
-          } else {
+          if (!is_nan_[tmp_idx[j]]) {
             double feat_val = feat_ptr[tmp_idx[j]];
-            out_score[tmp_idx[j]] += feat_val * tree->LeafCoeffs(i)[feat_num];
+            out_score[tmp_idx[j]] += feat_val * leaf_coeffs[feat_num];
           }
         }
       }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        if (!is_nan_[tmp_idx[j]]) {
-          out_score[tmp_idx[j]] += tree->LeafConst(i);
+        if (is_nan_[tmp_idx[j]]) {
+          out_score[tmp_idx[j]] += leaf_output;
+        } else {
+          out_score[tmp_idx[j]] += leaf_const;
         }
       }
     }
