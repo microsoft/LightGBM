@@ -405,7 +405,7 @@ test_that("Saving a model with different feature importance types works", {
     )
     expect_true(lgb.is.Booster(bst))
 
-    .feat_importance_from_string <- function(model_string){
+    .feat_importance_from_string <- function(model_string) {
         file_lines <- strsplit(model_string, "\n")[[1L]]
         start_indx <- which(grepl("^feature_importances\\:$", file_lines)) + 1L
         blank_line_indices <- which(file_lines == "")
@@ -447,4 +447,3 @@ test_that("Saving a model with different feature importance types works", {
         model_string <- bst$save_model_to_string(feature_importance_type = UNSUPPORTED_IMPORTANCE)
     }, "Unknown importance type")
 })
-
