@@ -956,7 +956,6 @@ struct Config {
 
   // check = >0
   // desc = number of gpus (CUDA implementation only)
-  // desc = default value is 1
   int num_gpu = 1;
 
   #pragma endregion
