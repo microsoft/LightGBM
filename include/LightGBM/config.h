@@ -532,6 +532,11 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string output_model = "LightGBM_model.txt";
 
+  // desc = the feature importance type in the saved model file
+  // desc = ``0``: count-based feature importance (numbers of splits are counted); ``1``: gain-based feature importance (values of gain are counted)
+  // desc = **Note**: can be used only in CLI version
+  int saved_feature_importance_type = 0;
+
   // [no-save]
   // alias = save_period
   // desc = frequency of saving model file snapshot
