@@ -391,9 +391,7 @@ context("save_model")
 test_that("Saving a model with different feature importance types works", {
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
-    data(agaricus.test, package = "lightgbm")
     train <- agaricus.train
-    test <- agaricus.test
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label

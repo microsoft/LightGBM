@@ -114,9 +114,6 @@ Rscript build_r.R --skip-install || exit -1
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 
-# suppress R CMD check warning from Suggests dependencies not being available
-export _R_CHECK_FORCE_SUGGESTS_=0
-
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
