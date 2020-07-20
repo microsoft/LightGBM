@@ -157,7 +157,7 @@ if ($env:COMPILER -ne "MSVC") {
   $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
   $relevant_line = $note_str -match '(\d+) NOTE'
   $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 3
+  $ALLOWED_CHECK_NOTES = 2
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
       Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
       Check-Output $False
