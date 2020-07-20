@@ -381,10 +381,12 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(USE_CUDA)
+  set_property(TARGET lightgbm PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   TARGET_LINK_LIBRARIES(
     lightgbm
     ${histograms}
   )
+  set_property(TARGET _lightgbm PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   TARGET_LINK_LIBRARIES(
     _lightgbm
     ${histograms}
