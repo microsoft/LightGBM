@@ -173,12 +173,9 @@
                                                          int numNonZeros,
                                                          FastConfigHandle handle,
                                                          int indptr_type,
-                                                         //int data_type,
                                                          int64_t nelem,
-                                                         //int64_t num_col,
                                                          int predict_type,
                                                          int num_iteration,
-                                                         //const char* parameter,
                                                          int64_t* out_len,
                                                          double* out_result) {
     // Alternatives
