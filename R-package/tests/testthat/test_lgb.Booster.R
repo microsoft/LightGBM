@@ -385,3 +385,65 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
         )
     }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
 })
+
+context("save_model")
+
+test_that("Saving a model with different feature importance types works", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    data(agaricus.test, package = "lightgbm")
+    train <- agaricus.train
+    test <- agaricus.test
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = 2L
+        , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    .feat_importance_from_string <- function(model_string) {
+        file_lines <- strsplit(model_string, "\n")[[1L]]
+        start_indx <- which(grepl("^feature_importances\\:$", file_lines)) + 1L
+        blank_line_indices <- which(file_lines == "")
+        end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
+        importances <- file_lines[start_indx: end_indx]
+        return(importances)
+    }
+
+    GAIN_IMPORTANCE <- 1L
+    model_string <- bst$save_model_to_string(feature_importance_type = GAIN_IMPORTANCE)
+    expect_equal(
+        .feat_importance_from_string(model_string)
+        , c(
+            "odor=none=4010"
+            , "stalk-root=club=1163"
+            , "stalk-root=rooted=573"
+            , "stalk-surface-above-ring=silky=450"
+            , "spore-print-color=green=397"
+            , "gill-color=buff=281"
+        )
+    )
+
+    SPLIT_IMPORTANCE <- 0L
+    model_string <- bst$save_model_to_string(feature_importance_type = SPLIT_IMPORTANCE)
+    expect_equal(
+        .feat_importance_from_string(model_string)
+        , c(
+            "odor=none=1"
+            , "gill-color=buff=1"
+            , "stalk-root=club=1"
+            , "stalk-root=rooted=1"
+            , "stalk-surface-above-ring=silky=1"
+            , "spore-print-color=green=1"
+        )
+    )
+
+    UNSUPPORTED_IMPORTANCE <- 2L
+    expect_error({
+        model_string <- bst$save_model_to_string(feature_importance_type = UNSUPPORTED_IMPORTANCE)
+    }, "Unknown importance type")
+})
