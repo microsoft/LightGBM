@@ -138,7 +138,6 @@ if ($env:COMPILER -ne "MSVC") {
   $PKG_FILE_NAME = $PKG_FILE_NAME -replace '[\\]', '/'
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
-  $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
 
