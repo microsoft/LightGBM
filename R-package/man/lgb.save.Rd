@@ -39,6 +39,6 @@ model <- lgb.train(
   , learning_rate = 1.0
   , early_stopping_rounds = 5L
 )
-lgb.save(model, "lgb-model.txt")
+lgb.save(model, tempfile(fileext = ".txt"))
 }
 }

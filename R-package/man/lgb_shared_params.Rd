@@ -29,3 +29,4 @@ If early stopping occurs, the model will have 'best_iter' field.}
 \description{
 Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
 }
+\keyword{internal}

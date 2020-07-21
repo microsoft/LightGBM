@@ -9,17 +9,23 @@
 # catch-all rule (this only gets matched if no rules below match)
 *    @guolinke @StrikerRUS @jameslamb @Laurae2
 
+# other catch-alls that will get matched if specific rules below are not matched
+*.R    @Laurae2 @jameslamb
+*.py    @StrikerRUS @chivee @wxchan @henry0312
+*.cpp    @guolinke @chivee @btrotta
+*.h    @guolinke @chivee @btrotta
+
 # main C++ code
 include/    @guolinke @chivee @btrotta
 src/    @guolinke @chivee @btrotta
-CmakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta
+CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta
+tests/c_api_test/    @guolinke @chivee @btrotta
+tests/cpp_test/    @guolinke @chivee @btrotta
+tests/data/    @guolinke @chivee @btrotta
+windows/    @guolinke @chivee @btrotta @StrikerRUS
 
 # R code
-include/LightGBM/lightgbm_R.h    @Laurae2 @jameslamb
-include/LightGBM/R_object_helper.h    @Laurae2 @jameslamb
-src/lightgbm_R.cpp    @Laurae2 @jameslamb
 R-package/    @Laurae2 @jameslamb
-*.R    @Laurae2 @jameslamb
 
 # Python code
 python-package/    @StrikerRUS @chivee @wxchan @henry0312

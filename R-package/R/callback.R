@@ -293,7 +293,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
       cat("Will train until there is no improvement in ", stopping_rounds, " rounds.\n\n", sep = "")
     }
 
-    # Maximization or minimization task
+    # Internally treat everything as a maximization task
     factor_to_bigger_better <<- rep.int(1.0, eval_len)
     best_iter <<- rep.int(-1L, eval_len)
     best_score <<- rep.int(-Inf, eval_len)
@@ -305,8 +305,8 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
       # Prepend message
       best_msg <<- c(best_msg, "")
 
-      # Check if maximization or minimization
-      if (!env$eval_list[[i]]$higher_better) {
+      # Internally treat everything as a maximization task
+      if (!isTRUE(env$eval_list[[i]]$higher_better)) {
         factor_to_bigger_better[i] <<- -1.0
       }
 

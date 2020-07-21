@@ -26,8 +26,14 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
   // Get local rank and global machine size
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
+
+  auto max_cat_threshold = this->config_->max_cat_threshold;
+  // need to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
+  size_t split_info_size = static_cast<size_t>(SplitInfo::Size(max_cat_threshold) * 2);
+  size_t histogram_size = static_cast<size_t>(this->train_data_->NumTotalBin() * kHistEntrySize);
+
   // allocate buffer for communication
-  size_t buffer_size = this->train_data_->NumTotalBin() * kHistEntrySize;
+  size_t buffer_size = std::max(histogram_size, split_info_size);
 
   input_buffer_.resize(buffer_size);
   output_buffer_.resize(buffer_size);
@@ -146,7 +152,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
 }
 
 template <typename TREELEARNER_T>
-void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
+void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
   TREELEARNER_T::ConstructHistograms(
       this->col_sampler_.is_feature_used_bytree(), true);
   // construct local histograms
@@ -163,17 +169,17 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, sizeof(hist_t), block_start_.data(),
                          block_len_.data(), output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramSumReducer);
   this->FindBestSplitsFromHistograms(
-      this->col_sampler_.is_feature_used_bytree(), true);
+      this->col_sampler_.is_feature_used_bytree(), true, tree);
 }
 
 template <typename TREELEARNER_T>
-void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
+void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool, const Tree* tree) {
   std::vector<SplitInfo> smaller_bests_per_thread(this->share_state_->num_threads);
   std::vector<SplitInfo> larger_bests_per_thread(this->share_state_->num_threads);
   std::vector<int8_t> smaller_node_used_features =
-      this->col_sampler_.GetByNode();
+      this->col_sampler_.GetByNode(tree, this->smaller_leaf_splits_->leaf_index());
   std::vector<int8_t> larger_node_used_features =
-      this->col_sampler_.GetByNode();
+      this->col_sampler_.GetByNode(tree, this->larger_leaf_splits_->leaf_index());
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {

@@ -505,6 +505,14 @@ struct Config {
   // descl2 = note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
   double path_smooth = 0;
 
+  // desc = controls which features can appear in the same branch
+  // desc = by default interaction constraints are disabled, to enable them you can specify
+  // descl2 = for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
+  // descl2 = for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+  // descl2 = for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
+  // desc = any two features can only appear in the same branch only if there exists a constraint containing both features
+  std::string interaction_constraints = "";
+
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
@@ -523,6 +531,11 @@ struct Config {
   // desc = filename of output model in training
   // desc = **Note**: can be used only in CLI version
   std::string output_model = "LightGBM_model.txt";
+
+  // desc = the feature importance type in the saved model file
+  // desc = ``0``: count-based feature importance (numbers of splits are counted); ``1``: gain-based feature importance (values of gain are counted)
+  // desc = **Note**: can be used only in CLI version
+  int saved_feature_importance_type = 0;
 
   // [no-save]
   // alias = save_period
@@ -958,12 +971,14 @@ struct Config {
   static const std::unordered_map<std::string, std::string>& alias_table();
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
+  std::vector<std::vector<int>> interaction_constraints_vector;
 
  private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();
+  void GetInteractionConstraints();
 };
 
 inline bool Config::GetString(

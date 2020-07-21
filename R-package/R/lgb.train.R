@@ -124,6 +124,15 @@ lgb.train <- function(params = list(),
     end_iteration <- begin_iteration + nrounds - 1L
   }
 
+  # Check interaction constraints
+  cnames <- NULL
+  if (!is.null(colnames)) {
+    cnames <- colnames
+  } else if (!is.null(data$get_colnames())) {
+    cnames <- data$get_colnames()
+  }
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params, cnames)
+
   # Update parameters with parsed parameters
   data$update_params(params)
 
@@ -298,7 +307,15 @@ lgb.train <- function(params = list(),
   # When early stopping is not activated, we compute the best iteration / score ourselves by
   # selecting the first metric and the first dataset
   if (record && length(non_train_valid_names) > 0L && is.na(env$best_score)) {
-    first_metric <- booster$.__enclos_env__$private$eval_names[1L]
+
+    # when using a custom eval function, the metric name is returned from the
+    # function, so figure it out from record_evals
+    if (!is.null(feval)) {
+      first_metric <- names(booster$record_evals[[first_valid_name]])[1L]
+    } else {
+      first_metric <- booster$.__enclos_env__$private$eval_names[1L]
+    }
+
     .find_best <- which.min
     if (isTRUE(env$eval_list[[1L]]$higher_better[1L])) {
       .find_best <- which.max

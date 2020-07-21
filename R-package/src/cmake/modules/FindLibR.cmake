@@ -30,7 +30,7 @@ endif()
 # https://docs.microsoft.com/en-us/cpp/build/reference/link-input-files?redirectedfrom=MSDN&view=vs-2019
 function(create_rlib_for_msvc)
 
-  message("Creating R.lib and R.def")
+  message(STATUS "Creating R.lib and R.def")
 
   # various checks and warnings
   if(NOT WIN32 OR NOT MSVC)
@@ -41,20 +41,26 @@ function(create_rlib_for_msvc)
     message(FATAL_ERROR "LIBR_CORE_LIBRARY, '${LIBR_CORE_LIBRARY}', not found")
   endif()
 
-  find_program(GENDEF_EXE gendef)
   find_program(DLLTOOL_EXE dlltool)
 
-  if(NOT GENDEF_EXE OR NOT DLLTOOL_EXE)
-    message(FATAL_ERROR "Either gendef.exe or dlltool.exe not found!\
+  if(NOT DLLTOOL_EXE)
+    message(FATAL_ERROR "dlltool.exe not found!\
       \nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
 
   set(LIBR_MSVC_CORE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib filepath")
 
-  # extract symbols from R.dll into R.def and R.lib import library
-  execute_process(COMMAND ${GENDEF_EXE}
-    "-" "${LIBR_CORE_LIBRARY}"
-    OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/R.def"
+  get_filename_component(
+    LIBR_RSCRIPT_EXECUTABLE_DIR
+    ${LIBR_EXECUTABLE}
+    DIRECTORY
+  )
+  set(LIBR_RSCRIPT_EXECUTABLE "${LIBR_RSCRIPT_EXECUTABLE_DIR}/Rscript")
+
+  execute_process(
+    COMMAND ${LIBR_RSCRIPT_EXECUTABLE}
+    "${CMAKE_CURRENT_BINARY_DIR}/make-r-def.R"
+    "${LIBR_CORE_LIBRARY}" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
   )
   execute_process(COMMAND ${DLLTOOL_EXE}
     "--input-def" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
@@ -67,7 +73,7 @@ endfunction(create_rlib_for_msvc)
 # an R script (src/install.libs.R), that script uses R's built-ins to
 # find the version of R and pass it through as a CMake variable
 if(CMAKE_R_VERSION)
-  message("R version passed into FindLibR.cmake: ${CMAKE_R_VERSION}")
+  message(STATUS "R version passed into FindLibR.cmake: ${CMAKE_R_VERSION}")
 elseif(WIN32)
   message(FATAL_ERROR "Expected CMAKE_R_VERSION to be passed in on Windows but none was provided. Check src/install.libs.R")
 endif()

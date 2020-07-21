@@ -9,6 +9,12 @@ if [[ $OS_NAME == "macos" ]]; then
     else  # gcc
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
+            if [[ $GITHUB_ACTIONS == "true" ]]; then
+                brew update
+            fi
+            if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
+                brew upgrade gcc
+            fi
         fi
     fi
     if [[ $TASK == "mpi" ]]; then
@@ -26,7 +32,7 @@ else  # Linux
     if [[ $TASK == "gpu" ]]; then
         sudo add-apt-repository ppa:mhier/libboost-latest -y
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libboost1.70-dev ocl-icd-opencl-dev
+        sudo apt-get install --no-install-recommends -y libboost1.73-dev ocl-icd-opencl-dev
         cd $BUILD_DIRECTORY  # to avoid permission errors
         wget -q https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         tar -xjf AMD-APP-SDK*.tar.bz2
@@ -36,12 +42,12 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-    if [[ $TRAVIS == "true" ]]; then
+    if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi
 fi
 
-if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
+if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
     sh conda.sh -b -p $CONDA
 fi
 conda config --set always_yes yes --set changeps1 no
