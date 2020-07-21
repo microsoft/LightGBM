@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.unloader.R
 \name{lgb.unloader}
 \alias{lgb.unloader}
-\title{LightGBM unloading error fix}
+\title{Remove lightgbm and its objects from an environment}
 \usage{
 lgb.unloader(restore = TRUE, wipe = FALSE, envir = .GlobalEnv)
 }
