@@ -154,9 +154,6 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     cd ${R_CMD_CHECK_DIR}
 fi
 
-# suppress R CMD check warning from Suggests dependencies not being available
-export _R_CHECK_FORCE_SUGGESTS_=0
-
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
@@ -190,9 +187,9 @@ if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
 fi
 
 if [[ $OS_NAME == "linux" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
-    ALLOWED_CHECK_NOTES=3
-else
     ALLOWED_CHECK_NOTES=2
+else
+    ALLOWED_CHECK_NOTES=1
 fi
 NUM_CHECK_NOTES=$(
     cat ${LOG_FILE_NAME} \

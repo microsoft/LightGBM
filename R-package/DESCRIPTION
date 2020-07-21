@@ -25,7 +25,6 @@ BugReports: https://github.com/Microsoft/LightGBM/issues
 NeedsCompilation: yes
 Biarch: false
 Suggests:
-    ggplot2 (>= 1.0.1),
     processx,
     testthat
 Depends:
