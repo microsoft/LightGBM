@@ -104,7 +104,7 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
   printf("Comparing Histograms, feature_id = %d, size = %d\n", feature_id, static_cast<int>(size));
   if (dp_flag) {  // double precision
     double af, bf;
-    int64 ai, bi;
+    int64_t ai, bi;
     for (i = 0; i < static_cast<int>(size); ++i) {
       af = GET_GRAD(h1, i);
       bf = GET_GRAD(h2, i);
@@ -113,10 +113,10 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
         ++retval;
       }
       if (const_flag) {
-        ai = GET_HESS((reinterpret_cast<int64 *>(h1), i);
-        bi = GET_HESS((reinterpret_cast<int64 *>(h2), i);
+        ai = GET_HESS((reinterpret_cast<int64_t *>(h1)), i);
+        bi = GET_HESS((reinterpret_cast<int64_t *>(h2)), i);
         if (ai != bi) {
-          printf("i = %5d, h1.hess %lld, h2.hess %lld\n", i, ai, bi);
+          printf("i = %5d, h1.hess %lld, h2.hess %lld\n", i, (long long int) ai, (long long int) bi);
           ++retval;
         }
       } else {
@@ -743,7 +743,7 @@ bool CUDATreeLearner::ConstructGPUHistogramsAsync(
       feature_masks_[i] = 0;
     }
   }
-  bool use_all_features = used_dense_feature_groups == num_dense_feature_groups_;
+  bool use_all_features = ((used_dense_feature_groups == num_dense_feature_groups_) && (data_indices != nullptr));
   // if no feature group is used, just return and do not use GPU
   if (used_dense_feature_groups == 0) {
     return false;

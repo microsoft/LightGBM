@@ -44,10 +44,7 @@ inline void AdditionalConfig(Config *config) {
 #ifdef USE_CUDA
   if (config->device_type == std::string("cuda")) {
       LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
-
       config->is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
-      if (config->bagging_fraction == 1.0) { config->bagging_fraction = 0.8; }
-      if (config->bagging_freq == 0) { config->bagging_freq = 1; }
   }
 #else
   (void)(config);       // UNUSED
@@ -125,13 +122,6 @@ class Booster {
     if (config_.num_threads > 0) {
       omp_set_num_threads(config_.num_threads);
     }
-
-#ifdef USE_CUDA
-    // Only use CUDA when the data is large (2048 == 256 bins each with at least 8 elements)
-    if (train_data->num_data() < 2048) {
-       config_.device_type = std::string("cpu");
-    }
-#endif
 
     AdditionalConfig(&config_);
 
