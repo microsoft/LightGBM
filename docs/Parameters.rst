@@ -548,7 +548,7 @@ Learning Control Parameters
 
       -  for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
 
-      -  for R-package, **not yet supported**
+      -  for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
 
    -  any two features can only appear in the same branch only if there exists a constraint containing both features
 
@@ -571,6 +571,14 @@ Learning Control Parameters
 -  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
 
    -  filename of output model in training
+
+   -  **Note**: can be used only in CLI version
+
+-  ``saved_feature_importance_type`` :raw-html:`<a id="saved_feature_importance_type" title="Permalink to this parameter" href="#saved_feature_importance_type">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+
+   -  the feature importance type in the saved model file
+
+   -  ``0``: count-based feature importance (numbers of splits are counted); ``1``: gain-based feature importance (values of gain are counted)
 
    -  **Note**: can be used only in CLI version
 

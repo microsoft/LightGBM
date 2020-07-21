@@ -20,7 +20,7 @@
 
 namespace LightGBM {
 /*!
-* \brief Rondom Forest implementation
+* \brief Random Forest implementation
 */
 class RF : public GBDT {
  public:

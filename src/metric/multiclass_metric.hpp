@@ -286,10 +286,10 @@ class AucMuMetric : public Metric {
     double ans = 0;
     for (int i = 0; i < num_class_; ++i) {
       for (int j = i + 1; j < num_class_; ++j) {
-        ans += S[i][j] / (class_sizes[i] * class_sizes[j]);
+        ans += (S[i][j] / class_sizes[i]) / class_sizes[j];
       }
     }
-    ans = 2 * ans / (num_class_ * (num_class_ - 1));
+    ans = (2 * ans / num_class_) / (num_class_ - 1);
     return std::vector<double>(1, ans);
   }
 

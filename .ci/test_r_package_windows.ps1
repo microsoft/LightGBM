@@ -24,7 +24,7 @@ function Download-Miktex-Setup {
         [string]$destfile
     )
     $PageContent = Invoke-WebRequest -Uri $archive -Method Get
-    $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup.*'
+    $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup-2.*'
     $FileToDownload = "${archive}/${SetupExeFile}"
     Download-File-With-Retries $FileToDownload $destfile
 }
@@ -64,7 +64,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
   $env:RTOOLS_MINGW_BIN = "$env:R_LIB_PATH/Rtools/mingw64/bin"
   $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.0"
+  $env:R_WINDOWS_VERSION = "4.0.2"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -138,7 +138,6 @@ if ($env:COMPILER -ne "MSVC") {
   $PKG_FILE_NAME = $PKG_FILE_NAME -replace '[\\]', '/'
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
-  $env:_R_CHECK_FORCE_SUGGESTS_ = 0
   Write-Output "Running R CMD check as CRAN"
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
 
@@ -157,7 +156,7 @@ if ($env:COMPILER -ne "MSVC") {
   $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
   $relevant_line = $note_str -match '(\d+) NOTE'
   $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 3
+  $ALLOWED_CHECK_NOTES = 2
   if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
       Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
       Check-Output $False
@@ -165,7 +164,7 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Run-R-Code-Redirect-Stderr "source('build_r.R')" *> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Run-R-Code-Redirect-Stderr "source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
