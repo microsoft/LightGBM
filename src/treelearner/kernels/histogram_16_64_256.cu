@@ -294,19 +294,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     __syncthreads();
     __threadfence();
-    // To avoid the cost of an extra reducting kernel, we have to deal with some
-    // gray area in OpenCL. We want the last work group that process this feature to
-    // make the final reduction, and other threads will just quit.
-    // This requires that the results written by other workgroups available to the
-    // last workgroup (memory consistency)
-    // this is equavalent to CUDA __threadfence();
-    // ensure the writes above goes to main memory and other workgroups can see it
-    asm volatile("{\n\tmembar.gl;\n\t}\n\t" :::"memory");
-    // Now, we want one workgroup to do the final reduction.
-    // Other workgroups processing the same feature quit.
-    // The is done by using an global atomic counter.
-    // On AMD GPUs ideally this should be done in GDS,
-    // but currently there is no easy way to access it via OpenCL.
     uint * counter_val = cnt_hist;
     // backup the old value
     uint old_val = *counter_val;
@@ -624,19 +611,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     __syncthreads();
     __threadfence();
-    // To avoid the cost of an extra reducting kernel, we have to deal with some
-    // gray area in OpenCL. We want the last work group that process this feature to
-    // make the final reduction, and other threads will just quit.
-    // This requires that the results written by other workgroups available to the
-    // last workgroup (memory consistency)
-    // this is equavalent to CUDA __threadfence();
-    // ensure the writes above goes to main memory and other workgroups can see it
-    asm volatile("{\n\tmembar.gl;\n\t}\n\t" :::"memory");
-    // Now, we want one workgroup to do the final reduction.
-    // Other workgroups processing the same feature quit.
-    // The is done by using an global atomic counter.
-    // On AMD GPUs ideally this should be done in GDS,
-    // but currently there is no easy way to access it via OpenCL.
     uint * counter_val = cnt_hist;
     // backup the old value
     uint old_val = *counter_val;
@@ -955,19 +929,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     __syncthreads();
     __threadfence();
-    // To avoid the cost of an extra reducting kernel, we have to deal with some
-    // gray area in OpenCL. We want the last work group that process this feature to
-    // make the final reduction, and other threads will just quit.
-    // This requires that the results written by other workgroups available to the
-    // last workgroup (memory consistency)
-    // this is equavalent to CUDA __threadfence();
-    // ensure the writes above goes to main memory and other workgroups can see it
-    asm volatile("{\n\tmembar.gl;\n\t}\n\t" :::"memory");
-    // Now, we want one workgroup to do the final reduction.
-    // Other workgroups processing the same feature quit.
-    // The is done by using an global atomic counter.
-    // On AMD GPUs ideally this should be done in GDS,
-    // but currently there is no easy way to access it via OpenCL.
     uint * counter_val = cnt_hist;
     // backup the old value
     uint old_val = *counter_val;
