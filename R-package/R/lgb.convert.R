@@ -1,11 +1,13 @@
-#' @name lgb.prepare2
+#' @name lgb.convert
 #' @title Data preparator for LightGBM datasets (integer)
 #' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-#'              Factors and characters are converted to numeric (specifically: integer).
-#'              Please use \code{\link{lgb.prepare_rules2}} if you want to apply this transformation to
+#'              Factors and characters are converted to integer.
+#'              Please use \code{\link{lgb.convert_with_rules2} if you want to apply this transformation to
 #'              other datasets. This is useful if you have a specific need for integer dataset instead
 #'              of numeric dataset. Note that there are programs which do not support integer-only
 #'              input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
+#'
+#'              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare}.
 #' @param data A data.frame or data.table to prepare.
 #' @return The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
 #'         for input in \code{lgb.Dataset}.
@@ -22,7 +24,7 @@
 #' # When lightgbm package is installed, and you do not want to load it
 #' # You can still use the function!
 #' lgb.unloader()
-#' str(lightgbm::lgb.prepare2(data = iris))
+#' str(lightgbm::lgb.convert(data = iris))
 #' # 'data.frame':	150 obs. of  5 variables:
 #' # $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
 #' # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
@@ -32,7 +34,7 @@
 #' }
 #'
 #' @export
-lgb.prepare2 <- function(data) {
+lgb.convert <- function(data) {
 
   # data.table not behaving like data.frame
   if (inherits(data, "data.table")) {
@@ -75,7 +77,7 @@ lgb.prepare2 <- function(data) {
     } else {
 
       stop(
-        "lgb.prepare2: you provided "
+        "lgb.convert: you provided "
         , paste(class(data), collapse = " & ")
         , " but data should have class data.frame or data.table"
       )

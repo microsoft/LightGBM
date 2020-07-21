@@ -1,23 +1,25 @@
-#' @name lgb.prepare_rules
-#' @title Data preparator for LightGBM datasets with rules (numeric)
-#' @description **NOTE: This function is deprecated and will be removed in a future release.
-#'              Please use \code{\link{lgb.prepare_rules2}}.**
+#' @name lgb.convert_with_rules
+#' @title Data preparator for LightGBM datasets with rules (integer)
+#' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
+#'              Factors and characters are converted to integer.
+#'              In addition, keeps rules created so you can convert other datasets using this converter.
+#'              This is useful if you have a specific need for integer dataset instead of numeric dataset.
+#'              Note that there are programs which do not support integer-only input.
+#'              Consider this as a half memory technique which is dangerous, especially for LightGBM.
 #'
-#'              Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-#'              Factors and characters are converted to numeric. In addition, keeps rules created
-#'              so you can convert other datasets using this converter.
+#'              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare_rules2}.
 #' @param data A data.frame or data.table to prepare.
 #' @param rules A set of rules from the data preparator, if already used.
 #' @return A list with the cleaned dataset (\code{data}) and the rules (\code{rules}).
-#'         The data must be converted to a matrix format (\code{as.matrix}) for input
-#'         in \code{lgb.Dataset}.
+#'         The data must be converted to a matrix format (\code{as.matrix}) for input in
+#'         \code{lgb.Dataset}.
 #'
 #' @examples
 #' data(iris)
 #'
 #' str(iris)
 #'
-#' new_iris <- lgb.prepare_rules(data = iris) # Autoconverter
+#' new_iris <- lgb.convert_with_rules(data = iris) # Autoconverter
 #' str(new_iris$data)
 #'
 #' data(iris) # Erase iris dataset
@@ -25,7 +27,7 @@
 #'
 #' # Use conversion using known rules
 #' # Unknown factors become 0, excellent for sparse datasets
-#' newer_iris <- lgb.prepare_rules(data = iris, rules = new_iris$rules)
+#' newer_iris <- lgb.convert_with_rules(data = iris, rules = new_iris$rules)
 #'
 #' # Unknown factor is now zero, perfect for sparse datasets
 #' newer_iris$data[1L, ] # Species became 0 as it is an unknown factor
@@ -40,24 +42,18 @@
 #'
 #' # We remapped values differently
 #' personal_rules <- list(
-#'     Species = c(
-#'         "setosa" = 3L
-#'         , "versicolor" = 2L
-#'         , "virginica" = 1L
-#'     )
+#'   Species = c(
+#'     "setosa" = 3L
+#'     , "versicolor" = 2L
+#'     , "virginica" = 1L
+#'   )
 #' )
-#' newest_iris <- lgb.prepare_rules(data = iris, rules = personal_rules)
+#' newest_iris <- lgb.convert_with_rules(data = iris, rules = personal_rules)
 #' str(newest_iris$data) # SUCCESS!
 #'
 #' @importFrom data.table set
 #' @export
-lgb.prepare_rules <- function(data, rules = NULL) {
-
-  .Deprecated(
-    new = "lgb.prepare2"
-    , package = "lightgbm"
-    , msg = "lgb.prepare is deprecated and will be removed in LightGBM 3.0.0. lgb.prepare2() is preferred."
-  )
+lgb.convert_with_rules <- function(data, rules = NULL) {
 
   # data.table not behaving like data.frame
   if (inherits(data, "data.table")) {
@@ -69,7 +65,7 @@ lgb.prepare_rules <- function(data, rules = NULL) {
       for (i in names(rules)) {
 
         data.table::set(data, j = i, value = unname(rules[[i]][data[[i]]]))
-        data[[i]][is.na(data[[i]])] <- 0L # Overwrite NAs by 0s
+        data[[i]][is.na(data[[i]])] <- 0L # Overwrite NAs by 0s as integer
 
       }
 
@@ -94,11 +90,10 @@ lgb.prepare_rules <- function(data, rules = NULL) {
           # Get unique values
           if (is.factor(mini_data)) {
             mini_unique <- levels(mini_data) # Factor
-            mini_numeric <- numeric(length(mini_unique))
-            mini_numeric[seq_along(mini_unique)] <- seq_along(mini_unique) # Respect ordinal if needed
+            mini_numeric <- seq_along(mini_unique) # Respect ordinal if needed
           } else {
             mini_unique <- as.factor(unique(mini_data)) # Character
-            mini_numeric <- as.numeric(mini_unique) # No respect of ordinality
+            mini_numeric <- as.integer(mini_unique) # No respect of ordinality
           }
 
           # Create rules
@@ -124,7 +119,7 @@ lgb.prepare_rules <- function(data, rules = NULL) {
       for (i in names(rules)) {
 
         data[[i]] <- unname(rules[[i]][data[[i]]])
-        data[[i]][is.na(data[[i]])] <- 0L # Overwrite NAs by 0s
+        data[[i]][is.na(data[[i]])] <- 0L # Overwrite NAs by 0s as integer
 
       }
 
@@ -152,11 +147,10 @@ lgb.prepare_rules <- function(data, rules = NULL) {
             # Get unique values
             if (is.factor(mini_data)) {
               mini_unique <- levels(mini_data) # Factor
-              mini_numeric <- numeric(length(mini_unique))
-              mini_numeric[seq_along(mini_unique)] <- seq_along(mini_unique) # Respect ordinal if needed
+              mini_numeric <- seq_along(mini_unique) # Respect ordinal if needed
             } else {
               mini_unique <- as.factor(unique(mini_data)) # Character
-              mini_numeric <- as.numeric(mini_unique) # No respect of ordinality
+              mini_numeric <- as.integer(mini_unique) # No respect of ordinality
             }
 
             # Create rules
@@ -174,7 +168,7 @@ lgb.prepare_rules <- function(data, rules = NULL) {
       } else {
 
         stop(
-          "lgb.prepare_rules: you provided "
+          "lgb.convert_with_rules: you provided "
           , paste(class(data), collapse = " & ")
           , " but data should have class data.frame"
         )
