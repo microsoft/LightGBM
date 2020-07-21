@@ -16,6 +16,7 @@ test_that("train and predict binary classification", {
     , nrounds = nrounds
     , objective = "binary"
     , metric = "binary_error"
+    , save_name = tempfile(fileext = ".model")
   )
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "binary_error")
@@ -47,6 +48,7 @@ test_that("train and predict softmax", {
     , objective = "multiclass"
     , metric = "multi_error"
     , num_class = 3L
+    , save_name = tempfile(fileext = ".model")
   )
 
   expect_false(is.null(bst$record_evals))
@@ -68,6 +70,7 @@ test_that("use of multiple eval metrics works", {
     , nrounds = 10L
     , objective = "binary"
     , metric = metrics
+    , save_name = tempfile(fileext = ".model")
   )
   expect_false(is.null(bst$record_evals))
   expect_named(
@@ -88,6 +91,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
     , nrounds = nrounds
     , objective = "binary"
     , metric = "binary_error"
+    , save_name = tempfile(fileext = ".model")
   )
   expect_true(abs(bst$lower_bound() - -1.590853) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 1.871015) <  TOLERANCE)
@@ -103,6 +107,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
     , nrounds = nrounds
     , objective = "regression"
     , metric = "l2"
+    , save_name = tempfile(fileext = ".model")
   )
   expect_true(abs(bst$lower_bound() - 0.1513859) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 0.9080349) < TOLERANCE)
@@ -117,6 +122,7 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
         data = dtrain
         , params = params
         , nrounds = nround_value
+        , save_name = tempfile(fileext = ".model")
       )
     }, "nrounds should be greater than zero")
   }
@@ -147,6 +153,7 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
       "valid1" = dvalid1
       , "valid2" = dvalid2
     )
+    , save_name = tempfile(fileext = ".model")
   )
 
   expect_named(
@@ -188,13 +195,14 @@ test_that("training continuation works", {
   # first 5 iterations:
   bst1 <- lgb.train(param, dtrain, nrounds = 5L, watchlist)
   # test continuing from a model in file
-  lgb.save(bst1, "lightgbm.model")
+  model_file <- tempfile(fileext = ".model")
+  lgb.save(bst1, model_file)
   # continue for 5 more:
   bst2 <- lgb.train(param, dtrain, nrounds = 5L, watchlist, init_model = bst1)
   err_bst2 <- lgb.get.eval.result(bst2, "train", "binary_logloss", 10L)
   expect_lt(abs(err_bst - err_bst2), 0.01)
 
-  bst2 <- lgb.train(param, dtrain, nrounds = 5L, watchlist, init_model = "lightgbm.model")
+  bst2 <- lgb.train(param, dtrain, nrounds = 5L, watchlist, init_model = model_file)
   err_bst2 <- lgb.get.eval.result(bst2, "train", "binary_logloss", 10L)
   expect_lt(abs(err_bst - err_bst2), 0.01)
 })
@@ -1007,6 +1015,7 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
       , learning_rate = 1.5
     )
     , verbose = -7L
+    , save_name = tempfile(fileext = ".model")
   )
   # when verbose <= 0 is passed to lightgbm(), 'valids' is passed through to lgb.train()
   # untouched. If you set verbose to > 0, the training data will still be first but called "train"
@@ -1020,4 +1029,104 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
   expect_length(auc_scores, nrounds)
   expect_identical(bst$best_iter, which.max(auc_scores))
   expect_identical(bst$best_score, auc_scores[which.max(auc_scores)])
+})
+
+test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", interaction_constraints = "[1,2],[3]")
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2L
+      )
+    }, "interaction_constraints must be a list")
+})
+
+test_that(paste0("lgb.train() throws an informative error if the members of interaction_constraints ",
+                 "are not character or numeric vectors"), {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", interaction_constraints = list(list(1L, 2L), list(3L)))
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2L
+      )
+    }, "every element in interaction_constraints must be a character vector or numeric vector")
+})
+
+test_that("lgb.train() throws an informative error if interaction_constraints contains a too large index", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression",
+                 interaction_constraints = list(c(1L, length(colnames(train$data)) + 1L), 3L))
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2L
+      )
+    }, "supplied a too large value in interaction_constraints")
+})
+
+test_that(paste0("lgb.train() gives same result when interaction_constraints is specified as a list of ",
+                 "character vectors, numeric vectors, or a combination"), {
+  set.seed(1L)
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+
+  params <- list(objective = "regression", interaction_constraints = list(c(1L, 2L), 3L))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2L
+  )
+  pred1 <- bst$predict(test$data)
+
+  cnames <- colnames(train$data)
+  params <- list(objective = "regression", interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), cnames[[3L]]))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2L
+  )
+  pred2 <- bst$predict(test$data)
+
+  params <- list(objective = "regression", interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), 3L))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2L
+  )
+  pred3 <- bst$predict(test$data)
+
+  expect_equal(pred1, pred2)
+  expect_equal(pred2, pred3)
+
+})
+
+test_that(paste0("lgb.train() gives same results when using interaction_constraints and specifying colnames"), {
+  set.seed(1L)
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+
+  params <- list(objective = "regression", interaction_constraints = list(c(1L, 2L), 3L))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2L
+  )
+  pred1 <- bst$predict(test$data)
+
+  new_colnames <- paste0(colnames(train$data), "_x")
+  params <- list(objective = "regression"
+                 , interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L]))
+  bst <- lightgbm(
+    data = dtrain
+    , params = params
+    , nrounds = 2L
+    , colnames = new_colnames
+  )
+  pred2 <- bst$predict(test$data)
+
+  expect_equal(pred1, pred2)
+
 })
