@@ -61,8 +61,6 @@ class TestEngine(unittest.TestCase):
             'verbose': -1,
             'num_iteration': 50  # test num_iteration in dict here
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
         evals_result = {}
@@ -89,8 +87,6 @@ class TestEngine(unittest.TestCase):
             'metric': 'binary_logloss',
             'verbose': -1
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
         evals_result = {}
@@ -110,8 +106,6 @@ class TestEngine(unittest.TestCase):
             'metric': 'l2',
             'verbose': -1
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
         evals_result = {}
@@ -139,8 +133,6 @@ class TestEngine(unittest.TestCase):
             'verbose': -1,
             'boost_from_average': False
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=20,
@@ -196,8 +188,6 @@ class TestEngine(unittest.TestCase):
             'min_data_in_bin': 1,
             'zero_as_missing': False
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=1,
@@ -230,8 +220,6 @@ class TestEngine(unittest.TestCase):
             'min_data_in_bin': 1,
             'zero_as_missing': True
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=1,
@@ -264,8 +252,6 @@ class TestEngine(unittest.TestCase):
             'min_data_in_bin': 1,
             'use_missing': False
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=1,
@@ -304,8 +290,6 @@ class TestEngine(unittest.TestCase):
             'zero_as_missing': True,
             'categorical_column': 0
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=1,
@@ -343,8 +327,6 @@ class TestEngine(unittest.TestCase):
             'zero_as_missing': False,
             'categorical_column': 0
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=1,
@@ -403,8 +385,6 @@ class TestEngine(unittest.TestCase):
             'num_class': 10,
             'verbose': -1
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train, params=params)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)
         evals_result = {}
@@ -421,7 +401,6 @@ class TestEngine(unittest.TestCase):
         X, y = load_digits(10, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
-            'device': 'cpu',
             'boosting_type': 'rf',
             'objective': 'multiclass',
             'metric': 'multi_logloss',
@@ -455,8 +434,6 @@ class TestEngine(unittest.TestCase):
             'num_class': 10,
             'verbose': -1
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train, params=params)
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=50)
@@ -478,8 +455,6 @@ class TestEngine(unittest.TestCase):
         X, y = load_digits(10, True)
         params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error',
                   'num_leaves': 4, 'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_data = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_data, num_boost_round=10)
         predict_default = est.predict(X)
@@ -589,8 +564,6 @@ class TestEngine(unittest.TestCase):
             'metric': 'binary_logloss',
             'verbose': -1
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
@@ -624,8 +597,6 @@ class TestEngine(unittest.TestCase):
             'metric': 'l1',
             'verbose': -1
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=False)
         init_gbm = lgb.train(params, lgb_train, num_boost_round=20)
@@ -691,8 +662,6 @@ class TestEngine(unittest.TestCase):
             'num_class': 3,
             'verbose': -1
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train, params=params, free_raw_data=False)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params, free_raw_data=False)
         init_gbm = lgb.train(params, lgb_train, num_boost_round=20)
@@ -749,8 +718,6 @@ class TestEngine(unittest.TestCase):
         q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                           '../../examples/lambdarank/rank.train.query'))
         params_lambdarank = {'objective': 'lambdarank', 'verbose': -1, 'eval_at': 3}
-        if lgb.get_device_type() == 2:
-            params_lambdarank["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
         # ... with l2 metric
         cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3,
@@ -804,8 +771,6 @@ class TestEngine(unittest.TestCase):
                 'metric': 'l2',
                 'verbose': -1
             }
-            if lgb.get_device_type() == 2:
-                params["device"] = "cuda"
             lgb_train = lgb.Dataset(X_train, y_train)
             gbm_template = lgb.train(params, lgb_train, num_boost_round=10, init_model=init_model)
             return gbm_template if return_model else mean_squared_error(y_test, gbm_template.predict(X_test))
@@ -859,8 +824,6 @@ class TestEngine(unittest.TestCase):
             'metric': 'binary_logloss',
             'verbose': -1
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X, y)
         gbm0 = lgb.train(params, lgb_train, num_boost_round=10)
         pred0 = gbm0.predict(X_test)
@@ -957,8 +920,6 @@ class TestEngine(unittest.TestCase):
         tmp_dat_train = tmp_dat.subset(np.arange(80))
         tmp_dat_val = tmp_dat.subset(np.arange(80, 100)).subset(np.arange(18))
         params = {'objective': 'regression_l2', 'metric': 'rmse'}
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         evals_result = {}
         gbm = lgb.train(params, tmp_dat_train, num_boost_round=20,
                         valid_sets=[tmp_dat_train, tmp_dat_val],
@@ -974,8 +935,6 @@ class TestEngine(unittest.TestCase):
             'metric': 'binary_logloss',
             'verbose': -1,
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X_train, y_train)
         gbm = lgb.train(params, lgb_train, num_boost_round=20)
 
@@ -990,8 +949,6 @@ class TestEngine(unittest.TestCase):
                 'verbose': -1,
                 'min_data': 5,
             }
-            if lgb.get_device_type() == 2:
-                lgb_params["device"] = "cuda"
             gbm = lgb.train(
                 params=lgb_params,
                 train_set=dataset,
@@ -1282,8 +1239,6 @@ class TestEngine(unittest.TestCase):
             'feature_fraction': 0.8,
             'boost_from_average': True
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X, y)
         gbm = lgb.train(params, lgb_train, num_boost_round=20)
         pred = gbm.predict(X)
@@ -1301,8 +1256,6 @@ class TestEngine(unittest.TestCase):
             'feature_fraction': 0.8,
             'boost_from_average': False
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         lgb_train = lgb.Dataset(X, y)
         gbm = lgb.train(params, lgb_train, num_boost_round=40)
         pred = gbm.predict(X)
@@ -1322,8 +1275,6 @@ class TestEngine(unittest.TestCase):
             'min_data_in_bin': 1,
             'boost_from_average': True
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         params.update(more_params)
         lgb_train = lgb.Dataset(X_train, y_train, params=params)
         gbm = lgb.train(params, lgb_train, num_boost_round=2)
@@ -1334,8 +1285,6 @@ class TestEngine(unittest.TestCase):
         params = {
             'objective': 'regression'
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         self.check_constant_features([0.0, 10.0, 0.0, 10.0], 5.0, params)
         self.check_constant_features([0.0, 1.0, 2.0, 3.0], 1.5, params)
         self.check_constant_features([-1.0, 1.0, -2.0, 2.0], 0.0, params)
@@ -1344,8 +1293,6 @@ class TestEngine(unittest.TestCase):
         params = {
             'objective': 'binary'
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         self.check_constant_features([0.0, 10.0, 0.0, 10.0], 0.5, params)
         self.check_constant_features([0.0, 1.0, 2.0, 3.0], 0.75, params)
 
@@ -1354,8 +1301,6 @@ class TestEngine(unittest.TestCase):
             'objective': 'multiclass',
             'num_class': 3
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         self.check_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
         self.check_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
 
@@ -1364,8 +1309,6 @@ class TestEngine(unittest.TestCase):
             'objective': 'multiclassova',
             'num_class': 3
         }
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         self.check_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
         self.check_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
 
@@ -1385,8 +1328,6 @@ class TestEngine(unittest.TestCase):
         X, y = load_iris(True)
         dataset = lgb.Dataset(X, y, free_raw_data=False)
         params = {'objective': 'multiclass', 'num_class': 3, 'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params["device"] = "cuda"
         results = lgb.cv(params, dataset, num_boost_round=10, fpreproc=preprocess_data)
         self.assertIn('multi_logloss-mean', results)
         self.assertEqual(len(results['multi_logloss-mean']), 10)
@@ -1399,28 +1340,14 @@ class TestEngine(unittest.TestCase):
 
         evals_result = {}
         params_verbose = {'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params_verbose["device"] = "cuda"
         params_obj_verbose = {'objective': 'binary', 'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params_obj_verbose["device"] = "cuda"
         params_obj_metric_log_verbose = {'objective': 'binary', 'metric': 'binary_logloss', 'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params_obj_metric_log_verbose["device"] = "cuda"
         params_obj_metric_err_verbose = {'objective': 'binary', 'metric': 'binary_error', 'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params_obj_metric_err_verbose["device"] = "cuda"
         params_obj_metric_inv_verbose = {'objective': 'binary', 'metric': 'invalid_metric', 'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params_obj_metric_inv_verbose["device"] = "cuda"
         params_obj_metric_multi_verbose = {'objective': 'binary',
                                            'metric': ['binary_logloss', 'binary_error'],
                                            'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params_obj_metric_multi_verbose["device"] = "cuda"
         params_obj_metric_none_verbose = {'objective': 'binary', 'metric': 'None', 'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params_obj_metric_none_verbose["device"] = "cuda"
         params_metric_log_verbose = {'metric': 'binary_logloss', 'verbose': -1}
         params_metric_err_verbose = {'metric': 'binary_error', 'verbose': -1}
         params_metric_inv_verbose = {'metric_types': 'invalid_metric', 'verbose': -1}
@@ -1638,8 +1565,6 @@ class TestEngine(unittest.TestCase):
         # remove default metric by 'None' aliases
         for na_alias in ('None', 'na', 'null', 'custom'):
             params = {'objective': 'binary', 'metric': na_alias, 'verbose': -1}
-            if lgb.get_device_type() == 2:
-                params["device"] = "cuda"
             train_booster(params=params)
             self.assertEqual(len(evals_result), 0)
 
@@ -1720,14 +1645,8 @@ class TestEngine(unittest.TestCase):
         obj_multi_aliases = ['multiclass', 'softmax', 'multiclassova', 'multiclass_ova', 'ova', 'ovr']
         for obj_multi_alias in obj_multi_aliases:
             params_obj_class_3_verbose = {'objective': obj_multi_alias, 'num_class': 3, 'verbose': -1}
-            if lgb.get_device_type() == 2:
-                params_obj_class_3_verbose["device"] = "cuda"
             params_obj_class_1_verbose = {'objective': obj_multi_alias, 'num_class': 1, 'verbose': -1}
-            if lgb.get_device_type() == 2:
-                params_obj_class_1_verbose["device"] = "cuda"
             params_obj_verbose = {'objective': obj_multi_alias, 'verbose': -1}
-            if lgb.get_device_type() == 2:
-                params_obj_verbose["device"] = "cuda"
             # multiclass default metric
             res = get_cv_result(params_obj_class_3_verbose)
             self.assertEqual(len(res), 2)
@@ -1768,8 +1687,6 @@ class TestEngine(unittest.TestCase):
             self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
                               params_obj_class_3_verbose, metrics='binary_logloss')
         params_class_3_verbose = {'num_class': 3, 'verbose': -1}
-        if lgb.get_device_type() == 2:
-            params_class_3_verbose["device"] = "cuda"
         # non-default num_class for default objective
         self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
                           params_class_3_verbose)
@@ -1904,8 +1821,6 @@ class TestEngine(unittest.TestCase):
                 'verbose': -1,
                 'seed': 123
             }
-            if lgb.get_device_type() == 2:
-                params["device"] = "cuda"
             gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
                             num_boost_round=25, valid_sets=valid_sets, feval=feval,
                             early_stopping_rounds=5, verbose_eval=False)

@@ -627,16 +627,6 @@ const char* LGBM_GetLastError() {
   return LastErrorMsg();
 }
 
-int LGBM_GetDeviceType() {
-#ifdef USE_GPU
-  return 1;
-#elif USE_CUDA
-  return 2;
-#else
-  return 0;     // CPU
-#endif
-}
-
 int LGBM_RegisterLogCallback(void (*callback)(const char*)) {
   API_BEGIN();
   Log::ResetCallBack(callback);

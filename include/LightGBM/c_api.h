@@ -1077,12 +1077,6 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
 #endif
 
 /*!
- *  * \brief Returns device type.
- *   * \return 0 = CPU, 1 = GPU / OCL, 2 = CUDA
- *    */
-LIGHTGBM_C_EXPORT int LGBM_GetDeviceType();
-
-/*!
  * \brief Handle of error message.
  * \return Error message
  */
