@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <cinttypes>
 
 #include "../io/dense_bin.hpp"
 
@@ -116,7 +117,7 @@ int CompareHistograms(hist_t* h1, hist_t* h2, size_t size, int feature_id, int d
         ai = GET_HESS((reinterpret_cast<int64_t *>(h1)), i);
         bi = GET_HESS((reinterpret_cast<int64_t *>(h2)), i);
         if (ai != bi) {
-          printf("i = %5d, h1.hess %lld, h2.hess %lld\n", i, (long long int) ai, (long long int) bi);
+          printf("i = %5d, h1.hess %" PRId64 ", h2.hess %" PRId64 "\n", i, ai, bi);
           ++retval;
         }
       } else {

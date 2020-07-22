@@ -41,7 +41,6 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
     const ushort ltid = threadIdx.x;
-    // TODO(anyone): try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
     uint* __restrict__ local_cnt = reinterpret_cast<uint *>(local_hist + 2 * NUM_BINS);
@@ -360,7 +359,6 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
     const ushort ltid = threadIdx.x;
-    // TODO(anyone): try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
     uint* __restrict__ local_cnt = reinterpret_cast<uint *>(local_hist + 2 * NUM_BINS);
@@ -677,7 +675,6 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
     const ushort ltid = threadIdx.x;
-    // TODO(anyone): try to avoid bank conflict here
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
     uint* __restrict__ local_cnt = reinterpret_cast<uint *>(local_hist + 2 * NUM_BINS);
