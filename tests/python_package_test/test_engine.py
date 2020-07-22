@@ -1215,7 +1215,6 @@ class TestEngine(unittest.TestCase):
         X, y = load_breast_cancer(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
-            'device': 'cpu',
             'objective': 'binary',
             'metric': 'binary_logloss',
             'verbose': -1,
