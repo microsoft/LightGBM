@@ -65,11 +65,11 @@ reference:
     - '`lgb.Dataset.save`'
     - '`lgb.Dataset.set.categorical`'
     - '`lgb.Dataset.set.reference`'
+    - '`lgb.convert`'
+    - '`lgb.convert_with_rules`'
   - title: Machine Learning
     desc: Train models with LightGBM
     contents:
-    - '`lgb.prepare2`'
-    - '`lgb.prepare_rules2`'
     - '`lightgbm`'
     - '`lgb.train`'
     - '`lgb.cv`'
@@ -95,8 +95,3 @@ reference:
     desc: Ungroupable functions to troubleshoot LightGBM
     contents:
     - '`lgb.unloader`'
-  - title: Deprecated functions
-    desc: Functions that will be removed in a future release
-    contents:
-    - '`lgb.prepare`'
-    - '`lgb.prepare_rules`'

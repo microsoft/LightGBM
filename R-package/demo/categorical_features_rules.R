@@ -32,7 +32,7 @@ bank_train <- bank[1L:4000L, ]
 bank_test <- bank[4001L:4521L, ]
 
 # We must now transform the data to fit in LightGBM
-# For this task, we use lgb.prepare
+# For this task, we use lgb.convert
 # The function transforms the data into a fittable data
 #
 # Classes 'data.table' and 'data.frame':	521 obs. of  17 variables:
@@ -53,9 +53,9 @@ bank_test <- bank[4001L:4521L, ]
 # $ previous : int  1 0 0 0 0 2 0 0 0 1 ...
 # $ poutcome : num  1 4 4 4 4 1 4 4 4 3 ...
 # $ y        : num  1 1 1 1 1 1 1 1 1 2 ...
-bank_rules <- lgb.prepare_rules(data = bank_train)
+bank_rules <- lgb.convert_with_rules(data = bank_train)
 bank_train <- bank_rules$data
-bank_test <- lgb.prepare_rules(data = bank_test, rules = bank_rules$rules)$data
+bank_test <- lgb.convert_with_rules(data = bank_test, rules = bank_rules$rules)$data
 str(bank_test)
 
 # Remove 1 to label because it must be between 0 and 1

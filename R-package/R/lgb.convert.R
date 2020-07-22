@@ -2,7 +2,7 @@
 #' @title Data preparator for LightGBM datasets (integer)
 #' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
 #'              Factors and characters are converted to integer.
-#'              Please use \code{\link{lgb.convert_with_rules2} if you want to apply this transformation to
+#'              Please use \code{\link{lgb.convert_with_rules}} if you want to apply this transformation to
 #'              other datasets. This is useful if you have a specific need for integer dataset instead
 #'              of numeric dataset. Note that there are programs which do not support integer-only
 #'              input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
@@ -18,7 +18,7 @@
 #' str(iris)
 #'
 #' # Convert all factors/chars to integer
-#' str(lgb.prepare2(data = iris))
+#' str(lgb.convert(data = iris))
 #'
 #' \dontrun{
 #' # When lightgbm package is installed, and you do not want to load it
