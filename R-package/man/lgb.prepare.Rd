@@ -6,6 +6,9 @@
 \usage{
 lgb.prepare(...)
 }
+\arguments{
+\item{...}{catch-all too match old calls}
+}
 \description{
 removed functions
 }
