@@ -38,12 +38,13 @@ class LinearTreeLearner: public SerialTreeLearner {
       double leaf_const = tree->LeafConst(i);
       std::vector<double> leaf_coeffs = tree->LeafCoeffs(i);
       for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
+        double coeff = leaf_coeffs[feat_num];
         int feat = tree->LeafFeaturesInner(i)[feat_num];
         const double* feat_ptr = train_data_->raw_index(feat);
         for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
           if (is_nan_[tmp_idx[j]] == 0) {
             double feat_val = feat_ptr[tmp_idx[j]];
-            out_score[tmp_idx[j]] += feat_val * leaf_coeffs[feat_num];
+            out_score[tmp_idx[j]] += feat_val * coeff;
           }
         }
       }
