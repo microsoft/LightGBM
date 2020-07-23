@@ -387,8 +387,10 @@ lightgbm.model
 # VSCode
 .vscode
 
-# IntelliJ IDEA
-.idea/
+# IntelliJ/CLion
+.idea
+*.iml
+/cmake-build-debug/
 
 # Files from local Python install
 python-package/LICENSE
