@@ -100,8 +100,8 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int raw_feat,
   const data_size_t* ind = data_partition_->indices();
   const double* feat_ptr = train_data_->raw_index(raw_feat);
   int prev_feat = tree->LeafNewFeature(leaf_num);
-  const double* prev_feat_ptr;
-  double prev_coeff;
+  const double* prev_feat_ptr = nullptr;
+  double prev_coeff = 0;
   double prev_const = tree->LeafNewConst(leaf_num);
   if (prev_feat > -1) {
     prev_feat_ptr = train_data_->raw_index(prev_feat);
@@ -127,7 +127,6 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int raw_feat,
   if (bin_mapper->bin_type() != BinType::NumericalBin) {
     can_solve = false;
   } else {
-    //auto X = std::vector<double>(num_data, 0);
     double XTHX_00 = 0, XTHX_01 = 0, XTHX_11 = 0;
     double XTHy_0 = 0, XTHy_1 = 0;
     double gTX_0 = 0, gTX_1 = 0;
@@ -135,7 +134,6 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int raw_feat,
     for (int i = 0; i < num_data; ++i) {
       int row_idx = ind[idx + i];
       double x = feat_ptr[row_idx];
-      //X[i] = x;
       if (std::isnan(x) || std::isinf(x)) {
         is_nan_[row_idx] = 1;
         continue;
@@ -148,13 +146,6 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int raw_feat,
       } else {
         y = curr_pred_[row_idx];
         y += update_prev(prev_feat_ptr, row_idx, prev_coeff, prev_const);
-        /*
-        if (prev_feat > -1) {
-          y += prev_feat_ptr[row_idx] * prev_coeff + prev_const;
-        } else {
-          y += prev_const;
-        }
-        */
       }
       curr_pred_[row_idx] = y;
       XTHX_00 += x * x * h;
@@ -208,13 +199,6 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int raw_feat,
         y = leaf_output;
       } else {
         y += update_prev(prev_feat_ptr, row_idx, prev_coeff, prev_const);
-        /*
-        if (prev_feat > -1) {
-        y += prev_feat_ptr[row_idx] * prev_coeff + prev_const;
-        } else {
-        y += prev_const;
-        }
-        */
       }
       curr_pred_[row_idx] = y;
       hy += hessians_[row_idx] * y;
