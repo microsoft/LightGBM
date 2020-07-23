@@ -157,17 +157,12 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int raw_feat,
       gTX_1 += g;
     }
     XTHX_01 += config_->linear_lambda;
-    auto inv_matrix = std::vector<std::vector<double>>(2, std::vector<double>(2, 0));
     double det = XTHX_00 * XTHX_11 - XTHX_01 * XTHX_01;
-    inv_matrix[0][0] = XTHX_11 / det;
-    inv_matrix[0][1] = -XTHX_01 / det;
-    inv_matrix[1][0] = -XTHX_01 / det;
-    inv_matrix[1][1] = XTHX_00 / det;
     if (det > -kEpsilon && det < kEpsilon) {
       can_solve = false;
     } else {
-      double feat_coeff = - (inv_matrix[0][0] * (XTHy_0 + gTX_0) + inv_matrix[0][1] * (XTHy_1 + gTX_1));
-      constant_term = - (inv_matrix[1][0] * (XTHy_0 + gTX_0) + inv_matrix[1][1] * (XTHy_1 + gTX_1));
+      double feat_coeff = - (XTHX_11 * (XTHy_0 + gTX_0) - XTHX_01 * (XTHy_1 + gTX_1)) / det;
+      constant_term = - (- XTHX_01 * (XTHy_0 + gTX_0) + XTHX_00 * (XTHy_1 + gTX_1)) / det;
       // add the new coeff to the parent coeffs
       if (feat_coeff < -kZeroThreshold || feat_coeff > kZeroThreshold) {
         tree->SetLeafNewFeature(leaf_num, raw_feat);
