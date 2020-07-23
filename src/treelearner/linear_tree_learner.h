@@ -21,7 +21,7 @@ class LinearTreeLearner: public SerialTreeLearner {
    
   Tree* Train(const score_t* gradients, const score_t *hessians);
 
-  void CalculateLinear(Tree* tree, int leaf,
+  void CalculateLinear(Tree* tree, int leaf, int raw_feat,
                        const std::vector<int>& parent_features,
                        const std::vector<double>& parent_coeffs,
                        const double& parent_const, const double& sum_grad, const double& sum_hess);
@@ -42,14 +42,14 @@ class LinearTreeLearner: public SerialTreeLearner {
         int feat = tree->LeafFeaturesInner(i)[feat_num];
         const double* feat_ptr = train_data_->raw_index(feat);
         for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-          if (is_nan_[tmp_idx[j]] == 0) {
+          if (!is_nan_[tmp_idx[j]]) {
             double feat_val = feat_ptr[tmp_idx[j]];
             out_score[tmp_idx[j]] += feat_val * coeff;
           }
         }
       }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        if (is_nan_[tmp_idx[j]] == 1) {
+        if (is_nan_[tmp_idx[j]]) {
           out_score[tmp_idx[j]] += leaf_output;
         } else {
           out_score[tmp_idx[j]] += leaf_const;

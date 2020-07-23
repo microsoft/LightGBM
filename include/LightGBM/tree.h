@@ -280,11 +280,17 @@ class Tree {
   /*! \brief Get the linear model constant term (bias) of one leaf */
   inline double LeafConst(int leaf) const { return leaf_const_[leaf]; }
 
+  inline double LeafNewConst(int leaf) const { return new_const_[leaf]; }
+
   /*! \brief Get the linear model coefficients of one leaf */
-  inline std::vector<double> LeafCoeffs  (int leaf) const { return leaf_coeff_[leaf]; }
+  inline std::vector<double> LeafCoeffs(int leaf) const { return leaf_coeff_[leaf]; }
+
+  inline double LeafNewCoeff(int leaf) const { return new_coeff_[leaf]; }
 
   /*! \brief Get the linear model features of one leaf */
   inline std::vector<int> LeafFeaturesInner(int leaf) const {return leaf_features_inner_[leaf]; }
+
+  inline int LeafNewFeature(int leaf) const { return new_feature_[leaf]; }
 
   /*! \brief Set the linear model coefficients on one leaf */
   inline void SetLeafCoeffs(int leaf, std::vector<double> output) {
@@ -294,10 +300,15 @@ class Tree {
     }
   }
 
+  inline void SetLeafNewCoeff(int leaf, double val) { new_coeff_[leaf] = val; }
+
   /*! \brief Set the linear model constant term (bias) on one leaf */
   inline void SetLeafConst(int leaf, double output) {
     leaf_const_[leaf] = MaybeRoundToZero(output);
   }
+
+  inline void SetLeafNewConst(int leaf, double val) { new_const_[leaf] = val; }
+
 
   /*! \brief Set the linear model features on one leaf */
   inline void SetLeafFeaturesInner(int leaf, std::vector<int> features) {
@@ -309,6 +320,9 @@ class Tree {
     leaf_features_[leaf] = features;
   }
 
+  inline void SetLeafNewFeature(int leaf, int feature) {
+    new_feature_[leaf] = feature;
+  }
   inline bool GetLinear() { return is_linear_; }
 
   inline void SetLinear(bool is_linear) {
@@ -512,6 +526,12 @@ class Tree {
   bool is_linear_;
   /*! \brief coefficients of linear models on leaves */ 
   std::vector<std::vector<double>> leaf_coeff_;
+  /*! \brief linear model feature not yet added to curr_pred_, raw index */
+  std::vector<int> new_feature_;
+  /*! \brief linear model coefficient not yet added */
+  std::vector<double> new_coeff_;
+  /*! \brief linear model constant term not yet added */
+  std::vector<double> new_const_;
   /*! \brief constant term (bias) of linear models on leaves */
   std::vector<double> leaf_const_;
   /* \brief features used in leaf linear models; indexing is relative to num_total_features_ */
@@ -541,6 +561,16 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   // add two new leaves
   left_child_[new_node_idx] = ~leaf;
   right_child_[new_node_idx] = ~num_leaves_;
+  // copy unapplied coefficients
+  if (is_linear_) {
+    if (new_feature_[leaf] > -1) {
+      new_feature_[num_leaves_] = new_feature_[leaf];
+      new_coeff_[num_leaves_] = new_coeff_[leaf];
+    }
+    new_feature_[num_leaves_] = new_feature_[leaf];
+    new_coeff_[num_leaves_] = new_coeff_[leaf];
+    new_const_[num_leaves_] = new_const_[leaf];
+  }
   // update new leaves
   leaf_parent_[leaf] = new_node_idx;
   leaf_parent_[num_leaves_] = new_node_idx;

@@ -54,6 +54,9 @@ Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
     leaf_const_.resize(max_leaves_);
     leaf_features_.resize(max_leaves_);
     leaf_features_inner_.resize(max_leaves_);
+    new_feature_ = std::vector<int>(max_leaves_, -1);
+    new_coeff_.resize(max_leaves_);
+    new_const_.resize(max_leaves_);
   }
 }
 
