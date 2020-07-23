@@ -21,7 +21,7 @@ class LinearTreeLearner: public SerialTreeLearner {
    
   Tree* Train(const score_t* gradients, const score_t *hessians);
 
-  void CalculateLinear(Tree* tree, int leaf, int raw_feat,
+  void CalculateLinear(Tree* tree, int leaf, int feat,
                        const std::vector<int>& parent_features,
                        const std::vector<double>& parent_coeffs,
                        const double& parent_const, const double& sum_grad, const double& sum_hess);
