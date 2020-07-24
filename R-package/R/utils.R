@@ -11,12 +11,10 @@ lgb.is.null.handle <- function(x) {
 }
 
 lgb.encode.char <- function(arr, len) {
-
   if (!is.raw(arr)) {
-    stop("lgb.encode.char: Can only encode from raw type") # Not an object of type raw
+    stop("lgb.encode.char: Can only encode from raw type")
   }
-  rawToChar(arr[seq_len(len)]) # Return the conversion of raw type to character type
-
+  return(rawToChar(arr[seq_len(len)]))
 }
 
 # [description] Raise an error. Before raising that error, check for any error message
@@ -311,16 +309,25 @@ lgb.check.obj <- function(params, obj) {
 
 }
 
+# [description]
+#     make sure that "metric" is populated on params,
+#     and add any eval values to itt
+# [return]
+#     params, where "metric" is a list
 lgb.check.eval <- function(params, eval) {
 
-  # Check if metric is null, if yes put a list instead
   if (is.null(params$metric)) {
     params$metric <- list()
+  } else if (is.character(params$metric)) {
+    params$metric <- as.list(params$metric)
   }
 
-  # If 'eval' is a list or character vector, store it in 'metric'
-  if (is.character(eval) || identical(class(eval), "list")) {
+  if (is.character(eval)) {
     params$metric <- append(params$metric, eval)
+  }
+
+  if (identical(class(eval), "list")) {
+    params$metric <- append(params$metric, unlist(eval))
   }
 
   return(params)
