@@ -42,9 +42,9 @@
   #define _mm_malloc(a, b) memalign(b, a)
   #define _mm_free(a) free(a)
 #else
-  #include <stdlib.h>
-  #define _mm_malloc(a, b) malloc(a)
-  #define _mm_free(a) free(a)
+#include <stdlib.h>
+#define _mm_malloc(a, b) malloc(a)
+#define _mm_free(a) free(a)
 #endif
 
 namespace LightGBM {
