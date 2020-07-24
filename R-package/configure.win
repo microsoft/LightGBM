@@ -30,7 +30,7 @@ EOL
 ${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
 echo "checking whether MM_PREFETCH works...${ac_mm_prefetch}"
 
-if test "${ac_mm_prefetch}" = "yes"
+if test "${ac_mm_prefetch}" = "yes";
 then
     LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_PREFETCH=1"
 fi

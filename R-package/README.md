@@ -185,7 +185,7 @@ CXX11=g++-8
 
 A lot of details are handled automatically by `R CMD build` and `R CMD install`, so it can be difficult to understand how the files in the R package are related to each other. An extensive treatment of those details is available in ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
 
-This section briefly explains the key files for building a CRAN package. To update the package, edit the files relevant to your change and re-run the steps in `Build a CRAN package`.
+This section briefly explains the key files for building a CRAN package. To update the package, edit the files relevant to your change and re-run the steps in [Build a CRAN Package](#build-a-cran-package).
 
 **Linux or Mac**
 
@@ -200,7 +200,7 @@ If you have an Ubuntu 18.04 environment available, run the provided script from 
 ./R-package/recreate-configure.sh
 ```
 
-If you do not have easy access to an Ubuntu 18.04 environment, the `coonfigure` script can be generated using Docker.
+If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker.
 
 ```shell
 docker run \

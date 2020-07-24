@@ -137,7 +137,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     )
     if [[ ${num_files_changed} -gt 0 ]]; then
         echo "'configure' in the R package has changed. Please recreate it and commit the changes."
-        echo "changed files:"
+        echo "Changed files:"
         git diff --compact-summary
         echo "See R-package/README.md for details on how to recreate this script."
         echo ""

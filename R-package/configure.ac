@@ -119,7 +119,7 @@ then
         OPENMP_CXXFLAGS=''
         OPENMP_LIB=''
         echo '***********************************************************************************************'
-        echo ' OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result'
+        echo ' OpenMP is unavailable on this macOS system. LightGBM code may be slower as a result'
         echo ' To use all CPU cores for training jobs, you should install OpenMP by running'
         echo ''
         echo '     brew install libomp'

@@ -71,7 +71,7 @@ cd ${TEMP_R_DIR}
 
     # 'processx' is listed as a 'Suggests' dependency in DESCRIPTION
     # because it is used in install.libs.R, a file that is not
-    # included in the CRAN distribution of the pagkage
+    # included in the CRAN distribution of the package
     sed \
         -i.bak \
         '/processx/d' \
