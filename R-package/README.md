@@ -6,6 +6,7 @@ LightGBM R-package
 * [Installation](#installation)
 * [Examples](#examples)
 * [Testing](#testing)
+* [Preparing a CRAN Package and Installing It](#preparing-a-cran-package-and-installing-it)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
 
@@ -143,7 +144,7 @@ Rscript -e " \
     "
 ```
 
-Preparing a CRAN package and installing it
+Preparing a CRAN Package and Installing It
 ------------------------------------------
 
 This section is primarily for maintainers, but may help users and contributors to understand the structure of the R package.
@@ -152,7 +153,7 @@ Most of `LightGBM` uses `CMake` to handle tasks like setting compiler and linker
 
 For more information on this approach, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup).
 
-### Build a CRAN package
+### Build a CRAN Package
 
 From the root of the repository, run the following.
 
@@ -162,7 +163,7 @@ sh build-cran-package.sh
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
 
-### Standard Installation from CRAN package
+### Standard Installation from CRAN Package
 
 After building the package, install it with a command like the following:
 
@@ -181,7 +182,7 @@ CXX=g++-8
 CXX11=g++-8
 ```
 
-### Changing the CRAN package
+### Changing the CRAN Package
 
 A lot of details are handled automatically by `R CMD build` and `R CMD install`, so it can be difficult to understand how the files in the R package are related to each other. An extensive treatment of those details is available in ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
 
@@ -194,22 +195,22 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
 1. Edit `configure.ac`
 2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 18.04.
 
-If you have an Ubuntu 18.04 environment available, run the provided script from the root of the `LightGBM` repository.
+    If you have an Ubuntu 18.04 environment available, run the provided script from the root of the `LightGBM` repository.
 
-```shell
-./R-package/recreate-configure.sh
-```
+    ```shell
+    ./R-package/recreate-configure.sh
+    ```
 
-If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker.
+    If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker.
 
-```shell
-docker run \
-    -v $(pwd):/opt/LightGBM \
-    -t ubuntu:18.04 \
-    /bin/bash -c "cd /opt/LightGBM && ./R-package/recreate-configure.sh"
-```
+    ```shell
+    docker run \
+        -v $(pwd):/opt/LightGBM \
+        -t ubuntu:18.04 \
+        /bin/bash -c "cd /opt/LightGBM && ./R-package/recreate-configure.sh"
+    ```
 
-The version of `autoconf` used by this project is stored in `R-package/AUTOCONF_UBUNTU_VERSION`. To update that version, update that file and run the commands above. To see available versions, see https://packages.ubuntu.com/search?keywords=autoconf.
+    The version of `autoconf` used by this project is stored in `R-package/AUTOCONF_UBUNTU_VERSION`. To update that version, update that file and run the commands above. To see available versions, see https://packages.ubuntu.com/search?keywords=autoconf.
 
 3. Edit `src/Makevars.in`
 

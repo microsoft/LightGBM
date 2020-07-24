@@ -195,7 +195,6 @@ if ($env:COMPILER -ne "MSVC") {
 # Checking that we actually got the expected compiler. The R package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler was used.
-$checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for working CXX compiler.*$env:COMPILER"
 if ($env:R_BUILD_TYPE -eq "cmake") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for working CXX compiler.*$env:COMPILER"
   if ($checks.Matches.length -eq 0) {
