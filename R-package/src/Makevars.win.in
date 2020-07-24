@@ -5,8 +5,7 @@ PKGROOT=.
 LGB_CPPFLAGS = \
     @LGB_CPPFLAGS@ \
     -DUSE_SOCKET \
-    -DLGB_R_BUILD \
-    -O3
+    -DLGB_R_BUILD
 
 CPICFLAGS = -fPIC
 
