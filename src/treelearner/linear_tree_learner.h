@@ -34,13 +34,12 @@ class LinearTreeLearner: public SerialTreeLearner {
     for (int i = 0; i < tree->num_leaves(); ++i) {
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-      int num_feat = tree->LeafFeaturesInner(i).size();
       double leaf_output = tree->LeafOutput(i);
       double leaf_const = tree->LeafConst(i);
       std::vector<double> leaf_coeffs = tree->LeafCoeffs(i);
       std::vector<int> feat_arr = tree->LeafFeaturesInner(i);
       std::vector<const double*> feat_ptr_arr;
-      for (int feat : tree->LeafFeaturesInner(i)) {
+      for (int feat : feat_arr) {
         feat_ptr_arr.push_back(train_data_->raw_index(feat));
       }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
@@ -50,7 +49,7 @@ class LinearTreeLearner: public SerialTreeLearner {
           continue;
         }
         double output = leaf_const;
-        for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
+        for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
           output += feat_ptr_arr[feat_num][row_idx] * leaf_coeffs[feat_num];
         }
         out_score[row_idx] += output;
