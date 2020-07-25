@@ -38,26 +38,26 @@ class LinearTreeLearner: public SerialTreeLearner {
       double leaf_output = tree->LeafOutput(i);
       double leaf_const = tree->LeafConst(i);
       std::vector<double> leaf_coeffs = tree->LeafCoeffs(i);
-      for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
-        double coeff = leaf_coeffs[feat_num];
-        int feat = tree->LeafFeaturesInner(i)[feat_num];
-        const double* feat_ptr = train_data_->raw_index(feat);
-        for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-          if (!is_nan_[tmp_idx[j]]) {
-            double feat_val = feat_ptr[tmp_idx[j]];
-            out_score[tmp_idx[j]] += feat_val * coeff;
-          }
-        }
+      std::vector<int> feat_arr = tree->LeafFeaturesInner(i);
+      std::vector<const double*> feat_ptr_arr;
+      for (int feat : tree->LeafFeaturesInner(i)) {
+        feat_ptr_arr.push_back(train_data_->raw_index(feat));
       }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        if (is_nan_[tmp_idx[j]]) {
-          out_score[tmp_idx[j]] += leaf_output;
-        } else {
-          out_score[tmp_idx[j]] += leaf_const;
+        int row_idx = tmp_idx[j];
+        if (is_nan_[row_idx]) {
+          out_score[row_idx] += leaf_output;
+          continue;
         }
+        double output = leaf_const;
+        for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
+          output += feat_ptr_arr[feat_num][row_idx] * leaf_coeffs[feat_num];
+        }
+        out_score[row_idx] += output;
       }
     }
   }
+
 private:
   /*! \brief Temporary storage for calculating additive linear model */
   std::vector<double> curr_pred_;
