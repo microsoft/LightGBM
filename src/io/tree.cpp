@@ -51,7 +51,7 @@ Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
   is_linear_ = is_linear;
   if (is_linear_) {
     leaf_coeff_.resize(max_leaves_);
-    leaf_const_.resize(max_leaves_);
+    leaf_const_ = std::vector<double>(max_leaves_, 0);
     leaf_features_.resize(max_leaves_);
     leaf_features_inner_.resize(max_leaves_);
     new_feature_ = std::vector<int>(max_leaves_, -1);
@@ -120,7 +120,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
 
 
 #define PredictionFunLinear(niter, fidx_in_iter, start_pos, decision_fun,     \
-                            decision_fun_inner, iter_idx, data_idx)           \
+                            iter_idx, data_idx)                               \
   std::vector<std::unique_ptr<BinIterator>> iter((niter));                    \
   for (int i = 0; i < (niter); ++i) {                                         \
     iter[i].reset(data->FeatureIterator((fidx_in_iter)));                     \
@@ -129,26 +129,26 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   for (data_size_t i = start; i < end; ++i) {                                 \
     int node = 0;                                                             \
     while (node >= 0) {                                                       \
-      node = decision_fun_inner(iter[(iter_idx)]->Get((data_idx)), node,      \
-                                default_bins[node], max_bins[node]);          \
+      node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,            \
+                          default_bins[node], max_bins[node]);                \
     }                                                                         \
-  double add_score = leaf_const_[~node];                                      \
-  bool nan_found = false;                                                     \
-  for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {              \
-     int feat_num = leaf_features_inner_[~node][j];                           \
-     double feat_val = feat_ptr[(feat_num)][(data_idx)];                      \
-     if (isnan(feat_val) || isinf(feat_val)) {                                \
-        nan_found = true;                                                     \
-        break;                                                                \
-     }                                                                        \
-     add_score += leaf_coeff_[~node][j] * feat_val;                           \
-  }                                                                           \
-  if (nan_found) {                                                            \
-     score[(data_idx)] += leaf_value_[~node];                                 \
-  } else {                                                                    \
-    score[(data_idx)] += add_score;                                           \
-  }                                                                           \
-}
+    double add_score = static_cast<double>(leaf_const_[~node]);                                    \
+    bool nan_found = false;                                                   \
+    for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {            \
+       int feat_num = leaf_features_inner_[~node][j];                         \
+       double feat_val = feat_ptr[(feat_num)][(data_idx)];                    \
+       if (std::isnan(feat_val) || std::isinf(feat_val)) {                    \
+          nan_found = true;                                                   \
+          break;                                                              \
+       }                                                                      \
+       add_score += static_cast<double>(leaf_coeff_[~node][j]) * feat_val;                         \
+    }                                                                         \
+    if (nan_found) {                                                          \
+       score[(data_idx)] += static_cast<double>(leaf_value_[~node]);                               \
+    } else {                                                                  \
+      score[(data_idx)] += add_score;                                         \
+    }                                                                         \
+}\
 
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
@@ -176,7 +176,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     }
     Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
     (int, data_size_t start, data_size_t end) {
-      PredictionFunLinear(data->num_features(), i, start, Decision, DecisionInner, split_feature_inner_[node], i);
+      PredictionFunLinear(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
     });
   } else {
     if (num_cat_ > 0) {
@@ -234,7 +234,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
     }
     Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
     (int, data_size_t start, data_size_t end) {
-      PredictionFunLinear(data->num_features(), i, used_data_indices[start], Decision, DecisionInner, split_feature_inner_[node], used_data_indices[i]);
+      PredictionFunLinear(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
     });
   } else {
     if (num_cat_ > 0) {

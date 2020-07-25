@@ -24,7 +24,8 @@ class LinearTreeLearner: public SerialTreeLearner {
   void CalculateLinear(Tree* tree, int leaf, int feat,
                        const std::vector<int>& parent_features,
                        const std::vector<double>& parent_coeffs,
-                       const double& parent_const, const double& sum_grad, const double& sum_hess);
+                       const double& parent_const, const double& sum_grad, const double& sum_hess,
+                       int& num_nan);
 
   void AddPredictionToScore(const Tree* tree,
                             double* out_score) const override {
@@ -62,6 +63,8 @@ private:
   std::vector<double> curr_pred_;
   /*! \brief Temporary storage for calculating additive linear model */
   std::vector<int8_t> is_nan_;
+  /*! \brief Temporary storage for calculating additive linear model */
+  std::vector<int> nan_ind_;
 };
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
