@@ -4,7 +4,6 @@
  */
 #include "linear_tree_learner.h"
 
-#include <Eigen/Dense>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
@@ -129,12 +128,17 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
     double XTHX_00 = 0, XTHX_01 = 0, XTHX_11 = 0;
     double XTHy_0 = 0, XTHy_1 = 0;
     double gTX_0 = 0, gTX_1 = 0;
+    // keep track of current nans in is_nan_curr
+    // only copy back to the main is_nan_ if the feature gets used
+    auto is_nan_curr = std::vector<int8_t>(num_data, 0);
+    int num_nan = 0;
 #pragma omp parallel for schedule(static, 512) reduction(+:XTHX_00,XTHX_01,XTHX_11,XTHy_0,XTHy_1,gTX_0,gTX_1) if (num_data > 1024)
     for (int i = 0; i < num_data; ++i) {
       int row_idx = ind[idx + i];
       double x = feat_ptr[row_idx];
       if (std::isnan(x) || std::isinf(x)) {
-        is_nan_[row_idx] = 1;
+        is_nan_curr[i] = 1;
+        ++num_nan;
         continue;
       }
       double h = hessians_[row_idx];
@@ -160,6 +164,15 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
     if (det > -kEpsilon && det < kEpsilon) {
       can_solve = false;
     } else {
+      if (num_nan > 0) {
+#pragma omp parallel for schedule(static, 512) if (num_data > 1024)
+        for (int i = 0; i < num_data; ++i) {
+          if (is_nan_curr[i]) {
+            is_nan_[ind[idx + i]] = 1;
+          }
+        }
+      }
+
       double feat_coeff = - (XTHX_11 * (XTHy_0 + gTX_0) - XTHX_01 * (XTHy_1 + gTX_1)) / det;
       constant_term = - (- XTHX_01 * (XTHy_0 + gTX_0) + XTHX_00 * (XTHy_1 + gTX_1)) / det;
       // add the new coeff to the parent coeffs
@@ -214,5 +227,5 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
   tree->SetLeafFeatures(leaf_num, features_raw);
   tree->SetLeafCoeffs(leaf_num, coeffs);
   tree->SetLeafConst(leaf_num, constant_term + parent_const);
-  }
+}
 }

@@ -603,7 +603,7 @@ inline double Tree::Predict(const double* feature_values) const {
       for (int i = 0; i < leaf_features_[leaf].size(); ++i) {
         int feat_raw = leaf_features_[leaf][i];
         double feat_val = feature_values[feat_raw];
-        if (isnan(feat_val) || isinf(feat_val)) {
+        if (std::isnan(feat_val) || std::isinf(feat_val)) {
           nan_found = true;
           break;
         } else {
