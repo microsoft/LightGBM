@@ -2246,3 +2246,13 @@ class TestEngine(unittest.TestCase):
                         num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
         pred = est.predict(x[:, np.newaxis])
         np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-2))
+        # test with a feature that has only one non-nan value
+        x = np.concatenate([x[:, np.newaxis], np.ones([x.shape[0], 1])], 1)
+        x[500:, 1] = np.nan
+        y[500:] += 10
+        lgb_train = lgb.Dataset(x, label=y)
+        res = {}
+        est = lgb.train(dict(params, boosting='gbdt_linear', subsample=0.8, bagging_freq=1), lgb_train,
+                        num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
+        pred = est.predict(x)
+        np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-2))

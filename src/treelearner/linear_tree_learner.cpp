@@ -90,7 +90,8 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
   // calculate coefficients using the additive method described in https://arxiv.org/pdf/1802.05640.pdf
   // the coefficients vector is given by
   // - (X_T * H * X + lambda) ^ (-1) * (X_T * H * y + g_T X)
-  // where X is the matrix where the first column is the feature values and the second is all ones,
+  // where:
+  // X is the matrix where the first column is the feature values and the second is all ones,
   // y is the vector of current predictions
   // H is the diagonal matrix of the hessian,
   // lambda is the diagonal matrix with diagonal entries equal to the regularisation term linear_lambda
@@ -124,6 +125,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
     };
   }
 
+  int curr_num_nan = 0;
   if (bin_mapper->bin_type() != BinType::NumericalBin) {
     can_solve = false;
   } else {
@@ -132,8 +134,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
     double gTX_0 = 0, gTX_1 = 0;
     // keep track of current nans in is_nan_curr_
     // only copy back to the main is_nan_ if the feature gets used
-    //auto is_nan_curr = std::vector<int8_t>(num_data, 0);
-    int curr_num_nan = 0;
+    // auto is_nan_curr = std::vector<int8_t>(num_data, 0);
 #pragma omp parallel for schedule(static, 512) reduction(+:XTHX_00,XTHX_01,XTHX_11,XTHy_0,XTHy_1,gTX_0,gTX_1,curr_num_nan) if (num_data > 1024)
     for (int i = 0; i < num_data; ++i) {
       int row_idx = ind[idx + i];
@@ -167,19 +168,18 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
     if (det > -kEpsilon && det < kEpsilon) {
       can_solve = false;
     } else {
-      if (curr_num_nan > 0) {
-#pragma omp parallel for schedule(static, 512) if (num_data > 1024)
-        for (int i = 0; i < num_data; ++i) {
-          if (is_nan_curr_[i]) {
-            is_nan_[ind[idx + i]] = 1;
-          }
-        }
-        std::fill(is_nan_curr_.begin(), is_nan_curr_.begin() + num_data, 0);
-      }
       double feat_coeff = - (XTHX_11 * (XTHy_0 + gTX_0) - XTHX_01 * (XTHy_1 + gTX_1)) / det;
       constant_term = - (- XTHX_01 * (XTHy_0 + gTX_0) + XTHX_00 * (XTHy_1 + gTX_1)) / det;
       // add the new coeff to the parent coeffs
-      if (feat_coeff < -kZeroThreshold || feat_coeff > kZeroThreshold) {
+      if ((feat_coeff < -kZeroThreshold) || (feat_coeff > kZeroThreshold)) {
+        if (curr_num_nan > 0) {
+#pragma omp parallel for schedule(static, 512) if (num_data > 1024)
+          for (int i = 0; i < num_data; ++i) {
+            if (is_nan_curr_[i]) {
+              is_nan_[ind[idx + i]] = 1;
+            }
+          }
+        }
         tree->SetLeafNewFeature(leaf_num, feat);
         tree->SetLeafNewCoeff(leaf_num, feat_coeff);
         bool feature_exists = false;
@@ -190,7 +190,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
             break;
           }
         }
-        if (!feature_exists && (feat_coeff < -kZeroThreshold || feat_coeff > kZeroThreshold)) {
+        if (!feature_exists && ((feat_coeff < -kZeroThreshold) || (feat_coeff > kZeroThreshold))) {
           features.push_back(feat);
           coeffs.push_back(feat_coeff);
         }
@@ -220,6 +220,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
       constant_term = 0;
     }
   }
+  std::fill(is_nan_curr_.begin(), is_nan_curr_.begin() + num_data, 0);
   // update the tree properties
   tree->SetLeafNewConst(leaf_num, constant_term);
   tree->SetLeafFeaturesInner(leaf_num, features);
