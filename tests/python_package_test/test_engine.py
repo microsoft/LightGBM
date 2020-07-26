@@ -2217,12 +2217,16 @@ class TestEngine(unittest.TestCase):
         y = 2 * x + np.random.normal(0, 0.1, len(x))
         lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
         params = {'verbose': -1,
+                  'metric': 'mse',
                   'seed': 0}
         est = lgb.train(params, lgb_train, num_boost_round=10)
         pred1 = est.predict(x[:, np.newaxis])
         lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
-        est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10)
+        res = {}
+        est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10, evals_result=res,
+                        valid_sets=[lgb_train], valid_names=['train'])
         pred2 = est.predict(x[:, np.newaxis])
+        np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-2))
         self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
         # test again with nans in data
         x[:10] = np.nan
@@ -2230,9 +2234,15 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(params, lgb_train, num_boost_round=10)
         pred1 = est.predict(x[:, np.newaxis])
         lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
-        est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10)
+        res = {}
+        est = lgb.train(dict(params, boosting='gbdt_linear'), lgb_train, num_boost_round=10, evals_result=res,
+                        valid_sets=[lgb_train], valid_names=['train'])
         pred2 = est.predict(x[:, np.newaxis])
+        np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-2))
         self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
         # test again with bagging
+        res = {}
         est = lgb.train(dict(params, boosting='gbdt_linear', subsample=0.8, bagging_freq=1), lgb_train,
-                        num_boost_round=10)
+                        num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
+        pred = est.predict(x[:, np.newaxis])
+        np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-2))

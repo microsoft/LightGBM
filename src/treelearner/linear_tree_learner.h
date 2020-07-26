@@ -63,7 +63,7 @@ private:
   /*! \brief Temporary storage for calculating additive linear model */
   std::vector<int8_t> is_nan_;
   /*! \brief Temporary storage for calculating additive linear model */
-  std::vector<int> nan_ind_;
+  std::vector<int8_t> is_nan_curr_;
 };
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_

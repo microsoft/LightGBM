@@ -13,6 +13,7 @@ namespace LightGBM {
     SerialTreeLearner::Init(train_data, is_constant_hessian);
     curr_pred_ = std::vector<double>(num_data_, 0);
     is_nan_ = std::vector<int8_t>(num_data_, 0);
+    is_nan_curr_ = std::vector<int8_t>(num_data_, 0);
   }
 
 
@@ -44,7 +45,9 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
   int init_splits = ForceSplits(tree_prt, &left_leaf, &right_leaf, &cur_depth);
 
   int num_nan = 0;
-  std::fill(curr_pred_.begin(), curr_pred_.end(), 0);
+  std::fill(curr_pred_.begin(), curr_pred_.end(), 0.0);
+  std::fill(is_nan_curr_.begin(), is_nan_curr_.end(), 0);
+  std::fill(is_nan_.begin(), is_nan_.end(), 0);
   for (int split = init_splits; split < config_->num_leaves - 1; ++split) {
     // some initial works before finding best split
     if (BeforeFindBestSplit(tree_prt, left_leaf, right_leaf)) {
@@ -71,9 +74,6 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
     CalculateLinear(tree_prt, right_leaf, feat, parent_features, parent_coeffs, parent_const,
                     best_leaf_SplitInfo.right_sum_gradient, best_leaf_SplitInfo.right_sum_hessian, num_nan);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
-  }
-  if (num_nan > 0) {
-    std::fill(is_nan_.begin(), is_nan_.end(), 0);
   }
   Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
@@ -130,16 +130,16 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
     double XTHX_00 = 0, XTHX_01 = 0, XTHX_11 = 0;
     double XTHy_0 = 0, XTHy_1 = 0;
     double gTX_0 = 0, gTX_1 = 0;
-    // keep track of current nans in curr_num_nan
+    // keep track of current nans in is_nan_curr_
     // only copy back to the main is_nan_ if the feature gets used
     //auto is_nan_curr = std::vector<int8_t>(num_data, 0);
     int curr_num_nan = 0;
-#pragma omp parallel for schedule(static, 512) reduction(+:XTHX_00,XTHX_01,XTHX_11,XTHy_0,XTHy_1,gTX_0,gTX_1) if (num_data > 1024)
+#pragma omp parallel for schedule(static, 512) reduction(+:XTHX_00,XTHX_01,XTHX_11,XTHy_0,XTHy_1,gTX_0,gTX_1,curr_num_nan) if (num_data > 1024)
     for (int i = 0; i < num_data; ++i) {
       int row_idx = ind[idx + i];
       double x = feat_ptr[row_idx];
       if (std::isnan(x) || std::isinf(x)) {
-        nan_ind_[curr_num_nan] = i;
+        is_nan_curr_[i] = 1;
         ++curr_num_nan;
         continue;
       }
@@ -169,9 +169,12 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
     } else {
       if (curr_num_nan > 0) {
 #pragma omp parallel for schedule(static, 512) if (num_data > 1024)
-        for (int i = 0; i < curr_num_nan; ++i) {
-          is_nan_[nan_ind_[i]] = 1;
+        for (int i = 0; i < num_data; ++i) {
+          if (is_nan_curr_[i]) {
+            is_nan_[ind[idx + i]] = 1;
+          }
         }
+        std::fill(is_nan_curr_.begin(), is_nan_curr_.begin() + num_data, 0);
       }
       double feat_coeff = - (XTHX_11 * (XTHy_0 + gTX_0) - XTHX_01 * (XTHy_1 + gTX_1)) / det;
       constant_term = - (- XTHX_01 * (XTHy_0 + gTX_0) + XTHX_00 * (XTHy_1 + gTX_1)) / det;
