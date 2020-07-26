@@ -172,7 +172,6 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
         for (int i = 0; i < curr_num_nan; ++i) {
           is_nan_[nan_ind_[i]] = 1;
         }
-        std::fill(nan_ind_.begin(), nan_ind_.begin() + curr_num_nan, 0);
       }
       double feat_coeff = - (XTHX_11 * (XTHy_0 + gTX_0) - XTHX_01 * (XTHy_1 + gTX_1)) / det;
       constant_term = - (- XTHX_01 * (XTHy_0 + gTX_0) + XTHX_00 * (XTHy_1 + gTX_1)) / det;
