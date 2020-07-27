@@ -95,7 +95,7 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_multiclass(self):
-        X, y = load_digits(n_classes=10, return_X_y=True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -147,7 +147,7 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_binary_classification_with_custom_objective(self):
-        X, y = load_digits(n_classes=2, return_X_y=True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -810,7 +810,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('mape', gbm.evals_result_['training'])
         self.assertIn('error', gbm.evals_result_['training'])
 
-        X, y = load_digits(n_classes=3, return_X_y=True)
+        X, y = load_digits(n_class=3, return_X_y=True)
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # default metric and invalid binary metric is replaced with multiclass alternative
@@ -837,7 +837,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('multi_logloss', gbm.evals_result_['training'])
         self.assertIn('multi_error', gbm.evals_result_['training'])
 
-        X, y = load_digits(n_classes=2, return_X_y=True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # default metric and invalid multiclass metric is replaced with binary alternative
@@ -977,7 +977,7 @@ class TestSklearn(unittest.TestCase):
         fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l2, True)
 
     def test_class_weight(self):
-        X, y = load_digits(n_classes=10, return_X_y=True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         y_train_str = y_train.astype('str')
         y_test_str = y_test.astype('str')
@@ -1011,7 +1011,7 @@ class TestSklearn(unittest.TestCase):
                                            gbm_str.evals_result_[eval_set][metric])
 
     def test_continue_training_with_model(self):
-        X, y = load_digits(n_classes=3, return_X_y=True)
+        X, y = load_digits(n_class=3, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         init_gbm = lgb.LGBMClassifier(n_estimators=5).fit(X_train, y_train, eval_set=(X_test, y_test),
                                                           verbose=False)
