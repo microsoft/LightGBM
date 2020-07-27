@@ -141,7 +141,9 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   col_sampler_.SetConfig(config_);
   histogram_pool_.ResetConfig(train_data_, config_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
-    cegb_.reset(new CostEfficientGradientBoosting(this));
+    if (cegb_ == nullptr) {
+      cegb_.reset(new CostEfficientGradientBoosting(this));
+    }
     cegb_->Init();
   }
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves));
