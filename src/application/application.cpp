@@ -43,7 +43,6 @@ Application::Application(int argc, char** argv) {
 #ifdef USE_CUDA
   if (config_.device_type == std::string("cuda")) {
       LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
-      config_.is_enable_sparse = false; /* LGBM_CUDA setting is_enable_sparse to FALSE (default is true) */
   }
 #endif
 }

@@ -336,9 +336,11 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   }
   auto features_in_group = NoGroup(used_features);
 
+  auto is_sparse = io_config.is_enable_sparse;
 #ifdef USE_CUDA
   if (io_config.device_type == std::string("cuda")) {
       LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
+      is_sparse = false;
   }
 #endif
 
@@ -349,7 +351,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
         *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
         num_sample_col, static_cast<data_size_t>(total_sample_cnt),
         used_features, num_data_, lgbm_is_gpu_used,
-        io_config.is_enable_sparse, &group_is_multi_val);
+        is_sparse, &group_is_multi_val);
   }
 
   num_features_ = 0;
