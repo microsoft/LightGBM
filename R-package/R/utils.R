@@ -311,7 +311,7 @@ lgb.check.obj <- function(params, obj) {
 
 # [description]
 #     make sure that "metric" is populated on params,
-#     and add any eval values to itt
+#     and add any eval values to it
 # [return]
 #     params, where "metric" is a list
 lgb.check.eval <- function(params, eval) {

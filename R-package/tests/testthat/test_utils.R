@@ -98,15 +98,6 @@ test_that("lgb.check.eval adds eval to metric in params", {
     expect_identical(params[["metric"]], list("auc", "binary_error"))
 })
 
-test_that("lgb.check.eval adds eval to metric in params", {
-    params <- lgb.check.eval(
-        params = list(metric = "auc")
-        , eval = "binary_error"
-    )
-    expect_named(params, "metric")
-    expect_identical(params[["metric"]], list("auc", "binary_error"))
-})
-
 test_that("lgb.check.eval adds eval to metric in params if two evaluation names are provided", {
     params <- lgb.check.eval(
         params = list(metric = "auc")
