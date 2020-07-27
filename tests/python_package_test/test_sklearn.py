@@ -219,7 +219,7 @@ class TestSklearn(unittest.TestCase):
 
     def test_grid_search(self):
         X, y = load_iris(return_X_y=True)
-        y = y.astype(str) 
+        y = y.astype(str)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {'subsample': 0.8,
                   'subsample_freq': 1}
@@ -245,7 +245,7 @@ class TestSklearn(unittest.TestCase):
 
     def test_random_search(self):
         X, y = load_iris(return_X_y=True)
-        y = y.astype(str) 
+        y = y.astype(str)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {'subsample': 0.8,
                   'subsample_freq': 1}
