@@ -381,10 +381,6 @@ class Dataset {
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
     if (is_finish_load_) { return; }
-    std::vector<double> raw_row;
-    if (has_raw_) {
-      raw_row = std::vector<double>(num_features_, 0.0f);
-    }
     for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
       int feature_idx = used_feature_map_[i];
       if (feature_idx >= 0) {
@@ -392,13 +388,11 @@ class Dataset {
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
         if (has_raw_) {
-          raw_row[feature_idx] = feature_values[i];
+          int num_feat = numeric_feature_map_[feature_idx];
+          if (num_feat > -1) {
+            raw_data_[num_feat][row_idx] = feature_values[i];
+          }
         }
-      }
-    }
-    if (has_raw_) {
-      for (int i = 0; i < raw_row.size(); ++i) {
-        raw_data_[i][row_idx] = raw_row[i];
       }
     }
   }
@@ -406,10 +400,6 @@ class Dataset {
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     if (is_finish_load_) { return; }
     std::vector<bool> is_feature_added(num_features_, false);
-    std::vector<double> raw_row;
-    if (has_raw_) {
-      raw_row = std::vector<double>(num_features_, 0.0f);
-    }
     for (auto& inner_data : feature_values) {
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
@@ -419,13 +409,11 @@ class Dataset {
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
         if (has_raw_) {
-          raw_row[feature_idx] = inner_data.second;
+          int num_feat = numeric_feature_map_[feature_idx];
+          if (num_feat > -1) {
+            raw_data_[num_feat][row_idx] = inner_data.second;
+          }
         }
-      }
-    }
-    if (has_raw_) {
-      for (int i = 0; i < raw_row.size(); ++i) {
-        raw_data_[i][row_idx] = raw_row[i];
       }
     }
     FinishOneRow(tid, row_idx, is_feature_added);
@@ -704,9 +692,6 @@ class Dataset {
   /*! \brief Set has_raw_ */
   inline void SetRaw(bool has_raw) { has_raw_ = has_raw; }
 
-  /*! \brief Get raw data */
-  inline double get_data(int idx, int feat_num) const { return raw_data_[feat_num][idx]; }
-
   /*! \brief Get size of raw data */
   inline data_size_t get_raw_size() const {
     if (raw_data_.size() == 0) {
@@ -720,30 +705,23 @@ class Dataset {
   /*! \brief Resize raw_data_, use current number of featurse */
   inline void ResizeRaw(int num_rows) {
     for (int i = 0; i < raw_data_.size(); ++i) {
-      raw_data_[i].resize(num_rows);
+      int feat_num = numeric_feature_map_[i];
+      if (feat_num > -1) {
+        raw_data_[feat_num].resize(num_rows);
+      }
     }
     int curr_size = raw_data_.size();
-    for (int i = 0; i < num_features_ - curr_size; ++i) {
-      raw_data_.push_back(std::vector<double>(num_rows, 0));
-    }
-  }
-
-  /*! \brief Resize raw_data_ */
-  inline void ResizeRaw(int num_rows, int num_features) {
-    for (int i = 0; i < raw_data_.size(); ++i) {
-      raw_data_[i].resize(num_rows);
-    }
-    if (num_features < num_features_) {
-      raw_data_.resize(num_features);
-    }
-    for (int i = 0; i < num_features - raw_data_.size(); ++i) {
-      raw_data_.push_back(std::vector<double>(num_rows, 0));
+    for (int i = curr_size; i < num_features_; ++i) {
+      int num_feat_num = numeric_feature_map_[i];
+      if (num_feat_num > -1) {
+        raw_data_.push_back(std::vector<double>(num_rows, 0));
+      }
     }
   }
 
   /*! \brief Get pointer to raw_data_ feature */
   inline const double* raw_index(int feat_num) const {
-    return raw_data_[feat_num].data();
+    return raw_data_[numeric_feature_map_[feat_num]].data();
   }
 
  private:
@@ -784,6 +762,9 @@ class Dataset {
   std::vector<int> feature_need_push_zeros_;
   std::vector<std::vector<double>> raw_data_;
   bool has_raw_;
+  /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
+  std::vector<int> numeric_feature_map_;
+  int num_numeric_features_;
 };
 
 }  // namespace LightGBM

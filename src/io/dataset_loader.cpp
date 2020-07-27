@@ -546,9 +546,19 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   dataset->feature_groups_.shrink_to_fit();
 
   // raw data
+  dataset->numeric_feature_map_ = std::vector<int>(dataset->num_features_, false);
+  dataset->num_numeric_features_ = 0;
+  for (int i = 0; i < dataset->num_features_; ++ i) {
+    if (dataset->FeatureBinMapper(i)->bin_type() == BinType::CategoricalBin) {
+      dataset->numeric_feature_map_[i] = -1;
+    } else {
+      dataset->numeric_feature_map_[i] = dataset->num_numeric_features_;
+      ++dataset->num_numeric_features_;
+    }
+  }
   if (dataset->has_raw()) {
     dataset->ResizeRaw(dataset->num_data());
-      size_t row_size = dataset->num_features() * sizeof(double);
+      size_t row_size = dataset->num_numeric_features_ * sizeof(double);
       if (row_size > buffer_size) {
         buffer_size = row_size;
         buffer.resize(buffer_size);
@@ -560,14 +570,14 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       }
       mem_ptr = buffer.data();
       const double* tmp_ptr_raw_row = reinterpret_cast<const double*>(mem_ptr);
-      std::vector<double> curr_row(dataset->num_features(), 0);
+      std::vector<double> curr_row(dataset->num_numeric_features_, 0);
       for (int j = 0; j < dataset->num_features(); ++j) {
-        curr_row[j] = tmp_ptr_raw_row[j];
+        int num_feat = dataset->numeric_feature_map_[j];
+        if (num_feat > -1) {
+          dataset->raw_data_[num_feat][i] = tmp_ptr_raw_row[num_feat];
+        }
       }
       mem_ptr += row_size;
-      for (int k = 0; k < dataset->num_features(); ++k) {
-        dataset->raw_data_[k][i] = curr_row[k];
-      }
     } 
   }
 
@@ -1106,7 +1116,10 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       }
       if (dataset->has_raw()) {
         for (int j = 0; j < feature_row.size(); ++j) {
-          dataset->raw_data_[j][i] = feature_row[j];
+          int feat_num = dataset->numeric_feature_map_[j];
+          if (feat_num > -1) {
+            dataset->raw_data_[feat_num][i] = feature_row[j];
+          }
         }
       }
       dataset->FinishOneRow(tid, i, is_feature_added);
@@ -1165,7 +1178,10 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       dataset->FinishOneRow(tid, i, is_feature_added);
       if (dataset->has_raw()) {
         for (int j = 0; j < feature_row.size(); ++j) {
-          dataset->raw_data_[j][i] = feature_row[j];
+          int feat_num = dataset->numeric_feature_map_[j];
+          if (feat_num > -1) {
+            dataset->raw_data_[feat_num][i] = feature_row[j];
+          }
         }
       }
       OMP_LOOP_EX_END();
@@ -1237,7 +1253,10 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       }
       if (dataset->has_raw()) {
         for (int j = 0; j < feature_row.size(); ++j) {
-          dataset->raw_data_[j][i] = feature_row[j];
+          int feat_num = dataset->numeric_feature_map_[j];
+          if (feat_num > -1) {
+            dataset->raw_data_[feat_num][i] = feature_row[j];
+          }
         }
       }
       dataset->FinishOneRow(tid, i, is_feature_added);

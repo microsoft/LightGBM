@@ -423,6 +423,14 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   if (io_config.boosting == "gbdt_linear") {
     has_raw_ = true;
   }
+  numeric_feature_map_ = std::vector<int>(num_features_, -1);
+  num_numeric_features_ = 0;
+  for (int i = 0; i < num_features_; ++ i) {
+    if (FeatureBinMapper(i)->bin_type() == BinType::NumericalBin) {
+      numeric_feature_map_[i] = num_numeric_features_;
+      ++num_numeric_features_;
+    }
+  }
 }
 
 void Dataset::FinishLoad() {
@@ -721,6 +729,8 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature2group_.clear();
   feature2subfeature_.clear();
   has_raw_ = dataset->has_raw();
+  numeric_feature_map_ = dataset->numeric_feature_map_;
+  num_numeric_features_ = dataset->num_numeric_features_;
   // copy feature bin mapper data
   feature_need_push_zeros_.clear();
   for (int i = 0; i < num_features_; ++i) {
@@ -769,9 +779,6 @@ void Dataset::CreateValid(const Dataset* dataset) {
 void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
-    if (has_raw_) {
-      ResizeRaw(num_data);
-    }
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
@@ -800,10 +807,13 @@ void Dataset::CopySubrow(const Dataset* fullset,
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }
   is_finish_load_ = true;
+  numeric_feature_map_ = fullset->numeric_feature_map_;
+  num_numeric_features_ = fullset->num_numeric_features_;
   if (has_raw_) {
+    ResizeRaw(num_used_indices);
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < num_used_indices; ++i) {
-      for (int j = 0; j < num_features_; ++j) {
+      for (int j = 0; j < num_numeric_features_; ++j) {
         raw_data_[j][i] = fullset->raw_data_[j][used_indices[i]];
       }
     }
@@ -1013,7 +1023,10 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     if (has_raw_) {
       for (int i = 0; i < num_data_; ++i) {
         for (int j = 0; j < num_features_; ++j) {
-          writer->Write(&raw_data_[j][i], sizeof(double));
+          int num_feat = numeric_feature_map_[j];
+          if (num_feat > -1) {
+            writer->Write(&raw_data_[num_feat][i], sizeof(double));
+          }
         }
       }
     }
@@ -1497,6 +1510,9 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
         "Cannot add features from other Dataset with a different number of "
         "rows");
   }
+  if (other->has_raw_ != has_raw_) {
+    Log::Fatal("Can only add features from other Dataset if both or neither have raw data.");
+  }
   PushVector(&feature_names_, other->feature_names_);
   PushVector(&feature2subfeature_, other->feature2subfeature_);
   PushVector(&group_feature_cnt_, other->group_feature_cnt_);
@@ -1528,7 +1544,21 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   num_features_ += other->num_features_;
   num_total_features_ += other->num_total_features_;
   num_groups_ += other->num_groups_;
-  ResizeRaw(num_data_, num_features_);
+
+  for (int i = 0; i < (other->numeric_feature_map_).size(); ++i) {
+    int num_feat = numeric_feature_map_[i];
+    if (num_feat > -1) {
+      numeric_feature_map_.push_back(num_feat + num_numeric_features_);
+    } else {
+      numeric_feature_map_.push_back(-1);
+    }
+  }
+  num_numeric_features_ += other->num_numeric_features_;
+  if (has_raw_) {
+    for (int i = 0; i < other->num_numeric_features_; ++i) {
+      raw_data_.push_back(other->raw_data_[i]);
+    }
+  }
 }
 
 }  // namespace LightGBM

@@ -110,9 +110,10 @@ class TestBasic(unittest.TestCase):
 
     def test_save_and_load_linear(self):
         X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        X_train = np.concatenate([np.ones((X_train.shape[0], 1)), X_train], 1)
         params = {'boosting': 'gbdt_linear'}
         train_data = lgb.Dataset(X_train, label=y_train, params=params)
-        est = lgb.train(params, train_data, num_boost_round=10)
+        est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
         pred1 = est.predict(X_train)
         train_data.save_binary('temp_dataset.bin')
         train_data_2 = lgb.Dataset('temp_dataset.bin')
