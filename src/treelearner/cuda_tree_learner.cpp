@@ -74,7 +74,7 @@ void CUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) 
   num_feature_groups_ = train_data_->num_feature_groups();
 
   // Initialize GPU buffers and kernels & LGBM_CUDA: get device info
-  InitGPU(config_->num_gpu);
+  InitGPU();
 }
 
 // some functions used for debugging the GPU histogram construction
@@ -435,7 +435,7 @@ void CUDATreeLearner::copyDenseFeature() {
 
 
 // LGBM_CUDA: InitGPU w/ num_gpu
-void CUDATreeLearner::InitGPU(int num_gpu) {
+void CUDATreeLearner::InitGPU() {
   // Get the max bin size, used for selecting best GPU kernel
   max_num_bin_ = 0;
 
@@ -481,13 +481,10 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
   // LGBM_CUDA: get num_dense_feature_groups_
   CountDenseFeatureGroups();
 
-  if (num_gpu > num_dense_feature_groups_) num_gpu = num_dense_feature_groups_;
-
   // LGBM_CUDA: initialize GPU
-  int gpu_count;
-
-  CUDASUCCESS_OR_FATAL(cudaGetDeviceCount(&gpu_count));
-  num_gpu_ = (gpu_count < num_gpu)? gpu_count : num_gpu;
+  CUDASUCCESS_OR_FATAL(cudaGetDeviceCount(&num_gpu_));
+  if (num_gpu_ > 1) num_gpu_ = 1;
+  if (num_gpu_ > num_dense_feature_groups_) num_gpu_ = num_dense_feature_groups_;
 
   // LGBM_CUDA: set cpu threads
   cpu_threads_ = reinterpret_cast<pthread_t **>(malloc(sizeof(pthread_t *)*num_gpu_));

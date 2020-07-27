@@ -77,7 +77,7 @@ class CUDATreeLearner: public SerialTreeLearner {
      * \brief Initialize GPU device
      * \LGBM_CUDA: param num_gpu: number of maximum gpus
      */
-    void InitGPU(int num_gpu);
+    void InitGPU();
 
     /*!
      * \brief Allocate memory for GPU computation // LGBM_CUDA: alloc only
