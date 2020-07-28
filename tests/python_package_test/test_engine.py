@@ -2258,7 +2258,17 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-2))
         # test with a categorical feature
         x[:250, 0] = 0
+        y[:250] += 10
         lgb_train = lgb.Dataset(x, label=y)
         est = lgb.train(dict(params, boosting='gbdt_linear', subsample=0.8, bagging_freq=1), lgb_train,
                         num_boost_round=10, categorical_feature=[0])
-
+        # test when num_leaves - 1 < num_features and when num_leaves - 1 > num_features
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        params = {'boosting': 'gbdt_linear',
+                  'verbose': -1,
+                  'metric': 'mse',
+                  'seed': 0}
+        train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=2))
+        est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
+        train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=60))
+        est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])

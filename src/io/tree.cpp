@@ -179,10 +179,32 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
         feat_ptr.push_back(nullptr);
       }
     }
-    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
-    (int, data_size_t start, data_size_t end) {
-      PredictionFunLinear(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
-    });
+    if (num_cat_ > 0) {
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(num_leaves_ - 1, split_feature_inner_[i], start, DecisionInner, node, i);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
+        });
+      }
+    } else {
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(num_leaves_ - 1, split_feature_inner_[i], start, NumericalDecisionInner, node, i);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(data->num_features(), i, start, NumericalDecisionInner, split_feature_inner_[node], i);
+        });
+      }
+    }
+
   } else {
     if (num_cat_ > 0) {
       if (data->num_features() > num_leaves_ - 1) {
@@ -242,10 +264,35 @@ void Tree::AddPredictionToScore(const Dataset* data,
         feat_ptr.push_back(nullptr);
       }
     }
-    Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
-    (int, data_size_t start, data_size_t end) {
-      PredictionFunLinear(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
-    });
+    if (num_cat_ > 0) {
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], DecisionInner,
+                              node, used_data_indices[i]);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
+        });
+      }
+    } else {
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], NumericalDecisionInner,
+                              node, used_data_indices[i]);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(data->num_features(), i, used_data_indices[start], NumericalDecisionInner,
+                              split_feature_inner_[node], used_data_indices[i]);
+        });
+      }
+    }
+
   } else {
     if (num_cat_ > 0) {
       if (data->num_features() > num_leaves_ - 1) {
