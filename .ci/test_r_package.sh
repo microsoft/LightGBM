@@ -139,6 +139,8 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
             R-package/configure.ac \
         || exit -1
 
+        git diff
+
         num_files_changed=$(
             git diff --name-only | wc -l
         )
