@@ -218,7 +218,8 @@ void LinearTreeLearner::CalculateLinearInner(Tree* tree, int leaf_num, int feat,
     if (HAS_NAN) {
       num_nan += curr_num_nan;
     }
-    XTHX_01 += config_->linear_lambda;
+    XTHX_00 += config_->linear_lambda;
+    XTHX_11 += config_->linear_lambda;
     double det = XTHX_00 * XTHX_11 - XTHX_01 * XTHX_01;
     if (det > -kEpsilon && det < kEpsilon) {
       can_solve = false;
