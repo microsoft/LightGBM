@@ -127,8 +127,6 @@ then
     fi
 fi
 
-AC_MSG_CHECKING([whether some nonsense])
-
 # substitute variables from this script into Makevars.in
 AC_SUBST(OPENMP_CXXFLAGS)
 AC_SUBST(OPENMP_LIB)
