@@ -21,11 +21,21 @@ class LinearTreeLearner: public SerialTreeLearner {
    
   Tree* Train(const score_t* gradients, const score_t *hessians);
 
-  void CalculateLinear(Tree* tree, int leaf, int feat,
+  template<bool HAS_NAN>
+  void CalculateLinear(Tree*, int leaf_num, int feat,
                        const std::vector<int>& parent_features,
                        const std::vector<double>& parent_coeffs,
-                       const double& parent_const, const double& sum_grad, const double& sum_hess,
+                       const double& parent_const,
+                       const double& sum_grad, const double& sum_hess,
                        int& num_nan);
+
+  template<bool HAS_NAN, bool HAS_PREV_NAN, bool UPDATE_PREV>
+  void CalculateLinearInner(Tree* tree, int leaf_num, int feat,
+                            const std::vector<int>& parent_features,
+                            const std::vector<double>& parent_coeffs,
+                            const double& parent_const,
+                            const double& sum_grad, const double& sum_hess,
+                            int& num_nan);
 
   void AddPredictionToScore(const Tree* tree,
                             double* out_score) const override {
@@ -64,6 +74,8 @@ private:
   std::vector<int8_t> is_nan_;
   /*! \brief Temporary storage for calculating additive linear model */
   std::vector<int8_t> is_nan_curr_;
+  /*! \brief whether features contain any nan values */
+  std::vector<int8_t> contains_nan_;
 };
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_

@@ -172,7 +172,12 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
   if (is_linear_) {
     std::vector<const double*> feat_ptr;
     for (int i = 0; i < data->num_features(); ++i) {
-      feat_ptr.push_back(data->raw_index(i));
+      auto bin_mapper = data->FeatureBinMapper(i);
+      if (bin_mapper->bin_type() == BinType::NumericalBin) {
+        feat_ptr.push_back(data->raw_index(i));
+      } else {
+        feat_ptr.push_back(nullptr);
+      }
     }
     Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
     (int, data_size_t start, data_size_t end) {
@@ -230,7 +235,12 @@ void Tree::AddPredictionToScore(const Dataset* data,
   if (is_linear_) {
     std::vector<const double*> feat_ptr;
     for (int i = 0; i < data->num_features(); ++i) {
-      feat_ptr.push_back(data->raw_index(i));
+      auto bin_mapper = data->FeatureBinMapper(i);
+      if (bin_mapper->bin_type() == BinType::NumericalBin) {
+        feat_ptr.push_back(data->raw_index(i));
+      } else {
+        feat_ptr.push_back(nullptr);
+      }
     }
     Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
     (int, data_size_t start, data_size_t end) {

@@ -704,16 +704,16 @@ class Dataset {
 
   /*! \brief Resize raw_data_, use current number of featurse */
   inline void ResizeRaw(int num_rows) {
+    if (raw_data_.size() > num_numeric_features_) {
+      raw_data_.resize(num_numeric_features_);
+    }
     for (int i = 0; i < raw_data_.size(); ++i) {
-      int feat_num = numeric_feature_map_[i];
-      if (feat_num > -1) {
-        raw_data_[feat_num].resize(num_rows);
-      }
+      raw_data_[i].resize(num_rows);
     }
     int curr_size = raw_data_.size();
     for (int i = curr_size; i < num_features_; ++i) {
-      int num_feat_num = numeric_feature_map_[i];
-      if (num_feat_num > -1) {
+      int feat_num = numeric_feature_map_[i];
+      if (feat_num > -1) {
         raw_data_.push_back(std::vector<double>(num_rows, 0));
       }
     }
