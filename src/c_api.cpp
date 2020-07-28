@@ -922,8 +922,8 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   }
   DatasetLoader loader(config, nullptr, 1, nullptr);
   *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
-                                       num_sample_row,
-                                       static_cast<data_size_t>(num_total_row));
+                                        num_sample_row,
+                                        static_cast<data_size_t>(num_total_row));
   API_END();
 }
 
@@ -1070,10 +1070,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
-                                            Vector2Ptr<int>(&sample_idx).data(),
-                                            ncol,
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, total_nrow));
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             ncol,
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, total_nrow));
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1146,10 +1146,10 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
-                                            Vector2Ptr<int>(&sample_idx).data(),
-                                            static_cast<int>(num_col),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow));
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(num_col),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1214,10 +1214,10 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
-                                            Vector2Ptr<int>(&sample_idx).data(),
-                                            static_cast<int>(num_col),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow));
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(num_col),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1287,10 +1287,10 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     OMP_THROW_EX();
     DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
-                                            Vector2Ptr<int>(&sample_idx).data(),
-                                            static_cast<int>(sample_values.size()),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow));
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(sample_values.size()),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
