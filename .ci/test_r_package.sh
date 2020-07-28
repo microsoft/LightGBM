@@ -135,10 +135,12 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
         cp VERSION.txt R-package/src/VERSION.txt
+        cd ${BUILD_DIRECTORY}/R-package
         autoconf \
-            --output R-package/configure \
-            R-package/configure.ac \
+            --output configure \
+                configure.ac \
         || exit -1
+        cd ${BUILD_DIRECTORY}
 
         git diff
 
