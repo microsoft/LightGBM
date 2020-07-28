@@ -41,7 +41,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     if (num_class_ < 0) {
       Log::Fatal("Objective should contain num_class field");
     }
-    factor_ = static_cast<double>(num_class_ - 1) / num_class_;
+    factor_ = static_cast<double>(num_class_) / (num_class_ - 1.0f);
   }
 
   ~MulticlassSoftmax() {
