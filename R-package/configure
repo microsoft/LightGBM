@@ -1698,10 +1698,7 @@ CXX=`"${R_HOME}/bin/R" CMD config CXX11`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
-################
-# LGB_CPPFLAGS #
-################
-
+# LightGBM-specific flags
 LGB_CPPFLAGS=""
 
 ###############
@@ -1822,7 +1819,7 @@ $as_echo "${ac_pkg_openmp}" >&6; }
         OPENMP_CXXFLAGS=''
         OPENMP_LIB=''
         echo '***********************************************************************************************'
-        echo ' OpenMP is unavailable on this Mac OSX system. LightGBM code may be slower as a result'
+        echo ' OpenMP is unavailable on this macOS system. LightGBM code will run single-threaded as a result.'
         echo ' To use all CPU cores for training jobs, you should install OpenMP by running'
         echo ''
         echo '     brew install libomp'
