@@ -25,7 +25,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
  public:
   explicit MulticlassSoftmax(const Config& config) {
     num_class_ = config.num_class;
-    factor_ = static_cast<double>(num_class_ - 1) / num_class_;
+    factor_ = static_cast<double>(num_class_) / (num_class_ - 1.0f);
   }
 
   explicit MulticlassSoftmax(const std::vector<std::string>& strs) {
