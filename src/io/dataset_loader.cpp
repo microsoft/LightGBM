@@ -524,7 +524,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 }
 
 
-Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
+Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
                                                int** sample_indices, int num_col, const int* num_per_col,
                                                size_t total_sample_size, data_size_t num_data) {
   int num_total_features = num_col;
