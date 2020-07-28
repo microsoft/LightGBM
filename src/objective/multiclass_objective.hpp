@@ -25,6 +25,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
  public:
   explicit MulticlassSoftmax(const Config& config) {
     num_class_ = config.num_class;
+    factor_ = static_cast<double>(num_class_ - 1) / num_class_;
   }
 
   explicit MulticlassSoftmax(const std::vector<std::string>& strs) {
@@ -40,6 +41,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     if (num_class_ < 0) {
       Log::Fatal("Objective should contain num_class field");
     }
+    factor_ = static_cast<double>(num_class_ - 1) / num_class_;
   }
 
   ~MulticlassSoftmax() {
@@ -97,7 +99,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
           } else {
             gradients[idx] = static_cast<score_t>(p);
           }
-          hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p));
+          hessians[idx] = static_cast<score_t>(factor_ * p * (1.0f - p));
         }
       }
     } else {
@@ -118,7 +120,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
           } else {
             gradients[idx] = static_cast<score_t>((p) * weights_[i]);
           }
-          hessians[idx] = static_cast<score_t>((2.0f * p * (1.0f - p))* weights_[i]);
+          hessians[idx] = static_cast<score_t>((factor_ * p * (1.0f - p))* weights_[i]);
         }
       }
     }
@@ -161,6 +163,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
   }
 
  private:
+  double factor_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */
