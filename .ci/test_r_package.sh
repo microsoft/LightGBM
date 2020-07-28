@@ -138,20 +138,21 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
             --output R-package/configure \
             R-package/configure.ac \
         || exit -1
-    fi
-    ./build-cran-package.sh || exit -1
 
-    num_files_changed=$(
-        git diff --name-only | wc -l
-    )
-    if [[ ${num_files_changed} -gt 0 ]]; then
-        echo "'configure' in the R package has changed. Please recreate it and commit the changes."
-        echo "Changed files:"
-        git diff --compact-summary
-        echo "See R-package/README.md for details on how to recreate this script."
-        echo ""
-        exit -1
+        num_files_changed=$(
+            git diff --name-only | wc -l
+        )
+        if [[ ${num_files_changed} -gt 0 ]]; then
+            echo "'configure' in the R package has changed. Please recreate it and commit the changes."
+            echo "Changed files:"
+            git diff --compact-summary
+            echo "See R-package/README.md for details on how to recreate this script."
+            echo ""
+            exit -1
+        fi
     fi
+
+    ./build-cran-package.sh || exit -1
 
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
