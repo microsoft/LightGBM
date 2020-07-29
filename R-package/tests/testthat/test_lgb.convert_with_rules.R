@@ -111,7 +111,7 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with num
         expect_identical(rules[["character_col"]], c("a" = 1L, "b" = 2L, "c" = 3L))
         expect_identical(rules[["factor_col"]], c("n" = 1L, "y" = 2L))
 
-        # today, lgb.convert() does not convert numeric columns
+        # today, lgb.convert_with_rules() does not convert numeric columns
         expect_identical(class(converted_dataset[["numeric_col"]]), "numeric")
         expect_identical(converted_dataset[["numeric_col"]], c(1.0, 9.0, 10.0))
     }
