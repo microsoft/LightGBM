@@ -474,7 +474,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
 
   void RecomputeConstraintsIfNeeded(
       LeafConstraintsBase* constraints_,
-      int feature_for_constraint, int leaf_idx, uint32_t it_end) {
+      int feature_for_constraint, int leaf_idx, uint32_t it_end) override{
     entries_[~leaf_idx]->RecomputeConstraintsIfNeeded(constraints_, feature_for_constraint, leaf_idx, it_end);
   }
 
