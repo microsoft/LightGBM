@@ -20,7 +20,6 @@ from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOu
                                  RegressorChain)
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
-from scipy.stats import randint, uniform
 
 
 decreasing_generator = itertools.count(0, -1)
@@ -219,24 +218,28 @@ class TestSklearn(unittest.TestCase):
 
     def test_grid_search(self):
         X, y = load_iris(return_X_y=True)
-        y = y.astype(str)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        params = {'subsample': 0.8,
-                  'subsample_freq': 1}
-        grid_params = {'boosting_type': ['rf', 'gbdt'],
-                       'n_estimators': [4, 6],
-                       'reg_alpha': [0.01, 0.005]}
-        fit_params = {'verbose': False,
-                      'eval_set': [(X_test, y_test)],
-                      'eval_metric': constant_metric,
-                      'early_stopping_rounds': 2}
-        grid = GridSearchCV(lgb.LGBMClassifier(**params), grid_params, cv=2)
+        y = y.astype(str)  # utilize label encoder at it's max power
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1,
+                                                          random_state=42)
+        params = dict(subsample=0.8,
+                      subsample_freq=1)
+        grid_params = dict(boosting_type=['rf', 'gbdt'],
+                           n_estimators=[4, 6],
+                           reg_alpha=[0.01, 0.005])
+        fit_params = dict(verbose=False,
+                          eval_set=[(X_val, y_val)],
+                          eval_metric=constant_metric,
+                          early_stopping_rounds=2)
+        grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params,
+                            cv=2)
         grid.fit(X_train, y_train, **fit_params)
         score = grid.score(X_test, y_test)  # utilizes GridSearchCV default refit=True
         self.assertIn(grid.best_params_['boosting_type'], ['rf', 'gbdt'])
         self.assertIn(grid.best_params_['n_estimators'], [4, 6])
         self.assertIn(grid.best_params_['reg_alpha'], [0.01, 0.005])
-        self.assertLess(grid.best_score_, 1.0)
+        self.assertLessEqual(grid.best_score_, 1.)
         self.assertEqual(grid.best_estimator_.best_iteration_, 1)
         self.assertLess(grid.best_estimator_.best_score_['valid_0']['multi_logloss'], 0.25)
         self.assertEqual(grid.best_estimator_.best_score_['valid_0']['error'], 0)
@@ -245,40 +248,53 @@ class TestSklearn(unittest.TestCase):
 
     def test_random_search(self):
         X, y = load_iris(return_X_y=True)
-        y = y.astype(str)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        params = {'subsample': 0.8,
-                  'subsample_freq': 1}
-        param_dist = {'boosting_type': ['rf', 'gbdt'],
-                      'n_estimators': randint(low=3, high=10),
-                      'reg_alpha': uniform(loc=0.01, scale=0.05)}
-        fit_params = {'verbose': False,
-                      'eval_set': [(X_test, y_test)],
-                      'eval_metric': constant_metric,
-                      'early_stopping_rounds': 2}
-        rand = RandomizedSearchCV(lgb.LGBMClassifier(**params), param_dist, cv=2)
+        y = y.astype(str)  # utilize label encoder at it's max power
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1,
+                                                          random_state=42)
+        n_iter = 3  # Number of samples
+        params = dict(subsample=0.8,
+                      subsample_freq=1)
+        param_dist = dict(boosting_type=['rf', 'gbdt'],
+                          n_estimators=[np.random.randint(low=3, high=10) for i in range(n_iter)],
+                          reg_alpha=[np.random.uniform(low=0.01, high=0.06) for i in range(n_iter)])
+        fit_params = dict(verbose=False,
+                          eval_set=[(X_val, y_val)],
+                          eval_metric=constant_metric,
+                          early_stopping_rounds=2)
+        rand = RandomizedSearchCV(estimator=lgb.LGBMClassifier(**params),
+                                  param_distributions=param_dist, cv=2,
+                                  n_iter=n_iter, random_state=42)
         rand.fit(X_train, y_train, **fit_params)
         score = rand.score(X_test, y_test)  # utilizes RandomizedSearchCV default refit=True
         self.assertIn(rand.best_params_['boosting_type'], ['rf', 'gbdt'])
         self.assertIn(rand.best_params_['n_estimators'], list(range(3, 10)))
         self.assertGreaterEqual(rand.best_params_['reg_alpha'], 0.01)  # Left-closed boundary point
         self.assertLessEqual(rand.best_params_['reg_alpha'], 0.06)  # Right-closed boundary point
-        self.assertLess(rand.best_score_, 1.0)
+        self.assertLessEqual(rand.best_score_, 1.)
         self.assertLess(rand.best_estimator_.best_score_['valid_0']['multi_logloss'], 0.25)
         self.assertEqual(rand.best_estimator_.best_score_['valid_0']['error'], 0)
         self.assertGreaterEqual(score, 0.2)
         self.assertLessEqual(score, 1.)
 
     def test_multioutput_classifier(self):
-        X, y = make_multilabel_classification(n_classes=3, random_state=0)
-        y = y.astype(str)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        n_outputs = 3
+        X, y = make_multilabel_classification(n_samples=100, n_features=20,
+                                              n_classes=n_outputs, random_state=0)
+        y = y.astype(str)  # utilize label encoder at it's max power
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
         clf = MultiOutputClassifier(estimator=lgb.LGBMClassifier(n_estimators=10))
         clf.fit(X_train, y_train)
         score = clf.score(X_test, y_test)
         self.assertGreaterEqual(score, 0.2)
         self.assertLessEqual(score, 1.)
+        _classes = np.ones(shape=2 * n_outputs, dtype=str)
+        _classes[0::2] = str(0)  # make binary classification str pattern
+        self.assertTrue(all(_classes == np.concatenate(clf.classes_)))
         for classifier in clf.estimators_:
+            self.assertIsInstance(classifier, lgb.LGBMClassifier)
             self.assertIsInstance(classifier.booster_, lgb.Booster)
 
     # sklearn < 0.23 does not have as_frame parameter
@@ -286,25 +302,37 @@ class TestSklearn(unittest.TestCase):
     def test_multioutput_regressor(self):
         bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
         X, y = bunch['data'], bunch['target']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
         reg = MultiOutputRegressor(estimator=lgb.LGBMRegressor(n_estimators=10))
         reg.fit(X_train, y_train)
         y_pred = reg.predict(X_test)
         _, score, _ = mse(y_test, y_pred)
         self.assertGreaterEqual(score, 0.2)
-        self.assertLessEqual(score, 120.0)
+        self.assertLessEqual(score, 120.)
         for regressor in reg.estimators_:
+            self.assertIsInstance(regressor, lgb.LGBMRegressor)
             self.assertIsInstance(regressor.booster_, lgb.Booster)
 
     def test_classifier_chain(self):
-        X, y = make_multilabel_classification(n_classes=3, random_state=0)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        clf = ClassifierChain(base_estimator=lgb.LGBMClassifier(n_estimators=10), order=[2, 0, 1])
+        n_outputs = 3
+        X, y = make_multilabel_classification(n_samples=100, n_features=20,
+                                              n_classes=n_outputs, random_state=0)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
+        order = [2, 0, 1]
+        clf = ClassifierChain(base_estimator=lgb.LGBMClassifier(n_estimators=10),
+                              order=order, random_state=42)
         clf.fit(X_train, y_train)
         score = clf.score(X_test, y_test)
         self.assertGreaterEqual(score, 0.2)
         self.assertLessEqual(score, 1.)
+        _classes = np.ones(shape=2 * n_outputs, dtype=int)
+        _classes[0::2] = 0  # make binary classification int pattern
+        self.assertTrue(all(_classes == np.concatenate(clf.classes_)))
+        self.assertTrue(order == clf.order_)
         for classifier in clf.estimators_:
+            self.assertIsInstance(classifier, lgb.LGBMClassifier)
             self.assertIsInstance(classifier.booster_, lgb.Booster)
 
     # sklearn < 0.23 does not have as_frame parameter
@@ -313,13 +341,17 @@ class TestSklearn(unittest.TestCase):
         bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
         X, y = bunch['data'], bunch['target']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        reg = RegressorChain(base_estimator=lgb.LGBMRegressor(n_estimators=10), order=[2, 0, 1])
+        order = [2, 0, 1]
+        reg = RegressorChain(base_estimator=lgb.LGBMRegressor(n_estimators=10), order=order,
+                             random_state=42)
         reg.fit(X_train, y_train)
         y_pred = reg.predict(X_test)
         _, score, _ = mse(y_test, y_pred)
         self.assertGreaterEqual(score, 0.2)
-        self.assertLessEqual(score, 120.0)
+        self.assertLessEqual(score, 120.)
+        self.assertTrue(order == reg.order_)
         for regressor in reg.estimators_:
+            self.assertIsInstance(regressor, lgb.LGBMRegressor)
             self.assertIsInstance(regressor.booster_, lgb.Booster)
 
     def test_clone_and_property(self):
