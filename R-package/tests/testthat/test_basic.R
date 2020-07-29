@@ -545,6 +545,74 @@ test_that("lgb.train() works with early stopping for classification", {
 
 })
 
+test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stopping", {
+  set.seed(708L)
+  trainDF <- data.frame(
+    "feat1" = rep(c(5.0, 10.0), 500L)
+    , "target" = rep(c(0L, 1L), 500L)
+  )
+  validDF <- data.frame(
+    "feat1" = rep(c(5.0, 10.0), 50L)
+    , "target" = rep(c(0L, 1L), 50L)
+  )
+  dtrain <- lgb.Dataset(
+    data = as.matrix(trainDF[["feat1"]], drop = FALSE)
+    , label = trainDF[["target"]]
+  )
+  dvalid <- lgb.Dataset(
+    data = as.matrix(validDF[["feat1"]], drop = FALSE)
+    , label = validDF[["target"]]
+  )
+  nrounds <- 5L
+
+  for (value in c(-5L, 0L)){
+
+    #----------------------------#
+    # passed as keyword argument #
+    #----------------------------#
+    bst <- lgb.train(
+      params = list(
+        objective = "binary"
+        , metric = "binary_error"
+      )
+      , data = dtrain
+      , nrounds = nrounds
+      , valids = list(
+        "valid1" = dvalid
+      )
+      , early_stopping_rounds = value
+    )
+
+    # a perfect model should be trivial to obtain, but all 10 rounds
+    # should happen
+    expect_equal(bst$best_score, 0.0)
+    expect_equal(bst$best_iter, 1L)
+    expect_equal(length(bst$record_evals[["valid1"]][["binary_error"]][["eval"]]), nrounds)
+
+    #---------------------------#
+    # passed as parameter alias #
+    #---------------------------#
+    bst <- lgb.train(
+      params = list(
+        objective = "binary"
+        , metric = "binary_error"
+        , n_iter_no_change = value
+      )
+      , data = dtrain
+      , nrounds = nrounds
+      , valids = list(
+        "valid1" = dvalid
+      )
+    )
+
+    # a perfect model should be trivial to obtain, but all 10 rounds
+    # should happen
+    expect_equal(bst$best_score, 0.0)
+    expect_equal(bst$best_iter, 1L)
+    expect_equal(length(bst$record_evals[["valid1"]][["binary_error"]][["eval"]]), nrounds)
+  }
+})
+
 test_that("lgb.train() works with early stopping for classification with a metric that should be maximized", {
   set.seed(708L)
   dtrain <- lgb.Dataset(
