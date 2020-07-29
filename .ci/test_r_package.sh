@@ -142,8 +142,6 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
         || exit -1
         cd ${BUILD_DIRECTORY}
 
-        git diff
-
         num_files_changed=$(
             git diff --name-only | wc -l
         )
