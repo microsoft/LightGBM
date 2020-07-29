@@ -278,6 +278,8 @@ class TestSklearn(unittest.TestCase):
         self.assertGreaterEqual(score, 0.2)
         self.assertLessEqual(score, 1.)
 
+    # sklearn < 0.22 does not have the post fit attribute: classes_
+    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
     def test_multioutput_classifier(self):
         n_outputs = 3
         X, y = make_multilabel_classification(n_samples=100, n_features=20,
@@ -314,6 +316,8 @@ class TestSklearn(unittest.TestCase):
             self.assertIsInstance(regressor, lgb.LGBMRegressor)
             self.assertIsInstance(regressor.booster_, lgb.Booster)
 
+    # sklearn < 0.22 does not have the post fit attribute: classes_
+    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
     def test_classifier_chain(self):
         n_outputs = 3
         X, y = make_multilabel_classification(n_samples=100, n_features=20,
