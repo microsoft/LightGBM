@@ -565,7 +565,7 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
   )
   nrounds <- 5L
 
-  for (value in c(-5L, 0L)){
+  for (value in c(-5L, 0L)) {
 
     #----------------------------#
     # passed as keyword argument #
