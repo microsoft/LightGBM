@@ -18,8 +18,7 @@ Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              Factors and characters are converted to integer.
              Please use \code{\link{lgb.convert_with_rules}} if you want to apply this transformation to
              other datasets. This is useful if you have a specific need for integer dataset instead
-             of numeric dataset. Note that there are programs which do not support integer-only
-             input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
+             of numeric dataset.
 
              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare}.
 }

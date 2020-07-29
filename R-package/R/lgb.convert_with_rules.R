@@ -4,8 +4,6 @@
 #'              Factors and characters are converted to integer.
 #'              In addition, keeps rules created so you can convert other datasets using this converter.
 #'              This is useful if you have a specific need for integer dataset instead of numeric dataset.
-#'              Note that there are programs which do not support integer-only input.
-#'              Consider this as a half memory technique which is dangerous, especially for LightGBM.
 #'
 #'              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare_rules2}.
 #' @param data A data.frame or data.table to prepare.
