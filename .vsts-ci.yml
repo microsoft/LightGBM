@@ -1,10 +1,12 @@
 trigger:
   branches:
     include:
-    - '*'
+    - master
   tags:
     include:
     - v*
+pr:
+- master
 variables:
   PYTHON_VERSION: 3.8
   CONDA_ENV: test-env
