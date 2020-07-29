@@ -41,7 +41,7 @@ test_that("train and predict softmax", {
     data = as.matrix(iris[, -5L])
     , label = lb
     , num_leaves = 4L
-    , learning_rate = 0.1
+    , learning_rate = 0.05
     , nrounds = 20L
     , min_data = 20L
     , min_hessian = 20.0
