@@ -21,21 +21,7 @@ class LinearTreeLearner: public SerialTreeLearner {
    
   Tree* Train(const score_t* gradients, const score_t *hessians);
 
-  template<bool HAS_NAN>
-  void CalculateLinear(Tree*, int leaf_num, int feat,
-                       const std::vector<int>& parent_features,
-                       const std::vector<double>& parent_coeffs,
-                       const double& parent_const,
-                       const double& sum_grad, const double& sum_hess,
-                       int& num_nan);
-
-  template<bool HAS_NAN, bool HAS_PREV_NAN, bool UPDATE_PREV>
-  void CalculateLinearInner(Tree* tree, int leaf_num, int feat,
-                            const std::vector<int>& parent_features,
-                            const std::vector<double>& parent_coeffs,
-                            const double& parent_const,
-                            const double& sum_grad, const double& sum_hess,
-                            int& num_nan);
+  void CalculateLinear(Tree* tree);
 
   void AddPredictionToScore(const Tree* tree,
                             double* out_score) const override {
@@ -54,28 +40,37 @@ class LinearTreeLearner: public SerialTreeLearner {
       }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
         int row_idx = tmp_idx[j];
+        /*
         if (is_nan_[row_idx]) {
           out_score[row_idx] += leaf_output;
           continue;
         }
+        */
         double output = leaf_const;
+        bool nan_found = false;
         for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
-          output += feat_ptr_arr[feat_num][row_idx] * leaf_coeffs[feat_num];
+          double val = feat_ptr_arr[feat_num][row_idx];
+          if (std::isnan(val)) {
+            nan_found = true;
+            break;
+          } else {
+            output += val * leaf_coeffs[feat_num];
+          }
         }
-        out_score[row_idx] += output;
+        if (nan_found) {
+          out_score[row_idx] += leaf_output;
+        } else {
+          out_score[row_idx] += output;
+        }
       }
     }
   }
 
 private:
-  /*! \brief Temporary storage for calculating additive linear model */
-  std::vector<double> curr_pred_;
-  /*! \brief Temporary storage for calculating additive linear model */
-  std::vector<int8_t> is_nan_;
-  /*! \brief Temporary storage for calculating additive linear model */
-  std::vector<int8_t> is_nan_curr_;
   /*! \brief whether features contain any nan values */
   std::vector<int8_t> contains_nan_;
+  /*! \brief map dataset to leaves */
+  std::vector<int> leaf_map_;
 };
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_

@@ -4,6 +4,7 @@
  */
 #include "linear_tree_learner.h"
 
+#include <Eigen/Dense>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
@@ -11,9 +12,7 @@ namespace LightGBM {
 
   void LinearTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
     SerialTreeLearner::Init(train_data, is_constant_hessian);
-    curr_pred_ = std::vector<double>(num_data_, 0);
-    is_nan_ = std::vector<int8_t>(num_data_, 0);
-    is_nan_curr_ = std::vector<int8_t>(num_data_, 0);
+    leaf_map_ = std::vector<int>(num_data_, -1);
     contains_nan_ = std::vector<int8_t>(num_features_, 0);
 #pragma omp parallel for schedule(dynamic)
     for (int feat = 0; feat < num_features_; ++feat) {
@@ -58,10 +57,6 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
   int init_splits = ForceSplits(tree_prt, &left_leaf, &right_leaf, &cur_depth);
 
-  int num_nan = 0;
-  std::fill(curr_pred_.begin(), curr_pred_.end(), 0.0);
-  std::fill(is_nan_curr_.begin(), is_nan_curr_.end(), 0);
-  std::fill(is_nan_.begin(), is_nan_.end(), 0);
   for (int split = init_splits; split < config_->num_leaves - 1; ++split) {
     // some initial works before finding best split
     if (BeforeFindBestSplit(tree_prt, left_leaf, right_leaf)) {
@@ -80,60 +75,31 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
     // split tree with best leaf
     std::vector<int> parent_features = tree_prt->LeafFeaturesInner(best_leaf);
     std::vector<double> parent_coeffs = tree_prt->LeafCoeffs(best_leaf);
-    double parent_const = tree_prt->LeafConst(best_leaf);
-    int feat = train_data_->InnerFeatureIndex(best_leaf_SplitInfo.feature);
     Split(tree_prt, best_leaf, &left_leaf, &right_leaf);
-    if (contains_nan_[feat]) {
-      CalculateLinear<true>(tree_prt, left_leaf, feat, parent_features, parent_coeffs, parent_const,
-                            best_leaf_SplitInfo.left_sum_gradient, best_leaf_SplitInfo.left_sum_hessian, num_nan);
-      CalculateLinear<true>(tree_prt, right_leaf, feat, parent_features, parent_coeffs, parent_const,
-                            best_leaf_SplitInfo.right_sum_gradient, best_leaf_SplitInfo.right_sum_hessian, num_nan);
-    } else {
-      CalculateLinear<false>(tree_prt, left_leaf, feat, parent_features, parent_coeffs, parent_const,
-        best_leaf_SplitInfo.left_sum_gradient, best_leaf_SplitInfo.left_sum_hessian, num_nan);
-      CalculateLinear<false>(tree_prt, right_leaf, feat, parent_features, parent_coeffs, parent_const,
-        best_leaf_SplitInfo.right_sum_gradient, best_leaf_SplitInfo.right_sum_hessian, num_nan);
-    }
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
+
+  LinearTreeLearner::CalculateLinear(tree_prt);
+
   Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
 
-template<bool HAS_NAN>
-void LinearTreeLearner::CalculateLinear(Tree* tree, int leaf_num, int feat,
-                                        const std::vector<int>& parent_features,
-                                        const std::vector<double>& parent_coeffs,
-                                        const double& parent_const,
-                                        const double& sum_grad, const double& sum_hess,
-                                        int& num_nan) {
-  int prev_feat = tree->LeafNewFeature(leaf_num);
-  if (prev_feat > -1) {
-    if (num_nan > 0) {
-      CalculateLinearInner<HAS_NAN, true, true>(
-        tree, leaf_num, feat, parent_features, parent_coeffs, parent_const, sum_grad, sum_hess, num_nan);
-    } else {
-      CalculateLinearInner<HAS_NAN, false, true>(
-        tree, leaf_num, feat, parent_features, parent_coeffs, parent_const, sum_grad, sum_hess, num_nan);
-    }
-  } else {
-    if (num_nan > 0) {
-      CalculateLinearInner<HAS_NAN, true, false>(
-        tree, leaf_num, feat, parent_features, parent_coeffs, parent_const, sum_grad, sum_hess, num_nan);
-    } else {
-      CalculateLinearInner<HAS_NAN, false, false>(
-        tree, leaf_num, feat, parent_features, parent_coeffs, parent_const, sum_grad, sum_hess, num_nan);
+void LinearTreeLearner::CalculateLinear(Tree* tree) {
+  
+  //std::fill(is_nan_.begin(), is_nan_.end(), 0);
+  std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
+
+  // map data to leaf number
+  const data_size_t* ind = data_partition_->indices();
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < tree->num_leaves(); ++i) {
+    data_size_t idx = data_partition_->leaf_begin(i);
+    for (int j = 0; j < data_partition_->leaf_count(i); ++j) {
+      leaf_map_[ind[idx + j]] = i;
     }
   }
-}
 
-template<bool HAS_NAN, bool HAS_PREV_NAN, bool UPDATE_PREV>
-void LinearTreeLearner::CalculateLinearInner(Tree* tree, int leaf_num, int feat,
-                                             const std::vector<int>& parent_features,
-                                             const std::vector<double>& parent_coeffs,
-                                             const double& parent_const,
-                                             const double& sum_grad, const double& sum_hess,
-                                             int& num_nan) {
   // calculate coefficients using the additive method described in https://arxiv.org/pdf/1802.05640.pdf
   // the coefficients vector is given by
   // - (X_T * H * X + lambda) ^ (-1) * (X_T * H * y + g_T X)
@@ -144,163 +110,127 @@ void LinearTreeLearner::CalculateLinearInner(Tree* tree, int leaf_num, int feat,
   // lambda is the diagonal matrix with diagonal entries equal to the regularisation term linear_lambda
   // g is the vector of gradients
   // the subscript _T denotes the transpose
-  int idx = data_partition_->leaf_begin(leaf_num);
-  const data_size_t* ind = data_partition_->indices();
-  int prev_feat = tree->LeafNewFeature(leaf_num);
-  double prev_coeff = 0;
-  double prev_const = tree->LeafNewConst(leaf_num);
-  const double* prev_feat_ptr = nullptr;
-  if (UPDATE_PREV) {
-    prev_feat_ptr = train_data_->raw_index(prev_feat);
-    prev_coeff = tree->LeafNewCoeff(leaf_num);
+
+  // create array of numerical features pointers to raw data, and coefficient matrices, for each leaf
+  std::vector<std::vector<int>> leaf_features;
+  std::vector<std::vector<const double*>> raw_data_ptr;
+  std::vector<std::vector<std::vector<double>>> XTHX;
+  std::vector<std::vector<double>> XTg;
+
+  int max_num_features = 0;
+  for (int i = 0; i < tree->num_leaves(); ++i) {
+    std::vector<int> raw_features = tree->branch_features(i);
+    std::sort(raw_features.begin(), raw_features.end());
+    auto new_end = std::unique(raw_features.begin(), raw_features.end());
+    raw_features.erase(new_end, raw_features.end());
+    std::vector<int> numerical_features;
+    std::vector<const double*> data_ptr;
+    for (int j = 0; j < raw_features.size(); ++j) {
+      int feat = train_data_->InnerFeatureIndex(raw_features[j]);
+      auto bin_mapper = train_data_->FeatureBinMapper(feat);
+      if (bin_mapper->bin_type() == BinType::NumericalBin) {
+        numerical_features.push_back(feat);
+        data_ptr.push_back(train_data_->raw_index(feat));
+      }
+    }
+    leaf_features.push_back(numerical_features);
+    raw_data_ptr.push_back(data_ptr);
+    XTHX.push_back(std::vector<std::vector<double>>
+                           (numerical_features.size() + 1,
+                             std::vector<double>(numerical_features.size() + 1, 0.0)));
+    XTg.push_back(std::vector<double>(numerical_features.size() + 1, 0.0));
+    if (numerical_features.size() > max_num_features) {
+      max_num_features = numerical_features.size();
+    }
   }
-  data_size_t num_data = data_partition_->leaf_count(leaf_num);
-  double leaf_output = tree->LeafOutput(leaf_num);
-  auto features = parent_features;
-  auto coeffs = parent_coeffs;
-  double constant_term;
-  bool can_solve = true;
-  int curr_num_nan = 0;
-  auto bin_mapper = train_data_->FeatureBinMapper(feat);
-  const double* feat_ptr;
-  if (bin_mapper->bin_type() != BinType::NumericalBin) {
-    can_solve = false;
-  } else {
-    feat_ptr = train_data_->raw_index(feat);
-    double XTHX_00 = 0, XTHX_01 = 0, XTHX_11 = 0;
-    double XTHy_0 = 0, XTHy_1 = 0;
-    double gTX_0 = 0, gTX_1 = 0;
-    // keep track of current nans in is_nan_curr_
-    // only copy back to the main is_nan_ if the feature gets used
-    // auto is_nan_curr = std::vector<int8_t>(num_data, 0);
-#pragma omp parallel for schedule(static, 512) reduction(+:XTHX_00,XTHX_01,XTHX_11,XTHy_0,XTHy_1,gTX_0,gTX_1,curr_num_nan) if (num_data > 1024)
-    for (int i = 0; i < num_data; ++i) {
-      int row_idx = ind[idx + i];
-      double x = feat_ptr[row_idx];
-      if (HAS_NAN) {
-        if (std::isnan(x) || std::isinf(x)) {
-          is_nan_curr_[i] = 1;
-          ++curr_num_nan;
-          continue;
-        }
-      }
-      double h = hessians_[row_idx];
-      double g = gradients_[row_idx];
-      double y;
-      if (HAS_PREV_NAN) {
-        if (is_nan_[row_idx]) {
-          y = leaf_output;
-        } else {
-          y = curr_pred_[row_idx];
-          if (UPDATE_PREV) {
-            y += prev_feat_ptr[row_idx] * prev_coeff + prev_const;
-          } else {
-            y += prev_const;
-          }
-        }
-      } else {
-        y = curr_pred_[row_idx];
-        if (UPDATE_PREV) {
-          y += prev_feat_ptr[row_idx] * prev_coeff + prev_const;
-        } else {
-          y += prev_const;
-        }
-      }
-      curr_pred_[row_idx] = y;
-      XTHX_00 += x * x * h;
-      XTHX_01 += h * x;
-      XTHX_11 += h;
-      XTHy_0 += x * h * y;
-      XTHy_1 += h * y;
-      gTX_0 += g * x;
-      gTX_1 += g;
+
+  std::vector<std::vector<std::vector<std::vector<double>>>> XTHX_by_thread;
+  std::vector<std::vector<std::vector<double>>> XTg_by_thread;
+  std::vector<std::vector<double>> curr_row; 
+  for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
+    XTHX_by_thread.push_back(XTHX);
+    XTg_by_thread.push_back(XTg);
+    curr_row.push_back(std::vector<double>(max_num_features + 1));
+  }
+#pragma omp parallel for schedule(static) if (num_data_ > 1024)
+  for (int i = 0; i < num_data_; ++i) {
+    int tid = omp_get_thread_num();
+    int leaf_num = leaf_map_[i];
+    if (leaf_num < 0) {
+      continue;
     }
-    if (HAS_NAN) {
-      num_nan += curr_num_nan;
+    bool nan_found = false;
+    data_size_t num_feat = leaf_features[leaf_num].size();
+    for (int feat = 0; feat < num_feat;  ++feat) {
+      double val = raw_data_ptr[leaf_num][feat][i];
+      if (std::isnan(val)) {
+        nan_found = true;
+        break;
+      }
+      curr_row[tid][feat] = raw_data_ptr[leaf_num][feat][i];
     }
-    XTHX_00 += config_->linear_lambda;
-    XTHX_11 += config_->linear_lambda;
-    double det = XTHX_00 * XTHX_11 - XTHX_01 * XTHX_01;
-    if (det > -kEpsilon && det < kEpsilon) {
-      can_solve = false;
-    } else {
-      double feat_coeff = - (XTHX_11 * (XTHy_0 + gTX_0) - XTHX_01 * (XTHy_1 + gTX_1)) / det;
-      constant_term = - (- XTHX_01 * (XTHy_0 + gTX_0) + XTHX_00 * (XTHy_1 + gTX_1)) / det;
-      // add the new coeff to the parent coeffs
-      if ((feat_coeff < -kZeroThreshold) || (feat_coeff > kZeroThreshold)) {
-        if (HAS_NAN) {
-          if (curr_num_nan > 0) {
-#pragma omp parallel for schedule(static, 512) if (num_data > 1024)
-            for (int i = 0; i < num_data; ++i) {
-              if (is_nan_curr_[i]) {
-                is_nan_[ind[idx + i]] = 1;
-              }
-            }
-          }
+    if (nan_found) {
+      continue;
+    }
+    curr_row[tid][num_feat] = 1;
+    double h = hessians_[i];
+    double g = gradients_[i];
+    for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+      double f1_val = curr_row[tid][feat1];
+      for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
+        XTHX_by_thread[tid][leaf_num][feat1][feat2] += f1_val * curr_row[tid][feat2] * h;
+      }
+      XTg_by_thread[tid][leaf_num][feat1] += f1_val * g;
+    }
+  }
+  // aggregate results from different threads
+  for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
+    for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+      int num_feat = leaf_features[leaf_num].size();
+      for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+        for (int feat2 = feat1; feat2 < num_feat + 1; ++ feat2) {
+          XTHX[leaf_num][feat1][feat2] += XTHX_by_thread[tid][leaf_num][feat1][feat2];
         }
-        tree->SetLeafNewFeature(leaf_num, feat);
-        tree->SetLeafNewCoeff(leaf_num, feat_coeff);
-        bool feature_exists = false;
-        for (int feat_num = 0; feat_num < parent_features.size(); ++feat_num) {
-          if (parent_features[feat_num] == feat) {
-            coeffs[feat_num] += feat_coeff;
-            feature_exists = true;
-            break;
-          }
-        }
-        if (!feature_exists && ((feat_coeff < -kZeroThreshold) || (feat_coeff > kZeroThreshold))) {
-          features.push_back(feat);
-          coeffs.push_back(feat_coeff);
-        }
+        XTg[leaf_num][feat1] += XTg_by_thread[tid][leaf_num][feat1];
       }
     }
   }
-  if (!can_solve) {
-    // just calculate an adjustment to the constant term
-    double hy = 0;
-    double linear_lambda = config_->linear_lambda;
-#pragma omp parallel for schedule(static, 512) reduction(+:hy) if (num_data > 1024)
-    for (int i = 0; i < num_data; ++i) {
-      int row_idx = ind[idx + i];
-      double y;
-      if (HAS_PREV_NAN) {
-        if (is_nan_[row_idx]) {
-          y = leaf_output;
-        } else {
-          y = curr_pred_[row_idx];
-          if (UPDATE_PREV) {
-            y += prev_feat_ptr[row_idx] * prev_coeff + prev_const;
-          } else {
-            y += prev_const;
-          }
-        }
-      } else {
-        y = curr_pred_[row_idx];
-        if (UPDATE_PREV) {
-          y += prev_feat_ptr[row_idx] * prev_coeff + prev_const;
-        } else {
-          y += prev_const;
+  // copy into eigen matrices and solve
+#pragma omp parallel for schedule(static)
+  for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+    int num_feat = leaf_features[leaf_num].size();
+    Eigen::MatrixXd XTHX_mat(num_feat + 1, num_feat + 1);
+    Eigen::MatrixXd XTg_mat(num_feat + 1, 1);
+    for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+      for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
+        XTHX_mat(feat1, feat2) = XTHX[leaf_num][feat1][feat2];
+        XTHX_mat(feat2, feat1) = XTHX_mat(feat1, feat2);
+        if ((feat1 == feat2) && (feat1 < num_feat)){
+          XTHX_mat(feat1, feat2) += config_->linear_lambda;
         }
       }
-      curr_pred_[row_idx] = y;
-      hy += hessians_[row_idx] * y;
+      XTg_mat(feat1) = XTg[leaf_num][feat1];
     }
-    if (sum_hess > kEpsilon) {
-      constant_term = -(hy + sum_grad) / (sum_hess + linear_lambda);
-    } else {
-      constant_term = 0;
+    Eigen::MatrixXd coeffs = - XTHX_mat.fullPivLu().inverse() * XTg_mat;
+    // remove features with very small coefficients
+    std::vector<double> coeffs_vec;
+    std::vector<int> features_new;
+    for (int i = 0; i < leaf_features[leaf_num].size(); ++i) {
+      if (coeffs(i) < -kZeroThreshold || coeffs(i) > kZeroThreshold) {
+        coeffs_vec.push_back(coeffs(i));
+        features_new.push_back(leaf_features[leaf_num][i]);
+      }
     }
+    // update the tree properties
+    tree->SetLeafFeaturesInner(leaf_num, features_new);
+    std::vector<int> features_raw(features_new.size());
+    for (int i = 0; i < features_new.size(); ++i) {
+      features_raw[i] = train_data_->RealFeatureIndex(features_new[i]);
+    }
+    tree->SetLeafFeatures(leaf_num, features_raw);
+    tree->SetLeafCoeffs(leaf_num, coeffs_vec);
+    tree->SetLeafConst(leaf_num, coeffs(num_feat));
   }
-  std::fill(is_nan_curr_.begin(), is_nan_curr_.begin() + num_data, 0);
-  // update the tree properties
-  tree->SetLeafNewConst(leaf_num, constant_term);
-  tree->SetLeafFeaturesInner(leaf_num, features);
-  std::vector<int> features_raw(features.size());
-  for (int i = 0; i < features.size(); ++i) {
-    features_raw[i] = train_data_->RealFeatureIndex(features[i]);
   }
-  tree->SetLeafFeatures(leaf_num, features_raw);
-  tree->SetLeafCoeffs(leaf_num, coeffs);
-  tree->SetLeafConst(leaf_num, constant_term + parent_const);
-}
+
 }

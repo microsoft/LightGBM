@@ -54,9 +54,6 @@ Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
     leaf_const_ = std::vector<double>(max_leaves_, 0);
     leaf_features_.resize(max_leaves_);
     leaf_features_inner_.resize(max_leaves_);
-    new_feature_ = std::vector<int>(max_leaves_, -1);
-    new_coeff_.resize(max_leaves_);
-    new_const_.resize(max_leaves_);
   }
 }
 
@@ -132,19 +129,19 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
       node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,            \
                           default_bins[node], max_bins[node]);                \
     }                                                                         \
-    double add_score = static_cast<double>(leaf_const_[~node]);                                    \
+    double add_score = leaf_const_[~node];                                    \
     bool nan_found = false;                                                   \
     for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {            \
        int feat_num = leaf_features_inner_[~node][j];                         \
        double feat_val = feat_ptr[(feat_num)][(data_idx)];                    \
-       if (std::isnan(feat_val) || std::isinf(feat_val)) {                    \
+       if (std::isnan(feat_val)) {                                            \
           nan_found = true;                                                   \
           break;                                                              \
        }                                                                      \
-       add_score += static_cast<double>(leaf_coeff_[~node][j]) * feat_val;                         \
+       add_score += leaf_coeff_[~node][j] * feat_val;                         \
     }                                                                         \
     if (nan_found) {                                                          \
-       score[(data_idx)] += static_cast<double>(leaf_value_[~node]);                               \
+       score[(data_idx)] += leaf_value_[~node];                               \
     } else {                                                                  \
       score[(data_idx)] += add_score;                                         \
     }                                                                         \
