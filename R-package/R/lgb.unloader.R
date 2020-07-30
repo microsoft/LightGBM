@@ -1,5 +1,5 @@
 #' @name lgb.unloader
-#' @title LightGBM unloading error fix
+#' @title Remove lightgbm and its objects from an environment
 #' @description Attempts to unload LightGBM packages so you can remove objects cleanly without
 #'              having to restart R. This is useful for instance if an object becomes stuck for no
 #'              apparent reason and you do not want to restart R to fix the lost object.
@@ -69,6 +69,6 @@ lgb.unloader <- function(restore = TRUE, wipe = FALSE, envir = .GlobalEnv) {
     library(lightgbm)
   }
 
-  invisible()
+  return(invisible(NULL))
 
 }

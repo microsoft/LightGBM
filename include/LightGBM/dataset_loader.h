@@ -27,7 +27,7 @@ class DatasetLoader {
 
   LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
-  LIGHTGBM_EXPORT Dataset* CostructFromSampleData(double** sample_values,
+  LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(double** sample_values,
     int** sample_indices, int num_col, const int* num_per_col,
     size_t total_sample_size, data_size_t num_data);
 

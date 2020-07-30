@@ -100,7 +100,7 @@ struct Config {
   // alias = task_type
   // desc = ``train``, for training, aliases: ``training``
   // desc = ``predict``, for prediction, aliases: ``prediction``, ``test``
-  // desc = ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <#io-parameters>`__
+  // desc = ``convert_model``, for converting model file into if-else format, see more information in `Convert Parameters <#convert-parameters>`__
   // desc = ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
@@ -145,6 +145,7 @@ struct Config {
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
+  // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
   // alias = train, train_data, train_data_file, data_filename
@@ -225,7 +226,7 @@ struct Config {
   // desc = set this to ``true`` to force col-wise histogram building
   // desc = enabling this is recommended when:
   // descl2 = the number of columns is large, or the total number of bins is large
-  // descl2 = ``num_threads`` is large, e.g. ``>20``
+  // descl2 = ``num_threads`` is large, e.g. ``> 20``
   // descl2 = you want to reduce memory cost
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
@@ -235,7 +236,7 @@ struct Config {
   // desc = set this to ``true`` to force row-wise histogram building
   // desc = enabling this is recommended when:
   // descl2 = the number of data points is large, and the total number of bins is relatively small
-  // descl2 = ``num_threads`` is relatively small, e.g. ``<=16``
+  // descl2 = ``num_threads`` is relatively small, e.g. ``<= 16``
   // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
   // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
@@ -440,7 +441,9 @@ struct Config {
   // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
 
+  // type = enum
   // alias = monotone_constraining_method, mc_method
+  // options = basic, intermediate
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
   // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
