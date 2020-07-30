@@ -292,9 +292,8 @@ class TestSklearn(unittest.TestCase):
         score = clf.score(X_test, y_test)
         self.assertGreaterEqual(score, 0.2)
         self.assertLessEqual(score, 1.)
-        _classes = np.ones(shape=2 * n_outputs, dtype=str)
-        _classes[0::2] = str(0)  # make binary classification str pattern
-        self.assertTrue(all(_classes == np.concatenate(clf.classes_)))
+        np.testing.assert_array_equal(np.tile(np.unique(y_train), n_outputs),
+                                      np.concatenate(clf.classes_))
         for classifier in clf.estimators_:
             self.assertIsInstance(classifier, lgb.LGBMClassifier)
             self.assertIsInstance(classifier.booster_, lgb.Booster)
@@ -331,10 +330,9 @@ class TestSklearn(unittest.TestCase):
         score = clf.score(X_test, y_test)
         self.assertGreaterEqual(score, 0.2)
         self.assertLessEqual(score, 1.)
-        _classes = np.ones(shape=2 * n_outputs, dtype=int)
-        _classes[0::2] = 0  # make binary classification int pattern
-        self.assertTrue(all(_classes == np.concatenate(clf.classes_)))
-        self.assertTrue(order == clf.order_)
+        np.testing.assert_array_equal(np.tile(np.unique(y_train), n_outputs),
+                                      np.concatenate(clf.classes_))
+        self.assertListEqual(order, clf.order_)
         for classifier in clf.estimators_:
             self.assertIsInstance(classifier, lgb.LGBMClassifier)
             self.assertIsInstance(classifier.booster_, lgb.Booster)
@@ -353,7 +351,7 @@ class TestSklearn(unittest.TestCase):
         _, score, _ = mse(y_test, y_pred)
         self.assertGreaterEqual(score, 0.2)
         self.assertLessEqual(score, 120.)
-        self.assertTrue(order == reg.order_)
+        self.assertListEqual(order, reg.order_)
         for regressor in reg.estimators_:
             self.assertIsInstance(regressor, lgb.LGBMRegressor)
             self.assertIsInstance(regressor.booster_, lgb.Booster)
