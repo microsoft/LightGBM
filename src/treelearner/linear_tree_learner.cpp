@@ -14,6 +14,7 @@ namespace LightGBM {
     SerialTreeLearner::Init(train_data, is_constant_hessian);
     leaf_map_ = std::vector<int>(num_data_, -1);
     contains_nan_ = std::vector<int8_t>(num_features_, 0);
+    any_nan_ = false;
 #pragma omp parallel for schedule(dynamic)
     for (int feat = 0; feat < num_features_; ++feat) {
       auto bin_mapper = train_data_->FeatureBinMapper(feat);
@@ -22,6 +23,7 @@ namespace LightGBM {
         for (int i = 0; i < num_data_; ++i) {
           if (std::isnan(feat_ptr[i])) {
             contains_nan_[feat] = 1;
+            any_nan_ = true;
             break;
           }
         }
@@ -79,15 +81,30 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
 
-  LinearTreeLearner::CalculateLinear(tree_prt);
+  bool has_nan = false;
+  if (any_nan_) {
+    for (int i = 0; i < tree->num_leaves() - 1 ; ++i) {
+      if (contains_nan_[tree_prt->split_feature_inner(i)]) {
+        has_nan = true;
+        break;
+      }
+    }
+  }
+
+  if (has_nan) {
+    LinearTreeLearner::CalculateLinear<true>(tree_prt);
+  } else {
+    LinearTreeLearner::CalculateLinear<false>(tree_prt);
+  }
 
   Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
 
+template<bool HAS_NAN>
 void LinearTreeLearner::CalculateLinear(Tree* tree) {
-  
-  //std::fill(is_nan_.begin(), is_nan_.end(), 0);
+
+  bool data_has_nan = false;
   std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
 
   // map data to leaf number
@@ -163,14 +180,18 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     data_size_t num_feat = leaf_features[leaf_num].size();
     for (int feat = 0; feat < num_feat;  ++feat) {
       double val = raw_data_ptr[leaf_num][feat][i];
-      if (std::isnan(val)) {
-        nan_found = true;
-        break;
+      if (HAS_NAN) {
+        if (std::isnan(val)) {
+          nan_found = true;
+          break;
+        }
       }
-      curr_row[tid][feat] = raw_data_ptr[leaf_num][feat][i];
+      curr_row[tid][feat] = val;
     }
-    if (nan_found) {
-      continue;
+    if (HAS_NAN) {
+      if (nan_found) {
+        continue;
+      }
     }
     curr_row[tid][num_feat] = 1;
     double h = hessians_[i];
@@ -196,7 +217,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     }
   }
   // copy into eigen matrices and solve
-#pragma omp parallel for schedule(static)
+ #pragma omp parallel for schedule(static)
   for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
     int num_feat = leaf_features[leaf_num].size();
     Eigen::MatrixXd XTHX_mat(num_feat + 1, num_feat + 1);
@@ -218,7 +239,11 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     for (int i = 0; i < leaf_features[leaf_num].size(); ++i) {
       if (coeffs(i) < -kZeroThreshold || coeffs(i) > kZeroThreshold) {
         coeffs_vec.push_back(coeffs(i));
-        features_new.push_back(leaf_features[leaf_num][i]);
+        int feat = leaf_features[leaf_num][i];
+        features_new.push_back(feat);
+        if (contains_nan_[feat]) {
+          data_has_nan = true;
+        }
       }
     }
     // update the tree properties
@@ -230,6 +255,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     tree->SetLeafFeatures(leaf_num, features_raw);
     tree->SetLeafCoeffs(leaf_num, coeffs_vec);
     tree->SetLeafConst(leaf_num, coeffs(num_feat));
+    tree->SetNan(data_has_nan);
   }
   }
 
