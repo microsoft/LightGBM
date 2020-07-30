@@ -7,8 +7,6 @@ LGB_CPPFLAGS = \
     -DUSE_SOCKET \
     -DLGB_R_BUILD
 
-CPICFLAGS = -fPIC
-
 PKG_CPPFLAGS = \
     -I$(PKGROOT)/include \
     $(LGB_CPPFLAGS)
