@@ -28,8 +28,8 @@ struct BasicConstraint {
 };
 
 struct FeatureConstraint {
-  virtual void InitCumulativeConstraints(bool) {};
-  virtual void Update(int) {};
+  virtual void InitCumulativeConstraints(bool) {}
+  virtual void Update(int) {}
   virtual BasicConstraint LeftToBasicConstraint() const = 0;
   virtual BasicConstraint RightToBasicConstraint() const = 0;
   virtual bool ConstraintDifferentDependingOnThreshold() const = 0;
@@ -44,7 +44,7 @@ struct ConstraintEntry {
   virtual ConstraintEntry *clone() const = 0;
 
   virtual void RecomputeConstraintsIfNeeded(LeafConstraintsBase *, int, int,
-                                            uint32_t) {};
+                                            uint32_t) {}
 
   virtual FeatureConstraint *GetFeatureConstraint(int feature_index) = 0;
 };
@@ -53,7 +53,6 @@ struct ConstraintEntry {
 struct BasicConstraintEntry : ConstraintEntry,
                               FeatureConstraint,
                               BasicConstraint {
-
   bool ConstraintDifferentDependingOnThreshold() const final { return false; }
 
   BasicConstraintEntry *clone() const final {
@@ -107,7 +106,7 @@ struct FeatureMinOrMaxConstraints {
 
   size_t Size() const { return thresholds.size(); }
 
-  FeatureMinOrMaxConstraints(double extremum) {
+  explicit FeatureMinOrMaxConstraints(double extremum) {
     constraints.reserve(32);
     thresholds.reserve(32);
 
@@ -160,7 +159,7 @@ struct CumulativeFeatureConstraint {
     }
 
 #ifdef DEBUG
-    CHECK(cumulative_extremum.size() != 0);
+    CHECK_NE(cumulative_extremum.size(), 0);
 #endif
 
     std::size_t n_exts = cumulative_extremum.size();
@@ -413,7 +412,7 @@ struct AdvancedConstraintEntry : ConstraintEntry {
   }
 
   // for each feature, an array of constraints needs to be stored
-  AdvancedConstraintEntry(unsigned int num_features) {
+  explicit AdvancedConstraintEntry(unsigned int num_features) {
     constraints.resize(num_features);
   }
 
@@ -474,7 +473,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
 
   void RecomputeConstraintsIfNeeded(
       LeafConstraintsBase* constraints_,
-      int feature_for_constraint, int leaf_idx, uint32_t it_end) override{
+      int feature_for_constraint, int leaf_idx, uint32_t it_end) override {
     entries_[~leaf_idx]->RecomputeConstraintsIfNeeded(constraints_, feature_for_constraint, leaf_idx, it_end);
   }
 
@@ -1014,7 +1013,7 @@ public:
 #endif
       UpdateConstraints(feature_constraint, extremum, it_start, it_end,
                         min_constraints_to_be_updated, last_threshold);
-    } else { // if node, keep going down the tree
+    } else {  // if node, keep going down the tree
       // check if the children are contiguous to the original leaf and therefore
       // potentially constraining
       std::pair<bool, bool> keep_going_left_right = ShouldKeepGoingLeftRight(
