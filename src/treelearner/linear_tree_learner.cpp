@@ -131,7 +131,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
   // create array of numerical features pointers to raw data, and coefficient matrices, for each leaf
   std::vector<std::vector<int>> leaf_features;
   std::vector<std::vector<const double*>> raw_data_ptr;
-  std::vector<std::vector<std::vector<double>>> XTHX;
+  std::vector<std::vector<double>> XTHX;
   std::vector<std::vector<double>> XTg;
 
   int max_num_features = 0;
@@ -152,16 +152,15 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     }
     leaf_features.push_back(numerical_features);
     raw_data_ptr.push_back(data_ptr);
-    XTHX.push_back(std::vector<std::vector<double>>
-                           (numerical_features.size() + 1,
-                             std::vector<double>(numerical_features.size() + 1, 0.0)));
+    // store only upper triangular half of matrix as an array, in row-major order
+    XTHX.push_back(std::vector<double>((numerical_features.size() + 1) * (numerical_features.size() + 2) / 2, 0));
     XTg.push_back(std::vector<double>(numerical_features.size() + 1, 0.0));
     if (numerical_features.size() > max_num_features) {
       max_num_features = numerical_features.size();
     }
   }
 
-  std::vector<std::vector<std::vector<std::vector<double>>>> XTHX_by_thread;
+  std::vector<std::vector<std::vector<double>>> XTHX_by_thread;
   std::vector<std::vector<std::vector<double>>> XTg_by_thread;
   std::vector<std::vector<double>> curr_row; 
   for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
@@ -196,10 +195,12 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     curr_row[tid][num_feat] = 1;
     double h = hessians_[i];
     double g = gradients_[i];
+    int j = 0;
     for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
       double f1_val = curr_row[tid][feat1];
       for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
-        XTHX_by_thread[tid][leaf_num][feat1][feat2] += f1_val * curr_row[tid][feat2] * h;
+        XTHX_by_thread[tid][leaf_num][j] += f1_val * curr_row[tid][feat2] * h;
+        ++j;
       }
       XTg_by_thread[tid][leaf_num][feat1] += f1_val * g;
     }
@@ -207,11 +208,12 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
   // aggregate results from different threads
   for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
     for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+      int j = 0;
+      for (int j = 0; j < XTHX[leaf_num].size(); ++j) {
+        XTHX[leaf_num][j] += XTHX_by_thread[tid][leaf_num][j];
+      }
       int num_feat = leaf_features[leaf_num].size();
       for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
-        for (int feat2 = feat1; feat2 < num_feat + 1; ++ feat2) {
-          XTHX[leaf_num][feat1][feat2] += XTHX_by_thread[tid][leaf_num][feat1][feat2];
-        }
         XTg[leaf_num][feat1] += XTg_by_thread[tid][leaf_num][feat1];
       }
     }
@@ -222,13 +224,15 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     int num_feat = leaf_features[leaf_num].size();
     Eigen::MatrixXd XTHX_mat(num_feat + 1, num_feat + 1);
     Eigen::MatrixXd XTg_mat(num_feat + 1, 1);
+    int j = 0;
     for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
       for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
-        XTHX_mat(feat1, feat2) = XTHX[leaf_num][feat1][feat2];
+        XTHX_mat(feat1, feat2) = XTHX[leaf_num][j];
         XTHX_mat(feat2, feat1) = XTHX_mat(feat1, feat2);
         if ((feat1 == feat2) && (feat1 < num_feat)){
           XTHX_mat(feat1, feat2) += config_->linear_lambda;
         }
+        ++j;
       }
       XTg_mat(feat1) = XTg[leaf_num][feat1];
     }
