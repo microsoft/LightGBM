@@ -131,8 +131,8 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
   // create array of numerical features pointers to raw data, and coefficient matrices, for each leaf
   std::vector<std::vector<int>> leaf_features;
   std::vector<std::vector<const double*>> raw_data_ptr;
-  std::vector<std::vector<double>> XTHX;
-  std::vector<std::vector<double>> XTg;
+  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> XTHX;
+  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> XTg;
 
   int max_num_features = 0;
   for (int i = 0; i < tree->num_leaves(); ++i) {
@@ -153,15 +153,17 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     leaf_features.push_back(numerical_features);
     raw_data_ptr.push_back(data_ptr);
     // store only upper triangular half of matrix as an array, in row-major order
-    XTHX.push_back(std::vector<double>((numerical_features.size() + 1) * (numerical_features.size() + 2) / 2, 0));
-    XTg.push_back(std::vector<double>(numerical_features.size() + 1, 0.0));
+    XTHX.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>
+      ((numerical_features.size() + 1) * (numerical_features.size() + 2) / 2 + 8, 0));
+    XTg.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>
+      (numerical_features.size() + 1 + 8, 0.0));
     if (numerical_features.size() > max_num_features) {
       max_num_features = numerical_features.size();
     }
   }
 
-  std::vector<std::vector<std::vector<double>>> XTHX_by_thread;
-  std::vector<std::vector<std::vector<double>>> XTg_by_thread;
+  std::vector<std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>>> XTHX_by_thread;
+  std::vector<std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>>> XTg_by_thread;
   std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> curr_row; 
   for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
     XTHX_by_thread.push_back(XTHX);
@@ -208,10 +210,10 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
   // aggregate results from different threads
   for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
     for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
-      for (int j = 0; j < XTHX[leaf_num].size(); ++j) {
+      int num_feat = leaf_features[leaf_num].size();
+      for (int j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {
         XTHX[leaf_num][j] += XTHX_by_thread[tid][leaf_num][j];
       }
-      int num_feat = leaf_features[leaf_num].size();
       for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
         XTg[leaf_num][feat1] += XTg_by_thread[tid][leaf_num][feat1];
       }
