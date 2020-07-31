@@ -15,6 +15,8 @@ namespace LightGBM {
     leaf_map_ = std::vector<int>(num_data_, -1);
     contains_nan_ = std::vector<int8_t>(num_features_, 0);
     any_nan_ = false;
+
+    // identify features containing nans
 #pragma omp parallel for schedule(dynamic)
     for (int feat = 0; feat < num_features_; ++feat) {
       auto bin_mapper = train_data_->FeatureBinMapper(feat);
@@ -28,6 +30,25 @@ namespace LightGBM {
           }
         }
       }
+    }
+
+    // preallocate the matrix used to calculate linear model coefficients
+    int max_num_feat = std::min(train_data_->num_numeric_features(), config_->num_leaves - 1);
+    for (int i = 0; i < config_->num_leaves; ++i) {
+      // store only upper triangular half of matrix as an array, in row-major order
+      // this requires (max_num_feat + 1) * (max_num_feat + 2) / 2 entries (including the constant terms of the regression)
+      // we add another 8 to ensure cache lines are not shared among processors
+      XTHX_.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>
+        ((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
+      XTg_.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>
+        (max_num_feat + 1 + 8, 0.0));
+    }
+
+    std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> curr_row; 
+    for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
+      XTHX_by_thread_.push_back(XTHX_);
+      XTg_by_thread_.push_back(XTg_);
+      curr_row.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(max_num_feat + 1 + 8));  
     }
   }
 
@@ -131,9 +152,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
   // create array of numerical features pointers to raw data, and coefficient matrices, for each leaf
   std::vector<std::vector<int>> leaf_features;
   std::vector<std::vector<const double*>> raw_data_ptr;
-  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> XTHX;
-  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> XTg;
-
+  
   int max_num_features = 0;
   for (int i = 0; i < tree->num_leaves(); ++i) {
     std::vector<int> raw_features = tree->branch_features(i);
@@ -152,24 +171,30 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     }
     leaf_features.push_back(numerical_features);
     raw_data_ptr.push_back(data_ptr);
-    // store only upper triangular half of matrix as an array, in row-major order
-    XTHX.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>
-      ((numerical_features.size() + 1) * (numerical_features.size() + 2) / 2 + 8, 0));
-    XTg.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>
-      (numerical_features.size() + 1 + 8, 0.0));
     if (numerical_features.size() > max_num_features) {
       max_num_features = numerical_features.size();
     }
   }
 
-  std::vector<std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>>> XTHX_by_thread;
-  std::vector<std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>>> XTg_by_thread;
+  // clear the coefficient matrices
+  for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
+    for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+      int num_feat = leaf_features[leaf_num].size();
+      std::fill(XTHX_by_thread_[tid][leaf_num].begin(), XTHX_by_thread_[tid][leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
+      std::fill(XTg_by_thread_[tid][leaf_num].begin(), XTg_by_thread_[tid][leaf_num].begin() + num_feat + 1, 0);
+    }
+  }
+  for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+    int num_feat = leaf_features[leaf_num].size();
+    std::fill(XTHX_[leaf_num].begin(), XTHX_[leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
+    std::fill(XTg_[leaf_num].begin(), XTg_[leaf_num].begin() + num_feat + 1, 0);
+  }
+
   std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> curr_row; 
   for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
-    XTHX_by_thread.push_back(XTHX);
-    XTg_by_thread.push_back(XTg);
     curr_row.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(max_num_features + 1 + 8));  
   }
+
 #pragma omp parallel for schedule(static) if (num_data_ > 1024)
   for (int i = 0; i < num_data_; ++i) {
     int tid = omp_get_thread_num();
@@ -201,10 +226,10 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
       double f1_val = curr_row[tid][feat1];
       for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
-        XTHX_by_thread[tid][leaf_num][j] += f1_val * curr_row[tid][feat2] * h;
+        XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[tid][feat2] * h;
         ++j;
       }
-      XTg_by_thread[tid][leaf_num][feat1] += f1_val * g;
+      XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
     }
   }
   // aggregate results from different threads
@@ -212,10 +237,10 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
       int num_feat = leaf_features[leaf_num].size();
       for (int j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {
-        XTHX[leaf_num][j] += XTHX_by_thread[tid][leaf_num][j];
+        XTHX_[leaf_num][j] += XTHX_by_thread_[tid][leaf_num][j];
       }
       for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
-        XTg[leaf_num][feat1] += XTg_by_thread[tid][leaf_num][feat1];
+        XTg_[leaf_num][feat1] += XTg_by_thread_[tid][leaf_num][feat1];
       }
     }
   }
@@ -228,14 +253,14 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     int j = 0;
     for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
       for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
-        XTHX_mat(feat1, feat2) = XTHX[leaf_num][j];
+        XTHX_mat(feat1, feat2) = XTHX_[leaf_num][j];
         XTHX_mat(feat2, feat1) = XTHX_mat(feat1, feat2);
         if ((feat1 == feat2) && (feat1 < num_feat)){
           XTHX_mat(feat1, feat2) += config_->linear_lambda;
         }
         ++j;
       }
-      XTg_mat(feat1) = XTg[leaf_num][feat1];
+      XTg_mat(feat1) = XTg_[leaf_num][feat1];
     }
     Eigen::MatrixXd coeffs = - XTHX_mat.fullPivLu().inverse() * XTg_mat;
     // remove features with very small coefficients

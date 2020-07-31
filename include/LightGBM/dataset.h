@@ -623,6 +623,9 @@ class Dataset {
   /*! \brief Get Number of used features */
   inline int num_features() const { return num_features_; }
 
+  /*! \brief Get number of numeric features */
+  inline int num_numeric_features() const { return num_numeric_features_; }
+
   /*! \brief Get Number of feature groups */
   inline int num_feature_groups() const { return num_groups_;}
 

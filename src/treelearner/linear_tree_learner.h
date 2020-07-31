@@ -82,6 +82,12 @@ private:
   bool any_nan_;
   /*! \brief map dataset to leaves */
   std::vector<int> leaf_map_;
+  /*! \brief temporary storage for calculating linear model */
+  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> XTHX_;
+  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> XTg_;
+  std::vector<std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>>> XTHX_by_thread_;
+  std::vector<std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>>> XTg_by_thread_;
+
 };
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
