@@ -45,7 +45,7 @@ Core Parameters
 
    -  ``predict``, for prediction, aliases: ``prediction``, ``test``
 
-   -  ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <#io-parameters>`__
+   -  ``convert_model``, for converting model file into if-else format, see more information in `Convert Parameters <#convert-parameters>`__
 
    -  ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
 
@@ -114,6 +114,8 @@ Core Parameters
    -  ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
 
    -  ``goss``, Gradient-based One-Side Sampling
+
+      -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
 
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
@@ -204,7 +206,7 @@ Learning Control Parameters
 
       -  the number of columns is large, or the total number of bins is large
 
-      -  ``num_threads`` is large, e.g. ``>20``
+      -  ``num_threads`` is large, e.g. ``> 20``
 
       -  you want to reduce memory cost
 
@@ -222,7 +224,7 @@ Learning Control Parameters
 
       -  the number of data points is large, and the total number of bins is relatively small
 
-      -  ``num_threads`` is relatively small, e.g. ``<=16``
+      -  ``num_threads`` is relatively small, e.g. ``<= 16``
 
       -  you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
 
@@ -460,7 +462,7 @@ Learning Control Parameters
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
--  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = string, aliases: ``monotone_constraining_method``, ``mc_method``
+-  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, aliases: ``monotone_constraining_method``, ``mc_method``
 
    -  used only if ``monotone_constraints`` is set
 
@@ -548,7 +550,7 @@ Learning Control Parameters
 
       -  for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
 
-      -  for R-package, **not yet supported**
+      -  for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
 
    -  any two features can only appear in the same branch only if there exists a constraint containing both features
 
@@ -571,6 +573,14 @@ Learning Control Parameters
 -  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
 
    -  filename of output model in training
+
+   -  **Note**: can be used only in CLI version
+
+-  ``saved_feature_importance_type`` :raw-html:`<a id="saved_feature_importance_type" title="Permalink to this parameter" href="#saved_feature_importance_type">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+
+   -  the feature importance type in the saved model file
+
+   -  ``0``: count-based feature importance (numbers of splits are counted); ``1``: gain-based feature importance (values of gain are counted)
 
    -  **Note**: can be used only in CLI version
 

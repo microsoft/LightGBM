@@ -11,10 +11,13 @@ import numpy as np
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris, load_svmlight_file)
+                              load_iris, load_linnerud, load_svmlight_file,
+                              make_multilabel_classification)
 from sklearn.exceptions import SkipTestWarning
 from sklearn.metrics import log_loss, mean_squared_error
-from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
+from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOutputRegressor,
+                                 RegressorChain)
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
 
@@ -73,7 +76,7 @@ def multi_logloss(y_true, y_pred):
 class TestSklearn(unittest.TestCase):
 
     def test_binary(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -82,7 +85,7 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_regression(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -91,7 +94,7 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_multiclass(self):
-        X, y = load_digits(10, True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -134,7 +137,7 @@ class TestSklearn(unittest.TestCase):
         self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6253)
 
     def test_regression_with_custom_objective(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -143,7 +146,7 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_binary_classification_with_custom_objective(self):
-        X, y = load_digits(2, True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -155,7 +158,7 @@ class TestSklearn(unittest.TestCase):
         self.assertLess(ret, 0.05)
 
     def test_dart(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(boosting_type='dart', n_estimators=50)
         gbm.fit(X_train, y_train)
@@ -163,31 +166,198 @@ class TestSklearn(unittest.TestCase):
         self.assertGreaterEqual(score, 0.8)
         self.assertLessEqual(score, 1.)
 
+    # sklearn <0.23 does not have a stacking classifier and n_features_in_ property
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    def test_stacking_classifier(self):
+        from sklearn.ensemble import StackingClassifier
+
+        X, y = load_iris(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        classifiers = [('gbm1', lgb.LGBMClassifier(n_estimators=3)),
+                       ('gbm2', lgb.LGBMClassifier(n_estimators=3))]
+        clf = StackingClassifier(estimators=classifiers,
+                                 final_estimator=lgb.LGBMClassifier(n_estimators=3),
+                                 passthrough=True)
+        clf.fit(X_train, y_train)
+        score = clf.score(X_test, y_test)
+        self.assertGreaterEqual(score, 0.8)
+        self.assertLessEqual(score, 1.)
+        self.assertEqual(clf.n_features_in_, 4)  # number of input features
+        self.assertEqual(len(clf.named_estimators_['gbm1'].feature_importances_), 4)
+        self.assertEqual(clf.named_estimators_['gbm1'].n_features_in_,
+                         clf.named_estimators_['gbm2'].n_features_in_)
+        self.assertEqual(clf.final_estimator_.n_features_in_, 10)  # number of concatenated features
+        self.assertEqual(len(clf.final_estimator_.feature_importances_), 10)
+        classes = clf.named_estimators_['gbm1'].classes_ == clf.named_estimators_['gbm2'].classes_
+        self.assertTrue(all(classes))
+        classes = clf.classes_ == clf.named_estimators_['gbm1'].classes_
+        self.assertTrue(all(classes))
+
+    # sklearn <0.23 does not have a stacking regressor and n_features_in_ property
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    def test_stacking_regressor(self):
+        from sklearn.ensemble import StackingRegressor
+
+        X, y = load_boston(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
+                      ('gbm2', lgb.LGBMRegressor(n_estimators=3))]
+        reg = StackingRegressor(estimators=regressors,
+                                final_estimator=lgb.LGBMRegressor(n_estimators=3),
+                                passthrough=True)
+        reg.fit(X_train, y_train)
+        score = reg.score(X_test, y_test)
+        self.assertGreaterEqual(score, 0.2)
+        self.assertLessEqual(score, 1.)
+        self.assertEqual(reg.n_features_in_, 13)  # number of input features
+        self.assertEqual(len(reg.named_estimators_['gbm1'].feature_importances_), 13)
+        self.assertEqual(reg.named_estimators_['gbm1'].n_features_in_,
+                         reg.named_estimators_['gbm2'].n_features_in_)
+        self.assertEqual(reg.final_estimator_.n_features_in_, 15)  # number of concatenated features
+        self.assertEqual(len(reg.final_estimator_.feature_importances_), 15)
+
     def test_grid_search(self):
-        X, y = load_iris(True)
-        y = np.array(list(map(str, y)))  # utilize label encoder at it's max power
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        params = {'subsample': 0.8,
-                  'subsample_freq': 1}
-        grid_params = {'boosting_type': ['rf', 'gbdt'],
-                       'n_estimators': [4, 6],
-                       'reg_alpha': [0.01, 0.005]}
-        fit_params = {'verbose': False,
-                      'eval_set': [(X_test, y_test)],
-                      'eval_metric': constant_metric,
-                      'early_stopping_rounds': 2}
-        grid = GridSearchCV(lgb.LGBMClassifier(**params), grid_params, cv=2)
-        grid.fit(X, y, **fit_params)
+        X, y = load_iris(return_X_y=True)
+        y = y.astype(str)  # utilize label encoder at it's max power
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1,
+                                                          random_state=42)
+        params = dict(subsample=0.8,
+                      subsample_freq=1)
+        grid_params = dict(boosting_type=['rf', 'gbdt'],
+                           n_estimators=[4, 6],
+                           reg_alpha=[0.01, 0.005])
+        fit_params = dict(verbose=False,
+                          eval_set=[(X_val, y_val)],
+                          eval_metric=constant_metric,
+                          early_stopping_rounds=2)
+        grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params,
+                            cv=2)
+        grid.fit(X_train, y_train, **fit_params)
+        score = grid.score(X_test, y_test)  # utilizes GridSearchCV default refit=True
         self.assertIn(grid.best_params_['boosting_type'], ['rf', 'gbdt'])
         self.assertIn(grid.best_params_['n_estimators'], [4, 6])
         self.assertIn(grid.best_params_['reg_alpha'], [0.01, 0.005])
-        self.assertLess(grid.best_score_, 0.9)
+        self.assertLessEqual(grid.best_score_, 1.)
         self.assertEqual(grid.best_estimator_.best_iteration_, 1)
         self.assertLess(grid.best_estimator_.best_score_['valid_0']['multi_logloss'], 0.25)
         self.assertEqual(grid.best_estimator_.best_score_['valid_0']['error'], 0)
+        self.assertGreaterEqual(score, 0.2)
+        self.assertLessEqual(score, 1.)
+
+    def test_random_search(self):
+        X, y = load_iris(return_X_y=True)
+        y = y.astype(str)  # utilize label encoder at it's max power
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1,
+                                                          random_state=42)
+        n_iter = 3  # Number of samples
+        params = dict(subsample=0.8,
+                      subsample_freq=1)
+        param_dist = dict(boosting_type=['rf', 'gbdt'],
+                          n_estimators=[np.random.randint(low=3, high=10) for i in range(n_iter)],
+                          reg_alpha=[np.random.uniform(low=0.01, high=0.06) for i in range(n_iter)])
+        fit_params = dict(verbose=False,
+                          eval_set=[(X_val, y_val)],
+                          eval_metric=constant_metric,
+                          early_stopping_rounds=2)
+        rand = RandomizedSearchCV(estimator=lgb.LGBMClassifier(**params),
+                                  param_distributions=param_dist, cv=2,
+                                  n_iter=n_iter, random_state=42)
+        rand.fit(X_train, y_train, **fit_params)
+        score = rand.score(X_test, y_test)  # utilizes RandomizedSearchCV default refit=True
+        self.assertIn(rand.best_params_['boosting_type'], ['rf', 'gbdt'])
+        self.assertIn(rand.best_params_['n_estimators'], list(range(3, 10)))
+        self.assertGreaterEqual(rand.best_params_['reg_alpha'], 0.01)  # Left-closed boundary point
+        self.assertLessEqual(rand.best_params_['reg_alpha'], 0.06)  # Right-closed boundary point
+        self.assertLessEqual(rand.best_score_, 1.)
+        self.assertLess(rand.best_estimator_.best_score_['valid_0']['multi_logloss'], 0.25)
+        self.assertEqual(rand.best_estimator_.best_score_['valid_0']['error'], 0)
+        self.assertGreaterEqual(score, 0.2)
+        self.assertLessEqual(score, 1.)
+
+    # sklearn < 0.22 does not have the post fit attribute: classes_
+    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    def test_multioutput_classifier(self):
+        n_outputs = 3
+        X, y = make_multilabel_classification(n_samples=100, n_features=20,
+                                              n_classes=n_outputs, random_state=0)
+        y = y.astype(str)  # utilize label encoder at it's max power
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
+        clf = MultiOutputClassifier(estimator=lgb.LGBMClassifier(n_estimators=10))
+        clf.fit(X_train, y_train)
+        score = clf.score(X_test, y_test)
+        self.assertGreaterEqual(score, 0.2)
+        self.assertLessEqual(score, 1.)
+        np.testing.assert_array_equal(np.tile(np.unique(y_train), n_outputs),
+                                      np.concatenate(clf.classes_))
+        for classifier in clf.estimators_:
+            self.assertIsInstance(classifier, lgb.LGBMClassifier)
+            self.assertIsInstance(classifier.booster_, lgb.Booster)
+
+    # sklearn < 0.23 does not have as_frame parameter
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    def test_multioutput_regressor(self):
+        bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
+        X, y = bunch['data'], bunch['target']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
+        reg = MultiOutputRegressor(estimator=lgb.LGBMRegressor(n_estimators=10))
+        reg.fit(X_train, y_train)
+        y_pred = reg.predict(X_test)
+        _, score, _ = mse(y_test, y_pred)
+        self.assertGreaterEqual(score, 0.2)
+        self.assertLessEqual(score, 120.)
+        for regressor in reg.estimators_:
+            self.assertIsInstance(regressor, lgb.LGBMRegressor)
+            self.assertIsInstance(regressor.booster_, lgb.Booster)
+
+    # sklearn < 0.22 does not have the post fit attribute: classes_
+    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    def test_classifier_chain(self):
+        n_outputs = 3
+        X, y = make_multilabel_classification(n_samples=100, n_features=20,
+                                              n_classes=n_outputs, random_state=0)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                            random_state=42)
+        order = [2, 0, 1]
+        clf = ClassifierChain(base_estimator=lgb.LGBMClassifier(n_estimators=10),
+                              order=order, random_state=42)
+        clf.fit(X_train, y_train)
+        score = clf.score(X_test, y_test)
+        self.assertGreaterEqual(score, 0.2)
+        self.assertLessEqual(score, 1.)
+        np.testing.assert_array_equal(np.tile(np.unique(y_train), n_outputs),
+                                      np.concatenate(clf.classes_))
+        self.assertListEqual(order, clf.order_)
+        for classifier in clf.estimators_:
+            self.assertIsInstance(classifier, lgb.LGBMClassifier)
+            self.assertIsInstance(classifier.booster_, lgb.Booster)
+
+    # sklearn < 0.23 does not have as_frame parameter
+    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    def test_regressor_chain(self):
+        bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
+        X, y = bunch['data'], bunch['target']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        order = [2, 0, 1]
+        reg = RegressorChain(base_estimator=lgb.LGBMRegressor(n_estimators=10), order=order,
+                             random_state=42)
+        reg.fit(X_train, y_train)
+        y_pred = reg.predict(X_test)
+        _, score, _ = mse(y_test, y_pred)
+        self.assertGreaterEqual(score, 0.2)
+        self.assertLessEqual(score, 120.)
+        self.assertListEqual(order, reg.order_)
+        for regressor in reg.estimators_:
+            self.assertIsInstance(regressor, lgb.LGBMRegressor)
+            self.assertIsInstance(regressor.booster_, lgb.Booster)
 
     def test_clone_and_property(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
         gbm.fit(X, y, verbose=False)
 
@@ -195,7 +365,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIsInstance(gbm.booster_, lgb.Booster)
         self.assertIsInstance(gbm.feature_importances_, np.ndarray)
 
-        X, y = load_digits(2, True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         clf = lgb.LGBMClassifier(n_estimators=10, silent=True)
         clf.fit(X, y, verbose=False)
         self.assertListEqual(sorted(clf.classes_), [0, 1])
@@ -204,7 +374,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIsInstance(clf.feature_importances_, np.ndarray)
 
     def test_joblib(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
                                 silent=True, importance_type='split')
@@ -229,7 +399,7 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_allclose(pred_origin, pred_pickle)
 
     def test_random_state_object(self):
-        X, y = load_iris(True)
+        X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         state1 = np.random.RandomState(123)
         state2 = np.random.RandomState(123)
@@ -262,14 +432,14 @@ class TestSklearn(unittest.TestCase):
                           df1, df3)
 
     def test_feature_importances_single_leaf(self):
-        data = load_iris()
+        data = load_iris(return_X_y=False)
         clf = lgb.LGBMClassifier(n_estimators=10)
         clf.fit(data.data, data.target)
         importances = clf.feature_importances_
         self.assertEqual(len(importances), 4)
 
     def test_feature_importances_type(self):
-        data = load_iris()
+        data = load_iris(return_X_y=False)
         clf = lgb.LGBMClassifier(n_estimators=10)
         clf.fit(data.data, data.target)
         clf.set_params(importance_type='split')
@@ -393,7 +563,7 @@ class TestSklearn(unittest.TestCase):
 
     def test_predict(self):
         # With default params
-        iris = load_iris()
+        iris = load_iris(return_X_y=False)
         X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target,
                                                             test_size=0.2, random_state=42)
 
@@ -438,7 +608,7 @@ class TestSklearn(unittest.TestCase):
                           res_engine, res_sklearn_params)
 
     def test_evaluate_train_set(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)], verbose=False)
@@ -451,7 +621,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('l2', gbm.evals_result_['valid_1'])
 
     def test_metrics(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         params = {'n_estimators': 2, 'verbose': -1}
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
@@ -489,6 +659,20 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('gamma', gbm.evals_result_['training'])
         self.assertIn('l2', gbm.evals_result_['training'])
         self.assertIn('mape', gbm.evals_result_['training'])
+
+        # non-default metric with multiple metrics in eval_metric for LGBMClassifier
+        X_classification, y_classification = load_breast_cancer(return_X_y=True)
+        params_classification = {'n_estimators': 2, 'verbose': -1,
+                                 'objective': 'binary', 'metric': 'binary_logloss'}
+        params_fit_classification = {'X': X_classification, 'y': y_classification,
+                                     'eval_set': (X_classification, y_classification),
+                                     'verbose': False}
+        gbm = lgb.LGBMClassifier(**params_classification).fit(eval_metric=['fair', 'error'],
+                                                              **params_fit_classification)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('fair', gbm.evals_result_['training'])
+        self.assertIn('binary_error', gbm.evals_result_['training'])
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
 
         # default metric for non-default objective
         gbm = lgb.LGBMRegressor(objective='regression_l1', **params).fit(**params_fit)
@@ -660,7 +844,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('mape', gbm.evals_result_['training'])
         self.assertIn('error', gbm.evals_result_['training'])
 
-        X, y = load_digits(3, True)
+        X, y = load_digits(n_class=3, return_X_y=True)
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # default metric and invalid binary metric is replaced with multiclass alternative
@@ -687,7 +871,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('multi_logloss', gbm.evals_result_['training'])
         self.assertIn('multi_error', gbm.evals_result_['training'])
 
-        X, y = load_digits(2, True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # default metric and invalid multiclass metric is replaced with binary alternative
@@ -746,7 +930,7 @@ class TestSklearn(unittest.TestCase):
                     self.assertEqual(assumed_iteration if eval_set_name != 'training' else gbm.n_estimators,
                                      gbm.best_iteration_)
 
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=72)
         params = {'n_estimators': 30,
@@ -827,7 +1011,7 @@ class TestSklearn(unittest.TestCase):
         fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l2, True)
 
     def test_class_weight(self):
-        X, y = load_digits(10, True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         y_train_str = y_train.astype('str')
         y_test_str = y_test.astype('str')
@@ -861,7 +1045,7 @@ class TestSklearn(unittest.TestCase):
                                            gbm_str.evals_result_[eval_set][metric])
 
     def test_continue_training_with_model(self):
-        X, y = load_digits(3, True)
+        X, y = load_digits(n_class=3, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         init_gbm = lgb.LGBMClassifier(n_estimators=5).fit(X_train, y_train, eval_set=(X_test, y_test),
                                                           verbose=False)

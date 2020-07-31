@@ -31,7 +31,7 @@ class ColSampler {
   }
 
   static int GetCnt(size_t total_cnt, double fraction) {
-    const int min = std::min(2, static_cast<int>(total_cnt));
+    const int min = std::min(1, static_cast<int>(total_cnt));
     int used_feature_cnt = static_cast<int>(Common::RoundInt(total_cnt * fraction));
     return std::max(used_feature_cnt, min);
   }
@@ -117,7 +117,9 @@ class ColSampler {
       } else {
         for (int feat : allowed_features) {
           int inner_feat = train_data_->InnerFeatureIndex(feat);
-          ret[inner_feat] = 1;
+          if (inner_feat >= 0) {
+            ret[inner_feat] = 1;
+          }
         }
         return ret;
       }
