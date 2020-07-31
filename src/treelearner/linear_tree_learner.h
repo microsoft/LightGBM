@@ -51,24 +51,25 @@ class LinearTreeLearner: public SerialTreeLearner {
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
         int row_idx = tmp_idx[j];
         double output = leaf_const;
-        bool nan_found = false;
-        for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
-          double val = feat_ptr_arr[feat_num][row_idx];
-          if (HAS_NAN) {
+        if (HAS_NAN) {
+          bool nan_found = false;
+          for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
+            double val = feat_ptr_arr[feat_num][row_idx];
             if (std::isnan(val)) {
               nan_found = true;
               break;
-            } 
+            }
+            output += val * leaf_coeffs[feat_num];
           }
-          output += val * leaf_coeffs[feat_num];
-        }
-        if (HAS_NAN) {
           if (nan_found) {
             out_score[row_idx] += leaf_output;
           } else {
             out_score[row_idx] += output;
           }
         } else {
+          for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
+            output += feat_ptr_arr[feat_num][row_idx] * leaf_coeffs[feat_num];
+          }
           out_score[row_idx] += output;
         }
       }
