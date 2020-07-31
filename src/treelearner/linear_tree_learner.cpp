@@ -162,11 +162,11 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
 
   std::vector<std::vector<std::vector<double>>> XTHX_by_thread;
   std::vector<std::vector<std::vector<double>>> XTg_by_thread;
-  std::vector<std::vector<double>> curr_row; 
+  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> curr_row; 
   for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
     XTHX_by_thread.push_back(XTHX);
     XTg_by_thread.push_back(XTg);
-    curr_row.push_back(std::vector<double>(max_num_features + 1));
+    curr_row.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(max_num_features + 1 + 8));  
   }
 #pragma omp parallel for schedule(static) if (num_data_ > 1024)
   for (int i = 0; i < num_data_; ++i) {
@@ -208,7 +208,6 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
   // aggregate results from different threads
   for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
     for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
-      int j = 0;
       for (int j = 0; j < XTHX[leaf_num].size(); ++j) {
         XTHX[leaf_num][j] += XTHX_by_thread[tid][leaf_num][j];
       }
