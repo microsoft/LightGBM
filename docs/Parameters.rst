@@ -123,6 +123,8 @@ Core Parameters
 
       -  not yet supported in R-package
 
+      -  ``regression_l1 `` objective is not supported with linear tree boosting
+
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data

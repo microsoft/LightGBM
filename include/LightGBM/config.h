@@ -149,6 +149,7 @@ struct Config {
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
   // descl2 = missing values must be encoded as np.nan (Python) or NA (cli), not 0
   // descl2 = not yet supported in R-package
+  // descl2 = ``regression_l1 `` objective is not supported with linear tree boosting
   std::string boosting = "gbdt";
 
   // alias = train, train_data, train_data_file, data_filename

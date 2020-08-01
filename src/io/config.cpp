@@ -339,6 +339,9 @@ void Config::CheckParamConflict() {
     if (zero_as_missing) {
       Log::Fatal("zero_as_missing must be false when using linear tree learner.");
     }
+    if (objective == std::string("regresson_l1")) {
+      Log::Fatal("Cannot use regression_l1 objective with linear tree learner.");
+    }
   }
 
   // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the split is calculated
