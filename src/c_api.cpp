@@ -1978,6 +1978,7 @@ int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
   API_BEGIN();
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, fastConfig->data_type, nindptr, nelem);
+  fastConfig->booster->SetSingleRowPredictor(num_iteration, predict_type, fastConfig->config);
   fastConfig->booster->PredictSingleRow(predict_type, fastConfig->ncol,
                                         get_row_fun, fastConfig->config, out_result, out_len);
   API_END();
@@ -2111,6 +2112,7 @@ int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fastConfig_handle,
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   // Single row in row-major format:
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, fastConfig->ncol, fastConfig->data_type, 1);
+  fastConfig->booster->SetSingleRowPredictor(num_iteration, predict_type, fastConfig->config);
   fastConfig->booster->PredictSingleRow(predict_type, fastConfig->ncol,
                                         get_row_fun, fastConfig->config,
                                         out_result, out_len);
