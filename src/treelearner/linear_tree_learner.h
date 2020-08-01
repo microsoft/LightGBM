@@ -36,7 +36,7 @@ class LinearTreeLearner: public SerialTreeLearner {
 
   template<bool HAS_NAN>
   void AddPredictionToScoreInner(const Tree* tree, double* out_score) const {
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
