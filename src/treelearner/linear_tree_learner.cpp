@@ -221,20 +221,25 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
         continue;
       }
     }
-    curr_row[tid][num_feat] = 1;
+    //curr_row[tid][num_feat] = 1;
     double h = hessians_[i];
     double g = gradients_[i];
-    int j = 0;
-    for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+    int j =0;
+    for (int feat1 = 0; feat1 < num_feat; ++feat1) {
       double f1_val = curr_row[tid][feat1];
+      XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
       XTHX_by_thread_[tid][leaf_num][j] += f1_val * f1_val * h;
+      f1_val *= h;
       ++j;
-      for (int feat2 = feat1 + 1; feat2 < num_feat + 1; ++feat2) {
-        XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[tid][feat2] * h;
+      for (int feat2 = feat1 + 1; feat2 < num_feat; ++feat2) {
+        XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[tid][feat2];
         ++j;
       }
-      XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
+      XTHX_by_thread_[tid][leaf_num][j] += f1_val;
+      ++j;
     }
+    XTg_by_thread_[tid][leaf_num][num_feat] += g;
+    XTHX_by_thread_[tid][leaf_num][j] += h;
   }
   // aggregate results from different threads
   for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
