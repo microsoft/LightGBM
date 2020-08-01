@@ -84,10 +84,10 @@ private:
   /*! \brief map dataset to leaves */
   std::vector<int> leaf_map_;
   /*! \brief temporary storage for calculating linear model */
-  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> XTHX_;
-  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> XTg_;
-  std::vector<std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>>> XTHX_by_thread_;
-  std::vector<std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>>> XTg_by_thread_;
+  std::vector<std::vector<double>> XTHX_;
+  std::vector<std::vector<double>> XTg_;
+  std::vector<std::vector<std::vector<double>>> XTHX_by_thread_;
+  std::vector<std::vector<std::vector<double>>> XTg_by_thread_;
 
 };
 }  // namespace LightGBM

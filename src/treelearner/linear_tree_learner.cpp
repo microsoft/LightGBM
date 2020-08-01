@@ -38,18 +38,15 @@ namespace LightGBM {
       // store only upper triangular half of matrix as an array, in row-major order
       // this requires (max_num_feat + 1) * (max_num_feat + 2) / 2 entries (including the constant terms of the regression)
       // we add another 8 to ensure cache lines are not shared among processors
-      XTHX_.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>
-        ((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
-      XTg_.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>
-        (max_num_feat + 1 + 8, 0.0));
+      XTHX_.push_back(std::vector<double>((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
+      XTg_.push_back(std::vector<double>(max_num_feat + 9, 0.0));
     }
 
-    std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> curr_row; 
     for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
       XTHX_by_thread_.push_back(XTHX_);
       XTg_by_thread_.push_back(XTg_);
-      curr_row.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(max_num_feat + 1 + 8));  
     }
+
   }
 
 
@@ -190,9 +187,9 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
     std::fill(XTg_[leaf_num].begin(), XTg_[leaf_num].begin() + num_feat + 1, 0);
   }
 
-  std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> curr_row; 
+  std::vector<std::vector<double>> curr_row; 
   for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
-    curr_row.push_back(std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>(max_num_features + 1 + 8));  
+    curr_row.push_back(std::vector<double>(max_num_features));  
   }
 
 #pragma omp parallel for schedule(static) if (num_data_ > 1024)
@@ -221,7 +218,6 @@ void LinearTreeLearner::CalculateLinear(Tree* tree) {
         continue;
       }
     }
-    //curr_row[tid][num_feat] = 1;
     double h = hessians_[i];
     double g = gradients_[i];
     int j =0;
