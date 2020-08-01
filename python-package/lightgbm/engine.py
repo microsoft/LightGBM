@@ -211,7 +211,7 @@ def train(params, train_set, num_boost_round=100,
     elif isinstance(verbose_eval, integer_types):
         callbacks.add(callback.print_evaluation(verbose_eval))
 
-    if early_stopping_rounds is not None:
+    if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
@@ -568,7 +568,7 @@ def cv(params, train_set, num_boost_round=100,
         for i, cb in enumerate(callbacks):
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
-    if early_stopping_rounds is not None:
+    if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))

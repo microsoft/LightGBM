@@ -170,9 +170,6 @@ if (!use_precompile) {
   if (use_gpu) {
     cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
   }
-  if (R_ver >= 3.5) {
-    cmake_args <- c(cmake_args, "-DUSE_R35=ON")
-  }
   cmake_args <- c(cmake_args, "-DBUILD_FOR_R=ON")
 
   # Pass in R version, used to help find R executable for linking

@@ -602,7 +602,7 @@ class LGBMModel(_LGBMModelBase):
         if evals_result:
             self._evals_result = evals_result
 
-        if early_stopping_rounds is not None:
+        if early_stopping_rounds is not None and early_stopping_rounds > 0:
             self._best_iteration = self._Booster.best_iteration
 
         self._best_score = self._Booster.best_score
@@ -782,20 +782,28 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
         self._classes = self._le.classes_
         self._n_classes = len(self._classes)
+
         if self._n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             ova_aliases = {"multiclassova", "multiclass_ova", "ova", "ovr"}
             if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
-            if eval_metric in {'logloss', 'binary_logloss'}:
-                eval_metric = "multi_logloss"
-            elif eval_metric in {'error', 'binary_error'}:
-                eval_metric = "multi_error"
-        else:
-            if eval_metric in {'logloss', 'multi_logloss'}:
-                eval_metric = 'binary_logloss'
-            elif eval_metric in {'error', 'multi_error'}:
-                eval_metric = 'binary_error'
+
+        if not callable(eval_metric):
+            if isinstance(eval_metric, (string_type, type(None))):
+                eval_metric = [eval_metric]
+            if self._n_classes > 2:
+                for index, metric in enumerate(eval_metric):
+                    if metric in {'logloss', 'binary_logloss'}:
+                        eval_metric[index] = "multi_logloss"
+                    elif metric in {'error', 'binary_error'}:
+                        eval_metric[index] = "multi_error"
+            else:
+                for index, metric in enumerate(eval_metric):
+                    if metric in {'logloss', 'multi_logloss'}:
+                        eval_metric[index] = 'binary_logloss'
+                    elif metric in {'error', 'multi_error'}:
+                        eval_metric[index] = 'binary_error'
 
         # do not modify args, as it causes errors in model selection tools
         valid_sets = None

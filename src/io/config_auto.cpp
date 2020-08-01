@@ -234,6 +234,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "verbosity",
   "input_model",
   "output_model",
+  "saved_feature_importance_type",
   "snapshot_freq",
   "max_bin",
   "max_bin_by_feature",
@@ -463,6 +464,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "output_model", &output_model);
 
+  GetInt(params, "saved_feature_importance_type", &saved_feature_importance_type);
+
   GetInt(params, "snapshot_freq", &snapshot_freq);
 
   GetInt(params, "max_bin", &max_bin);
@@ -664,6 +667,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[path_smooth: " << path_smooth << "]\n";
   str_buf << "[interaction_constraints: " << interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
+  str_buf << "[saved_feature_importance_type: " << saved_feature_importance_type << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
