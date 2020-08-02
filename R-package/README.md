@@ -221,6 +221,65 @@ At build time, `configure.win` will be run and used to create a file `Makevars.w
 1. Edit `configure.win` directly
 2. Edit `src/Makevars.win.in`
 
+### Build Precompiled Binaries of the CRAN Package
+
+This section is mainly for maintainers. As long as the R package is not available on CRAN (which will build precompiled binaries automatically) you may want to build precompiled versions of the R package manually, since these will be easier for users to install.
+
+For more details, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Building-binary-packages).
+
+Packages built like this will only work for the minor version of R used to build them. They may or may not work across different versions of operating systems
+
+**Mac**
+
+Binary produced: `lightgbm_${VERSION}-r-package-macos.tgz`
+
+```shell
+sh build-cran-package.sh
+R CMD INSTALL --build lightgbm_$(cat VERSION.txt).tar.gz
+mv \
+    lightgbm_$(cat VERSION.txt).tgz \
+    lightgbm_$(cat VERSION.txt)-r-package-macos.tgz
+```
+
+**Linux**
+
+Binary produced: `lightgbm_${VERSION}-r-package-linux.tar.gz`
+
+You can access a Linux system that has R and its build toolchain installed with the `rocker` Docker images.
+
+```shell
+R_VERSION=4.0.2
+
+docker run \
+    -v $(pwd):/opt/LightGBM \
+    -it rocker/verse:${R_VERSION} \
+        /bin/bash
+
+cd /opt/LightGBM
+```
+
+From inside that container, the commands to create a precompiled binary are very similar
+
+```shell
+sh build-cran-package.sh
+R CMD INSTALL --build lightgbm_$(cat VERSION.txt).tar.gz
+mv \
+    lightgbm_$(cat VERSION.txt)_R_*-linux-gnu.tar.gz \
+    lightgbm_$(cat VERSION.txt)-r-package-linux.tgz
+```
+
+Exit the container, and the binary package should still be there on the host system.
+
+```shell
+exit
+```
+
+**Windows**
+
+Binary produced: `
+
+
+
 External (Unofficial) Repositories
 ----------------------------------
 
