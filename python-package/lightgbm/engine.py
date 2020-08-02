@@ -276,19 +276,35 @@ def train(params, train_set, num_boost_round=100,
     return booster
 
 
-class _CVBooster(object):
-    """Auxiliary data struct to hold all boosters of CV."""
+class CVBooster(object):
+    """CVBooster in LightGBM.
+
+    Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
+    This class has the same methods as Booster class.
+    All method calls are actually performed for underlying Boosters and then all returned results are returned in a list.
+
+    Attributes
+    ----------
+    boosters : list of Booster
+        The list of underlying fitted models.
+    best_iteration : int
+        The best iteration of fitted model.
+    """
 
     def __init__(self):
+        """Initialize the CVBooster.
+
+        Generally, no need to instantiate manually.
+        """
         self.boosters = []
         self.best_iteration = -1
 
-    def append(self, booster):
-        """Add a booster to _CVBooster."""
+    def _append(self, booster):
+        """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
     def __getattr__(self, name):
-        """Redirect methods call of _CVBooster."""
+        """Redirect methods call of CVBooster."""
         def handler_function(*args, **kwargs):
             """Call methods with each booster, and concatenate their results."""
             ret = []
@@ -341,7 +357,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
             folds = zip_(train_id, test_id)
 
-    ret = _CVBooster()
+    ret = CVBooster()
     for train_idx, test_idx in folds:
         train_set = full_data.subset(sorted(train_idx))
         valid_set = full_data.subset(sorted(test_idx))
@@ -354,7 +370,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
         if eval_train_metric:
             cvbooster.add_valid(train_set, 'train')
         cvbooster.add_valid(valid_set, 'valid')
-        ret.append(cvbooster)
+        ret._append(cvbooster)
     return ret
 
 
@@ -380,7 +396,8 @@ def cv(params, train_set, num_boost_round=100,
        feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
-       callbacks=None, eval_train_metric=False):
+       callbacks=None, eval_train_metric=False,
+       return_cvbooster=False):
     """Perform the cross-validation with given paramaters.
 
     Parameters
@@ -486,6 +503,8 @@ def cv(params, train_set, num_boost_round=100,
     eval_train_metric : bool, optional (default=False)
         Whether to display the train metric in progress.
         The score of the metric is calculated again after each training step, so there is some impact on performance.
+    return_cvbooster : bool, optional (default=False)
+        Whether to return Booster models trained on each fold through ``CVBooster``.
 
     Returns
     -------
@@ -495,6 +514,7 @@ def cv(params, train_set, num_boost_round=100,
         {'metric1-mean': [values], 'metric1-stdv': [values],
         'metric2-mean': [values], 'metric2-stdv': [values],
         ...}.
+        If ``return_cvbooster=True``, also returns trained boosters via ``cvbooster`` key.
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
@@ -586,4 +606,8 @@ def cv(params, train_set, num_boost_round=100,
             for k in results:
                 results[k] = results[k][:cvfolds.best_iteration]
             break
+
+    if return_cvbooster:
+        results['cvbooster'] = cvfolds
+
     return dict(results)

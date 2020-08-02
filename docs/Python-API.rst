@@ -11,6 +11,7 @@ Data Structure API
 
     Dataset
     Booster
+    CVBooster
 
 Training API
 ------------
