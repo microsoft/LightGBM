@@ -24,8 +24,13 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, 
   TREELEARNER_T::Init(train_data, is_constant_hessian);
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
-  input_buffer_.resize((sizeof(SplitInfo) + sizeof(uint32_t) * this->config_->max_cat_threshold) * 2);
-  output_buffer_.resize((sizeof(SplitInfo) + sizeof(uint32_t) * this->config_->max_cat_threshold) * 2);
+
+  auto max_cat_threshold = this->config_->max_cat_threshold;
+  // need to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
+  int split_info_size = SplitInfo::Size(max_cat_threshold) * 2;
+
+  input_buffer_.resize(split_info_size);
+  output_buffer_.resize(split_info_size);
 }
 
 
@@ -52,8 +57,9 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
 }
 
 template <typename TREELEARNER_T>
-void FeatureParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
-  TREELEARNER_T::FindBestSplitsFromHistograms(is_feature_used, use_subtract);
+void FeatureParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
+      const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree* tree) {
+  TREELEARNER_T::FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
   SplitInfo smaller_best_split, larger_best_split;
   // get best split at smaller leaf
   smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->leaf_index()];

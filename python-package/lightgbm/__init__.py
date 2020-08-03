@@ -8,7 +8,7 @@ from __future__ import absolute_import
 from .basic import Booster, Dataset
 from .callback import (early_stopping, print_evaluation, record_evaluation,
                        reset_parameter)
-from .engine import cv, train
+from .engine import cv, train, CVBooster
 
 import os
 
@@ -29,7 +29,7 @@ if os.path.isfile(os.path.join(dir_path, 'VERSION.txt')):
     with open(os.path.join(dir_path, 'VERSION.txt')) as version_file:
         __version__ = version_file.read().strip()
 
-__all__ = ['Dataset', 'Booster',
+__all__ = ['Dataset', 'Booster', 'CVBooster',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',

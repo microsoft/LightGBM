@@ -6,7 +6,7 @@
 #define LIGHTGBM_R_H_
 
 #include <LightGBM/c_api.h>
-#include <LightGBM/R_object_helper.h>
+#include "R_object_helper.h"
 
 /*!
 * \brief get string message of the last error
@@ -590,6 +590,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForMat_R(
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModel_R(
   LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE filename,
   LGBM_SE call_state
 );
@@ -604,6 +605,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModel_R(
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModelToString_R(
   LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
   LGBM_SE actual_len,
   LGBM_SE out_str,
@@ -620,6 +622,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModelToString_R(
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterDumpModel_R(
   LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
   LGBM_SE actual_len,
   LGBM_SE out_str,

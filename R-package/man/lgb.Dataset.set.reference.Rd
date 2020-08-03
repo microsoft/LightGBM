@@ -18,7 +18,6 @@ passed dataset
 If you want to use validation data, you should set reference to training data
 }
 \examples{
-library(lightgbm)
 data(agaricus.train, package ="lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

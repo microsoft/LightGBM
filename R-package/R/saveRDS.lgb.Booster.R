@@ -18,6 +18,7 @@
 #' @return NULL invisibly.
 #'
 #' @examples
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -36,7 +37,9 @@
 #'     , learning_rate = 1.0
 #'     , early_stopping_rounds = 5L
 #' )
-#' saveRDS.lgb.Booster(model, "model.rds")
+#' model_file <- tempfile(fileext = ".rds")
+#' saveRDS.lgb.Booster(model, model_file)
+#' }
 #' @export
 saveRDS.lgb.Booster <- function(object,
                                 file = "",

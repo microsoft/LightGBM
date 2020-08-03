@@ -11,14 +11,14 @@ lgb.is.null.handle <- function(x) {
 }
 
 lgb.encode.char <- function(arr, len) {
-
   if (!is.raw(arr)) {
-    stop("lgb.encode.char: Can only encode from raw type") # Not an object of type raw
+    stop("lgb.encode.char: Can only encode from raw type")
   }
-  rawToChar(arr[seq_len(len)]) # Return the conversion of raw type to character type
-
+  return(rawToChar(arr[seq_len(len)]))
 }
 
+# [description] Raise an error. Before raising that error, check for any error message
+#               stored in a buffer on the C++ side.
 lgb.last_error <- function() {
   # Perform text error buffering
   buf_len <- 200L
@@ -165,6 +165,65 @@ lgb.params2str <- function(params, ...) {
 
 }
 
+lgb.check_interaction_constraints <- function(params, column_names) {
+
+  # Convert interaction constraints to feature numbers
+  string_constraints <- list()
+
+  if (!is.null(params[["interaction_constraints"]])) {
+
+    # validation
+    if (!methods::is(params[["interaction_constraints"]], "list")) {
+        stop("interaction_constraints must be a list")
+    }
+    if (!all(sapply(params[["interaction_constraints"]], function(x) {is.character(x) || is.numeric(x)}))) {
+        stop("every element in interaction_constraints must be a character vector or numeric vector")
+    }
+
+    for (constraint in params[["interaction_constraints"]]) {
+
+      # Check for character name
+      if (is.character(constraint)) {
+
+          constraint_indices <- as.integer(match(constraint, column_names) - 1L)
+
+          # Provided indices, but some indices are not existing?
+          if (sum(is.na(constraint_indices)) > 0L) {
+            stop(
+              "supplied an unknown feature in interaction_constraints "
+              , sQuote(constraint[is.na(constraint_indices)])
+            )
+          }
+
+        } else {
+
+          # Check that constraint indices are at most number of features
+          if (max(constraint) > length(column_names)) {
+            stop(
+              "supplied a too large value in interaction_constraints: "
+              , max(constraint)
+              , " but only "
+              , length(column_names)
+              , " features"
+            )
+          }
+
+          # Store indices as [0, n-1] indexed instead of [1, n] indexed
+          constraint_indices <- as.integer(constraint - 1L)
+
+        }
+
+        # Convert constraint to string
+        constraint_string <- paste0("[", paste0(constraint_indices, collapse = ","), "]")
+        string_constraints <- append(string_constraints, constraint_string)
+    }
+
+  }
+
+  return(string_constraints)
+
+}
+
 lgb.c_str <- function(x) {
 
   # Perform character to raw conversion
@@ -256,9 +315,10 @@ lgb.check.obj <- function(params, obj) {
 #               or a list with a mix of strings and functions
 lgb.check.eval <- function(params, eval) {
 
-  # Check if metric is null, if yes put a list instead
   if (is.null(params$metric)) {
     params$metric <- list()
+  } else if (is.character(params$metric)) {
+    params$metric <- as.list(params$metric)
   }
 
   # if 'eval' is a character vector or list, find the character
@@ -282,6 +342,10 @@ lgb.check.eval <- function(params, eval) {
         }
         , x = params$metric
     )
+  }
+
+  if (identical(class(eval), "list")) {
+    params$metric <- append(params$metric, unlist(eval))
   }
 
   return(params)

@@ -1,3 +1,12 @@
+context("lgb.encode.char")
+
+test_that("lgb.encode.char throws an informative error if it is passed a non-raw input", {
+    x <- "some-string"
+    expect_error({
+        lgb.encode.char(x)
+    }, regexp = "Can only encode from raw type")
+})
+
 context("lgb.check.r6.class")
 
 test_that("lgb.check.r6.class() should return FALSE for NULL input", {
@@ -47,4 +56,62 @@ test_that("lgb.params2str() works as expected for a key in params with multiple 
         out_as_char
         , "objective=magic metric=a,ab,abc,abcdefg nrounds=10 learning_rate=0.0000001"
     )
+})
+
+context("lgb.last_error")
+
+test_that("lgb.last_error() throws an error if there are no errors", {
+    expect_error({
+        lgb.last_error()
+    }, regexp = "Everything is fine")
+})
+
+test_that("lgb.last_error() correctly returns errors from the C++ side", {
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    dvalid1 <- lgb.Dataset(
+        data = train$data
+        , label = as.matrix(rnorm(5L))
+    )
+    expect_error({
+        dvalid1$construct()
+    }, regexp = "[LightGBM] [Fatal] Length of label is not same with #data", fixed = TRUE)
+})
+
+context("lgb.check.eval")
+
+test_that("lgb.check.eval works as expected with no metric", {
+    params <- lgb.check.eval(
+        params = list(device = "cpu")
+        , eval = "binary_error"
+    )
+    expect_named(params, c("device", "metric"))
+    expect_identical(params[["metric"]], list("binary_error"))
+})
+
+test_that("lgb.check.eval adds eval to metric in params", {
+    params <- lgb.check.eval(
+        params = list(metric = "auc")
+        , eval = "binary_error"
+    )
+    expect_named(params, "metric")
+    expect_identical(params[["metric"]], list("auc", "binary_error"))
+})
+
+test_that("lgb.check.eval adds eval to metric in params if two evaluation names are provided", {
+    params <- lgb.check.eval(
+        params = list(metric = "auc")
+        , eval = c("binary_error", "binary_logloss")
+    )
+    expect_named(params, "metric")
+    expect_identical(params[["metric"]], list("auc", "binary_error", "binary_logloss"))
+})
+
+test_that("lgb.check.eval adds eval to metric in params if a list is provided", {
+    params <- lgb.check.eval(
+        params = list(metric = "auc")
+        , eval = list("binary_error", "binary_logloss")
+    )
+    expect_named(params, "metric")
+    expect_identical(params[["metric"]], list("auc", "binary_error", "binary_logloss"))
 })

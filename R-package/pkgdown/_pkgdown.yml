@@ -6,6 +6,13 @@ site:
   root: ''
   title: LightGBM, Light Gradient Boosting Machine
 
+repo:
+  url:
+    home: https://github.com/microsoft/LightGBM/
+    source: https://github.com/microsoft/LightGBM/tree/master/R-package/
+    issue: https://github.com/microsoft/LightGBM/issues/
+    user: https://github.com/
+
 development:
   mode: unreleased
 
@@ -58,13 +65,12 @@ reference:
     - '`lgb.Dataset.save`'
     - '`lgb.Dataset.set.categorical`'
     - '`lgb.Dataset.set.reference`'
+    - '`lgb.convert`'
+    - '`lgb.convert_with_rules`'
   - title: Machine Learning
     desc: Train models with LightGBM
     contents:
-    - '`lgb.prepare`'
-    - '`lgb.prepare2`'
-    - '`lgb.prepare_rules`'
-    - '`lgb.prepare_rules2`'
+    - '`lightgbm`'
     - '`lgb.train`'
     - '`lgb.cv`'
   - title: Saving / Loading Models

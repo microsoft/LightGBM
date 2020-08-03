@@ -1,4 +1,4 @@
-^build_package.R$
+^build_r.R$
 \.gitkeep$
 ^docs$
 ^pkgdown$
@@ -14,6 +14,11 @@
 ^src/CMakeLists.txt$
 ^Makefile$
 ^src/build/.*$
+^autom4te.cache/.*$
+
+# files only used during development
+AUTOCONF_UBUNTU_VERSION
+^recreate-configure\.sh$
 
 # unnecessary files from submodules
 ^src/compute/.appveyor.yml$

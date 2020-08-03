@@ -1,11 +1,11 @@
-#' @name lgb.prepare_rules2
+#' @name lgb.convert_with_rules
 #' @title Data preparator for LightGBM datasets with rules (integer)
 #' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-#'              Factors and characters are converted to numeric (specifically: integer).
+#'              Factors and characters are converted to integer.
 #'              In addition, keeps rules created so you can convert other datasets using this converter.
 #'              This is useful if you have a specific need for integer dataset instead of numeric dataset.
-#'              Note that there are programs which do not support integer-only input.
-#'              Consider this as a half memory technique which is dangerous, especially for LightGBM.
+#'
+#'              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare_rules2}.
 #' @param data A data.frame or data.table to prepare.
 #' @param rules A set of rules from the data preparator, if already used.
 #' @return A list with the cleaned dataset (\code{data}) and the rules (\code{rules}).
@@ -13,12 +13,11 @@
 #'         \code{lgb.Dataset}.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(iris)
 #'
 #' str(iris)
 #'
-#' new_iris <- lgb.prepare_rules2(data = iris) # Autoconverter
+#' new_iris <- lgb.convert_with_rules(data = iris) # Autoconverter
 #' str(new_iris$data)
 #'
 #' data(iris) # Erase iris dataset
@@ -26,7 +25,7 @@
 #'
 #' # Use conversion using known rules
 #' # Unknown factors become 0, excellent for sparse datasets
-#' newer_iris <- lgb.prepare_rules2(data = iris, rules = new_iris$rules)
+#' newer_iris <- lgb.convert_with_rules(data = iris, rules = new_iris$rules)
 #'
 #' # Unknown factor is now zero, perfect for sparse datasets
 #' newer_iris$data[1L, ] # Species became 0 as it is an unknown factor
@@ -47,12 +46,12 @@
 #'     , "virginica" = 1L
 #'   )
 #' )
-#' newest_iris <- lgb.prepare_rules2(data = iris, rules = personal_rules)
+#' newest_iris <- lgb.convert_with_rules(data = iris, rules = personal_rules)
 #' str(newest_iris$data) # SUCCESS!
 #'
 #' @importFrom data.table set
 #' @export
-lgb.prepare_rules2 <- function(data, rules = NULL) {
+lgb.convert_with_rules <- function(data, rules = NULL) {
 
   # data.table not behaving like data.frame
   if (inherits(data, "data.table")) {
@@ -167,7 +166,7 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
       } else {
 
         stop(
-          "lgb.prepare_rules2: you provided "
+          "lgb.convert_with_rules: you provided "
           , paste(class(data), collapse = " & ")
           , " but data should have class data.frame"
         )

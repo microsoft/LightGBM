@@ -1,7 +1,6 @@
 # coding: utf-8
 import ctypes
 import os
-import sys
 
 from platform import system
 
@@ -237,7 +236,7 @@ def test_booster():
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
         if i % 10 == 0:
             print('%d iteration test AUC %f' % (i, result[0]))
-    LIB.LGBM_BoosterSaveModel(booster, 0, -1, c_str('model.txt'))
+    LIB.LGBM_BoosterSaveModel(booster, 0, -1, 0, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
     free_dataset(train)
     free_dataset(test)

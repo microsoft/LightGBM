@@ -76,7 +76,6 @@
 #' @return a trained booster model \code{lgb.Booster}.
 #'
 #' @examples
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -88,11 +87,11 @@
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , valids = valids
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
+#'   , early_stopping_rounds = 3L
 #' )
 #' @export
 lgb.train <- function(params = list(),
@@ -181,6 +180,15 @@ lgb.train <- function(params = list(),
     end_iteration <- begin_iteration + nrounds - 1L
   }
 
+  # Check interaction constraints
+  cnames <- NULL
+  if (!is.null(colnames)) {
+    cnames <- colnames
+  } else if (!is.null(data$get_colnames())) {
+    cnames <- data$get_colnames()
+  }
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params, cnames)
+
   # Update parameters with parsed parameters
   data$update_params(params)
 
@@ -249,7 +257,7 @@ lgb.train <- function(params = list(),
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
-  using_early_stopping_via_args <- !is.null(early_stopping_rounds)
+  using_early_stopping_via_args <- !is.null(early_stopping_rounds) && early_stopping_rounds > 0L
 
   boosting_param_names <- .PARAMETER_ALIASES()[["boosting"]]
   using_dart <- any(
@@ -295,6 +303,7 @@ lgb.train <- function(params = list(),
   if (valid_contain_train) {
     booster$set_train_data_name(train_data_name)
   }
+
   for (key in names(reduced_valid_sets)) {
     booster$add_valid(reduced_valid_sets[[key]], key)
   }
@@ -363,16 +372,34 @@ lgb.train <- function(params = list(),
 
   }
 
+  # check if any valids were given other than the training data
+  non_train_valid_names <- names(valids)[!(names(valids) == train_data_name)]
+  first_valid_name <- non_train_valid_names[1L]
+
   # When early stopping is not activated, we compute the best iteration / score ourselves by
   # selecting the first metric and the first dataset
-  if (record && length(valids) > 0L && is.na(env$best_score)) {
-    if (env$eval_list[[1L]]$higher_better[1L] == TRUE) {
-      booster$best_iter <- unname(which.max(unlist(booster$record_evals[[2L]][[1L]][[1L]])))
-      booster$best_score <- booster$record_evals[[2L]][[1L]][[1L]][[booster$best_iter]]
+  if (record && length(non_train_valid_names) > 0L && is.na(env$best_score)) {
+
+    # when using a custom eval function, the metric name is returned from the
+    # function, so figure it out from record_evals
+    if (!is.null(feval)) {
+      first_metric <- names(booster$record_evals[[first_valid_name]])[1L]
     } else {
-      booster$best_iter <- unname(which.min(unlist(booster$record_evals[[2L]][[1L]][[1L]])))
-      booster$best_score <- booster$record_evals[[2L]][[1L]][[1L]][[booster$best_iter]]
+      first_metric <- booster$.__enclos_env__$private$eval_names[1L]
     }
+
+    .find_best <- which.min
+    if (isTRUE(env$eval_list[[1L]]$higher_better[1L])) {
+      .find_best <- which.max
+    }
+    booster$best_iter <- unname(
+      .find_best(
+        unlist(
+          booster$record_evals[[first_valid_name]][[first_metric]][[.EVAL_KEY()]]
+        )
+      )
+    )
+    booster$best_score <- booster$record_evals[[first_valid_name]][[first_metric]][[.EVAL_KEY()]][[booster$best_iter]]
   }
 
   # Check for booster model conversion to predictor model
