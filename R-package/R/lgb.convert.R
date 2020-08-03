@@ -107,7 +107,6 @@ lgb.convert <- function(data) {
     if (is_data_table) {
 
         if (length(is_char) > 0L) {
-            #data[, (is_char) := lapply(.SD, function(x) {as.integer(as.factor(x))}), .SDcols = is_char]
             for (col_name in names(is_char)) {
                 data[, (col_name) := as.integer(as.factor(get(col_name)))]
                 data[is.na(get(col_name)), (col_name) := .LGB_CONVERT_DEFAULT_FOR_NON_LOGICAL_NA()]
@@ -115,7 +114,6 @@ lgb.convert <- function(data) {
         }
 
         if (length(is_factor) > 0L) {
-            #data[, (is_factor) := lapply(.SD, function(x) {as.integer(x)}), .SDcols = is_factor]
             for (col_name in names(is_factor)) {
                 data[, (col_name) := as.integer(get(col_name))]
                 data[is.na(get(col_name)), (col_name) := .LGB_CONVERT_DEFAULT_FOR_NON_LOGICAL_NA()]
@@ -123,7 +121,6 @@ lgb.convert <- function(data) {
         }
 
         if (length(is_logical) > 0L) {
-            # data[, (is_logical) := lapply(.SD, function(x) {as.integer(x)}), .SDcols = is_logical]
             for (col_name in names(is_logical)) {
                 data[, (col_name) := as.integer(get(col_name))]
                 data[is.na(get(col_name)), (col_name) := .LGB_CONVERT_DEFAULT_FOR_LOGICAL_NA()]
@@ -137,11 +134,9 @@ lgb.convert <- function(data) {
                 data[[col_name]] <- as.integer(as.factor(data[[col_name]]))
                 data[is.na(data[col_name]), col_name] <- .LGB_CONVERT_DEFAULT_FOR_NON_LOGICAL_NA()
             }
-            #data[is_char] <- lapply(data[is_char], function(x) {as.integer(as.factor(x))})
         }
 
         if (length(is_factor) > 0L) {
-            #data[is_factor] <- lapply(data[is_factor], function(x) {as.integer(x)})
             for (col_name in names(is_factor)) {
                 data[[col_name]] <- as.integer(data[[col_name]])
                 data[is.na(data[col_name]), col_name] <- .LGB_CONVERT_DEFAULT_FOR_NON_LOGICAL_NA()
@@ -149,7 +144,6 @@ lgb.convert <- function(data) {
         }
 
         if (length(is_logical) > 0L) {
-            #data[is_logical] <- lapply(data[is_logical], function(x) {as.integer(x)})
             for (col_name in names(is_logical)) {
                 data[[col_name]] <- as.integer(data[[col_name]])
                 data[is.na(data[col_name]), col_name] <- .LGB_CONVERT_DEFAULT_FOR_LOGICAL_NA()
