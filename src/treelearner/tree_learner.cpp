@@ -5,7 +5,6 @@
 #include <LightGBM/tree_learner.h>
 
 #include "gpu_tree_learner.h"
-#include "linear_tree_learner.h"
 #include "parallel_tree_learner.h"
 #include "serial_tree_learner.h"
 
@@ -14,10 +13,7 @@ namespace LightGBM {
 TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, const std::string& device_type,
                                             const std::string& booster_type, const Config* config) {
   if (device_type == std::string("cpu")) {
-    if (learner_type == std::string("serial")) 
-      if (booster_type == std::string("gbdt_linear")) {
-        return new LinearTreeLearner(config);
-      } else {
+    if (learner_type == std::string("serial")) {
       return new SerialTreeLearner(config);
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<SerialTreeLearner>(config);

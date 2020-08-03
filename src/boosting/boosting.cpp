@@ -34,7 +34,7 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
 
 Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
   if (filename == nullptr || filename[0] == '\0') {
-    if (type == std::string("gbdt") || type == std::string("gbdt_linear")) {
+    if (type == std::string("gbdt")) {
       return new GBDT();
     } else if (type == std::string("dart")) {
       return new DART();
@@ -48,7 +48,7 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
   } else {
     std::unique_ptr<Boosting> ret;
     if (GetBoostingTypeFromModelFile(filename) == std::string("tree")) {
-      if (type == std::string("gbdt") || type == std::string("gbdt_linear")) {
+      if (type == std::string("gbdt")) {
         ret.reset(new GBDT());
       } else if (type == std::string("dart")) {
         ret.reset(new DART());

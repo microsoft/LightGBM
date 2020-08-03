@@ -80,7 +80,10 @@ class SerialTreeLearner: public TreeLearner {
 
   Tree* Train(const score_t* gradients, const score_t *hessians) override;
 
-  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
+  template<bool HAS_NAN>
+  void CalculateLinear(Tree* tree);
+
+  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                           const score_t* gradients, const score_t* hessians) override;
@@ -100,17 +103,69 @@ class SerialTreeLearner: public TreeLearner {
 
   void AddPredictionToScore(const Tree* tree,
                             double* out_score) const override {
-    if (tree->num_leaves() <= 1) {
-      return;
-    }
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
+    if (tree->GetLinear()) {
+      CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
+      if (tree->has_nan()) {
+        AddPredictionToScoreInner<true>(tree, out_score);
+      } else {
+        AddPredictionToScoreInner<false>(tree, out_score);
+      }
+    } else {
+      if (tree->num_leaves() <= 1) {
+        return;
+      }
 #pragma omp parallel for schedule(static, 1)
+      for (int i = 0; i < tree->num_leaves(); ++i) {
+        double output = static_cast<double>(tree->LeafOutput(i));
+        data_size_t cnt_leaf_data = 0;
+        auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
+        for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
+          out_score[tmp_idx[j]] += output;
+        }
+      }
+    }
+  }
+
+
+  template<bool HAS_NAN>
+  void AddPredictionToScoreInner(const Tree* tree, double* out_score) const {
+#pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < tree->num_leaves(); ++i) {
-      double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
+      double leaf_output = tree->LeafOutput(i);
+      double leaf_const = tree->LeafConst(i);
+      std::vector<double> leaf_coeffs = tree->LeafCoeffs(i);
+      std::vector<int> feat_arr = tree->LeafFeaturesInner(i);
+      std::vector<const double*> feat_ptr_arr;
+      for (int feat : feat_arr) {
+        feat_ptr_arr.push_back(train_data_->raw_index(feat));
+      }
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        out_score[tmp_idx[j]] += output;
+        int row_idx = tmp_idx[j];
+        double output = leaf_const;
+        if (HAS_NAN) {
+          bool nan_found = false;
+          for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
+            double val = feat_ptr_arr[feat_num][row_idx];
+            if (std::isnan(val)) {
+              nan_found = true;
+              break;
+            }
+            output += val * leaf_coeffs[feat_num];
+          }
+          if (nan_found) {
+            out_score[row_idx] += leaf_output;
+          } else {
+            out_score[row_idx] += output;
+          }
+        } else {
+          for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
+            output += feat_ptr_arr[feat_num][row_idx] * leaf_coeffs[feat_num];
+          }
+          out_score[row_idx] += output;
+        }
       }
     }
   }
@@ -220,6 +275,17 @@ class SerialTreeLearner: public TreeLearner {
   const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
+  /*! \brief whether numerical features contain any nan values, used for linear model */
+  std::vector<int8_t> contains_nan_;
+  /*! whether any numerical feature contains a nan value, used for linear model */
+  bool any_nan_;
+  /*! \brief map dataset to leaves, used for linear model */
+  std::vector<int> leaf_map_;
+  /*! \brief temporary storage for calculating linear model */
+  std::vector<std::vector<double>> XTHX_;
+  std::vector<std::vector<double>> XTg_;
+  std::vector<std::vector<std::vector<double>>> XTHX_by_thread_;
+  std::vector<std::vector<std::vector<double>>> XTg_by_thread_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

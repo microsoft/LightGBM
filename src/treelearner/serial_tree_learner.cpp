@@ -4,6 +4,7 @@
  */
 #include "serial_tree_learner.h"
 
+#include <Eigen/Dense>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/array_args.h>
@@ -65,6 +66,43 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
+  }
+
+  if (config_->linear_tree) {
+    leaf_map_ = std::vector<int>(num_data_, -1);
+    contains_nan_ = std::vector<int8_t>(num_features_, 0);
+    any_nan_ = false;
+
+    // identify features containing nans
+#pragma omp parallel for schedule(dynamic)
+    for (int feat = 0; feat < num_features_; ++feat) {
+      auto bin_mapper = train_data_->FeatureBinMapper(feat);
+      if (bin_mapper->bin_type() == BinType::NumericalBin) {
+        const double* feat_ptr = train_data_->raw_index(feat);
+        for (int i = 0; i < num_data_; ++i) {
+          if (std::isnan(feat_ptr[i])) {
+            contains_nan_[feat] = 1;
+            any_nan_ = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // preallocate the matrix used to calculate linear model coefficients
+    int max_num_feat = std::min(train_data_->num_numeric_features(), config_->num_leaves - 1);
+    for (int i = 0; i < config_->num_leaves; ++i) {
+      // store only upper triangular half of matrix as an array, in row-major order
+      // this requires (max_num_feat + 1) * (max_num_feat + 2) / 2 entries (including the constant terms of the regression)
+      // we add another 8 to ensure cache lines are not shared among processors
+      XTHX_.push_back(std::vector<double>((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
+      XTg_.push_back(std::vector<double>(max_num_feat + 9, 0.0));
+    }
+
+    for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
+      XTHX_by_thread_.push_back(XTHX_);
+      XTg_by_thread_.push_back(XTg_);
+    }
   }
 }
 
@@ -163,8 +201,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   // some initial works before training
   BeforeTrain();
 
-  bool track_branch_features = !(config_->interaction_constraints_vector.empty());
-  auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, false));
+  bool track_branch_features = (config_->linear_tree) || !(config_->interaction_constraints_vector.empty());
+  auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, config_->linear_tree));
   auto tree_prt = tree.get();
   constraints_->ShareTreePointer(tree_prt);
 
@@ -195,11 +233,29 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     Split(tree_prt, best_leaf, &left_leaf, &right_leaf);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
+
+  if (config_->linear_tree) {
+    bool has_nan = false;
+    if (any_nan_) {
+      for (int i = 0; i < tree->num_leaves() - 1 ; ++i) {
+        if (contains_nan_[tree_prt->split_feature_inner(i)]) {
+          has_nan = true;
+          break;
+        }
+      }
+    }
+    if (has_nan) {
+      CalculateLinear<true>(tree_prt);
+    } else {
+      CalculateLinear<false>(tree_prt);
+    }
+  }
+
   Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
 
-Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
+Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) {
   auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
   CHECK_GE(data_partition_->num_leaves(), tree->num_leaves());
   OMP_INIT_EX();
@@ -771,4 +827,185 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
   *split = bests[best_idx];
 }
 
+
+template<bool HAS_NAN>
+void SerialTreeLearner::CalculateLinear(Tree* tree) {
+  tree->SetLinear(true);
+  bool data_has_nan = false;
+  std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
+  // map data to leaf number
+  const data_size_t* ind = data_partition_->indices();
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < tree->num_leaves(); ++i) {
+    data_size_t idx = data_partition_->leaf_begin(i);
+    for (int j = 0; j < data_partition_->leaf_count(i); ++j) {
+      leaf_map_[ind[idx + j]] = i;
+    }
+  }
+  
+  // calculate coefficients using the additive method described in https://arxiv.org/pdf/1802.05640.pdf
+  // the coefficients vector is given by
+  // - (X_T * H * X + lambda) ^ (-1) * (X_T * H * y + g_T X)
+  // where:
+  // X is the matrix where the first column is the feature values and the second is all ones,
+  // y is the vector of current predictions
+  // H is the diagonal matrix of the hessian,
+  // lambda is the diagonal matrix with diagonal entries equal to the regularisation term linear_lambda
+  // g is the vector of gradients
+  // the subscript _T denotes the transpose
+
+  // create array of numerical features pointers to raw data, and coefficient matrices, for each leaf
+  std::vector<std::vector<int>> leaf_features;
+  std::vector<std::vector<const double*>> raw_data_ptr;
+
+  int max_num_features = 0;
+  for (int i = 0; i < tree->num_leaves(); ++i) {
+    //printf("\nnum leaves % d", tree->num_leaves());
+    //printf("\nis linear %d", tree->GetLinear());
+    //printf("\ntrack_branch %d", tree->GetTrack());
+    //printf("\nsize of branch features % d", tree->branch_features(i).size());
+    std::vector<int> raw_features = tree->branch_features(i);
+   // printf("\nnum feat % d", raw_features.size());
+    std::sort(raw_features.begin(), raw_features.end());
+    auto new_end = std::unique(raw_features.begin(), raw_features.end());
+    raw_features.erase(new_end, raw_features.end());
+    std::vector<int> numerical_features;
+    std::vector<const double*> data_ptr;
+    for (int j = 0; j < raw_features.size(); ++j) {
+      int feat = train_data_->InnerFeatureIndex(raw_features[j]);
+      auto bin_mapper = train_data_->FeatureBinMapper(feat);
+      if (bin_mapper->bin_type() == BinType::NumericalBin) {
+        numerical_features.push_back(feat);
+        data_ptr.push_back(train_data_->raw_index(feat));
+      }
+    }
+    leaf_features.push_back(numerical_features);
+    raw_data_ptr.push_back(data_ptr);
+    if (numerical_features.size() > max_num_features) {
+      max_num_features = numerical_features.size();
+    }
+  }
+  
+  // clear the coefficient matrices
+  for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
+    for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+      int num_feat = leaf_features[leaf_num].size();
+      std::fill(XTHX_by_thread_[tid][leaf_num].begin(), XTHX_by_thread_[tid][leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
+      std::fill(XTg_by_thread_[tid][leaf_num].begin(), XTg_by_thread_[tid][leaf_num].begin() + num_feat + 1, 0);
+    }
+  }
+  for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+    int num_feat = leaf_features[leaf_num].size();
+    std::fill(XTHX_[leaf_num].begin(), XTHX_[leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
+    std::fill(XTg_[leaf_num].begin(), XTg_[leaf_num].begin() + num_feat + 1, 0);
+  }
+
+  std::vector<std::vector<double>> curr_row; 
+  for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
+    curr_row.push_back(std::vector<double>(max_num_features));  
+  }
+  
+#pragma omp parallel for schedule(static) if (num_data_ > 1024)
+  for (int i = 0; i < num_data_; ++i) {
+    int tid = omp_get_thread_num();
+    int leaf_num = leaf_map_[i];
+    if (leaf_num < 0) {
+      continue;
+    }
+    bool nan_found = false;
+    data_size_t num_feat = leaf_features[leaf_num].size();
+    for (int feat = 0; feat < num_feat;  ++feat) {
+      if (HAS_NAN) {
+        double val = raw_data_ptr[leaf_num][feat][i];
+        if (std::isnan(val)) {
+          nan_found = true;
+          break;
+        }
+        curr_row[tid][feat] = val;
+      } else {
+        curr_row[tid][feat] = raw_data_ptr[leaf_num][feat][i];
+      }
+    }
+    if (HAS_NAN) {
+      if (nan_found) {
+        continue;
+      }
+    }
+    double h = hessians_[i];
+    double g = gradients_[i];
+    int j =0;
+    for (int feat1 = 0; feat1 < num_feat; ++feat1) {
+      double f1_val = curr_row[tid][feat1];
+      XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
+      XTHX_by_thread_[tid][leaf_num][j] += f1_val * f1_val * h;
+      f1_val *= h;
+      ++j;
+      for (int feat2 = feat1 + 1; feat2 < num_feat; ++feat2) {
+        XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[tid][feat2];
+        ++j;
+      }
+      XTHX_by_thread_[tid][leaf_num][j] += f1_val;
+      ++j;
+    }
+    XTg_by_thread_[tid][leaf_num][num_feat] += g;
+    XTHX_by_thread_[tid][leaf_num][j] += h;
+  }
+  
+  // aggregate results from different threads
+  for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
+    for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+      int num_feat = leaf_features[leaf_num].size();
+      for (int j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {
+        XTHX_[leaf_num][j] += XTHX_by_thread_[tid][leaf_num][j];
+      }
+      for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+        XTg_[leaf_num][feat1] += XTg_by_thread_[tid][leaf_num][feat1];
+      }
+    }
+  }
+  
+  // copy into eigen matrices and solve
+#pragma omp parallel for schedule(static)
+  for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+    int num_feat = leaf_features[leaf_num].size();
+    Eigen::MatrixXd XTHX_mat(num_feat + 1, num_feat + 1);
+    Eigen::MatrixXd XTg_mat(num_feat + 1, 1);
+    int j = 0;
+    for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+      for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
+        XTHX_mat(feat1, feat2) = XTHX_[leaf_num][j];
+        XTHX_mat(feat2, feat1) = XTHX_mat(feat1, feat2);
+        if ((feat1 == feat2) && (feat1 < num_feat)){
+          XTHX_mat(feat1, feat2) += config_->linear_lambda;
+        }
+        ++j;
+      }
+      XTg_mat(feat1) = XTg_[leaf_num][feat1];
+    }
+    Eigen::MatrixXd coeffs = - XTHX_mat.fullPivLu().inverse() * XTg_mat;
+    // remove features with very small coefficients
+    std::vector<double> coeffs_vec;
+    std::vector<int> features_new;
+    for (int i = 0; i < leaf_features[leaf_num].size(); ++i) {
+      if (coeffs(i) < -kZeroThreshold || coeffs(i) > kZeroThreshold) {
+        coeffs_vec.push_back(coeffs(i));
+        int feat = leaf_features[leaf_num][i];
+        features_new.push_back(feat);
+        if (contains_nan_[feat]) {
+          data_has_nan = true;
+        }
+      }
+    }
+    // update the tree properties
+    tree->SetLeafFeaturesInner(leaf_num, features_new);
+    std::vector<int> features_raw(features_new.size());
+    for (int i = 0; i < features_new.size(); ++i) {
+      features_raw[i] = train_data_->RealFeatureIndex(features_new[i]);
+    }
+    tree->SetLeafFeatures(leaf_num, features_raw);
+    tree->SetLeafCoeffs(leaf_num, coeffs_vec);
+    tree->SetLeafConst(leaf_num, coeffs(num_feat));
+    tree->SetNan(data_has_nan);
+  }
+}
 }  // namespace LightGBM

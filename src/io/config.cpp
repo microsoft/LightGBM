@@ -57,8 +57,6 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
       *boosting = "goss";
     } else if (value == std::string("rf") || value == std::string("random_forest")) {
       *boosting = "rf";
-    } else if (value == std::string("gbdt_linear")) {
-      *boosting = "gbdt_linear";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
@@ -327,7 +325,7 @@ void Config::CheckParamConflict() {
     force_row_wise = false;
   }
   // linear tree learner must be serial type and cpu device
-  if (boosting == std::string("gbdt_linear")) {
+  if (linear_tree) {
     if (device_type == std::string("gpu")) {
       device_type = "cpu";
       Log::Warning("Linear tree learner only works with CPU.");
@@ -337,10 +335,10 @@ void Config::CheckParamConflict() {
       Log::Warning("Linear tree learner must be serial.");
       }
     if (zero_as_missing) {
-      Log::Fatal("zero_as_missing must be false when using linear tree learner.");
+      Log::Fatal("zero_as_missing must be false when fitting linear trees.");
     }
     if (objective == std::string("regresson_l1")) {
-      Log::Fatal("Cannot use regression_l1 objective with linear tree learner.");
+      Log::Fatal("Cannot use regression_l1 objective when fitting linear trees.");
     }
   }
 

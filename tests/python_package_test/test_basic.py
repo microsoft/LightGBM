@@ -102,7 +102,7 @@ class TestBasic(unittest.TestCase):
         chunk_size = X_train.shape[0] // 10 + 1
         X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
         X_test = [X_test[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_test.shape[0] // chunk_size + 1)]
-        params = {"bin_construct_sample_cnt": 100, 'boosting': 'gbdt_linear'}
+        params = {"bin_construct_sample_cnt": 100, 'linear_tree': True}
         train_data = lgb.Dataset(X_train, label=y_train, params=params)
         valid_data = train_data.create_valid(X_test, label=y_test, params=params)
         train_data.construct()
@@ -113,7 +113,7 @@ class TestBasic(unittest.TestCase):
         X_train = np.concatenate([np.ones((X_train.shape[0], 1)), X_train], 1)
         X_train[:X_train.shape[0]//2, 0] = 0
         y_train[:X_train.shape[0]//2] = 1
-        params = {'boosting': 'gbdt_linear'}
+        params = {'linear_tree': True}
         train_data = lgb.Dataset(X_train, label=y_train, params=params)
         est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
         pred1 = est.predict(X_train)

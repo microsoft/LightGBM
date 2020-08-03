@@ -420,7 +420,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   use_missing_ = io_config.use_missing;
   zero_as_missing_ = io_config.zero_as_missing;
   has_raw_ = false;
-  if (io_config.boosting == "gbdt_linear") {
+  if (io_config.linear_tree) {
     has_raw_ = true;
   }
   numeric_feature_map_ = std::vector<int>(num_features_, -1);

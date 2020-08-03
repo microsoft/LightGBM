@@ -210,9 +210,6 @@
     <ClInclude Include="..\src\treelearner\col_sampler.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\treelearner\linear_tree_learner.h">
-      <Filter>src\treelearner</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -304,9 +301,6 @@
     </ClCompile>
     <ClCompile Include="..\src\io\config_auto.cpp">
       <Filter>src\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\treelearner\linear_tree_learner.cpp">
-      <Filter>src\treelearner</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

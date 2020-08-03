@@ -115,7 +115,9 @@ Core Parameters
 
    -  ``goss``, Gradient-based One-Side Sampling
 
-   -  ``gbdt_linear``, piecewise linear gradient boosting tree, only works with cpu and serial tree learner
+-  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  fit piecewise linear gradient boosting tree, only works with cpu and serial tree learner
 
       -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
 

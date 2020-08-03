@@ -145,12 +145,14 @@ struct Config {
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
-  // desc = ``gbdt_linear``, piecewise linear gradient boosting tree, only works with cpu and serial tree learner
+  std::string boosting = "gbdt";
+
+  // desc = fit piecewise linear gradient boosting tree, only works with cpu and serial tree learner
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
   // descl2 = missing values must be encoded as np.nan (Python) or NA (cli), not 0
   // descl2 = not yet supported in R-package
   // descl2 = ``regression_l1 `` objective is not supported with linear tree boosting
-  std::string boosting = "gbdt";
+  bool linear_tree = false;
 
   // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data

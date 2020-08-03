@@ -281,9 +281,7 @@ class Booster {
           "You need to set `feature_pre_filter=false` to dynamically change "
           "the `min_data_in_leaf`.");
     }
-    if ((new_param.count("boosting") && new_param.at("boosting") == "gbdt_linear" && old_config.boosting != "gbdt_linear")
-        || (new_param.count("boosting") && new_param.at("boosting") != "gbdt_linear" && old_config.boosting == "gbdt_linear")
-        || (!new_param.count("boosting") && old_config.boosting == "gbdt_linear")) {
+    if (new_param.count("linear_tree") && (new_config.linear_tree != old_config.linear_tree)) {
       Log:: Fatal("Cannot change between gbdt_linear boosting and other boosting types after Dataset handle has been constructed.");
     }
   }

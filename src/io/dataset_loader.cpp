@@ -23,7 +23,7 @@ DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& pre
   group_idx_ = NO_SPECIFIC;
   SetHeader(filename);
   store_raw_ = false;
-  if (io_config.boosting == "gbdt_linear") {
+  if (io_config.linear_tree) {
     store_raw_ = true;
   }
 }
