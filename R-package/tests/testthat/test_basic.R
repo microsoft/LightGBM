@@ -1086,37 +1086,6 @@ test_that("lgb.train() works when you specify both 'metric' and 'eval' with stri
   expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.6932548) < TOLERANCE)
 })
 
-test_that("lgb.train() works when you specify both 'metric' and 'eval' with strings", {
-  set.seed(708L)
-  nrounds <- 10L
-  increasing_metric_starting_value <- get(ACCUMULATOR_NAME, envir = .GlobalEnv)
-  bst <- lgb.train(
-    params = list(
-      objective = "binary"
-      , metric = "binary_error"
-    )
-    , data = DTRAIN_RANDOM_CLASSIFICATION
-    , nrounds = nrounds
-    , valids = list(
-      "valid1" = DVALID_RANDOM_CLASSIFICATION
-    )
-    , eval = "binary_logloss"
-  )
-
-  # both metrics should have been used
-  expect_named(
-    bst$record_evals[["valid1"]]
-    , expected = c("binary_error", "binary_logloss")
-    , ignore.order = TRUE
-    , ignore.case = FALSE
-  )
-
-  # the difference metrics shouldn't have been mixed up with each other
-  results <- bst$record_evals[["valid1"]]
-  expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.4864865) < TOLERANCE)
-  expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.6932548) < TOLERANCE)
-})
-
 test_that("lgb.train() works when you give a function for eval", {
   set.seed(708L)
   nrounds <- 10L
