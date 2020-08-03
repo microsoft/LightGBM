@@ -253,11 +253,6 @@ class LGBMModel(_LGBMModelBase):
 
                 \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
-        Attributes
-        ----------
-        n_features_in_ : int
-            The number of features of fitted model.
-
         Note
         ----
         A custom objective function can be provided for the ``objective`` parameter.
@@ -313,6 +308,7 @@ class LGBMModel(_LGBMModelBase):
         self._class_weight = None
         self._class_map = None
         self._n_features = None
+        self._n_features_in = None
         self._classes = None
         self._n_classes = None
         self.set_params(**kwargs)
@@ -545,8 +541,8 @@ class LGBMModel(_LGBMModelBase):
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
         self._n_features = _X.shape[1]
-        # set public attribute for consistency
-        self.n_features_in_ = self._n_features
+        # copy for consistency
+        self._n_features_in = self._n_features
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params,
                                categorical_feature='auto'):
@@ -606,7 +602,7 @@ class LGBMModel(_LGBMModelBase):
         if evals_result:
             self._evals_result = evals_result
 
-        if early_stopping_rounds is not None:
+        if early_stopping_rounds is not None and early_stopping_rounds > 0:
             self._best_iteration = self._Booster.best_iteration
 
         self._best_score = self._Booster.best_score
@@ -652,7 +648,7 @@ class LGBMModel(_LGBMModelBase):
             The predicted values.
         X_leaves : array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
             If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
+        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
             If ``pred_contrib=True``, the feature contributions for each sample.
         """
         if self._n_features is None:
@@ -674,6 +670,13 @@ class LGBMModel(_LGBMModelBase):
         if self._n_features is None:
             raise LGBMNotFittedError('No n_features found. Need to call fit beforehand.')
         return self._n_features
+
+    @property
+    def n_features_in_(self):
+        """:obj:`int`: The number of features of fitted model."""
+        if self._n_features_in is None:
+            raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
+        return self._n_features_in
 
     @property
     def best_score_(self):
@@ -779,20 +782,28 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
         self._classes = self._le.classes_
         self._n_classes = len(self._classes)
+
         if self._n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             ova_aliases = {"multiclassova", "multiclass_ova", "ova", "ovr"}
             if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
-            if eval_metric in {'logloss', 'binary_logloss'}:
-                eval_metric = "multi_logloss"
-            elif eval_metric in {'error', 'binary_error'}:
-                eval_metric = "multi_error"
-        else:
-            if eval_metric in {'logloss', 'multi_logloss'}:
-                eval_metric = 'binary_logloss'
-            elif eval_metric in {'error', 'multi_error'}:
-                eval_metric = 'binary_error'
+
+        if not callable(eval_metric):
+            if isinstance(eval_metric, (string_type, type(None))):
+                eval_metric = [eval_metric]
+            if self._n_classes > 2:
+                for index, metric in enumerate(eval_metric):
+                    if metric in {'logloss', 'binary_logloss'}:
+                        eval_metric[index] = "multi_logloss"
+                    elif metric in {'error', 'binary_error'}:
+                        eval_metric[index] = "multi_error"
+            else:
+                for index, metric in enumerate(eval_metric):
+                    if metric in {'logloss', 'multi_logloss'}:
+                        eval_metric[index] = 'binary_logloss'
+                    elif metric in {'error', 'multi_error'}:
+                        eval_metric[index] = 'binary_error'
 
         # do not modify args, as it causes errors in model selection tools
         valid_sets = None
@@ -870,7 +881,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             The predicted probability for each class for each sample.
         X_leaves : array-like of shape = [n_samples, n_trees * n_classes]
             If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-        X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes]
+        X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
             If ``pred_contrib=True``, the feature contributions for each sample.
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,

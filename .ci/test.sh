@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
-    export CXX=g++-9
-    export CC=gcc-9
+    export CXX=g++-10
+    export CC=gcc-10
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
@@ -69,7 +69,7 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "r-package" ]]; then
+if [[ "${TASK:0:9}" == "r-package" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi

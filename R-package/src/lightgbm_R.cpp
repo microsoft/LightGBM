@@ -632,15 +632,17 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
 
 LGBM_SE LGBM_BoosterSaveModel_R(LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE filename,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_CHAR_PTR(filename)));
+  CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_CHAR_PTR(filename)));
   R_API_END();
 }
 
 LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
   LGBM_SE actual_len,
   LGBM_SE out_str,
@@ -648,13 +650,14 @@ LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
-  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
 
 LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
   LGBM_SE actual_len,
   LGBM_SE out_str,
@@ -662,7 +665,7 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
-  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
+  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
@@ -707,9 +710,9 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterCalcNumPredict_R"     , (DL_FUNC) &LGBM_BoosterCalcNumPredict_R     , 8},
   {"LGBM_BoosterPredictForCSC_R"      , (DL_FUNC) &LGBM_BoosterPredictForCSC_R      , 14},
   {"LGBM_BoosterPredictForMat_R"      , (DL_FUNC) &LGBM_BoosterPredictForMat_R      , 11},
-  {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
-  {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 6},
-  {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 6},
+  {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 5},
+  {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 7},
+  {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 7},
   {NULL, NULL, 0}
 };
 

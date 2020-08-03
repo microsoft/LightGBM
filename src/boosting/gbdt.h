@@ -211,18 +211,18 @@ class GBDT : public GBDTBase {
   * \return number of prediction
   */
   inline int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const override {
-    int num_preb_in_one_row = num_class_;
+    int num_pred_in_one_row = num_class_;
     if (is_pred_leaf) {
       int max_iteration = GetCurrentIteration();
       if (num_iteration > 0) {
-        num_preb_in_one_row *= static_cast<int>(std::min(max_iteration, num_iteration));
+        num_pred_in_one_row *= static_cast<int>(std::min(max_iteration, num_iteration));
       } else {
-        num_preb_in_one_row *= max_iteration;
+        num_pred_in_one_row *= max_iteration;
       }
     } else if (is_pred_contrib) {
-      num_preb_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2);  // +1 for 0-based indexing, +1 for baseline
+      num_pred_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2);  // +1 for 0-based indexing, +1 for baseline
     }
-    return num_preb_in_one_row;
+    return num_pred_in_one_row;
   }
 
   void PredictRaw(const double* features, double* output,
@@ -241,16 +241,20 @@ class GBDT : public GBDTBase {
 
   void PredictLeafIndexByMap(const std::unordered_map<int, double>& features, double* output) const override;
 
-  void PredictContrib(const double* features, double* output,
-                      const PredictionEarlyStopInstance* earlyStop) const override;
+  void PredictContrib(const double* features, double* output) const override;
+
+  void PredictContribByMap(const std::unordered_map<int, double>& features,
+                           std::vector<std::unordered_map<int, double>>* output) const override;
 
   /*!
   * \brief Dump model to json format string
   * \param start_iteration The model will be saved start from
   * \param num_iteration Number of iterations that want to dump, -1 means dump all
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \return Json format string of model
   */
-  std::string DumpModel(int start_iteration, int num_iteration) const override;
+  std::string DumpModel(int start_iteration, int num_iteration,
+                        int feature_importance_type) const override;
 
   /*!
   * \brief Translate model to if-else statement
@@ -271,18 +275,22 @@ class GBDT : public GBDTBase {
   * \brief Save model to file
   * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \param filename Filename that want to save to
   * \return is_finish Is training finished or not
   */
-  bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const override;
+  bool SaveModelToFile(int start_iteration, int num_iterations,
+                       int feature_importance_type,
+                       const char* filename) const override;
 
   /*!
   * \brief Save model to string
   * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \return Non-empty string if succeeded
   */
-  std::string SaveModelToString(int start_iteration, int num_iterations) const override;
+  std::string SaveModelToString(int start_iteration, int num_iterations, int feature_importance_type) const override;
 
   /*!
   * \brief Restore from a serialized buffer
