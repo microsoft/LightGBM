@@ -7,18 +7,23 @@
 lgb.convert(data)
 }
 \arguments{
-\item{data}{A data.frame or data.table to prepare.}
+\item{data}{A data.frame or \code{data.table} to prepare. If a \code{data.table} is provided,
+it will be modified in place for speed and too avoid out-of-memory erros.}
 }
 \value{
 The cleaned dataset. It must be converted to a matrix format (\code{as.matrix})
-        for input in \code{lgb.Dataset}.
+        for input in \code{lgb.Dataset}. If \code{data} is a \code{data.table}, it will be
+        modified in place.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
-             Factors and characters are converted to integer.
-             Please use \code{\link{lgb.convert_with_rules}} if you want to apply this transformation to
-             other datasets. This is useful if you have a specific need for integer dataset instead
-             of numeric dataset.
+Attempts to prepare a clean dataset to put in a \code{lgb.Dataset}.
+             Factor, character, and logical columns are converted to integer.
+
+             Missing values in factor and character columns will be replaced with 0. Missing
+             values in logical columns will be replaced with -1.
+
+             Please use \code{\link{lgb.convert_with_rules}} if you want to apply this
+             transformation to other datasets.
 
              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare}.
 }
