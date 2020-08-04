@@ -20,7 +20,6 @@
 #' # Convert all factors/chars to integer
 #' str(lgb.convert(data = iris))
 #'
-#' \dontrun{
 #' # When lightgbm package is installed, and you do not want to load it
 #' # You can still use the function!
 #' lgb.unloader()
@@ -31,7 +30,6 @@
 #' # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 #' # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 #' # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
-#' }
 #' }
 #' @export
 lgb.convert <- function(data) {
