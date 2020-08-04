@@ -26,6 +26,7 @@ Attempts to unload LightGBM packages so you can remove objects cleanly without
              apparent reason and you do not want to restart R to fix the lost object.
 }
 \examples{
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -51,5 +52,5 @@ gc() # Not needed if wipe = TRUE
 library(lightgbm)
 # Do whatever you want again with LightGBM without object clashing
 }
-
+}
 }

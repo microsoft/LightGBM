@@ -23,6 +23,7 @@ Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare}.
 }
 \examples{
+\dontrun{
 data(iris)
 
 str(iris)
@@ -42,5 +43,5 @@ str(lightgbm::lgb.convert(data = iris))
 # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
 }
-
+}
 }

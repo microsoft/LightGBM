@@ -25,6 +25,7 @@ Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare_rules2}.
 }
 \examples{
+\dontrun{
 data(iris)
 
 str(iris)
@@ -60,5 +61,5 @@ personal_rules <- list(
 )
 newest_iris <- lgb.convert_with_rules(data = iris, rules = personal_rules)
 str(newest_iris$data) # SUCCESS!
-
+}
 }
