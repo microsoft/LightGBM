@@ -915,11 +915,11 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle h
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
                                                              const void* indptr,
-                                                             int indptr_type,
+                                                             const int indptr_type,
                                                              const int32_t* indices,
                                                              const void* data,
-                                                             int64_t nindptr,
-                                                             int64_t nelem,
+                                                             const int64_t nindptr,
+                                                             const int64_t nelem,
                                                              int64_t* out_len,
                                                              double* out_result);
 
@@ -1057,8 +1057,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
                                                                  const int predict_type,
                                                                  const int num_iteration,
-                                                                 int data_type,
-                                                                 int32_t ncol,
+                                                                 const int data_type,
+                                                                 const int32_t ncol,
                                                                  const char* parameter,
                                                                  FastConfigHandle *out_fastConfig);
 

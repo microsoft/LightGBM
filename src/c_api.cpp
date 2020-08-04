@@ -1973,11 +1973,11 @@ int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
 
 int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
                                            const void* indptr,
-                                           int indptr_type,
+                                           const int indptr_type,
                                            const int32_t* indices,
                                            const void* data,
-                                           int64_t nindptr,
-                                           int64_t nelem,
+                                           const int64_t nindptr,
+                                           const int64_t nelem,
                                            int64_t* out_len,
                                            double* out_result) {
   API_BEGIN();
