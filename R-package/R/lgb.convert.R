@@ -12,6 +12,7 @@
 #'         for input in \code{lgb.Dataset}.
 #'
 #' @examples
+#' \dontrun{
 #' data(iris)
 #'
 #' str(iris)
@@ -31,7 +32,7 @@
 #' # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 #' # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
 #' }
-#'
+#' }
 #' @export
 lgb.convert <- function(data) {
 

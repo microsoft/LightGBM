@@ -774,7 +774,7 @@ predict.lgb.Booster <- function(object,
 #' @return lgb.Booster
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -834,7 +834,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @return lgb.Booster
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -882,7 +882,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @return json format of model
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -930,6 +930,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #' @return vector of evaluation result
 #'
 #' @examples
+#' \dontrun{
 #' # train a regression model
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -956,6 +957,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'
 #' # Get L2 values for "test" dataset
 #' lgb.get.eval.result(model, "test", "l2")
+#' }
 #' @export
 lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_err = FALSE) {
 
