@@ -118,7 +118,7 @@ class CUDATreeLearner: public SerialTreeLearner {
       td->stream                = stream_[device_id];
       td->device_features       = device_features_[device_id];
       td->device_feature_masks  = reinterpret_cast<uint8_t *>(device_feature_masks_[device_id]);
-      td->device_data_indices   = reinterpret_cast<uint*>(device_data_indices_[device_id]);
+      td->device_data_indices   = reinterpret_cast<unsigned int*>(device_data_indices_[device_id]);
       td->device_gradients      = device_gradients_[device_id];
       td->device_hessians       = device_hessians_[device_id];
       td->hessians_const        = hessians_[0];

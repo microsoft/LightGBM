@@ -29,29 +29,29 @@ inline __device__ void atomic_local_add_f(acc_type *addr, const acc_type val) {
 #define KERNEL_NAME histogram16
 #endif  // ENABLE_ALL_FEATURES
 #define NUM_BINS 16
-#define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
+#define LOCAL_MEM_SIZE ((sizeof(unsigned int) + 2 * sizeof(acc_type)) * NUM_BINS)
 
 // this function will be called by histogram16
 // we have one sub-histogram of one feature in local memory, and need to read others
 inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ feature_sub_hist,
-                           const uint skip_id,
-                           const uint old_val_cont_bin0,
-                           const ushort num_sub_hist,
+                           const unsigned int skip_id,
+                           const unsigned int old_val_cont_bin0,
+                           const unsigned short num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
-    const ushort ltid = threadIdx.x;
+    const unsigned short ltid = threadIdx.x;
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = reinterpret_cast<uint *>(local_hist + 2 * NUM_BINS);
+    unsigned int* __restrict__ local_cnt = reinterpret_cast<unsigned int *>(local_hist + 2 * NUM_BINS);
 
-    uint cont_bin;
+    unsigned int cont_bin;
     if (power_feature_workgroups != 0) {
       cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
     } else {
       cont_bin = local_cnt[ltid];
     }
-    ushort i;
+    unsigned short i;
 
     if (power_feature_workgroups != 0) {
         // add all sub-histograms for feature
@@ -113,15 +113,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // allocate the local memory array aligned with float2, to guarantee correct alignment on NVIDIA platforms
     // otherwise a "Misaligned Address" exception may occur
     __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
-    const uint gtid = blockIdx.x * blockDim.x + threadIdx.x;
-    const ushort ltid = threadIdx.x;
-    const ushort lsize = NUM_BINS;  // get_local_size(0);
-    const ushort group_id = blockIdx.x;
+    const unsigned int gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned short ltid = threadIdx.x;
+    const unsigned short lsize = NUM_BINS;  // get_local_size(0);
+    const unsigned short group_id = blockIdx.x;
 
     // local memory per workgroup is 3 KB
     // clear local memory
-    uint *ptr = reinterpret_cast<uint *>(shared_array);
-    for (int i = ltid; i < LOCAL_MEM_SIZE/sizeof(uint); i += lsize) {
+    unsigned int *ptr = reinterpret_cast<unsigned int *>(shared_array);
+    for (int i = ltid; i < LOCAL_MEM_SIZE/sizeof(unsigned int); i += lsize) {
         ptr[i] = 0;
     }
     __syncthreads();
@@ -133,25 +133,25 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *gh_hist = reinterpret_cast<acc_type *>(shared_array);
 
     // counter histogram
-    // total size: 256 * size_of(uint) = 1 KB
-    uint *cnt_hist = reinterpret_cast<uint *>(gh_hist + 2 * NUM_BINS);
+    // total size: 256 * size_of(unsigned int) = 1 KB
+    unsigned int *cnt_hist = reinterpret_cast<unsigned int *>(gh_hist + 2 * NUM_BINS);
 
     // odd threads (1, 3, ...) compute histograms for hessians first
     // even thread (0, 2, ...) compute histograms for gradients first
     // etc.
     uchar is_hessian_first = ltid & 1;
 
-    ushort feature_id = group_id >> power_feature_workgroups;
+    unsigned short feature_id = group_id >> power_feature_workgroups;
 
     // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
     // feature_size is the number of examples per feature
     const uchar *feature_data = feature_data_base + feature_id * feature_size;
 
     // size of threads that process this feature4
-    const uint subglobal_size = lsize * (1 << power_feature_workgroups);
+    const unsigned int subglobal_size = lsize * (1 << power_feature_workgroups);
 
     // equavalent thread ID in this subgroup for this feature4
-    const uint subglobal_tid  = gtid - feature_id * subglobal_size;
+    const unsigned int subglobal_tid  = gtid - feature_id * subglobal_size;
 
 
     data_size_t ind;
@@ -177,7 +177,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     uchar feature;
     uchar feature_next;
     // uint8_t bin;
-    ushort bin;
+    unsigned short bin;
 
     feature = feature_data[ind >> feature_mask];
     if (feature_mask) {
@@ -197,7 +197,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     #endif
 
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
-    for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
+    for (unsigned int i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
         // we don't need bondary check because we have made the buffer large
         int i_next = i + subglobal_size;
@@ -280,22 +280,22 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ output = reinterpret_cast<acc_type *>(output_buf) + group_id * 3 * NUM_BINS;
     // write gradients and hessians
     acc_type *__restrict__ ptr_f = output;
-    for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
+    for (unsigned short i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
-    for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-        uint value = cnt_hist[i];
+    for (unsigned short i = ltid; i < NUM_BINS; i += lsize) {
+        unsigned int value = cnt_hist[i];
         ptr_i[i] = value;
     }
     __syncthreads();
     __threadfence();
-    uint * counter_val = cnt_hist;
+    unsigned int * counter_val = cnt_hist;
     // backup the old value
-    uint old_val = *counter_val;
+    unsigned int old_val = *counter_val;
     if (ltid == 0) {
         // all workgroups processing the same feature add this counter
         *counter_val = atomicAdd(const_cast<int*>(sync_counters + feature_id), 1);
@@ -313,15 +313,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // only 1 work group, no need to increase counter
     // the reduction will become a simple copy
     if (1) {
-        uint old_val;  // dummy
+        unsigned int old_val;  // dummy
 #endif
         // locate our feature's block in output memory
-        uint output_offset = (feature_id << power_feature_workgroups);
+        unsigned int output_offset = (feature_id << power_feature_workgroups);
         acc_type const * __restrict__ feature_subhists =
                  reinterpret_cast<acc_type *>(output_buf) + output_offset * 3 * NUM_BINS;
         // skip reading the data already in local memory
-        // uint skip_id = feature_id ^ output_offset;
-        uint skip_id = group_id - output_offset;
+        // unsigned int skip_id = feature_id ^ output_offset;
+        unsigned int skip_id = group_id - output_offset;
         // locate output histogram location for this feature4
         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 
@@ -347,29 +347,29 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 #define KERNEL_NAME histogram64
 #endif  // ENABLE_ALL_FEATURES
 #define NUM_BINS 64
-#define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
+#define LOCAL_MEM_SIZE ((sizeof(unsigned int) + 2 * sizeof(acc_type)) * NUM_BINS)
 
 // this function will be called by histogram64
 // we have one sub-histogram of one feature in local memory, and need to read others
 inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ feature_sub_hist,
-                           const uint skip_id,
-                           const uint old_val_cont_bin0,
-                           const ushort num_sub_hist,
+                           const unsigned int skip_id,
+                           const unsigned int old_val_cont_bin0,
+                           const unsigned short num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
-    const ushort ltid = threadIdx.x;
+    const unsigned short ltid = threadIdx.x;
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = reinterpret_cast<uint *>(local_hist + 2 * NUM_BINS);
+    unsigned int* __restrict__ local_cnt = reinterpret_cast<unsigned int *>(local_hist + 2 * NUM_BINS);
 
-    uint cont_bin;
+    unsigned int cont_bin;
     if (power_feature_workgroups != 0) {
       cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
     } else {
       cont_bin = local_cnt[ltid];
     }
-    ushort i;
+    unsigned short i;
 
     if (power_feature_workgroups != 0) {
         // add all sub-histograms for feature
@@ -431,15 +431,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // allocate the local memory array aligned with float2, to guarantee correct alignment on NVIDIA platforms
     // otherwise a "Misaligned Address" exception may occur
     __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
-    const uint gtid = blockIdx.x * blockDim.x + threadIdx.x;
-    const ushort ltid = threadIdx.x;
-    const ushort lsize = NUM_BINS;  // get_local_size(0);
-    const ushort group_id = blockIdx.x;
+    const unsigned int gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned short ltid = threadIdx.x;
+    const unsigned short lsize = NUM_BINS;  // get_local_size(0);
+    const unsigned short group_id = blockIdx.x;
 
     // local memory per workgroup is 3 KB
     // clear local memory
-    uint *ptr = reinterpret_cast<uint *>(shared_array);
-    for (int i = ltid; i < LOCAL_MEM_SIZE/sizeof(uint); i += lsize) {
+    unsigned int *ptr = reinterpret_cast<unsigned int *>(shared_array);
+    for (int i = ltid; i < LOCAL_MEM_SIZE/sizeof(unsigned int); i += lsize) {
         ptr[i] = 0;
     }
     __syncthreads();
@@ -451,25 +451,25 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *gh_hist = reinterpret_cast<acc_type *>(shared_array);
 
     // counter histogram
-    // total size: 256 * size_of(uint) = 1 KB
-    uint *cnt_hist = reinterpret_cast<uint *>(gh_hist + 2 * NUM_BINS);
+    // total size: 256 * size_of(unsigned int) = 1 KB
+    unsigned int *cnt_hist = reinterpret_cast<unsigned int *>(gh_hist + 2 * NUM_BINS);
 
     // odd threads (1, 3, ...) compute histograms for hessians first
     // even thread (0, 2, ...) compute histograms for gradients first
     // etc.
     uchar is_hessian_first = ltid & 1;
 
-    ushort feature_id = group_id >> power_feature_workgroups;
+    unsigned short feature_id = group_id >> power_feature_workgroups;
 
     // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
     // feature_size is the number of examples per feature
     const uchar *feature_data = feature_data_base + feature_id * feature_size;
 
     // size of threads that process this feature4
-    const uint subglobal_size = lsize * (1 << power_feature_workgroups);
+    const unsigned int subglobal_size = lsize * (1 << power_feature_workgroups);
 
     // equavalent thread ID in this subgroup for this feature4
-    const uint subglobal_tid  = gtid - feature_id * subglobal_size;
+    const unsigned int subglobal_tid  = gtid - feature_id * subglobal_size;
 
     data_size_t ind;
     data_size_t ind_next;
@@ -494,7 +494,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     uchar feature;
     uchar feature_next;
     // uint8_t bin;
-    ushort bin;
+    unsigned short bin;
 
     feature = feature_data[ind >> feature_mask];
     if (feature_mask) {
@@ -514,7 +514,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     #endif
 
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
-    for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
+    for (unsigned int i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
         // we don't need bondary check because we have made the buffer large
         int i_next = i + subglobal_size;
@@ -596,22 +596,22 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ output = reinterpret_cast<acc_type *>(output_buf) + group_id * 3 * NUM_BINS;
     // write gradients and hessians
     acc_type *__restrict__ ptr_f = output;
-    for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
+    for (unsigned short i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
-    for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-        uint value = cnt_hist[i];
+    for (unsigned short i = ltid; i < NUM_BINS; i += lsize) {
+        unsigned int value = cnt_hist[i];
         ptr_i[i] = value;
     }
     __syncthreads();
     __threadfence();
-    uint * counter_val = cnt_hist;
+    unsigned int * counter_val = cnt_hist;
     // backup the old value
-    uint old_val = *counter_val;
+    unsigned int old_val = *counter_val;
     if (ltid == 0) {
         // all workgroups processing the same feature add this counter
         *counter_val = atomicAdd(const_cast<int*>(sync_counters + feature_id), 1);
@@ -629,15 +629,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // only 1 work group, no need to increase counter
     // the reduction will become a simple copy
     if (1) {
-        uint old_val;  // dummy
+        unsigned int old_val;  // dummy
 #endif
         // locate our feature's block in output memory
-        uint output_offset = (feature_id << power_feature_workgroups);
+        unsigned int output_offset = (feature_id << power_feature_workgroups);
         acc_type const * __restrict__ feature_subhists =
                  reinterpret_cast<acc_type *>(output_buf) + output_offset * 3 * NUM_BINS;
         // skip reading the data already in local memory
-        // uint skip_id = feature_id ^ output_offset;
-        uint skip_id = group_id - output_offset;
+        // unsigned int skip_id = feature_id ^ output_offset;
+        unsigned int skip_id = group_id - output_offset;
         // locate output histogram location for this feature4
         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 
@@ -663,29 +663,29 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 #define KERNEL_NAME histogram256
 #endif  // ENABLE_ALL_FEATURES
 #define NUM_BINS 256
-#define LOCAL_MEM_SIZE ((sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS)
+#define LOCAL_MEM_SIZE ((sizeof(unsigned int) + 2 * sizeof(acc_type)) * NUM_BINS)
 
 // this function will be called by histogram256
 // we have one sub-histogram of one feature in local memory, and need to read others
 inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__ feature_sub_hist,
-                           const uint skip_id,
-                           const uint old_val_cont_bin0,
-                           const ushort num_sub_hist,
+                           const unsigned int skip_id,
+                           const unsigned int old_val_cont_bin0,
+                           const unsigned short num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
-    const ushort ltid = threadIdx.x;
+    const unsigned short ltid = threadIdx.x;
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
-    uint* __restrict__ local_cnt = reinterpret_cast<uint *>(local_hist + 2 * NUM_BINS);
+    unsigned int* __restrict__ local_cnt = reinterpret_cast<unsigned int *>(local_hist + 2 * NUM_BINS);
 
-    uint cont_bin;
+    unsigned int cont_bin;
     if (power_feature_workgroups != 0) {
       cont_bin = ltid ? local_cnt[ltid] : old_val_cont_bin0;
     } else {
       cont_bin = local_cnt[ltid];
     }
-    ushort i;
+    unsigned short i;
 
     if (power_feature_workgroups != 0) {
         // add all sub-histograms for feature
@@ -748,15 +748,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // allocate the local memory array aligned with float2, to guarantee correct alignment on NVIDIA platforms
     // otherwise a "Misaligned Address" exception may occur
     __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
-    const uint gtid = blockIdx.x * blockDim.x + threadIdx.x;
-    const ushort ltid = threadIdx.x;
-    const ushort lsize = NUM_BINS;  // get_local_size(0);
-    const ushort group_id = blockIdx.x;
+    const unsigned int gtid = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned short ltid = threadIdx.x;
+    const unsigned short lsize = NUM_BINS;  // get_local_size(0);
+    const unsigned short group_id = blockIdx.x;
 
     // local memory per workgroup is 3 KB
     // clear local memory
-    uint *ptr = reinterpret_cast<uint *>(shared_array);
-    for (int i = ltid; i < LOCAL_MEM_SIZE/sizeof(uint); i += lsize) {
+    unsigned int *ptr = reinterpret_cast<unsigned int *>(shared_array);
+    for (int i = ltid; i < LOCAL_MEM_SIZE/sizeof(unsigned int); i += lsize) {
         ptr[i] = 0;
     }
     __syncthreads();
@@ -768,25 +768,25 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *gh_hist = reinterpret_cast<acc_type *>(shared_array);
 
     // counter histogram
-    // total size: 256 * size_of(uint) = 1 KB
-    uint *cnt_hist = reinterpret_cast<uint *>(gh_hist + 2 * NUM_BINS);
+    // total size: 256 * size_of(unsigned int) = 1 KB
+    unsigned int *cnt_hist = reinterpret_cast<unsigned int *>(gh_hist + 2 * NUM_BINS);
 
     // odd threads (1, 3, ...) compute histograms for hessians first
     // even thread (0, 2, ...) compute histograms for gradients first
     // etc.
     uchar is_hessian_first = ltid & 1;
 
-    ushort feature_id = group_id >> power_feature_workgroups;
+    unsigned short feature_id = group_id >> power_feature_workgroups;
 
     // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
     // feature_size is the number of examples per feature
     const uchar *feature_data = feature_data_base + feature_id * feature_size;
 
     // size of threads that process this feature4
-    const uint subglobal_size = lsize * (1 << power_feature_workgroups);
+    const unsigned int subglobal_size = lsize * (1 << power_feature_workgroups);
 
     // equavalent thread ID in this subgroup for this feature4
-    const uint subglobal_tid  = gtid - feature_id * subglobal_size;
+    const unsigned int subglobal_tid  = gtid - feature_id * subglobal_size;
 
     data_size_t ind;
     data_size_t ind_next;
@@ -811,7 +811,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     uchar feature;
     uchar feature_next;
     // uint8_t bin;
-    ushort bin;
+    unsigned short bin;
 
     feature = feature_data[ind >> feature_mask];
     if (feature_mask) {
@@ -831,7 +831,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     #endif
 
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
-    for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
+    for (unsigned int i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
         // we don't need bondary check because we have made the buffer large
         int i_next = i + subglobal_size;
@@ -913,22 +913,22 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ output = reinterpret_cast<acc_type *>(output_buf) + group_id * 3 * NUM_BINS;
     // write gradients and hessians
     acc_type *__restrict__ ptr_f = output;
-    for (ushort i = ltid; i < 2 * NUM_BINS; i += lsize) {
+    for (unsigned short i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
-    for (ushort i = ltid; i < NUM_BINS; i += lsize) {
-        uint value = cnt_hist[i];
+    for (unsigned short i = ltid; i < NUM_BINS; i += lsize) {
+        unsigned int value = cnt_hist[i];
         ptr_i[i] = value;
     }
     __syncthreads();
     __threadfence();
-    uint * counter_val = cnt_hist;
+    unsigned int * counter_val = cnt_hist;
     // backup the old value
-    uint old_val = *counter_val;
+    unsigned int old_val = *counter_val;
     if (ltid == 0) {
         // all workgroups processing the same feature add this counter
         *counter_val = atomicAdd(const_cast<int*>(sync_counters + feature_id), 1);
@@ -946,15 +946,15 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // only 1 work group, no need to increase counter
     // the reduction will become a simple copy
     if (1) {
-        uint old_val;  // dummy
+        unsigned int old_val;  // dummy
 #endif
         // locate our feature's block in output memory
-        uint output_offset = (feature_id << power_feature_workgroups);
+        unsigned int output_offset = (feature_id << power_feature_workgroups);
         acc_type const * __restrict__ feature_subhists =
                  reinterpret_cast<acc_type *>(output_buf) + output_offset * 3 * NUM_BINS;
         // skip reading the data already in local memory
-        // uint skip_id = feature_id ^ output_offset;
-        uint skip_id = group_id - output_offset;
+        // unsigned int skip_id = feature_id ^ output_offset;
+        unsigned int skip_id = group_id - output_offset;
         // locate output histogram location for this feature4
         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
 

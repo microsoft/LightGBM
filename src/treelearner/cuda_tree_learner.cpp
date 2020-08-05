@@ -36,7 +36,7 @@ static void *launch_cuda_histogram(void *thread_data) {
                 td.device_features,
                 td.device_feature_masks,
                 td.num_data,
-                reinterpret_cast<uint*>(td.device_data_indices),
+                reinterpret_cast<unsigned int*>(td.device_data_indices),
                 td.leaf_num_data,
                 td.device_gradients,
                 td.device_hessians, td.hessians_const,

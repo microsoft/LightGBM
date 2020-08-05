@@ -28,9 +28,9 @@ __device__ double as_double(const T t) {
   return d;
 }
 template<typename T>
-__device__ ulong as_ulong(const T t) {
-  static_assert(sizeof(T) == sizeof(ulong), "size mismatch");
-  ulong u; 
+__device__ unsigned long long as_ulong_ulong(const T t) {
+  static_assert(sizeof(T) == sizeof(unsigned long long), "size mismatch");
+  unsigned long long u; 
   memcpy(&u, &t, sizeof(T)); 
   return u;
 }
@@ -42,9 +42,9 @@ __device__ float as_float(const T t) {
   return f;
 }
 template<typename T>
-__device__ uint as_uint(const T t) {
-  static_assert(sizeof(T) == sizeof(uint), "size_mismatch");
-  uint u; 
+__device__ unsigned int as_uint(const T t) {
+  static_assert(sizeof(T) == sizeof(unsigned int), "size_mismatch");
+  unsigned int u; 
   memcpy(&u, &t, sizeof(T)); 
   return u;
 }
@@ -58,12 +58,12 @@ __device__ uchar4 as_uchar4(const T t) {
 
 #if USE_DP_FLOAT == 1
 typedef double acc_type;
-typedef ulong acc_int_type;
+typedef unsigned long long acc_int_type;
 #define as_acc_type as_double
-#define as_acc_int_type as_ulong
+#define as_acc_int_type as_ulong_ulong
 #else
 typedef float acc_type;
-typedef uint acc_int_type;
+typedef unsigned int acc_int_type;
 #define as_acc_type as_float
 #define as_acc_int_type as_uint
 #endif
@@ -73,7 +73,7 @@ typedef uint acc_int_type;
 #define ENABLE_ALL_FEATURES 1
 #endif
 
-typedef uint data_size_t;
+typedef unsigned int data_size_t;
 typedef float score_t;
 
 // define all of the different kernels
