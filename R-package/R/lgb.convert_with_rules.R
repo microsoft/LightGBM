@@ -5,8 +5,8 @@
 #'              in factors and characters will be filled with 0L. Missing values in logicals
 #'              will be filled with -1L.
 #'
-#'              Unlike \code{\link{lgb.convert}}, this function returns and optionally takes
-#'              in "rules" the describe exactly how to convert values in columns.
+#'              This function returns and optionally takes in "rules" the describe exactly
+#'              how to convert values in columns.
 #'
 #'              Columns that contain only NA values will be converted by this function but will
 #'              not show up in the returned \code{rules}.
