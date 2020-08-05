@@ -89,7 +89,7 @@ Predictor <- R6::R6Class(
         num_iteration <- -1L
       }
       # Check if start iterations is existing - if not, then set it to 0 (start from the first iteration)
-      if(is.null(start_iteration)) {
+      if (is.null(start_iteration)) {
         start_iteration <- 0L
       }
 
