@@ -614,7 +614,7 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_allclose(res_engine, res_sklearn)
 
         # Tests same predictions, starting from iteration 10
-        res_engine = np.argmax(gbm.predict(X_test), axis=1, start_iteration=10)
+        res_engine = np.argmax(gbm.predict(X_test, start_iteration=10), axis=1)
         res_sklearn = clf.predict(X_test, start_iteration=10)
         np.testing.assert_equal(res_engine, res_sklearn)
 
