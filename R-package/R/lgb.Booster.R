@@ -718,6 +718,7 @@ Booster <- R6::R6Class(
 #'         number of columns corresponding to the number of trees.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -735,6 +736,7 @@ Booster <- R6::R6Class(
 #'   , learning_rate = 1.0
 #' )
 #' preds <- predict(model, test$data)
+#' }
 #' @export
 predict.lgb.Booster <- function(object,
                                 data,
