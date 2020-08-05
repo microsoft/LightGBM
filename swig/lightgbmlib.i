@@ -83,13 +83,14 @@
                                       int ncol,
                                       int is_row_major,
                                       int predict_type,
+                                      int start_iteration,
                                       int num_iteration,
                                       const char* parameter,
                                       int64_t* out_len,
                                       double* out_result) {
     double* data0 = (double*)jenv->GetPrimitiveArrayCritical(data, 0);
 
-    int ret = LGBM_BoosterPredictForMatSingleRow(handle, data0, data_type, ncol, is_row_major, predict_type,
+    int ret = LGBM_BoosterPredictForMatSingleRow(handle, data0, data_type, ncol, is_row_major, predict_type, start_iteration,
                                                  num_iteration, parameter, out_len, out_result);
 
     jenv->ReleasePrimitiveArrayCritical(data, data0, JNI_ABORT);
@@ -109,14 +110,11 @@
   int LGBM_BoosterPredictForMatSingleRowFastCriticalSWIG(JNIEnv *jenv,
                                                          jdoubleArray data,
                                                          FastConfigHandle handle,
-                                                         int predict_type,
-                                                         int num_iteration,
                                                          int64_t* out_len,
                                                          double* out_result) {
     double* data0 = (double*)jenv->GetPrimitiveArrayCritical(data, 0);
 
-    int ret = LGBM_BoosterPredictForMatSingleRowFast(handle, data0, predict_type,
-                                                     num_iteration, out_len, out_result);
+    int ret = LGBM_BoosterPredictForMatSingleRowFast(handle, data0, out_len, out_result);
 
     jenv->ReleasePrimitiveArrayCritical(data, data0, JNI_ABORT);
 
@@ -133,6 +131,7 @@
                                       int64_t nelem,
                                       int64_t num_col,
                                       int predict_type,
+                                      int start_iteration,
                                       int num_iteration,
                                       const char* parameter,
                                       int64_t* out_len,
@@ -150,7 +149,7 @@
     int32_t ind[2] = { 0, numNonZeros };
 
     int ret = LGBM_BoosterPredictForCSRSingleRow(handle, ind, indptr_type, indices0, values0, data_type, 2,
-                                                 nelem, num_col, predict_type, num_iteration, parameter, out_len, out_result);
+                                                 nelem, num_col, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);
 
     jenv->ReleasePrimitiveArrayCritical(values, values0, JNI_ABORT);
     jenv->ReleasePrimitiveArrayCritical(indices, indices0, JNI_ABORT);
@@ -174,8 +173,6 @@
                                                          FastConfigHandle handle,
                                                          int indptr_type,
                                                          int64_t nelem,
-                                                         int predict_type,
-                                                         int num_iteration,
                                                          int64_t* out_len,
                                                          double* out_result) {
     // Alternatives
@@ -191,7 +188,7 @@
     int32_t ind[2] = { 0, numNonZeros };
 
     int ret = LGBM_BoosterPredictForCSRSingleRowFast(handle, ind, indptr_type, indices0, values0, 2,
-                                                     nelem, predict_type, num_iteration, out_len, out_result);
+                                                     nelem, out_len, out_result);
 
     jenv->ReleasePrimitiveArrayCritical(values, values0, JNI_ABORT);
     jenv->ReleasePrimitiveArrayCritical(indices, indices0, JNI_ABORT);

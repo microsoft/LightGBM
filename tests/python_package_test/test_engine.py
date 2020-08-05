@@ -2315,3 +2315,90 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(dict(params, interaction_constraints=[[0] + list(range(2, num_features)),
                                                               [1] + list(range(2, num_features))]),
                         train_data, num_boost_round=10)
+
+    def test_predict_with_start_iteration(self):
+        def inner_test(X, y, params, early_stopping_rounds):
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+            train_data = lgb.Dataset(X_train, label=y_train)
+            valid_data = lgb.Dataset(X_test, label=y_test)
+            booster = lgb.train(params, train_data, num_boost_round=100, early_stopping_rounds=early_stopping_rounds, valid_sets=[valid_data])
+
+            # test that the predict once with all iterations equals summed results with start_iteration and num_iteration
+            all_pred = booster.predict(X, raw_score=True)
+            all_pred_contrib = booster.predict(X, pred_contrib=True)
+            steps = [10, 12]
+            for step in steps:
+                pred = np.zeros_like(all_pred)
+                pred_contrib = np.zeros_like(all_pred_contrib)
+                for start_iter in range(0, 100, step):
+                    pred += booster.predict(X, num_iteration=step, start_iteration=start_iter, raw_score=True)
+                    pred_contrib += booster.predict(X, num_iteration=step, start_iteration=start_iter, pred_contrib=True)
+                np.testing.assert_allclose(all_pred, pred)
+                np.testing.assert_allclose(all_pred_contrib, pred_contrib)
+            
+            # test the case where start_iteration <= 0, and num_iteration is None
+            pred1 = booster.predict(X, start_iteration=-1)
+            pred2 = booster.predict(X, num_iteration=booster.best_iteration)
+            pred3 = booster.predict(X, num_iteration=booster.best_iteration, start_iteration=0)
+            np.testing.assert_allclose(pred1, pred2)
+            np.testing.assert_allclose(pred1, pred3)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0 
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=90)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0, with pred_leaf=True
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1, pred_leaf=True)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=90, pred_leaf=True)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0, pred_leaf=True)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0, with pred_contrib=True
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1, pred_contrib=True)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=90, pred_contrib=True)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0, pred_contrib=True)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+        # test for regression
+        X, y = load_boston(True)
+        params = {
+            'objective':'regression',
+            'verbose': -1,
+            'metric':'l2'
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=10)
+        inner_test(X, y, params, early_stopping_rounds=None)
+
+        # test for multi-class
+        X, y = load_iris(True)
+        params = {
+            'objective': 'multiclass',
+            'metric': 'multi_logloss',
+            'num_class': 3,
+            'verbose': -1,
+            'metric':'multi_error'
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=10)
+        inner_test(X, y, params, early_stopping_rounds=None)
+
+        # test for binary
+        X, y = load_breast_cancer(True)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+            'metric':'auc'
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=10)
+        inner_test(X, y, params, early_stopping_rounds=None)

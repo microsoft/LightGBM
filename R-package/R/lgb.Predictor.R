@@ -76,6 +76,7 @@ Predictor <- R6::R6Class(
 
     # Predict from data
     predict = function(data,
+                       start_iteration = NULL,
                        num_iteration = NULL,
                        rawscore = FALSE,
                        predleaf = FALSE,
@@ -86,6 +87,10 @@ Predictor <- R6::R6Class(
       # Check if number of iterations is existing - if not, then set it to -1 (use all)
       if (is.null(num_iteration)) {
         num_iteration <- -1L
+      }
+      # Check if start iterations is existing - if not, then set it to 0 (start from the first iteration)
+      if(is.null(start_iteration)) {
+        start_iteration <- 0L
       }
 
       # Set temporary variable
@@ -108,6 +113,7 @@ Predictor <- R6::R6Class(
           , as.integer(rawscore)
           , as.integer(predleaf)
           , as.integer(predcontrib)
+          , as.integer(start_iteration)
           , as.integer(num_iteration)
           , private$params
           , lgb.c_str(tmp_filename)
@@ -134,6 +140,7 @@ Predictor <- R6::R6Class(
           , as.integer(rawscore)
           , as.integer(predleaf)
           , as.integer(predcontrib)
+          , as.integer(start_iteration)
           , as.integer(num_iteration)
         )
 
@@ -156,6 +163,7 @@ Predictor <- R6::R6Class(
             , as.integer(rawscore)
             , as.integer(predleaf)
             , as.integer(predcontrib)
+            , as.integer(start_iteration)
             , as.integer(num_iteration)
             , private$params
           )
@@ -178,6 +186,7 @@ Predictor <- R6::R6Class(
             , as.integer(rawscore)
             , as.integer(predleaf)
             , as.integer(predcontrib)
+            , as.integer(start_iteration)
             , as.integer(num_iteration)
             , private$params
           )

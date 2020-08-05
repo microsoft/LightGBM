@@ -31,12 +31,13 @@ class Predictor {
   /*!
   * \brief Constructor
   * \param boosting Input boosting model
+  * \param start_iteration Start index of the iteration to predict
   * \param num_iteration Number of boosting round
   * \param is_raw_score True if need to predict result with raw score
   * \param predict_leaf_index True to output leaf index instead of prediction score
   * \param predict_contrib True to output feature contributions instead of prediction score
   */
-  Predictor(Boosting* boosting, int num_iteration, bool is_raw_score,
+  Predictor(Boosting* boosting, int start_iteration, int num_iteration, bool is_raw_score,
             bool predict_leaf_index, bool predict_contrib, bool early_stop,
             int early_stop_freq, double early_stop_margin) {
     early_stop_ = CreatePredictionEarlyStopInstance(
@@ -56,9 +57,9 @@ class Predictor {
       }
     }
 
-    boosting->InitPredict(num_iteration, predict_contrib);
+    boosting->InitPredict(start_iteration, num_iteration, predict_contrib);
     boosting_ = boosting;
-    num_pred_one_row_ = boosting_->NumPredictOneRow(
+    num_pred_one_row_ = boosting_->NumPredictOneRow(start_iteration,
         num_iteration, predict_leaf_index, predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_.resize(
@@ -225,6 +226,7 @@ class Predictor {
                           data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> result_to_write(lines.size());
+      Log::Warning("before predict_fun_ is called");
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static) firstprivate(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
@@ -239,6 +241,7 @@ class Predictor {
         result_to_write[i] = str_result;
         OMP_LOOP_EX_END();
       }
+      Log::Warning("after predict_fun_ is called");
       OMP_THROW_EX();
       for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {
         writer->Write(result_to_write[i].c_str(), result_to_write[i].size());

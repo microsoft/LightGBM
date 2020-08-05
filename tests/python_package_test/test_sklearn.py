@@ -607,6 +607,41 @@ class TestSklearn(unittest.TestCase):
                           np.testing.assert_allclose,
                           res_engine, res_sklearn_params)
 
+        # Tests start_iteration
+        # Tests same probabilities, starting from iteration 10
+        res_engine = gbm.predict(X_test, start_iteration=10)
+        res_sklearn = clf.predict_proba(X_test, start_iteration=10)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests same predictions, starting from iteration 10
+        res_engine = np.argmax(gbm.predict(X_test), axis=1, start_iteration=10)
+        res_sklearn = clf.predict(X_test, start_iteration=10)
+        np.testing.assert_equal(res_engine, res_sklearn)
+
+        # Tests same raw scores, starting from iteration 10
+        res_engine = gbm.predict(X_test, raw_score=True, start_iteration=10)
+        res_sklearn = clf.predict(X_test, raw_score=True, start_iteration=10)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests same leaf indices, starting from iteration 10
+        res_engine = gbm.predict(X_test, pred_leaf=True, start_iteration=10)
+        res_sklearn = clf.predict(X_test, pred_leaf=True, start_iteration=10)
+        np.testing.assert_equal(res_engine, res_sklearn)
+
+        # Tests same feature contributions, starting from iteration 10
+        res_engine = gbm.predict(X_test, pred_contrib=True, start_iteration=10)
+        res_sklearn = clf.predict(X_test, pred_contrib=True, start_iteration=10)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests other parameters for the prediction works, starting from iteration 10
+        res_engine = gbm.predict(X_test, start_iteration=10)
+        res_sklearn_params = clf.predict_proba(X_test,
+                                               pred_early_stop=True,
+                                               pred_early_stop_margin=1.0, start_iteration=10)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_allclose,
+                          res_engine, res_sklearn_params)
+
     def test_evaluate_train_set(self):
         X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
