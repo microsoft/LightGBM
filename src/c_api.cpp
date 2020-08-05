@@ -921,9 +921,9 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
     omp_set_num_threads(config.num_threads);
   }
   DatasetLoader loader(config, nullptr, 1, nullptr);
-  *out = loader.CostructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
-                                       num_sample_row,
-                                       static_cast<data_size_t>(num_total_row));
+  *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
+                                        num_sample_row,
+                                        static_cast<data_size_t>(num_total_row));
   API_END();
 }
 
@@ -1069,11 +1069,11 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
-                                            Vector2Ptr<int>(&sample_idx).data(),
-                                            ncol,
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, total_nrow));
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             ncol,
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, total_nrow));
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1145,11 +1145,11 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
-                                            Vector2Ptr<int>(&sample_idx).data(),
-                                            static_cast<int>(num_col),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow));
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(num_col),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1213,11 +1213,11 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
       }
     }
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
-                                            Vector2Ptr<int>(&sample_idx).data(),
-                                            static_cast<int>(num_col),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow));
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(num_col),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1286,11 +1286,11 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     }
     OMP_THROW_EX();
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
-                                            Vector2Ptr<int>(&sample_idx).data(),
-                                            static_cast<int>(sample_values.size()),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow));
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(sample_values.size()),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1769,13 +1769,15 @@ int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
 struct FastConfig {
   FastConfig(Booster *const booster_ptr,
              const char *parameter,
+             const int predict_type_,
              const int data_type_,
-             const int32_t num_cols) : booster(booster_ptr), data_type(data_type_), ncol(num_cols) {
+             const int32_t num_cols) : booster(booster_ptr), predict_type(predict_type_), data_type(data_type_), ncol(num_cols) {
     config.Set(Config::Str2Map(parameter));
   }
 
   Booster* const booster;
   Config config;
+  const int predict_type;
   const int data_type;
   const int32_t ncol;
 };
@@ -1939,6 +1941,8 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
 }
 
 int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
+                                               const int predict_type,
+                                               const int num_iteration,
                                                const int data_type,
                                                const int64_t num_col,
                                                const char* parameter,
@@ -1953,6 +1957,7 @@ int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
   auto fastConfig_ptr = std::unique_ptr<FastConfig>(new FastConfig(
     reinterpret_cast<Booster*>(handle),
     parameter,
+    predict_type,
     data_type,
     static_cast<int32_t>(num_col)));
 
@@ -1960,25 +1965,25 @@ int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
     omp_set_num_threads(fastConfig_ptr->config.num_threads);
   }
 
+  fastConfig_ptr->booster->SetSingleRowPredictor(num_iteration, predict_type, fastConfig_ptr->config);
+
   *out_fastConfig = fastConfig_ptr.release();
   API_END();
 }
 
 int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
                                            const void* indptr,
-                                           int indptr_type,
+                                           const int indptr_type,
                                            const int32_t* indices,
                                            const void* data,
-                                           int64_t nindptr,
-                                           int64_t nelem,
-                                           int predict_type,
-                                           int num_iteration,
+                                           const int64_t nindptr,
+                                           const int64_t nelem,
                                            int64_t* out_len,
                                            double* out_result) {
   API_BEGIN();
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, fastConfig->data_type, nindptr, nelem);
-  fastConfig->booster->PredictSingleRow(predict_type, fastConfig->ncol,
+  fastConfig->booster->PredictSingleRow(fastConfig->predict_type, fastConfig->ncol,
                                         get_row_fun, fastConfig->config, out_result, out_len);
   API_END();
 }
@@ -2082,6 +2087,8 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
 }
 
 int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
+                                               const int predict_type,
+                                               const int num_iteration,
                                                const int data_type,
                                                const int32_t ncol,
                                                const char* parameter,
@@ -2090,6 +2097,7 @@ int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
   auto fastConfig_ptr = std::unique_ptr<FastConfig>(new FastConfig(
     reinterpret_cast<Booster*>(handle),
     parameter,
+    predict_type,
     data_type,
     ncol));
 
@@ -2097,21 +2105,21 @@ int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
     omp_set_num_threads(fastConfig_ptr->config.num_threads);
   }
 
+  fastConfig_ptr->booster->SetSingleRowPredictor(num_iteration, predict_type, fastConfig_ptr->config);
+
   *out_fastConfig = fastConfig_ptr.release();
   API_END();
 }
 
 int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fastConfig_handle,
                                            const void* data,
-                                           const int predict_type,
-                                           const int num_iteration,
                                            int64_t* out_len,
                                            double* out_result) {
   API_BEGIN();
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   // Single row in row-major format:
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, fastConfig->ncol, fastConfig->data_type, 1);
-  fastConfig->booster->PredictSingleRow(predict_type, fastConfig->ncol,
+  fastConfig->booster->PredictSingleRow(fastConfig->predict_type, fastConfig->ncol,
                                         get_row_fun, fastConfig->config,
                                         out_result, out_len);
   API_END();

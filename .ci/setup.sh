@@ -9,10 +9,7 @@ if [[ $OS_NAME == "macos" ]]; then
     else  # gcc
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
-            if [[ $GITHUB_ACTIONS == "true" ]]; then
-                brew update
-            fi
-            if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
+            if [[ $TRAVIS == "true" ]]; then
                 brew upgrade gcc
             fi
         fi
