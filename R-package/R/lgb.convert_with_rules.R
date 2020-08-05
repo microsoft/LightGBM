@@ -1,3 +1,49 @@
+# [description] get all column classes of a data.table or data.frame.
+#               This function collapses the result of class() into a single string
+.get_column_classes <- function(df) {
+    return(
+        vapply(
+            X = df
+            , FUN = function(x) {paste0(class(x), collapse = ",")}
+            , FUN.VALUE = character(1L)
+        )
+    )
+}
+
+# [description] check a data frame or data table for columns tthat are any
+#               type other than numeric and integer. This is used by lgb.convert()
+#               and lgb.convert_with_rules() too warn if more action is needed by users
+#               before a dataset can be converted to a lgb.Dataset.
+.warn_for_unconverted_columns <- function(df, function_name) {
+    column_classes <- .get_column_classes(df)
+    unconverted_columns <- column_classes[!(column_classes %in% c("numeric", "integer"))]
+    if (length(unconverted_columns) > 0L) {
+        col_detail_string <- paste0(
+            paste0(
+                names(unconverted_columns)
+                , " ("
+                , unconverted_columns
+                , ")"
+            )
+            , collapse = ", "
+        )
+        msg <- paste0(
+            function_name
+            , ": "
+            , length(unconverted_columns)
+            , " columns are not numeric or integer. These need to be dropped or converted to "
+            , "be used in an lgb.Dataset object. "
+            , col_detail_string
+        )
+        warning(msg)
+    }
+    return(invisible(NULL))
+}
+
+.LGB_CONVERT_DEFAULT_FOR_LOGICAL_NA <- function() {return(-1L)}
+.LGB_CONVERT_DEFAULT_FOR_NON_LOGICAL_NA <- function() {return(0L)}
+
+
 #' @name lgb.convert_with_rules
 #' @title Data preparator for LightGBM datasets with rules (integer)
 #' @description Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
