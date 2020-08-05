@@ -512,6 +512,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCalcNumPredict_R(
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE out_len,
   LGBM_SE call_state
