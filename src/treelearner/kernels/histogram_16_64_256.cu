@@ -4,7 +4,9 @@
  */
 
 #include "histogram_16_64_256.hu"
-#include "stdio.h"
+
+#include <cstdint>
+#include <cstdio>
 
 #define PRINT(b, t, fmt, ...) \
 if (b == gtid && t == ltid) { \
@@ -36,11 +38,11 @@ inline __device__ void atomic_local_add_f(acc_type *addr, const acc_type val) {
 inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ feature_sub_hist,
                            const unsigned int skip_id,
                            const unsigned int old_val_cont_bin0,
-                           const unsigned short num_sub_hist,
+                           const uint16_t num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
-    const unsigned short ltid = threadIdx.x;
+    const uint16_t ltid = threadIdx.x;
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
     unsigned int* __restrict__ local_cnt = reinterpret_cast<unsigned int *>(local_hist + 2 * NUM_BINS);
@@ -51,7 +53,7 @@ inline void __device__ within_kernel_reduction16x4(const acc_type* __restrict__ 
     } else {
       cont_bin = local_cnt[ltid];
     }
-    unsigned short i;
+    uint16_t i;
 
     if (power_feature_workgroups != 0) {
         // add all sub-histograms for feature
@@ -114,9 +116,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // otherwise a "Misaligned Address" exception may occur
     __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
     const unsigned int gtid = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned short ltid = threadIdx.x;
-    const unsigned short lsize = NUM_BINS;  // get_local_size(0);
-    const unsigned short group_id = blockIdx.x;
+    const uint16_t ltid = threadIdx.x;
+    const uint16_t lsize = NUM_BINS;  // get_local_size(0);
+    const uint16_t group_id = blockIdx.x;
 
     // local memory per workgroup is 3 KB
     // clear local memory
@@ -141,7 +143,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // etc.
     uchar is_hessian_first = ltid & 1;
 
-    unsigned short feature_id = group_id >> power_feature_workgroups;
+    uint16_t feature_id = group_id >> power_feature_workgroups;
 
     // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
     // feature_size is the number of examples per feature
@@ -177,7 +179,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     uchar feature;
     uchar feature_next;
     // uint8_t bin;
-    unsigned short bin;
+    uint16_t bin;
 
     feature = feature_data[ind >> feature_mask];
     if (feature_mask) {
@@ -280,14 +282,14 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ output = reinterpret_cast<acc_type *>(output_buf) + group_id * 3 * NUM_BINS;
     // write gradients and hessians
     acc_type *__restrict__ ptr_f = output;
-    for (unsigned short i = ltid; i < 2 * NUM_BINS; i += lsize) {
+    for (uint16_t i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
-    for (unsigned short i = ltid; i < NUM_BINS; i += lsize) {
+    for (uint16_t i = ltid; i < NUM_BINS; i += lsize) {
         unsigned int value = cnt_hist[i];
         ptr_i[i] = value;
     }
@@ -354,11 +356,11 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ feature_sub_hist,
                            const unsigned int skip_id,
                            const unsigned int old_val_cont_bin0,
-                           const unsigned short num_sub_hist,
+                           const uint16_t num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
-    const unsigned short ltid = threadIdx.x;
+    const uint16_t ltid = threadIdx.x;
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
     unsigned int* __restrict__ local_cnt = reinterpret_cast<unsigned int *>(local_hist + 2 * NUM_BINS);
@@ -369,7 +371,7 @@ inline void __device__ within_kernel_reduction64x4(const acc_type* __restrict__ 
     } else {
       cont_bin = local_cnt[ltid];
     }
-    unsigned short i;
+    uint16_t i;
 
     if (power_feature_workgroups != 0) {
         // add all sub-histograms for feature
@@ -432,9 +434,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // otherwise a "Misaligned Address" exception may occur
     __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
     const unsigned int gtid = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned short ltid = threadIdx.x;
-    const unsigned short lsize = NUM_BINS;  // get_local_size(0);
-    const unsigned short group_id = blockIdx.x;
+    const uint16_t ltid = threadIdx.x;
+    const uint16_t lsize = NUM_BINS;  // get_local_size(0);
+    const uint16_t group_id = blockIdx.x;
 
     // local memory per workgroup is 3 KB
     // clear local memory
@@ -459,7 +461,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // etc.
     uchar is_hessian_first = ltid & 1;
 
-    unsigned short feature_id = group_id >> power_feature_workgroups;
+    uint16_t feature_id = group_id >> power_feature_workgroups;
 
     // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
     // feature_size is the number of examples per feature
@@ -494,7 +496,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     uchar feature;
     uchar feature_next;
     // uint8_t bin;
-    unsigned short bin;
+    uint16_t bin;
 
     feature = feature_data[ind >> feature_mask];
     if (feature_mask) {
@@ -596,14 +598,14 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ output = reinterpret_cast<acc_type *>(output_buf) + group_id * 3 * NUM_BINS;
     // write gradients and hessians
     acc_type *__restrict__ ptr_f = output;
-    for (unsigned short i = ltid; i < 2 * NUM_BINS; i += lsize) {
+    for (uint16_t i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
-    for (unsigned short i = ltid; i < NUM_BINS; i += lsize) {
+    for (uint16_t i = ltid; i < NUM_BINS; i += lsize) {
         unsigned int value = cnt_hist[i];
         ptr_i[i] = value;
     }
@@ -670,11 +672,11 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__ feature_sub_hist,
                            const unsigned int skip_id,
                            const unsigned int old_val_cont_bin0,
-                           const unsigned short num_sub_hist,
+                           const uint16_t num_sub_hist,
                            acc_type* __restrict__ output_buf,
                            acc_type* __restrict__ local_hist,
                            const size_t power_feature_workgroups) {
-    const unsigned short ltid = threadIdx.x;
+    const uint16_t ltid = threadIdx.x;
     acc_type grad_bin = local_hist[ltid * 2];
     acc_type hess_bin = local_hist[ltid * 2 + 1];
     unsigned int* __restrict__ local_cnt = reinterpret_cast<unsigned int *>(local_hist + 2 * NUM_BINS);
@@ -685,7 +687,7 @@ inline void __device__ within_kernel_reduction256x4(const acc_type* __restrict__
     } else {
       cont_bin = local_cnt[ltid];
     }
-    unsigned short i;
+    uint16_t i;
 
     if (power_feature_workgroups != 0) {
         // add all sub-histograms for feature
@@ -749,9 +751,9 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // otherwise a "Misaligned Address" exception may occur
     __shared__ float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
     const unsigned int gtid = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned short ltid = threadIdx.x;
-    const unsigned short lsize = NUM_BINS;  // get_local_size(0);
-    const unsigned short group_id = blockIdx.x;
+    const uint16_t ltid = threadIdx.x;
+    const uint16_t lsize = NUM_BINS;  // get_local_size(0);
+    const uint16_t group_id = blockIdx.x;
 
     // local memory per workgroup is 3 KB
     // clear local memory
@@ -776,7 +778,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // etc.
     uchar is_hessian_first = ltid & 1;
 
-    unsigned short feature_id = group_id >> power_feature_workgroups;
+    uint16_t feature_id = group_id >> power_feature_workgroups;
 
     // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
     // feature_size is the number of examples per feature
@@ -811,7 +813,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     uchar feature;
     uchar feature_next;
     // uint8_t bin;
-    unsigned short bin;
+    uint16_t bin;
 
     feature = feature_data[ind >> feature_mask];
     if (feature_mask) {
@@ -913,14 +915,14 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     acc_type *__restrict__ output = reinterpret_cast<acc_type *>(output_buf) + group_id * 3 * NUM_BINS;
     // write gradients and hessians
     acc_type *__restrict__ ptr_f = output;
-    for (unsigned short i = ltid; i < 2 * NUM_BINS; i += lsize) {
+    for (uint16_t i = ltid; i < 2 * NUM_BINS; i += lsize) {
         // even threads read gradients, odd threads read hessians
         acc_type value = gh_hist[i];
         ptr_f[(i & 1) * NUM_BINS + (i >> 1)] = value;
     }
     // write counts
     acc_int_type *__restrict__ ptr_i = reinterpret_cast<acc_int_type *>(output + 2 * NUM_BINS);
-    for (unsigned short i = ltid; i < NUM_BINS; i += lsize) {
+    for (uint16_t i = ltid; i < NUM_BINS; i += lsize) {
         unsigned int value = cnt_hist[i];
         ptr_i[i] = value;
     }
