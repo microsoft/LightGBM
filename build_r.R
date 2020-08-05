@@ -13,7 +13,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
-  if (!res) {
+  if (!all(res)) {
     stop("Copying files failed!")
   }
 }
@@ -70,6 +70,20 @@ result <- file.copy(
 )
 .handle_result(result)
 
+# Add blank Makevars files
+result <- file.copy(
+  from = file.path(TEMP_R_DIR, "inst", "Makevars")
+  , to = file.path(TEMP_SOURCE_DIR, "Makevars")
+  , overwrite = TRUE
+)
+.handle_result(result)
+result <- file.copy(
+  from = file.path(TEMP_R_DIR, "inst", "Makevars.win")
+  , to = file.path(TEMP_SOURCE_DIR, "Makevars.win")
+  , overwrite = TRUE
+)
+.handle_result(result)
+
 result <- file.copy(
   from = "include/"
   , to =  sprintf("%s/", TEMP_SOURCE_DIR)
@@ -98,6 +112,16 @@ result <- file.copy(
   from = "CMakeLists.txt"
   , to = file.path(TEMP_R_DIR, "inst", "bin/")
   , overwrite = TRUE
+)
+.handle_result(result)
+
+# remove CRAN-specific files
+result <- file.remove(
+  file.path(TEMP_R_DIR, "configure")
+  , file.path(TEMP_R_DIR, "configure.ac")
+  , file.path(TEMP_R_DIR, "configure.win")
+  , file.path(TEMP_SOURCE_DIR, "Makevars.in")
+  , file.path(TEMP_SOURCE_DIR, "Makevars.win.in")
 )
 .handle_result(result)
 

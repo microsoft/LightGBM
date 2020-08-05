@@ -141,7 +141,9 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   col_sampler_.SetConfig(config_);
   histogram_pool_.ResetConfig(train_data_, config_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
-    cegb_.reset(new CostEfficientGradientBoosting(this));
+    if (cegb_ == nullptr) {
+      cegb_.reset(new CostEfficientGradientBoosting(this));
+    }
     cegb_->Init();
   }
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves));
@@ -165,8 +167,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
   bool track_branch_features = !(config_->interaction_constraints_vector.empty());
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features));
-  auto tree_prt = tree.get();
-  constraints_->ShareTreePointer(tree_prt);
+  auto tree_ptr = tree.get();
+  constraints_->ShareTreePointer(tree_ptr);
 
   // root leaf
   int left_leaf = 0;
@@ -174,13 +176,13 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   // only root leaf can be splitted on first time
   int right_leaf = -1;
 
-  int init_splits = ForceSplits(tree_prt, &left_leaf, &right_leaf, &cur_depth);
+  int init_splits = ForceSplits(tree_ptr, &left_leaf, &right_leaf, &cur_depth);
 
   for (int split = init_splits; split < config_->num_leaves - 1; ++split) {
     // some initial works before finding best split
-    if (BeforeFindBestSplit(tree_prt, left_leaf, right_leaf)) {
+    if (BeforeFindBestSplit(tree_ptr, left_leaf, right_leaf)) {
       // find best threshold for every feature
-      FindBestSplits(tree_prt);
+      FindBestSplits(tree_ptr);
     }
     // Get a leaf with max split gain
     int best_leaf = static_cast<int>(ArrayArgs<SplitInfo>::ArgMax(best_split_per_leaf_));
@@ -192,7 +194,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       break;
     }
     // split tree with best leaf
-    Split(tree_prt, best_leaf, &left_leaf, &right_leaf);
+    Split(tree_ptr, best_leaf, &left_leaf, &right_leaf);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
   Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);

@@ -424,7 +424,7 @@ Booster <- R6::R6Class(
     },
 
     # Save model
-    save_model = function(filename, num_iteration = NULL) {
+    save_model = function(filename, num_iteration = NULL, feature_importance_type = 0L) {
 
       # Check if number of iteration is non existent
       if (is.null(num_iteration)) {
@@ -437,6 +437,7 @@ Booster <- R6::R6Class(
         , ret = NULL
         , private$handle
         , as.integer(num_iteration)
+        , as.integer(feature_importance_type)
         , lgb.c_str(filename)
       )
 
@@ -445,7 +446,7 @@ Booster <- R6::R6Class(
     },
 
     # Save model to string
-    save_model_to_string = function(num_iteration = NULL) {
+    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L) {
 
       # Check if number of iteration is non existent
       if (is.null(num_iteration)) {
@@ -457,12 +458,13 @@ Booster <- R6::R6Class(
         "LGBM_BoosterSaveModelToString_R"
         , private$handle
         , as.integer(num_iteration)
+        , as.integer(feature_importance_type)
       ))
 
     },
 
     # Dump model in memory
-    dump_model = function(num_iteration = NULL) {
+    dump_model = function(num_iteration = NULL, feature_importance_type = 0L) {
 
       # Check if number of iteration is non existent
       if (is.null(num_iteration)) {
@@ -474,6 +476,7 @@ Booster <- R6::R6Class(
         "LGBM_BoosterDumpModel_R"
         , private$handle
         , as.integer(num_iteration)
+        , as.integer(feature_importance_type)
       )
 
     },
