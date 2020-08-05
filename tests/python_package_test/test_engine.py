@@ -2335,7 +2335,6 @@ class TestEngine(unittest.TestCase):
                     pred_contrib += booster.predict(X, num_iteration=step, start_iteration=start_iter, pred_contrib=True)
                 np.testing.assert_allclose(all_pred, pred)
                 np.testing.assert_allclose(all_pred_contrib, pred_contrib)
-            
             # test the case where start_iteration <= 0, and num_iteration is None
             pred1 = booster.predict(X, start_iteration=-1)
             pred2 = booster.predict(X, num_iteration=booster.best_iteration)
@@ -2343,7 +2342,7 @@ class TestEngine(unittest.TestCase):
             np.testing.assert_allclose(pred1, pred2)
             np.testing.assert_allclose(pred1, pred3)
 
-            # test the case where start_iteration > 0, and num_iteration <= 0 
+            # test the case where start_iteration > 0, and num_iteration <= 0
             pred4 = booster.predict(X, start_iteration=10, num_iteration=-1)
             pred5 = booster.predict(X, start_iteration=10, num_iteration=90)
             pred6 = booster.predict(X, start_iteration=10, num_iteration=0)
@@ -2367,9 +2366,9 @@ class TestEngine(unittest.TestCase):
         # test for regression
         X, y = load_boston(True)
         params = {
-            'objective':'regression',
+            'objective': 'regression',
             'verbose': -1,
-            'metric':'l2'
+            'metric': 'l2'
         }
         # test both with and without early stopping
         inner_test(X, y, params, early_stopping_rounds=1)
@@ -2383,7 +2382,7 @@ class TestEngine(unittest.TestCase):
             'metric': 'multi_logloss',
             'num_class': 3,
             'verbose': -1,
-            'metric':'multi_error'
+            'metric': 'multi_error'
         }
         # test both with and without early stopping
         inner_test(X, y, params, early_stopping_rounds=1)
@@ -2396,7 +2395,7 @@ class TestEngine(unittest.TestCase):
             'objective': 'binary',
             'metric': 'binary_logloss',
             'verbose': -1,
-            'metric':'auc'
+            'metric': 'auc'
         }
         # test both with and without early stopping
         inner_test(X, y, params, early_stopping_rounds=1)
