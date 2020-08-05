@@ -61,7 +61,7 @@ class GOSS: public GBDT {
       CHECK(hessians != nullptr && objective_function_ == nullptr);
       size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
       #pragma omp parallel for schedule(static)
-      for(size_t i = 0; i < total_size; ++i) {
+      for (size_t i = 0; i < total_size; ++i) {
         gradients_[i] = gradients[i];
         hessians_[i] = hessians[i];
       }
