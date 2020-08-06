@@ -2368,7 +2368,8 @@ class TestEngine(unittest.TestCase):
         params = {
             'objective': 'regression',
             'verbose': -1,
-            'metric': 'l2'
+            'metric': 'l2',
+            'learning_rate': 0.5
         }
         # test both with and without early stopping
         inner_test(X, y, params, early_stopping_rounds=1)
