@@ -7,6 +7,7 @@
 \method{predict}{lgb.Booster}(
   object,
   data,
+  start_iteration = NULL,
   num_iteration = NULL,
   rawscore = FALSE,
   predleaf = FALSE,
@@ -21,7 +22,15 @@
 
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
 
-\item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration}
+\item{start_iteration}{int or None, optional (default=None)
+Start index of the iteration to predict.
+If None or <= 0, starts from the first iteration.}
+
+\item{num_iteration}{int or None, optional (default=None)
+Limit number of iterations in the prediction.
+If None, if the best iteration exists and start_iteration is None or <= 0, the
+best iteration is used; otherwise, all iterations from start_iteration are used.
+If <= 0, all iterations from start_iteration are used (no limits).}
 
 \item{rawscore}{whether the prediction should be returned in the for of original untransformed
 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
