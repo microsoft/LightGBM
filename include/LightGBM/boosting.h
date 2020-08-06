@@ -123,7 +123,7 @@ class LIGHTGBM_EXPORT Boosting {
   */
   virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
 
-  virtual int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const = 0;
+  virtual int NumPredictOneRow(int start_iteration, int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
@@ -284,10 +284,11 @@ class LIGHTGBM_EXPORT Boosting {
 
   /*!
   * \brief Initial work for the prediction
+  * \param start_iteration Start index of the iteration to predict
   * \param num_iteration number of used iteration
   * \param is_pred_contrib
   */
-  virtual void InitPredict(int num_iteration, bool is_pred_contrib) = 0;
+  virtual void InitPredict(int start_iteration, int num_iteration, bool is_pred_contrib) = 0;
 
   /*!
   * \brief Name of submodel

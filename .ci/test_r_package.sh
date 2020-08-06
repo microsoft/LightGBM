@@ -42,7 +42,7 @@ if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
-        -y \
+        -y --allow-downgrades \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-recommended \
