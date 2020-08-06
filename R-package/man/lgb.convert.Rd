@@ -23,6 +23,7 @@ Attempts to prepare a clean dataset to prepare to put in a \code{lgb.Dataset}.
              NOTE: In previous releases of LightGBM, this function was called \code{lgb.prepare}.
 }
 \examples{
+\dontrun{
 data(iris)
 
 str(iris)
@@ -30,11 +31,10 @@ str(iris)
 # Convert all factors/chars to integer
 str(lgb.convert(data = iris))
 
-\dontrun{
 # When lightgbm package is installed, and you do not want to load it
 # You can still use the function!
 lgb.unloader()
-str(lightgbm::lgb.convert(data = iris))
+str(lgb.convert(data = iris))
 # 'data.frame':	150 obs. of  5 variables:
 # $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
 # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
@@ -42,5 +42,4 @@ str(lightgbm::lgb.convert(data = iris))
 # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
 }
-
 }

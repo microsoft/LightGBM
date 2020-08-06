@@ -21,6 +21,7 @@ Set the categorical features of an \code{lgb.Dataset} object. Use this function
              to tell LightGBM which features should be treated as categorical.
 }
 \examples{
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -28,5 +29,5 @@ data_file <- tempfile(fileext = ".data")
 lgb.Dataset.save(dtrain, data_file)
 dtrain <- lgb.Dataset(data_file)
 lgb.Dataset.set.categorical(dtrain, 1L:2L)
-
+}
 }
