@@ -247,7 +247,7 @@ def generate_r_docs(app):
             , install = FALSE \
             , devel = FALSE \
             , examples = TRUE \
-            , run_dont_run = FALSE \
+            , run_dont_run = TRUE \
             , seed = 42L \
             , preview = FALSE \
             , new_process = TRUE \

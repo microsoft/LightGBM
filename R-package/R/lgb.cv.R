@@ -56,6 +56,7 @@ CVBooster <- R6::R6Class(
 #' @return a trained model \code{lgb.CVBooster}.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -68,6 +69,7 @@ CVBooster <- R6::R6Class(
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
 #' )
+#' }
 #' @importFrom data.table data.table setorderv
 #' @export
 lgb.cv <- function(params = list()

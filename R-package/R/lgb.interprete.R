@@ -16,6 +16,7 @@
 #'         Contribution columns to each class.
 #'
 #' @examples
+#' \dontrun{
 #' Logit <- function(x) log(x / (1.0 - x))
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -38,7 +39,7 @@
 #' )
 #'
 #' tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
-#'
+#' }
 #' @importFrom data.table as.data.table
 #' @export
 lgb.interprete <- function(model,
