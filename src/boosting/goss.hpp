@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdint>
 #include <fstream>
 #include <vector>
 
@@ -59,9 +60,9 @@ class GOSS: public GBDT {
     if (gradients != nullptr) {
       // use customized objective function
       CHECK(hessians != nullptr && objective_function_ == nullptr);
-      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
       #pragma omp parallel for schedule(static)
-      for (size_t i = 0; i < total_size; ++i) {
+      for (int64_t i = 0; i < total_size; ++i) {
         gradients_[i] = gradients[i];
         hessians_[i] = hessians[i];
       }
