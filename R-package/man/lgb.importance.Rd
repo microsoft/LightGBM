@@ -24,6 +24,7 @@ For a tree model, a \code{data.table} with the following columns:
 Creates a \code{data.table} of feature importances in a model.
 }
 \examples{
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -43,5 +44,5 @@ model <- lgb.train(
 
 tree_imp1 <- lgb.importance(model, percentage = TRUE)
 tree_imp2 <- lgb.importance(model, percentage = FALSE)
-
+}
 }

@@ -18,7 +18,7 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 Attempts to load a model stored in a \code{.rds} file, using \code{\link[base]{readRDS}}
 }
 \examples{
-\donttest{
+\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train

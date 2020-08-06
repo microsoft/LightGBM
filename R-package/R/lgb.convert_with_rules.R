@@ -68,6 +68,7 @@
 #'         \code{lgb.Dataset}.
 #'
 #' @examples
+#' \dontrun{
 #' data(iris)
 #'
 #' str(iris)
@@ -103,7 +104,7 @@
 #' )
 #' newest_iris <- lgb.convert_with_rules(data = iris, rules = personal_rules)
 #' str(newest_iris$data) # SUCCESS!
-#'
+#' }
 #' @importFrom data.table set
 #' @export
 lgb.convert_with_rules <- function(data, rules = NULL) {
