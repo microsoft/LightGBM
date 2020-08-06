@@ -52,6 +52,7 @@ For regression or binary classification, it returns a vector of length \code{nro
 Predicted values based on class \code{lgb.Booster}
 }
 \examples{
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -69,4 +70,5 @@ model <- lgb.train(
   , learning_rate = 1.0
 )
 preds <- predict(model, test$data)
+}
 }

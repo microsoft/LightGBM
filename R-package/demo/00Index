@@ -1,6 +1,5 @@
 basic_walkthrough               Basic feature walkthrough
 boost_from_prediction           Boosting from existing prediction
-categorical_features_prepare     Categorical Feature Preparation
 categorical_features_rules       Categorical Feature Preparation with Rules
 cross_validation                Cross Validation
 early_stopping                  Early Stop in training
