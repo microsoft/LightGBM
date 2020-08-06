@@ -82,7 +82,7 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
-$env:LGB_VER = Get-Content -Path VERSION.txt -TotalCount 1
+$env:LGB_VER = Get-Content -Path R-package/src/VERSION.txt -TotalCount 1
 
 if ($env:R_BUILD_TYPE -eq "cmake") {
   if ($env:TOOLCHAIN -eq "MINGW") {
