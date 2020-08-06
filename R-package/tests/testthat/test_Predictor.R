@@ -41,31 +41,39 @@ test_that("start_iteration works correctly", {
         , nrounds = 100L
         , objective = "binary"
         , save_name = tempfile(fileext = ".model")
-        , valids=list("test" = dtest)
-        , early_stopping_rounds=2L
+        , valids = list("test" = dtest)
+        , early_stopping_rounds = 2L
     )
     expect_true(lgb.is.Booster(bst))
-    pred1 <- predict(bst, data=test$data, rawscore=TRUE)
-    pred_contrib1 <- predict(bst, test$data, predcontrib=TRUE)
+    pred1 <- predict(bst, data = test$data, rawscore = TRUE)
+    pred_contrib1 <- predict(bst, test$data, predcontrib = TRUE)
     pred2 <- rep(0.0, length(pred1))
     pred_contrib2 <- rep(0.0, length(pred2))
     step <- 11L
     end_iter <- 99L
-    if (bst$best_iter != -1) {
-        end_iter <- bst$best_iter - 1
+    if (bst$best_iter != -1L) {
+        end_iter <- bst$best_iter - 1L
     }
-    start_iters <- seq(0L, end_iter, by=step)
+    start_iters <- seq(0L, end_iter, by = step)
     for (start_iter in start_iters) {
-        n_iter = min(c(end_iter - start_iter + 1, step))
-        inc_pred <- predict(bst, test$data, start_iteration=start_iter, num_iteration=n_iter, rawscore=TRUE)
-        inc_pred_contrib <- bst$predict(test$data, start_iteration=start_iter, num_iteration=n_iter, predcontrib=TRUE)
+        n_iter <- min(c(end_iter - start_iter + 1L, step))
+        inc_pred <- predict(bst, test$data
+            , start_iteration = start_iter
+            , num_iteration = n_iter
+            , rawscore = TRUE
+        )
+        inc_pred_contrib <- bst$predict(test$data
+            , start_iteration = start_iter
+            , num_iteration = n_iter
+            , predcontrib = TRUE
+        )
         pred2 <- pred2 + inc_pred
         pred_contrib2 <- pred_contrib2 + inc_pred_contrib
     }
     expect_equal(pred2, pred1)
     expect_equal(pred_contrib2, pred_contrib1)
 
-    pred_leaf1 <- predict(bst, test$data, predleaf=TRUE)
-    pred_leaf2 <- predict(bst, test$data, start_iteration=0L, num_iteration=end_iter + 1, predleaf=TRUE)
+    pred_leaf1 <- predict(bst, test$data, predleaf = TRUE)
+    pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, predleaf = TRUE)
     expect_equal(pred_leaf1, pred_leaf2)
 })

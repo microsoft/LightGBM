@@ -361,8 +361,7 @@ class GBDT : public GBDTBase {
     start_iteration = std::min(start_iteration, num_iteration_for_pred_);
     if (num_iteration > 0) {
       num_iteration_for_pred_ = std::min(num_iteration, num_iteration_for_pred_ - start_iteration);
-    }
-    else {
+    } else {
       num_iteration_for_pred_ = num_iteration_for_pred_ - start_iteration;
     }
     start_iteration_for_pred_ = start_iteration;

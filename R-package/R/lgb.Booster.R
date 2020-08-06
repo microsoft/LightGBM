@@ -708,8 +708,8 @@ Booster <- R6::R6Class(
 #'                        If None or <= 0, starts from the first iteration.
 #' @param num_iteration int or None, optional (default=None)
 #'                      Limit number of iterations in the prediction.
-#'                      If None, if the best iteration exists and start_iteration is None or <= 0, the best iteration is used;
-#'                      otherwise, all iterations from start_iteration are used.
+#'                      If None, if the best iteration exists and start_iteration is None or <= 0, the
+#'                      best iteration is used; otherwise, all iterations from start_iteration are used.
 #'                      If <= 0, all iterations from start_iteration are used (no limits).
 #' @param rawscore whether the prediction should be returned in the for of original untransformed
 #'                 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
