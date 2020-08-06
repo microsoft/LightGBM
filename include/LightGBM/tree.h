@@ -219,6 +219,7 @@ class Tree {
     leaf_value_[num_leaves_ - 1] =
         MaybeRoundToZero(leaf_value_[num_leaves_ - 1] + val);
     if (is_linear_) {
+#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
       for (int i = 0; i < num_leaves_ - 1; ++i) {
         leaf_const_[i] = MaybeRoundToZero(leaf_const_[i] + val);
       }
@@ -232,7 +233,9 @@ class Tree {
     num_leaves_ = 1;
     shrinkage_ = 1.0f;
     leaf_value_[0] = val;
-    is_linear_ = false;
+    if (is_linear_) {
+      leaf_const_[0] = val;
+    }
   }
 
   /*! \brief Serialize this object to string*/
@@ -285,6 +288,9 @@ class Tree {
 
   /*! \brief Get the linear model features of one leaf */
   inline std::vector<int> LeafFeaturesInner(int leaf) const {return leaf_features_inner_[leaf]; }
+
+  /*! \brief Get the linear model features of one leaf */
+  inline std::vector<int> LeafFeatures(int leaf) const {return leaf_features_[leaf]; }
 
   /*! \brief Set the linear model coefficients on one leaf */
   inline void SetLeafCoeffs(int leaf, std::vector<double> output) {

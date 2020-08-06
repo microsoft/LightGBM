@@ -1342,6 +1342,13 @@ int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
   API_END();
 }
 
+int LGBM_BoosterGetLinear(BoosterHandle handle, int* out_is_linear) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_is_linear = static_cast<int>(ref_booster->GetBoosting()->IsLinear());
+  API_END();
+}
+
 int LGBM_BoosterRefit(BoosterHandle handle, const int32_t* leaf_preds, int32_t nrow, int32_t ncol) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);

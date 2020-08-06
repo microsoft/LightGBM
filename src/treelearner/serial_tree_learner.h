@@ -55,6 +55,8 @@ class SerialTreeLearner: public TreeLearner {
 
   virtual void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
+  void InitLinear(const Dataset* train_data, const int max_leaves) override;
+
   void ResetTrainingData(const Dataset* train_data,
                          bool is_constant_hessian) override {
     ResetTrainingDataInner(train_data, is_constant_hessian, true);
@@ -78,10 +80,10 @@ class SerialTreeLearner: public TreeLearner {
     }
   }
 
-  Tree* Train(const score_t* gradients, const score_t *hessians) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
 
   template<bool HAS_NAN>
-  void CalculateLinear(Tree* tree);
+  void CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree);
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) override;
 

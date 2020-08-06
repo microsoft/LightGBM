@@ -36,6 +36,8 @@ class TreeLearner {
   */
   virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
+  virtual void InitLinear(const Dataset* train_data, const int max_leaves) = 0;
+
   virtual void ResetIsConstantHessian(bool is_constant_hessian) = 0;
 
   virtual void ResetTrainingData(const Dataset* train_data,
@@ -53,9 +55,10 @@ class TreeLearner {
   * \brief training tree model on dataset
   * \param gradients The first order gradients
   * \param hessians The second order gradients
+  * \param is_first_tree If linear tree learning is enabled, first tree needs to be handled differently
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians) = 0;
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_first_tree) = 0;
 
   /*!
   * \brief use an existing tree to fit the new gradients and hessians.
