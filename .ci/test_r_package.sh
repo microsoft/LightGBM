@@ -125,7 +125,7 @@ fi
 
 cd ${BUILD_DIRECTORY}
 
-PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
+PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R --skip-install || exit -1
@@ -134,7 +134,6 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        cp VERSION.txt R-package/src/VERSION.txt
         cd ${BUILD_DIRECTORY}/R-package
         autoconf \
             --output configure \
