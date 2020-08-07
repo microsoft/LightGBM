@@ -499,7 +499,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
 
   const ConstraintEntry* Get(int leaf_idx) override { return entries_[leaf_idx]; }
 
-  FeatureConstraint* GetFeatureConstraint(int leaf_idx, int feature_index) {
+  FeatureConstraint* GetFeatureConstraint(int leaf_idx, int feature_index) final {
     return entries_[leaf_idx]->GetFeatureConstraint(feature_index);
   }
 
