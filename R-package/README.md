@@ -231,14 +231,15 @@ Packages built like this will only work for the minor version of R used to build
 
 **Mac**
 
-Binary produced: `lightgbm_${VERSION}-r-package-macos.tgz`
+Binary produced: `lightgbm_${VERSION}-r40-macos.tgz`
 
 ```shell
+LGB_VERSION="3.0.1-1"
 sh build-cran-package.sh
-R CMD INSTALL --build lightgbm_$(cat VERSION.txt).tar.gz
+R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
-    lightgbm_$(cat VERSION.txt).tgz \
-    lightgbm_$(cat VERSION.txt)-r-package-macos.tgz
+    lightgbm_${LGB_VERSION}.tgz \
+    lightgbm_${LGB_VERSION}-r40-macos.tgz
 ```
 
 **Linux**
@@ -261,11 +262,12 @@ cd /opt/LightGBM
 From inside that container, the commands to create a precompiled binary are very similar
 
 ```shell
+LGB_VERSION="3.0.1-1"
 sh build-cran-package.sh
-R CMD INSTALL --build lightgbm_$(cat VERSION.txt).tar.gz
+R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
-    lightgbm_$(cat VERSION.txt)_R_*-linux-gnu.tar.gz \
-    lightgbm_$(cat VERSION.txt)-r-package-linux.tgz
+    lightgbm_${LGB_VERSION}_R_*-linux-gnu.tar.gz \
+    lightgbm_${LGB_VERSION}-r40-linux.tgz
 ```
 
 Exit the container, and the binary package should still be there on the host system.
@@ -276,9 +278,16 @@ exit
 
 **Windows**
 
-Binary produced: `
+Binary produced: `lightgbm_${VERSION}.zip`
 
-
+```shell
+LGB_VERSION="3.0.1-1"
+sh build-cran-package.sh
+R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
+mv \
+    lightgbm_${LGB_VERSION}.tgz \
+    lightgbm_${LGB_VERSION}-r40-windows.tgz
+```
 
 External (Unofficial) Repositories
 ----------------------------------
