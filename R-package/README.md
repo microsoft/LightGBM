@@ -13,6 +13,36 @@ LightGBM R-package
 Installation
 ------------
 
+### Installing Precompiled Binaries
+
+Starting with `LightGBM` 3.0.0, precompiled binaries for the R package are created for each release. These packages do not require compilation, so they will be faster and easier to install than packages that are built from source. These packages are created with R 4.0 and are not guaranteed to work with other R versions.
+
+Binaries are available for Windows, Mac, and Linux systems. They are not guaranteed to work with all variants and versions of these operating systems. Please [open an issue](https://github.com/microsoft/LightGBM/issues) if you encoutnter any problems.
+
+To install a binary for the R package:
+
+1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases)
+2. Choose a file based on your operating system. Right-click it and choose "copy link address"
+3. Copy that link into `PKG_URL` in the code below and run it.
+
+This sample code installs versioon 3.0.0-1 of the R package on Mac.
+
+```r
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm_3.0.0-1-r40-macos.tgz"
+
+local_file <- paste0("lightgbm.", tools::file_ext(PKG_URL))
+
+download.file(
+    url = PKG_URL
+    , destfile = local_file
+)
+install.packages(
+    pkgs = local_file
+    , type = "binary"
+    , repos = NULL
+)
+```
+
 ### Preparation
 
 You need to install git and [CMake](https://cmake.org/) first.
@@ -234,7 +264,7 @@ Packages built like this will only work for the minor version of R used to build
 Binary produced: `lightgbm_${VERSION}-r40-macos.tgz`
 
 ```shell
-LGB_VERSION="3.0.1-1"
+LGB_VERSION="3.0.0-1"
 sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
@@ -244,7 +274,7 @@ mv \
 
 **Linux**
 
-Binary produced: `lightgbm_${VERSION}-r-package-linux.tar.gz`
+Binary produced: `lightgbm_${VERSION}-r40-linux.tar.gz`
 
 You can access a Linux system that has R and its build toolchain installed with the `rocker` Docker images.
 
@@ -255,14 +285,13 @@ docker run \
     -v $(pwd):/opt/LightGBM \
     -it rocker/verse:${R_VERSION} \
         /bin/bash
-
-cd /opt/LightGBM
 ```
 
 From inside that container, the commands to create a precompiled binary are very similar
 
 ```shell
-LGB_VERSION="3.0.1-1"
+cd /opt/LightGBM
+LGB_VERSION="3.0.0-1"
 sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
@@ -281,7 +310,7 @@ exit
 Binary produced: `lightgbm_${VERSION}.zip`
 
 ```shell
-LGB_VERSION="3.0.1-1"
+LGB_VERSION="3.0.0-1"
 sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
