@@ -117,7 +117,7 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with num
     }
 })
 
-test_that("lgb.convert_with_rules() should work correctly for a dataset with missing values", {
+test_that("lgb.convert_with_rules() should convert missing values to the expected value", {
     testDF <- data.frame(
         character_col = c("a", NA_character_, "c")
         , na_col = rep(NA, 3L)
@@ -137,24 +137,26 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with mis
         expect_identical(class(input_data), class(converted_dataset))
 
         expect_identical(class(converted_dataset[["character_col"]]), "integer")
-        expect_identical(converted_dataset[["character_col"]], c(1L, NA_integer_, 2L))
+        expect_identical(converted_dataset[["character_col"]], c(1L, 0L, 2L))
 
+        # does not try to fill 0s in for already-integer columns
         expect_identical(class(converted_dataset[["integer_col"]]), "integer")
         expect_identical(converted_dataset[["integer_col"]], c(1L, 9L, NA_integer_))
+        expect_identical(class(converted_dataset[["na_int_col"]]), "integer")
+        expect_identical(converted_dataset[["na_int_col"]], rep(NA_integer_, nrow(converted_dataset)))
 
         expect_identical(class(converted_dataset[["factor_col"]]), "integer")
         expect_identical(converted_dataset[["factor_col"]], c(1L, 1L, 2L))
 
-        # NAs of any type should be converted to numeric
-        for (col in c("na_int_col", "na_character_col")) {
-            expect_identical(class(converted_dataset[[col]]), "integer")
-            expect_identical(converted_dataset[[col]], rep(NA_integer_, nrow(converted_dataset)))
-        }
+        # NAs in character columns should be converted to 0
+        expect_identical(class(converted_dataset[["na_character_col"]]), "integer")
+        expect_identical(converted_dataset[["na_character_col"]], rep(0L, nrow(converted_dataset)))
 
-        # today, lgb.convert_with_rules() does not convert logical columns
-        expect_identical(class(converted_dataset[["na_col"]]), "logical")
+        # logical should be converted to integer
+        expect_identical(class(converted_dataset[["na_col"]]), "integer")
+        expect_identical(converted_dataset[["na_col"]], rep(-1L, 3L))
 
-        # today, lgb.convert_with_rules() does not convert numeric columns to integer
+        # lgb.convert_with_rules() should not convert numeric columns to integer
         expect_identical(class(converted_dataset[["na_real_col"]]), "numeric")
         expect_identical(converted_dataset[["na_real_col"]], rep(NA_real_, nrow(converted_dataset)))
         expect_identical(class(converted_dataset[["numeric_col"]]), "numeric")
@@ -164,9 +166,9 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with mis
         rules <- conversion_result$rules
         expect_is(rules, "list")
         expect_length(rules, 3L)
-        expect_identical(rules[["character_col"]], stats::setNames(c(1L, NA_integer_, 2L), c("a", NA, "c")))
-        expect_identical(rules[["na_character_col"]], stats::setNames(NA_integer_, NA))
+        expect_identical(rules[["character_col"]], c("a" = 1L, "c" = 2L))
         expect_identical(rules[["factor_col"]], c("n" = 1L, "y" = 2L))
+        expect_identical(rules[["na_col"]], stats::setNames(c(0L, 1L), c(FALSE, TRUE)))
     }
 })
 
@@ -183,9 +185,11 @@ test_that("lgb.convert_with_rules() should work correctly if you provide your ow
         , stringsAsFactors = FALSE
     )
     testDT <- data.table::as.data.table(testDF)
+
     # value used by lgb.convert_with_rules() when it encounters a categorical value that
     # is not in the provided rules
     UNKNOWN_FACTOR_VALUE <- 0L
+    UNKNOWN_LOGICAL_VALUE <- -1L
     for (input_data in list(testDF, testDT)) {
         custom_rules <- list(
             "character_col" = c(
@@ -212,10 +216,14 @@ test_that("lgb.convert_with_rules() should work correctly if you provide your ow
         expect_identical(class(converted_dataset[["factor_col"]]), "integer")
         expect_identical(converted_dataset[["factor_col"]], c(65L, 65L, 66L, 66L, 65L, 65L))
 
-        # columns not specified in rules are not going to be converted
-        for (col in c("na_col", "na_real_col", "na_int_col", "na_character_col", "numeric_col", "integer_col")) {
+        # columns not specified in rules are not going to be converted, unless they are all NA
+        for (col in c("na_real_col", "na_int_col", "numeric_col", "integer_col")) {
             expect_identical(converted_dataset[[col]], input_data[[col]])
         }
+
+        # non-numeric/integer columns that are all NA should have been filled in
+        expect_identical(converted_dataset[["na_col"]], rep(UNKNOWN_LOGICAL_VALUE, 6L))
+        expect_identical(converted_dataset[["na_character_col"]], rep(UNKNOWN_FACTOR_VALUE, 6L))
 
         # the rules you passed in should be returned unchanged
         rules <- conversion_result$rules

@@ -39,7 +39,7 @@ The columns of the \code{data.table} are:
 Parse a LightGBM model json dump into a \code{data.table} structure.
 }
 \examples{
-
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -55,5 +55,5 @@ params <- list(
 model <- lgb.train(params, dtrain, 10L)
 
 tree_dt <- lgb.model.dt.tree(model)
-
+}
 }

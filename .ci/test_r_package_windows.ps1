@@ -82,7 +82,6 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
-$env:LGB_VER = Get-Content -Path VERSION.txt -TotalCount 1
 
 if ($env:R_BUILD_TYPE -eq "cmake") {
   if ($env:TOOLCHAIN -eq "MINGW") {
@@ -142,7 +141,7 @@ Write-Output "Building R package"
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
 
-  $PKG_FILE_NAME = "lightgbm_$env:LGB_VER.tar.gz"
+  $PKG_FILE_NAME = "lightgbm_*.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
@@ -160,7 +159,7 @@ if ($env:COMPILER -ne "MSVC") {
   }
 
   Write-Output "Running R CMD check as CRAN"
-  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
+  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-dontrun', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
