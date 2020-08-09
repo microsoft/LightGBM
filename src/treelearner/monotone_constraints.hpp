@@ -986,11 +986,10 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
     if ((monotone_type == -1 && min_constraints_to_be_updated) ||
         (monotone_type == 1 && !min_constraints_to_be_updated)) {
       return std::pair<bool, bool>(true, false);
-    }
-//    Same as
-//    if ((monotone_type == 1 && min_constraints_to_be_updated) ||
-//        (monotone_type == -1 && !min_constraints_to_be_updated))
-    else {
+    } else {
+      //    Same as
+      //    if ((monotone_type == 1 && min_constraints_to_be_updated) ||
+      //        (monotone_type == -1 && !min_constraints_to_be_updated))
       return std::pair<bool, bool>(false, true);
     }
   }
