@@ -1073,9 +1073,13 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   double tmp_label = 0.0f;
   auto& ref_text_data = *text_data;
   if (predict_fun_ == nullptr) {
+    std::vector<double> feature_row;
+    if (dataset->has_raw()) {
+      feature_row = std::vector<double>(dataset->num_features_, 0.0f);
+    }
     OMP_INIT_EX();
     // if doesn't need to prediction with initial model
-    #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label)
+    #pragma omp parallel for schedule(static) private(oneline_features, feature_row) firstprivate(tmp_label)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1089,10 +1093,6 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       std::vector<bool> is_feature_added(dataset->num_features_, false);
-      std::vector<double> feature_row;
-      if (dataset->has_raw()) {
-        feature_row = std::vector<double>(dataset->num_features_, 0.0f);
-      }
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
@@ -1127,10 +1127,14 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
     }
     OMP_THROW_EX();
   } else {
+    std::vector<double> feature_row;
+    if (dataset->has_raw()) {
+      feature_row = std::vector<double>(dataset->num_features_, 0.0f);
+    }
     OMP_INIT_EX();
     // if need to prediction with initial model
     std::vector<double> init_score(dataset->num_data_ * num_class_);
-    #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label)
+    #pragma omp parallel for schedule(static) private(oneline_features, feature_row) firstprivate(tmp_label)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1150,10 +1154,6 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
-      std::vector<double> feature_row;
-      if (dataset->has_raw()) {
-        feature_row = std::vector<double>(dataset->num_features_, 0.0f);
-      }
       std::vector<bool> is_feature_added(dataset->num_features_, false);
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
@@ -1207,8 +1207,12 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   (data_size_t start_idx, const std::vector<std::string>& lines) {
     std::vector<std::pair<int, double>> oneline_features;
     double tmp_label = 0.0f;
+    std::vector<double> feature_row;
+    if (dataset->has_raw()) {
+      feature_row = std::vector<double>(dataset->num_features(), 0.0f);
+    }
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label)
+    #pragma omp parallel for schedule(static) private(oneline_features, feature_row) firstprivate(tmp_label)
     for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1226,10 +1230,6 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       // set label
       dataset->metadata_.SetLabelAt(start_idx + i, static_cast<label_t>(tmp_label));
       std::vector<bool> is_feature_added(dataset->num_features_, false);
-      std::vector<double> feature_row;
-      if (dataset->has_raw()) {
-        feature_row = std::vector<double>(dataset->num_features(), 0.0f);
-      }
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
