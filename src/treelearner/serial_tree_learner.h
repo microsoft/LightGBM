@@ -104,7 +104,7 @@ class SerialTreeLearner: public TreeLearner {
   }
 
   void AddPredictionToScore(const Tree* tree,
-                            double* out_score) const override {
+                            double* out_score) override {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     if (tree->GetLinear()) {
       CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
@@ -131,46 +131,57 @@ class SerialTreeLearner: public TreeLearner {
 
 
   template<bool HAS_NAN>
-  void AddPredictionToScoreInner(const Tree* tree, double* out_score) const {
-#pragma omp parallel for schedule(dynamic)
+  void AddPredictionToScoreInner(const Tree* tree, double* out_score) {
+    std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
+    // map data to leaf number
     for (int i = 0; i < tree->num_leaves(); ++i) {
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-      double leaf_output = tree->LeafOutput(i);
-      double leaf_const = tree->LeafConst(i);
-      std::vector<double> leaf_coeffs = tree->LeafCoeffs(i);
-      std::vector<int> feat_arr = tree->LeafFeaturesInner(i);
-      std::vector<const double*> feat_ptr_arr;
-      for (int feat : feat_arr) {
-        feat_ptr_arr.push_back(train_data_->raw_index(feat));
+      for (int j = 0; j < cnt_leaf_data; ++j) {
+        leaf_map_[tmp_idx[j]] = i;
       }
-      for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        int row_idx = tmp_idx[j];
-        double output = leaf_const;
-        if (HAS_NAN) {
-          bool nan_found = false;
-          for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
-            double val = feat_ptr_arr[feat_num][row_idx];
-            if (std::isnan(val)) {
-              nan_found = true;
-              break;
-            }
-            output += val * leaf_coeffs[feat_num];
+    }
+    int num_leaves = tree->num_leaves();
+    std::vector<double> leaf_const(num_leaves);
+    std::vector<std::vector<double>> leaf_coeff(num_leaves);
+    std::vector<std::vector<const double*>> feat_ptr(num_leaves);
+    std::vector<double> leaf_output(num_leaves);
+    for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
+      leaf_const[leaf_num] = tree->LeafConst(leaf_num);
+      leaf_coeff[leaf_num] = tree->LeafCoeffs(leaf_num);
+      leaf_output[leaf_num] = tree->LeafOutput(leaf_num);
+      for (int feat : tree->LeafFeaturesInner(leaf_num)) {
+        feat_ptr[leaf_num].push_back(train_data_->raw_index(feat));
+      }
+    }
+#pragma omp parallel for schedule(static) if (num_data_ > 1024)
+    for (int i = 0; i < num_data_; ++i) {
+      int leaf_num = leaf_map_[i];
+      double output = leaf_const[leaf_num];
+      if (HAS_NAN) {
+        bool nan_found = false;
+        for (int feat_num = 0; feat_num < leaf_coeff[leaf_num].size(); ++feat_num) {
+          double val = feat_ptr[leaf_num][feat_num][i];
+          if (std::isnan(val)) {
+            nan_found = true;
+            break;
           }
-          if (nan_found) {
-            out_score[row_idx] += leaf_output;
-          } else {
-            out_score[row_idx] += output;
-          }
-        } else {
-          for (int feat_num = 0; feat_num < feat_arr.size(); ++feat_num) {
-            output += feat_ptr_arr[feat_num][row_idx] * leaf_coeffs[feat_num];
-          }
-          out_score[row_idx] += output;
+          output += val * leaf_coeff[leaf_num][feat_num];
         }
+        if (nan_found) {
+          out_score[i] += leaf_output[leaf_num];
+        } else {
+          out_score[i] += output;
+        }
+      } else {
+        for (int feat_num = 0; feat_num < leaf_coeff[leaf_num].size(); ++feat_num) {
+          output += feat_ptr[leaf_num][feat_num][i] * leaf_coeff[leaf_num][feat_num];
+        }
+        out_score[i] += output;
       }
     }
   }
+
 
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
