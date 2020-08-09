@@ -852,7 +852,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
 };
 
 class AdvancedLeafConstraints : public IntermediateLeafConstraints {
-public:
+ public:
   AdvancedLeafConstraints(const Config *config, int num_leaves,
                           int num_features)
       : IntermediateLeafConstraints(config, num_leaves) {
