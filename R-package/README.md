@@ -261,7 +261,7 @@ Packages built like this will only work for the minor version of R used to build
 
 **Mac**
 
-Binary produced: `lightgbm_${VERSION}-r40-macos.tgz`.
+Binary produced: `lightgbm-${VERSION}-r40-macos.tgz`.
 
 ```shell
 LGB_VERSION="3.0.0-1"
@@ -269,12 +269,12 @@ sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
     lightgbm_${LGB_VERSION}.tgz \
-    lightgbm_${LGB_VERSION}-r40-macos.tgz
+    lightgbm-${LGB_VERSION}-r40-macos.tgz
 ```
 
 **Linux**
 
-Binary produced: `lightgbm_${VERSION}-r40-linux.tar.gz`.
+Binary produced: `lightgbm-${VERSION}-r40-linux.tar.gz`.
 
 You can access a Linux system that has R and its build toolchain installed with the `rocker` Docker images.
 
@@ -307,7 +307,7 @@ exit
 
 **Windows**
 
-Binary produced: `lightgbm_${VERSION}.zip`.
+Binary produced: `lightgbm-${VERSION}.zip`.
 
 ```shell
 LGB_VERSION="3.0.0-1"
@@ -315,7 +315,7 @@ sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
     lightgbm_${LGB_VERSION}.tgz \
-    lightgbm_${LGB_VERSION}-r40-windows.tgz
+    lightgbm-${LGB_VERSION}-r40-windows.tgz
 ```
 
 External (Unofficial) Repositories
