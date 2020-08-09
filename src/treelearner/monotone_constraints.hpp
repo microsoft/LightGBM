@@ -610,8 +610,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
         }
       }
       return true;
-    }
-    else {
+    } else {
       return false;
     }
   }
