@@ -38,9 +38,8 @@ test_that("start_iteration works correctly", {
         , label = train$label
         , num_leaves = 4L
         , learning_rate = 0.6
-        , nrounds = 100L
+        , nrounds = 50L
         , objective = "binary"
-        , save_name = tempfile(fileext = ".model")
         , valids = list("test" = dtest)
         , early_stopping_rounds = 2L
     )
@@ -50,7 +49,7 @@ test_that("start_iteration works correctly", {
     pred2 <- rep(0.0, length(pred1))
     pred_contrib2 <- rep(0.0, length(pred2))
     step <- 11L
-    end_iter <- 99L
+    end_iter <- 49L
     if (bst$best_iter != -1L) {
         end_iter <- bst$best_iter - 1L
     }

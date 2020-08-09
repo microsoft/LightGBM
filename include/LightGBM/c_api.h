@@ -724,7 +724,7 @@ LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);
  * \note
  * You should pre-allocate memory for ``out_result``:
  *   - for normal and raw score, its length is equal to ``num_class * num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * (start_iteration + num_iteration)``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param indptr Pointer to row headers
@@ -827,7 +827,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFreePredictSparse(void* indptr, int32_t* indic
  * \note
  * You should pre-allocate memory for ``out_result``:
  *   - for normal and raw score, its length is equal to ``num_class * num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * (start_iteration + num_iteration)``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param indptr Pointer to row headers
@@ -911,7 +911,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle h
  * \note
  * You should pre-allocate memory for ``out_result``:
  *   - for normal and raw score, its length is equal to ``num_class * num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * (start_iteration + num_iteration)``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  *
  * \param fastConfig_handle FastConfig object handle returned by ``LGBM_BoosterPredictForCSRSingleRowFastInit``
@@ -940,7 +940,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fa
  * \note
  * You should pre-allocate memory for ``out_result``:
  *   - for normal and raw score, its length is equal to ``num_class * num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * (start_iteration + num_iteration)``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param col_ptr Pointer to column headers
@@ -984,7 +984,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
  * \note
  * You should pre-allocate memory for ``out_result``:
  *   - for normal and raw score, its length is equal to ``num_class * num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * (start_iteration + num_iteration)``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param data Pointer to the data space
@@ -1023,7 +1023,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
  * \note
  * You should pre-allocate memory for ``out_result``:
  *   - for normal and raw score, its length is equal to ``num_class * num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * (start_iteration + num_iteration)``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param data Pointer to the data space
@@ -1112,7 +1112,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fa
  * \note
  * You should pre-allocate memory for ``out_result``:
  *   - for normal and raw score, its length is equal to ``num_class * num_data``;
- *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * (start_iteration + num_iteration)``;
  *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
  * \param handle Handle of booster
  * \param data Pointer to the data space
