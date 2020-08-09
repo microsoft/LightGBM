@@ -590,7 +590,6 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
       int inner_feature,
       const std::vector<bool>& was_original_leaf_right_child_of_split,
       bool is_in_right_child) {
-
     // if the split is categorical, it is not handled by this optimisation,
     // so the code will have to go down in the other child subtree to see if
     // there are leaves to update
