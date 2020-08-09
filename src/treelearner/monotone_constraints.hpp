@@ -33,6 +33,7 @@ struct FeatureConstraint {
   virtual BasicConstraint LeftToBasicConstraint() const = 0;
   virtual BasicConstraint RightToBasicConstraint() const = 0;
   virtual bool ConstraintDifferentDependingOnThreshold() const = 0;
+  virtual ~FeatureConstraint() {}
 };
 
 struct ConstraintEntry {
