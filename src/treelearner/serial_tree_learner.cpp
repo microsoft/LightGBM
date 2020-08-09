@@ -929,7 +929,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       num_nonzero.push_back(std::vector<int>(tree->num_leaves(), 0));
     }
   }
-  std::vector<double> curr_row = std::vector<double>(max_num_features);
+  std::vector<double> curr_row(max_num_features);
 #pragma omp parallel for schedule(static) firstprivate(curr_row) if (num_data_ > 1024)
   for (int i = 0; i < num_data_; ++i) {
     int tid = omp_get_thread_num();
@@ -939,17 +939,19 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
     bool nan_found = false;
     data_size_t num_feat = leaf_features[leaf_num].size();
+    const double** feat_ptr = raw_data_ptr[leaf_num].data();
+    double* curr_row_ptr = curr_row.data();
     for (int feat = 0; feat < num_feat;  ++feat) {
       if (HAS_NAN) {
-        double val = raw_data_ptr[leaf_num][feat][i];
+        double val = feat_ptr[feat][i];
         if (std::isnan(val)) {
           nan_found = true;
           break;
         }
         num_nonzero[tid][leaf_num] += 1;
-        curr_row[feat] = val;
+        curr_row_ptr[feat] = val;
       } else {
-        curr_row[feat] = raw_data_ptr[leaf_num][feat][i];
+        curr_row_ptr[feat] = feat_ptr[feat][i];
       }
     }
     if (HAS_NAN) {
@@ -961,13 +963,13 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     double g = gradients[i];
     int j = 0;
     for (int feat1 = 0; feat1 < num_feat; ++feat1) {
-      double f1_val = curr_row[feat1];
+      double f1_val = curr_row_ptr[feat1];
       XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
       XTHX_by_thread_[tid][leaf_num][j] += f1_val * f1_val * h;
       f1_val *= h;
       ++j;
       for (int feat2 = feat1 + 1; feat2 < num_feat; ++feat2) {
-        XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[feat2];
+        XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row_ptr[feat2];
         ++j;
       }
       XTHX_by_thread_[tid][leaf_num][j] += f1_val;

@@ -131,14 +131,15 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
     }                                                                         \
     double add_score = leaf_const_[~node];                                    \
     bool nan_found = false;                                                   \
+    const double* coeff_ptr = leaf_coeff_[~node].data();                      \
+    const double** data_ptr = feat_ptr[~node].data();                         \
     for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {            \
-       int feat_num = leaf_features_inner_[~node][j];                         \
-       double feat_val = feat_ptr[(feat_num)][(data_idx)];                    \
+       double feat_val = data_ptr[j][(data_idx)];                             \
        if (std::isnan(feat_val)) {                                            \
           nan_found = true;                                                   \
           break;                                                              \
        }                                                                      \
-       add_score += leaf_coeff_[~node][j] * feat_val;                         \
+       add_score += coeff_ptr[j] * feat_val;                                  \
     }                                                                         \
     if (nan_found) {                                                          \
        score[(data_idx)] += leaf_value_[~node];                               \
@@ -167,15 +168,13 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    std::vector<const double*> feat_ptr;
-    for (int i = 0; i < data->num_features(); ++i) {
-      auto bin_mapper = data->FeatureBinMapper(i);
-      if (bin_mapper->bin_type() == BinType::NumericalBin) {
-        feat_ptr.push_back(data->raw_index(i));
-      } else {
-        feat_ptr.push_back(nullptr);
+    std::vector<std::vector<const double*>> feat_ptr(num_leaves_);
+    for (int leaf_num = 0; leaf_num < num_leaves_; ++leaf_num) {
+      for (int feat : leaf_features_inner_[leaf_num]) {
+        feat_ptr[leaf_num].push_back(data->raw_index(feat));
       }
     }
+
     if (num_cat_ > 0) {
       if (data->num_features() > num_leaves_ - 1) {
         Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
@@ -252,13 +251,10 @@ void Tree::AddPredictionToScore(const Dataset* data,
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    std::vector<const double*> feat_ptr;
-    for (int i = 0; i < data->num_features(); ++i) {
-      auto bin_mapper = data->FeatureBinMapper(i);
-      if (bin_mapper->bin_type() == BinType::NumericalBin) {
-        feat_ptr.push_back(data->raw_index(i));
-      } else {
-        feat_ptr.push_back(nullptr);
+    std::vector<std::vector<const double*>> feat_ptr(num_leaves_);
+    for (int leaf_num = 0; leaf_num < num_leaves_; ++leaf_num) {
+      for (int feat : leaf_features_inner_[leaf_num]) {
+        feat_ptr[leaf_num].push_back(data->raw_index(feat));
       }
     }
     if (num_cat_ > 0) {
