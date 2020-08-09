@@ -154,9 +154,12 @@ class SerialTreeLearner: public TreeLearner {
         feat_ptr[leaf_num].push_back(train_data_->raw_index(feat));
       }
     }
-#pragma omp parallel for schedule(static) if (num_data_ > 1024)
+//#pragma omp parallel for schedule(static) if (num_data_ > 1024)
     for (int i = 0; i < num_data_; ++i) {
       int leaf_num = leaf_map_[i];
+      if (leaf_num < 0) {
+        continue;
+      }
       double output = leaf_const[leaf_num];
       if (HAS_NAN) {
         bool nan_found = false;
