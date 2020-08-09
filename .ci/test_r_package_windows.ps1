@@ -111,8 +111,7 @@ Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT 
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-#./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH
-Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
+./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
