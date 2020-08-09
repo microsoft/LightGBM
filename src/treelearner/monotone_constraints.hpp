@@ -988,8 +988,10 @@ public:
         (monotone_type == 1 && !min_constraints_to_be_updated)) {
       return std::pair<bool, bool>(true, false);
     }
-    if ((monotone_type == 1 && min_constraints_to_be_updated) ||
-        (monotone_type == -1 && !min_constraints_to_be_updated)) {
+//    Same as
+//    if ((monotone_type == 1 && min_constraints_to_be_updated) ||
+//        (monotone_type == -1 && !min_constraints_to_be_updated))
+    else {
       return std::pair<bool, bool>(false, true);
     }
   }
