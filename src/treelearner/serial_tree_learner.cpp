@@ -94,6 +94,8 @@ void SerialTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
   }
   // preallocate the matrix used to calculate linear model coefficients
   int max_num_feat = std::min(max_leaves, train_data_->num_numeric_features());
+  XTHX_.clear();
+  XTg_.clear();
   for (int i = 0; i < max_leaves; ++i) {
     // store only upper triangular half of matrix as an array, in row-major order
     // this requires (max_num_feat + 1) * (max_num_feat + 2) / 2 entries (including the constant terms of the regression)
@@ -101,6 +103,8 @@ void SerialTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
     XTHX_.push_back(std::vector<double>((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
     XTg_.push_back(std::vector<double>(max_num_feat + 9, 0.0));
   }
+  XTHX_by_thread_.clear();
+  XTg_by_thread_.clear();
   for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
     XTHX_by_thread_.push_back(XTHX_);
     XTg_by_thread_.push_back(XTg_);
@@ -245,6 +249,9 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
         }
       }
     }
+
+    GetLeafMap(tree_prt);
+
     if (has_nan) {
       CalculateLinear<true>(tree_prt, false, gradients_, hessians_, is_first_tree);
     } else {
@@ -299,6 +306,7 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
         }
       }
     }
+    GetLeafMap(tree_prt);
     if (has_nan) {
       CalculateLinear<true>(tree_prt, true, gradients, hessians, false);
     } else {
@@ -845,6 +853,18 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
   *split = bests[best_idx];
 }
 
+void SerialTreeLearner::GetLeafMap(Tree* tree) {
+  std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
+  // map data to leaf number
+  const data_size_t* ind = data_partition_->indices();
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < tree->num_leaves(); ++i) {
+    data_size_t idx = data_partition_->leaf_begin(i);
+    for (int j = 0; j < data_partition_->leaf_count(i); ++j) {
+      leaf_map_[ind[idx + j]] = i;
+    }
+  }
+}
 
 template<bool HAS_NAN>
 void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) {
@@ -857,16 +877,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   }
 
   bool data_has_nan = false;
-  std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
-  // map data to leaf number
-  const data_size_t* ind = data_partition_->indices();
-#pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < tree->num_leaves(); ++i) {
-    data_size_t idx = data_partition_->leaf_begin(i);
-    for (int j = 0; j < data_partition_->leaf_count(i); ++j) {
-      leaf_map_[ind[idx + j]] = i;
-    }
-  }
   // calculate coefficients using the additive method described in https://arxiv.org/pdf/1802.05640.pdf
   // the coefficients vector is given by
   // - (X_T * H * X + lambda) ^ (-1) * (X_T * H * y + g_T X)
@@ -1009,6 +1019,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
         double old_const = tree->LeafConst(leaf_num);
         tree->SetLeafConst(leaf_num, decay_rate * old_const + (1.0 - decay_rate) * tree->LeafOutput(leaf_num) * shrinkage);
         tree->SetLeafCoeffs(leaf_num, std::vector<double>(leaf_features[leaf_num].size(), 0));
+        tree->SetLeafFeaturesInner(leaf_num, leaf_features[leaf_num]);
       } else {
         tree->SetLeafConst(leaf_num, tree->LeafOutput(leaf_num));
       }

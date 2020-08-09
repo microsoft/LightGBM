@@ -82,6 +82,9 @@ class SerialTreeLearner: public TreeLearner {
 
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
 
+  /*! \brief Create array mapping dataset to leaf index, used for linear trees */
+  void GetLeafMap(Tree* tree);
+
   template<bool HAS_NAN>
   void CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree);
 
@@ -132,15 +135,6 @@ class SerialTreeLearner: public TreeLearner {
 
   template<bool HAS_NAN>
   void AddPredictionToScoreInner(const Tree* tree, double* out_score) {
-    std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
-    // map data to leaf number
-    for (int i = 0; i < tree->num_leaves(); ++i) {
-      data_size_t cnt_leaf_data = 0;
-      auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-      for (int j = 0; j < cnt_leaf_data; ++j) {
-        leaf_map_[tmp_idx[j]] = i;
-      }
-    }
     int num_leaves = tree->num_leaves();
     std::vector<double> leaf_const(num_leaves);
     std::vector<std::vector<double>> leaf_coeff(num_leaves);
@@ -154,7 +148,7 @@ class SerialTreeLearner: public TreeLearner {
         feat_ptr[leaf_num].push_back(train_data_->raw_index(feat));
       }
     }
-//#pragma omp parallel for schedule(static) if (num_data_ > 1024)
+#pragma omp parallel for schedule(static) if (num_data_ > 1024)
     for (int i = 0; i < num_data_; ++i) {
       int leaf_num = leaf_map_[i];
       if (leaf_num < 0) {
