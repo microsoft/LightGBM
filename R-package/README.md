@@ -37,14 +37,14 @@ Binaries are available for Windows, Mac, and Linux systems. They are not guarant
 
 To install a binary for the R package:
 
-1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases)
-2. Choose a file based on your operating system. Right-click it and choose "copy link address"
+1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases).
+2. Choose a file based on your operating system. Right-click it and choose "copy link address".
     * Linux: `lightgbm-{VERSION}-r40-linux.tgz`
     * Mac: `lightgbm-{VERSION}-r40-macos.tgz`
     * Windows: `lightgbm-{VERSION}-r40-windows.zip`
 3. Copy that link into `PKG_URL` in the code below and run it.
 
-This sample code installs versioon 3.0.0-1 of the R package on Mac.
+This sample code installs version 3.0.0-1 of the R package on Mac.
 
 ```r
 PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r40-macos.tgz"
@@ -276,11 +276,11 @@ This section is mainly for maintainers. As long as the R package is not availabl
 
 For more details, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Building-binary-packages).
 
-Packages built like this will only work for the minor version of R used to build them. They may or may not work across different versions of operating systems
+Packages built like this will only work for the minor version of R used to build them. They may or may not work across different versions of operating systems.
 
 **Mac**
 
-Binary produced: `lightgbm_${VERSION}-r40-macos.tgz`
+Binary produced: `lightgbm-${VERSION}-r40-macos.tgz`.
 
 ```shell
 LGB_VERSION="3.0.0-1"
@@ -288,12 +288,12 @@ sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
     lightgbm_${LGB_VERSION}.tgz \
-    lightgbm_${LGB_VERSION}-r40-macos.tgz
+    lightgbm-${LGB_VERSION}-r40-macos.tgz
 ```
 
 **Linux**
 
-Binary produced: `lightgbm_${VERSION}-r40-linux.tar.gz`
+Binary produced: `lightgbm-${VERSION}-r40-linux.tar.gz`.
 
 You can access a Linux system that has R and its build toolchain installed with the `rocker` Docker images.
 
@@ -306,7 +306,7 @@ docker run \
         /bin/bash
 ```
 
-From inside that container, the commands to create a precompiled binary are very similar
+From inside that container, the commands to create a precompiled binary are very similar.
 
 ```shell
 cd /opt/LightGBM
@@ -315,7 +315,7 @@ sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
     lightgbm_${LGB_VERSION}_R_*-linux-gnu.tar.gz \
-    lightgbm_${LGB_VERSION}-r40-linux.tgz
+    lightgbm-${LGB_VERSION}-r40-linux.tgz
 ```
 
 Exit the container, and the binary package should still be there on the host system.
@@ -326,7 +326,7 @@ exit
 
 **Windows**
 
-Binary produced: `lightgbm_${VERSION}.zip`
+Binary produced: `lightgbm-${VERSION}-r40-windows.zip`.
 
 ```shell
 LGB_VERSION="3.0.0-1"
@@ -334,7 +334,7 @@ sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
     lightgbm_${LGB_VERSION}.tgz \
-    lightgbm_${LGB_VERSION}-r40-windows.tgz
+    lightgbm-${LGB_VERSION}-r40-windows.zip
 ```
 
 External (Unofficial) Repositories
