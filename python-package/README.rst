@@ -34,6 +34,12 @@ Install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first. Aft
 
     pip install lightgbm
 
+The 3.0 version is pre-released, you can install it via:
+
+.. code:: sh
+
+   pip install lightgbm==3.0.0rc1
+
 Build from Sources
 ******************
 

@@ -10,10 +10,15 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
 TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 
+install_libs_content <- readLines(
+  file.path("R-package", "src", "install.libs.R")
+)
+USING_GPU <- any(grepl("use_gpu.*TRUE", install_libs_content))
+
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
-  if (!res) {
+  if (!all(res)) {
     stop("Copying files failed!")
   }
 }
@@ -70,6 +75,20 @@ result <- file.copy(
 )
 .handle_result(result)
 
+# Add blank Makevars files
+result <- file.copy(
+  from = file.path(TEMP_R_DIR, "inst", "Makevars")
+  , to = file.path(TEMP_SOURCE_DIR, "Makevars")
+  , overwrite = TRUE
+)
+.handle_result(result)
+result <- file.copy(
+  from = file.path(TEMP_R_DIR, "inst", "Makevars.win")
+  , to = file.path(TEMP_SOURCE_DIR, "Makevars.win")
+  , overwrite = TRUE
+)
+.handle_result(result)
+
 result <- file.copy(
   from = "include/"
   , to =  sprintf("%s/", TEMP_SOURCE_DIR)
@@ -86,18 +105,32 @@ result <- file.copy(
 )
 .handle_result(result)
 
-result <- file.copy(
-  from = "compute/"
-  , to = sprintf("%s/", TEMP_SOURCE_DIR)
-  , recursive = TRUE
-  , overwrite = TRUE
-)
-.handle_result(result)
+# compute/ is a submodule with boost, only needed if
+# building the R package with GPU support
+if (USING_GPU) {
+  result <- file.copy(
+    from = "compute/"
+    , to = sprintf("%s/", TEMP_SOURCE_DIR)
+    , recursive = TRUE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
 
 result <- file.copy(
   from = "CMakeLists.txt"
   , to = file.path(TEMP_R_DIR, "inst", "bin/")
   , overwrite = TRUE
+)
+.handle_result(result)
+
+# remove CRAN-specific files
+result <- file.remove(
+  file.path(TEMP_R_DIR, "configure")
+  , file.path(TEMP_R_DIR, "configure.ac")
+  , file.path(TEMP_R_DIR, "configure.win")
+  , file.path(TEMP_SOURCE_DIR, "Makevars.in")
+  , file.path(TEMP_SOURCE_DIR, "Makevars.win.in")
 )
 .handle_result(result)
 

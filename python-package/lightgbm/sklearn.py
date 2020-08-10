@@ -602,7 +602,7 @@ class LGBMModel(_LGBMModelBase):
         if evals_result:
             self._evals_result = evals_result
 
-        if early_stopping_rounds is not None:
+        if early_stopping_rounds is not None and early_stopping_rounds > 0:
             self._best_iteration = self._Booster.best_iteration
 
         self._best_score = self._Booster.best_score
@@ -612,7 +612,7 @@ class LGBMModel(_LGBMModelBase):
         del train_set, valid_sets
         return self
 
-    def predict(self, X, raw_score=False, num_iteration=None,
+    def predict(self, X, raw_score=False, start_iteration=None, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
         """Return the predicted value for each sample.
 
@@ -622,6 +622,9 @@ class LGBMModel(_LGBMModelBase):
             Input features matrix.
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
+        start_iteration : int or None, optional (default=None)
+            Start index of the iteration to predict.
+            If None or <= 0, starts from the first iteration.
         num_iteration : int or None, optional (default=None)
             Limit number of iterations in the prediction.
             If None, if the best iteration exists, it is used; otherwise, all trees are used.
@@ -661,7 +664,7 @@ class LGBMModel(_LGBMModelBase):
                              "match the input. Model n_features_ is %s and "
                              "input n_features is %s "
                              % (self._n_features, n_features))
-        return self._Booster.predict(X, raw_score=raw_score, num_iteration=num_iteration,
+        return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
     @property
@@ -782,20 +785,28 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
         self._classes = self._le.classes_
         self._n_classes = len(self._classes)
+
         if self._n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             ova_aliases = {"multiclassova", "multiclass_ova", "ova", "ovr"}
             if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
-            if eval_metric in {'logloss', 'binary_logloss'}:
-                eval_metric = "multi_logloss"
-            elif eval_metric in {'error', 'binary_error'}:
-                eval_metric = "multi_error"
-        else:
-            if eval_metric in {'logloss', 'multi_logloss'}:
-                eval_metric = 'binary_logloss'
-            elif eval_metric in {'error', 'multi_error'}:
-                eval_metric = 'binary_error'
+
+        if not callable(eval_metric):
+            if isinstance(eval_metric, (string_type, type(None))):
+                eval_metric = [eval_metric]
+            if self._n_classes > 2:
+                for index, metric in enumerate(eval_metric):
+                    if metric in {'logloss', 'binary_logloss'}:
+                        eval_metric[index] = "multi_logloss"
+                    elif metric in {'error', 'binary_error'}:
+                        eval_metric[index] = "multi_error"
+            else:
+                for index, metric in enumerate(eval_metric):
+                    if metric in {'logloss', 'multi_logloss'}:
+                        eval_metric[index] = 'binary_logloss'
+                    elif metric in {'error', 'multi_error'}:
+                        eval_metric[index] = 'binary_error'
 
         # do not modify args, as it causes errors in model selection tools
         valid_sets = None
@@ -824,10 +835,10 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
     fit.__doc__ = LGBMModel.fit.__doc__
 
-    def predict(self, X, raw_score=False, num_iteration=None,
+    def predict(self, X, raw_score=False, start_iteration=None, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
         """Docstring is inherited from the LGBMModel."""
-        result = self.predict_proba(X, raw_score, num_iteration,
+        result = self.predict_proba(X, raw_score, start_iteration, num_iteration,
                                     pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) or raw_score or pred_leaf or pred_contrib:
             return result
@@ -837,7 +848,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
     predict.__doc__ = LGBMModel.predict.__doc__
 
-    def predict_proba(self, X, raw_score=False, num_iteration=None,
+    def predict_proba(self, X, raw_score=False, start_iteration=None, num_iteration=None,
                       pred_leaf=False, pred_contrib=False, **kwargs):
         """Return the predicted probability for each class for each sample.
 
@@ -847,6 +858,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             Input features matrix.
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
+        start_iteration : int or None, optional (default=None)
+            Start index of the iteration to predict.
+            If None or <= 0, starts from the first iteration.
         num_iteration : int or None, optional (default=None)
             Limit number of iterations in the prediction.
             If None, if the best iteration exists, it is used; otherwise, all trees are used.
@@ -876,7 +890,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
             If ``pred_contrib=True``, the feature contributions for each sample.
         """
-        result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
+        result = super(LGBMClassifier, self).predict(X, raw_score, start_iteration, num_iteration,
                                                      pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             warnings.warn("Cannot compute class probabilities or labels "
