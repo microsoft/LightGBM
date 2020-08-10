@@ -2902,12 +2902,12 @@ class Booster(object):
         predictor = self._to_predictor(copy.deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
-        out_is_linear = ctypes.c_int(0)
+        out_is_linear = ctypes.c_bool(False)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
         new_params = copy.deepcopy(self.params)
-        new_params["linear_tree"] = out_is_linear.value > 0
+        new_params["linear_tree"] = out_is_linear.value
         train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
