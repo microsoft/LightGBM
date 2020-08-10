@@ -148,8 +148,10 @@ class SerialTreeLearner: public TreeLearner {
         feat_ptr[leaf_num].push_back(train_data_->raw_index(feat));
       }
     }
+    OMP_INIT_EX();
 #pragma omp parallel for schedule(static) if (num_data_ > 1024)
     for (int i = 0; i < num_data_; ++i) {
+      OMP_LOOP_EX_BEGIN();
       int leaf_num = leaf_map_[i];
       if (leaf_num < 0) {
         continue;
@@ -176,7 +178,9 @@ class SerialTreeLearner: public TreeLearner {
         }
         out_score[i] += output;
       }
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
   }
 
 

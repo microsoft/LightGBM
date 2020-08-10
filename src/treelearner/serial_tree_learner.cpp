@@ -940,8 +940,10 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
   }
   std::vector<double> curr_row(max_num_features);
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static) firstprivate(curr_row) if (num_data_ > 1024)
   for (int i = 0; i < num_data_; ++i) {
+    OMP_LOOP_EX_BEGIN();
     int tid = omp_get_thread_num();
     int leaf_num = leaf_map_[i];
     if (leaf_num < 0) {
@@ -985,7 +987,9 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
     XTg_by_thread_[tid][leaf_num][num_feat] += g;
     XTHX_by_thread_[tid][leaf_num][j] += h;
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   auto total_nonzero = std::vector<int>(tree->num_leaves());
   // aggregate results from different threads
   for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
