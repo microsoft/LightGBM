@@ -29,6 +29,7 @@
 #' @return a trained booster model \code{lgb.Booster}.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -46,6 +47,7 @@
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 3L
 #' )
+#' }
 #' @export
 lgb.train <- function(params = list(),
                       data,
@@ -124,9 +126,14 @@ lgb.train <- function(params = list(),
     end_iteration <- begin_iteration + nrounds - 1L
   }
 
-  if (!is.null(params[["interaction_constraints"]])) {
-    stop("lgb.train: interaction_constraints is not implemented")
+  # Check interaction constraints
+  cnames <- NULL
+  if (!is.null(colnames)) {
+    cnames <- colnames
+  } else if (!is.null(data$get_colnames())) {
+    cnames <- data$get_colnames()
   }
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params, cnames)
 
   # Update parameters with parsed parameters
   data$update_params(params)
@@ -196,7 +203,7 @@ lgb.train <- function(params = list(),
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
-  using_early_stopping_via_args <- !is.null(early_stopping_rounds)
+  using_early_stopping_via_args <- !is.null(early_stopping_rounds) && early_stopping_rounds > 0L
 
   boosting_param_names <- .PARAMETER_ALIASES()[["boosting"]]
   using_dart <- any(

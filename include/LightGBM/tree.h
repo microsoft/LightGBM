@@ -137,6 +137,8 @@ class Tree {
   inline int PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const;
 
   inline void PredictContrib(const double* feature_values, int num_features, double* output);
+  inline void PredictContribByMap(const std::unordered_map<int, double>& feature_values,
+                                  int num_features, std::unordered_map<int, double>* output);
 
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
@@ -457,6 +459,12 @@ class Tree {
                 PathElement *parent_unique_path, double parent_zero_fraction,
                 double parent_one_fraction, int parent_feature_index) const;
 
+  void TreeSHAPByMap(const std::unordered_map<int, double>& feature_values,
+                     std::unordered_map<int, double>* phi,
+                     int node, int unique_depth,
+                     PathElement *parent_unique_path, double parent_zero_fraction,
+                     double parent_one_fraction, int parent_feature_index) const;
+
   /*! \brief Extend our decision path with a fraction of one and zero extensions for TreeSHAP*/
   static void ExtendPath(PathElement *unique_path, int unique_depth,
                          double zero_fraction, double one_fraction, int feature_index);
@@ -666,6 +674,18 @@ inline void Tree::PredictContrib(const double* feature_values, int num_features,
     const int max_path_len = max_depth_ + 1;
     std::vector<PathElement> unique_path_data(max_path_len*(max_path_len + 1) / 2);
     TreeSHAP(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);
+  }
+}
+
+inline void Tree::PredictContribByMap(const std::unordered_map<int, double>& feature_values,
+                                      int num_features, std::unordered_map<int, double>* output) {
+  (*output)[num_features] += ExpectedValue();
+  // Run the recursion with preallocated space for the unique path data
+  if (num_leaves_ > 1) {
+    CHECK_GE(max_depth_, 0);
+    const int max_path_len = max_depth_ + 1;
+    std::vector<PathElement> unique_path_data(max_path_len*(max_path_len + 1) / 2);
+    TreeSHAPByMap(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);
   }
 }
 

@@ -210,6 +210,15 @@
     <ClInclude Include="..\src\treelearner\col_sampler.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp">
+      <Filter>include\LightGBM\utils\yamc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_rwlock_sched.hpp">
+      <Filter>include\LightGBM\utils\yamc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_shared_lock.hpp">
+      <Filter>include\LightGBM\utils\yamc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">

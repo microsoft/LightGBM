@@ -266,7 +266,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
     if (snapshot_freq > 0
         && (iter + 1) % snapshot_freq == 0) {
       std::string snapshot_out = model_output_path + ".snapshot_iter_" + std::to_string(iter + 1);
-      SaveModelToFile(0, -1, snapshot_out.c_str());
+      SaveModelToFile(0, -1, config_->saved_feature_importance_type, snapshot_out.c_str());
     }
   }
 }
@@ -589,23 +589,27 @@ const double* GBDT::GetTrainingScore(int64_t* out_len) {
   return train_score_updater_->score();
 }
 
-void GBDT::PredictContrib(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
-  int early_stop_round_counter = 0;
+void GBDT::PredictContrib(const double* features, double* output) const {
   // set zero
   const int num_features = max_feature_idx_ + 1;
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_ * (num_features + 1));
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+  const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       models_[i * num_tree_per_iteration_ + k]->PredictContrib(features, num_features, output + k*(num_features + 1));
     }
-    // check early stopping
-    ++early_stop_round_counter;
-    if (early_stop->round_period == early_stop_round_counter) {
-      if (early_stop->callback_function(output, num_tree_per_iteration_)) {
-        return;
-      }
-      early_stop_round_counter = 0;
+  }
+}
+
+void GBDT::PredictContribByMap(const std::unordered_map<int, double>& features,
+                               std::vector<std::unordered_map<int, double>>* output) const {
+  const int num_features = max_feature_idx_ + 1;
+  const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
+    // predict all the trees for one iteration
+    for (int k = 0; k < num_tree_per_iteration_; ++k) {
+      models_[i * num_tree_per_iteration_ + k]->PredictContribByMap(features, num_features, &((*output)[k]));
     }
   }
 }

@@ -35,10 +35,12 @@
 #include <malloc.h>
 #elif MM_MALLOC
 #include <mm_malloc.h>
-#elif defined(__GNUC__)
-#include <malloc.h>
-#define _mm_malloc(a, b) memalign(b, a)
-#define _mm_free(a) free(a)
+// https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+// https://www.oreilly.com/library/view/mac-os-x/0596003560/ch05s01s02.html
+#elif defined(__GNUC__) && defined(HAVE_MALLOC_H)
+  #include <malloc.h>
+  #define _mm_malloc(a, b) memalign(b, a)
+  #define _mm_free(a) free(a)
 #else
 #include <stdlib.h>
 #define _mm_malloc(a, b) malloc(a)
@@ -927,7 +929,7 @@ inline static bool CheckDoubleEqualOrdered(double a, double b) {
 }
 
 inline static double GetDoubleUpperBound(double a) {
-  return std::nextafter(a, INFINITY);;
+  return std::nextafter(a, INFINITY);
 }
 
 inline static size_t GetLine(const char* str) {

@@ -31,12 +31,13 @@ class Predictor {
   /*!
   * \brief Constructor
   * \param boosting Input boosting model
+  * \param start_iteration Start index of the iteration to predict
   * \param num_iteration Number of boosting round
   * \param is_raw_score True if need to predict result with raw score
   * \param predict_leaf_index True to output leaf index instead of prediction score
   * \param predict_contrib True to output feature contributions instead of prediction score
   */
-  Predictor(Boosting* boosting, int num_iteration, bool is_raw_score,
+  Predictor(Boosting* boosting, int start_iteration, int num_iteration, bool is_raw_score,
             bool predict_leaf_index, bool predict_contrib, bool early_stop,
             int early_stop_freq, double early_stop_margin) {
     early_stop_ = CreatePredictionEarlyStopInstance(
@@ -56,9 +57,9 @@ class Predictor {
       }
     }
 
-    boosting->InitPredict(num_iteration, predict_contrib);
+    boosting->InitPredict(start_iteration, num_iteration, predict_contrib);
     boosting_ = boosting;
-    num_pred_one_row_ = boosting_->NumPredictOneRow(
+    num_pred_one_row_ = boosting_->NumPredictOneRow(start_iteration,
         num_iteration, predict_leaf_index, predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_.resize(
@@ -88,12 +89,18 @@ class Predictor {
                          double* output) {
         int tid = omp_get_thread_num();
         CopyToPredictBuffer(predict_buf_[tid].data(), features);
-        // get result for leaf index
-        boosting_->PredictContrib(predict_buf_[tid].data(), output,
-                                  &early_stop_);
+        // get feature importances
+        boosting_->PredictContrib(predict_buf_[tid].data(), output);
         ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(),
                            features);
       };
+      predict_sparse_fun_ = [=](const std::vector<std::pair<int, double>>& features,
+                                std::vector<std::unordered_map<int, double>>* output) {
+        auto buf = CopyToPredictMap(features);
+        // get sparse feature importances
+        boosting_->PredictContribByMap(buf, output);
+      };
+
     } else {
       if (is_raw_score) {
         predict_fun_ = [=](const std::vector<std::pair<int, double>>& features,
@@ -138,6 +145,11 @@ class Predictor {
 
   inline const PredictFunction& GetPredictFunction() const {
     return predict_fun_;
+  }
+
+
+  inline const PredictSparseFunction& GetPredictSparseFunction() const {
+    return predict_sparse_fun_;
   }
 
   /*!
@@ -214,6 +226,7 @@ class Predictor {
                           data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> result_to_write(lines.size());
+      Log::Warning("before predict_fun_ is called");
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static) firstprivate(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
@@ -228,6 +241,7 @@ class Predictor {
         result_to_write[i] = str_result;
         OMP_LOOP_EX_END();
       }
+      Log::Warning("after predict_fun_ is called");
       OMP_THROW_EX();
       for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {
         writer->Write(result_to_write[i].c_str(), result_to_write[i].size());
@@ -275,6 +289,7 @@ class Predictor {
   const Boosting* boosting_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
+  PredictSparseFunction predict_sparse_fun_;
   PredictionEarlyStopInstance early_stop_;
   int num_feature_;
   int num_pred_one_row_;

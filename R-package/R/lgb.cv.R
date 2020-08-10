@@ -56,6 +56,7 @@ CVBooster <- R6::R6Class(
 #' @return a trained model \code{lgb.CVBooster}.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -68,6 +69,7 @@ CVBooster <- R6::R6Class(
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
 #' )
+#' }
 #' @importFrom data.table data.table setorderv
 #' @export
 lgb.cv <- function(params = list()
@@ -148,6 +150,15 @@ lgb.cv <- function(params = list()
     end_iteration <- begin_iteration + nrounds - 1L
   }
 
+  # Check interaction constraints
+  cnames <- NULL
+  if (!is.null(colnames)) {
+    cnames <- colnames
+  } else if (!is.null(data$get_colnames())) {
+    cnames <- data$get_colnames()
+  }
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params, cnames)
+
   # Check for weights
   if (!is.null(weight)) {
     data$setinfo("weight", weight)
@@ -223,7 +234,7 @@ lgb.cv <- function(params = list()
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
-  using_early_stopping_via_args <- !is.null(early_stopping_rounds)
+  using_early_stopping_via_args <- !is.null(early_stopping_rounds) && early_stopping_rounds > 0L
 
   boosting_param_names <- .PARAMETER_ALIASES()[["boosting"]]
   using_dart <- any(

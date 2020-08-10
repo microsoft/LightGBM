@@ -1,8 +1,8 @@
 Package: lightgbm
 Type: Package
 Title: Light Gradient Boosting Machine
-Version: 2.3.2
-Date: 2019-11-26
+Version: 3.0.0-1
+Date: 2020-08-06
 Authors@R: c(
     person("Guolin", "Ke", email = "guolin.ke@microsoft.com", role = c("aut", "cre")),
     person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("ctb")),
@@ -25,13 +25,10 @@ BugReports: https://github.com/Microsoft/LightGBM/issues
 NeedsCompilation: yes
 Biarch: false
 Suggests:
-    ggplot2 (>= 1.0.1),
-    knitr,
     processx,
-    rmarkdown,
     testthat
 Depends:
-    R (>= 3.4),
+    R (>= 3.5),
     R6 (>= 2.0)
 Imports:
     data.table (>= 1.9.6),
@@ -42,4 +39,4 @@ Imports:
     utils
 SystemRequirements:
     C++11
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1

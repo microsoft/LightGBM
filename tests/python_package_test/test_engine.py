@@ -9,9 +9,9 @@ import unittest
 
 import lightgbm as lgb
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris, load_svmlight_file)
+                              load_iris, load_svmlight_file, make_multilabel_classification)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
 
@@ -735,6 +735,50 @@ class TestEngine(unittest.TestCase):
                                    verbose_eval=False)
         np.testing.assert_allclose(cv_res_lambda['ndcg@3-mean'], cv_res_lambda_obj['ndcg@3-mean'])
 
+    def test_cvbooster(self):
+        X, y = load_breast_cancer(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        # with early stopping
+        cv_res = lgb.cv(params, lgb_train,
+                        num_boost_round=25,
+                        early_stopping_rounds=5,
+                        verbose_eval=False,
+                        nfold=3,
+                        return_cvbooster=True)
+        self.assertIn('cvbooster', cv_res)
+        cvb = cv_res['cvbooster']
+        self.assertIsInstance(cvb, lgb.CVBooster)
+        self.assertIsInstance(cvb.boosters, list)
+        self.assertEqual(len(cvb.boosters), 3)
+        self.assertTrue(all(isinstance(bst, lgb.Booster) for bst in cvb.boosters))
+        self.assertGreater(cvb.best_iteration, 0)
+        # predict by each fold booster
+        preds = cvb.predict(X_test, num_iteration=cvb.best_iteration)
+        self.assertIsInstance(preds, list)
+        self.assertEqual(len(preds), 3)
+        # fold averaging
+        avg_pred = np.mean(preds, axis=0)
+        ret = log_loss(y_test, avg_pred)
+        self.assertLess(ret, 0.13)
+        # without early stopping
+        cv_res = lgb.cv(params, lgb_train,
+                        num_boost_round=20,
+                        verbose_eval=False,
+                        nfold=3,
+                        return_cvbooster=True)
+        cvb = cv_res['cvbooster']
+        self.assertEqual(cvb.best_iteration, -1)
+        preds = cvb.predict(X_test)
+        avg_pred = np.mean(preds, axis=0)
+        ret = log_loss(y_test, avg_pred)
+        self.assertLess(ret, 0.15)
+
     def test_feature_name(self):
         X_train, y_train = load_boston(True)
         params = {'verbose': -1}
@@ -940,6 +984,60 @@ class TestEngine(unittest.TestCase):
 
         self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
                                        - np.sum(gbm.predict(X_test, pred_contrib=True), axis=1)), 1e-4)
+
+    def test_contribs_sparse(self):
+        n_features = 20
+        n_samples = 100
+        # generate CSR sparse dataset
+        X, y = make_multilabel_classification(n_samples=n_samples,
+                                              sparse=True,
+                                              n_features=n_features,
+                                              n_classes=1,
+                                              n_labels=2)
+        y = y.flatten()
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'verbose': -1,
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20)
+        contribs_csr = gbm.predict(X_test, pred_contrib=True)
+        self.assertTrue(isspmatrix_csr(contribs_csr))
+        # convert data to dense and get back same contribs
+        contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
+        # validate the values are the same
+        np.testing.assert_allclose(contribs_csr.toarray(), contribs_dense)
+        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
+                                       - np.sum(contribs_dense, axis=1)), 1e-4)
+        # validate using CSC matrix
+        X_test_csc = X_test.tocsc()
+        contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
+        self.assertTrue(isspmatrix_csc(contribs_csc))
+        # validate the values are the same
+        np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
+
+    @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
+    def test_int32_max_sparse_contribs(self):
+        params = {
+            'objective': 'binary'
+        }
+        train_features = np.random.rand(100, 1000)
+        train_targets = [0] * 50 + [1] * 50
+        lgb_train = lgb.Dataset(train_features, train_targets)
+        gbm = lgb.train(params, lgb_train, num_boost_round=2)
+        csr_input_shape = (3000000, 1000)
+        test_features = csr_matrix(csr_input_shape)
+        for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
+            for j in range(0, 1000, 100):
+                test_features[i, j] = random.random()
+        y_pred_csr = gbm.predict(test_features, pred_contrib=True)
+        # Note there is an extra column added to the output for the expected value
+        csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
+        self.assertTupleEqual(y_pred_csr.shape, csr_output_shape)
+        y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
+        # Note output CSC shape should be same as CSR output shape
+        self.assertTupleEqual(y_pred_csc.shape, csr_output_shape)
 
     def test_sliced_data(self):
         def train_and_get_predictions(features, labels):
@@ -2195,7 +2293,7 @@ class TestEngine(unittest.TestCase):
                   'seed': 0}
         est = lgb.train(params, train_data, num_boost_round=10)
         pred1 = est.predict(X)
-        est = lgb.train(dict(params, interation_constraints=[list(range(num_features))]), train_data,
+        est = lgb.train(dict(params, interaction_constraints=[list(range(num_features))]), train_data,
                         num_boost_round=10)
         pred2 = est.predict(X)
         np.testing.assert_allclose(pred1, pred2)
@@ -2210,6 +2308,13 @@ class TestEngine(unittest.TestCase):
                         num_boost_round=10)
         pred4 = est.predict(X)
         self.assertLess(mean_squared_error(y, pred3), mean_squared_error(y, pred4))
+        # test that interaction constraints work when not all features are used
+        X = np.concatenate([np.zeros((X.shape[0], 1)), X], axis=1)
+        num_features = X.shape[1]
+        train_data = lgb.Dataset(X, label=y)
+        est = lgb.train(dict(params, interaction_constraints=[[0] + list(range(2, num_features)),
+                                                              [1] + list(range(2, num_features))]),
+                        train_data, num_boost_round=10)
 
     def test_linear(self):
         # check that setting boosting=gbdt_linear fits better than boosting=gbdt when data has linear relationship
@@ -2291,3 +2396,89 @@ class TestEngine(unittest.TestCase):
         train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=60))
         est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
 
+    def test_predict_with_start_iteration(self):
+        def inner_test(X, y, params, early_stopping_rounds):
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+            train_data = lgb.Dataset(X_train, label=y_train)
+            valid_data = lgb.Dataset(X_test, label=y_test)
+            booster = lgb.train(params, train_data, num_boost_round=100, early_stopping_rounds=early_stopping_rounds, valid_sets=[valid_data])
+
+            # test that the predict once with all iterations equals summed results with start_iteration and num_iteration
+            all_pred = booster.predict(X, raw_score=True)
+            all_pred_contrib = booster.predict(X, pred_contrib=True)
+            steps = [10, 12]
+            for step in steps:
+                pred = np.zeros_like(all_pred)
+                pred_contrib = np.zeros_like(all_pred_contrib)
+                for start_iter in range(0, 100, step):
+                    pred += booster.predict(X, num_iteration=step, start_iteration=start_iter, raw_score=True)
+                    pred_contrib += booster.predict(X, num_iteration=step, start_iteration=start_iter, pred_contrib=True)
+                np.testing.assert_allclose(all_pred, pred)
+                np.testing.assert_allclose(all_pred_contrib, pred_contrib)
+            # test the case where start_iteration <= 0, and num_iteration is None
+            pred1 = booster.predict(X, start_iteration=-1)
+            pred2 = booster.predict(X, num_iteration=booster.best_iteration)
+            pred3 = booster.predict(X, num_iteration=booster.best_iteration, start_iteration=0)
+            np.testing.assert_allclose(pred1, pred2)
+            np.testing.assert_allclose(pred1, pred3)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=90)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0, with pred_leaf=True
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1, pred_leaf=True)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=90, pred_leaf=True)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0, pred_leaf=True)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0, with pred_contrib=True
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1, pred_contrib=True)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=90, pred_contrib=True)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0, pred_contrib=True)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+        # test for regression
+        X, y = load_boston(True)
+        params = {
+            'objective': 'regression',
+            'verbose': -1,
+            'metric': 'l2',
+            'learning_rate': 0.5
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=10)
+        inner_test(X, y, params, early_stopping_rounds=None)
+
+        # test for multi-class
+        X, y = load_iris(True)
+        params = {
+            'objective': 'multiclass',
+            'metric': 'multi_logloss',
+            'num_class': 3,
+            'verbose': -1,
+            'metric': 'multi_error'
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=10)
+        inner_test(X, y, params, early_stopping_rounds=None)
+
+        # test for binary
+        X, y = load_breast_cancer(True)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+            'metric': 'auc'
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=10)
+        inner_test(X, y, params, early_stopping_rounds=None)
