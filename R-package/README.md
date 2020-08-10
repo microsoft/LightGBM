@@ -13,22 +13,41 @@ LightGBM R-package
 Installation
 ------------
 
+### Installing the CRAN package
+
+As of this writing, `LightGBM`'s R package is not available on CRAN. However, start with `LightGBM` 3.0.0, you can install a released source distribution. This is the same type of package that you'd install from CRAN. It does not require `CMake`, Visual Studio, or anything else outside the CRAN toolchain.
+
+To install this package on any operating system:
+
+1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases)
+2. Look for the artifact with a name like `lgb-{VERSION}-r-cran.tar.gz`. Right-click it and choose "copy link address".
+3. Copy that link into `PKG_URL` in the code below and run it.
+
+```r
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r-cran.tar.gz"
+
+remotes::install_url(PKG_URL)
+```
+
 ### Installing Precompiled Binaries
 
 Starting with `LightGBM` 3.0.0, precompiled binaries for the R package are created for each release. These packages do not require compilation, so they will be faster and easier to install than packages that are built from source. These packages are created with R 4.0 and are not guaranteed to work with other R versions.
 
-Binaries are available for Windows, Mac, and Linux systems. They are not guaranteed to work with all variants and versions of these operating systems. Please [open an issue](https://github.com/microsoft/LightGBM/issues) if you encoutnter any problems.
+Binaries are available for Windows, Mac, and Linux systems. They are not guaranteed to work with all variants and versions of these operating systems. Please [open an issue](https://github.com/microsoft/LightGBM/issues) if you encounter any problems.
 
 To install a binary for the R package:
 
 1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases)
 2. Choose a file based on your operating system. Right-click it and choose "copy link address"
+    * Linux: `lightgbm-{VERSION}-r40-linux.tgz`
+    * Mac: `lightgbm-{VERSION}-r40-macos.tgz`
+    * Windows: `lightgbm-{VERSION}-r40-windows.zip`
 3. Copy that link into `PKG_URL` in the code below and run it.
 
 This sample code installs versioon 3.0.0-1 of the R package on Mac.
 
 ```r
-PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm_3.0.0-1-r40-macos.tgz"
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r40-macos.tgz"
 
 local_file <- paste0("lightgbm.", tools::file_ext(PKG_URL))
 
