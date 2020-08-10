@@ -26,7 +26,7 @@ To install this package on any operating system:
 ```r
 PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r-cran.tar.gz"
 
-remotes::install_url(PKG_URL)
+remotes::install_url(PKG_URL, INSTALL_OPTS = "--no-multiarch")
 ```
 
 ### Installing Precompiled Binaries
