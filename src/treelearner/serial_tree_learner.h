@@ -39,16 +39,12 @@ using json11::Json;
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
 
-/*! \brief forward declaration */
-class LinearTreeLearner;
-
 /*!
 * \brief Used for learning a tree by single machine
 */
 class SerialTreeLearner: public TreeLearner {
  public:
   friend CostEfficientGradientBoosting;
-  friend LinearTreeLearner;
   explicit SerialTreeLearner(const Config* config);
 
   ~SerialTreeLearner();
