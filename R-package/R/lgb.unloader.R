@@ -14,6 +14,7 @@
 #' @return NULL invisibly.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -31,7 +32,6 @@
 #'   , learning_rate = 1.0
 #' )
 #'
-#' \dontrun{
 #' lgb.unloader(restore = FALSE, wipe = FALSE, envir = .GlobalEnv)
 #' rm(model, dtrain, dtest) # Not needed if wipe = TRUE
 #' gc() # Not needed if wipe = TRUE
@@ -39,7 +39,6 @@
 #' library(lightgbm)
 #' # Do whatever you want again with LightGBM without object clashing
 #' }
-#'
 #' @export
 lgb.unloader <- function(restore = TRUE, wipe = FALSE, envir = .GlobalEnv) {
 

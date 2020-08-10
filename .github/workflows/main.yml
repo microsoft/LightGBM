@@ -12,6 +12,7 @@ jobs:
   test:
     name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -137,7 +138,6 @@ jobs:
           export CONDA_ENV="test-env"
           export CONDA="$HOME/miniconda"
           export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
-          export LGB_VER=$(head -n 1 VERSION.txt)
           export R_VERSION="${{ matrix.r_version }}"
           export R_BUILD_TYPE="${{ matrix.build_type }}"
           $GITHUB_WORKSPACE/.ci/setup.sh

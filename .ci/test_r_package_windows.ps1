@@ -8,7 +8,7 @@ function Download-File-With-Retries {
   do {
     Write-Output "Downloading ${url}"
     sleep 5;
-    (New-Object System.Net.WebClient).DownloadFile($url, $destfile)
+    Invoke-WebRequest -Uri $url -OutFile $destfile
   } while(!$?);
 }
 
@@ -82,7 +82,6 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
-$env:LGB_VER = Get-Content -Path VERSION.txt -TotalCount 1
 
 if ($env:R_BUILD_TYPE -eq "cmake") {
   if ($env:TOOLCHAIN -eq "MINGW") {
@@ -103,8 +102,8 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 
 # download R and RTools
 Write-Output "Downloading R and Rtools"
-Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-Download-File-With-Retries -url "https://cloud.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
+Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
+Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 # Install R
 Write-Output "Installing R"
@@ -112,7 +111,7 @@ Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT 
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
+./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
@@ -142,7 +141,7 @@ Write-Output "Building R package"
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
 
-  $PKG_FILE_NAME = "lightgbm_$env:LGB_VER.tar.gz"
+  $PKG_FILE_NAME = "lightgbm_*.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
@@ -160,7 +159,7 @@ if ($env:COMPILER -ne "MSVC") {
   }
 
   Write-Output "Running R CMD check as CRAN"
-  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
+  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-dontrun', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"

@@ -28,7 +28,7 @@
 #' }
 #'
 #' @examples
-#'
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -44,7 +44,7 @@
 #' model <- lgb.train(params, dtrain, 10L)
 #'
 #' tree_dt <- lgb.model.dt.tree(model)
-#'
+#' }
 #' @importFrom data.table := rbindlist
 #' @importFrom jsonlite fromJSON
 #' @export
