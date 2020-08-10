@@ -28,7 +28,7 @@ To install a binary for the R package:
 This sample code installs versioon 3.0.0-1 of the R package on Mac.
 
 ```r
-PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm_3.0.0-1-r40-macos.tgz"
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r40-macos.tgz"
 
 local_file <- paste0("lightgbm.", tools::file_ext(PKG_URL))
 
@@ -296,7 +296,7 @@ sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
     lightgbm_${LGB_VERSION}_R_*-linux-gnu.tar.gz \
-    lightgbm_${LGB_VERSION}-r40-linux.tgz
+    lightgbm-${LGB_VERSION}-r40-linux.tgz
 ```
 
 Exit the container, and the binary package should still be there on the host system.
@@ -307,7 +307,7 @@ exit
 
 **Windows**
 
-Binary produced: `lightgbm-${VERSION}.zip`.
+Binary produced: `lightgbm-${VERSION}-r40-windows.zip`.
 
 ```shell
 LGB_VERSION="3.0.0-1"
@@ -315,7 +315,7 @@ sh build-cran-package.sh
 R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
 mv \
     lightgbm_${LGB_VERSION}.tgz \
-    lightgbm-${LGB_VERSION}-r40-windows.tgz
+    lightgbm-${LGB_VERSION}-r40-windows.zip
 ```
 
 External (Unofficial) Repositories
