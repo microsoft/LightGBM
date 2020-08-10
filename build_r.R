@@ -10,6 +10,11 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
 TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 
+install_libs_content <- readLines(
+  file.path("R-package", "src", "install.libs.R")
+)
+USING_GPU <- any(grepl("use_gpu.*TRUE", install_libs_content))
+
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
@@ -100,13 +105,17 @@ result <- file.copy(
 )
 .handle_result(result)
 
-result <- file.copy(
-  from = "compute/"
-  , to = sprintf("%s/", TEMP_SOURCE_DIR)
-  , recursive = TRUE
-  , overwrite = TRUE
-)
-.handle_result(result)
+# compute/ is a submodule with boost, only needed if
+# building the R package with GPU support
+if (USING_GPU) {
+  result <- file.copy(
+    from = "compute/"
+    , to = sprintf("%s/", TEMP_SOURCE_DIR)
+    , recursive = TRUE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
 
 result <- file.copy(
   from = "CMakeLists.txt"
