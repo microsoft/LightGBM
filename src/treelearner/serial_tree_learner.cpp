@@ -77,7 +77,6 @@ void SerialTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
   leaf_map_ = std::vector<int>(train_data->num_data(), -1);
   contains_nan_ = std::vector<int8_t>(train_data->num_features(), 0);
   any_nan_ = false;
-
   // identify features containing nans
   for (int feat = 0; feat < train_data->num_features(); ++feat) {
     auto bin_mapper = train_data_->FeatureBinMapper(feat);
@@ -880,7 +879,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     return;
   }
 
-  bool data_has_nan = false;
   // calculate coefficients using the additive method described in https://arxiv.org/pdf/1802.05640.pdf
   // the coefficients vector is given by
   // - (X_T * H * X + lambda) ^ (-1) * (X_T * H * y + g_T X)
@@ -892,10 +890,10 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   // g is the vector of gradients
   // the subscript _T denotes the transpose
 
-  // create array of numerical features pointers to raw data, and coefficient matrices, for each leaf
+  // create array of pointers to raw data, and coefficient matrices, for each leaf
+  bool data_has_nan = false;
   std::vector<std::vector<int>> leaf_features;
   std::vector<std::vector<const double*>> raw_data_ptr;
-
   int max_num_features = 0;
   for (int i = 0; i < tree->num_leaves(); ++i) {
     std::vector<int> raw_features;
@@ -936,7 +934,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     std::fill(XTHX_[leaf_num].begin(), XTHX_[leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
     std::fill(XTg_[leaf_num].begin(), XTg_[leaf_num].begin() + num_feat + 1, 0);
   }
-
   std::vector<std::vector<int>> num_nonzero;
   for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
     if (HAS_NAN) {
@@ -1039,7 +1036,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
         XTHX_mat(feat1, feat2) = XTHX_[leaf_num][j];
         XTHX_mat(feat2, feat1) = XTHX_mat(feat1, feat2);
-        if ((feat1 == feat2) && (feat1 < num_feat)){
+        if ((feat1 == feat2) && (feat1 < num_feat)) {
           XTHX_mat(feat1, feat2) += config_->linear_lambda;
         }
         ++j;
@@ -1047,7 +1044,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       XTg_mat(feat1) = XTg_[leaf_num][feat1];
     }
     Eigen::MatrixXd coeffs = - XTHX_mat.fullPivLu().inverse() * XTg_mat;
-
     std::vector<double> coeffs_vec;
     std::vector<int> features_new;
     std::vector<double> old_coeffs = tree->LeafCoeffs(leaf_num);

@@ -127,8 +127,7 @@ class SerialTreeLearner: public TreeLearner {
       }
     }
   }
-
-
+  
   template<bool HAS_NAN>
   void AddPredictionToScoreInner(const Tree* tree, double* out_score) {
     int num_leaves = tree->num_leaves();
@@ -254,7 +253,6 @@ class SerialTreeLearner: public TreeLearner {
   FeatureHistogram* smaller_leaf_histogram_array_;
   /*! \brief pointer to histograms array of larger leaf */
   FeatureHistogram* larger_leaf_histogram_array_;
-
   /*! \brief store best split points for all leaves */
   std::vector<SplitInfo> best_split_per_leaf_;
   /*! \brief store best split per feature for all leaves */

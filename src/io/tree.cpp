@@ -172,7 +172,6 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
         feat_ptr[leaf_num].push_back(data->raw_index(feat));
       }
     }
-
     if (num_cat_ > 0) {
       if (data->num_features() > num_leaves_ - 1) {
         Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
@@ -198,7 +197,6 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
         });
       }
     }
-
   } else {
     if (num_cat_ > 0) {
       if (data->num_features() > num_leaves_ - 1) {
@@ -283,7 +281,6 @@ void Tree::AddPredictionToScore(const Dataset* data,
         });
       }
     }
-
   } else {
     if (num_cat_ > 0) {
       if (data->num_features() > num_leaves_ - 1) {
@@ -375,14 +372,12 @@ std::string Tree::ToString() const {
   if (is_linear_) {
     str_buf << "leaf_const="
       << Common::ArrayToStringFast(leaf_const_, num_leaves_) << '\n';
-
     std::vector<int> num_feat(num_leaves_);
     for (int i = 0; i < num_leaves_; ++i) {
       num_feat[i] = leaf_coeff_[i].size();
     }
     str_buf << "num_features="
       << Common::ArrayToStringFast(num_feat, num_leaves_) << '\n';
-
     str_buf << "leaf_features=";
     for (int i = 0; i < num_leaves_; ++i) {
       if (num_feat[i] > 0){
@@ -391,7 +386,6 @@ std::string Tree::ToString() const {
       str_buf << ' ';
     }
     str_buf << '\n';
-
     str_buf << "leaf_coeff=";
     for (int i = 0; i < num_leaves_; ++i) {
       if (num_feat[i] > 0){
@@ -401,7 +395,6 @@ std::string Tree::ToString() const {
     }
     str_buf << '\n';
   }
-
   str_buf << "shrinkage=" << shrinkage_ << '\n';
   str_buf << '\n';
 
