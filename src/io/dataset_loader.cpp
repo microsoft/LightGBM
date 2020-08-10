@@ -1072,14 +1072,11 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   std::vector<std::pair<int, double>> oneline_features;
   double tmp_label = 0.0f;
   auto& ref_text_data = *text_data;
+  std::vector<double> feature_row;
   if (predict_fun_ == nullptr) {
-    std::vector<double> feature_row;
-    if (dataset->has_raw()) {
-      feature_row = std::vector<double>(dataset->num_features_, 0.0f);
-    }
     OMP_INIT_EX();
     // if doesn't need to prediction with initial model
-    #pragma omp parallel for schedule(static) private(oneline_features, feature_row) firstprivate(tmp_label)
+    #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1127,14 +1124,10 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
     }
     OMP_THROW_EX();
   } else {
-    std::vector<double> feature_row;
-    if (dataset->has_raw()) {
-      feature_row = std::vector<double>(dataset->num_features_, 0.0f);
-    }
     OMP_INIT_EX();
     // if need to prediction with initial model
     std::vector<double> init_score(dataset->num_data_ * num_class_);
-    #pragma omp parallel for schedule(static) private(oneline_features, feature_row) firstprivate(tmp_label)
+    #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
@@ -1207,12 +1200,9 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   (data_size_t start_idx, const std::vector<std::string>& lines) {
     std::vector<std::pair<int, double>> oneline_features;
     double tmp_label = 0.0f;
-    std::vector<double> feature_row;
-    if (dataset->has_raw()) {
-      feature_row = std::vector<double>(dataset->num_features(), 0.0f);
-    }
+    std::vector<double> feature_row(dataset->num_features_);
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static) private(oneline_features, feature_row) firstprivate(tmp_label)
+    #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
