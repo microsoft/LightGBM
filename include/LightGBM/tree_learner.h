@@ -101,9 +101,8 @@ class TreeLearner {
   * \param config config of tree
   */
   static TreeLearner* CreateTreeLearner(const std::string& learner_type,
-    const std::string& device_type,
-    const std::string& booster_type,
-    const Config* config);
+                                        const std::string& device_type,
+                                        const Config* config);
 };
 
 }  // namespace LightGBM
