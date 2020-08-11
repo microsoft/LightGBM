@@ -945,7 +945,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   OMP_INIT_EX();
 #pragma omp parallel if (num_data_ > 1024)
   {
-    std::vector<double> curr_row(max_num_features);
+    std::vector<double> curr_row(max_num_features + 1);
     int tid = omp_get_thread_num();
     #pragma omp for schedule(static)
     for (int i = 0; i < num_data_; ++i) {
@@ -974,24 +974,19 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
           continue;
         }
       }
+      curr_row[num_feat] = 1.0;
       double h = hessians[i];
       double g = gradients[i];
       int j = 0;
-      for (int feat1 = 0; feat1 < num_feat; ++feat1) {
+      for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
         double f1_val = curr_row[feat1];
         XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
-        XTHX_by_thread_[tid][leaf_num][j] += f1_val * f1_val * h;
         f1_val *= h;
-        ++j;
-        for (int feat2 = feat1 + 1; feat2 < num_feat; ++feat2) {
+        for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
           XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[feat2];
           ++j;
         }
-        XTHX_by_thread_[tid][leaf_num][j] += f1_val;
-        ++j;
       }
-      XTg_by_thread_[tid][leaf_num][num_feat] += g;
-      XTHX_by_thread_[tid][leaf_num][j] += h;
       OMP_LOOP_EX_END();
     }
   }
