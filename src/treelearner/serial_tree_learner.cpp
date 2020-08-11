@@ -872,8 +872,10 @@ void SerialTreeLearner::GetLeafMap(Tree* tree) {
 template<bool HAS_NAN>
 void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) {
   tree->SetLinear(true);
+  int num_leaves = tree->num_leaves();
+  int num_threads = OMP_NUM_THREADS();
   if (is_first_tree) {
-    for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+    for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       tree->SetLeafConst(leaf_num, tree->LeafOutput(leaf_num));
     }
     return;
@@ -896,7 +898,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   std::vector<int> leaf_num_features;
   std::vector<std::vector<const double*>> raw_data_ptr;
   int max_num_features = 0;
-  for (int i = 0; i < tree->num_leaves(); ++i) {
+  for (int i = 0; i < num_leaves; ++i) {
     std::vector<int> raw_features;
     if (is_refit) {
       raw_features = tree->LeafFeatures(i);
@@ -924,22 +926,22 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
   }
   // clear the coefficient matrices
-  for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
-    for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+  for (int tid = 0; tid < num_threads; ++tid) {
+    for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       int num_feat = leaf_features[leaf_num].size();
       std::fill(XTHX_by_thread_[tid][leaf_num].begin(), XTHX_by_thread_[tid][leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
       std::fill(XTg_by_thread_[tid][leaf_num].begin(), XTg_by_thread_[tid][leaf_num].begin() + num_feat + 1, 0);
     }
   }
-  for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+  for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
     int num_feat = leaf_features[leaf_num].size();
     std::fill(XTHX_[leaf_num].begin(), XTHX_[leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
     std::fill(XTg_[leaf_num].begin(), XTg_[leaf_num].begin() + num_feat + 1, 0);
   }
   std::vector<std::vector<int>> num_nonzero;
-  for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
+  for (int i = 0; i < num_threads; ++i) {
     if (HAS_NAN) {
-      num_nonzero.push_back(std::vector<int>(tree->num_leaves(), 0));
+      num_nonzero.push_back(std::vector<int>(num_leaves, 0));
     }
   }
   OMP_INIT_EX();
@@ -993,8 +995,8 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   OMP_THROW_EX();
   auto total_nonzero = std::vector<int>(tree->num_leaves());
   // aggregate results from different threads
-  for (int tid = 0; tid < OMP_NUM_THREADS(); ++tid) {
-    for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+  for (int tid = 0; tid < num_threads; ++tid) {
+    for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       int num_feat = leaf_features[leaf_num].size();
       for (int j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {
         XTHX_[leaf_num][j] += XTHX_by_thread_[tid][leaf_num][j];
@@ -1008,7 +1010,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
   }
   if (!HAS_NAN) {
-    for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+    for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       total_nonzero[leaf_num] = data_partition_->leaf_count(leaf_num);
     }
   }
@@ -1016,7 +1018,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   double decay_rate = config_->refit_decay_rate;
   // copy into eigen matrices and solve
 #pragma omp parallel for schedule(static)
-  for (int leaf_num = 0; leaf_num < tree->num_leaves(); ++leaf_num) {
+  for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
     if (total_nonzero[leaf_num] < leaf_features[leaf_num].size() + 1) {
       if (is_refit) {
         double old_const = tree->LeafConst(leaf_num);
