@@ -940,55 +940,58 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       num_nonzero.push_back(std::vector<int>(tree->num_leaves(), 0));
     }
   }
-  std::vector<double> curr_row(max_num_features);
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static) firstprivate(curr_row) if (num_data_ > 1024)
-  for (int i = 0; i < num_data_; ++i) {
-    OMP_LOOP_EX_BEGIN();
+#pragma omp parallel if (num_data_ > 1024)
+  {
+    std::vector<double> curr_row(max_num_features);
     int tid = omp_get_thread_num();
-    int leaf_num = leaf_map_[i];
-    if (leaf_num < 0) {
-      continue;
-    }
-    bool nan_found = false;
-    data_size_t num_feat = leaf_features[leaf_num].size();
-    for (int feat = 0; feat < num_feat;  ++feat) {
-      if (HAS_NAN) {
-        double val = raw_data_ptr[leaf_num][feat][i];
-        if (std::isnan(val)) {
-          nan_found = true;
-          break;
-        }
-        num_nonzero[tid][leaf_num] += 1;
-        curr_row[feat] = val;
-      } else {
-        curr_row[feat] = raw_data_ptr[leaf_num][feat][i];
-      }
-    }
-    if (HAS_NAN) {
-      if (nan_found) {
+    #pragma omp for schedule(static)
+    for (int i = 0; i < num_data_; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      int leaf_num = leaf_map_[i];
+      if (leaf_num < 0) {
         continue;
       }
-    }
-    double h = hessians[i];
-    double g = gradients[i];
-    int j = 0;
-    for (int feat1 = 0; feat1 < num_feat; ++feat1) {
-      double f1_val = curr_row[feat1];
-      XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
-      XTHX_by_thread_[tid][leaf_num][j] += f1_val * f1_val * h;
-      f1_val *= h;
-      ++j;
-      for (int feat2 = feat1 + 1; feat2 < num_feat; ++feat2) {
-        XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[feat2];
+      bool nan_found = false;
+      int num_feat = leaf_features[leaf_num].size();
+      for (int feat = 0; feat < num_feat; ++feat) {
+        if (HAS_NAN) {
+          double val = raw_data_ptr[leaf_num][feat][i];
+          if (std::isnan(val)) {
+            nan_found = true;
+            break;
+          }
+          num_nonzero[tid][leaf_num] += 1;
+          curr_row[feat] = val;
+        } else {
+          curr_row[feat] = raw_data_ptr[leaf_num][feat][i];
+        }
+      }
+      if (HAS_NAN) {
+        if (nan_found) {
+          continue;
+        }
+      }
+      double h = hessians[i];
+      double g = gradients[i];
+      int j = 0;
+      for (int feat1 = 0; feat1 < num_feat; ++feat1) {
+        double f1_val = curr_row[feat1];
+        XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
+        XTHX_by_thread_[tid][leaf_num][j] += f1_val * f1_val * h;
+        f1_val *= h;
+        ++j;
+        for (int feat2 = feat1 + 1; feat2 < num_feat; ++feat2) {
+          XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[feat2];
+          ++j;
+        }
+        XTHX_by_thread_[tid][leaf_num][j] += f1_val;
         ++j;
       }
-      XTHX_by_thread_[tid][leaf_num][j] += f1_val;
-      ++j;
+      XTg_by_thread_[tid][leaf_num][num_feat] += g;
+      XTHX_by_thread_[tid][leaf_num][j] += h;
+      OMP_LOOP_EX_END();
     }
-    XTg_by_thread_[tid][leaf_num][num_feat] += g;
-    XTHX_by_thread_[tid][leaf_num][j] += h;
-    OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
   auto total_nonzero = std::vector<int>(tree->num_leaves());
