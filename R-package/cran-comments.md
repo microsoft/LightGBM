@@ -47,7 +47,7 @@ Failing pre-checks.
 
 ### Maintainer Notes
 
-Seems removing `Biarch` field did't work. Noticed this in the install logs:
+Seems removing `Biarch` field didn't work. Noticed this in the install logs:
 
 > Warning: this package has a non-empty 'configure.win' file, so building only the main architecture
 
