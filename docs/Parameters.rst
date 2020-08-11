@@ -125,6 +125,8 @@ Core Parameters
 
       -  missing values must be encoded as np.nan (Python) or NA (cli), not 0
 
+      -  it is recommended to rescale data before training so that features have similar mean and standard deviation
+
       -  not yet supported in R-package
 
       -  ``regression_l1 `` objective is not supported with linear tree boosting

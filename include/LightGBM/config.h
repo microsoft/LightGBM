@@ -151,6 +151,7 @@ struct Config {
   // desc = fit piecewise linear gradient boosting tree, only works with cpu and serial tree learner
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
   // descl2 = missing values must be encoded as np.nan (Python) or NA (cli), not 0
+  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
   // descl2 = not yet supported in R-package
   // descl2 = ``regression_l1 `` objective is not supported with linear tree boosting
   bool linear_tree = false;
