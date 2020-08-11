@@ -23,6 +23,7 @@ License: MIT + file LICENSE
 URL: https://github.com/Microsoft/LightGBM
 BugReports: https://github.com/Microsoft/LightGBM/issues
 NeedsCompilation: yes
+Biarch: true
 Suggests:
     processx,
     testthat
