@@ -491,11 +491,11 @@ Booster <- R6::R6Class(
                        header = FALSE,
                        reshape = FALSE, ...) {
 
-      # Check if number of iteration is  non existent
+      # Check if number of iteration is non existent
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
       }
-      # Check if start iteration is  non existent
+      # Check if start iteration is non existent
       if (is.null(start_iteration)) {
         start_iteration <- 0L
       }

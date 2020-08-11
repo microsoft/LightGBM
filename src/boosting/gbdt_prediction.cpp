@@ -78,7 +78,7 @@ void GBDT::PredictByMap(const std::unordered_map<int, double>& features, double*
 
 void GBDT::PredictLeafIndex(const double* features, double* output) const {
   int start_tree = start_iteration_for_pred_ * num_tree_per_iteration_;
-  int num_trees =  num_iteration_for_pred_ * num_tree_per_iteration_;
+  int num_trees = num_iteration_for_pred_ * num_tree_per_iteration_;
   const auto* models_ptr = models_.data() + start_tree;
   for (int i = 0; i < num_trees; ++i) {
     output[i] = models_ptr[i]->PredictLeafIndex(features);
