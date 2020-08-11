@@ -104,7 +104,8 @@ void SerialTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
   }
   XTHX_by_thread_.clear();
   XTg_by_thread_.clear();
-  for (int i = 0; i < OMP_NUM_THREADS(); ++i) {
+  int max_threads = omp_get_max_threads();
+  for (int i = 0; i < max_threads; ++i) {
     XTHX_by_thread_.push_back(XTHX_);
     XTg_by_thread_.push_back(XTg_);
   }
