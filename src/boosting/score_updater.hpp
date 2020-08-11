@@ -85,7 +85,7 @@ class ScoreUpdater {
   * \param tree_learner
   * \param cur_tree_id Current tree for multiclass training
   */
-  inline void AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) {
+  inline void AddScore(TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) {
     Common::FunctionTimer fun_timer("ScoreUpdater::AddScore", global_timer);
     const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
     tree_learner->AddPredictionToScore(tree, score_.data() + offset);

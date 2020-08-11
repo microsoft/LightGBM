@@ -67,6 +67,9 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
+SET(EIGEN_DIR ${PROJECT_SOURCE_DIR}/src/eigen)
+include_directories(${EIGEN_DIR})
+
 if(BUILD_FOR_R)
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
@@ -223,6 +226,7 @@ endif(USE_MPI)
 file(GLOB SOURCES
     src/application/*.cpp
     src/boosting/*.cpp
+    src/eigen/*.cpp
     src/io/*.cpp
     src/metric/*.cpp
     src/objective/*.cpp

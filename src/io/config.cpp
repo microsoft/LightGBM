@@ -324,6 +324,24 @@ void Config::CheckParamConflict() {
     force_col_wise = true;
     force_row_wise = false;
   }
+  // linear tree learner must be serial type and cpu device
+  if (linear_tree) {
+    if (device_type == std::string("gpu")) {
+      device_type = "cpu";
+      Log::Warning("Linear tree learner only works with CPU.");
+    }
+    if (tree_learner != std::string("serial")) {
+      tree_learner = "serial";
+      Log::Warning("Linear tree learner must be serial.");
+      }
+    if (zero_as_missing) {
+      Log::Fatal("zero_as_missing must be false when fitting linear trees.");
+    }
+    if (objective == std::string("regresson_l1")) {
+      Log::Fatal("Cannot use regression_l1 objective when fitting linear trees.");
+    }
+  }
+
   // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the split is calculated
   // the count is calculated using the proportion of hessian in the leaf which is rounded up to nearest int, so it can
   // be 1 when there is actually no data in the leaf. In rare cases this can cause a bug because with path smoothing the

@@ -36,6 +36,8 @@ class TreeLearner {
   */
   virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
+  virtual void InitLinear(const Dataset* train_data, const int max_leaves) = 0;
+
   virtual void ResetIsConstantHessian(bool is_constant_hessian) = 0;
 
   virtual void ResetTrainingData(const Dataset* train_data,
@@ -53,14 +55,15 @@ class TreeLearner {
   * \brief training tree model on dataset
   * \param gradients The first order gradients
   * \param hessians The second order gradients
+  * \param is_first_tree If linear tree learning is enabled, first tree needs to be handled differently
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians) = 0;
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_first_tree) = 0;
 
   /*!
   * \brief use an existing tree to fit the new gradients and hessians.
   */
-  virtual Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const = 0;
+  virtual Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) = 0;
 
   virtual Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                                   const score_t* gradients, const score_t* hessians) = 0;
@@ -79,7 +82,7 @@ class TreeLearner {
   * \brief Using last trained tree to predict score then adding to out_score;
   * \param out_score output score
   */
-  virtual void AddPredictionToScore(const Tree* tree, double* out_score) const = 0;
+  virtual void AddPredictionToScore(const Tree* tree, double* out_score) = 0;
 
   virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                                data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const = 0;
@@ -94,11 +97,12 @@ class TreeLearner {
   * \brief Create object of tree learner
   * \param learner_type Type of tree learner
   * \param device_type Type of tree learner
+  * \param booster_type Type of boosting
   * \param config config of tree
   */
   static TreeLearner* CreateTreeLearner(const std::string& learner_type,
-    const std::string& device_type,
-    const Config* config);
+                                        const std::string& device_type,
+                                        const Config* config);
 };
 
 }  // namespace LightGBM

@@ -34,6 +34,7 @@ GBDT::GBDT()
       bagging_runner_(0, bagging_rand_block_) {
   average_output_ = false;
   tree_learner_ = nullptr;
+  linear_tree_ = false;
 }
 
 GBDT::~GBDT() {
@@ -75,7 +76,8 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
-  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type, config_.get()));
+  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
+                                                                              config_.get()));
 
   // init tree learner
   tree_learner_->Init(train_data_, is_constant_hessian_);
@@ -116,6 +118,11 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
       class_need_train_[i] = objective_function_->ClassNeedTrain(i);
     }
   }
+
+  if (config_->linear_tree) {
+    linear_tree_ = true;
+  }
+
 }
 
 void GBDT::AddValidDataset(const Dataset* valid_data,
@@ -247,6 +254,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   bool is_finished = false;
   auto start_time = std::chrono::steady_clock::now();
   for (int iter = 0; iter < config_->num_iterations && !is_finished; ++iter) {
+
     is_finished = TrainOneIter(nullptr, nullptr);
     if (!is_finished) {
       is_finished = EvalAndCheckEarlyStopping();
@@ -269,6 +277,16 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
   CHECK_EQ(static_cast<size_t>(models_.size()), tree_leaf_prediction[0].size());
   int num_iterations = static_cast<int>(models_.size() / num_tree_per_iteration_);
   std::vector<int> leaf_pred(num_data_);
+  if (linear_tree_) {
+    int max_leaves = 0;
+    for (int i = 0; i < tree_leaf_prediction.size(); ++i) {
+      for (int j = 0; j < tree_leaf_prediction[i].size(); ++j) {
+        max_leaves = std::max(max_leaves, tree_leaf_prediction[i][j]);
+      }
+    }
+    max_leaves += 1;
+    tree_learner_->InitLinear(train_data_, max_leaves);
+  }
   for (int iter = 0; iter < num_iterations; ++iter) {
     Boosting();
     for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
@@ -352,7 +370,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
-    std::unique_ptr<Tree> new_tree(new Tree(2, false));
+    std::unique_ptr<Tree> new_tree(new Tree(2, false, false));
     if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;
@@ -365,7 +383,8 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         grad = gradients_.data() + offset;
         hess = hessians_.data() + offset;
       }
-      new_tree.reset(tree_learner_->Train(grad, hess));
+      bool is_first_tree = models_.size() < static_cast<size_t>(num_tree_per_iteration_);
+      new_tree.reset(tree_learner_->Train(grad, hess, is_first_tree));
     }
 
     if (new_tree->num_leaves() > 1) {

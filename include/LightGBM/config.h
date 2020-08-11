@@ -148,6 +148,14 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
+  // desc = fit piecewise linear gradient boosting tree, only works with cpu and serial tree learner
+  // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+  // descl2 = missing values must be encoded as np.nan (Python) or NA (cli), not 0
+  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
+  // descl2 = not yet supported in R-package
+  // descl2 = ``regression_l1 `` objective is not supported with linear tree boosting
+  bool linear_tree = false;
+
   // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data
   // desc = **Note**: can be used only in CLI version
@@ -356,6 +364,10 @@ struct Config {
   // check = >=0.0
   // desc = L2 regularization
   double lambda_l2 = 0.0;
+
+  // check = >=0.0
+  // desc = Linear tree regularisation, the parameter `lambda` in Eq 3 of <https://arxiv.org/pdf/1802.05640.pdf>
+  double linear_lambda = 0.0;
 
   // alias = min_split_gain
   // check = >=0.0

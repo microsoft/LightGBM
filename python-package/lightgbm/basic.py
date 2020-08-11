@@ -1004,7 +1004,8 @@ class Dataset(object):
                                                 "two_round",
                                                 "use_missing",
                                                 "weight_column",
-                                                "zero_as_missing")
+                                                "zero_as_missing",
+                                                "boosting")
             return {k: v for k, v in self.params.items() if k in dataset_params}
 
     def _free_handle(self):
@@ -1979,11 +1980,13 @@ class Booster(object):
                                      listen_time_out=params.get("listen_time_out", 120),
                                      num_machines=params.setdefault("num_machines", num_machines))
                     break
+            # copy the parameters from train_set
+            if train_set.get_params():
+                params.update(train_set.get_params())
+            params_str = param_dict_to_str(params)
+            train_set._update_params(params)
             # construct booster object
             train_set.construct()
-            # copy the parameters from train_set
-            params.update(train_set.get_params())
-            params_str = param_dict_to_str(params)
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreate(
                 train_set.handle,
@@ -2899,8 +2902,13 @@ class Booster(object):
         predictor = self._to_predictor(copy.deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
-        train_set = Dataset(data, label, silent=True)
+        out_is_linear = ctypes.c_bool(False)
+        _safe_call(_LIB.LGBM_BoosterGetLinear(
+            self.handle,
+            ctypes.byref(out_is_linear)))
         new_params = copy.deepcopy(self.params)
+        new_params["linear_tree"] = out_is_linear.value
+        train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models

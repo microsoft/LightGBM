@@ -25,6 +25,7 @@ Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
   is_finish_load_ = false;
+  has_raw_ = false;
 }
 
 Dataset::Dataset(data_size_t num_data) {
@@ -34,6 +35,7 @@ Dataset::Dataset(data_size_t num_data) {
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
   group_bin_boundaries_.push_back(0);
+  has_raw_ = false;
 }
 
 Dataset::~Dataset() {}
@@ -417,6 +419,18 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
   use_missing_ = io_config.use_missing;
   zero_as_missing_ = io_config.zero_as_missing;
+  has_raw_ = false;
+  if (io_config.linear_tree) {
+    has_raw_ = true;
+  }
+  numeric_feature_map_ = std::vector<int>(num_features_, -1);
+  num_numeric_features_ = 0;
+  for (int i = 0; i < num_features_; ++ i) {
+    if (FeatureBinMapper(i)->bin_type() == BinType::NumericalBin) {
+      numeric_feature_map_[i] = num_numeric_features_;
+      ++num_numeric_features_;
+    }
+  }
 }
 
 void Dataset::FinishLoad() {
@@ -687,6 +701,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = dataset->num_groups_;
+  has_raw_ = dataset->has_raw();
   // copy feature bin mapper data
   for (int i = 0; i < num_groups_; ++i) {
     feature_groups_.emplace_back(
@@ -713,6 +728,9 @@ void Dataset::CreateValid(const Dataset* dataset) {
   num_groups_ = num_features_;
   feature2group_.clear();
   feature2subfeature_.clear();
+  has_raw_ = dataset->has_raw();
+  numeric_feature_map_ = dataset->numeric_feature_map_;
+  num_numeric_features_ = dataset->num_numeric_features_;
   // copy feature bin mapper data
   feature_need_push_zeros_.clear();
   for (int i = 0; i < num_features_; ++i) {
@@ -789,6 +807,17 @@ void Dataset::CopySubrow(const Dataset* fullset,
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }
   is_finish_load_ = true;
+  numeric_feature_map_ = fullset->numeric_feature_map_;
+  num_numeric_features_ = fullset->num_numeric_features_;
+  if (has_raw_) {
+    ResizeRaw(num_used_indices);
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < num_used_indices; ++i) {
+      for (int j = 0; j < num_numeric_features_; ++j) {
+        raw_data_[j][i] = fullset->raw_data_[j][used_indices[i]];
+      }
+    }
+  }
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -917,7 +946,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
       + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
       + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_
-      + sizeof(int32_t) * num_total_features_ + sizeof(int) * 3 + sizeof(bool) * 2;
+      + sizeof(int32_t) * num_total_features_ + sizeof(int) * 3 + sizeof(bool) * 3;
 
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
@@ -940,6 +969,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(&min_data_in_bin_, sizeof(min_data_in_bin_));
     writer->Write(&use_missing_, sizeof(use_missing_));
     writer->Write(&zero_as_missing_, sizeof(zero_as_missing_));
+    writer->Write(&has_raw_, sizeof(has_raw_));
     writer->Write(used_feature_map_.data(), sizeof(int) * num_total_features_);
     writer->Write(&num_groups_, sizeof(num_groups_));
     writer->Write(real_feature_idx_.data(), sizeof(int) * num_features_);
@@ -987,6 +1017,18 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       writer->Write(&size_of_feature, sizeof(size_of_feature));
       // write feature
       feature_groups_[i]->SaveBinaryToFile(writer.get());
+    }
+
+    // write raw data; use row-major order so we can read row-by-row
+    if (has_raw_) {
+      for (int i = 0; i < num_data_; ++i) {
+        for (int j = 0; j < num_features_; ++j) {
+          int num_feat = numeric_feature_map_[j];
+          if (num_feat > -1) {
+            writer->Write(&raw_data_[num_feat][i], sizeof(double));
+          }
+        }
+      }
     }
   }
 }
@@ -1468,6 +1510,9 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
         "Cannot add features from other Dataset with a different number of "
         "rows");
   }
+  if (other->has_raw_ != has_raw_) {
+    Log::Fatal("Can only add features from other Dataset if both or neither have raw data.");
+  }
   PushVector(&feature_names_, other->feature_names_);
   PushVector(&feature2subfeature_, other->feature2subfeature_);
   PushVector(&group_feature_cnt_, other->group_feature_cnt_);
@@ -1499,6 +1544,21 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   num_features_ += other->num_features_;
   num_total_features_ += other->num_total_features_;
   num_groups_ += other->num_groups_;
+
+  for (int i = 0; i < (other->numeric_feature_map_).size(); ++i) {
+    int num_feat = numeric_feature_map_[i];
+    if (num_feat > -1) {
+      numeric_feature_map_.push_back(num_feat + num_numeric_features_);
+    } else {
+      numeric_feature_map_.push_back(-1);
+    }
+  }
+  num_numeric_features_ += other->num_numeric_features_;
+  if (has_raw_) {
+    for (int i = 0; i < other->num_numeric_features_; ++i) {
+      raw_data_.push_back(other->raw_data_[i]);
+    }
+  }
 }
 
 }  // namespace LightGBM
