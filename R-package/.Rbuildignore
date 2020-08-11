@@ -2,7 +2,6 @@
 \.gitkeep$
 ^docs$
 ^pkgdown$
-^cran-comments\.md$
 
 # Objects created by compilation
 ^.*\.o
