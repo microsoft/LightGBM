@@ -73,7 +73,6 @@ We set up total 3 settings for experiments. The parameters of these settings are
        eta = 0.1
        num_round = 500
        nthread = 16
-       tree_method = approx
        min_child_weight = 100
        tree_method = hist
        grow_policy = lossguide
