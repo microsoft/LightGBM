@@ -893,6 +893,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   // create array of pointers to raw data, and coefficient matrices, for each leaf
   bool data_has_nan = false;
   std::vector<std::vector<int>> leaf_features;
+  std::vector<int> leaf_num_features;
   std::vector<std::vector<const double*>> raw_data_ptr;
   int max_num_features = 0;
   for (int i = 0; i < tree->num_leaves(); ++i) {
@@ -917,6 +918,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
     leaf_features.push_back(numerical_features);
     raw_data_ptr.push_back(data_ptr);
+    leaf_num_features.push_back(numerical_features.size());
     if (numerical_features.size() > max_num_features) {
       max_num_features = numerical_features.size();
     }
@@ -953,7 +955,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
         continue;
       }
       bool nan_found = false;
-      int num_feat = leaf_features[leaf_num].size();
+      int num_feat = leaf_num_features[leaf_num];
       for (int feat = 0; feat < num_feat; ++feat) {
         if (HAS_NAN) {
           double val = raw_data_ptr[leaf_num][feat][i];

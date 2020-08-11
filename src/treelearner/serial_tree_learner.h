@@ -135,6 +135,7 @@ class SerialTreeLearner: public TreeLearner {
     std::vector<std::vector<double>> leaf_coeff(num_leaves);
     std::vector<std::vector<const double*>> feat_ptr(num_leaves);
     std::vector<double> leaf_output(num_leaves);
+    std::vector<int> leaf_num_features(num_leaves);
     for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       leaf_const[leaf_num] = tree->LeafConst(leaf_num);
       leaf_coeff[leaf_num] = tree->LeafCoeffs(leaf_num);
@@ -142,6 +143,7 @@ class SerialTreeLearner: public TreeLearner {
       for (int feat : tree->LeafFeaturesInner(leaf_num)) {
         feat_ptr[leaf_num].push_back(train_data_->raw_index(feat));
       }
+      leaf_num_features[leaf_num] = feat_ptr[leaf_num].size();
     }
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static) if (num_data_ > 1024)
@@ -152,7 +154,7 @@ class SerialTreeLearner: public TreeLearner {
         continue;
       }
       double output = leaf_const[leaf_num];
-      int num_feat = leaf_coeff[leaf_num].size();
+      int num_feat = leaf_num_features[leaf_num];
       if (HAS_NAN) {
         bool nan_found = false;
         for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
