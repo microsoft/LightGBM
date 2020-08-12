@@ -1,5 +1,62 @@
 # CRAN Submission History
 
+## v3.0.0-1 - Submission 3 - (August 13, 2020)
+
+### CRAN response
+
+Failing pre-checks.
+
+### `R CMD check` results
+
+* Debian: 1 NOTE
+
+    ```text
+    * checking CRAN incoming feasibility ... NOTE
+    Maintainer: ‘Guolin Ke <guolin.ke@microsoft.com>’
+
+    New submission
+
+    License components with restrictions and base license permitting such:
+      MIT + file LICENSE
+    ```
+
+* Windows: 1 ERROR, 1 NOTE
+
+    ```text
+    * checking CRAN incoming feasibility ... NOTE
+    Maintainer: ‘Guolin Ke <guolin.ke@microsoft.com>’
+
+    New submission
+
+    License components with restrictions and base license permitting such:
+      MIT + file LICENSE
+
+    ** running tests for arch 'i386' ... [9s] ERROR
+      Running 'testthat.R' [8s]
+    Running the tests in 'tests/testthat.R' failed.
+    Complete output:
+      > library(testthat)
+      > library(lightgbm)
+      Loading required package: R6
+      >
+      > test_check(
+      +     package = "lightgbm"
+      +     , stop_on_failure = TRUE
+      +     , stop_on_warning = FALSE
+      + )
+      -- 1. Error: predictions do not fail for integer input (@test_Predictor.R#7)  --
+      lgb.Dataset.construct: cannot create Dataset handle
+      Backtrace:
+       1. lightgbm::lgb.train(...)
+       2. data$construct()
+    ```
+
+### Maintainer Notes
+
+The "checking CRAN incoming feasibility" NOTE can be safely ignored. It only shows up the first time you submit a package to CRAN.
+
+So the only thing I see broken right now is the test error on 32-bit Windows. This is documented in https://github.com/microsoft/LightGBM/issues/3187.
+
 ## v3.0.0-1 - Submission 2 - (August 10, 2020)
 
 ### CRAN response
