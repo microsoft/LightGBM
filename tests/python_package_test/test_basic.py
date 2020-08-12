@@ -111,8 +111,8 @@ class TestBasic(unittest.TestCase):
     def test_save_and_load_linear(self):
         X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
         X_train = np.concatenate([np.ones((X_train.shape[0], 1)), X_train], 1)
-        X_train[:X_train.shape[0]//2, 0] = 0
-        y_train[:X_train.shape[0]//2] = 1
+        X_train[:X_train.shape[0] // 2, 0] = 0
+        y_train[:X_train.shape[0] // 2] = 1
         params = {'linear_tree': True}
         train_data = lgb.Dataset(X_train, label=y_train, params=params)
         est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
