@@ -702,7 +702,6 @@ class Dataset {
     } else {
       return raw_data_[0].size();
     }
-
   }
 
   /*! \brief Resize raw_data_, use current number of featurse */

@@ -49,7 +49,7 @@ class SerialTreeLearner: public TreeLearner {
 
   ~SerialTreeLearner();
 
-  virtual void Init(const Dataset* train_data, bool is_constant_hessian) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
   void InitLinear(const Dataset* train_data, const int max_leaves) override;
 
@@ -127,7 +127,7 @@ class SerialTreeLearner: public TreeLearner {
       }
     }
   }
-  
+ 
   template<bool HAS_NAN>
   void AddPredictionToScoreInner(const Tree* tree, double* out_score) const {
     int num_leaves = tree->num_leaves();

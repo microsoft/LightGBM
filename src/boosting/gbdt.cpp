@@ -122,7 +122,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   if (config_->linear_tree) {
     linear_tree_ = true;
   }
-
 }
 
 void GBDT::AddValidDataset(const Dataset* valid_data,
@@ -254,7 +253,6 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   bool is_finished = false;
   auto start_time = std::chrono::steady_clock::now();
   for (int iter = 0; iter < config_->num_iterations && !is_finished; ++iter) {
-
     is_finished = TrainOneIter(nullptr, nullptr);
     if (!is_finished) {
       is_finished = EvalAndCheckEarlyStopping();

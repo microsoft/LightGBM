@@ -294,7 +294,7 @@ class Tree {
   /*! \brief Set the linear model coefficients on one leaf */
   inline void SetLeafCoeffs(int leaf, std::vector<double> output) {
     leaf_coeff_[leaf].resize(output.size());
-    for (int i=0; i<output.size(); ++i) {
+    for (int i=0; i < output.size(); ++i) {
       leaf_coeff_[leaf][i] = MaybeRoundToZero(output[i]);
     }
   }
@@ -523,7 +523,7 @@ class Tree {
   int max_depth_;
   /*! \brief Tree has linear model at each leaf */
   bool is_linear_;
-  /*! \brief coefficients of linear models on leaves */ 
+  /*! \brief coefficients of linear models on leaves */
   std::vector<std::vector<double>> leaf_coeff_;
   /*! \brief constant term (bias) of linear models on leaves */
   std::vector<double> leaf_const_;
@@ -631,7 +631,7 @@ inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_
       return LeafOutput(leaf);
     } else {
       return output;
-    } 
+    }
   } else {
     if (num_leaves_ > 1) {
       int leaf = GetLeafByMap(feature_values);

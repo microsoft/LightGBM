@@ -380,7 +380,7 @@ std::string Tree::ToString() const {
       << Common::ArrayToStringFast(num_feat, num_leaves_) << '\n';
     str_buf << "leaf_features=";
     for (int i = 0; i < num_leaves_; ++i) {
-      if (num_feat[i] > 0){
+      if (num_feat[i] > 0) {
         str_buf << Common::ArrayToStringFast(leaf_features_[i], leaf_features_[i].size()) << ' ';
       }
       str_buf << ' ';
@@ -388,7 +388,7 @@ std::string Tree::ToString() const {
     str_buf << '\n';
     str_buf << "leaf_coeff=";
     for (int i = 0; i < num_leaves_; ++i) {
-      if (num_feat[i] > 0){
+      if (num_feat[i] > 0) {
         str_buf << Common::ArrayToStringFast(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
       }
       str_buf << ' ';
@@ -638,7 +638,7 @@ std::string Tree::NodeToIfElseByMap(int index, bool predict_leaf_index) const {
 Tree::Tree(const char* str, size_t* used_len) {
   auto p = str;
   std::unordered_map<std::string, std::string> key_vals;
-  const int max_num_line = 22;  
+  const int max_num_line = 22;
   int read_line = 0;
   while (read_line < max_num_line) {
     if (*p == '\r' || *p == '\n') break;
@@ -752,7 +752,6 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (is_linear_) {
-
     if (key_vals.count("leaf_const")) {
       leaf_const_ = Common::StringToArrayFast<double>(key_vals["leaf_const"], num_leaves_);
     } else {
@@ -761,7 +760,7 @@ Tree::Tree(const char* str, size_t* used_len) {
     std::vector<int> num_feat;
     if (key_vals.count("num_features")) {
       num_feat = Common::StringToArrayFast<int>(key_vals["num_features"], num_leaves_);
-    } 
+    }
     leaf_coeff_.resize(num_leaves_);
     leaf_features_.resize(num_leaves_);
     leaf_features_inner_.resize(num_leaves_);

@@ -199,7 +199,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       auto sample_data = SampleTextDataFromMemory(text_data);
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
-      
       if (dataset->has_raw()) {
         dataset->ResizeRaw(dataset->num_data_);
       }
@@ -548,7 +547,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   // raw data
   dataset->numeric_feature_map_ = std::vector<int>(dataset->num_features_, false);
   dataset->num_numeric_features_ = 0;
-  for (int i = 0; i < dataset->num_features_; ++ i) {
+  for (int i = 0; i < dataset->num_features_; ++i) {
     if (dataset->FeatureBinMapper(i)->bin_type() == BinType::CategoricalBin) {
       dataset->numeric_feature_map_[i] = -1;
     } else {
@@ -578,7 +577,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
         }
       }
       mem_ptr += row_size;
-    } 
+    }
   }
 
   dataset->is_finish_load_ = true;
