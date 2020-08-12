@@ -1,6 +1,6 @@
 # CRAN Submission History
 
-## v3.0.0-1 - Submission 3 - (August 13, 2020)
+## v3.0.0-1 - Submission 3 - (August 12, 2020)
 
 ### CRAN response
 
