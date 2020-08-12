@@ -103,7 +103,7 @@ class SerialTreeLearner: public TreeLearner {
   }
 
   void AddPredictionToScore(const Tree* tree,
-                            double* out_score) override {
+                            double* out_score) const override {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     if (tree->GetLinear()) {
       CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
@@ -129,7 +129,7 @@ class SerialTreeLearner: public TreeLearner {
   }
   
   template<bool HAS_NAN>
-  void AddPredictionToScoreInner(const Tree* tree, double* out_score) {
+  void AddPredictionToScoreInner(const Tree* tree, double* out_score) const {
     int num_leaves = tree->num_leaves();
     std::vector<double> leaf_const(num_leaves);
     std::vector<std::vector<double>> leaf_coeff(num_leaves);
