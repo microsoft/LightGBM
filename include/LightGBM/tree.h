@@ -619,7 +619,7 @@ inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_
       auto val_it = feature_values.find(feat);
       if (val_it != feature_values.end()) {
         double feat_val = val_it->second;
-        if (isnan(feat_val) || isinf(feat_val)) {
+        if (std::isnan(feat_val)) {
           nan_found = true;
           break;
         } else {
