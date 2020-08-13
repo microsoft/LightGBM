@@ -1,7 +1,8 @@
 ^build_r.R$
 \.gitkeep$
-^docs$
+^docs/.*$
 ^pkgdown$
+^cran-comments\.md$
 
 # Objects created by compilation
 ^.*\.o

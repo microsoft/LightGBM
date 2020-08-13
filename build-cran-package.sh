@@ -30,6 +30,7 @@ cd ${TEMP_R_DIR}
     rm -r src/cmake/
     rm -r inst/
     rm -r pkgdown/
+    rm cran-comments.md
     rm AUTOCONF_UBUNTU_VERSION
     rm recreate-configure.sh
 
