@@ -8,6 +8,7 @@ test_data <- agaricus.test$data[1L:100L, ]
 test_label <- agaricus.test$label[1L:100L]
 
 test_that("lgb.Dataset: basic construction, saving, loading", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   # from sparse matrix
   dtest1 <- lgb.Dataset(test_data, label = test_label)
   # from dense matrix
@@ -25,6 +26,7 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
 })
 
 test_that("lgb.Dataset: getinfo & setinfo", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtest <- lgb.Dataset(test_data)
   dtest$construct()
 
@@ -40,6 +42,7 @@ test_that("lgb.Dataset: getinfo & setinfo", {
 })
 
 test_that("lgb.Dataset: slice, dim", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtest <- lgb.Dataset(test_data, label = test_label)
   lgb.Dataset.construct(dtest)
   expect_equal(dim(dtest), dim(test_data))
@@ -50,6 +53,7 @@ test_that("lgb.Dataset: slice, dim", {
 })
 
 test_that("lgb.Dataset: colnames", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtest <- lgb.Dataset(test_data, label = test_label)
   expect_equal(colnames(dtest), colnames(test_data))
   lgb.Dataset.construct(dtest)
@@ -63,6 +67,7 @@ test_that("lgb.Dataset: colnames", {
 })
 
 test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   nr <- 1000L
   x <- Matrix::rsparsematrix(nr, 100L, density = 0.0005)
   # we want it very sparse, so that last rows are empty
@@ -72,6 +77,7 @@ test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
 })
 
 test_that("lgb.Dataset: Dataset should be able to construct from matrix and return non-null handle", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   rawData <- matrix(runif(1000L), ncol = 10L)
   handle <- NA_real_
   ref_handle <- NULL
@@ -88,6 +94,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
 })
 
 test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   ds <- lgb.Dataset(
     data = matrix(rnorm(100L), nrow = 50L, ncol = 2L)
     , label = sample(c(0L, 1L), size = 50L, replace = TRUE)
@@ -101,6 +108,7 @@ test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
 })
 
 test_that("lgb.Dataset should throw an error if 'reference' is provided but of the wrong format", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   data(agaricus.test, package = "lightgbm")
   test_data <- agaricus.test$data[1L:100L, ]
   test_label <- agaricus.test$label[1L:100L]
@@ -115,6 +123,7 @@ test_that("lgb.Dataset should throw an error if 'reference' is provided but of t
 })
 
 test_that("Dataset$new() should throw an error if 'predictor' is provided but of the wrong format", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   data(agaricus.test, package = "lightgbm")
   test_data <- agaricus.test$data[1L:100L, ]
   test_label <- agaricus.test$label[1L:100L]
@@ -128,6 +137,7 @@ test_that("Dataset$new() should throw an error if 'predictor' is provided but of
 })
 
 test_that("Dataset$get_params() successfully returns parameters if you passed them", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   # note that this list uses one "main" parameter (feature_pre_filter) and one that
   # is an alias (is_sparse), to check that aliases are handled correctly
   params <- list(
@@ -149,6 +159,7 @@ test_that("Dataset$get_params() successfully returns parameters if you passed th
 })
 
 test_that("Dataset$get_params() ignores irrelevant parameters", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   params <- list(
     "feature_pre_filter" = TRUE
     , "is_sparse" = FALSE
@@ -164,6 +175,7 @@ test_that("Dataset$get_params() ignores irrelevant parameters", {
 })
 
 test_that("Dataset$update_parameters() does nothing for empty inputs", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   ds <- lgb.Dataset(
     test_data
     , label = test_label
@@ -182,6 +194,7 @@ test_that("Dataset$update_parameters() does nothing for empty inputs", {
 })
 
 test_that("Dataset$update_params() works correctly for recognized Dataset parameters", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   ds <- lgb.Dataset(
     test_data
     , label = test_label

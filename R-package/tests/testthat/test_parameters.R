@@ -7,6 +7,7 @@ train <- agaricus.train
 test <- agaricus.test
 
 test_that("Feature penalties work properly", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   # Fit a series of models with varying penalty on most important variable
   var_name <- "odor=none"
   var_index <- which(train$data@Dimnames[[2L]] == var_name)
@@ -48,6 +49,7 @@ test_that("Feature penalties work properly", {
 context("parameter aliases")
 
 test_that(".PARAMETER_ALIASES() returns a named list of character vectors, where names are unique", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   param_aliases <- .PARAMETER_ALIASES()
   expect_identical(class(param_aliases), "list")
   expect_true(is.character(names(param_aliases)))
@@ -61,6 +63,7 @@ test_that(".PARAMETER_ALIASES() returns a named list of character vectors, where
 })
 
 test_that("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
     expect_warning({
       result <- lightgbm(

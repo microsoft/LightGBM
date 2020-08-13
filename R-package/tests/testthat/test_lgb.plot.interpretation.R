@@ -8,6 +8,7 @@ context("lgb.plot.interpretation")
 }
 
 test_that("lgb.plot.interepretation works as expected for binary classification", {
+    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -58,6 +59,7 @@ test_that("lgb.plot.interepretation works as expected for binary classification"
 })
 
 test_that("lgb.plot.interepretation works as expected for multiclass classification", {
+    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
     data(iris)
 
     # We must convert factors to numeric

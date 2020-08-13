@@ -8,6 +8,7 @@ test <- agaricus.test
 TOLERANCE <- 1e-6
 
 test_that("train and predict binary classification", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   nrounds <- 10L
   bst <- lightgbm(
     data = train$data
@@ -34,6 +35,7 @@ test_that("train and predict binary classification", {
 
 
 test_that("train and predict softmax", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   lb <- as.numeric(iris$Species) - 1L
 
@@ -61,6 +63,7 @@ test_that("train and predict softmax", {
 
 
 test_that("use of multiple eval metrics works", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   metrics <- list("binary_error", "auc", "binary_logloss")
   bst <- lightgbm(
     data = train$data
@@ -82,6 +85,7 @@ test_that("use of multiple eval metrics works", {
 })
 
 test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for binary classification", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   nrounds <- 10L
   bst <- lightgbm(
@@ -98,6 +102,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
 })
 
 test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expected for regression", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   nrounds <- 10L
   bst <- lightgbm(
@@ -114,6 +119,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
 })
 
 test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
   for (nround_value in c(-10L, 0L)) {
@@ -129,6 +135,7 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
 })
 
 test_that("lightgbm() performs evaluation on validation sets if they are provided", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   dvalid1 <- lgb.Dataset(
     data = train$data
@@ -210,6 +217,7 @@ test_that("training continuation works", {
 context("lgb.cv()")
 
 test_that("cv works", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
   bst <- lgb.cv(
@@ -225,6 +233,7 @@ test_that("cv works", {
 })
 
 test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
   for (nround_value in c(-10L, 0L)) {
@@ -241,6 +250,7 @@ test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
 })
 
 test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset and labels are not given", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   bad_values <- list(
     4L
     , "hello"
@@ -263,6 +273,7 @@ test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset 
 })
 
 test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric where higher values are better", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   dtrain <- lgb.Dataset(
     data = as.matrix(runif(n = 500L, min = 0.0, max = 15.0), drop = FALSE)
@@ -296,6 +307,7 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
 context("lgb.train()")
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   metrics <- c("binary_error", "auc", "binary_logloss")
   bst <- lgb.train(
     data = lgb.Dataset(
@@ -325,6 +337,7 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
 })
 
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
   for (nround_value in c(-10L, 0L)) {
@@ -339,6 +352,7 @@ test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
 })
 
 test_that("lgb.train() throws an informative error if 'data' is not an lgb.Dataset", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   bad_values <- list(
     4L
     , "hello"
@@ -359,6 +373,7 @@ test_that("lgb.train() throws an informative error if 'data' is not an lgb.Datas
 })
 
 test_that("lgb.train() throws an informative error if 'valids' is not a list of lgb.Dataset objects", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   valids <- list(
     "valid1" = data.frame(x = rnorm(5L), y = rnorm(5L))
     , "valid2" = data.frame(x = rnorm(5L), y = rnorm(5L))
@@ -374,6 +389,7 @@ test_that("lgb.train() throws an informative error if 'valids' is not a list of 
 })
 
 test_that("lgb.train() errors if 'valids' is a list of lgb.Dataset objects but some do not have names", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   valids <- list(
     "valid1" = lgb.Dataset(matrix(rnorm(10L), 5L, 2L))
     , lgb.Dataset(matrix(rnorm(10L), 2L, 5L))
@@ -389,6 +405,7 @@ test_that("lgb.train() errors if 'valids' is a list of lgb.Dataset objects but s
 })
 
 test_that("lgb.train() throws an informative error if 'valids' contains lgb.Dataset objects but none have names", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   valids <- list(
     lgb.Dataset(matrix(rnorm(10L), 5L, 2L))
     , lgb.Dataset(matrix(rnorm(10L), 2L, 5L))
@@ -404,6 +421,7 @@ test_that("lgb.train() throws an informative error if 'valids' contains lgb.Data
 })
 
 test_that("lgb.train() works with force_col_wise and force_row_wise", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(1234L)
   nrounds <- 10L
   dtrain <- lgb.Dataset(
@@ -447,6 +465,7 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
 })
 
 test_that("lgb.train() works as expected with sparse features", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   num_obs <- 70000L
   trainDF <- data.frame(
@@ -478,6 +497,7 @@ test_that("lgb.train() works as expected with sparse features", {
 })
 
 test_that("lgb.train() works with early stopping for classification", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   trainDF <- data.frame(
     "feat1" = rep(c(5.0, 10.0), 500L)
     , "target" = rep(c(0L, 1L), 500L)
@@ -546,6 +566,7 @@ test_that("lgb.train() works with early stopping for classification", {
 })
 
 test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stopping", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   trainDF <- data.frame(
     "feat1" = rep(c(5.0, 10.0), 500L)
@@ -614,6 +635,7 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
 })
 
 test_that("lgb.train() works with early stopping for classification with a metric that should be maximized", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   dtrain <- lgb.Dataset(
     data = train$data
@@ -681,6 +703,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
 })
 
 test_that("lgb.train() works with early stopping for regression", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   trainDF <- data.frame(
     "feat1" = rep(c(10.0, 100.0), 500L)
@@ -751,6 +774,7 @@ test_that("lgb.train() works with early stopping for regression", {
 })
 
 test_that("lgb.train() works with early stopping for regression with a metric that should be minimized", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   trainDF <- data.frame(
     "feat1" = rep(c(10.0, 100.0), 500L)
@@ -836,6 +860,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
 })
 
 test_that("when early stopping is not activated, best_iter and best_score come from valids and not training data", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   trainDF <- data.frame(
     "feat1" = rep(c(10.0, 100.0), 500L)
@@ -997,6 +1022,7 @@ test_that("when early stopping is not activated, best_iter and best_score come f
 })
 
 test_that("lightgbm.train() gives the correct best_score and best_iter for a metric where higher values are better", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   trainDF <- data.frame(
     "feat1" = runif(n = 500L, min = 0.0, max = 15.0)
@@ -1044,6 +1070,7 @@ test_that("lightgbm.train() gives the correct best_score and best_iter for a met
 })
 
 test_that("using lightgbm() without early stopping, best_iter and best_score come from valids and not training data", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(708L)
   # example: train second (called "something-random-we-would-not-hardcode"), two valids,
   #          and a metric where higher values are better ("auc")
@@ -1113,6 +1140,7 @@ test_that("lgb.train() throws an informative error if interaction_constraints is
 
 test_that(paste0("lgb.train() throws an informative error if the members of interaction_constraints ",
                  "are not character or numeric vectors"), {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", interaction_constraints = list(list(1L, 2L), list(3L)))
     expect_error({
@@ -1125,6 +1153,7 @@ test_that(paste0("lgb.train() throws an informative error if the members of inte
 })
 
 test_that("lgb.train() throws an informative error if interaction_constraints contains a too large index", {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression",
                  interaction_constraints = list(c(1L, length(colnames(train$data)) + 1L), 3L))
@@ -1139,6 +1168,7 @@ test_that("lgb.train() throws an informative error if interaction_constraints co
 
 test_that(paste0("lgb.train() gives same result when interaction_constraints is specified as a list of ",
                  "character vectors, numeric vectors, or a combination"), {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
 
@@ -1173,6 +1203,7 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
 })
 
 test_that(paste0("lgb.train() gives same results when using interaction_constraints and specifying colnames"), {
+  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
 

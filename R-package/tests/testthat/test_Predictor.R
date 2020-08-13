@@ -1,6 +1,7 @@
 context("Predictor")
 
 test_that("predictions do not fail for integer input", {
+    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
     dtrain <- lgb.Dataset(X, label = y)
@@ -19,6 +20,7 @@ test_that("predictions do not fail for integer input", {
 })
 
 test_that("start_iteration works correctly", {
+    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")

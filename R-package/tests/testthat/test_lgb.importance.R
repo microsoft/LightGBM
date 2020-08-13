@@ -1,6 +1,7 @@
 context("lgb.importance")
 
 test_that("lgb.importance() should reject bad inputs", {
+    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
     bad_inputs <- list(
         .Machine$integer.max
         , Inf

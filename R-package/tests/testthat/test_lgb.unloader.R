@@ -1,6 +1,7 @@
 context("lgb.unloader")
 
 test_that("lgb.unloader works as expected", {
+    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -21,6 +22,7 @@ test_that("lgb.unloader works as expected", {
 })
 
 test_that("lgb.unloader finds all boosters and removes them", {
+    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
