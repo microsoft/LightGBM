@@ -1,0 +1,30 @@
+
+namespace Eigen {
+
+/** \page TopicCUDA Using Eigen in CUDA kernels
+
+Staring from CUDA 5.5 and Eigen 3.3, it is possible to use Eigen's matrices, vectors, and arrays for fixed size within CUDA kernels. This is especially useful when working on numerous but small problems. By default, when Eigen's headers are included within a .cu file compiled by nvcc most Eigen's functions and methods are prefixed by the \c __device__ \c __host__ keywords making them callable from both host and device code.
+This support can be disabled by defining \c EIGEN_NO_CUDA before including any Eigen's header.
+This might be useful to disable some warnings when a .cu file makes use of Eigen on the host side only.
+However, in both cases, host's SIMD vectorization has to be disabled in .cu files.
+It is thus \b strongly \b recommended to properly move all costly host computation from your .cu files to regular .cpp files.
+
+Known issues:
+
+ - \c nvcc with MS Visual Studio does not work (patch welcome)
+ 
+ - \c nvcc 5.5 with gcc-4.7 (or greater) has issues with the standard \c \<limits\> header file. To workaround this, you can add the following before including any other files:
+   \code
+    // workaround issue between gcc >= 4.7 and cuda 5.5
+    #if (defined __GNUC__) && (__GNUC__>4 || __GNUC_MINOR__>=7)
+      #undef _GLIBCXX_ATOMIC_BUILTINS
+      #undef _GLIBCXX_USE_INT128
+    #endif
+   \endcode
+   
+ - On 64bits system Eigen uses \c long \c int as the default type for indexes and sizes. On CUDA device, it would make sense to default to 32 bits \c int.
+   However, to keep host and CUDA code compatible, this cannot be done automatically by %Eigen, and the user is thus required to define \c EIGEN_DEFAULT_DENSE_INDEX_TYPE to \c int throughout his code (or only for CUDA code if there is no interaction between host and CUDA code through %Eigen's object).
+
+*/
+
+}

@@ -1,0 +1,41 @@
+      /* setup the chart and its options */                                                                                
+      var chart = nv.models.lineChart()                                                                                    
+                    .color(d3.scale.category10().range())                                                                  
+                    .margin({left: 75, bottom: 100})                                                                        
+                    .forceX([0]).forceY([0]);                                                                              
+                                                                                                                           
+      chart.x(function(datum){ return datum.r; })                                                                          
+           .xAxis.options({                                                                                                
+             axisLabel: customSettings.XLABEL || 'Changeset',
+             tickFormat: d3.format('.0f')                                                                                  
+           });
+      chart.xAxis
+        .tickValues(changesets_count)
+        .tickFormat(function(d){return changesets[d]})
+        .rotateLabels(-90);
+                                                                                                                                                                                                       
+      chart.y(function(datum){ return datum.v; })                                                    
+            .yAxis.options({                                                                                              
+              axisLabel: customSettings.YLABEL || 'GFlops'/*,
+              tickFormat: function(val){ return d3.format('.0f')(val) + ' GFlops'; }*/
+            });
+      
+      chart.tooltip.headerFormatter(function(d) { return changesets[d]
+        + ' <p style="font-weight:normal;text-align: left;">'
+        + changesets_details[d] + "</p>"; });
+
+      //chart.useInteractiveGuideline(true);
+      d3.select('#chart').datum(data).call(chart);                                                                         
+      var plot = d3.select('#chart > g');                                                                                  
+                                                                                                                           
+      /* setup the title */                                                                                                
+      plot.append('text')                                                                                                  
+          .style('font-size', '24px')                                                                                      
+          .attr('text-anchor', 'middle').attr('x', '50%').attr('y', '20px')                                                
+          .text(customSettings.TITLE || '');                                                                                                                   
+                                                                                                                           
+      /* ensure the chart is responsive */                                                                                 
+      nv.utils.windowResize(chart.update);                                                                                 
+    </script>                                                                                                              
+  </body>                                                                                                                  
+</html>  

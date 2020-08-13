@@ -1,0 +1,9 @@
+/** \page SYCL_EIGEN Eigen SYCL Backend
+
+Useful information for Eigen SYCL Backend:
+
+- <a href="https://developer.codeplay.com/computecppce/latest/getting-started-with-eigen">Getting Started with Eigen</a> 
+
+- <a href="https://developer.codeplay.com/computecppce/latest/options-for-building-eigen-sycl">Options for Building Eigen SYCL</a>  
+
+*/

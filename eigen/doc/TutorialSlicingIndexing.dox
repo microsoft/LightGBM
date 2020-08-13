@@ -1,0 +1,244 @@
+namespace Eigen {
+
+/** \eigenManualPage TutorialSlicingIndexing Slicing and Indexing
+
+This page presents the numerous possibilities offered by `operator()` to index sub-set of rows and columns.
+This API has been introduced in %Eigen 3.4.
+It supports all the feature proposed by the \link TutorialBlockOperations block API \endlink, and much more.
+In particular, it supports \b slicing that consists in taking a set of rows, columns, or elements, uniformly spaced within a matrix or indexed from an array of indices.
+
+\eigenAutoToc
+
+\section TutorialSlicingOverview Overview
+
+All the aforementioned operations are handled through the generic DenseBase::operator()(const RowIndices&, const ColIndices&) method.
+Each argument can be:
+  - An integer indexing a single row or column, including symbolic indices.
+  - The symbol Eigen::all representing the whole set of respective rows or columns in increasing order.
+  - An ArithmeticSequence as constructed by the Eigen::seq, Eigen::seqN, or Eigen::lastN functions.
+  - Any 1D vector/array of integers including %Eigen's vector/array, expressions, std::vector, std::array, as well as plain C arrays: `int[N]`.
+
+More generally, it can accepts any object exposing the following two member functions:
+  \code
+  <integral type> operator[](<integral type>) const;
+  <integral type> size() const;
+  \endcode
+where `<integral type>` stands for any integer type compatible with Eigen::Index (i.e. `std::ptrdiff_t`).
+
+\section TutorialSlicingBasic Basic slicing
+
+Taking a set of rows, columns, or elements, uniformly spaced within a matrix or vector is achieved through the Eigen::seq or Eigen::seqN functions where "seq" stands for arithmetic sequence. Their signatures are summarized below:
+
+<table class="manual">
+<tr>
+  <th>function</th>
+  <th>description</th>
+  <th>example</th>
+</tr>
+<tr>
+  <td>\code seq(firstIdx,lastIdx) \endcode</td>
+  <td>represents the sequence of integers ranging from \c firstIdx to \c lastIdx</td>
+  <td>\code seq(2,5) <=> {2,3,4,5} \endcode</td>
+</tr>
+<tr>
+  <td>\code seq(firstIdx,lastIdx,incr) \endcode</td>
+  <td>same but using the increment \c incr to advance from one index to the next</td>
+  <td>\code seq(2,8,2) <=> {2,4,6,8} \endcode</td>
+</tr>
+<tr>
+  <td>\code seqN(firstIdx,size) \endcode</td>
+  <td>represents the sequence of \c size integers starting from \c firstIdx</td>
+  <td>\code seqN(2,5) <=> {2,3,4,5,6} \endcode</td>
+</tr>
+<tr>
+  <td>\code seqN(firstIdx,size,incr) \endcode</td>
+  <td>same but using the increment \c incr to advance from one index to the next</td>
+  <td>\code seqN(2,3,3) <=> {2,5,8} \endcode</td>
+</tr>
+</table>
+
+The \c firstIdx and \c lastIdx parameters can also be defined with the help of the Eigen::last symbol representing the index of the last row, column or element of the underlying matrix/vector once the arithmetic sequence is passed to it through operator().
+Here are some examples for a 2D array/matrix \c A and a 1D array/vector \c v.
+<table class="manual">
+<tr>
+  <th>Intent</th>
+  <th>Code</th>
+  <th>Block-API equivalence</th>
+</tr>
+<tr>
+  <td>Bottom-left corner starting at row \c i with \c n columns</td>
+  <td>\code A(seq(i,last), seqN(0,n)) \endcode</td>
+  <td>\code A.bottomLeftCorner(A.rows()-i,n) \endcode</td>
+</tr>
+<tr>
+  <td>%Block starting at \c i,j having \c m rows, and \c n columns</td>
+  <td>\code A(seqN(i,m), seqN(i,n) \endcode</td>
+  <td>\code A.block(i,j,m,n) \endcode</td>
+</tr>
+<tr>
+  <td>%Block starting at \c i0,j0 and ending at \c i1,j1</td>
+  <td>\code A(seq(i0,i1), seq(j0,j1) \endcode</td>
+  <td>\code A.block(i0,j0,i1-i0+1,j1-j0+1) \endcode</td>
+</tr>
+<tr>
+  <td>Even columns of A</td>
+  <td>\code A(all, seq(0,last,2)) \endcode</td>
+  <td></td>
+</tr>
+<tr>
+  <td>First \c n odd rows A</td>
+  <td>\code A(seqN(1,n,2), all) \endcode</td>
+  <td></td>
+</tr>
+<tr>
+  <td>The last past one column</td>
+  <td>\code A(all, last-1) \endcode</td>
+  <td>\code A.col(A.cols()-2) \endcode</td>
+</tr>
+<tr>
+  <td>The middle row</td>
+  <td>\code A(last/2,all) \endcode</td>
+  <td>\code A.row((A.rows()-1)/2) \endcode</td>
+</tr>
+<tr>
+  <td>Last elements of v starting at i</td>
+  <td>\code v(seq(i,last)) \endcode</td>
+  <td>\code v.tail(v.size()-i) \endcode</td>
+</tr>
+<tr>
+  <td>Last \c n elements of v</td>
+  <td>\code v(seq(last+1-n,last)) \endcode</td>
+  <td>\code v.tail(n) \endcode</td>
+</tr>
+</table>
+
+As seen in the last exemple, referencing the <i> last n </i> elements (or rows/columns) is a bit cumbersome to write.
+This becomes even more tricky and error prone with a non-default increment.
+Here comes \link Eigen::lastN(SizeType) Eigen::lastN(size) \endlink, and \link Eigen::lastN(SizeType,IncrType) Eigen::lastN(size,incr) \endlink:
+
+<table class="manual">
+<tr>
+  <th>Intent</th>
+  <th>Code</th>
+  <th>Block-API equivalence</th>
+</tr>
+<tr>
+  <td>Last \c n elements of v</td>
+  <td>\code v(lastN(n)) \endcode</td>
+  <td>\code v.tail(n) \endcode</td>
+</tr>
+<tr>
+  <td>Bottom-right corner of A of size \c m times \c n</td>
+  <td>\code v(lastN(m), lastN(n)) \endcode</td>
+  <td>\code A.bottomRightCorner(m,n) \endcode</td>
+</tr>
+<tr>
+  <td>Bottom-right corner of A of size \c m times \c n</td>
+  <td>\code v(lastN(m), lastN(n)) \endcode</td>
+  <td>\code A.bottomRightCorner(m,n) \endcode</td>
+</tr>
+<tr>
+  <td>Last \c n columns taking 1 column over 3</td>
+  <td>\code A(all, lastN(n,3)) \endcode</td>
+  <td></td>
+</tr>
+</table>
+
+\section TutorialSlicingFixed Compile time size and increment
+
+In terms of performance, %Eigen and the compiler can take advantage of compile-time size and increment.
+To this end, you can enforce compile-time parameters using Eigen::fix<val>.
+Such compile-time value can be combined with the Eigen::last symbol:
+\code v(seq(last-fix<7>, last-fix<2>))
+\endcode
+In this example %Eigen knowns at compile-time that the returned expression has 6 elements.
+It is equivalent to:
+\code v(seqN(last-7, fix<6>))
+\endcode
+
+We can revisit the <i>even columns of A</i> example as follows:
+\code A(all, seq(0,last,fix<2>))
+\endcode
+
+
+\section TutorialSlicingReverse Reverse order
+
+Row/column indices can also be enumerated in decreasing order using a negative increment.
+For instance, one over two columns of A from the column 20 to 10:
+\code A(all, seq(20, 10, fix<-2>))
+\endcode
+The last \c n rows starting from the last one:
+\code A(seqN(last, n, fix<-1>), all)
+\endcode
+You can also use the ArithmeticSequence::reverse() method to reverse its order.
+The previous example can thus also be written as:
+\code A(lastN(n).reverse(), all)
+\endcode
+
+
+\section TutorialSlicingArray Array of indices
+
+The generic `operator()` can also takes as input an arbitrary list of row or column indices stored as either an `ArrayXi`, a `std::vector<int>`, `std::array<int,N>`, etc.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Slicing_stdvector_cxx11.cpp
+</td>
+<td>
+\verbinclude Slicing_stdvector_cxx11.out
+</td></tr></table>
+
+You can also directly pass a static array:
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Slicing_rawarray_cxx11.cpp
+</td>
+<td>
+\verbinclude Slicing_rawarray_cxx11.out
+</td></tr></table>
+
+or expressions:
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Slicing_arrayexpr.cpp
+</td>
+<td>
+\verbinclude Slicing_arrayexpr.out
+</td></tr></table>
+
+When passing an object with a compile-time size such as `Array4i`, `std::array<int,N>`, or a static array, then the returned expression also exhibit compile-time dimensions.
+
+\section TutorialSlicingCustomArray Custom index list
+
+More generally, `operator()` can accept as inputs any object \c ind of type \c T compatible with:
+\code
+Index s = ind.size(); or Index s = size(ind);
+Index i;
+i = ind[i];
+\endcode
+
+This means you can easily build your own fancy sequence generator and pass it to `operator()`.
+Here is an exemple enlarging a given matrix while padding the additional first rows and columns through repetition:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Slicing_custom_padding_cxx11.cpp
+</td>
+<td>
+\verbinclude Slicing_custom_padding_cxx11.out
+</td></tr></table>
+
+<br>
+
+*/
+
+/*
+TODO add:
+so_repeat_inner.cpp
+so_repeleme.cpp
+*/
+}

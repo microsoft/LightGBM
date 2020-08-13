@@ -1,0 +1,56 @@
+namespace Eigen {
+
+/**
+
+\page TopicCMakeGuide Using %Eigen in CMake Projects
+
+%Eigen provides native CMake support which allows the library to be easily
+used in CMake projects.
+
+\note %CMake 3.0 (or later) is required to enable this functionality.
+
+%Eigen exports a CMake target called `Eigen3::Eigen` which can be imported
+using the `find_package` CMake command and used by calling
+`target_link_libraries` as in the following example:
+\code{.cmake}
+cmake_minimum_required (VERSION 3.0)
+project (myproject)
+
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+
+add_executable (example example.cpp)
+target_link_libraries (example Eigen3::Eigen)
+\endcode
+
+The above code snippet must be placed in a file called `CMakeLists.txt` alongside
+`example.cpp`. After running
+\code{.sh}
+$ cmake path-to-example-directory
+\endcode
+CMake will produce project files that generate an executable called `example`
+which requires at least version 3.3 of %Eigen. Here, `path-to-example-directory`
+is the path to the directory that contains both `CMakeLists.txt` and
+`example.cpp`.
+
+Do not forget to set the <a href="https://cmake.org/cmake/help/v3.7/variable/CMAKE_PREFIX_PATH.html">\c CMAKE_PREFIX_PATH </a> variable if Eigen is not installed in a default location or if you want to pick a specific version. For instance:
+\code{.sh}
+$ cmake path-to-example-directory -DCMAKE_PREFIX_PATH=$HOME/mypackages
+\endcode
+An alternative is to set the \c Eigen3_DIR cmake's variable to the respective path containing the \c Eigen3*.cmake files. For instance:
+\code{.sh}
+$ cmake path-to-example-directory -DEigen3_DIR=$HOME/mypackages/share/eigen3/cmake/
+\endcode
+
+If the `REQUIRED` option is omitted when locating %Eigen using
+`find_package`, one can check whether the package was found as follows:
+\code{.cmake}
+find_package (Eigen3 3.3 NO_MODULE)
+
+if (TARGET Eigen3::Eigen)
+  # Use the imported target
+endif (TARGET Eigen3::Eigen)
+\endcode
+
+*/
+
+}

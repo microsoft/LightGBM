@@ -1,0 +1,38 @@
+namespace Eigen {
+
+/** \eigenManualPage TopicFixedSizeVectorizable Fixed-size vectorizable %Eigen objects
+
+The goal of this page is to explain what we mean by "fixed-size vectorizable".
+
+\section FixedSizeVectorizable_summary Executive Summary
+
+An Eigen object is called "fixed-size vectorizable" if it has fixed size and that size is a multiple of 16 bytes.
+
+Examples include:
+\li Eigen::Vector2d
+\li Eigen::Vector4d
+\li Eigen::Vector4f
+\li Eigen::Matrix2d
+\li Eigen::Matrix2f
+\li Eigen::Matrix4d
+\li Eigen::Matrix4f
+\li Eigen::Affine3d
+\li Eigen::Affine3f
+\li Eigen::Quaterniond
+\li Eigen::Quaternionf
+
+\section FixedSizeVectorizable_explanation Explanation
+
+First, "fixed-size" should be clear: an %Eigen object has fixed size if its number of rows and its number of columns are fixed at compile-time. So for example \ref Matrix3f has fixed size, but \ref MatrixXf doesn't (the opposite of fixed-size is dynamic-size).
+
+The array of coefficients of a fixed-size %Eigen object is a plain "static array", it is not dynamically allocated. For example, the data behind a \ref Matrix4f is just a "float array[16]".
+
+Fixed-size objects are typically very small, which means that we want to handle them with zero runtime overhead -- both in terms of memory usage and of speed.
+
+Now, vectorization works with 128-bit packets (e.g., SSE, AltiVec, NEON), 256-bit packets (e.g., AVX), or 512-bit packets (e.g., AVX512). Moreover, for performance reasons, these packets are most efficiently read and written if they have the same alignment as the packet size, that is 16 bytes, 32 bytes, and 64 bytes respectively.
+
+So it turns out that the best way that fixed-size %Eigen objects can be vectorized, is if their size is a multiple of 16 bytes (or more). %Eigen will then request 16-byte alignment (or more) for these objects, and henceforth rely on these objects being aligned to achieve maximal efficiency.
+
+*/
+
+}

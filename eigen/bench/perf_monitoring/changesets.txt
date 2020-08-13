@@ -1,0 +1,95 @@
+Load hg-to-git hash maps from ./eigen_git/.git/
+#3.0.1
+#3.1.1
+#3.2.0
+3.2.4
+#574a7621809fe
+58964a85800bd  # introduce AVX
+#589cbd7e98174  # merge
+589db7d49efbb  # introduce FMA
+#590a078f442a3  # complex and AVX
+590a419cea4a0  # improve packing with ptranspose
+#59251e85c936d  # merge
+#592e497a27ddc
+593d5a795f673  # New gebp kernel: up to 3 packets x 4 register-level blocks
+#5942c3c95990d  # merge
+#596c9788d55b9  # Disable 3pX4 kernel on Altivec
+#5999aa3dc4e21  # merge
+6209452eb38f8   # before-evaluators
+#6333eba5e1101  # Implement evaluator for sparse outer products
+#663b9d314ae19
+#6655ef95fabee  # Properly detect FMA support on ARM
+#667fe25f3b8e3   # FMA has been wrongly disabled
+#668409547a0c8
+#6694304c73542   # merge default to tensors
+#67216047c8d4a   # merge default to tensors
+#67410a79ca3a3   # merge default to tensors
+#674b7271dffb5   # Generalized the gebp apis
+676bfdd9f3ac9   # Made the blocking computation aware of the l3 cache;<br/> Also optimized the blocking parameters to take<br/> into account the number of threads used for a computation.
+6782dde63499c   # generalized gemv
+6799f98650d0a   # ensured that contractions that can be reduced to a matrix vector product
+#6840918c51e60   # merge tensor
+684e972b55ec4   # change prefetching in gebp
+#68598604576d1   # merge index conversion
+68963eb0f6fe6   # clean blocking size computation
+689db05f2d01e   # rotating kernel for ARM only
+#6901b7e12847d   # result_of
+69226275b250a   # fix prefetching change for ARM
+692692136350b   # prefetching
+693a8ad8887bf   # blocking size strategy
+693bcf9bb5c1f   # avoid redundant pack_rhs
+6987550107028   # dynamic loop swapping
+69858740ce4c6   # rm dynamic loop swapping,<br/> adjust lhs's micro panel height to fully exploit L1 cache
+698cd3bbffa73   # blocking heuristic:<br/> block on the rhs in L1 if the lhs fit in L1.
+701488c15615a   # organize a little our default cache sizes,<br/> and use a saner default L1 outside of x86 (10% faster on Nexus 5)
+701e56aabf205   # Refactor computeProductBlockingSizes to make room<br/> for the possibility of using lookup tables
+701ca5c12587b   # Polish lookup tables generation
+7013589a9c115   # actual_panel_rows computation should always be resilient<br/> to parameters not consistent with the known L1 cache size, see comment
+70102babb9c0f   # Provide a empirical lookup table for blocking sizes measured on a Nexus 5.<br/> Only for float, only for Android on ARM 32bit for now.
+7088481dc21ea   # Bug 986: add support for coefficient-based<br/> product with 0 depth.
+709d7f51feb07   # Bug 992: don't select a 3p GEMM path with non-SIMD scalar types.
+759f9303cc7c5   # 3.3-alpha1
+765aba1eda71e   # help clang inlining
+770fe630c9873   # Improve numerical accuracy in LLT and triangular solve<br/> by using true scalar divisions (instead of x * (1/y))
+#8741d23430628   # Improved the matrix multiplication blocking in the case<br/> where mr is not a power of 2 (e.g on Haswell CPUs)
+878f629fe95c8   # Made the index type a template parameter to evaluateProductBlockingSizes.<br/> Use numext::mini and numext::maxi instead of <br/> std::min/std::max to compute blocking sizes.
+8975d51a7f12c   # Don't optimize the processing of the last rows of<br/> a matrix matrix product in cases that violate<br/> the assumptions made by the optimized code path.
+8986136f4fdd4   # Remove the rotating kernel.
+898e68e165a23   # Bug 256: enable vectorization with unaligned loads/stores.
+91466e99ab6a1   # Relax mixing-type constraints for binary coeff-wise operators
+91776236cdea4   # merge
+917101ea26f5e   # Include the cost of stores in unrolling
+921672076db5d   # Fix perf regression introduced in changeset e56aabf205
+9210fa9e4a15c   # Fix perf regression in dgemm introduced by changeset 5d51a7f12c
+936f6b3cf8de9   # 3.3-beta2
+944504a4404f1   # Optimize expression matching 'd?=a-b*c' as 'd?=a; d?=b*c;'
+95877e27fbeee   # 3.3-rc1
+959779774f98c   # Bug 1311: fix alignment logic in some cases<br/> of (scalar*small).lazyProduct(small)
+9729f9d8d2f62   # Disabled part of the matrix matrix peeling code<br/> that's incompatible with 512 bit registers
+979eeac81b8c0   # 3.3.0
+989c927af60ed   # Fix a performance regression in (mat*mat)*vec<br/> for which mat*mat was evaluated multiple times.
+994fe696022ec   # Operators += and -= do not resize!
+99466f65ccc36   # Ease compiler generating clean and efficient code in mat*vec
+9946a5fe86098   # Complete rewrite of column-major-matrix * vector product<br/> to deliver higher performance of modern CPU.
+99591003f3b86   # Improve performance of row-major-dense-matrix * vector products<br/> for recent CPUs.
+997eb621413c1   # Revert vec/y to vec*(1/y) in row-major TRSM
+10444bbc320468  # Bug 1435: fix aliasing issue in exressions like: A = C - B*A;
+1073624df50945  # Adds missing EIGEN_STRONG_INLINE to support MSVC<br/> properly inlining small vector calculations
+1094d428a199ab  # Bug 1562: optimize evaluation of small products<br/> of the form s*A*B by rewriting them as: s*(A.lazyProduct(B))<br/> to save a costly temporary.<br/> Measured speedup from 2x to 5x.
+1096de9e31a06d  # Introduce the macro ei_declare_local_nested_eval to<br/> help allocating on the stack local temporaries via alloca,<br/> and let outer-products makes a good use of it.
+11087b91c11207  # Bug 1578: Improve prefetching in matrix multiplication on MIPS.
+1153aa110e681b  # PR 526: Speed up multiplication of small, dynamically sized matrices
+11544ad359237a  # Vectorize row-by-row gebp loop iterations on 16 packets as well
+1157a476054879  # Bug 1624: improve matrix-matrix product on ARM 64, 20% speedup
+1160a4159dba08  # do not read buffers out of bounds
+1163c53eececb0  # Implement AVX512 vectorization of std::complex<float/double>
+11644e7746fe22  # Bug 1636: fix gemm performance issue with gcc>=6 and no FMA
+1164956678a4ef  # Bug 1515: disable gebp's 3pX4 micro kernel<br/> for MSVC<=19.14 because of register spilling.
+1165426bce7529  # fix EIGEN_GEBP_2PX4_SPILLING_WORKAROUND<br/> for non vectorized type, and non x86/64 target
+11660d90637838  # enable spilling workaround on architectures with SSE/AVX
+1166f159cf3d75  # Artificially increase l1-blocking size for AVX512.<br/> +10% speedup with current kernels.
+11686dd93f7e3b  # Make code compile again for older compilers.
+1175dbfcceabf5  # Bug: 1633: refactor gebp kernel and optimize for neon
+117670e133333d  # Bug 1661: fix regression in GEBP and AVX512
+11760f028f61cb  # GEBP: cleanup logic to choose between<br/> a 4 packets of 1 packet (=e118ce86fd+fix)
+1180de77bf5d6c  # gebp: Add new ½ and ¼ packet rows per (peeling) round on the lhs
