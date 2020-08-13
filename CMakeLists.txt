@@ -67,8 +67,9 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
-SET(EIGEN_DIR ${PROJECT_SOURCE_DIR}/include/eigen)
+SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/eigen")
 include_directories(${EIGEN_DIR})
+message("${EIGEN_DIR}")
 
 if(BUILD_FOR_R)
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
@@ -224,7 +225,7 @@ if(USE_MPI)
 endif(USE_MPI)
 
 file(GLOB SOURCES
-    include/eigen/*.cpp
+    eigen/*.cpp
     src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
