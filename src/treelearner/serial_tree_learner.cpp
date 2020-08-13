@@ -884,12 +884,11 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     return;
   }
 
-  // calculate coefficients using the additive method described in https://arxiv.org/pdf/1802.05640.pdf
+  // calculate coefficients using the method described in Eq 3 of https://arxiv.org/pdf/1802.05640.pdf
   // the coefficients vector is given by
-  // - (X_T * H * X + lambda) ^ (-1) * (X_T * H * y + g_T X)
+  // - (X_T * H * X + lambda) ^ (-1) * (X_T * g)
   // where:
   // X is the matrix where the first column is the feature values and the second is all ones,
-  // y is the vector of current predictions
   // H is the diagonal matrix of the hessian,
   // lambda is the diagonal matrix with diagonal entries equal to the regularisation term linear_lambda
   // g is the vector of gradients
