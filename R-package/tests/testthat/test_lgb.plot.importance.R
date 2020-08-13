@@ -1,7 +1,7 @@
 context("lgb.plot.importance()")
 
 test_that("lgb.plot.importance() should run without error for well-formed inputs", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)

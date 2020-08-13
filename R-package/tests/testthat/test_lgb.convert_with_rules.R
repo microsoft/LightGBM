@@ -1,7 +1,7 @@
 context("lgb.convert_with_rules()")
 
 test_that("lgb.convert_with_rules() rejects inputs that are not a data.table or data.frame", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     bad_inputs <- list(
         matrix(1.0:10.0, 2L, 5L)
         , TRUE
@@ -21,7 +21,7 @@ test_that("lgb.convert_with_rules() rejects inputs that are not a data.table or 
 })
 
 test_that("lgb.convert_with_rules() should work correctly for a dataset with only character columns", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     testDF <- data.frame(
         col1 = c("a", "b", "c")
         , col2 =  c("green", "green", "red")
@@ -47,7 +47,7 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with onl
 })
 
 test_that("lgb.convert_with_rules() should work correctly for a dataset with only factor columns", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     testDF <- data.frame(
         col1 = as.factor(c("a", "b", "c"))
         , col2 =  as.factor(c("green", "green", "red"))
@@ -73,7 +73,7 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with onl
 })
 
 test_that("lgb.convert_with_rules() should not change a dataset with only integer columns", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     testDF <- data.frame(
         col1 = 11L:15L
         , col2 = 16L:20L
@@ -92,7 +92,7 @@ test_that("lgb.convert_with_rules() should not change a dataset with only intege
 })
 
 test_that("lgb.convert_with_rules() should work correctly for a dataset with numeric, factor, and character columns", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     testDF <- data.frame(
         character_col = c("a", "b", "c")
         , numeric_col = c(1.0, 9.0, 10.0)
@@ -123,7 +123,7 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with num
 })
 
 test_that("lgb.convert_with_rules() should convert missing values to the expected value", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     testDF <- data.frame(
         character_col = c("a", NA_character_, "c")
         , na_col = rep(NA, 3L)
@@ -179,7 +179,7 @@ test_that("lgb.convert_with_rules() should convert missing values to the expecte
 })
 
 test_that("lgb.convert_with_rules() should work correctly if you provide your own well-formed rules", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     testDF <- data.frame(
         character_col = c("a", NA_character_, "c", "a", "a", "c")
         , na_col = rep(NA, 6L)
@@ -239,7 +239,7 @@ test_that("lgb.convert_with_rules() should work correctly if you provide your ow
 })
 
 test_that("lgb.convert_with_rules() should modify data.tables in-place", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     testDT <- data.table::data.table(
         character_col = c("a", NA_character_, "c")
         , na_col = rep(NA, 3L)

@@ -1,7 +1,7 @@
 context("lgb.get.eval.result")
 
 test_that("lgb.get.eval.result() should throw an informative error if booster is not an lgb.Booster", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     bad_inputs <- list(
         matrix(1.0:10.0, 2L, 5L)
         , TRUE
@@ -25,7 +25,7 @@ test_that("lgb.get.eval.result() should throw an informative error if booster is
 })
 
 test_that("lgb.get.eval.result() should throw an informative error for incorrect data_name", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
     dtrain <- lgb.Dataset(
@@ -59,7 +59,7 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
 })
 
 test_that("lgb.get.eval.result() should throw an informative error for incorrect eval_name", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
     dtrain <- lgb.Dataset(
@@ -95,7 +95,7 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
 context("lgb.load()")
 
 test_that("lgb.load() gives the expected error messages given different incorrect inputs", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
@@ -140,7 +140,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
 })
 
 test_that("Loading a Booster from a file works", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
@@ -174,7 +174,7 @@ test_that("Loading a Booster from a file works", {
 })
 
 test_that("Loading a Booster from a string works", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
@@ -207,7 +207,7 @@ test_that("Loading a Booster from a string works", {
 })
 
 test_that("If a string and a file are both passed to lgb.load() the file is used model_str is totally ignored", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
@@ -244,7 +244,7 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
 context("Booster")
 
 test_that("Creating a Booster from a Dataset should work", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
@@ -265,7 +265,7 @@ test_that("Creating a Booster from a Dataset should work", {
 })
 
 test_that("Creating a Booster from a Dataset with an existing predictor should work", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     nrounds <- 2L
@@ -297,7 +297,7 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
 })
 
 test_that("Booster$rollback_one_iter() should work as expected", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
@@ -331,7 +331,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
 })
 
 test_that("Booster$update() passing a train_set works as expected", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     nrounds <- 2L
@@ -376,7 +376,7 @@ test_that("Booster$update() passing a train_set works as expected", {
 })
 
 test_that("Booster$update() throws an informative error if you provide a non-Dataset to update()", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     nrounds <- 2L
@@ -401,7 +401,7 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
 context("save_model")
 
 test_that("Saving a model with different feature importance types works", {
-    testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+    testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train

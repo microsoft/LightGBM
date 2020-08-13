@@ -1,6 +1,6 @@
 context("Test models with custom objective")
 
-if (Sys.getenv("R_ARCH") != "i386/") {
+if (Sys.getenv("R_ARCH") != "/i386") {
   data(agaricus.train, package = "lightgbm")
   data(agaricus.test, package = "lightgbm")
   dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label)
@@ -42,13 +42,13 @@ param <- list(
 num_round <- 10L
 
 test_that("custom objective works", {
-  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+  testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
   bst <- lgb.train(param, dtrain, num_round, watchlist, eval = evalerror)
   expect_false(is.null(bst$record_evals))
 })
 
 test_that("using a custom objective, custom eval, and no other metrics works", {
-  testthat::skip_if(Sys.getenv("R_ARCH") == "i386/", message = "skipping tests on 32-bit R")
+  testthat::skip_if(Sys.getenv("R_ARCH") == "/i386", message = "skipping tests on 32-bit R")
   set.seed(708L)
   bst <- lgb.train(
     params = list(
