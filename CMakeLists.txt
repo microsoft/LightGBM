@@ -1,16 +1,10 @@
 if(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 elseif(USE_CUDA)
-  cmake_minimum_required(VERSION 3.11)
-  enable_language(CUDA)
+  cmake_minimum_required(VERSION 3.16)
+  PROJECT(lightgbm LANGUAGES CUDA)
 else()
   cmake_minimum_required(VERSION 2.8)
-endif()
-
-if(USE_CUDA)
-  PROJECT(lightgbm LANGUAGES C CXX CUDA)
-else()
-  PROJECT(lightgbm LANGUAGES C CXX)
 endif()
 
 PROJECT(lightgbm)
@@ -135,20 +129,19 @@ endif(USE_GPU)
 
 if(USE_CUDA)
     find_package(CUDA REQUIRED)
+    SET(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
     include_directories(${CUDA_INCLUDE_DIRS})
-    LIST(APPEND CMAKE_CUDA_FLAGS -g -Xcompiler=-fopenmp -Xcompiler=-fPIC -Xcompiler=-Wall -lineinfo)
-    CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS 7.0)
+    LIST(APPEND CMAKE_CUDA_FLAGS -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall)
+    CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS 6.0 6.1 6.2 7.0 7.5+PTX)
 
     LIST(APPEND CMAKE_CUDA_FLAGS ${CUDA_ARCH_FLAGS})
-    if(CMAKE_BUILD_TYPE MATCHES Release)
-      LIST(APPEND CMAKE_CUDA_FLAGS -03)
+    if(USE_DEBUG)
+      SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
+    else()
+      SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -lineinfo")
     endif()
-
-    message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
     string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
     message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
-    set(CMAKE_CUDA_FLAGS_DEBUG -G)
-    set(CMAKE_CUDA_FLAGS_RELEASE -lineinfo)
 
     ADD_DEFINITIONS(-DUSE_CUDA)
     if (NOT DEFINED CMAKE_CUDA_STANDARD)
@@ -381,12 +374,12 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(USE_CUDA)
-  set_property(TARGET lightgbm PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   TARGET_LINK_LIBRARIES(
     lightgbm
     ${histograms}
   )
-  set_property(TARGET _lightgbm PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   TARGET_LINK_LIBRARIES(
     _lightgbm
     ${histograms}
