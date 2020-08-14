@@ -300,8 +300,9 @@ class FeatureHistogram {
     }
 
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
-    bool is_full_categorical = meta_->missing_type == MissingType::None;
-    int used_bin = meta_->num_bin - 1 + is_full_categorical;
+    const int bin_start = 1;
+    const int bin_end = meta_->num_bin;
+    int used_bin = -1;
 
     std::vector<int> sorted_idx;
     double l2 = meta_->config->lambda_l2;
@@ -312,11 +313,11 @@ class FeatureHistogram {
     int rand_threshold = 0;
     if (use_onehot) {
       if (USE_RAND) {
-        if (used_bin > 0) {
-          rand_threshold = meta_->rand.NextInt(0, used_bin);
+        if (bin_end - bin_start > 0) {
+          rand_threshold = meta_->rand.NextInt(bin_start, bin_end);
         }
       }
-      for (int t = 0; t < used_bin; ++t) {
+      for (int t = bin_start; t < bin_end; ++t) {
         const auto grad = GET_GRAD(data_, t);
         const auto hess = GET_HESS(data_, t);
         data_size_t cnt =
@@ -366,7 +367,7 @@ class FeatureHistogram {
         }
       }
     } else {
-      for (int i = 0; i < used_bin; ++i) {
+      for (int i = bin_start; i < bin_end; ++i) {
         if (Common::RoundInt(GET_HESS(data_, i) * cnt_factor) >=
             meta_->config->cat_smooth) {
           sorted_idx.push_back(i);
@@ -649,9 +650,7 @@ class FeatureHistogram {
     double gain_shift = GetLeafGainGivenOutput<true>(
         sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, parent_output);
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
-    bool is_full_categorical = meta_->missing_type == MissingType::None;
-    int used_bin = meta_->num_bin - 1 + is_full_categorical;
-    if (threshold >= static_cast<uint32_t>(used_bin)) {
+    if (threshold >= static_cast<uint32_t>(meta_->num_bin) || threshold < 0) {
       output->gain = kMinScore;
       Log::Warning("Invalid categorical threshold split");
       return;
