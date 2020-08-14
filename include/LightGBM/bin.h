@@ -456,8 +456,10 @@ class MultiValBin {
 
 inline uint32_t BinMapper::ValueToBin(double value) const {
   if (std::isnan(value)) {
-    if (missing_type_ == MissingType::NaN) {
+    if (bin_type_ == BinType::CategoricalBin) {
       return 0;
+    } else if (missing_type_ == MissingType::NaN) {
+      return num_bin_ - 1;
     } else {
       value = 0.0f;
     }
