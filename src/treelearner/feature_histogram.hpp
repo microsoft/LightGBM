@@ -300,8 +300,9 @@ class FeatureHistogram {
     }
 
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
-    const int bin_start = 1;
-    const int bin_end = meta_->num_bin;
+    const int8_t offset = meta_->offset;
+    const int bin_start = 1 - offset;
+    const int bin_end = meta_->num_bin - offset;
     int used_bin = -1;
 
     std::vector<int> sorted_idx;
@@ -490,19 +491,19 @@ class FeatureHistogram {
       if (use_onehot) {
         output->num_cat_threshold = 1;
         output->cat_threshold =
-            std::vector<uint32_t>(1, static_cast<uint32_t>(best_threshold));
+            std::vector<uint32_t>(1, static_cast<uint32_t>(best_threshold + offset));
       } else {
         output->num_cat_threshold = best_threshold + 1;
         output->cat_threshold =
             std::vector<uint32_t>(output->num_cat_threshold);
         if (best_dir == 1) {
           for (int i = 0; i < output->num_cat_threshold; ++i) {
-            auto t = sorted_idx[i];
+            auto t = sorted_idx[i] + offset;
             output->cat_threshold[i] = t;
           }
         } else {
           for (int i = 0; i < output->num_cat_threshold; ++i) {
-            auto t = sorted_idx[used_bin - 1 - i];
+            auto t = sorted_idx[used_bin - 1 - i] + offset;
             output->cat_threshold[i] = t;
           }
         }
@@ -1171,6 +1172,7 @@ class HistogramPool {
         }
       }
     }
+    Log::Warning("o0 %d, bin %d", offsets->at(0), num_total_bin);
     return num_total_bin;
   }
 
