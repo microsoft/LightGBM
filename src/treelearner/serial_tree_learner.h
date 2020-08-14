@@ -127,7 +127,7 @@ class SerialTreeLearner: public TreeLearner {
       }
     }
   }
- 
+
   template<bool HAS_NAN>
   void AddPredictionToScoreInner(const Tree* tree, double* out_score) const {
     int num_leaves = tree->num_leaves();

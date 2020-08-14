@@ -425,7 +425,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   }
   numeric_feature_map_ = std::vector<int>(num_features_, -1);
   num_numeric_features_ = 0;
-  for (int i = 0; i < num_features_; ++ i) {
+  for (int i = 0; i < num_features_; ++i) {
     if (FeatureBinMapper(i)->bin_type() == BinType::NumericalBin) {
       numeric_feature_map_[i] = num_numeric_features_;
       ++num_numeric_features_;
