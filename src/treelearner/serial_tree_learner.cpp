@@ -6,7 +6,7 @@
 
 // preprocessor definition ensures we use only MPL2-licensed code
 #define EIGEN_MPL2_ONLY
-#include <Dense>
+#include <Eigen/Dense>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/array_args.h>

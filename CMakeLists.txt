@@ -67,7 +67,7 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
-SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/eigen/Eigen")
+SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/eigen")
 include_directories(${EIGEN_DIR})
 
 if(BUILD_FOR_R)
@@ -224,7 +224,7 @@ if(USE_MPI)
 endif(USE_MPI)
 
 file(GLOB SOURCES
-    eigen/Eigen/*.cpp
+    eigen/*.cpp
     src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
