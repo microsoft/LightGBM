@@ -123,7 +123,7 @@ Core Parameters
 
       -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
 
-      -  missing values must be encoded as np.nan (Python) or NA (cli), not 0
+      -  missing values must be encoded as ``np.nan`` (Python) or ``NA`` (cli), not ``0``
 
       -  it is recommended to rescale data before training so that features have similar mean and standard deviation
 
