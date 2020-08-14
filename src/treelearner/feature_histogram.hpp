@@ -1172,7 +1172,6 @@ class HistogramPool {
         }
       }
     }
-    Log::Warning("o0 %d, bin %d", offsets->at(0), num_total_bin);
     return num_total_bin;
   }
 

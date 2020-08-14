@@ -320,7 +320,7 @@ class DenseBin : public Bin {
     data_size_t* default_count = &gt_count;
     int8_t offset = most_freq_bin == 0 ? 1 : 0;
     if (most_freq_bin > 0 &&
-        Common ::FindInBitset(threshold, num_threahold, most_freq_bin)) {
+        Common::FindInBitset(threshold, num_threahold, most_freq_bin)) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
