@@ -657,8 +657,8 @@ class FeatureHistogram {
       return;
     }
     const double cnt_factor = num_data / sum_hessian;
-    const auto grad = GET_GRAD(data_, threshold);
-    const auto hess = GET_HESS(data_, threshold);
+    const auto grad = GET_GRAD(data_, threshold - meta_->offset);
+    const auto hess = GET_HESS(data_, threshold - meta_->offset);
     data_size_t cnt =
         static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
 
