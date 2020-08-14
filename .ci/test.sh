@@ -52,7 +52,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./eigen,./.nuget . || exit -1
-    pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
+    pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|^eigen|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
