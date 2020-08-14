@@ -439,7 +439,6 @@ namespace LightGBM {
           }
         }
       }
-      num_bin_ = 0;
       int rest_cnt = static_cast<int>(total_sample_cnt - na_cnt);
       if (rest_cnt > 0) {
         const int SPARSE_RATIO = 100;
@@ -450,19 +449,24 @@ namespace LightGBM {
         // sort by counts
         Common::SortForPair<int, int>(&counts_int, &distinct_values_int, 0, true);
         // will ignore the categorical of small counts
-        int cut_cnt = static_cast<int>((total_sample_cnt - na_cnt) * 0.99f);
+        int cut_cnt = static_cast<int>(
+            Common::RoundInt((total_sample_cnt - na_cnt) * 0.99f));
         size_t cur_cat = 0;
         categorical_2_bin_.clear();
         bin_2_categorical_.clear();
         int used_cnt = 0;
-        max_bin = std::min(static_cast<int>(distinct_values_int.size()), max_bin);
+        int distinct_cnt = static_cast<int>(distinct_values_int.size());
+        if (na_cnt > 0) {
+          ++distinct_cnt;
+        }
+        max_bin = std::min(distinct_cnt, max_bin);
         cnt_in_bin.clear();
 
         // Push the dummy bin for NaN
         bin_2_categorical_.push_back(-1);
-        categorical_2_bin_[-1] = num_bin_;
+        categorical_2_bin_[-1] = 0;
         cnt_in_bin.push_back(0);
-        ++num_bin_;
+        num_bin_ = 1;
         while (cur_cat < distinct_values_int.size()
                && (used_cnt < cut_cnt || num_bin_ < max_bin)) {
           if (counts_int[cur_cat] < min_data_in_bin && cur_cat > 1) {
