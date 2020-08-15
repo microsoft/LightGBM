@@ -31,7 +31,7 @@ Booster <- R6::R6Class(
 
       # Create parameters and handle
       params <- append(params, list(...))
-      handle <- 0L
+      handle <- NA_integer_
 
       # Attempts to create a handle for the dataset
       try({

@@ -73,7 +73,7 @@ test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
 
 test_that("lgb.Dataset: Dataset should be able to construct from matrix and return non-null handle", {
   rawData <- matrix(runif(1000L), ncol = 10L)
-  handle <- 0L
+  handle <- NA_integer_
   ref_handle <- NULL
   handle <- lightgbm:::lgb.call(
     "LGBM_DatasetCreateFromMat_R"
