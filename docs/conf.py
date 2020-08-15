@@ -190,6 +190,7 @@ def generate_doxygen_xml(app):
         "SKIP_FUNCTION_MACROS=NO",
         "SORT_BRIEF_DOCS=YES",
         "WARN_AS_ERROR=YES",
+        "EXCLUDE_PATTERNS=*/eigen/*"
     ]
     doxygen_input = '\n'.join(doxygen_args)
     is_py3 = sys.version[0] == "3"
