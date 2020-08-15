@@ -651,7 +651,7 @@ class FeatureHistogram {
     double gain_shift = GetLeafGainGivenOutput<true>(
         sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, parent_output);
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
-    if (threshold >= static_cast<uint32_t>(meta_->num_bin) || threshold < 0) {
+    if (threshold >= static_cast<uint32_t>(meta_->num_bin) || threshold < meta_->offset) {
       output->gain = kMinScore;
       Log::Warning("Invalid categorical threshold split");
       return;
