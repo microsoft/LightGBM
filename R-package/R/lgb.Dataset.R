@@ -186,7 +186,7 @@ Dataset <- R6::R6Class(
       if (!is.null(private$reference)) {
         ref_handle <- private$reference$.__enclos_env__$private$get_handle()
       }
-      handle <- NA_integer_
+      handle <- lgb.null.handle()
 
       # Not subsetting
       if (is.null(private$used_indices)) {
