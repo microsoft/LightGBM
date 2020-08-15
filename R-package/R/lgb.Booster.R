@@ -31,7 +31,7 @@ Booster <- R6::R6Class(
 
       # Create parameters and handle
       params <- append(params, list(...))
-      handle <- 0.0
+      handle <- 0L
 
       # Attempts to create a handle for the dataset
       try({
