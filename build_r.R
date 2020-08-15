@@ -105,6 +105,14 @@ result <- file.copy(
 )
 .handle_result(result)
 
+result <- file.copy(
+  from = "eigen/"
+  , to = sprintf("%s/", TEMP_SOURCE_DIR)
+  , recursive = TRUE
+  , overwrite = TRUE
+)
+.handle_result(result)
+
 # compute/ is a submodule with boost, only needed if
 # building the R package with GPU support
 if (USING_GPU) {
