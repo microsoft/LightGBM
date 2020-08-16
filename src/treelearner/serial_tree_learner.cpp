@@ -101,8 +101,8 @@ void SerialTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
     // store only upper triangular half of matrix as an array, in row-major order
     // this requires (max_num_feat + 1) * (max_num_feat + 2) / 2 entries (including the constant terms of the regression)
     // we add another 8 to ensure cache lines are not shared among processors
-    XTHX_.push_back(std::vector<double>((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
-    XTg_.push_back(std::vector<double>(max_num_feat + 9, 0.0));
+    XTHX_.push_back(std::vector<float>((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
+    XTg_.push_back(std::vector<float>(max_num_feat + 9, 0.0));
   }
   XTHX_by_thread_.clear();
   XTg_by_thread_.clear();
