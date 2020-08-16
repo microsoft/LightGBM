@@ -716,13 +716,13 @@ class Dataset {
     for (int i = curr_size; i < num_features_; ++i) {
       int feat_num = numeric_feature_map_[i];
       if (feat_num > -1) {
-        raw_data_.push_back(std::vector<double>(num_rows, 0));
+        raw_data_.push_back(std::vector<float>(num_rows, 0));
       }
     }
   }
 
   /*! \brief Get pointer to raw_data_ feature */
-  inline const double* raw_index(int feat_num) const {
+  inline const float* raw_index(int feat_num) const {
     return raw_data_[numeric_feature_map_[feat_num]].data();
   }
 
@@ -762,7 +762,7 @@ class Dataset {
   bool use_missing_;
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
-  std::vector<std::vector<double>> raw_data_;
+  std::vector<std::vector<float>> raw_data_;
   bool has_raw_;
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;

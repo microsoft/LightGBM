@@ -83,7 +83,7 @@ void SerialTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
   for (int feat = 0; feat < train_data->num_features(); ++feat) {
     auto bin_mapper = train_data_->FeatureBinMapper(feat);
     if (bin_mapper->bin_type() == BinType::NumericalBin) {
-      const double* feat_ptr = train_data_->raw_index(feat);
+      const float* feat_ptr = train_data_->raw_index(feat);
       for (int i = 0; i < train_data->num_data(); ++i) {
         if (std::isnan(feat_ptr[i])) {
           contains_nan_[feat] = 1;
@@ -898,7 +898,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   bool data_has_nan = false;
   std::vector<std::vector<int>> leaf_features;
   std::vector<int> leaf_num_features;
-  std::vector<std::vector<const double*>> raw_data_ptr;
+  std::vector<std::vector<const float*>> raw_data_ptr;
   int max_num_features = 0;
   for (int i = 0; i < num_leaves; ++i) {
     std::vector<int> raw_features;
@@ -911,7 +911,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     auto new_end = std::unique(raw_features.begin(), raw_features.end());
     raw_features.erase(new_end, raw_features.end());
     std::vector<int> numerical_features;
-    std::vector<const double*> data_ptr;
+    std::vector<const float*> data_ptr;
     for (size_t j = 0; j < raw_features.size(); ++j) {
       int feat = train_data_->InnerFeatureIndex(raw_features[j]);
       auto bin_mapper = train_data_->FeatureBinMapper(feat);
@@ -949,7 +949,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   OMP_INIT_EX();
 #pragma omp parallel if (num_data_ > 1024)
   {
-    std::vector<double> curr_row(max_num_features + 1);
+    std::vector<float> curr_row(max_num_features + 1);
     int tid = omp_get_thread_num();
     #pragma omp for schedule(static)
     for (int i = 0; i < num_data_; ++i) {
@@ -962,7 +962,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       int num_feat = leaf_num_features[leaf_num];
       for (int feat = 0; feat < num_feat; ++feat) {
         if (HAS_NAN) {
-          double val = raw_data_ptr[leaf_num][feat][i];
+          float val = raw_data_ptr[leaf_num][feat][i];
           if (std::isnan(val)) {
             nan_found = true;
             break;

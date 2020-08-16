@@ -130,9 +130,9 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
     double add_score = leaf_const_[~node];                                    \
     bool nan_found = false;                                                   \
     const double* coeff_ptr = leaf_coeff_[~node].data();                      \
-    const double** data_ptr = feat_ptr[~node].data();                         \
+    const float** data_ptr = feat_ptr[~node].data();                          \
     for (size_t j = 0; j < leaf_features_inner_[~node].size(); ++j) {         \
-       double feat_val = data_ptr[j][(data_idx)];                             \
+       float feat_val = data_ptr[j][(data_idx)];                              \
        if (std::isnan(feat_val)) {                                            \
           nan_found = true;                                                   \
           break;                                                              \
@@ -166,7 +166,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    std::vector<std::vector<const double*>> feat_ptr(num_leaves_);
+    std::vector<std::vector<const float*>> feat_ptr(num_leaves_);
     for (int leaf_num = 0; leaf_num < num_leaves_; ++leaf_num) {
       for (int feat : leaf_features_inner_[leaf_num]) {
         feat_ptr[leaf_num].push_back(data->raw_index(feat));
@@ -247,7 +247,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
   if (is_linear_) {
-    std::vector<std::vector<const double*>> feat_ptr(num_leaves_);
+    std::vector<std::vector<const float*>> feat_ptr(num_leaves_);
     for (int leaf_num = 0; leaf_num < num_leaves_; ++leaf_num) {
       for (int feat : leaf_features_inner_[leaf_num]) {
         feat_ptr[leaf_num].push_back(data->raw_index(feat));

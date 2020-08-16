@@ -1025,7 +1025,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
         for (int j = 0; j < num_features_; ++j) {
           int num_feat = numeric_feature_map_[j];
           if (num_feat > -1) {
-            writer->Write(&raw_data_[num_feat][i], sizeof(double));
+            writer->Write(&raw_data_[num_feat][i], sizeof(float));
           }
         }
       }

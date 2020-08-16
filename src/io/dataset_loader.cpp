@@ -557,7 +557,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
   if (dataset->has_raw()) {
     dataset->ResizeRaw(dataset->num_data());
-      size_t row_size = dataset->num_numeric_features_ * sizeof(double);
+      size_t row_size = dataset->num_numeric_features_ * sizeof(float);
       if (row_size > buffer_size) {
         buffer_size = row_size;
         buffer.resize(buffer_size);
@@ -568,8 +568,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
         Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %d", i, read_cnt);
       }
       mem_ptr = buffer.data();
-      const double* tmp_ptr_raw_row = reinterpret_cast<const double*>(mem_ptr);
-      std::vector<double> curr_row(dataset->num_numeric_features_, 0);
+      const float* tmp_ptr_raw_row = reinterpret_cast<const float*>(mem_ptr);
+      std::vector<float> curr_row(dataset->num_numeric_features_, 0);
       for (int j = 0; j < dataset->num_features(); ++j) {
         int num_feat = dataset->numeric_feature_map_[j];
         if (num_feat > -1) {
@@ -1071,7 +1071,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   std::vector<std::pair<int, double>> oneline_features;
   double tmp_label = 0.0f;
   auto& ref_text_data = *text_data;
-  std::vector<double> feature_row(dataset->num_features_);
+  std::vector<float> feature_row(dataset->num_features_);
   if (predict_fun_ == nullptr) {
     OMP_INIT_EX();
     // if doesn't need to prediction with initial model
@@ -1199,7 +1199,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   (data_size_t start_idx, const std::vector<std::string>& lines) {
     std::vector<std::pair<int, double>> oneline_features;
     double tmp_label = 0.0f;
-    std::vector<double> feature_row(dataset->num_features_);
+    std::vector<float> feature_row(dataset->num_features_);
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
