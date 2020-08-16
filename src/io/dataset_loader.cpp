@@ -1111,7 +1111,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
         }
       }
       if (dataset->has_raw()) {
-        for (int j = 0; j < feature_row.size(); ++j) {
+        for (size_t j = 0; j < feature_row.size(); ++j) {
           int feat_num = dataset->numeric_feature_map_[j];
           if (feat_num > -1) {
             dataset->raw_data_[feat_num][i] = feature_row[j];
@@ -1169,7 +1169,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       }
       dataset->FinishOneRow(tid, i, is_feature_added);
       if (dataset->has_raw()) {
-        for (int j = 0; j < feature_row.size(); ++j) {
+        for (size_t j = 0; j < feature_row.size(); ++j) {
           int feat_num = dataset->numeric_feature_map_[j];
           if (feat_num > -1) {
             dataset->raw_data_[feat_num][i] = feature_row[j];
@@ -1241,7 +1241,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
         }
       }
       if (dataset->has_raw()) {
-        for (int j = 0; j < feature_row.size(); ++j) {
+        for (size_t j = 0; j < feature_row.size(); ++j) {
           int feat_num = dataset->numeric_feature_map_[j];
           if (feat_num > -1) {
             dataset->raw_data_[feat_num][i] = feature_row[j];

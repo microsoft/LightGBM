@@ -706,10 +706,10 @@ class Dataset {
 
   /*! \brief Resize raw_data_, use current number of featurse */
   inline void ResizeRaw(int num_rows) {
-    if (raw_data_.size() > num_numeric_features_) {
+    if (static_cast<int>(raw_data_.size()) > num_numeric_features_) {
       raw_data_.resize(num_numeric_features_);
     }
-    for (int i = 0; i < raw_data_.size(); ++i) {
+    for (size_t i = 0; i < raw_data_.size(); ++i) {
       raw_data_[i].resize(num_rows);
     }
     int curr_size = raw_data_.size();

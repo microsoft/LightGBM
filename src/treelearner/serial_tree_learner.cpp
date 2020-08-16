@@ -912,7 +912,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     raw_features.erase(new_end, raw_features.end());
     std::vector<int> numerical_features;
     std::vector<const double*> data_ptr;
-    for (int j = 0; j < raw_features.size(); ++j) {
+    for (size_t j = 0; j < raw_features.size(); ++j) {
       int feat = train_data_->InnerFeatureIndex(raw_features[j]);
       auto bin_mapper = train_data_->FeatureBinMapper(feat);
       if (bin_mapper->bin_type() == BinType::NumericalBin) {
@@ -923,7 +923,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     leaf_features.push_back(numerical_features);
     raw_data_ptr.push_back(data_ptr);
     leaf_num_features.push_back(numerical_features.size());
-    if (numerical_features.size() > max_num_features) {
+    if (static_cast<int>(numerical_features.size()) > max_num_features) {
       max_num_features = numerical_features.size();
     }
   }
@@ -1021,7 +1021,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   // copy into eigen matrices and solve
 #pragma omp parallel for schedule(static)
   for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
-    if (total_nonzero[leaf_num] < leaf_features[leaf_num].size() + 1) {
+    if (total_nonzero[leaf_num] < static_cast<int>(leaf_features[leaf_num].size()) + 1) {
       if (is_refit) {
         double old_const = tree->LeafConst(leaf_num);
         tree->SetLeafConst(leaf_num, decay_rate * old_const + (1.0 - decay_rate) * tree->LeafOutput(leaf_num) * shrinkage);
@@ -1051,7 +1051,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     std::vector<double> coeffs_vec;
     std::vector<int> features_new;
     std::vector<double> old_coeffs = tree->LeafCoeffs(leaf_num);
-    for (int i = 0; i < leaf_features[leaf_num].size(); ++i) {
+    for (size_t i = 0; i < leaf_features[leaf_num].size(); ++i) {
       if (is_refit) {
         features_new.push_back(leaf_features[leaf_num][i]);
         coeffs_vec.push_back(decay_rate * old_coeffs[i] + (1.0 - decay_rate) * coeffs(i) * shrinkage);
@@ -1069,7 +1069,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     // update the tree properties
     tree->SetLeafFeaturesInner(leaf_num, features_new);
     std::vector<int> features_raw(features_new.size());
-    for (int i = 0; i < features_new.size(); ++i) {
+    for (size_t i = 0; i < features_new.size(); ++i) {
       features_raw[i] = train_data_->RealFeatureIndex(features_new[i]);
     }
     tree->SetLeafFeatures(leaf_num, features_raw);

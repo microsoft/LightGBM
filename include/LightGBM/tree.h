@@ -191,7 +191,7 @@ class Tree {
       internal_value_[i] = MaybeRoundToZero(internal_value_[i] * rate);
       if (is_linear_) {
         leaf_const_[i] = MaybeRoundToZero(leaf_const_[i] * rate);
-        for (int j = 0; j < leaf_coeff_[i].size(); ++j) {
+        for (size_t j = 0; j < leaf_coeff_[i].size(); ++j) {
           leaf_coeff_[i][j] = MaybeRoundToZero(leaf_coeff_[i][j] * rate);
         }
       }
@@ -200,7 +200,7 @@ class Tree {
         MaybeRoundToZero(leaf_value_[num_leaves_ - 1] * rate);
     if (is_linear_) {
       leaf_const_[num_leaves_ - 1] = MaybeRoundToZero(leaf_const_[num_leaves_ - 1] * rate);
-      for (int j = 0; j < leaf_coeff_[num_leaves_ - 1].size(); ++j) {
+      for (size_t j = 0; j < leaf_coeff_[num_leaves_ - 1].size(); ++j) {
         leaf_coeff_[num_leaves_ - 1][j] = MaybeRoundToZero(leaf_coeff_[num_leaves_ - 1][j] * rate);
       }
     }
@@ -294,7 +294,7 @@ class Tree {
   /*! \brief Set the linear model coefficients on one leaf */
   inline void SetLeafCoeffs(int leaf, std::vector<double> output) {
     leaf_coeff_[leaf].resize(output.size());
-    for (int i=0; i < output.size(); ++i) {
+    for (size_t i = 0; i < output.size(); ++i) {
       leaf_coeff_[leaf][i] = MaybeRoundToZero(output[i]);
     }
   }
@@ -584,7 +584,7 @@ inline double Tree::Predict(const double* feature_values) const {
       int leaf = GetLeaf(feature_values);
       double output = leaf_const_[leaf];
       bool nan_found = false;
-      for (int i = 0; i < leaf_features_[leaf].size(); ++i) {
+      for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
         int feat_raw = leaf_features_[leaf][i];
         double feat_val = feature_values[feat_raw];
         if (std::isnan(feat_val)) {
@@ -614,7 +614,7 @@ inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_
     int leaf = GetLeafByMap(feature_values);
     double output = leaf_const_[leaf];
     bool nan_found = false;
-    for (int i=0; i < leaf_features_[leaf].size(); ++i) {
+    for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
       int feat = leaf_features_[leaf][i];
       auto val_it = feature_values.find(feat);
       if (val_it != feature_values.end()) {

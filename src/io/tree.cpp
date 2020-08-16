@@ -131,7 +131,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
     bool nan_found = false;                                                   \
     const double* coeff_ptr = leaf_coeff_[~node].data();                      \
     const double** data_ptr = feat_ptr[~node].data();                         \
-    for (int j = 0; j < leaf_features_inner_[~node].size(); ++j) {            \
+    for (size_t j = 0; j < leaf_features_inner_[~node].size(); ++j) {         \
        double feat_val = data_ptr[j][(data_idx)];                             \
        if (std::isnan(feat_val)) {                                            \
           nan_found = true;                                                   \
@@ -680,7 +680,9 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("is_linear")) {
-    Common::Atoi(key_vals["is_linear"].c_str(), &is_linear_);
+    int is_linear_int;
+    Common::Atoi(key_vals["is_linear"].c_str(), &is_linear_int);
+    is_linear_ = static_cast<bool>(is_linear_int);
   }
 
   if ((num_leaves_ <= 1) && !is_linear_) { return; }
@@ -766,7 +768,7 @@ Tree::Tree(const char* str, size_t* used_len) {
     leaf_features_inner_.resize(num_leaves_);
     if (num_feat.size() > 0) {
       int total_num_feat = 0;
-      for (int i = 0; i < num_feat.size(); ++i) { total_num_feat += num_feat[i]; }
+      for (size_t i = 0; i < num_feat.size(); ++i) { total_num_feat += num_feat[i]; }
       std::vector<int> all_leaf_features;
       if (key_vals.count("leaf_features")) {
         all_leaf_features = Common::StringToArrayFast<int>(key_vals["leaf_features"], total_num_feat);

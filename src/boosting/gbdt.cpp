@@ -277,8 +277,8 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
   std::vector<int> leaf_pred(num_data_);
   if (linear_tree_) {
     int max_leaves = 0;
-    for (int i = 0; i < tree_leaf_prediction.size(); ++i) {
-      for (int j = 0; j < tree_leaf_prediction[i].size(); ++j) {
+    for (size_t i = 0; i < tree_leaf_prediction.size(); ++i) {
+      for (size_t j = 0; j < tree_leaf_prediction[i].size(); ++j) {
         max_leaves = std::max(max_leaves, tree_leaf_prediction[i][j]);
       }
     }

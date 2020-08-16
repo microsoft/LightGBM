@@ -1545,7 +1545,7 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   num_total_features_ += other->num_total_features_;
   num_groups_ += other->num_groups_;
 
-  for (int i = 0; i < (other->numeric_feature_map_).size(); ++i) {
+  for (size_t i = 0; i < (other->numeric_feature_map_).size(); ++i) {
     int num_feat = numeric_feature_map_[i];
     if (num_feat > -1) {
       numeric_feature_map_.push_back(num_feat + num_numeric_features_);
