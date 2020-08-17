@@ -224,7 +224,6 @@ if(USE_MPI)
 endif(USE_MPI)
 
 file(GLOB SOURCES
-    eigen/*.cpp
     src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
