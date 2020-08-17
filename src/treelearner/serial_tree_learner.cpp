@@ -4,9 +4,12 @@
  */
 #include "serial_tree_learner.h"
 
+#ifndef LGB_R_BUILD
 // preprocessor definition ensures we use only MPL2-licensed code
 #define EIGEN_MPL2_ONLY
 #include <Eigen/Dense>
+#endif // !LGB_R_BUILD
+
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/array_args.h>
@@ -872,6 +875,12 @@ void SerialTreeLearner::GetLeafMap(Tree* tree) {
   }
 }
 
+#ifdef LGB_R_BUILD
+template<bool HAS_NAN>
+void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) {
+  Log::Fatal("Linear tree learner does not work with R package.");
+}
+#else
 template<bool HAS_NAN>
 void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) {
   tree->SetLinear(true);
@@ -951,7 +960,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   {
     std::vector<float> curr_row(max_num_features + 1);
     int tid = omp_get_thread_num();
-    #pragma omp for schedule(static)
+#pragma omp for schedule(static)
     for (int i = 0; i < num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       int leaf_num = leaf_map_[i];
@@ -1083,6 +1092,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     tree->SetNan(data_has_nan);
   }
 }
-
+#endif // LGB_R_BUILD
 
 }  // namespace LightGBM
