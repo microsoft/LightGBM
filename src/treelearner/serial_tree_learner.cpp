@@ -8,7 +8,7 @@
 // preprocessor definition ensures we use only MPL2-licensed code
 #define EIGEN_MPL2_ONLY
 #include <Eigen/Dense>
-#endif // !LGB_R_BUILD
+#endif //  !LGB_R_BUILD
 
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
@@ -1092,6 +1092,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     tree->SetNan(data_has_nan);
   }
 }
-#endif // LGB_R_BUILD
+#endif  // LGB_R_BUILD
 
 }  // namespace LightGBM
