@@ -1,4 +1,4 @@
-<img src=https://github.com/microsoft/LightGBM/blob/master/logo/logo_black_font.png width=200 />
+<img src=https://github.com/microsoft/LightGBM/blob/master/logo/logo_black_font.png width=300 />
 
 Light Gradient Boosting Machine
 ===============================
