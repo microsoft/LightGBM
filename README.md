@@ -1,4 +1,4 @@
-<img src=https://github.com/microsoft/LightGBM/blob/master/logo/logo_black_font.png width=150/> Light Gradient Boosting Machine
+<img src=https://github.com/microsoft/LightGBM/blob/master/logo/logo_black_font.png width=200 height=50/> Light Gradient Boosting Machine
 ===============================================================================================================================
 
 [![GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/GitHub%20Actions/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
