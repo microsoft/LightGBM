@@ -198,6 +198,11 @@ This is a known issue of CMake when using MinGW. The easiest solution is to run 
 
 See `Microsoft/LightGBM#3060 <https://github.com/microsoft/LightGBM/issues/3060#issuecomment-626338538>`__ for more details.
 
+15. Where can I find LightGBM's logo to use it in my presentation?
+------------------------------------------------------------------
+
+You can find LightGBM's logo in different file formats and resolutions `here <https://github.com/microsoft/LightGBM/tree/master/docs/logo>`__.
+
 ------
 
 R-package
