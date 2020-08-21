@@ -340,6 +340,9 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
 #ifdef USE_CUDA
   if (io_config.device_type == std::string("cuda")) {
       LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
+      if (is_sparse) {
+        Log::Warning("Using sparse features with CUDA is currently not supported.");
+      }
       is_sparse = false;
   }
 #endif

@@ -801,18 +801,9 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     }
   } else {
     bag_data_cnt_ = num_data_;
-    if (config_->device_type == std::string("cuda")) {
-      if (tmp_subset_ == nullptr) {
-        tmp_subset_.reset(new Dataset(bag_data_cnt_));
-        tmp_subset_->CopyFeatureMapperFrom(train_data_);
-        is_use_subset_ = false;
-        bag_data_indices_.clear();
-      }
-    } else {
-      bag_data_indices_.clear();
-      bagging_runner_.ReSize(0);
-      is_use_subset_ = false;
-    }
+    bag_data_indices_.clear();
+    bagging_runner_.ReSize(0);
+    is_use_subset_ = false;
   }
 }
 

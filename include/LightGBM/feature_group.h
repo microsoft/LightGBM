@@ -233,6 +233,9 @@ class FeatureGroup {
   }
 
   inline void* FeatureGroupData() {
+    if (is_multi_val_) {
+      return nullptr;
+    }
     return bin_data_->get_data();
   }
 
