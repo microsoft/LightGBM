@@ -585,7 +585,8 @@ void GBDT::PredictContrib(const double* features, double* output) const {
   // set zero
   const int num_features = max_feature_idx_ + 1;
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_ * (num_features + 1));
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+  const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       models_[i * num_tree_per_iteration_ + k]->PredictContrib(features, num_features, output + k*(num_features + 1));
@@ -596,7 +597,8 @@ void GBDT::PredictContrib(const double* features, double* output) const {
 void GBDT::PredictContribByMap(const std::unordered_map<int, double>& features,
                                std::vector<std::unordered_map<int, double>>* output) const {
   const int num_features = max_feature_idx_ + 1;
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+  const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       models_[i * num_tree_per_iteration_ + k]->PredictContribByMap(features, num_features, &((*output)[k]));

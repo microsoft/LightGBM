@@ -205,19 +205,22 @@ class GBDT : public GBDTBase {
 
   /*!
   * \brief Get number of prediction for one data
+  * \param start_iteration Start index of the iteration to predict
   * \param num_iteration number of used iterations
   * \param is_pred_leaf True if predicting  leaf index
   * \param is_pred_contrib True if predicting feature contribution
   * \return number of prediction
   */
-  inline int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const override {
+  inline int NumPredictOneRow(int start_iteration, int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const override {
     int num_pred_in_one_row = num_class_;
     if (is_pred_leaf) {
       int max_iteration = GetCurrentIteration();
+      start_iteration = std::max(start_iteration, 0);
+      start_iteration = std::min(start_iteration, max_iteration);
       if (num_iteration > 0) {
-        num_pred_in_one_row *= static_cast<int>(std::min(max_iteration, num_iteration));
+        num_pred_in_one_row *= static_cast<int>(std::min(max_iteration - start_iteration, num_iteration));
       } else {
-        num_pred_in_one_row *= max_iteration;
+        num_pred_in_one_row *= (max_iteration - start_iteration);
       }
     } else if (is_pred_contrib) {
       num_pred_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2);  // +1 for 0-based indexing, +1 for baseline
@@ -353,11 +356,16 @@ class GBDT : public GBDTBase {
   */
   inline int NumberOfClasses() const override { return num_class_; }
 
-  inline void InitPredict(int num_iteration, bool is_pred_contrib) override {
+  inline void InitPredict(int start_iteration, int num_iteration, bool is_pred_contrib) override {
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
+    start_iteration = std::max(start_iteration, 0);
+    start_iteration = std::min(start_iteration, num_iteration_for_pred_);
     if (num_iteration > 0) {
-      num_iteration_for_pred_ = std::min(num_iteration, num_iteration_for_pred_);
+      num_iteration_for_pred_ = std::min(num_iteration, num_iteration_for_pred_ - start_iteration);
+    } else {
+      num_iteration_for_pred_ = num_iteration_for_pred_ - start_iteration;
     }
+    start_iteration_for_pred_ = start_iteration;
     if (is_pred_contrib) {
       #pragma omp parallel for schedule(static)
       for (int i = 0; i < static_cast<int>(models_.size()); ++i) {
@@ -499,6 +507,8 @@ class GBDT : public GBDTBase {
   data_size_t label_idx_;
   /*! \brief number of used model */
   int num_iteration_for_pred_;
+  /*! \brief Start iteration of used model */
+  int start_iteration_for_pred_;
   /*! \brief Shrinkage rate for one iteration */
   double shrinkage_rate_;
   /*! \brief Number of loaded initial models */

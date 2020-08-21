@@ -38,6 +38,7 @@ The \code{name} field can be one of the following:
 }
 }
 \examples{
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -48,5 +49,5 @@ lightgbm::setinfo(dtrain, "label", 1 - labels)
 
 labels2 <- lightgbm::getinfo(dtrain, "label")
 stopifnot(all.equal(labels2, 1 - labels))
-
+}
 }

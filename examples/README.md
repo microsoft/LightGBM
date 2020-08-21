@@ -12,6 +12,7 @@ Machine Learning Challenge Winning Solutions
 
 | Place         | Competition   | Solution  | Date |
 | ------------- |:------------- | --------- | -----|
+|1st      | [M5 Forecasting - Accuracy](https://www.kaggle.com/c/m5-forecasting-accuracy) | [link](https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/163684) | 2020.6 |
 | 3rd     | [RSNA Intracranial Hemorrhage Detection](https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection) | [link](https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection/discussion/117223#latest-673643) | 2019.11 |
 | 1st     | [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) | [link](https://www.kaggle.com/c/ieee-fraud-detection/discussion/111308) | 2019.10 |
 | 2nd     | [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) | [link](https://www.kaggle.com/c/ieee-fraud-detection/discussion/111321) | 2019.10 |

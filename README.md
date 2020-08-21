@@ -1,5 +1,7 @@
-LightGBM, Light Gradient Boosting Machine
-=========================================
+<img src=https://github.com/microsoft/LightGBM/blob/master/logo/logo_black_font.png width=300 />
+
+Light Gradient Boosting Machine
+===============================
 
 [![GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/GitHub%20Actions/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
 [![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
