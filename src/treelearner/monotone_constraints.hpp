@@ -28,8 +28,8 @@ struct BasicConstraint {
 };
 
 struct FeatureConstraint {
-  virtual void InitCumulativeConstraints(bool) {}
-  virtual void Update(int) {}
+  virtual void InitCumulativeConstraints(bool) const {}
+  virtual void Update(int) const {}
   virtual BasicConstraint LeftToBasicConstraint() const = 0;
   virtual BasicConstraint RightToBasicConstraint() const = 0;
   virtual bool ConstraintDifferentDependingOnThreshold() const = 0;
@@ -258,16 +258,16 @@ struct CumulativeFeatureConstraint {
 struct AdvancedFeatureConstraints : FeatureConstraint {
   FeatureMinOrMaxConstraints min_constraints;
   FeatureMinOrMaxConstraints max_constraints;
-  CumulativeFeatureConstraint cumulative_feature_constraint;
+  mutable CumulativeFeatureConstraint cumulative_feature_constraint;
   bool min_constraints_to_be_recomputed = false;
   bool max_constraints_to_be_recomputed = false;
 
-  void InitCumulativeConstraints(bool REVERSE) final {
+  void InitCumulativeConstraints(bool REVERSE) const final {
     cumulative_feature_constraint =
         CumulativeFeatureConstraint(min_constraints, max_constraints, REVERSE);
   }
 
-  void Update(int threshold) final {
+  void Update(int threshold) const final {
     cumulative_feature_constraint.Update(threshold);
   }
 

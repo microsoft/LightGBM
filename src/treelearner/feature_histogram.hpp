@@ -84,7 +84,7 @@ class FeatureHistogram {
 
   void FindBestThreshold(double sum_gradient, double sum_hessian,
                          data_size_t num_data,
-                         FeatureConstraint* constraints,
+                         const FeatureConstraint* constraints,
                          double parent_output,
                          SplitInfo* output) {
     output->default_left = true;
@@ -158,7 +158,7 @@ class FeatureHistogram {
 #define TEMPLATE_PREFIX USE_RAND, USE_MC, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING
 #define LAMBDA_ARGUMENTS                                         \
   double sum_gradient, double sum_hessian, data_size_t num_data, \
-      FeatureConstraint* constraints, double parent_output, SplitInfo *output
+      const FeatureConstraint* constraints, double parent_output, SplitInfo *output
 #define BEFORE_ARGUMENTS sum_gradient, sum_hessian, parent_output, num_data, output, &rand_threshold
 #define FUNC_ARGUMENTS                                                      \
   sum_gradient, sum_hessian, num_data, constraints, min_gain_shift, \
@@ -278,7 +278,7 @@ class FeatureHistogram {
   void FindBestThresholdCategoricalInner(double sum_gradient,
                                          double sum_hessian,
                                          data_size_t num_data,
-                                         FeatureConstraint* constraints,
+                                         const FeatureConstraint* constraints,
                                          double parent_output,
                                          SplitInfo* output) {
     is_splittable_ = false;
@@ -787,7 +787,7 @@ class FeatureHistogram {
                               double sum_right_gradients,
                               double sum_right_hessians, double l1, double l2,
                               double max_delta_step,
-                              FeatureConstraint* constraints,
+                              const FeatureConstraint* constraints,
                               int8_t monotone_constraint,
                               double smoothing,
                               data_size_t left_count,
@@ -853,12 +853,11 @@ class FeatureHistogram {
     }
   }
 
-  // FIXME Make constraints const again and have the cumulative constraints outside of it?
   template <bool USE_RAND, bool USE_MC, bool USE_L1, bool USE_MAX_OUTPUT, bool USE_SMOOTHING,
             bool REVERSE, bool SKIP_DEFAULT_BIN, bool NA_AS_MISSING>
   void FindBestThresholdSequentially(double sum_gradient, double sum_hessian,
                                      data_size_t num_data,
-                                     FeatureConstraint* constraints,
+                                     const FeatureConstraint* constraints,
                                      double min_gain_shift, SplitInfo* output,
                                      int rand_threshold, double parent_output) {
     const int8_t offset = meta_->offset;
@@ -1080,7 +1079,7 @@ class FeatureHistogram {
   hist_t* data_;
   bool is_splittable_ = true;
 
-  std::function<void(double, double, data_size_t, FeatureConstraint*,
+  std::function<void(double, double, data_size_t, const FeatureConstraint*,
                      double, SplitInfo*)>
       find_best_threshold_fun_;
 };
