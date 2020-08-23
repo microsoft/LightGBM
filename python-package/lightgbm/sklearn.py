@@ -501,7 +501,7 @@ class LGBMModel(_LGBMModelBase):
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
-        if isinstance(eval_metric, (string_type, type(None))) or callable(eval_metric):
+        if not isinstance(eval_metric, list):
             eval_metric = [eval_metric]
 
         # Separate built-in from callable evaluation metrics
