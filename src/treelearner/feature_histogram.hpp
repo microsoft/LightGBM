@@ -764,7 +764,7 @@ class FeatureHistogram {
   template <bool USE_MC, bool USE_L1, bool USE_MAX_OUTPUT, bool USE_SMOOTHING>
   static double CalculateSplittedLeafOutput(
       double sum_gradients, double sum_hessians, double l1, double l2,
-      double max_delta_step, const BasicConstraint constraints,
+      double max_delta_step, const BasicConstraint& constraints,
       double smoothing, data_size_t num_data, double parent_output) {
     double ret = CalculateSplittedLeafOutput<USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
         sum_gradients, sum_hessians, l1, l2, max_delta_step, smoothing, num_data, parent_output);
