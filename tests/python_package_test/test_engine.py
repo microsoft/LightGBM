@@ -12,8 +12,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file, make_multilabel_classification)
-from sklearn.metrics import (log_loss, mean_absolute_error, mean_squared_error, roc_auc_score,
-                             recall_score, precision_score)
+from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
 
 try:
@@ -50,15 +49,6 @@ def decreasing_metric(preds, train_data):
 
 def categorize(continuous_x):
     return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
-
-def custom_recall(preds, train_data):
-    y_true = train_data.get_label()
-    return 'custom_recall', recall_score(y_true, preds > 0.5), True
-
-
-def custom_precision(preds, train_data):
-    y_true = train_data.get_label()
-    return 'custom_precision', precision_score(y_true, preds > 0.5), True
 
 
 class TestEngine(unittest.TestCase):
@@ -1828,13 +1818,13 @@ class TestEngine(unittest.TestCase):
             train_set=train_dataset,
             valid_sets=validation_dataset,
             num_boost_round=5,
-            feval=[custom_recall, custom_precision],
+            feval=[constant_metric, decreasing_metric],
             evals_result=evals_result)
 
         self.assertEqual(len(evals_result['valid_0']), 3)
         self.assertIn('binary_logloss', evals_result['valid_0'])
-        self.assertIn('custom_recall', evals_result['valid_0'])
-        self.assertIn('custom_precision', evals_result['valid_0'])
+        self.assertIn('error', evals_result['valid_0'])
+        self.assertIn('decreasing_metric', evals_result['valid_0'])
 
     def test_multiple_feval_cv(self):
         X, y = load_breast_cancer(True)
@@ -1847,16 +1837,16 @@ class TestEngine(unittest.TestCase):
             params=params,
             train_set=train_dataset,
             num_boost_round=5,
-            feval=[custom_recall, custom_precision])
+            feval=[constant_metric, decreasing_metric])
 
         # Expect three metrics but mean and stdv for each metric
         self.assertEqual(len(cv_results), 6)
         self.assertIn('binary_logloss-mean', cv_results)
-        self.assertIn('custom_recall-mean', cv_results)
-        self.assertIn('custom_precision-mean', cv_results)
+        self.assertIn('error-mean', cv_results)
+        self.assertIn('decreasing_metric-mean', cv_results)
         self.assertIn('binary_logloss-stdv', cv_results)
-        self.assertIn('custom_recall-stdv', cv_results)
-        self.assertIn('custom_precision-stdv', cv_results)
+        self.assertIn('error-stdv', cv_results)
+        self.assertIn('decreasing_metric-stdv', cv_results)
 
     @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
     def test_model_size(self):

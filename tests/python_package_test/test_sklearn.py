@@ -73,13 +73,6 @@ def multi_error(y_true, y_pred):
 def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
-def custom_recall(y_true, y_pred):
-    return 'custom_recall', recall_score(y_true, y_pred > 0.5), True
-
-
-def custom_precision(y_true, y_pred):
-    return 'custom_precision', precision_score(y_true, y_pred > 0.5), True
-
 
 class TestSklearn(unittest.TestCase):
 
@@ -937,17 +930,17 @@ class TestSklearn(unittest.TestCase):
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # Verify that can receive a list of metrics, only callable
-        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[custom_recall, custom_precision], **params_fit)
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[constant_metric, decreasing_metric], **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 3)
-        self.assertIn('custom_recall', gbm.evals_result_['training'])
-        self.assertIn('custom_precision', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+        self.assertIn('decreasing_metric', gbm.evals_result_['training'])
         self.assertIn('binary_logloss', gbm.evals_result_['training'])
 
         # Verify that can receive a list of custom and built-in metrics
-        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[custom_recall, custom_precision, 'fair'], **params_fit)
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[constant_metric, decreasing_metric, 'fair'], **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 4)
-        self.assertIn('custom_recall', gbm.evals_result_['training'])
-        self.assertIn('custom_precision', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+        self.assertIn('decreasing_metric', gbm.evals_result_['training'])
         self.assertIn('binary_logloss', gbm.evals_result_['training'])
         self.assertIn('fair', gbm.evals_result_['training'])
 
