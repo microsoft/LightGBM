@@ -288,7 +288,9 @@ class FeatureHistogram {
     double best_sum_left_gradient = 0;
     double best_sum_left_hessian = 0;
     double gain_shift;
-    constraints->InitCumulativeConstraints(true);
+    if (USE_MC) {
+      constraints->InitCumulativeConstraints(true);
+    }
     if (USE_SMOOTHING) {
       gain_shift = GetLeafGainGivenOutput<USE_L1>(
           sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, parent_output);
@@ -866,12 +868,15 @@ class FeatureHistogram {
     data_size_t best_left_count = 0;
     uint32_t best_threshold = static_cast<uint32_t>(meta_->num_bin);
     const double cnt_factor = num_data / sum_hessian;
+
     BasicConstraint best_right_constraints;
     BasicConstraint best_left_constraints;
-
     bool constraint_update_necessary =
-        constraints->ConstraintDifferentDependingOnThreshold();
-    constraints->InitCumulativeConstraints(REVERSE);
+        USE_MC && constraints->ConstraintDifferentDependingOnThreshold();
+
+    if (USE_MC) {
+      constraints->InitCumulativeConstraints(REVERSE);
+    }
 
     if (REVERSE) {
       double sum_right_gradient = 0.0f;
@@ -920,7 +925,7 @@ class FeatureHistogram {
           }
         }
 
-        if (constraint_update_necessary) {
+        if (USE_MC && constraint_update_necessary) {
           constraints->Update(t + offset);
         }
 
@@ -946,8 +951,10 @@ class FeatureHistogram {
           // left is <= threshold, right is > threshold.  so this is t-1
           best_threshold = static_cast<uint32_t>(t - 1 + offset);
           best_gain = current_gain;
-          best_right_constraints = (constraints->RightToBasicConstraint());
-          best_left_constraints = (constraints->LeftToBasicConstraint());
+          if (USE_MC) {
+            best_right_constraints = (constraints->RightToBasicConstraint());
+            best_left_constraints = (constraints->LeftToBasicConstraint());
+          }
         }
       }
     } else {
@@ -1032,8 +1039,10 @@ class FeatureHistogram {
           best_sum_left_hessian = sum_left_hessian;
           best_threshold = static_cast<uint32_t>(t + offset);
           best_gain = current_gain;
-          best_right_constraints = (constraints->RightToBasicConstraint());
-          best_left_constraints = (constraints->LeftToBasicConstraint());
+          if (USE_MC) {
+            best_right_constraints = (constraints->RightToBasicConstraint());
+            best_left_constraints = (constraints->LeftToBasicConstraint());
+          }
         }
       }
     }
