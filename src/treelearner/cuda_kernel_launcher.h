@@ -24,9 +24,7 @@ struct ThreadData {
           cudaStream_t    stream;
           uint8_t*        device_features;
           uint8_t*        device_feature_masks;
-          // data_size_t     num_data;
           data_size_t*    device_data_indices;
-          // data_size_t     leaf_num_data;
           score_t*        device_gradients;
           score_t*        device_hessians;
           score_t         hessians_const;

@@ -8,10 +8,10 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/random.h>
-#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <string>
 #include <cmath>

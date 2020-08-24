@@ -2,8 +2,8 @@
  * Copyright (c) 2020 IBM Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_CUDA_UTILS_H_
-#define LIGHTGBM_CUDA_UTILS_H_
+#ifndef LIGHTGBM_CUDA_CUDA_UTILS_H_
+#define LIGHTGBM_CUDA_CUDA_UTILS_H_
 
 #ifdef USE_CUDA
 
@@ -19,6 +19,6 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
   }
 }
 
-#endif /* USE_CUDA */
+#endif  // USE_CUDA
 
-#endif
+#endif  // LIGHTGBM_CUDA_CUDA_UTILS_H_

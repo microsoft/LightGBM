@@ -5,8 +5,11 @@
 #ifdef USE_CUDA
 
 #include "cuda_kernel_launcher.h"
+
 #include <LightGBM/utils/log.h>
+
 #include <cuda_runtime.h>
+
 #include <cstdio>
 
 namespace LightGBM {

@@ -6,10 +6,10 @@
 #include <LightGBM/dataset.h>
 
 #include <LightGBM/feature_group.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <chrono>
 #include <cstdio>

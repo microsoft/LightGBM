@@ -4,11 +4,10 @@
  */
 #include <LightGBM/config.h>
 
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/random.h>
-
-#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <limits>
 
@@ -328,20 +327,15 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-  // force col-wise for gpu
-  if (device_type == std::string("gpu")) {
-    force_col_wise = true;
-    force_row_wise = false;
-  }
-
-  // force col-wise for CUDA
-  if (device_type == std::string("cuda")) {
+  // force col-wise for gpu & CUDA
+  if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
     force_col_wise = true;
     force_row_wise = false;
   }
 
   // force gpu_use_dp for CUDA
-  if (device_type == std::string("cuda")) {
+  if (device_type == std::string("cuda") && !gpu_use_dp) {
+    Log::Warning("CUDA currently requires double precision calculations.");
     gpu_use_dp = true;
   }
 

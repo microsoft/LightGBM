@@ -27,8 +27,7 @@ inline __device__ void atomic_local_add_f(acc_type *addr, const acc_type val) {
 #ifdef IGNORE_INDICES
 #define KERNEL_NAME histogram16_fulldata
 #else  // IGNORE_INDICES
-#define KERNEL_NAME histogram16  // seems like ENABLE_ALL_FEATURES is set to 1 in the header if its disabled
-// #define KERNEL_NAME histogram16_allfeats
+#define KERNEL_NAME histogram16
 #endif  // IGNORE_INDICES
 #else  // ENABLE_ALL_FEATURES
 #error "ENABLE_ALL_FEATURES should always be 1"
@@ -132,7 +131,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     __syncthreads();
     // gradient/hessian histograms
-    // assume this starts at 32 * 4 = 128-byte boundary // LGBM_CUDA: What does it mean? boundary??
+    // assume this starts at 32 * 4 = 128-byte boundary // What does it mean? boundary??
     // total size: 2 * 256 * size_of(float) = 2 KB
     // organization: each feature/grad/hessian is at a different bank,
     //               as indepedent of the feature value as possible
@@ -174,7 +173,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     if (!feature_mask) {
         return;
     } else {
-        feature_mask = feature_mask - 1;  // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
+        feature_mask = feature_mask - 1;  // feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
     }
 
     // STAGE 1: read feature data, and gradient and hessian
@@ -182,7 +181,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // We will prefetch data into the "next" variable at the beginning of each iteration
     uchar feature;
     uchar feature_next;
-    // uint8_t bin;
     uint16_t bin;
 
     feature = feature_data[ind >> feature_mask];
@@ -196,7 +194,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // store gradient and hessian
     score_t grad, hess;
     score_t grad_next, hess_next;
-    // LGBM_CUDA v5.1
     grad = ordered_gradients[ind];
     #if CONST_HESSIAN == 0
     hess = ordered_hessians[ind];
@@ -214,7 +211,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         ind_next = data_indices[i_next];
         #endif
 
-        // imbGBT v5.1
         grad_next = ordered_gradients[ind_next];
         #if CONST_HESSIAN == 0
         hess_next = ordered_hessians[ind_next];
@@ -252,7 +248,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         // STAGE 4: update next stat
         grad = grad_next;
         hess = hess_next;
-        // LGBM_CUDA: v4.2
         if (!feature_mask) {
             feature = feature_next;
         } else {
@@ -278,7 +273,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     #if CONST_HESSIAN == 1
     // make a final reduction
     gh_hist[ltid * 2] += gh_hist[ltid * 2 + 1];
-    gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // LGBM_CUDA: counter move to this position
+    gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // counter move to this position
     __syncthreads();
     #endif
 
@@ -308,7 +303,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     // make sure everyone in this workgroup is here
     __syncthreads();
-    // everyone in this wrokgroup: if we are the last workgroup, then do reduction!
+    // everyone in this workgroup: if we are the last workgroup, then do reduction!
     if (*counter_val == (1 << power_feature_workgroups) - 1) {
         if (ltid == 0) {
             sync_counters[feature_id] = 0;
@@ -318,7 +313,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     // only 1 work group, no need to increase counter
     // the reduction will become a simple copy
-    if (1) {
+    {
         unsigned int old_val;  // dummy
 #endif
         // locate our feature's block in output memory
@@ -450,7 +445,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     __syncthreads();
     // gradient/hessian histograms
-    // assume this starts at 32 * 4 = 128-byte boundary // LGBM_CUDA: What does it mean? boundary??
+    // assume this starts at 32 * 4 = 128-byte boundary // What does it mean? boundary??
     // total size: 2 * 256 * size_of(float) = 2 KB
     // organization: each feature/grad/hessian is at a different bank,
     //               as indepedent of the feature value as possible
@@ -491,7 +486,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     if (!feature_mask) {
         return;
     } else {
-        feature_mask = feature_mask - 1;  // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
+        feature_mask = feature_mask - 1;  // feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
     }
 
     // STAGE 1: read feature data, and gradient and hessian
@@ -499,7 +494,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // We will prefetch data into the "next" variable at the beginning of each iteration
     uchar feature;
     uchar feature_next;
-    // uint8_t bin;
     uint16_t bin;
 
     feature = feature_data[ind >> feature_mask];
@@ -513,7 +507,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // store gradient and hessian
     score_t grad, hess;
     score_t grad_next, hess_next;
-    // LGBM_CUDA v5.1
     grad = ordered_gradients[ind];
     #if CONST_HESSIAN == 0
     hess = ordered_hessians[ind];
@@ -531,7 +524,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         ind_next = data_indices[i_next];
         #endif
 
-        // imbGBT v5.1
         grad_next = ordered_gradients[ind_next];
         #if CONST_HESSIAN == 0
         hess_next = ordered_hessians[ind_next];
@@ -569,7 +561,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         // STAGE 4: update next stat
         grad = grad_next;
         hess = hess_next;
-        // LGBM_CUDA: v4.2
         if (!feature_mask) {
             feature = feature_next;
         } else {
@@ -594,7 +585,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     #if CONST_HESSIAN == 1
     // make a final reduction
     gh_hist[ltid * 2] += gh_hist[ltid * 2 + 1];
-    gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // LGBM_CUDA: counter move to this position
+    gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // counter move to this position
     __syncthreads();
     #endif
 
@@ -624,7 +615,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     // make sure everyone in this workgroup is here
     __syncthreads();
-    // everyone in this wrokgroup: if we are the last workgroup, then do reduction!
+    // everyone in this workgroup: if we are the last workgroup, then do reduction!
     if (*counter_val == (1 << power_feature_workgroups) - 1) {
         if (ltid == 0) {
             sync_counters[feature_id] = 0;
@@ -634,7 +625,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     // only 1 work group, no need to increase counter
     // the reduction will become a simple copy
-    if (1) {
+    {
         unsigned int old_val;  // dummy
 #endif
         // locate our feature's block in output memory
@@ -767,7 +758,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     __syncthreads();
     // gradient/hessian histograms
-    // assume this starts at 32 * 4 = 128-byte boundary // LGBM_CUDA: What does it mean? boundary??
+    // assume this starts at 32 * 4 = 128-byte boundary // What does it mean? boundary??
     // total size: 2 * 256 * size_of(float) = 2 KB
     // organization: each feature/grad/hessian is at a different bank,
     //               as indepedent of the feature value as possible
@@ -808,7 +799,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     if (!feature_mask) {
         return;
     } else {
-        feature_mask = feature_mask - 1;  // LGBM_CUDA: feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
+        feature_mask = feature_mask - 1;  // feature_mask is used for get feature (1: 4bit feature, 0: 8bit feature)
     }
 
     // STAGE 1: read feature data, and gradient and hessian
@@ -816,7 +807,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // We will prefetch data into the "next" variable at the beginning of each iteration
     uchar feature;
     uchar feature_next;
-    // uint8_t bin;
     uint16_t bin;
 
     feature = feature_data[ind >> feature_mask];
@@ -830,7 +820,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // store gradient and hessian
     score_t grad, hess;
     score_t grad_next, hess_next;
-    // LGBM_CUDA v5.1
     grad = ordered_gradients[ind];
     #if CONST_HESSIAN == 0
     hess = ordered_hessians[ind];
@@ -848,7 +837,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         ind_next = data_indices[i_next];
         #endif
 
-        // imbGBT v5.1
         grad_next = ordered_gradients[ind_next];
         #if CONST_HESSIAN == 0
         hess_next = ordered_hessians[ind_next];
@@ -885,7 +873,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         // STAGE 4: update next stat
         grad = grad_next;
         hess = hess_next;
-        // LGBM_CUDA: v4.2
         if (!feature_mask) {
             feature = feature_next;
         } else {
@@ -911,7 +898,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     #if CONST_HESSIAN == 1
     // make a final reduction
     gh_hist[ltid * 2] += gh_hist[ltid * 2 + 1];
-    gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // LGBM_CUDA: counter move to this position
+    gh_hist[ltid * 2 + 1] = const_hessian * cnt_hist[ltid];  // counter move to this position
     __syncthreads();
     #endif
 
@@ -941,7 +928,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     // make sure everyone in this workgroup is here
     __syncthreads();
-    // everyone in this wrokgroup: if we are the last workgroup, then do reduction!
+    // everyone in this workgroup: if we are the last workgroup, then do reduction!
     if (*counter_val == (1 << power_feature_workgroups) - 1) {
         if (ltid == 0) {
             sync_counters[feature_id] = 0;
@@ -951,7 +938,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     }
     // only 1 work group, no need to increase counter
     // the reduction will become a simple copy
-    if (1) {
+    {
         unsigned int old_val;  // dummy
 #endif
         // locate our feature's block in output memory

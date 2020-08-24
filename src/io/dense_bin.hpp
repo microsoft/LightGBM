@@ -8,7 +8,6 @@
 
 #include <LightGBM/bin.h>
 #include <LightGBM/cuda/vector_cudahost.h>
-#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstdint>
 #include <cstring>

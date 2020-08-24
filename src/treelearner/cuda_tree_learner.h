@@ -6,20 +6,22 @@
 #ifndef LIGHTGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNET_CUDA_TREE_LEARNER_H_
 
-#include <cstdio>
-#include <vector>
-#include <random>
+#include <LightGBM/utils/random.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/dataset.h>
+#include <LightGBM/feature_group.h>
+#include <LightGBM/tree.h>
+
+#include <string>
 #include <cmath>
+#include <cstdio>
 #include <memory>
+#include <random>
+#include <vector>
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
 #endif
 
-#include <LightGBM/utils/random.h>
-#include <LightGBM/utils/array_args.h>
-#include <LightGBM/dataset.h>
-#include <LightGBM/tree.h>
-#include <LightGBM/feature_group.h>
 #include "feature_histogram.hpp"
 #include "serial_tree_learner.h"
 #include "data_partition.hpp"
@@ -28,7 +30,7 @@
 
 #ifdef USE_CUDA
 #include <LightGBM/cuda/vector_cudahost.h>
-#include "cuda_kernel_launcher.h"  // LGBM_CUDA
+#include "cuda_kernel_launcher.h"
 
 
 using json11::Json;
@@ -75,24 +77,24 @@ class CUDATreeLearner: public SerialTreeLearner {
 
     /*!
      * \brief Initialize GPU device
-     * \LGBM_CUDA: param num_gpu: number of maximum gpus
+     * \param num_gpu: number of maximum gpus
      */
     void InitGPU();
 
     /*!
-     * \brief Allocate memory for GPU computation // LGBM_CUDA: alloc only
+     * \brief Allocate memory for GPU computation // alloc only
      */
     void CountDenseFeatureGroups();  // compute num_dense_feature_group
     void prevAllocateGPUMemory();  // compute CPU-side param calculation & Pin HostMemory
     void AllocateGPUMemory();
 
     /*!
-     * \ LGBM_CUDA: ResetGPUMemory
+     * \ ResetGPUMemory
      */
     void ResetGPUMemory();
 
     /*!
-     * \ LGBM_CUDA: copy dense feature from CPU to GPU
+     * \ copy dense feature from CPU to GPU
      */
     void copyDenseFeature();
 
@@ -160,7 +162,6 @@ class CUDATreeLearner: public SerialTreeLearner {
      *                     Set hessians to nullptr to skip copy to GPU.
      * \return true if GPU kernel is launched, false if GPU is not used
     */
-    // LGBM_CUDA v5.2
     bool ConstructGPUHistogramsAsync(
       const std::vector<int8_t>& is_feature_used,
       const data_size_t* data_indices, data_size_t num_data);
@@ -181,8 +182,8 @@ class CUDATreeLearner: public SerialTreeLearner {
     int num_feature_groups_;
     /*! \brief total number of dense feature-groups, which will be processed on GPU */
     int num_dense_feature_groups_;
-    std::vector<int> num_gpu_feature_groups_;  // LGBM_CUDA
-    std::vector<int> offset_gpu_feature_groups_;  // LGBM_CUDA
+    std::vector<int> num_gpu_feature_groups_;
+    std::vector<int> offset_gpu_feature_groups_;
     /*! \brief On GPU we read one DWORD (4-byte) of features of one example once.
      *  With bin size > 16, there are 4 features per DWORD.
      *  With bin size <=16, there are 8 features per DWORD.
@@ -203,66 +204,48 @@ class CUDATreeLearner: public SerialTreeLearner {
     std::vector<int> dense_feature_group_map_;
     /*! \brief Indices of all sparse feature-groups */
     std::vector<int> sparse_feature_group_map_;
-    /*! \brief Multipliers of all dense feature-groups, used for redistributing bins */
-    // std::vector<int> device_bin_mults_;
     /*! \brief GPU memory object holding the training data */
-    // uint8_t *device_features_;
     std::vector<uint8_t*> device_features_;
     /*! \brief GPU memory object holding the ordered gradient */
-    // score_t *device_gradients_;
     std::vector<score_t*> device_gradients_;
     /*! \brief Pointer to pinned memory of ordered gradient */
     void * ptr_pinned_gradients_ = nullptr;
     /*! \brief GPU memory object holding the ordered hessian */
-    // score_t *device_hessians_;
     std::vector<score_t*> device_hessians_;
     /*! \brief Pointer to pinned memory of ordered hessian */
     void * ptr_pinned_hessians_ = nullptr;
     /*! \brief A vector of feature mask. 1 = feature used, 0 = feature not used */
-    // std::vector<char, CHAllocator<char>> feature_masks_;
     std::vector<char> feature_masks_;
     /*! \brief GPU memory object holding the feature masks */
-    // void *device_feature_masks_;
     std::vector<char*> device_feature_masks_;
     /*! \brief Pointer to pinned memory of feature masks */
     char* ptr_pinned_feature_masks_ = nullptr;
     /*! \brief GPU memory object holding indices of the leaf being processed */
-    // data_size_t *device_data_indices_;
     std::vector<data_size_t*> device_data_indices_;
     /*! \brief GPU memory object holding counters for workgroup coordination */
-    // int *sync_counters_;
     std::vector<int*> sync_counters_;
     /*! \brief GPU memory object holding temporary sub-histograms per workgroup */
-    // char *device_subhistograms_;
     std::vector<char*> device_subhistograms_;
     /*! \brief Host memory object for histogram output (GPU will write to Host memory directly) */
-    // void *device_histogram_outputs_;
     std::vector<void*> device_histogram_outputs_;
     /*! \brief Host memory pointer for histogram outputs */
     void *host_histogram_outputs_;
-    /*! \LGBM_CUDA: CUDA waitlist object for waiting for data transfer before kernel execution */
+    /*! CUDA waitlist object for waiting for data transfer before kernel execution */
     // cudaEvent_t kernel_wait_obj_;
     std::vector<cudaEvent_t> kernel_wait_obj_;
-    /*! \LGBM_CUDA: CUDA waitlist object for reading output histograms after kernel execution */
-    // cudaEvent_t histograms_wait_obj_;
+    /*! CUDA waitlist object for reading output histograms after kernel execution */
     std::vector<cudaEvent_t> histograms_wait_obj_;
-    /*! \LGBM_CUDA: CUDA Asynchronous waiting object for copying indices */
-    // cudaEvent_t indices_future_;
+    /*! CUDA Asynchronous waiting object for copying indices */
     std::vector<cudaEvent_t> indices_future_;
-    /*! \LGBM_CUDA: Asynchronous waiting object for copying gradients */
-    // cudaEvent_t gradients_future_;
+    /*! Asynchronous waiting object for copying gradients */
     std::vector<cudaEvent_t> gradients_future_;
-    /*! \LGBM_CUDA: Asynchronous waiting object for copying hessians */
-    // cudaEvent_t hessians_future_;
+    /*! Asynchronous waiting object for copying hessians */
     std::vector<cudaEvent_t> hessians_future_;
-    // LGBM_CUDA:\brief Asynchronous waiting object for copying dense features
-    // cudaEvent_t features_future_;
+    /*! Asynchronous waiting object for copying dense features */
     std::vector<cudaEvent_t> features_future_;
 
-    // LGBM_CUDA: host-side buffer for converting feature data into featre4 data
-    // std::vector<uint8_t*> host_vecs_;
+    // host-side buffer for converting feature data into featre4 data
     int nthreads_;  // number of Feature4* vector on host4_vecs_
-    // cudaEvent_t kernel_start_;  // event for kernel start
     std::vector<cudaEvent_t> kernel_start_;
     std::vector<float> kernel_time_;  // measure histogram kernel time
     std::vector<std::chrono::duration<double, std::milli>> kernel_input_wait_time_;
