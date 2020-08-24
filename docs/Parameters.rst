@@ -472,6 +472,8 @@ Learning Control Parameters
 
       -  ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
 
+      -  ``advanced``, an `even more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
+
 -  ``monotone_penalty`` :raw-html:`<a id="monotone_penalty" title="Permalink to this parameter" href="#monotone_penalty">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``monotone_splits_penalty``, ``ms_penalty``, ``mc_penalty``, constraints: ``monotone_penalty >= 0.0``
 
    -  used only if ``monotone_constraints`` is set
