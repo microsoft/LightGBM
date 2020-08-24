@@ -3,10 +3,14 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#include "histogram_16_64_256.hu"
+#include <LightGBM/meta.h>
 
 #include <cstdint>
 #include <cstdio>
+
+#include "histogram_16_64_256.hu"
+
+namespace LightGBM {
 
 #define PRINT(b, t, fmt, ...) \
 if (b == gtid && t == ltid) { \
@@ -966,3 +970,4 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
 
 // end of histogram256 stuff
 
+}  // namespace LightGBM

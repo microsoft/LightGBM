@@ -9,6 +9,8 @@
 #include <chrono>
 #include "kernels/histogram_16_64_256.hu"  // kernel, acc_type, data_size_t, uchar, score_t
 
+namespace LightGBM {
+
 struct ThreadData {
           // device id
           int             device_id;
@@ -64,6 +66,7 @@ void cuda_histogram(
                 void*           arg9,
                 size_t          exp_workgroups_per_feature);
 
+}  // namespace LightGBM
 
 #endif  // USE_CUDA
 #endif  // LIGHTGBM_TREELEARNER_CUDA_KERNEL_LAUNCHER_H_

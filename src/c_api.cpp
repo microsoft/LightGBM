@@ -1611,10 +1611,14 @@ int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                     const float* hess,
                                     int* is_finished) {
   API_BEGIN();
-  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   #ifdef SCORE_T_USE_DOUBLE
+  (void) handle;       // UNUSED VARIABLE
+  (void) grad;         // UNUSED VARIABLE
+  (void) hess;         // UNUSED VARIABLE
+  (void) is_finished;  // UNUSED VARIABLE
   Log::Fatal("Don't support custom loss function when SCORE_T_USE_DOUBLE is enabled");
   #else
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter(grad, hess)) {
     *is_finished = 1;
   } else {

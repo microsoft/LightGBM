@@ -6,7 +6,9 @@
 #ifndef LIGHTGBM_TREELEARNER_KERNELS_HISTOGRAM_16_64_256_HU_
 #define LIGHTGBM_TREELEARNER_KERNELS_HISTOGRAM_16_64_256_HU_
 
-//#pragma once
+#include "LightGBM/meta.h"
+
+namespace LightGBM {
 
 // use double precision or not
 #ifndef USE_DP_FLOAT
@@ -72,9 +74,6 @@ typedef unsigned int acc_int_type;
 #ifndef ENABLE_ALL_FEATURES
 #define ENABLE_ALL_FEATURES 1
 #endif
-
-typedef unsigned int data_size_t;
-typedef float score_t;
 
 // define all of the different kernels
 
@@ -156,4 +155,7 @@ DECLARE(histogram256_allfeats);
 DECLARE(histogram256_fulldata);
 DECLARE(histogram256);
 
-#endif // _HITOGRAM_256_KERNEL_
+}  // namespace LightGBM
+
+#endif  // LIGHTGBM_TREELEARNER_KERNELS_HISTOGRAM_16_64_256_HU_
+
