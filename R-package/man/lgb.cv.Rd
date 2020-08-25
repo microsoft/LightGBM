@@ -100,6 +100,7 @@ a trained model \code{lgb.CVBooster}.
 Cross validation logic used by LightGBM
 }
 \examples{
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -112,4 +113,5 @@ model <- lgb.cv(
   , min_data = 1L
   , learning_rate = 1.0
 )
+}
 }

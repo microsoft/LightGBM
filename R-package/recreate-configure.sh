@@ -12,7 +12,6 @@ apt-get install \
     -y \
         autoconf=${AUTOCONF_VERSION}
 
-cp VERSION.txt R-package/src/
 cd R-package
 autoconf \
     --output configure \

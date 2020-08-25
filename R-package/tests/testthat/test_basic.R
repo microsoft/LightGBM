@@ -93,10 +93,10 @@ test_that("train and predict softmax", {
     data = as.matrix(iris[, -5L])
     , label = lb
     , num_leaves = 4L
-    , learning_rate = 0.1
+    , learning_rate = 0.05
     , nrounds = 20L
     , min_data = 20L
-    , min_hessian = 20.0
+    , min_hessian = 10.0
     , objective = "multiclass"
     , metric = "multi_error"
     , num_class = 3L
@@ -105,7 +105,7 @@ test_that("train and predict softmax", {
 
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "multi_error")
-  expect_lt(min(record_results), 0.05)
+  expect_lt(min(record_results), 0.06)
 
   pred <- predict(bst, as.matrix(iris[, -5L]))
   expect_equal(length(pred), nrow(iris) * 3L)

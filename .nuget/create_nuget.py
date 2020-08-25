@@ -26,7 +26,7 @@ if __name__ == "__main__":
     copy_file(os.path.join(source, "lib_lightgbm.dylib"), os.path.join(osx_folder_path, "lib_lightgbm.dylib"))
     copy_file(os.path.join(source, "lib_lightgbm.dll"), os.path.join(windows_folder_path, "lib_lightgbm.dll"))
     copy_file(os.path.join(source, "lightgbm.exe"), os.path.join(windows_folder_path, "lightgbm.exe"))
-    version = open(os.path.join(current_dir, os.path.pardir, 'VERSION.txt')).read().strip()
+    version = open(os.path.join(current_dir, os.path.pardir, 'VERSION.txt')).read().strip().replace('rc', '-rc')
     nuget_str = r"""<?xml version="1.0"?>
     <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>

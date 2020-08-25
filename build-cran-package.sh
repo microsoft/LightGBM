@@ -21,7 +21,6 @@ mkdir -p ${TEMP_R_DIR}
 cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
-cp VERSION.txt ${TEMP_R_DIR}/src/
 
 cd ${TEMP_R_DIR}
 
@@ -31,6 +30,7 @@ cd ${TEMP_R_DIR}
     rm -r src/cmake/
     rm -r inst/
     rm -r pkgdown/
+    rm cran-comments.md
     rm AUTOCONF_UBUNTU_VERSION
     rm recreate-configure.sh
 

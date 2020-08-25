@@ -13,6 +13,7 @@
 #' }
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -32,7 +33,7 @@
 #'
 #' tree_imp1 <- lgb.importance(model, percentage = TRUE)
 #' tree_imp2 <- lgb.importance(model, percentage = FALSE)
-#'
+#' }
 #' @importFrom data.table := setnames setorderv
 #' @export
 lgb.importance <- function(model, percentage = TRUE) {

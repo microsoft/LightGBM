@@ -53,7 +53,7 @@ def categorize(continuous_x):
 
 class TestEngine(unittest.TestCase):
     def test_binary(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'binary',
@@ -75,7 +75,7 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
     def test_rf(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'boosting_type': 'rf',
@@ -100,7 +100,7 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
     def test_regression(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'metric': 'l2',
@@ -377,7 +377,7 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
 
     def test_multiclass(self):
-        X, y = load_digits(10, True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'multiclass',
@@ -398,7 +398,7 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
     def test_multiclass_rf(self):
-        X, y = load_digits(10, True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'boosting_type': 'rf',
@@ -426,7 +426,7 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
     def test_multiclass_prediction_early_stopping(self):
-        X, y = load_digits(10, True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'multiclass',
@@ -452,7 +452,7 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.2)
 
     def test_multi_class_error(self):
-        X, y = load_digits(10, True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         params = {'objective': 'multiclass', 'num_classes': 10, 'metric': 'multi_error',
                   'num_leaves': 4, 'verbose': -1}
         lgb_data = lgb.Dataset(X, label=y)
@@ -497,7 +497,7 @@ class TestEngine(unittest.TestCase):
 
     def test_auc_mu(self):
         # should give same result as binary auc for 2 classes
-        X, y = load_digits(10, True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         y_new = np.zeros((len(y)))
         y_new[y != 0] = 1
         lgb_X = lgb.Dataset(X, label=y_new)
@@ -558,7 +558,7 @@ class TestEngine(unittest.TestCase):
         self.assertNotEqual(results_weight['training']['auc_mu'][-1], results_no_weight['training']['auc_mu'][-1])
 
     def test_early_stopping(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
@@ -590,7 +590,7 @@ class TestEngine(unittest.TestCase):
         self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
 
     def test_continue_train(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'regression',
@@ -618,7 +618,7 @@ class TestEngine(unittest.TestCase):
         os.remove(model_name)
 
     def test_continue_train_reused_dataset(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         params = {
             'objective': 'regression',
             'verbose': -1
@@ -631,7 +631,7 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(gbm.current_iteration(), 20)
 
     def test_continue_train_dart(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'boosting_type': 'dart',
@@ -654,7 +654,7 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['l1'][-1], ret, places=5)
 
     def test_continue_train_multiclass(self):
-        X, y = load_iris(True)
+        X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'multiclass',
@@ -677,7 +677,7 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
     def test_cv(self):
-        X_train, y_train = load_boston(True)
+        X_train, y_train = load_boston(return_X_y=True)
         params = {'verbose': -1}
         lgb_train = lgb.Dataset(X_train, y_train)
         # shuffle = False, override metric in params
@@ -736,7 +736,7 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_allclose(cv_res_lambda['ndcg@3-mean'], cv_res_lambda_obj['ndcg@3-mean'])
 
     def test_cvbooster(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'binary',
@@ -780,7 +780,7 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.15)
 
     def test_feature_name(self):
-        X_train, y_train = load_boston(True)
+        X_train, y_train = load_boston(return_X_y=True)
         params = {'verbose': -1}
         lgb_train = lgb.Dataset(X_train, y_train)
         feature_names = ['f_' + str(i) for i in range(X_train.shape[-1])]
@@ -808,7 +808,7 @@ class TestEngine(unittest.TestCase):
 
     def test_save_load_copy_pickle(self):
         def train_and_predict(init_model=None, return_model=False):
-            X, y = load_boston(True)
+            X, y = load_boston(return_X_y=True)
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
             params = {
                 'objective': 'regression',
@@ -972,7 +972,7 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(len(evals_result['valid_1']['rmse']), 20)
 
     def test_contribs(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'binary',
@@ -1310,7 +1310,7 @@ class TestEngine(unittest.TestCase):
         np.random.seed()  # reset seed
 
     def test_refit(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'binary',
@@ -1326,7 +1326,7 @@ class TestEngine(unittest.TestCase):
         self.assertGreater(err_pred, new_err_pred)
 
     def test_mape_rf(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         params = {
             'boosting_type': 'rf',
             'objective': 'mape',
@@ -1343,7 +1343,7 @@ class TestEngine(unittest.TestCase):
         self.assertGreater(pred_mean, 20)
 
     def test_mape_dart(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         params = {
             'boosting_type': 'dart',
             'objective': 'mape',
@@ -1422,7 +1422,7 @@ class TestEngine(unittest.TestCase):
             params['num_class'] = 4
             return dtrain, dtest, params
 
-        X, y = load_iris(True)
+        X, y = load_iris(return_X_y=True)
         dataset = lgb.Dataset(X, y, free_raw_data=False)
         params = {'objective': 'multiclass', 'num_class': 3, 'verbose': -1}
         results = lgb.cv(params, dataset, num_boost_round=10, fpreproc=preprocess_data)
@@ -1430,7 +1430,7 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(len(results['multi_logloss-mean']), 10)
 
     def test_metrics(self):
-        X, y = load_digits(2, True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         lgb_train = lgb.Dataset(X_train, y_train, silent=True)
         lgb_valid = lgb.Dataset(X_test, y_test, reference=lgb_train, silent=True)
@@ -1736,7 +1736,7 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(len(evals_result), 1)
         self.assertIn('error', evals_result['valid_0'])
 
-        X, y = load_digits(3, True)
+        X, y = load_digits(n_class=3, return_X_y=True)
         lgb_train = lgb.Dataset(X, y, silent=True)
 
         obj_multi_aliases = ['multiclass', 'softmax', 'multiclassova', 'multiclass_ova', 'ova', 'ovr']
@@ -1805,7 +1805,7 @@ class TestEngine(unittest.TestCase):
 
     @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
     def test_model_size(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         data = lgb.Dataset(X, y)
         bst = lgb.train({'verbose': -1}, data, num_boost_round=2)
         y_pred = bst.predict(X)
@@ -1831,7 +1831,7 @@ class TestEngine(unittest.TestCase):
             self.skipTest('not enough RAM')
 
     def test_get_split_value_histogram(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         lgb_train = lgb.Dataset(X, y, categorical_feature=[2])
         gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=20)
         # test XGBoost-style return value
@@ -1941,7 +1941,7 @@ class TestEngine(unittest.TestCase):
                          eval_train_metric=eval_train_metric)
             self.assertEqual(assumed_iteration, len(ret[list(ret.keys())[0]]))
 
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=73)
         lgb_train = lgb.Dataset(X_train, y_train)
@@ -2019,7 +2019,7 @@ class TestEngine(unittest.TestCase):
                                                                            decreasing_metric(preds, train_data)])
 
     def test_node_level_subcol(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'binary',
@@ -2200,7 +2200,7 @@ class TestEngine(unittest.TestCase):
 
     def test_extra_trees(self):
         # check extra trees increases regularization
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         lgb_x = lgb.Dataset(X, label=y)
         params = {'objective': 'regression',
                   'num_leaves': 32,
@@ -2218,7 +2218,7 @@ class TestEngine(unittest.TestCase):
 
     def test_path_smoothing(self):
         # check path smoothing increases regularization
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         lgb_x = lgb.Dataset(X, label=y)
         params = {'objective': 'regression',
                   'num_leaves': 32,
@@ -2240,7 +2240,7 @@ class TestEngine(unittest.TestCase):
             cols = ['Column_' + str(i) for i in range(X.shape[1])]
             return [impcts_dict.get(col, 0.) for col in cols]
 
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
         data = lgb.Dataset(X, label=y)
         num_trees = 10
         bst = lgb.train({"objective": "binary", "verbose": -1}, data, num_trees)
@@ -2285,7 +2285,7 @@ class TestEngine(unittest.TestCase):
             self.assertIsNone(tree_df.loc[0, col])
 
     def test_interaction_constraints(self):
-        X, y = load_boston(True)
+        X, y = load_boston(return_X_y=True)
         num_features = X.shape[1]
         train_data = lgb.Dataset(X, label=y)
         # check that constraint containing all features is equivalent to no constraint
@@ -2315,3 +2315,88 @@ class TestEngine(unittest.TestCase):
         est = lgb.train(dict(params, interaction_constraints=[[0] + list(range(2, num_features)),
                                                               [1] + list(range(2, num_features))]),
                         train_data, num_boost_round=10)
+
+    def test_predict_with_start_iteration(self):
+        def inner_test(X, y, params, early_stopping_rounds):
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+            train_data = lgb.Dataset(X_train, label=y_train)
+            valid_data = lgb.Dataset(X_test, label=y_test)
+            booster = lgb.train(params, train_data, num_boost_round=50, early_stopping_rounds=early_stopping_rounds, valid_sets=[valid_data])
+
+            # test that the predict once with all iterations equals summed results with start_iteration and num_iteration
+            all_pred = booster.predict(X, raw_score=True)
+            all_pred_contrib = booster.predict(X, pred_contrib=True)
+            steps = [10, 12]
+            for step in steps:
+                pred = np.zeros_like(all_pred)
+                pred_contrib = np.zeros_like(all_pred_contrib)
+                for start_iter in range(0, 50, step):
+                    pred += booster.predict(X, start_iteration=start_iter, num_iteration=step, raw_score=True)
+                    pred_contrib += booster.predict(X, start_iteration=start_iter, num_iteration=step, pred_contrib=True)
+                np.testing.assert_allclose(all_pred, pred)
+                np.testing.assert_allclose(all_pred_contrib, pred_contrib)
+            # test the case where start_iteration <= 0, and num_iteration is None
+            pred1 = booster.predict(X, start_iteration=-1)
+            pred2 = booster.predict(X, num_iteration=booster.best_iteration)
+            np.testing.assert_allclose(pred1, pred2)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=90)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0, with pred_leaf=True
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1, pred_leaf=True)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=40, pred_leaf=True)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0, pred_leaf=True)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+            # test the case where start_iteration > 0, and num_iteration <= 0, with pred_contrib=True
+            pred4 = booster.predict(X, start_iteration=10, num_iteration=-1, pred_contrib=True)
+            pred5 = booster.predict(X, start_iteration=10, num_iteration=40, pred_contrib=True)
+            pred6 = booster.predict(X, start_iteration=10, num_iteration=0, pred_contrib=True)
+            np.testing.assert_allclose(pred4, pred5)
+            np.testing.assert_allclose(pred4, pred6)
+
+        # test for regression
+        X, y = load_boston(return_X_y=True)
+        params = {
+            'objective': 'regression',
+            'verbose': -1,
+            'metric': 'l2',
+            'learning_rate': 0.5
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=5)
+        inner_test(X, y, params, early_stopping_rounds=None)
+
+        # test for multi-class
+        X, y = load_iris(return_X_y=True)
+        params = {
+            'objective': 'multiclass',
+            'metric': 'multi_logloss',
+            'num_class': 3,
+            'verbose': -1,
+            'metric': 'multi_error'
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=5)
+        inner_test(X, y, params, early_stopping_rounds=None)
+
+        # test for binary
+        X, y = load_breast_cancer(return_X_y=True)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+            'metric': 'auc'
+        }
+        # test both with and without early stopping
+        inner_test(X, y, params, early_stopping_rounds=1)
+        inner_test(X, y, params, early_stopping_rounds=5)
+        inner_test(X, y, params, early_stopping_rounds=None)

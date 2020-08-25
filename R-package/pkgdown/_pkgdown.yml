@@ -65,7 +65,6 @@ reference:
     - '`lgb.Dataset.save`'
     - '`lgb.Dataset.set.categorical`'
     - '`lgb.Dataset.set.reference`'
-    - '`lgb.convert`'
     - '`lgb.convert_with_rules`'
   - title: Machine Learning
     desc: Train models with LightGBM
