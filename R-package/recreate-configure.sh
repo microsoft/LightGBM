@@ -22,7 +22,6 @@ apt-get install \
 
 cd R-package
 
-# configure.ac has a placeholder for version
 cp configure.ac ${TMP_CONFIGURE_AC}
 sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" ${TMP_CONFIGURE_AC}
 
