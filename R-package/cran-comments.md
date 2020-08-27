@@ -4,7 +4,7 @@
 
 ## v3.0.0 - Submission 1 - (August 24, 2020)
 
-NOTE: 3.0.0-1 was never released to CRAN. CRAN was on vacation August 14-24, 2020, and in that time version 3.0.0-1 (a release candidate) because 3.0.0.
+NOTE: 3.0.0-1 was never released to CRAN. CRAN was on vacation August 14-24, 2020, and in that time version 3.0.0-1 (a release candidate) became 3.0.0.
 
 ### CRAN respoonse
 
@@ -49,7 +49,7 @@ YEAR: 2016
 COPYRIGHT HOLDER: Microsoft Corporation
 ```
 
-Added a citation and link for [the main paper](http://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision) in `DESCRIPTION`.
+Added a citation and link for [the main paper](https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision) in `DESCRIPTION`.
 
 ## v3.0.0-1 - Submission 3 - (August 12, 2020)
 

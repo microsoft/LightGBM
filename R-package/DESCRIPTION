@@ -25,7 +25,7 @@ Encoding: UTF-8
 License: MIT + file LICENSE
 URL:
     https://github.com/Microsoft/LightGBM,
-    http://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision
+    https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision
 BugReports: https://github.com/Microsoft/LightGBM/issues
 NeedsCompilation: yes
 Biarch: true
