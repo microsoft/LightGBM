@@ -134,12 +134,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        cd ${BUILD_DIRECTORY}/R-package
-        autoconf \
-            --output configure \
-                configure.ac \
-        || exit -1
-        cd ${BUILD_DIRECTORY}
+        ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
 
         num_files_changed=$(
             git diff --name-only | wc -l
@@ -199,11 +194,7 @@ if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     exit -1
 fi
 
-if [[ $OS_NAME == "linux" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
-    ALLOWED_CHECK_NOTES=2
-else
-    ALLOWED_CHECK_NOTES=1
-fi
+ALLOWED_CHECK_NOTES=2
 NUM_CHECK_NOTES=$(
     cat ${LOG_FILE_NAME} \
         | grep -e '^Status: .* NOTE.*' \

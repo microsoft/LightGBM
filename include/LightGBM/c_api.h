@@ -5,9 +5,9 @@
  * \note
  * To avoid type conversion on large data, the most of our exposed interface supports both float32 and float64,
  * except the following:
- *   1. gradient and Hessian;
- *   2. current score for training and validation data.
- *   .
+ * 1. gradient and Hessian;
+ * 2. current score for training and validation data.
+ * .
  * The reason is that they are called frequently, and the type conversion on them may be time-cost.
  */
 #ifndef LIGHTGBM_C_API_H_
