@@ -12,11 +12,6 @@
 
 namespace LightGBM {
 
-#define PRINT(b, t, fmt, ...) \
-if (b == gtid && t == ltid) { \
-  printf(fmt, __VA_ARGS__); \
-}
-
 // atomic add for float number in local memory
 inline __device__ void atomic_local_add_f(acc_type *addr, const acc_type val) {
     atomicAdd(addr, static_cast<acc_type>(val));
