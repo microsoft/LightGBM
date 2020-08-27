@@ -1,5 +1,56 @@
 # CRAN Submission History
 
+## v3.0.0 - Submission 2 - (August 28, 2020)
+
+## v3.0.0 - Submission 1 - (August 24, 2020)
+
+NOTE: 3.0.0-1 was never released to CRAN. CRAN was on vacation August 14-24, 2020, and in that time version 3.0.0-1 (a release candidate) because 3.0.0.
+
+### CRAN respoonse
+
+> Please only ship the CRAN template fior the MIT license.
+
+> Is there some reference about the method you can add in the Description field in the form Authors (year) doi:.....?
+
+> Please fix and resubmit.
+
+### `R CMD check` results
+
+* Debian: 1 NOTE
+
+    ```text
+    * checking CRAN incoming feasibility ... NOTE
+    Maintainer: ‘Guolin Ke <guolin.ke@microsoft.com>’
+
+    New submission
+
+    License components with restrictions and base license permitting such:
+      MIT + file LICENSE
+    ```
+
+* Windows: 1 NOTE
+
+    ```text
+    * checking CRAN incoming feasibility ... NOTE
+    Maintainer: 'Guolin Ke <guolin.ke@microsoft.com>'
+
+    New submission
+
+    License components with restrictions and base license permitting such:
+      MIT + file LICENSE
+    ```
+
+### Maintainer Notes
+
+Tried updating `LICENSE` file to this template:
+
+```yaml
+YEAR: 2016
+COPYRIGHT HOLDER: Microsoft Corporation
+```
+
+Added a citation and link for [the main paper](http://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision) in `DESCRIPTION`.
+
 ## v3.0.0-1 - Submission 3 - (August 12, 2020)
 
 ### CRAN response
