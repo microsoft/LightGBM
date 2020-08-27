@@ -352,10 +352,6 @@ lgb.check.eval <- function(params, eval) {
     )
   }
 
-  if (identical(class(eval), "list")) {
-    params$metric <- append(params$metric, unlist(eval))
-  }
-
   # duplicate metrics should be filtered out
   params$metric <- as.list(unique(unlist(params$metric)))
 
