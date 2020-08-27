@@ -33,8 +33,6 @@ class LGBM_config_ {
   static int current_learner;  // Default: use_cpu_learner
 };
 
-}  // namespace LightGBM
-
 
 template <class T>
 struct CHAllocator {
@@ -48,7 +46,7 @@ struct CHAllocator {
       if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
-          fprintf(stderr, "   TROUBLE: defaulting to malloc in CHAllocator!!!\n"); fflush(stderr);
+          Log::Warning("Defaulting to malloc in CHAllocator!!!");
           ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
         }
       } else {
@@ -82,5 +80,7 @@ template <class T, class U>
 bool operator==(const CHAllocator<T>&, const CHAllocator<U>&);
 template <class T, class U>
 bool operator!=(const CHAllocator<T>&, const CHAllocator<U>&);
+
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_

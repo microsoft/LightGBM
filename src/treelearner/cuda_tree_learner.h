@@ -2,9 +2,8 @@
  * Copyright (c) 2020 IBM Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#pragma once
 #ifndef LIGHTGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
-#define LIGHTGBM_TREELEARNET_CUDA_TREE_LEARNER_H_
+#define LIGHTGBM_TREELEARNER_CUDA_TREE_LEARNER_H_
 
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/array_args.h>

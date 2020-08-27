@@ -40,11 +40,9 @@ Application::Application(int argc, char** argv) {
     Log::Fatal("No training/prediction data, application quit");
   }
 
-#ifdef USE_CUDA
   if (config_.device_type == std::string("cuda")) {
       LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
   }
-#endif
 }
 
 Application::~Application() {

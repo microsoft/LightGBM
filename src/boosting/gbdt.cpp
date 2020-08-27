@@ -17,10 +17,8 @@
 
 namespace LightGBM {
 
-#ifdef USE_CUDA
 int LGBM_config_::current_device = lgbm_device_cpu;
 int LGBM_config_::current_learner = use_cpu_learner;
-#endif
 
 GBDT::GBDT()
     : iter_(0),
@@ -63,11 +61,9 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-#ifdef USE_CUDA
   if (config_->device_type == std::string("cuda")) {
     LGBM_config_::current_learner = use_cuda_learner;
   }
-#endif
 
   // load forced_splits file
   if (!config->forcedsplits_filename.empty()) {
