@@ -317,10 +317,11 @@ lgb.check.obj <- function(params, obj) {
 
 }
 
-# [description] Take any character values from eval and store them
-#               in params$metric. This has to account for the fact that
-#               `eval` could be a character vector, a function, a list of functions,
-#               or a list with a mix of strings and functions
+# [description]
+#     Take any character values from eval and store them in params$metric.
+#     This has to account for the fact that `eval` could be a character vector,
+#     a function, a list of functions, or a list with a mix of strings and
+#     functions
 lgb.check.eval <- function(params, eval) {
 
   if (is.null(params$metric)) {
@@ -335,7 +336,6 @@ lgb.check.eval <- function(params, eval) {
     for (i in seq_along(eval)) {
       element <- eval[[i]]
       if (is.character(element)) {
-        print(paste0("Adding '", element, "' to list of metrics"))
         params$metric <- append(params$metric, element)
       }
     }
@@ -346,7 +346,7 @@ lgb.check.eval <- function(params, eval) {
   if (length(params$metric) > 1L) {
     params$metric <- Filter(
         f = function(metric) {
-          metric != "None"
+          !(metric %in% .NO_METRIC_STRINGS())
         }
         , x = params$metric
     )
@@ -355,6 +355,9 @@ lgb.check.eval <- function(params, eval) {
   if (identical(class(eval), "list")) {
     params$metric <- append(params$metric, unlist(eval))
   }
+
+  # duplicate metrics should be filtered out
+  params$metric <- as.list(unique(unlist(params$metric)))
 
   return(params)
 }

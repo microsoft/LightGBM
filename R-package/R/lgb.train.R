@@ -173,7 +173,6 @@ lgb.train <- function(params = list(),
   if (!is.null(predictor)) {
     begin_iteration <- predictor$current_iter() + 1L
   }
-
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
   n_trees <- .PARAMETER_ALIASES()[["num_iterations"]]
   if (any(names(params) %in% n_trees)) {
@@ -384,7 +383,7 @@ lgb.train <- function(params = list(),
 
     # when using a custom eval function, the metric name is returned from the
     # function, so figure it out from record_evals
-    if (!is.null(feval)) {
+    if (!is.null(eval_functions[1L])) {
       first_metric <- names(booster$record_evals[[first_valid_name]])[1L]
     } else {
       first_metric <- booster$.__enclos_env__$private$eval_names[1L]

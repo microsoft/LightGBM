@@ -13,7 +13,8 @@ set.seed(708L)
 #               This is used to mock the situation where an evaluation
 #               metric increases every iteration
 ACCUMULATOR_NAME <- "INCREASING_METRIC_ACUMULATOR"
-assign(ACCUMULATOR_NAME, 0.0, envir = .GlobalEnv)
+assign(x = "INCREASING_METRIC_ACUMULATOR", value = 0.0, envir = .GlobalEnv)
+
 .increasing_metric <- function(preds, dtrain) {
   if (!exists(ACCUMULATOR_NAME, envir = .GlobalEnv)) {
     assign(ACCUMULATOR_NAME, 0.0, envir = .GlobalEnv)
@@ -758,6 +759,7 @@ test_that("lgb.train() works with early stopping for regression", {
   bst <- lgb.train(
     params = list(
       objective = "regression"
+      , metric = "rmse"
     )
     , data = dtrain
     , nrounds = nrounds
@@ -780,7 +782,6 @@ test_that("lgb.train() works with early stopping for regression", {
     params = list(
       objective = "regression"
       , metric = "rmse"
-      , min_data_in_bin = 5L
       , early_stopping_rounds = early_stopping_rounds
     )
     , data = dtrain
@@ -1167,6 +1168,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
     , rep(FALSE, 3L)
   )
 })
+
 
 test_that("lgb.train() supports non-ASCII feature names", {
   testthat::skip("UTF-8 feature names are not fully supported in the R package")
@@ -1555,3 +1557,4 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   expect_equal(pred1, pred2)
 
 })
+
