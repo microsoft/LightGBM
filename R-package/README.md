@@ -1,5 +1,6 @@
-LightGBM R-package <img src="man/figures/logo.png" align="right" alt="" width="120" />
-==================
+# LightGBM R-package
+
+<img src="man/figures/logo.png" align="right" alt="" width="175" />
 
 ### Contents
 
