@@ -6,6 +6,7 @@ AUTOCONF_UBUNTU_VERSION
 ^docs/.*$
 ^.*\.dll
 \.gitkeep$
+^logo/.*$
 ^Makefile$
 ^.*\.o
 ^.*\.out
