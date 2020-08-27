@@ -250,7 +250,7 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
     ./R-package/recreate-configure.sh
     ```
 
-    If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker.
+    If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
 
     ```shell
     docker run \
