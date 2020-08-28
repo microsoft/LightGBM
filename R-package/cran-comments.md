@@ -2,13 +2,65 @@
 
 ## v3.0.0 - Submission 2 - (August 28, 2020)
 
+### CRAN response
+
+Failing pre-checks.
+
+### `R CMD check` results
+
+* Debian: 2 NOTEs
+
+    ```text
+    * checking CRAN incoming feasibility ... NOTE
+    Maintainer: 'Guolin Ke <guolin.ke@microsoft.com>'
+
+    New submission
+
+    Possibly mis-spelled words in DESCRIPTION:
+      Guolin (13:52)
+      Ke (13:48)
+      LightGBM (14:20)
+      al (13:62)
+      et (13:59)
+
+    * checking top-level files ... NOTE
+    Non-standard files/directories found at top level:
+      'docs' 'lightgbm-hex-logo.png' 'lightgbm-hex-logo.svg'
+    ```
+
+* Windows: 2 NOTEs
+
+    ```text
+    * checking CRAN incoming feasibility ... NOTE
+    Maintainer: 'Guolin Ke <guolin.ke@microsoft.com>'
+
+    New submission
+
+    Possibly mis-spelled words in DESCRIPTION:
+      Guolin (13:52)
+      Ke (13:48)
+      LightGBM (14:20)
+      al (13:62)
+      et (13:59)
+
+    * checking top-level files ... NOTE
+    Non-standard files/directories found at top level:
+      'docs' 'lightgbm-hex-logo.png' 'lightgbm-hex-logo.svg'
+    ```
+
+### Maintainer Notes
+
+We should tell them the misspellings note is a false positive.
+
+For the note about included files, that is my fault. I had extra files laying around when I generated the package. I'm surprised to see `docs/` in that list, since it is ignored in  `.Rbuildignore`. I even tested that with [the exact code Rbuildignore uses](https://github.com/wch/r-source/blob/9d13622f41cfa0f36db2595bd6a5bf93e2010e21/src/library/tools/R/build.R#L85). For now, I added `rm -r  docs/` to `build-cran-package.sh`. We can figure out what is happening with `.Rbuildignore` in the future, but it shouldn't block a release.
+
 ## v3.0.0 - Submission 1 - (August 24, 2020)
 
 NOTE: 3.0.0-1 was never released to CRAN. CRAN was on vacation August 14-24, 2020, and in that time version 3.0.0-1 (a release candidate) became 3.0.0.
 
 ### CRAN respoonse
 
-> Please only ship the CRAN template fior the MIT license.
+> Please only ship the CRAN template for the MIT license.
 
 > Is there some reference about the method you can add in the Description field in the form Authors (year) doi:.....?
 
