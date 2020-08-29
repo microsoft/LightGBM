@@ -7,6 +7,10 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
+# hack to get around this:
+# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
+export _R_CHECK_SYSTEM_CLOCK_=0
+
 # Get details needed for installing R components
 #
 # NOTES:
