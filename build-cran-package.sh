@@ -33,7 +33,6 @@ cd ${TEMP_R_DIR}
     # Remove files not needed for CRAN
     echo "Removing files not needed for CRAN"
     rm src/install.libs.R
-    rm -r docs/
     rm -r src/cmake/
     rm -r inst/
     rm -r pkgdown/
