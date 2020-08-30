@@ -443,7 +443,7 @@ struct Config {
 
   // type = enum
   // alias = monotone_constraining_method, mc_method
-  // options = basic, intermediate
+  // options = basic, intermediate, advanced
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
   // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions

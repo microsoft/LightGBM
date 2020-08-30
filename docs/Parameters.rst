@@ -462,7 +462,7 @@ Learning Control Parameters
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
--  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, aliases: ``monotone_constraining_method``, ``mc_method``
+-  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, ``advanced``, aliases: ``monotone_constraining_method``, ``mc_method``
 
    -  used only if ``monotone_constraints`` is set
 
