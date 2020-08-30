@@ -1,6 +1,6 @@
 # LightGBM R-package
 
-<img src="man/figures/logo.png" align="right" alt="" width="175" />
+<img src="man/figures/logo.svg" align="right" alt="" width="175" />
 
 ### Contents
 
