@@ -481,10 +481,6 @@ void CUDATreeLearner::InitGPU() {
 
   // initialize GPU
   CUDASUCCESS_OR_FATAL(cudaGetDeviceCount(&num_gpu_));
-  if (num_gpu_ > 1) {
-    Log::Warning("CUDA doesn't support more than one GPU currently.");
-    num_gpu_ = 1;
-  }
   if (num_gpu_ > num_dense_feature_groups_) num_gpu_ = num_dense_feature_groups_;
 
   // set cpu threads
