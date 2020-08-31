@@ -393,7 +393,13 @@ lgb.cv <- function(params = list()
   # When early stopping is not activated, we compute the best iteration / score ourselves
   # based on the first first metric
   if (record && is.na(env$best_score)) {
-    first_metric <- cv_booster$boosters[[1L]][[1L]]$.__enclos_env__$private$eval_names[1L]
+    # when using a custom eval function, the metric name is returned from the
+    # function, so figure it out from record_evals
+    if (!is.null(eval_functions[1L])) {
+      first_metric <- names(cv_booster$record_evals[["valid"]])[1L]
+    } else {
+      first_metric <- cv_booster$.__enclos_env__$private$eval_names[1L]
+    }
     .find_best <- which.min
     if (isTRUE(env$eval_list[[1L]]$higher_better[1L])) {
       .find_best <- which.max
@@ -585,7 +591,8 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
       msg[[i]][[j]]$value }))
   })
 
-  # Get evaluation
+  # Get evaluation. Just taking the first element here to
+  # get structture (name, higher_bettter, data_name)
   ret_eval <- msg[[1L]]
 
   # Go through evaluation length items
@@ -593,6 +600,7 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
     ret_eval[[j]]$value <- mean(eval_result[[j]])
   }
 
+  # Preinit evaluation error
   ret_eval_err <- NULL
 
   # Check for standard deviation
@@ -611,11 +619,10 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
 
   }
 
-  return({
-    list(
-      eval_list = ret_eval
-      , eval_err_list = ret_eval_err
-    )
-  })
+  # Return errors
+  list(
+    eval_list = ret_eval
+    , eval_err_list = ret_eval_err
+  )
 
 }

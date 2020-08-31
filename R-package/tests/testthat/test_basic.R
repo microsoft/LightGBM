@@ -1458,6 +1458,172 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
   expect_identical(bst$best_score, auc_scores[which.max(auc_scores)])
 })
 
+test_that("lgb.cv() works when you specify both 'metric' and 'eval' with strings", {
+  set.seed(708L)
+  nrounds <- 10L
+  nfolds <- 4L
+  increasing_metric_starting_value <- get(ACCUMULATOR_NAME, envir = .GlobalEnv)
+  bst <- lgb.cv(
+    params = list(
+      objective = "binary"
+      , metric = "binary_error"
+    )
+    , data = DTRAIN_RANDOM_CLASSIFICATION
+    , nrounds = nrounds
+    , nfold = nfolds
+    , eval = "binary_logloss"
+  )
+
+  # both metrics should have been used
+  expect_named(
+    bst$record_evals[["valid"]]
+    , expected = c("binary_error", "binary_logloss")
+    , ignore.order = TRUE
+    , ignore.case = FALSE
+  )
+
+  # the difference metrics shouldn't have been mixed up with each other
+  results <- bst$record_evals[["valid"]]
+  expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.5005654) < TOLERANCE)
+  expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.7011232) < TOLERANCE)
+
+  # all boosters should have been created
+  expect_length(bst$boosters, nfolds)
+})
+
+test_that("lgb.cv() works when you give a function for eval", {
+  set.seed(708L)
+  nrounds <- 10L
+  nfolds <- 3L
+  increasing_metric_starting_value <- get(ACCUMULATOR_NAME, envir = .GlobalEnv)
+  bst <- lgb.cv(
+    params = list(
+      objective = "binary"
+      , metric = "None"
+    )
+    , data = DTRAIN_RANDOM_CLASSIFICATION
+    , nfold = nfolds
+    , nrounds = nrounds
+    , eval = .constant_metric
+  )
+
+  # the difference metrics shouldn't have been mixed up with each other
+  results <- bst$record_evals[["valid"]]
+  expect_true(abs(results[["constant_metric"]][["eval"]][[1L]] - CONSTANT_METRIC_VALUE) < TOLERANCE)
+  expect_named(results, "constant_metric")
+})
+
+test_that("If first_metric_only is TRUE, lgb.cv() decides to stop early based on only the first metric", {
+  set.seed(708L)
+  nrounds <- 10L
+  nfolds <- 5L
+  early_stopping_rounds <- 3L
+  increasing_metric_starting_value <- get(ACCUMULATOR_NAME, envir = .GlobalEnv)
+  bst <- lgb.cv(
+    params = list(
+      objective = "regression"
+      , metric = "None"
+      , early_stopping_rounds = early_stopping_rounds
+      , first_metric_only = TRUE
+    )
+    , data = DTRAIN_RANDOM_REGRESSION
+    , nfold = nfolds
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = DVALID_RANDOM_REGRESSION
+    )
+    , eval = list(
+      .increasing_metric
+      , .constant_metric
+    )
+  )
+
+  # Only the two functions provided to "eval" should have been evaluated
+  expect_named(bst$record_evals[["valid"]], c("increasing_metric", "constant_metric"))
+
+  # all 10 iterations should happen, and the best_iter should be the final one
+  expect_equal(bst$best_iter, nrounds)
+
+  # best_score should be taken from "increasing_metric"
+  #
+  # this expected value looks magical and confusing, but it's because
+  # evaluation metrics are averaged over all folds.
+  #
+  # consider 5-fold CV with a metric that adds 0.1 to a global accumulator
+  # each time it's called
+  #
+  # * iter 1: [0.1, 0.2, 0.3, 0.4, 0.5] (mean = 0.3)
+  # * iter 2: [0.6, 0.7, 0.8, 0.9, 1.0] (mean = 1.3)
+  # * iter 3: [1.1, 1.2, 1.3, 1.4, 1.5] (mean = 1.8)
+  #
+  cv_value <- increasing_metric_starting_value + mean(seq_len(nfolds) / 10.0) + (nrounds  - 1L) * 0.1 * nfolds
+  expect_equal(bst$best_score, cv_value)
+
+  # early stopping should not have happened. Even though constant_metric
+  # had 9 consecutive iterations with no improvement, it is ignored because of
+  # first_metric_only = TRUE
+  expect_equal(
+    length(bst$record_evals[["valid"]][["constant_metric"]][["eval"]])
+    , nrounds
+  )
+  expect_equal(
+    length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
+    , nrounds
+  )
+})
+
+test_that("early stopping works with lgb.cv()", {
+  set.seed(708L)
+  nrounds <- 10L
+  nfolds <- 5L
+  early_stopping_rounds <- 3L
+  increasing_metric_starting_value <- get(ACCUMULATOR_NAME, envir = .GlobalEnv)
+  bst <- lgb.cv(
+    params = list(
+      objective = "regression"
+      , metric = "None"
+      , early_stopping_rounds = early_stopping_rounds
+      , first_metric_only = TRUE
+    )
+    , data = DTRAIN_RANDOM_REGRESSION
+    , nfold = nfolds
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = DVALID_RANDOM_REGRESSION
+    )
+    , eval = list(
+      .constant_metric
+      , .increasing_metric
+    )
+  )
+
+  # only the two functions provided to "eval" should have been evaluated
+  expect_named(bst$record_evals[["valid"]], c("constant_metric", "increasing_metric"))
+
+  # best_iter should be based on the first metric. Since constant_metric
+  # never changes, its first iteration was the best oone
+  expect_equal(bst$best_iter, 1L)
+
+  # best_score should be taken from the first metri
+  expect_equal(bst$best_score, 0.2)
+
+  # early stopping should have happened, since constant_metric was the first
+  # one passed to eval and it will not improve over consecutive iterations
+  #
+  # note that this test is identical to the previous one, but with the
+  # order of the eval metrics switched
+  expect_equal(
+    length(bst$record_evals[["valid"]][["constant_metric"]][["eval"]])
+    , early_stopping_rounds + 1
+  )
+  expect_equal(
+    length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
+    , early_stopping_rounds + 1
+  )
+})
+
+context("interaction constraints")
+
 test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", interaction_constraints = "[1,2],[3]")
