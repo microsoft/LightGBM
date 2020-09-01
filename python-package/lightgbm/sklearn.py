@@ -761,8 +761,12 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
         return self
 
     _base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]
-                   + _base_doc[_base_doc.find('eval_init_score :'):])
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('eval_set :'):])
+    _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
+                 + _base_doc[_base_doc.find('eval_init_score :'):])
+    fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
+                   + _base_doc[_base_doc.find('eval_metric :'):])
 
 
 class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
@@ -834,7 +838,11 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                                         callbacks=callbacks, init_model=init_model)
         return self
 
-    fit.__doc__ = LGBMModel.fit.__doc__
+    _base_doc = LGBMModel.fit.__doc__
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('eval_set :'):])
+    fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
+                   + _base_doc[_base_doc.find('eval_metric :'):])
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
