@@ -1614,11 +1614,11 @@ test_that("early stopping works with lgb.cv()", {
   # order of the eval metrics switched
   expect_equal(
     length(bst$record_evals[["valid"]][["constant_metric"]][["eval"]])
-    , early_stopping_rounds + 1
+    , early_stopping_rounds + 1L
   )
   expect_equal(
     length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
-    , early_stopping_rounds + 1
+    , early_stopping_rounds + 1L
   )
 })
 
