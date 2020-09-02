@@ -1122,6 +1122,10 @@ GPU Parameters
 
    -  set this to ``true`` to use double precision math on GPU (by default single precision is used)
 
+-  ``num_gpu`` :raw-html:`<a id="num_gpu" title="Permalink to this parameter" href="#num_gpu">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``num_gpu > 0``
+
+   -  number of gpus (CUDA implementation only)
+
 .. end params list
 
 Others
