@@ -268,7 +268,7 @@ class AUCMetric: public Metric {
 * \brief Average Precision Metric for binary classification task.
 */
 class AveragePrecisionMetric: public Metric {
-public:
+ public:
   explicit AveragePrecisionMetric(const Config&) {
   }
 
@@ -371,7 +371,7 @@ public:
     return std::vector<double>(1, ap);
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
