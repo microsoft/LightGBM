@@ -138,7 +138,7 @@ Example
 
 .. _The following example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
 
-.. _Kubeflow Fairing: https://www.kubeflow.org/docs/fairing/fairing-overview
+.. _Kubeflow Fairing: https://www.kubeflow.org/docs/components/fairing/fairing-overview
 
 .. _These examples: https://github.com/kubeflow/fairing/tree/master/examples/lightgbm
 
