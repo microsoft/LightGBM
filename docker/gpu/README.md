@@ -2,8 +2,8 @@
 
 Docker files with LightGBM utilizing nvidia-docker:
 
-- `dockerfile-cli.gpu` - A multistage build based on the `nvidia/cuda:10.2-cudnn8-devel` (build) and `nvidia/cuda:10.2-base` (production) images. LightGBM (CLI-only) can be utilized in GPU and CPU modes. The resulting image size is only 111 MB.
-- `dockerfile.gpu` - Based on the `nvidia/cuda:8.0-cudnn5-devel` image. LightGBM can be utilized in GPU and CPU modes and via Python (2.7 & 3.6).
+- `dockerfile-cli.gpu` - A multi-stage build based on the `nvidia/opencl:devel` (build) and `nvidia/opencl:runtime` (production) images. LightGBM (CLI-only) can be utilized in GPU and CPU modes. The resulting image size is around 100 MB.
+- `dockerfile.gpu` - Based on the `nvidia/cuda:8.0-cudnn5-devel` image. LightGBM can be utilized in GPU and CPU modes and via Python (2.7 & 3.6). The resulting image size is around 2 GB.
 
 ## Contents
 
