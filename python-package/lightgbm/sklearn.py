@@ -607,6 +607,8 @@ class LGBMModel(_LGBMModelBase):
 
         self._best_score = self._Booster.best_score
 
+        self.fitted_ = True
+
         # free dataset
         self._Booster.free_dataset()
         del train_set, valid_sets

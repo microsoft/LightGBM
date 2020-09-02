@@ -20,6 +20,7 @@ from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOu
                                  RegressorChain)
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
+from sklearn.utils.validation import check_is_fitted
 
 
 decreasing_generator = itertools.count(0, -1)
@@ -1091,3 +1092,23 @@ class TestSklearn(unittest.TestCase):
         self.assertEqual(len(init_gbm.evals_result_['valid_0']['multi_logloss']), 5)
         self.assertLess(gbm.evals_result_['valid_0']['multi_logloss'][-1],
                         init_gbm.evals_result_['valid_0']['multi_logloss'][-1])
+
+    # sklearn < 0.22 requires passing "attributes" argument
+    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    def test_check_is_fitted(self):
+        X, y = load_digits(n_class=2, return_X_y=True)
+        est = lgb.LGBMModel(n_estimators=5, objective="binary")
+        clf = lgb.LGBMClassifier(n_estimators=5)
+        reg = lgb.LGBMRegressor(n_estimators=5)
+        rnk = lgb.LGBMRanker(n_estimators=5)
+        models = (est, clf, reg, rnk)
+        for model in models:
+            self.assertRaises(lgb.compat.LGBMNotFittedError,
+                              check_is_fitted,
+                              model)
+        est.fit(X, y)
+        clf.fit(X, y)
+        reg.fit(X, y)
+        rnk.fit(X, y, group=np.ones(X.shape[0]))
+        for model in models:
+            check_is_fitted(model)
