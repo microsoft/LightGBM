@@ -1,7 +1,7 @@
 # Ruoshi Sun <rs7wz@virginia.edu>
 # Research Computing, University of Virginia
 
-ARG VERSION=2.3.1
+ARG VERSION=3.0.0
 
 FROM nvidia/opencl:devel AS build
 ARG DEBIAN_FRONTEND=noninteractive
@@ -39,8 +39,10 @@ RUN wget -q https://github.com/microsoft/LightGBM/archive/v${VERSION}.tar.gz && 
 
 FROM nvidia/opencl:runtime
 ARG VERSION
-COPY --from=build /opt/LightGBM-${VERSION}/lightgbm /opt/LightGBM-${VERSION}/lightgbm
-COPY --from=build /opt/LightGBM-${VERSION}/lib_lightgbm.so /opt/LightGBM-${VERSION}/lib_lightgbm.so
+COPY --from=build \
+    /opt/LightGBM-${VERSION}/lightgbm \
+    /opt/LightGBM-${VERSION}/lib_lightgbm.so \
+    /opt/LightGBM-${VERSION}/
 
 ENV PATH /opt/LightGBM-${VERSION}:${PATH}
 ENV LD_LIBRARY_PATH /opt/LightGBM-${VERSION}:/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}
