@@ -250,6 +250,7 @@
     <ClInclude Include="..\include\LightGBM\prediction_early_stop.h" />
     <ClInclude Include="..\include\LightGBM\tree.h" />
     <ClInclude Include="..\include\LightGBM\tree_learner.h" />
+    <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp" />
     <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
     <ClInclude Include="..\include\LightGBM\utils\common.h" />
     <ClInclude Include="..\include\LightGBM\utils\file_io.h" />
