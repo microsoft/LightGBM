@@ -261,6 +261,8 @@
     <ClInclude Include="..\include\LightGBM\utils\random.h" />
     <ClInclude Include="..\include\LightGBM\utils\text_reader.h" />
     <ClInclude Include="..\include\LightGBM\utils\threading.h" />
+    <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_rwlock_sched.hpp" />
+    <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_shared_lock.hpp" />
     <ClInclude Include="..\src\application\predictor.hpp" />
     <ClInclude Include="..\src\boosting\gbdt.h" />
     <ClInclude Include="..\src\boosting\dart.hpp" />
