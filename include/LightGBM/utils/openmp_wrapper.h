@@ -6,15 +6,15 @@
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 #ifdef _OPENMP
 
+#include <LightGBM/utils/log.h>
+
+#include <omp.h>
+
 #include <exception>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <vector>
-
-#include <omp.h>
-
-#include <LightGBM/utils/log.h>
 
 inline int OMP_NUM_THREADS() {
   int ret = 1;
@@ -81,7 +81,7 @@ class ThreadExceptionHelper {
   inline int omp_get_thread_num() {return 0;}
   inline int OMP_NUM_THREADS() { return 1; }
 #ifdef __cplusplus
-};  // extern "C"
+}  // extern "C"
 #endif
 
 #define OMP_INIT_EX()

@@ -1,10 +1,12 @@
 trigger:
   branches:
     include:
-    - '*'
+    - master
   tags:
     include:
     - v*
+pr:
+- master
 variables:
   PYTHON_VERSION: 3.8
   CONDA_ENV: test-env
@@ -22,7 +24,7 @@ jobs:
     vmImage: 'ubuntu-latest'
   container: ubuntu1404
   strategy:
-    maxParallel: 7
+    maxParallel: 6
     matrix:
       regular:
         TASK: regular
@@ -41,8 +43,6 @@ jobs:
         TASK: gpu
         METHOD: source
         PYTHON_VERSION: 3.6
-      r_package:
-        TASK: r-package
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -74,7 +74,7 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
   strategy:
-    maxParallel: 4
+    maxParallel: 3
     matrix:
       regular:
         TASK: regular
@@ -84,8 +84,6 @@ jobs:
         PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
-      r_package:
-        TASK: r-package
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -96,7 +94,6 @@ jobs:
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
-      echo "##vso[task.setvariable variable=R_MAC_VERSION]3.6.3"
     displayName: 'Set variables'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
@@ -114,11 +111,8 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
-    maxParallel: 4
+    maxParallel: 3
     matrix:
-      r_package:
-        TASK: r-package
-        COMPILER: MSVC
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6

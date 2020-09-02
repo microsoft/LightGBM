@@ -24,6 +24,7 @@ Get a new \code{lgb.Dataset} containing the specified rows of
              original \code{lgb.Dataset} object
 }
 \examples{
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -31,5 +32,5 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 dsub <- lightgbm::slice(dtrain, seq_len(42L))
 lgb.Dataset.construct(dsub)
 labels <- lightgbm::getinfo(dsub, "label")
-
+}
 }

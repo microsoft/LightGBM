@@ -230,9 +230,11 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "cegb_penalty_feature_lazy",
   "cegb_penalty_feature_coupled",
   "path_smooth",
+  "interaction_constraints",
   "verbosity",
   "input_model",
   "output_model",
+  "saved_feature_importance_type",
   "snapshot_freq",
   "max_bin",
   "max_bin_by_feature",
@@ -254,6 +256,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "categorical_feature",
   "forcedbins_filename",
   "save_binary",
+  "start_iteration_predict",
   "num_iteration_predict",
   "predict_raw_score",
   "predict_leaf_index",
@@ -454,11 +457,15 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "path_smooth", &path_smooth);
   CHECK_GE(path_smooth,  0.0);
 
+  GetString(params, "interaction_constraints", &interaction_constraints);
+
   GetInt(params, "verbosity", &verbosity);
 
   GetString(params, "input_model", &input_model);
 
   GetString(params, "output_model", &output_model);
+
+  GetInt(params, "saved_feature_importance_type", &saved_feature_importance_type);
 
   GetInt(params, "snapshot_freq", &snapshot_freq);
 
@@ -506,6 +513,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetString(params, "forcedbins_filename", &forcedbins_filename);
 
   GetBool(params, "save_binary", &save_binary);
+
+  GetInt(params, "start_iteration_predict", &start_iteration_predict);
 
   GetInt(params, "num_iteration_predict", &num_iteration_predict);
 
@@ -659,7 +668,9 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
   str_buf << "[cegb_penalty_feature_coupled: " << Common::Join(cegb_penalty_feature_coupled, ",") << "]\n";
   str_buf << "[path_smooth: " << path_smooth << "]\n";
+  str_buf << "[interaction_constraints: " << interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
+  str_buf << "[saved_feature_importance_type: " << saved_feature_importance_type << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";

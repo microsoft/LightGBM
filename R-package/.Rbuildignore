@@ -1,21 +1,19 @@
-^build_r.R$
-\.gitkeep$
-^docs$
-^pkgdown$
-
-# Objects created by compilation
-^.*\.o
-^.*\.so
-^.*\.dll
-^.*\.out
+AUTOCONF_UBUNTU_VERSION
+^autom4te.cache/.*$
 ^.*\.bin
-
-# Code copied in at build time
-^src/CMakeLists.txt$
+^build_r.R$
+^cran-comments\.md$
+^docs/.*$
+^.*\.dll
+\.gitkeep$
 ^Makefile$
+^.*\.o
+^.*\.out
+^pkgdown$
+^recreate-configure\.sh$
+^.*\.so
 ^src/build/.*$
-
-# unnecessary files from submodules
+^src/CMakeLists.txt$
 ^src/compute/.appveyor.yml$
 ^src/compute/.coveralls.yml$
 ^src/compute/.travis.yml$

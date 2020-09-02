@@ -5,14 +5,14 @@
 #ifndef LIGHTGBM_TREE_H_
 #define LIGHTGBM_TREE_H_
 
+#include <LightGBM/dataset.h>
+#include <LightGBM/meta.h>
+
 #include <string>
 #include <map>
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
-#include <LightGBM/dataset.h>
-#include <LightGBM/meta.h>
 
 namespace LightGBM {
 
@@ -27,8 +27,9 @@ class Tree {
   /*!
   * \brief Constructor
   * \param max_leaves The number of max leaves
+  * \param track_branch_features Whether to keep track of ancestors of leaf nodes
   */
-  explicit Tree(int max_leaves);
+  explicit Tree(int max_leaves, bool track_branch_features);
 
   /*!
   * \brief Constructor, from a string
@@ -135,6 +136,8 @@ class Tree {
   inline int PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const;
 
   inline void PredictContrib(const double* feature_values, int num_features, double* output);
+  inline void PredictContribByMap(const std::unordered_map<int, double>& feature_values,
+                                  int num_features, std::unordered_map<int, double>* output);
 
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
@@ -147,6 +150,9 @@ class Tree {
 
   /*! \brief Get feature of specific split*/
   inline int split_feature(int split_idx) const { return split_feature_[split_idx]; }
+
+  /*! \brief Get features on leaf's branch*/
+  inline std::vector<int> branch_features(int leaf) const { return branch_features_[leaf]; }
 
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
@@ -383,6 +389,12 @@ class Tree {
                 PathElement *parent_unique_path, double parent_zero_fraction,
                 double parent_one_fraction, int parent_feature_index) const;
 
+  void TreeSHAPByMap(const std::unordered_map<int, double>& feature_values,
+                     std::unordered_map<int, double>* phi,
+                     int node, int unique_depth,
+                     PathElement *parent_unique_path, double parent_zero_fraction,
+                     double parent_one_fraction, int parent_feature_index) const;
+
   /*! \brief Extend our decision path with a fraction of one and zero extensions for TreeSHAP*/
   static void ExtendPath(PathElement *unique_path, int unique_depth,
                          double zero_fraction, double one_fraction, int feature_index);
@@ -436,6 +448,10 @@ class Tree {
   std::vector<int> internal_count_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
+  /*! \brief whether to keep track of ancestor nodes for each leaf (only needed when feature interactions are restricted) */
+  bool track_branch_features_;
+  /*! \brief Features on leaf's branch, original index */
+  std::vector<std::vector<int>> branch_features_;
   double shrinkage_;
   int max_depth_;
 };
@@ -477,6 +493,11 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   // update leaf depth
   leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
   leaf_depth_[leaf]++;
+  if (track_branch_features_) {
+    branch_features_[num_leaves_] = branch_features_[leaf];
+    branch_features_[num_leaves_].push_back(split_feature_[new_node_idx]);
+    branch_features_[leaf].push_back(split_feature_[new_node_idx]);
+  }
 }
 
 inline double Tree::Predict(const double* feature_values) const {
@@ -523,6 +544,18 @@ inline void Tree::PredictContrib(const double* feature_values, int num_features,
     const int max_path_len = max_depth_ + 1;
     std::vector<PathElement> unique_path_data(max_path_len*(max_path_len + 1) / 2);
     TreeSHAP(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);
+  }
+}
+
+inline void Tree::PredictContribByMap(const std::unordered_map<int, double>& feature_values,
+                                      int num_features, std::unordered_map<int, double>* output) {
+  (*output)[num_features] += ExpectedValue();
+  // Run the recursion with preallocated space for the unique path data
+  if (num_leaves_ > 1) {
+    CHECK_GE(max_depth_, 0);
+    const int max_path_len = max_depth_ + 1;
+    std::vector<PathElement> unique_path_data(max_path_len*(max_path_len + 1) / 2);
+    TreeSHAPByMap(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);
   }
 }
 

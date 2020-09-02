@@ -5,16 +5,16 @@
 #ifndef LIGHTGBM_BIN_H_
 #define LIGHTGBM_BIN_H_
 
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/file_io.h>
+
 #include <limits>
 #include <string>
 #include <functional>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-
-#include <LightGBM/meta.h>
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/file_io.h>
 
 namespace LightGBM {
 
@@ -456,7 +456,9 @@ class MultiValBin {
 
 inline uint32_t BinMapper::ValueToBin(double value) const {
   if (std::isnan(value)) {
-    if (missing_type_ == MissingType::NaN) {
+    if (bin_type_ == BinType::CategoricalBin) {
+      return 0;
+    } else if (missing_type_ == MissingType::NaN) {
       return num_bin_ - 1;
     } else {
       value = 0.0f;
@@ -482,12 +484,12 @@ inline uint32_t BinMapper::ValueToBin(double value) const {
     int int_value = static_cast<int>(value);
     // convert negative value to NaN bin
     if (int_value < 0) {
-      return num_bin_ - 1;
+      return 0;
     }
     if (categorical_2_bin_.count(int_value)) {
       return categorical_2_bin_.at(int_value);
     } else {
-      return num_bin_ - 1;
+      return 0;
     }
   }
 }

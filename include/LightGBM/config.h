@@ -11,17 +11,17 @@
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
 
+#include <LightGBM/export.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
+
 #include <string>
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include <LightGBM/export.h>
-#include <LightGBM/meta.h>
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/log.h>
 
 namespace LightGBM {
 
@@ -100,7 +100,7 @@ struct Config {
   // alias = task_type
   // desc = ``train``, for training, aliases: ``training``
   // desc = ``predict``, for prediction, aliases: ``prediction``, ``test``
-  // desc = ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <#io-parameters>`__
+  // desc = ``convert_model``, for converting model file into if-else format, see more information in `Convert Parameters <#convert-parameters>`__
   // desc = ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
@@ -145,6 +145,7 @@ struct Config {
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
+  // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
   // alias = train, train_data, train_data_file, data_filename
@@ -225,7 +226,7 @@ struct Config {
   // desc = set this to ``true`` to force col-wise histogram building
   // desc = enabling this is recommended when:
   // descl2 = the number of columns is large, or the total number of bins is large
-  // descl2 = ``num_threads`` is large, e.g. ``>20``
+  // descl2 = ``num_threads`` is large, e.g. ``> 20``
   // descl2 = you want to reduce memory cost
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
@@ -235,7 +236,7 @@ struct Config {
   // desc = set this to ``true`` to force row-wise histogram building
   // desc = enabling this is recommended when:
   // descl2 = the number of data points is large, and the total number of bins is relatively small
-  // descl2 = ``num_threads`` is relatively small, e.g. ``<=16``
+  // descl2 = ``num_threads`` is relatively small, e.g. ``<= 16``
   // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
   // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
@@ -440,7 +441,9 @@ struct Config {
   // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
 
+  // type = enum
   // alias = monotone_constraining_method, mc_method
+  // options = basic, intermediate
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
   // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
@@ -505,6 +508,14 @@ struct Config {
   // descl2 = note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
   double path_smooth = 0;
 
+  // desc = controls which features can appear in the same branch
+  // desc = by default interaction constraints are disabled, to enable them you can specify
+  // descl2 = for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
+  // descl2 = for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+  // descl2 = for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
+  // desc = any two features can only appear in the same branch only if there exists a constraint containing both features
+  std::string interaction_constraints = "";
+
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
@@ -523,6 +534,11 @@ struct Config {
   // desc = filename of output model in training
   // desc = **Note**: can be used only in CLI version
   std::string output_model = "LightGBM_model.txt";
+
+  // desc = the feature importance type in the saved model file
+  // desc = ``0``: count-based feature importance (numbers of splits are counted); ``1``: gain-based feature importance (values of gain are counted)
+  // desc = **Note**: can be used only in CLI version
+  int saved_feature_importance_type = 0;
 
   // [no-save]
   // alias = save_period
@@ -667,6 +683,12 @@ struct Config {
   #pragma endregion
 
   #pragma region Predict Parameters
+
+  // [no-save]
+  // desc = used only in ``prediction`` task
+  // desc = used to specify from which iteration to start the prediction
+  // desc = ``<= 0`` means from the first iteration
+  int start_iteration_predict = 0;
 
   // [no-save]
   // desc = used only in ``prediction`` task
@@ -958,12 +980,14 @@ struct Config {
   static const std::unordered_map<std::string, std::string>& alias_table();
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
+  std::vector<std::vector<int>> interaction_constraints_vector;
 
  private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();
+  void GetInteractionConstraints();
 };
 
 inline bool Config::GetString(

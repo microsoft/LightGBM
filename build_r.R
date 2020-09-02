@@ -10,10 +10,15 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
 TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 
+install_libs_content <- readLines(
+  file.path("R-package", "src", "install.libs.R")
+)
+USING_GPU <- any(grepl("use_gpu.*TRUE", install_libs_content))
+
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
-  if (!res) {
+  if (!all(res)) {
     stop("Copying files failed!")
   }
 }
@@ -70,6 +75,20 @@ result <- file.copy(
 )
 .handle_result(result)
 
+# Add blank Makevars files
+result <- file.copy(
+  from = file.path(TEMP_R_DIR, "inst", "Makevars")
+  , to = file.path(TEMP_SOURCE_DIR, "Makevars")
+  , overwrite = TRUE
+)
+.handle_result(result)
+result <- file.copy(
+  from = file.path(TEMP_R_DIR, "inst", "Makevars.win")
+  , to = file.path(TEMP_SOURCE_DIR, "Makevars.win")
+  , overwrite = TRUE
+)
+.handle_result(result)
+
 result <- file.copy(
   from = "include/"
   , to =  sprintf("%s/", TEMP_SOURCE_DIR)
@@ -86,18 +105,32 @@ result <- file.copy(
 )
 .handle_result(result)
 
-result <- file.copy(
-  from = "compute/"
-  , to = sprintf("%s/", TEMP_SOURCE_DIR)
-  , recursive = TRUE
-  , overwrite = TRUE
-)
-.handle_result(result)
+# compute/ is a submodule with boost, only needed if
+# building the R package with GPU support
+if (USING_GPU) {
+  result <- file.copy(
+    from = "compute/"
+    , to = sprintf("%s/", TEMP_SOURCE_DIR)
+    , recursive = TRUE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
 
 result <- file.copy(
   from = "CMakeLists.txt"
   , to = file.path(TEMP_R_DIR, "inst", "bin/")
   , overwrite = TRUE
+)
+.handle_result(result)
+
+# remove CRAN-specific files
+result <- file.remove(
+  file.path(TEMP_R_DIR, "configure")
+  , file.path(TEMP_R_DIR, "configure.ac")
+  , file.path(TEMP_R_DIR, "configure.win")
+  , file.path(TEMP_SOURCE_DIR, "Makevars.in")
+  , file.path(TEMP_SOURCE_DIR, "Makevars.win.in")
 )
 .handle_result(result)
 
@@ -114,6 +147,38 @@ for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
   )
   .handle_result(result)
 }
+
+result <- file.copy(
+  from = file.path("R-package", "inst", "make-r-def.R")
+  , to = file.path(TEMP_R_DIR, "inst", "bin/")
+  , overwrite = TRUE
+)
+.handle_result(result)
+
+# R packages cannot have versions like 3.0.0rc1, but
+# 3.0.0-1 is acceptable
+LGB_VERSION <- readLines("VERSION.txt")[1L]
+LGB_VERSION <- gsub(
+  pattern = "rc"
+  , replacement = "-"
+  , x = LGB_VERSION
+)
+
+# DESCRIPTION has placeholders for version
+# and date so it doesn't have to be updated manually
+DESCRIPTION_FILE <- file.path(TEMP_R_DIR, "DESCRIPTION")
+description_contents <- readLines(DESCRIPTION_FILE)
+description_contents <- gsub(
+  pattern = "~~VERSION~~"
+  , replacement = LGB_VERSION
+  , x = description_contents
+)
+description_contents <- gsub(
+  pattern = "~~DATE~~"
+  , replacement = as.character(Sys.Date())
+  , x = description_contents
+)
+writeLines(description_contents, DESCRIPTION_FILE)
 
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files

@@ -5,6 +5,9 @@
 #ifndef LIGHTGBM_BOOSTING_RF_H_
 #define LIGHTGBM_BOOSTING_RF_H_
 
+#include <LightGBM/boosting.h>
+#include <LightGBM/metric.h>
+
 #include <string>
 #include <cstdio>
 #include <fstream>
@@ -12,15 +15,12 @@
 #include <utility>
 #include <vector>
 
-#include <LightGBM/boosting.h>
-#include <LightGBM/metric.h>
-
 #include "gbdt.h"
 #include "score_updater.hpp"
 
 namespace LightGBM {
 /*!
-* \brief Rondom Forest implementation
+* \brief Random Forest implementation
 */
 class RF : public GBDT {
  public:
@@ -109,7 +109,7 @@ class RF : public GBDT {
     gradients = gradients_.data();
     hessians = hessians_.data();
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      std::unique_ptr<Tree> new_tree(new Tree(2));
+      std::unique_ptr<Tree> new_tree(new Tree(2, false));
       size_t offset = static_cast<size_t>(cur_tree_id)* num_data_;
       if (class_need_train_[cur_tree_id]) {
         auto grad = gradients + offset;

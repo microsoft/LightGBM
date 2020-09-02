@@ -5,13 +5,13 @@
 #ifndef LIGHTGBM_BOOSTING_DART_H_
 #define LIGHTGBM_BOOSTING_DART_H_
 
+#include <LightGBM/boosting.h>
+
 #include <string>
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <vector>
-
-#include <LightGBM/boosting.h>
 
 #include "gbdt.h"
 #include "score_updater.hpp"

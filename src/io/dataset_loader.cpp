@@ -2,9 +2,6 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-
-#include <fstream>
-
 #include <LightGBM/dataset_loader.h>
 
 #include <LightGBM/network.h>
@@ -12,6 +9,8 @@
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <fstream>
 
 namespace LightGBM {
 
@@ -525,9 +524,9 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 }
 
 
-Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
-                                               int** sample_indices, int num_col, const int* num_per_col,
-                                               size_t total_sample_size, data_size_t num_data) {
+Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
+                                                int** sample_indices, int num_col, const int* num_per_col,
+                                                size_t total_sample_size, data_size_t num_data) {
   int num_total_features = num_col;
   if (Network::num_machines() > 1) {
     num_total_features = Network::GlobalSyncUpByMax(num_total_features);

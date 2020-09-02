@@ -5,10 +5,10 @@
 #ifndef LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 #define LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 
+#include <LightGBM/meta.h>
+
 #include <limits>
 #include <vector>
-
-#include <LightGBM/meta.h>
 
 #include "data_partition.hpp"
 

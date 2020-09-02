@@ -5,6 +5,13 @@
 #ifndef LIGHTGBM_DATASET_H_
 #define LIGHTGBM_DATASET_H_
 
+#include <LightGBM/config.h>
+#include <LightGBM/feature_group.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/random.h>
+#include <LightGBM/utils/text_reader.h>
+
 #include <string>
 #include <functional>
 #include <memory>
@@ -12,13 +19,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include <LightGBM/config.h>
-#include <LightGBM/feature_group.h>
-#include <LightGBM/meta.h>
-#include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/random.h>
-#include <LightGBM/utils/text_reader.h>
 
 namespace LightGBM {
 
@@ -294,11 +294,11 @@ struct TrainingShareStates {
       hist_buf;
 
   void SetMultiValBin(MultiValBin* bin) {
+    num_threads = OMP_NUM_THREADS();
     if (bin == nullptr) {
       return;
     }
     multi_val_bin.reset(bin);
-    num_threads = OMP_NUM_THREADS();
     num_bin_aligned =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;

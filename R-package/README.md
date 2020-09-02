@@ -6,11 +6,61 @@ LightGBM R-package
 * [Installation](#installation)
 * [Examples](#examples)
 * [Testing](#testing)
+* [Preparing a CRAN Package and Installing It](#preparing-a-cran-package-and-installing-it)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
 
 Installation
 ------------
+
+### Installing the CRAN package
+
+As of this writing, `LightGBM`'s R package is not available on CRAN. However, start with `LightGBM` 3.0.0, you can install a released source distribution. This is the same type of package that you'd install from CRAN. It does not require `CMake`, Visual Studio, or anything else outside the CRAN toolchain.
+
+To install this package on any operating system:
+
+1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases)
+2. Look for the artifact with a name like `lightgbm-{VERSION}-r-cran.tar.gz`. Right-click it and choose "copy link address".
+3. Copy that link into `PKG_URL` in the code below and run it.
+
+```r
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r-cran.tar.gz"
+
+remotes::install_url(PKG_URL)
+```
+
+### Installing Precompiled Binaries
+
+Starting with `LightGBM` 3.0.0, precompiled binaries for the R package are created for each release. These packages do not require compilation, so they will be faster and easier to install than packages that are built from source. These packages are created with R 4.0 and are not guaranteed to work with other R versions.
+
+Binaries are available for Windows, Mac, and Linux systems. They are not guaranteed to work with all variants and versions of these operating systems. Please [open an issue](https://github.com/microsoft/LightGBM/issues) if you encounter any problems.
+
+To install a binary for the R package:
+
+1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases).
+2. Choose a file based on your operating system. Right-click it and choose "copy link address".
+    * Linux: `lightgbm-{VERSION}-r40-linux.tgz`
+    * Mac: `lightgbm-{VERSION}-r40-macos.tgz`
+    * Windows: `lightgbm-{VERSION}-r40-windows.zip`
+3. Copy that link into `PKG_URL` in the code below and run it.
+
+This sample code installs version 3.0.0-1 of the R package on Mac.
+
+```r
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r40-macos.tgz"
+
+local_file <- paste0("lightgbm.", tools::file_ext(PKG_URL))
+
+download.file(
+    url = PKG_URL
+    , destfile = local_file
+)
+install.packages(
+    pkgs = local_file
+    , type = "binary"
+    , repos = NULL
+)
+```
 
 ### Preparation
 
@@ -20,13 +70,52 @@ Note: 32-bit (i386) R/Rtools is currently not supported.
 
 #### Windows Preparation
 
-Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version. It requires to add to PATH the Rtools MinGW64 folder, if it was not done automatically during installation.
+Installing a 64-bit version of [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory.
 
-The default compiler is Visual Studio (or [VS Build Tools](https://visualstudio.microsoft.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
+After installing `Rtools` and `CMake`, be sure the following paths are added to the environment variable `PATH`. These may have been automatically added when installing other software.
 
-To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
+* `Rtools`
+    - If you have `Rtools` 3.x, example:
+        - `C:\Rtools\mingw_64\bin`
+    - If you have `Rtools` 4.0, example:
+        - `C:\rtools40\mingw64\bin`
+        - `C:\rtools40\usr\bin`
+* `CMake`
+    - example: `C:\Program Files\CMake\bin`
+* `R`
+    - example: `C:\Program Files\R\R-3.6.1\bin`
+
+NOTE: Two `Rtools` paths are required from `Rtools` 4.0 onwards because paths and the list of included software was changed in `Rtools` 4.0.
+
+#### Windows Toolchain Options
+
+A "toolchain" refers to the collection of software used to build the library. The R package can be built with three different toolchains.
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
+
+**Visual Studio (default)**
+
+By default, the package will be built with [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/).
+
+**MinGW (R 3.x)**
+
+If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://mingw-w64.org/doku.php) bundled with `Rtools`.
+
+If you want to force `LightGBM` to use MinGW (for any R version), open `R-package/src/install.libs.R` and change `use_mingw`:
+
+```r
+use_mingw <- TRUE
+```
+
+**MSYS2 (R 4.x)**
+
+If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS2](https://www.msys2.org/). This should work with the tools already bundled in `Rtools` 4.0.
+
+If you want to force `LightGBM` to use MSYS2 (for any R version), open `R-package/src/install.libs.R` and change `use_msys2`:
+
+```r
+use_msys2 <- TRUE
+```
 
 #### Mac OS Preparation
 
@@ -55,7 +144,7 @@ Windows users may need to run with administrator rights (either R or the command
 
 Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
-If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in cmake options when build precompiled dll/lib**.
+If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual.
 
 When your package installation is done, you can check quickly if your LightGBM R-package is working by running the following:
 
@@ -102,6 +191,150 @@ Rscript -e " \
     print(coverage);
     covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
     "
+```
+
+Preparing a CRAN Package and Installing It
+------------------------------------------
+
+This section is primarily for maintainers, but may help users and contributors to understand the structure of the R package.
+
+Most of `LightGBM` uses `CMake` to handle tasks like setting compiler and linker flags, including header file locations, and linking to other libraries. Because CRAN packages typically do not assume the presence of `CMake`, the R package uses an alternative method that is in the CRAN-supported toolchain for building R packages with C++ code: `Autoconf`.
+
+For more information on this approach, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup).
+
+### Build a CRAN Package
+
+From the root of the repository, run the following.
+
+```shell
+sh build-cran-package.sh
+```
+
+This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
+
+### Standard Installation from CRAN Package
+
+After building the package, install it with a command like the following:
+
+```shell
+R CMD install lightgbm_*.tar.gz
+```
+
+#### Custom Installation (Linux, Mac)
+
+To change the compiler used when installing the package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler). For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
+
+```make
+# ~/.R/Makevars
+CC=gcc-8
+CXX=g++-8
+CXX11=g++-8
+```
+
+### Changing the CRAN Package
+
+A lot of details are handled automatically by `R CMD build` and `R CMD install`, so it can be difficult to understand how the files in the R package are related to each other. An extensive treatment of those details is available in ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
+
+This section briefly explains the key files for building a CRAN package. To update the package, edit the files relevant to your change and re-run the steps in [Build a CRAN Package](#build-a-cran-package).
+
+**Linux or Mac**
+
+At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
+
+1. Edit `configure.ac`
+2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 18.04.
+
+    If you have an Ubuntu 18.04 environment available, run the provided script from the root of the `LightGBM` repository.
+
+    ```shell
+    ./R-package/recreate-configure.sh
+    ```
+
+    If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
+
+    ```shell
+    docker run \
+        -v $(pwd):/opt/LightGBM \
+        -t ubuntu:18.04 \
+        /bin/bash -c "cd /opt/LightGBM && ./R-package/recreate-configure.sh"
+    ```
+
+    The version of `autoconf` used by this project is stored in `R-package/AUTOCONF_UBUNTU_VERSION`. To update that version, update that file and run the commands above. To see available versions, see https://packages.ubuntu.com/search?keywords=autoconf.
+
+3. Edit `src/Makevars.in`
+
+**Configuring for Windows**
+
+At build time, `configure.win` will be run and used to create a file `Makevars.win`, using `Makevars.win.in` as a template.
+
+1. Edit `configure.win` directly
+2. Edit `src/Makevars.win.in`
+
+### Build Precompiled Binaries of the CRAN Package
+
+This section is mainly for maintainers. As long as the R package is not available on CRAN (which will build precompiled binaries automatically) you may want to build precompiled versions of the R package manually, since these will be easier for users to install.
+
+For more details, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Building-binary-packages).
+
+Packages built like this will only work for the minor version of R used to build them. They may or may not work across different versions of operating systems.
+
+**Mac**
+
+Binary produced: `lightgbm-${VERSION}-r40-macos.tgz`.
+
+```shell
+LGB_VERSION="3.0.0-1"
+sh build-cran-package.sh
+R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
+mv \
+    lightgbm_${LGB_VERSION}.tgz \
+    lightgbm-${LGB_VERSION}-r40-macos.tgz
+```
+
+**Linux**
+
+Binary produced: `lightgbm-${VERSION}-r40-linux.tgz`.
+
+You can access a Linux system that has R and its build toolchain installed with the `rocker` Docker images.
+
+```shell
+R_VERSION=4.0.2
+
+docker run \
+    -v $(pwd):/opt/LightGBM \
+    -it rocker/verse:${R_VERSION} \
+        /bin/bash
+```
+
+From inside that container, the commands to create a precompiled binary are very similar.
+
+```shell
+cd /opt/LightGBM
+LGB_VERSION="3.0.0-1"
+sh build-cran-package.sh
+R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
+mv \
+    lightgbm_${LGB_VERSION}_R_*-linux-gnu.tar.gz \
+    lightgbm-${LGB_VERSION}-r40-linux.tgz
+```
+
+Exit the container, and the binary package should still be there on the host system.
+
+```shell
+exit
+```
+
+**Windows**
+
+Binary produced: `lightgbm-${VERSION}-r40-windows.zip`.
+
+```shell
+LGB_VERSION="3.0.0-1"
+sh build-cran-package.sh
+R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
+mv \
+    lightgbm_${LGB_VERSION}.tgz \
+    lightgbm-${LGB_VERSION}-r40-windows.zip
 ```
 
 External (Unofficial) Repositories

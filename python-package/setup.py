@@ -2,7 +2,6 @@
 """Setup lightgbm package."""
 from __future__ import absolute_import
 
-import distutils
 import io
 import logging
 import os
@@ -17,6 +16,8 @@ from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.sdist import sdist
 from wheel.bdist_wheel import bdist_wheel
+from distutils.dir_util import copy_tree
+from distutils.file_util import copy_file
 
 
 def find_lib():
@@ -36,7 +37,7 @@ def copy_files(opencl_python_package=False, use_gpu=False):
         if os.path.exists(src):
             dst = os.path.join(CURRENT_DIR, 'compile', folder_name)
             shutil.rmtree(dst, ignore_errors=True)
-            distutils.dir_util.copy_tree(src, dst, verbose=0)
+            copy_tree(src, dst, verbose=0)
         else:
             raise Exception('Cannot copy {0} folder'.format(src))
 
@@ -45,25 +46,22 @@ def copy_files(opencl_python_package=False, use_gpu=False):
         copy_files_helper('src')
         if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "windows")):
             os.makedirs(os.path.join(CURRENT_DIR, "compile", "windows"))
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
-                                      os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"),
-                                      verbose=0)
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj"),
-                                      os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj"),
-                                      verbose=0)
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "LICENSE"),
-                                      os.path.join(CURRENT_DIR, "LICENSE"),
-                                      verbose=0)
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeLists.txt"),
-                                      os.path.join(CURRENT_DIR, "compile", "CMakeLists.txt"),
-                                      verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
+                  os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"),
+                  verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj"),
+                  os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj"),
+                  verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "LICENSE"),
+                  os.path.join(CURRENT_DIR, "LICENSE"),
+                  verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeLists.txt"),
+                  os.path.join(CURRENT_DIR, "compile", "CMakeLists.txt"),
+                  verbose=0)
         if opencl_python_package:
-            distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeOpenCLPythonPackage.txt"),
-                                          os.path.join(CURRENT_DIR, "compile", "CMakeOpenCLPythonPackage.txt"),
-                                          verbose=0)
-            distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeOpenCLPythonPackageCache.txt"),
-                                          os.path.join(CURRENT_DIR, "compile", "CMakeOpenCLPythonPackageCache.txt"),
-                                          verbose=0)
+            copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeOpenCLPythonPackage.txt"),
+                      os.path.join(CURRENT_DIR, "compile", "CMakeOpenCLPythonPackage.txt"),
+                      verbose=0)
         if use_gpu:
             copy_files_helper('compute')
 
@@ -109,7 +107,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
         use_mpi = False
         nomp = False
         use_hdfs = False
-        cmake_cmd.append("-C../compile/CMakeOpenCLPythonPackageCache.txt")
+        cmake_cmd.append("-D__OPENCL_PYTHON_PACKAGE=ON")
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
         if boost_root:
@@ -267,7 +265,7 @@ class CustomSdist(sdist):
 
 class CustomBdistWheel(bdist_wheel):
     """Supports --opencl-python-package to allow building OpenCL wheels on Windows.
-    
+
     Other install options should be added over time when needed.
     """
 
@@ -278,7 +276,7 @@ class CustomBdistWheel(bdist_wheel):
     def initialize_options(self):
         bdist_wheel.initialize_options(self)
         self.opencl_python_package = False
-    
+
     def run(self):
         install = self.distribution.get_command_obj('install')
         install.opencl_python_package = self.opencl_python_package
@@ -290,9 +288,9 @@ if __name__ == "__main__":
     LOG_PATH = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
     LOG_NOTICE = "The full version of error log was saved into {0}".format(LOG_PATH)
     if os.path.isfile(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt')):
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
-                                      os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
-                                      verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
+                  os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
+                  verbose=0)
     version = io.open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
     readme = io.open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
 

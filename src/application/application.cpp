@@ -2,15 +2,6 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-
-#include <string>
-#include <chrono>
-#include <cstdio>
-#include <ctime>
-#include <fstream>
-#include <sstream>
-#include <utility>
-
 #include <LightGBM/application.h>
 
 #include <LightGBM/boosting.h>
@@ -23,6 +14,14 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
+
+#include <string>
+#include <chrono>
+#include <cstdio>
+#include <ctime>
+#include <fstream>
+#include <sstream>
+#include <utility>
 
 #include "predictor.hpp"
 
@@ -89,7 +88,7 @@ void Application::LoadData() {
   PredictFunction predict_fun = nullptr;
   // need to continue training
   if (boosting_->NumberOfTotalModel() > 0 && config_.task != TaskType::KRefitTree) {
-    predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, false, -1, -1));
+    predictor.reset(new Predictor(boosting_.get(), 0, -1, true, false, false, false, -1, -1));
     predict_fun = predictor->GetPredictFunction();
   }
 
@@ -202,7 +201,8 @@ void Application::InitTrain() {
 void Application::Train() {
   Log::Info("Started training...");
   boosting_->Train(config_.snapshot_freq, config_.output_model);
-  boosting_->SaveModelToFile(0, -1, config_.output_model.c_str());
+  boosting_->SaveModelToFile(0, -1, config_.saved_feature_importance_type,
+                             config_.output_model.c_str());
   // convert model to if-else statement code
   if (config_.convert_model_language == std::string("cpp")) {
     boosting_->SaveModelToIfElse(-1, config_.convert_model.c_str());
@@ -213,7 +213,7 @@ void Application::Train() {
 void Application::Predict() {
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
-    Predictor predictor(boosting_.get(), -1, false, true, false, false, 1, 1);
+    Predictor predictor(boosting_.get(), 0, -1, false, true, false, false, 1, 1);
     predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
@@ -234,11 +234,12 @@ void Application::Predict() {
     boosting_->Init(&config_, train_data_.get(), objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
     boosting_->RefitTree(pred_leaf);
-    boosting_->SaveModelToFile(0, -1, config_.output_model.c_str());
+    boosting_->SaveModelToFile(0, -1, config_.saved_feature_importance_type,
+                               config_.output_model.c_str());
     Log::Info("Finished RefitTree");
   } else {
     // create predictor
-    Predictor predictor(boosting_.get(), config_.num_iteration_predict, config_.predict_raw_score,
+    Predictor predictor(boosting_.get(), config_.start_iteration_predict, config_.num_iteration_predict, config_.predict_raw_score,
                         config_.predict_leaf_index, config_.predict_contrib,
                         config_.pred_early_stop, config_.pred_early_stop_freq,
                         config_.pred_early_stop_margin);

@@ -19,11 +19,12 @@ test_that("Feature penalties work properly", {
       , label = train$label
       , num_leaves = 5L
       , learning_rate = 0.05
-      , nrounds = 20L
+      , nrounds = 5L
       , objective = "binary"
       , feature_penalty = paste0(feature_penalties, collapse = ",")
       , metric = "binary_error"
       , verbose = -1L
+      , save_name = tempfile(fileext = ".model")
     )
   })
 
@@ -75,6 +76,7 @@ test_that("training should warn if you use 'dart' boosting, specified with 'boos
           object = "dart"
           , nm = boosting_param
         )
+        , save_name = tempfile(fileext = ".model")
       )
     }, regexp = "Early stopping is not available in 'dart' mode")
   }

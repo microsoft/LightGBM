@@ -5,19 +5,19 @@
 #ifndef LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
 
-#include <string>
-#include <cmath>
-#include <cstdio>
-#include <memory>
-#include <random>
-#include <vector>
-
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/random.h>
+
+#include <string>
+#include <cmath>
+#include <cstdio>
+#include <memory>
+#include <random>
+#include <vector>
 
 #include "col_sampler.hpp"
 #include "data_partition.hpp"
@@ -134,11 +134,11 @@ class SerialTreeLearner: public TreeLearner {
   */
   virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf);
 
-  virtual void FindBestSplits();
+  virtual void FindBestSplits(const Tree* tree);
 
   virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
-  virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
+  virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree*);
 
   /*!
   * \brief Partition tree and data according best split.
@@ -196,7 +196,6 @@ class SerialTreeLearner: public TreeLearner {
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
   /*! \brief stores best thresholds for all feature for larger leaf */
   std::unique_ptr<LeafSplits> larger_leaf_splits_;
-
 #ifdef USE_GPU
   /*! \brief gradients of current iteration, ordered for cache optimized, aligned to 4K page */
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;

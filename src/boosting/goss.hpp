@@ -5,16 +5,17 @@
 #ifndef LIGHTGBM_BOOSTING_GOSS_H_
 #define LIGHTGBM_BOOSTING_GOSS_H_
 
+#include <LightGBM/boosting.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/log.h>
+
 #include <string>
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdint>
 #include <fstream>
 #include <vector>
-
-#include <LightGBM/boosting.h>
-#include <LightGBM/utils/array_args.h>
-#include <LightGBM/utils/log.h>
 
 #include "gbdt.h"
 #include "score_updater.hpp"
@@ -36,6 +37,12 @@ class GOSS: public GBDT {
             const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, objective_function, training_metrics);
     ResetGoss();
+    if (objective_function_ == nullptr) {
+      // use customized objective function
+      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      gradients_.resize(total_size, 0.0f);
+      hessians_.resize(total_size, 0.0f);
+    }
   }
 
   void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
@@ -47,6 +54,23 @@ class GOSS: public GBDT {
   void ResetConfig(const Config* config) override {
     GBDT::ResetConfig(config);
     ResetGoss();
+  }
+
+  bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
+    if (gradients != nullptr) {
+      // use customized objective function
+      CHECK(hessians != nullptr && objective_function_ == nullptr);
+      int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
+      #pragma omp parallel for schedule(static)
+      for (int64_t i = 0; i < total_size; ++i) {
+        gradients_[i] = gradients[i];
+        hessians_[i] = hessians[i];
+      }
+      return GBDT::TrainOneIter(gradients_.data(), hessians_.data());
+    } else {
+      CHECK(hessians == nullptr);
+      return GBDT::TrainOneIter(nullptr, nullptr);
+    }
   }
 
   void ResetGoss() {

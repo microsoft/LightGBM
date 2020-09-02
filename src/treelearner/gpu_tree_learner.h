@@ -5,18 +5,18 @@
 #ifndef LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 
+#include <LightGBM/dataset.h>
+#include <LightGBM/feature_group.h>
+#include <LightGBM/tree.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/random.h>
+
 #include <string>
 #include <cmath>
 #include <cstdio>
 #include <memory>
 #include <random>
 #include <vector>
-
-#include <LightGBM/dataset.h>
-#include <LightGBM/feature_group.h>
-#include <LightGBM/tree.h>
-#include <LightGBM/utils/array_args.h>
-#include <LightGBM/utils/random.h>
 
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
@@ -66,7 +66,7 @@ class GPUTreeLearner: public SerialTreeLearner {
  protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
-  void FindBestSplits() override;
+  void FindBestSplits(const Tree* tree) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 

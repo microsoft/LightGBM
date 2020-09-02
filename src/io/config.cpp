@@ -2,14 +2,13 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-
-#include <limits>
-
 #include <LightGBM/config.h>
 
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/random.h>
+
+#include <limits>
 
 namespace LightGBM {
 
@@ -181,6 +180,14 @@ void Config::GetAucMuWeights() {
   }
 }
 
+void Config::GetInteractionConstraints() {
+  if (interaction_constraints == "") {
+    interaction_constraints_vector = std::vector<std::vector<int>>();
+  } else {
+    interaction_constraints_vector = Common::StringToArrayofArrays<int>(interaction_constraints, '[', ']', ',');
+  }
+}
+
 void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
@@ -204,6 +211,8 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetMembersFromString(params);
 
   GetAucMuWeights();
+
+  GetInteractionConstraints();
 
   // sort eval_at
   std::sort(eval_at.begin(), eval_at.end());

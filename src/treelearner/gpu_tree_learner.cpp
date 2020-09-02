@@ -6,11 +6,11 @@
 
 #include "gpu_tree_learner.h"
 
-#include <algorithm>
-
 #include <LightGBM/bin.h>
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
+
+#include <algorithm>
 
 #include "../io/dense_bin.hpp"
 
@@ -1055,8 +1055,8 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   }
 }
 
-void GPUTreeLearner::FindBestSplits() {
-  SerialTreeLearner::FindBestSplits();
+void GPUTreeLearner::FindBestSplits(const Tree* tree) {
+  SerialTreeLearner::FindBestSplits(tree);
 
 #if GPU_DEBUG >= 3
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {

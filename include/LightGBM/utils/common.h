@@ -5,6 +5,9 @@
 #ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
 #define LIGHTGBM_UTILS_COMMON_FUN_H_
 
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+
 #include <limits>
 #include <string>
 #include <algorithm>
@@ -23,17 +26,21 @@
 #include <utility>
 #include <vector>
 
-#include <LightGBM/utils/log.h>
-#include <LightGBM/utils/openmp_wrapper.h>
+#ifdef _MSC_VER
+#include <intrin.h>
+#pragma intrinsic(_BitScanReverse)
+#endif
 
 #if defined(_MSC_VER)
 #include <malloc.h>
 #elif MM_MALLOC
 #include <mm_malloc.h>
-#elif defined(__GNUC__)
-#include <malloc.h>
-#define _mm_malloc(a, b) memalign(b, a)
-#define _mm_free(a) free(a)
+// https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+// https://www.oreilly.com/library/view/mac-os-x/0596003560/ch05s01s02.html
+#elif defined(__GNUC__) && defined(HAVE_MALLOC_H)
+  #include <malloc.h>
+  #define _mm_malloc(a, b) memalign(b, a)
+  #define _mm_free(a) free(a)
 #else
 #include <stdlib.h>
 #define _mm_malloc(a, b) malloc(a)
@@ -94,6 +101,30 @@ inline static std::vector<std::string> Split(const char* c_str, char delimiter) 
   }
   if (i < pos) {
     ret.push_back(str.substr(i));
+  }
+  return ret;
+}
+
+inline static std::vector<std::string> SplitBrackets(const char* c_str, char left_delimiter, char right_delimiter) {
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = 0;
+  bool open = false;
+  while (pos < str.length()) {
+    if (str[pos] == left_delimiter) {
+      open = true;
+      ++pos;
+      i = pos;
+    } else if (str[pos] == right_delimiter && open) {
+      if (i < pos) {
+        ret.push_back(str.substr(i, pos - i));
+      }
+      open = false;
+      ++pos;
+    } else {
+      ++pos;
+    }
   }
   return ret;
 }
@@ -499,6 +530,17 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
 }
 
 template<typename T>
+inline static std::vector<std::vector<T>> StringToArrayofArrays(
+    const std::string& str, char left_bracket, char right_bracket, char delimiter) {
+  std::vector<std::string> strs = SplitBrackets(str.c_str(), left_bracket, right_bracket);
+  std::vector<std::vector<T>> ret;
+  for (const auto& s : strs) {
+    ret.push_back(StringToArray<T>(s, delimiter));
+  }
+  return ret;
+}
+
+template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
@@ -887,7 +929,7 @@ inline static bool CheckDoubleEqualOrdered(double a, double b) {
 }
 
 inline static double GetDoubleUpperBound(double a) {
-  return std::nextafter(a, INFINITY);;
+  return std::nextafter(a, INFINITY);
 }
 
 inline static size_t GetLine(const char* str) {
