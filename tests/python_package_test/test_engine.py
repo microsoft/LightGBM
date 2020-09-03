@@ -495,7 +495,6 @@ class TestEngine(unittest.TestCase):
                   valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
         self.assertAlmostEqual(results['training']['multi_error@2'][-1], 0)
 
-
     def test_auc_mu(self):
         # should give same result as binary auc for 2 classes
         X, y = load_digits(n_class=10, return_X_y=True)
