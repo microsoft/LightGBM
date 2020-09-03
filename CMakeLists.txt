@@ -33,7 +33,7 @@ if(__OPENCL_PYTHON_PACKAGE)
   set(USE_TIMETAG OFF CACHE BOOL "")
   set(USE_DEBUG OFF CACHE BOOL "")
   set(BUILD_FOR_R OFF CACHE BOOL "")
-  message(WARNING "\nWARNING: building integrated OpenCL enabled components intended for Python package")
+  message(WARNING "WARNING: building integrated OpenCL enabled components intended for Python package")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -140,8 +140,12 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(__OPENCL_PYTHON_PACKAGE)
-    include(CMakeOpenCLPythonPackage.txt)
-    ADD_DEFINITIONS(-DUSE_GPU)
+    if (WIN32)
+        include(CMakeOpenCLPythonPackage.cmake)
+        ADD_DEFINITIONS(-DUSE_GPU)
+    else()
+        message(FATAL_ERROR "Integrated OpenCL build available only on WIN32")
+    endif()
 endif()
 
 if(USE_HDFS)
@@ -268,12 +272,6 @@ endif(BUILD_STATIC_LIB)
 
 if(MSVC)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
-  # TODO: use uniquely named dll (in setup.py, lightgbm/libpath.py) to avoid runtime conflicts
-  #if(__OPENCL_PYTHON_PACKAGE)
-  #  set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm-${OPENCL_PYTHON_PACKAGE_STAMP}")
-  #else()
-  #  set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
-  #endif()
 endif(MSVC)
 
 if(USE_SWIG)
@@ -331,10 +329,10 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(__OPENCL_PYTHON_PACKAGE)
-  # targets OpenCL and Boost are added in CMakeOpenCLPythonPackage.txt
+  # targets OpenCL and Boost are added in CMakeOpenCLPythonPackage.cmake
   add_dependencies(lightgbm OpenCL Boost)
   add_dependencies(_lightgbm OpenCL Boost)
-  # variables OPENCL_PYTHON_PACKAGE_* are set in CMakeOpenCLPythonPackage.txt
+  # variables OPENCL_PYTHON_PACKAGE_* are set in CMakeOpenCLPythonPackage.cmake
   target_include_directories(lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_INCLUDES})
   target_include_directories(_lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_INCLUDES})
   target_compile_definitions(lightgbm PRIVATE ${OPENCL_PYTHON_PACKAGE_DEFINITIONS})

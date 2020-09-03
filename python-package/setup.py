@@ -58,8 +58,8 @@ def copy_files(opencl_python_package=False, use_gpu=False):
                   os.path.join(CURRENT_DIR, "compile", "CMakeLists.txt"),
                   verbose=0)
         if opencl_python_package:
-            copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeOpenCLPythonPackage.txt"),
-                      os.path.join(CURRENT_DIR, "compile", "CMakeOpenCLPythonPackage.txt"),
+            copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeOpenCLPythonPackage.cmake"),
+                      os.path.join(CURRENT_DIR, "compile", "CMakeOpenCLPythonPackage.cmake"),
                       verbose=0)
         if use_gpu:
             copy_files_helper('compute')
