@@ -690,7 +690,7 @@ class Dataset {
   void AddFeaturesFrom(Dataset* other);
 
   /*! \brief Get has_raw_ */
-  inline double has_raw() const { return has_raw_; }
+  inline bool has_raw() const { return has_raw_; }
 
   /*! \brief Set has_raw_ */
   inline void SetRaw(bool has_raw) { has_raw_ = has_raw; }
