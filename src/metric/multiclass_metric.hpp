@@ -217,32 +217,32 @@ class AucMuMetric : public Metric {
     }
     Common::ParallelSort(sorted_data_idx_.begin(), sorted_data_idx_.end(),
       [this](data_size_t a, data_size_t b) { return label_[a] < label_[b]; });
+
+    // get size of each class
+    class_sizes_ = std::vector<data_size_t>(num_class_, 0);
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      data_size_t curr_label = static_cast<data_size_t>(label_[i]);
+      ++class_sizes_[curr_label];
+    }
+
+    // get total weight of data in each class
+    class_data_weights_ = std::vector<double>(num_class_, 0);
+    if (weights_ != nullptr) {
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        data_size_t curr_label = static_cast<data_size_t>(label_[i]);
+        class_data_weights_[curr_label] += weights_[i];
+      }
+    }
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // the notation follows that used in the paper introducing the auc-mu metric:
     // http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf
 
-    // get size of each class
-    auto class_sizes = std::vector<data_size_t>(num_class_, 0);
-    for (data_size_t i = 0; i < num_data_; ++i) {
-      data_size_t curr_label = static_cast<data_size_t>(label_[i]);
-      ++class_sizes[curr_label];
-    }
-
-    // get total weight of data in each class
-    auto class_data_weights = std::vector<double>(num_class_, 0);
-    if (weights_ != nullptr) {
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        data_size_t curr_label = static_cast<data_size_t>(label_[i]);
-        class_data_weights[curr_label] += weights_[i];
-      }
-    }
-
     auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
     int i_start = 0;
     for (int i = 0; i < num_class_; ++i) {
-      int j_start = i_start + class_sizes[i];
+      int j_start = i_start + class_sizes_[i];
       for (int j = i + 1; j < num_class_; ++j) {
         std::vector<double> curr_v;
         for (int k = 0; k < num_class_; ++k) {
@@ -251,9 +251,9 @@ class AucMuMetric : public Metric {
         double t1 = curr_v[i] - curr_v[j];
         // extract the data indices belonging to class i or j
         std::vector<data_size_t> class_i_j_indices;
-        class_i_j_indices.assign(sorted_data_idx_.begin() + i_start, sorted_data_idx_.begin() + i_start + class_sizes[i]);
+        class_i_j_indices.assign(sorted_data_idx_.begin() + i_start, sorted_data_idx_.begin() + i_start + class_sizes_[i]);
         class_i_j_indices.insert(class_i_j_indices.end(),
-          sorted_data_idx_.begin() + j_start, sorted_data_idx_.begin() + j_start + class_sizes[j]);
+          sorted_data_idx_.begin() + j_start, sorted_data_idx_.begin() + j_start + class_sizes_[j]);
         // sort according to distance from separating hyperplane
         std::vector<std::pair<data_size_t, double>> dist;
         for (data_size_t k = 0; static_cast<size_t>(k) < class_i_j_indices.size(); ++k) {
@@ -321,17 +321,17 @@ class AucMuMetric : public Metric {
             }
           }
         }
-        j_start += class_sizes[j];
+        j_start += class_sizes_[j];
       }
-      i_start += class_sizes[i];
+      i_start += class_sizes_[i];
     }
     double ans = 0;
     for (int i = 0; i < num_class_; ++i) {
       for (int j = i + 1; j < num_class_; ++j) {
         if (weights_ == nullptr) {
-          ans += (S[i][j] / class_sizes[i]) / class_sizes[j];
+          ans += (S[i][j] / class_sizes_[i]) / class_sizes_[j];
         } else {
-          ans += (S[i][j] / class_data_weights[i]) / class_data_weights[j];
+          ans += (S[i][j] / class_data_weights_[i]) / class_data_weights_[j];
         }
       }
     }
@@ -348,12 +348,16 @@ class AucMuMetric : public Metric {
   std::vector<std::string> name_;
   /*! \brief Number of classes*/
   int num_class_;
-  /*! \brief class_weights*/
+  /*! \brief Class auc-mu weights*/
   std::vector<std::vector<double>> class_weights_;
   /*! \brief Data weights */
   const label_t* weights_;
   /*! \brief Sum of data weights */
   double sum_weights_;
+  /*! \brief Sum of data weights in each class*/
+  std::vector<double> class_data_weights_;
+  /*! \brief Number of data in each class*/
+  std::vector<data_size_t> class_sizes_;
   /*! \brief config parameters*/
   Config config_;
   /*! \brief index to data, sorted by true class*/
