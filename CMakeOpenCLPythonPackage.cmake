@@ -4,11 +4,9 @@ set(BOOST_VERSION_DOT "1.73")
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION_DOT})
 
 set(OPENCL_HEADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-Headers.git")
-#set(OPENCL_HEADER_TAG "3f7c1f77f8e1a3c9b48765c713ca19013e95b91e")
 set(OPENCL_HEADER_TAG "1b2a1850f410aaaaeaa56cead5a179b5aea4918e")
 
 set(OPENCL_LOADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-ICD-Loader.git")
-#set(OPENCL_LOADER_TAG "bbdf079426d859fb8a68c332b41b714f9c87d6ad")
 set(OPENCL_LOADER_TAG "862eebe7ca733c398334a8db8481172a7d3a3c47")
 
 set(BOOST_REPOSITORY "https://github.com/boostorg/boost.git")
