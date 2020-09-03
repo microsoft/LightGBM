@@ -572,7 +572,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       std::vector<float> curr_row(dataset->num_numeric_features_, 0);
       for (int j = 0; j < dataset->num_features(); ++j) {
         int feat_ind = dataset->numeric_feature_map_[j];
-        if (feat_ind > -1) {
+        if (feat_ind >= 0) {
           dataset->raw_data_[feat_ind][i] = tmp_ptr_raw_row[feat_ind];
         }
       }
@@ -1112,9 +1112,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       }
       if (dataset->has_raw()) {
         for (size_t j = 0; j < feature_row.size(); ++j) {
-          int feat_num = dataset->numeric_feature_map_[j];
-          if (feat_num > -1) {
-            dataset->raw_data_[feat_num][i] = feature_row[j];
+          int feat_ind = dataset->numeric_feature_map_[j];
+          if (feat_ind >= 0) {
+            dataset->raw_data_[feat_ind][i] = feature_row[j];
           }
         }
       }
@@ -1170,9 +1170,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       dataset->FinishOneRow(tid, i, is_feature_added);
       if (dataset->has_raw()) {
         for (size_t j = 0; j < feature_row.size(); ++j) {
-          int feat_num = dataset->numeric_feature_map_[j];
-          if (feat_num > -1) {
-            dataset->raw_data_[feat_num][i] = feature_row[j];
+          int feat_ind = dataset->numeric_feature_map_[j];
+          if (feat_ind >= 0) {
+            dataset->raw_data_[feat_ind][i] = feature_row[j];
           }
         }
       }
@@ -1242,9 +1242,9 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       }
       if (dataset->has_raw()) {
         for (size_t j = 0; j < feature_row.size(); ++j) {
-          int feat_num = dataset->numeric_feature_map_[j];
-          if (feat_num > -1) {
-            dataset->raw_data_[feat_num][i] = feature_row[j];
+          int feat_ind = dataset->numeric_feature_map_[j];
+          if (feat_ind >= 0) {
+            dataset->raw_data_[feat_ind][i] = feature_row[j];
           }
         }
       }

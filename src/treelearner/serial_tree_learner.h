@@ -157,13 +157,13 @@ class SerialTreeLearner: public TreeLearner {
       int num_feat = leaf_num_features[leaf_num];
       if (HAS_NAN) {
         bool nan_found = false;
-        for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
-          float val = feat_ptr[leaf_num][feat_num][i];
+        for (int feat_ind = 0; feat_ind < num_feat; ++feat_ind) {
+          float val = feat_ptr[leaf_num][feat_ind][i];
           if (std::isnan(val)) {
             nan_found = true;
             break;
           }
-          output += val * leaf_coeff[leaf_num][feat_num];
+          output += val * leaf_coeff[leaf_num][feat_ind];
         }
         if (nan_found) {
           out_score[i] += leaf_output[leaf_num];
@@ -171,8 +171,8 @@ class SerialTreeLearner: public TreeLearner {
           out_score[i] += output;
         }
       } else {
-        for (int feat_num = 0; feat_num < num_feat; ++feat_num) {
-          output += feat_ptr[leaf_num][feat_num][i] * leaf_coeff[leaf_num][feat_num];
+        for (int feat_ind = 0; feat_ind < num_feat; ++feat_ind) {
+          output += feat_ptr[leaf_num][feat_ind][i] * leaf_coeff[leaf_num][feat_ind];
         }
         out_score[i] += output;
       }

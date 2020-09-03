@@ -389,7 +389,7 @@ class Dataset {
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
         if (has_raw_) {
           int feat_ind = numeric_feature_map_[feature_idx];
-          if (feat_ind > -1) {
+          if (feat_ind >= 0) {
             raw_data_[feat_ind][row_idx] = feature_values[i];
           }
         }
@@ -410,7 +410,7 @@ class Dataset {
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
         if (has_raw_) {
           int feat_ind = numeric_feature_map_[feature_idx];
-          if (feat_ind > -1) {
+          if (feat_ind >= 0) {
             raw_data_[feat_ind][row_idx] = inner_data.second;
           }
         }
@@ -714,16 +714,16 @@ class Dataset {
     }
     int curr_size = raw_data_.size();
     for (int i = curr_size; i < num_features_; ++i) {
-      int feat_num = numeric_feature_map_[i];
-      if (feat_num > -1) {
+      int feat_ind = numeric_feature_map_[i];
+      if (feat_ind >= 0) {
         raw_data_.push_back(std::vector<float>(num_rows, 0));
       }
     }
   }
 
   /*! \brief Get pointer to raw_data_ feature */
-  inline const float* raw_index(int feat_num) const {
-    return raw_data_[numeric_feature_map_[feat_num]].data();
+  inline const float* raw_index(int feat_ind) const {
+    return raw_data_[numeric_feature_map_[feat_ind]].data();
   }
 
  private:
