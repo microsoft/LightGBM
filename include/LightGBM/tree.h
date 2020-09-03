@@ -292,7 +292,7 @@ class Tree {
   inline std::vector<int> LeafFeatures(int leaf) const {return leaf_features_[leaf]; }
 
   /*! \brief Set the linear model coefficients on one leaf */
-  inline void SetLeafCoeffs(int leaf, std::vector<double> output) {
+  inline void SetLeafCoeffs(int leaf, const std::vector<double>& output) {
     leaf_coeff_[leaf].resize(output.size());
     for (size_t i = 0; i < output.size(); ++i) {
       leaf_coeff_[leaf][i] = MaybeRoundToZero(output[i]);
@@ -305,12 +305,12 @@ class Tree {
   }
 
   /*! \brief Set the linear model features on one leaf */
-  inline void SetLeafFeaturesInner(int leaf, std::vector<int> features) {
+  inline void SetLeafFeaturesInner(int leaf, const std::vector<int>& features) {
     leaf_features_inner_[leaf] = features;
   }
 
   /*! \brief Set the linear model features on one leaf */
-  inline void SetLeafFeatures(int leaf, std::vector<int> features) {
+  inline void SetLeafFeatures(int leaf, const std::vector<int>& features) {
     leaf_features_[leaf] = features;
   }
 
