@@ -34,7 +34,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     return new BinaryErrorMetric(config);
   } else if (type == std::string("auc")) {
     return new AUCMetric(config);
-  } else if (type == std::string("ap")) {
+  } else if (type == std::string("average_precision")) {
     return new AveragePrecisionMetric(config);
   } else if (type == std::string("auc_mu")) {
     return new AucMuMetric(config);

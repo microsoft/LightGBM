@@ -2406,7 +2406,7 @@ class TestEngine(unittest.TestCase):
         X, y = load_breast_cancer(return_X_y=True)
         params = {
             'objective': 'binary',
-            'metric': 'ap',
+            'metric': 'average_precision',
             'verbose': -1
         }
         res = {}
