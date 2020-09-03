@@ -314,9 +314,9 @@ class Tree {
     leaf_features_[leaf] = features;
   }
 
-  inline bool GetLinear() const { return is_linear_; }
+  inline bool is_linear() const { return is_linear_; }
 
-  inline void SetLinear(bool is_linear) {
+  inline void SetIsLinear(bool is_linear) {
     is_linear_ = is_linear;
   }
 

@@ -1023,9 +1023,9 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     if (has_raw_) {
       for (int i = 0; i < num_data_; ++i) {
         for (int j = 0; j < num_features_; ++j) {
-          int num_feat = numeric_feature_map_[j];
-          if (num_feat > -1) {
-            writer->Write(&raw_data_[num_feat][i], sizeof(float));
+          int feat_ind = numeric_feature_map_[j];
+          if (feat_ind > -1) {
+            writer->Write(&raw_data_[feat_ind][i], sizeof(float));
           }
         }
       }
@@ -1546,9 +1546,9 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   num_groups_ += other->num_groups_;
 
   for (size_t i = 0; i < (other->numeric_feature_map_).size(); ++i) {
-    int num_feat = numeric_feature_map_[i];
-    if (num_feat > -1) {
-      numeric_feature_map_.push_back(num_feat + num_numeric_features_);
+    int feat_ind = numeric_feature_map_[i];
+    if (feat_ind > -1) {
+      numeric_feature_map_.push_back(feat_ind + num_numeric_features_);
     } else {
       numeric_feature_map_.push_back(-1);
     }

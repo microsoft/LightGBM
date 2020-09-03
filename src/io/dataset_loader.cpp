@@ -178,7 +178,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   if (store_raw_) {
-    dataset->SetRaw(true);
+    dataset->SetHasRaw(true);
   }
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
@@ -244,7 +244,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   if (store_raw_) {
-    dataset->SetRaw(true);
+    dataset->SetHasRaw(true);
   }
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
@@ -571,9 +571,9 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       const float* tmp_ptr_raw_row = reinterpret_cast<const float*>(mem_ptr);
       std::vector<float> curr_row(dataset->num_numeric_features_, 0);
       for (int j = 0; j < dataset->num_features(); ++j) {
-        int num_feat = dataset->numeric_feature_map_[j];
-        if (num_feat > -1) {
-          dataset->raw_data_[num_feat][i] = tmp_ptr_raw_row[num_feat];
+        int feat_ind = dataset->numeric_feature_map_[j];
+        if (feat_ind > -1) {
+          dataset->raw_data_[feat_ind][i] = tmp_ptr_raw_row[feat_ind];
         }
       }
       mem_ptr += row_size;

@@ -388,9 +388,9 @@ class Dataset {
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
         if (has_raw_) {
-          int num_feat = numeric_feature_map_[feature_idx];
-          if (num_feat > -1) {
-            raw_data_[num_feat][row_idx] = feature_values[i];
+          int feat_ind = numeric_feature_map_[feature_idx];
+          if (feat_ind > -1) {
+            raw_data_[feat_ind][row_idx] = feature_values[i];
           }
         }
       }
@@ -409,9 +409,9 @@ class Dataset {
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
         if (has_raw_) {
-          int num_feat = numeric_feature_map_[feature_idx];
-          if (num_feat > -1) {
-            raw_data_[num_feat][row_idx] = inner_data.second;
+          int feat_ind = numeric_feature_map_[feature_idx];
+          if (feat_ind > -1) {
+            raw_data_[feat_ind][row_idx] = inner_data.second;
           }
         }
       }
@@ -693,7 +693,7 @@ class Dataset {
   inline bool has_raw() const { return has_raw_; }
 
   /*! \brief Set has_raw_ */
-  inline void SetRaw(bool has_raw) { has_raw_ = has_raw; }
+  inline void SetHasRaw(bool has_raw) { has_raw_ = has_raw; }
 
   /*! \brief Get size of raw data */
   inline data_size_t get_raw_size() const {

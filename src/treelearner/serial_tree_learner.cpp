@@ -302,7 +302,7 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (tree->GetLinear()) {
+  if (tree->is_linear()) {
     auto tree_prt = tree.get();
     bool has_nan = false;
     if (any_nan_) {
@@ -883,7 +883,7 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
 #else
 template<bool HAS_NAN>
 void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) {
-  tree->SetLinear(true);
+  tree->SetIsLinear(true);
   int num_leaves = tree->num_leaves();
   int num_threads = OMP_NUM_THREADS();
   if (is_first_tree) {

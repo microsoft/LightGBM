@@ -105,7 +105,7 @@ class SerialTreeLearner: public TreeLearner {
   void AddPredictionToScore(const Tree* tree,
                             double* out_score) const override {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
-    if (tree->GetLinear()) {
+    if (tree->is_linear()) {
       CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
       if (tree->has_nan()) {
         AddPredictionToScoreInner<true>(tree, out_score);
