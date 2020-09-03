@@ -123,6 +123,10 @@ Core Parameters
 
       -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
 
+      -  the linear model at each leaf includes all the numerical features in that leaf's branch
+
+      -  categorical features are used for splits as normal but are not used in the linear models
+
       -  missing values must be encoded as ``np.nan`` (Python) or ``NA`` (cli), not ``0``
 
       -  it is recommended to rescale data before training so that features have similar mean and standard deviation
