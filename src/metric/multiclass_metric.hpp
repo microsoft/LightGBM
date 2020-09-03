@@ -199,6 +199,17 @@ class AucMuMetric : public Metric {
     num_data_ = num_data;
     label_ = metadata.label();
 
+    // get weights
+    weights_ = metadata.weights();
+    if (weights_ == nullptr) {
+      sum_weights_ = static_cast<double>(num_data_);
+    } else {
+      sum_weights_ = 0.0f;
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        sum_weights_ += weights_[i];
+      }
+    }
+
     // sort the data indices by true class
     sorted_data_idx_ = std::vector<data_size_t>(num_data_, 0);
     for (data_size_t i = 0; i < num_data_; ++i) {
@@ -217,6 +228,15 @@ class AucMuMetric : public Metric {
     for (data_size_t i = 0; i < num_data_; ++i) {
       data_size_t curr_label = static_cast<data_size_t>(label_[i]);
       ++class_sizes[curr_label];
+    }
+
+    // get total weight of data in each class
+    auto class_data_weights = std::vector<double>(num_class_, 0);
+    if (weights_ != nullptr) {
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        data_size_t curr_label = static_cast<data_size_t>(label_[i]);
+        class_data_weights[curr_label] += weights_[i];
+      }
     }
 
     auto S = std::vector<std::vector<double>>(num_class_, std::vector<double>(num_class_, 0));
@@ -259,22 +279,45 @@ class AucMuMetric : public Metric {
         double num_j = 0;
         double last_j_dist = 0;
         double num_current_j = 0;
-        for (size_t k = 0; k < dist.size(); ++k) {
-          data_size_t a = dist[k].first;
-          double curr_dist = dist[k].second;
-          if (label_[a] == i) {
-            if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
-              S[i][j] += num_j - 0.5 * num_current_j;  // members of class j with same distance as a contribute 0.5
+        if (weights_ == nullptr) {
+          for (size_t k = 0; k < dist.size(); ++k) {
+            data_size_t a = dist[k].first;
+            double curr_dist = dist[k].second;
+            if (label_[a] == i) {
+              if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
+                S[i][j] += num_j - 0.5 * num_current_j;  // members of class j with same distance as a contribute 0.5
+              } else {
+                S[i][j] += num_j;
+              }
             } else {
-              S[i][j] += num_j;
+              ++num_j;
+              if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
+                ++num_current_j;
+              } else {
+                last_j_dist = dist[k].second;
+                num_current_j = 1;
+              }
             }
-          } else {
-            ++num_j;
-            if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
-              ++num_current_j;
+          }
+        } else {
+          for (size_t k = 0; k < dist.size(); ++k) {
+            data_size_t a = dist[k].first;
+            double curr_dist = dist[k].second;
+            double curr_weight = weights_[a];
+            if (label_[a] == i) {
+              if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
+                S[i][j] += curr_weight * (num_j - 0.5 * num_current_j);  // members of class j with same distance as a contribute 0.5
+              } else {
+                S[i][j] += curr_weight * num_j;
+              }
             } else {
-              last_j_dist = dist[k].second;
-              num_current_j = 1;
+              num_j += curr_weight;
+              if (std::fabs(curr_dist - last_j_dist) < kEpsilon) {
+                num_current_j += curr_weight;
+              } else {
+                last_j_dist = dist[k].second;
+                num_current_j = curr_weight;
+              }
             }
           }
         }
@@ -282,15 +325,18 @@ class AucMuMetric : public Metric {
       }
       i_start += class_sizes[i];
     }
-
     double ans = 0;
     for (int i = 0; i < num_class_; ++i) {
       for (int j = i + 1; j < num_class_; ++j) {
-        ans += (S[i][j] / class_sizes[i]) / class_sizes[j];
+        if (weights_ == nullptr) {
+          ans += (S[i][j] / class_sizes[i]) / class_sizes[j];
+        } else {
+          ans += (S[i][j] / class_data_weights[i]) / class_data_weights[j];
+        }
       }
     }
-    ans = (2 * ans / num_class_) / (num_class_ - 1);
-    return std::vector<double>(1, ans);
+    ans = (2.0 * ans / num_class_) / (num_class_ - 1);
+    return std::vector<double>(1.0, ans);
   }
 
  private:
@@ -304,6 +350,10 @@ class AucMuMetric : public Metric {
   int num_class_;
   /*! \brief class_weights*/
   std::vector<std::vector<double>> class_weights_;
+  /*! \brief Data weights */
+  const label_t* weights_;
+  /*! \brief Sum of data weights */
+  double sum_weights_;
   /*! \brief config parameters*/
   Config config_;
   /*! \brief index to data, sorted by true class*/

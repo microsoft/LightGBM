@@ -495,6 +495,7 @@ class TestEngine(unittest.TestCase):
                   valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
         self.assertAlmostEqual(results['training']['multi_error@2'][-1], 0)
 
+
     def test_auc_mu(self):
         # should give same result as binary auc for 2 classes
         X, y = load_digits(n_class=10, return_X_y=True)
@@ -526,6 +527,23 @@ class TestEngine(unittest.TestCase):
         results_auc_mu = {}
         lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
         self.assertAlmostEqual(results_auc_mu['training']['auc_mu'][-1], 0.5)
+        # test that weighted data gives different auc_mu
+        lgb_X = lgb.Dataset(X, label=y)
+        lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.abs(np.random.normal(size=y.shape)))
+        results_unweighted = {}
+        results_weighted = {}
+        params = dict(params, num_classes=10, num_leaves=5)
+        lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_unweighted)
+        lgb.train(params, lgb_X_weighted, num_boost_round=10, valid_sets=[lgb_X_weighted],
+                  evals_result=results_weighted)
+        self.assertLess(results_weighted['training']['auc_mu'][-1], 1)
+        self.assertNotEqual(results_unweighted['training']['auc_mu'][-1], results_weighted['training']['auc_mu'][-1])
+        # test that equal data weights give same auc_mu as unweighted data
+        lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.ones(y.shape) * 0.5)
+        lgb.train(params, lgb_X_weighted, num_boost_round=10, valid_sets=[lgb_X_weighted],
+                  evals_result=results_weighted)
+        self.assertAlmostEqual(results_unweighted['training']['auc_mu'][-1], results_weighted['training']['auc_mu'][-1],
+                               places=5)
         # should give 1 when accuracy = 1
         X = X[:10, :]
         y = y[:10]
@@ -538,7 +556,7 @@ class TestEngine(unittest.TestCase):
         results = {}
         lgb.train(params, lgb_X, num_boost_round=100, valid_sets=[lgb_X], evals_result=results)
         self.assertAlmostEqual(results['training']['auc_mu'][-1], 1)
-        # test loading weights
+        # test loading class weights
         Xy = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                      '../../examples/multiclass_classification/multiclass.train'))
         y = Xy[:, 0]
