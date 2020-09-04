@@ -165,5 +165,5 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-    - name: check that all tests succeeded
+    - name: note that all tests succeeded
       run: echo "🎉"
