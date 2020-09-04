@@ -160,3 +160,9 @@ jobs:
           $env:TASK = "${{ matrix.task }}"
           conda init powershell
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
+  allgood:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+    - name: echo allgood
+      run: echo "allgood"
