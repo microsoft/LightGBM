@@ -270,7 +270,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   return tree.release();
 }
 
-Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) {
+Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
   auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
   CHECK_GE(data_partition_->num_leaves(), tree->num_leaves());
   OMP_INIT_EX();
@@ -323,7 +323,8 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
   return tree.release();
 }
 
-Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred, const score_t* gradients, const score_t *hessians) {
+Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
+                                           const score_t* gradients, const score_t *hessians) const {
   data_partition_->ResetByLeafPred(leaf_pred, old_tree->num_leaves());
   return FitByExistingTree(old_tree, gradients, hessians);
 }
@@ -862,7 +863,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
   *split = bests[best_idx];
 }
 
-void SerialTreeLearner::GetLeafMap(Tree* tree) {
+void SerialTreeLearner::GetLeafMap(Tree* tree) const {
   std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
   // map data to leaf number
   const data_size_t* ind = data_partition_->indices();
@@ -877,12 +878,12 @@ void SerialTreeLearner::GetLeafMap(Tree* tree) {
 
 #ifdef LGB_R_BUILD
 template<bool HAS_NAN>
-void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) {
+void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const {
   Log::Fatal("Linear tree learner does not work with R package.");
 }
 #else
 template<bool HAS_NAN>
-void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) {
+void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const {
   tree->SetIsLinear(true);
   int num_leaves = tree->num_leaves();
   int num_threads = OMP_NUM_THREADS();

@@ -79,15 +79,15 @@ class SerialTreeLearner: public TreeLearner {
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
 
   /*! \brief Create array mapping dataset to leaf index, used for linear trees */
-  void GetLeafMap(Tree* tree);
+  void GetLeafMap(Tree* tree) const;
 
   template<bool HAS_NAN>
-  void CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree);
+  void CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const;
 
-  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) override;
+  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
-                          const score_t* gradients, const score_t* hessians) override;
+                          const score_t* gradients, const score_t* hessians) const override;
 
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
     if (subset == nullptr) {
@@ -287,16 +287,16 @@ class SerialTreeLearner: public TreeLearner {
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
   /*! \brief whether numerical features contain any nan values, used for linear model */
-  std::vector<int8_t> contains_nan_;
+  mutable std::vector<int8_t> contains_nan_;
   /*! whether any numerical feature contains a nan value, used for linear model */
-  bool any_nan_;
+  mutable bool any_nan_;
   /*! \brief map dataset to leaves, used for linear model */
-  std::vector<int> leaf_map_;
+  mutable std::vector<int> leaf_map_;
   /*! \brief temporary storage for calculating linear model */
-  std::vector<std::vector<float>> XTHX_;
-  std::vector<std::vector<float>> XTg_;
-  std::vector<std::vector<std::vector<float>>> XTHX_by_thread_;
-  std::vector<std::vector<std::vector<float>>> XTg_by_thread_;
+  mutable std::vector<std::vector<float>> XTHX_;
+  mutable std::vector<std::vector<float>> XTg_;
+  mutable std::vector<std::vector<std::vector<float>>> XTHX_by_thread_;
+  mutable std::vector<std::vector<std::vector<float>>> XTg_by_thread_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {
