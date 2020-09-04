@@ -1,5 +1,43 @@
 # CRAN Submission History
 
+## v3.0.0 - Submission 3 - (August 29, 2020)
+
+### CRAN response
+
+* Please write references in the description of the DESCRIPTION file in
+the form
+  - authors (year) doi:...
+  - authors (year) arXiv:...
+  - authors (year, ISBN:...)
+* if those are not available: authors (year) https:... with no space after 'doi:', 'arXiv:', 'https:' and angle brackets for auto-linking.
+* (If you want to add a title as well please put it in quotes: "Title")
+
+* \dontrun{} should only be used if the example really cannot be executed (e.g. because of missing additional software, missing API keys, ...) by the user. That's why wrapping examples in \dontrun{} adds the comment ("# Not run:") as a warning for the user. Does not seem necessary. Please unwrap the examples if they are executable in < 5 sec, or replace
+\dontrun{} with \donttest{}.
+
+* Please do not modify the global environment (e.g. by using <<-) in your
+functions. This is not allowed by the CRAN policies.
+
+* Please always add all authors, contributors and copyright holders in the Authors@R field with the appropriate roles. From CRAN policies you agreed to: "The ownership of copyright and intellectual property rights of all components of the package must be clear and unambiguous (including from the authors specification in the DESCRIPTION file). Where code is copied (or derived) from the work of others (including from R itself), care must be taken that any copyright/license statements are preserved and authorship is not misrepresented." e.g.: Microsoft Corporation, Dropbox Inc. Please explain in the submission comments what you did about this issue.
+
+Please fix and resubmit
+
+### Maintainer Notes
+
+responded to CRAN with the following:
+
+The paper citation has been adjusted as requested. We were using 'glmnet' as a  guide on how to include the URL but maybe they are no longer in compliance with CRAN policies: https://github.com/cran/glmnet/blob/b1a4b50de01e0cd24343959d7cf86452bac17b26/DESCRIPTION
+
+All authors from the original LightGBM paper have been added to Authors@R as `"aut"`. We have also added Microsoft and DropBox, Inc. as `"cph"` (copyright holders). These roles were chosen based on the guidance in https://journal.r-project.org/archive/2012-1/RJournal_2012-1_Hornik~et~al.pdf.
+
+lightgbm's code does use `<<-`, but it does not modify the global environment.  The uses of `<<-` in R/lgb.interprete.R and R/callback.R are in functions which are called in an environment created by the lightgbm functions that call them, and this operator is used to reach one level up into the calling function's environment.
+
+We chose to wrap our examples in `\dontrun{}` because we found, through testing on https://builder.r-hub.io/ and in our own continuous integration environments, that their run time varies a lot between platforms, and we cannot guarantee that all examples will run in under 5 seconds. We intentionally chose `\dontrun{}` over `\donttest{}` because this item in the R 4.0.0 changelog (https://cran.r-project.org/doc/manuals/r-devel/NEWS.html) seems to indicate that \donttest will be ignored by CRAN's automated checks:
+
+> "`R CMD check --as-cran` now runs \donttest examples (which are run by example()) instead of instructing the tester to do so. This can be temporarily circumvented during development by setting environment variable `_R_CHECK_DONTTEST_EXAMPLES_` to a false value."
+
+We run all examples with `R CMD check --as-cran --run-dontrun` in our continuous integration tests on every commit to the package, so we have high confidence that they are working correctly.
+
 ## v3.0.0 - Submission 2 - (August 28, 2020)
 
 ### CRAN response
