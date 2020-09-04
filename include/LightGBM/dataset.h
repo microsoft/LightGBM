@@ -695,15 +695,6 @@ class Dataset {
   /*! \brief Set has_raw_ */
   inline void SetHasRaw(bool has_raw) { has_raw_ = has_raw; }
 
-  /*! \brief Get size of raw data */
-  inline data_size_t get_raw_size() const {
-    if (raw_data_.size() == 0) {
-      return 0;
-    } else {
-      return raw_data_[0].size();
-    }
-  }
-
   /*! \brief Resize raw_data_, use current number of featurse */
   inline void ResizeRaw(int num_rows) {
     if (static_cast<int>(raw_data_.size()) > num_numeric_features_) {

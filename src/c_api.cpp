@@ -952,7 +952,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
   if (p_dataset->has_raw()) {
-    p_dataset->ResizeRaw(p_dataset->get_raw_size() + nrow);
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
@@ -985,7 +985,7 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
   if (p_dataset->has_raw()) {
-    p_dataset->ResizeRaw(p_dataset->get_raw_size() + nrow);
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
