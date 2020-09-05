@@ -11,7 +11,6 @@
 int main(int argc, char** argv) {
   bool success = false;
   try {
-
     LightGBM::Application app(argc, argv);
     app.Run();
 
