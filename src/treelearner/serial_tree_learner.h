@@ -287,9 +287,9 @@ class SerialTreeLearner: public TreeLearner {
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
   /*! \brief whether numerical features contain any nan values, used for linear model */
-  mutable std::vector<int8_t> contains_nan_;
+  std::vector<int8_t> contains_nan_;
   /*! whether any numerical feature contains a nan value, used for linear model */
-  mutable bool any_nan_;
+  bool any_nan_;
   /*! \brief map dataset to leaves, used for linear model */
   mutable std::vector<int> leaf_map_;
   /*! \brief temporary storage for calculating linear model */
