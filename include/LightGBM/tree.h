@@ -320,10 +320,6 @@ class Tree {
     is_linear_ = is_linear;
   }
 
-  inline bool has_nan() const { return data_has_nan_; }
-
-  inline void SetNan(bool has_nan) { data_has_nan_ = has_nan; }
-
  private:
   std::string NumericalDecisionIfElse(int node) const;
 
@@ -531,8 +527,6 @@ class Tree {
   std::vector<std::vector<int>> leaf_features_;
   /* \brief features used in leaf linear models; indexing is relative to used_features_ */
   std::vector<std::vector<int>> leaf_features_inner_;
-  /* \brief whether training data has any nans in numerical features of this tree */
-  bool data_has_nan_;
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,

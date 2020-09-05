@@ -107,7 +107,17 @@ class SerialTreeLearner: public TreeLearner {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     if (tree->is_linear()) {
       CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
-      if (tree->has_nan()) {
+      bool has_nan = false;
+      if (any_nan_) {
+        for (int i = 0; i < tree->num_leaves() - 1 ; ++i) {
+          // use split_feature because split_feature_inner doesn't work when refitting existing tree
+          if (contains_nan_[train_data_->InnerFeatureIndex(tree->split_feature(i))]) {
+            has_nan = true;
+            break;
+          }
+        }
+      }
+      if (has_nan) {
         AddPredictionToScoreInner<true>(tree, out_score);
       } else {
         AddPredictionToScoreInner<false>(tree, out_score);

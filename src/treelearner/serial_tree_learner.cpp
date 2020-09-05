@@ -905,7 +905,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   // the subscript _T denotes the transpose
 
   // create array of pointers to raw data, and coefficient matrices, for each leaf
-  bool data_has_nan = false;
   std::vector<std::vector<int>> leaf_features;
   std::vector<int> leaf_num_features;
   std::vector<std::vector<const float*>> raw_data_ptr;
@@ -1070,9 +1069,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
           coeffs_vec.push_back(coeffs(i));
           int feat = leaf_features[leaf_num][i];
           features_new.push_back(feat);
-          if (contains_nan_[feat]) {
-            data_has_nan = true;
-          }
         }
       }
     }
@@ -1090,7 +1086,6 @@ void SerialTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     } else {
       tree->SetLeafConst(leaf_num, coeffs(num_feat));
     }
-    tree->SetNan(data_has_nan);
   }
 }
 #endif  // LGB_R_BUILD
