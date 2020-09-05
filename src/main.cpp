@@ -12,15 +12,7 @@ int main(int argc, char** argv) {
   bool success = false;
   try {
 
-
-    // code from: https://stackoverflow.com/a/43373070
-    std::vector<char*> argv_new(argv, argv + argc);
-    argv_new.push_back("config=c:\\cpp_code\\lgb_pw\\train_test.conf");
-    argv_new.push_back(nullptr);
-    LightGBM::Application app(argc + 1, &argv_new[0]);
-
-
-//    LightGBM::Application app(argc, argv);
+    LightGBM::Application app(argc, argv);
     app.Run();
 
 #ifdef USE_MPI
