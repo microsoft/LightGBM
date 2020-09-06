@@ -20,6 +20,7 @@ from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOu
                                  RegressorChain)
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
+from sklearn.utils.validation import check_is_fitted
 
 
 decreasing_generator = itertools.count(0, -1)
@@ -607,6 +608,41 @@ class TestSklearn(unittest.TestCase):
                           np.testing.assert_allclose,
                           res_engine, res_sklearn_params)
 
+        # Tests start_iteration
+        # Tests same probabilities, starting from iteration 10
+        res_engine = gbm.predict(X_test, start_iteration=10)
+        res_sklearn = clf.predict_proba(X_test, start_iteration=10)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests same predictions, starting from iteration 10
+        res_engine = np.argmax(gbm.predict(X_test, start_iteration=10), axis=1)
+        res_sklearn = clf.predict(X_test, start_iteration=10)
+        np.testing.assert_equal(res_engine, res_sklearn)
+
+        # Tests same raw scores, starting from iteration 10
+        res_engine = gbm.predict(X_test, raw_score=True, start_iteration=10)
+        res_sklearn = clf.predict(X_test, raw_score=True, start_iteration=10)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests same leaf indices, starting from iteration 10
+        res_engine = gbm.predict(X_test, pred_leaf=True, start_iteration=10)
+        res_sklearn = clf.predict(X_test, pred_leaf=True, start_iteration=10)
+        np.testing.assert_equal(res_engine, res_sklearn)
+
+        # Tests same feature contributions, starting from iteration 10
+        res_engine = gbm.predict(X_test, pred_contrib=True, start_iteration=10)
+        res_sklearn = clf.predict(X_test, pred_contrib=True, start_iteration=10)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests other parameters for the prediction works, starting from iteration 10
+        res_engine = gbm.predict(X_test, start_iteration=10)
+        res_sklearn_params = clf.predict_proba(X_test,
+                                               pred_early_stop=True,
+                                               pred_early_stop_margin=1.0, start_iteration=10)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_allclose,
+                          res_engine, res_sklearn_params)
+
     def test_evaluate_train_set(self):
         X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -826,7 +862,7 @@ class TestSklearn(unittest.TestCase):
         # custom metric for custom objective
         gbm = lgb.LGBMRegressor(objective=custom_dummy_obj,
                                 **params).fit(eval_metric=constant_metric, **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
         self.assertIn('error', gbm.evals_result_['training'])
 
         # non-default regression metric with custom metric for custom objective
@@ -884,6 +920,43 @@ class TestSklearn(unittest.TestCase):
         gbm = lgb.LGBMClassifier(objective=custom_dummy_obj,
                                  **params).fit(eval_metric='multi_logloss', **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+
+    def test_multiple_eval_metrics(self):
+
+        X, y = load_breast_cancer(return_X_y=True)
+
+        params = {'n_estimators': 2, 'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
+        params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
+
+        # Verify that can receive a list of metrics, only callable
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[constant_metric, decreasing_metric], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('error', gbm.evals_result_['training'])
+        self.assertIn('decreasing_metric', gbm.evals_result_['training'])
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+
+        # Verify that can receive a list of custom and built-in metrics
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[constant_metric, decreasing_metric, 'fair'], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 4)
+        self.assertIn('error', gbm.evals_result_['training'])
+        self.assertIn('decreasing_metric', gbm.evals_result_['training'])
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+        self.assertIn('fair', gbm.evals_result_['training'])
+
+        # Verify that works as expected when eval_metric is empty
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=[], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+
+        # Verify that can receive a list of metrics, only built-in
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=['fair', 'error'], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+
+        # Verify that eval_metric is robust to receiving a list with None
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric=['fair', 'error', None], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
         self.assertIn('binary_logloss', gbm.evals_result_['training'])
 
     def test_inf_handle(self):
@@ -1056,3 +1129,23 @@ class TestSklearn(unittest.TestCase):
         self.assertEqual(len(init_gbm.evals_result_['valid_0']['multi_logloss']), 5)
         self.assertLess(gbm.evals_result_['valid_0']['multi_logloss'][-1],
                         init_gbm.evals_result_['valid_0']['multi_logloss'][-1])
+
+    # sklearn < 0.22 requires passing "attributes" argument
+    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    def test_check_is_fitted(self):
+        X, y = load_digits(n_class=2, return_X_y=True)
+        est = lgb.LGBMModel(n_estimators=5, objective="binary")
+        clf = lgb.LGBMClassifier(n_estimators=5)
+        reg = lgb.LGBMRegressor(n_estimators=5)
+        rnk = lgb.LGBMRanker(n_estimators=5)
+        models = (est, clf, reg, rnk)
+        for model in models:
+            self.assertRaises(lgb.compat.LGBMNotFittedError,
+                              check_is_fitted,
+                              model)
+        est.fit(X, y)
+        clf.fit(X, y)
+        reg.fit(X, y)
+        rnk.fit(X, y, group=np.ones(X.shape[0]))
+        for model in models:
+            check_is_fitted(model)

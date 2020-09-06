@@ -55,9 +55,9 @@ def train(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
 
-    feval : callable or None, optional (default=None)
+    feval : callable, list of callable functions or None, optional (default=None)
         Customized evaluation function.
-        Should accept two parameters: preds, train_data,
+        Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
             preds : list or numpy 1-D array
@@ -128,6 +128,7 @@ def train(params, train_set, num_boost_round=100,
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
+        When your model is very large and cause the memory error, you can try to set this param to ``True`` to avoid the model conversion performed during the internal call of ``model_to_string``.
         You can still use _InnerPredictor as ``init_model`` for future continue training.
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
@@ -442,9 +443,9 @@ def cv(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
 
-    feval : callable or None, optional (default=None)
+    feval : callable, list of callable functions or None, optional (default=None)
         Customized evaluation function.
-        Should accept two parameters: preds, train_data,
+        Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
             preds : list or numpy 1-D array

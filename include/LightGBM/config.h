@@ -686,6 +686,12 @@ struct Config {
 
   // [no-save]
   // desc = used only in ``prediction`` task
+  // desc = used to specify from which iteration to start the prediction
+  // desc = ``<= 0`` means from the first iteration
+  int start_iteration_predict = 0;
+
+  // [no-save]
+  // desc = used only in ``prediction`` task
   // desc = used to specify how many trained iterations will be used in prediction
   // desc = ``<= 0`` means no limit
   int num_iteration_predict = -1;

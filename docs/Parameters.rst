@@ -767,6 +767,14 @@ Dataset Parameters
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~
 
+-  ``start_iteration_predict`` :raw-html:`<a id="start_iteration_predict" title="Permalink to this parameter" href="#start_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+
+   -  used only in ``prediction`` task
+
+   -  used to specify from which iteration to start the prediction
+
+   -  ``<= 0`` means from the first iteration
+
 -  ``num_iteration_predict`` :raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" href="#num_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
    -  used only in ``prediction`` task

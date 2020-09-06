@@ -18,6 +18,7 @@
 #' and silently returns a processed data.table with \code{top_n} features sorted by defined importance.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -37,6 +38,7 @@
 #'
 #' tree_imp <- lgb.importance(model, percentage = TRUE)
 #' lgb.plot.importance(tree_imp, top_n = 5L, measure = "Gain")
+#' }
 #' @importFrom graphics barplot par
 #' @export
 lgb.plot.importance <- function(tree_imp,

@@ -186,7 +186,7 @@ Dataset <- R6::R6Class(
       if (!is.null(private$reference)) {
         ref_handle <- private$reference$.__enclos_env__$private$get_handle()
       }
-      handle <- NA_real_
+      handle <- lgb.null.handle()
 
       # Not subsetting
       if (is.null(private$used_indices)) {
@@ -725,6 +725,7 @@ Dataset <- R6::R6Class(
 #' @return constructed dataset
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -732,7 +733,7 @@ Dataset <- R6::R6Class(
 #' lgb.Dataset.save(dtrain, data_file)
 #' dtrain <- lgb.Dataset(data_file)
 #' lgb.Dataset.construct(dtrain)
-#'
+#' }
 #' @export
 lgb.Dataset <- function(data,
                         params = list(),
@@ -770,13 +771,14 @@ lgb.Dataset <- function(data,
 #' @return constructed dataset
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#'
+#' }
 #' @export
 lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 
@@ -796,11 +798,12 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 #' @param dataset Object of class \code{lgb.Dataset}
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' lgb.Dataset.construct(dtrain)
-#'
+#' }
 #' @export
 lgb.Dataset.construct <- function(dataset) {
 
@@ -826,6 +829,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' be directly used with an \code{lgb.Dataset} object.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -833,7 +837,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' stopifnot(nrow(dtrain) == nrow(train$data))
 #' stopifnot(ncol(dtrain) == ncol(train$data))
 #' stopifnot(all(dim(dtrain) == dim(train$data)))
-#'
+#' }
 #' @rdname dim
 #' @export
 dim.lgb.Dataset <- function(x, ...) {
@@ -860,6 +864,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #' Since row names are irrelevant, it is recommended to use \code{colnames} directly.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -868,7 +873,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #' colnames(dtrain)
 #' colnames(dtrain) <- make.names(seq_len(ncol(train$data)))
 #' print(dtrain, verbose = TRUE)
-#'
+#' }
 #' @rdname dimnames.lgb.Dataset
 #' @export
 dimnames.lgb.Dataset <- function(x) {
@@ -932,6 +937,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' @return constructed sub dataset
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -939,7 +945,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' dsub <- lightgbm::slice(dtrain, seq_len(42L))
 #' lgb.Dataset.construct(dsub)
 #' labels <- lightgbm::getinfo(dsub, "label")
-#'
+#' }
 #' @export
 slice <- function(dataset, ...) {
   UseMethod("slice")
@@ -978,6 +984,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' }
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -988,7 +995,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #'
 #' labels2 <- lightgbm::getinfo(dtrain, "label")
 #' stopifnot(all(labels2 == 1 - labels))
-#'
+#' }
 #' @export
 getinfo <- function(dataset, ...) {
   UseMethod("getinfo")
@@ -1031,6 +1038,7 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #' }
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1041,7 +1049,7 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #'
 #' labels2 <- lightgbm::getinfo(dtrain, "label")
 #' stopifnot(all.equal(labels2, 1 - labels))
-#'
+#' }
 #' @export
 setinfo <- function(dataset, ...) {
   UseMethod("setinfo")
@@ -1071,6 +1079,7 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' @return passed dataset
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1078,7 +1087,7 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' lgb.Dataset.save(dtrain, data_file)
 #' dtrain <- lgb.Dataset(data_file)
 #' lgb.Dataset.set.categorical(dtrain, 1L:2L)
-#'
+#' }
 #' @rdname lgb.Dataset.set.categorical
 #' @export
 lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
@@ -1102,6 +1111,7 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #' @return passed dataset
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package ="lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1109,7 +1119,7 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset(test$data, test = train$label)
 #' lgb.Dataset.set.reference(dtest, dtrain)
-#'
+#' }
 #' @rdname lgb.Dataset.set.reference
 #' @export
 lgb.Dataset.set.reference <- function(dataset, reference) {
@@ -1133,10 +1143,12 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @return passed dataset
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' lgb.Dataset.save(dtrain, tempfile(fileext = ".bin"))
+#' }
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
 
