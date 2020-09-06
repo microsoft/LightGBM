@@ -2,6 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 from __future__ import absolute_import
 
+import copy
 import warnings
 
 import numpy as np
@@ -388,9 +389,10 @@ class LGBMModel(_LGBMModelBase):
             Init score of eval data.
         eval_group : list of arrays or None, optional (default=None)
             Group data of eval data.
-        eval_metric : string, list of strings, callable or None, optional (default=None)
+        eval_metric : string, callable, list or None, optional (default=None)
             If string, it should be a built-in evaluation metric to use.
             If callable, it should be a custom evaluation metric, see note below for more details.
+            If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
             In either case, the ``metric`` from the model parameters will be evaluated and used as well.
             Default: 'l2' for LGBMRegressor, 'logloss' for LGBMClassifier, 'ndcg' for LGBMRanker.
         early_stopping_rounds : int or None, optional (default=None)
@@ -500,29 +502,36 @@ class LGBMModel(_LGBMModelBase):
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
-        if callable(eval_metric):
-            feval = _EvalFunctionWrapper(eval_metric)
-        else:
-            feval = None
-            # register default metric for consistency with callable eval_metric case
-            original_metric = self._objective if isinstance(self._objective, string_type) else None
-            if original_metric is None:
-                # try to deduce from class instance
-                if isinstance(self, LGBMRegressor):
-                    original_metric = "l2"
-                elif isinstance(self, LGBMClassifier):
-                    original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
-                elif isinstance(self, LGBMRanker):
-                    original_metric = "ndcg"
-            # overwrite default metric by explicitly set metric
-            for metric_alias in _ConfigAliases.get("metric"):
-                if metric_alias in params:
-                    original_metric = params.pop(metric_alias)
-            # concatenate metric from params (or default if not provided in params) and eval_metric
-            original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
-            eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
-            params['metric'] = [e for e in eval_metric if e not in original_metric] + original_metric
-            params['metric'] = [metric for metric in params['metric'] if metric is not None]
+        # Do not modify original args in fit function
+        # Refer to https://github.com/microsoft/LightGBM/pull/2619
+        eval_metric_list = copy.deepcopy(eval_metric)
+        if not isinstance(eval_metric_list, list):
+            eval_metric_list = [eval_metric_list]
+
+        # Separate built-in from callable evaluation metrics
+        eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
+        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, string_type)]
+
+        # register default metric for consistency with callable eval_metric case
+        original_metric = self._objective if isinstance(self._objective, string_type) else None
+        if original_metric is None:
+            # try to deduce from class instance
+            if isinstance(self, LGBMRegressor):
+                original_metric = "l2"
+            elif isinstance(self, LGBMClassifier):
+                original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
+            elif isinstance(self, LGBMRanker):
+                original_metric = "ndcg"
+
+        # overwrite default metric by explicitly set metric
+        for metric_alias in _ConfigAliases.get("metric"):
+            if metric_alias in params:
+                original_metric = params.pop(metric_alias)
+
+        # concatenate metric from params (or default if not provided in params) and eval_metric
+        original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
+        params['metric'] = [e for e in eval_metrics_builtin if e not in original_metric] + original_metric
+        params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
         if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
@@ -595,7 +604,7 @@ class LGBMModel(_LGBMModelBase):
         self._Booster = train(params, train_set,
                               self.n_estimators, valid_sets=valid_sets, valid_names=eval_names,
                               early_stopping_rounds=early_stopping_rounds,
-                              evals_result=evals_result, fobj=self._fobj, feval=feval,
+                              evals_result=evals_result, fobj=self._fobj, feval=eval_metrics_callable,
                               verbose_eval=verbose, feature_name=feature_name,
                               callbacks=callbacks, init_model=init_model)
 
@@ -607,12 +616,14 @@ class LGBMModel(_LGBMModelBase):
 
         self._best_score = self._Booster.best_score
 
+        self.fitted_ = True
+
         # free dataset
         self._Booster.free_dataset()
         del train_set, valid_sets
         return self
 
-    def predict(self, X, raw_score=False, start_iteration=None, num_iteration=None,
+    def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
         """Return the predicted value for each sample.
 
@@ -622,13 +633,14 @@ class LGBMModel(_LGBMModelBase):
             Input features matrix.
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
-        start_iteration : int or None, optional (default=None)
+        start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
-            If None or <= 0, starts from the first iteration.
+            If <= 0, starts from the first iteration.
         num_iteration : int or None, optional (default=None)
-            Limit number of iterations in the prediction.
-            If None, if the best iteration exists, it is used; otherwise, all trees are used.
-            If <= 0, all trees are used (no limits).
+            Total number of iterations used in the prediction.
+            If None, if the best iteration exists and start_iteration <= 0, the best iteration is used;
+            otherwise, all iterations from ``start_iteration`` are used (no limits).
+            If <= 0, all iterations from ``start_iteration`` are used (no limits).
         pred_leaf : bool, optional (default=False)
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)
@@ -760,8 +772,12 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         return self
 
     _base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]
-                   + _base_doc[_base_doc.find('eval_init_score :'):])
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('eval_set :'):])
+    _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
+                 + _base_doc[_base_doc.find('eval_init_score :'):])
+    fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
+                   + _base_doc[_base_doc.find('eval_metric :'):])
 
 
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
@@ -833,9 +849,13 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                                         callbacks=callbacks, init_model=init_model)
         return self
 
-    fit.__doc__ = LGBMModel.fit.__doc__
+    _base_doc = LGBMModel.fit.__doc__
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('eval_set :'):])
+    fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
+                   + _base_doc[_base_doc.find('eval_metric :'):])
 
-    def predict(self, X, raw_score=False, start_iteration=None, num_iteration=None,
+    def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
         """Docstring is inherited from the LGBMModel."""
         result = self.predict_proba(X, raw_score, start_iteration, num_iteration,
@@ -848,7 +868,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     predict.__doc__ = LGBMModel.predict.__doc__
 
-    def predict_proba(self, X, raw_score=False, start_iteration=None, num_iteration=None,
+    def predict_proba(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                       pred_leaf=False, pred_contrib=False, **kwargs):
         """Return the predicted probability for each class for each sample.
 
@@ -858,13 +878,14 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             Input features matrix.
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
-        start_iteration : int or None, optional (default=None)
+        start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
-            If None or <= 0, starts from the first iteration.
+            If <= 0, starts from the first iteration.
         num_iteration : int or None, optional (default=None)
-            Limit number of iterations in the prediction.
-            If None, if the best iteration exists, it is used; otherwise, all trees are used.
-            If <= 0, all trees are used (no limits).
+            Total number of iterations used in the prediction.
+            If None, if the best iteration exists and start_iteration <= 0, the best iteration is used;
+            otherwise, all iterations from ``start_iteration`` are used (no limits).
+            If <= 0, all iterations from ``start_iteration`` are used (no limits).
         pred_leaf : bool, optional (default=False)
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)

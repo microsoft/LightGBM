@@ -115,3 +115,12 @@ test_that("lgb.check.eval adds eval to metric in params if a list is provided", 
     expect_named(params, "metric")
     expect_identical(params[["metric"]], list("auc", "binary_error", "binary_logloss"))
 })
+
+test_that("lgb.check.eval drops duplicate metrics and preserves order", {
+    params <- lgb.check.eval(
+        params = list(metric = "l1")
+        , eval = list("l2", "rmse", "l1", "rmse")
+    )
+    expect_named(params, "metric")
+    expect_identical(params[["metric"]], list("l1", "l2", "rmse"))
+})

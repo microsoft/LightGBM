@@ -17,6 +17,12 @@ if test -d ${TEMP_R_DIR}; then
 fi
 mkdir -p ${TEMP_R_DIR}
 
+CURRENT_DATE=$(date +'%Y-%m-%d')
+
+# R packages cannot have versions like 3.0.0rc1, but
+# 3.0.0-1 is acceptable
+LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
+
 # move relevant files
 cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
@@ -30,12 +36,19 @@ cd ${TEMP_R_DIR}
     rm -r src/cmake/
     rm -r inst/
     rm -r pkgdown/
+    rm cran-comments.md
     rm AUTOCONF_UBUNTU_VERSION
     rm recreate-configure.sh
 
     # main.cpp is used to make the lightgbm CLI, unnecessary
     # for the R package
     rm src/main.cpp
+
+    # configure.ac and DESCRIPTION have placeholders for version
+    # and date so they don't have to be updated manually
+    sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" configure.ac
+    sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" DESCRIPTION
+    sed -i.bak -e "s/~~DATE~~/${CURRENT_DATE}/" DESCRIPTION
 
     # Remove 'region' and 'endregion' pragmas. This won't change
     # the correctness of the code. CRAN does not allow you

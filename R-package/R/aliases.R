@@ -108,3 +108,17 @@
     )
     return(c(learning_params, .DATASET_PARAMETERS()))
 }
+
+# [description]
+#     Per https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst#metric,
+#     a few different strings can be used to indicate "no metrics".
+# [returns]
+#     A character vector
+.NO_METRIC_STRINGS <- function() {
+    return(c(
+        "na"
+        , "None"
+        , "null"
+        , "custom"
+    ))
+}

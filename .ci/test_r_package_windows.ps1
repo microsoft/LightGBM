@@ -74,6 +74,10 @@ $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_MIKTEX_ARCHIVE = "$env:CTAN_MIRROR/setup/windows-x64/"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
+# hack to get around this:
+# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
+$env:_R_CHECK_SYSTEM_CLOCK_ = 0
+
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
@@ -158,8 +162,14 @@ if ($env:COMPILER -ne "MSVC") {
     cd "C:\$R_CMD_CHECK_DIR\"
   }
 
-  Write-Output "Running R CMD check as CRAN"
-  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-dontrun', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
+  Write-Output "Running R CMD check"
+  if ($env:R_BUILD_TYPE -eq "cran") {
+    # CRAN packages must pass without --no-multiarch (build on 64-bit and 32-bit)
+    $check_args = "c('CMD', 'check', '--as-cran', '--run-dontrun', '$PKG_FILE_NAME')"
+  } else {
+    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-dontrun', '$PKG_FILE_NAME')"
+  }
+  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"

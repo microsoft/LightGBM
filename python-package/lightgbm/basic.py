@@ -2813,7 +2813,7 @@ class Booster(object):
                                                           default=json_default_with_numpy))
         return ret
 
-    def predict(self, data, start_iteration=None, num_iteration=None,
+    def predict(self, data, start_iteration=0, num_iteration=None,
                 raw_score=False, pred_leaf=False, pred_contrib=False,
                 data_has_header=False, is_reshape=True, **kwargs):
         """Make a prediction.
@@ -2823,14 +2823,14 @@ class Booster(object):
         data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
-        start_iteration : int or None, optional (default=None)
+        start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
-            If None or <= 0, starts from the first iteration.
+            If <= 0, starts from the first iteration.
         num_iteration : int or None, optional (default=None)
-            Limit number of iterations in the prediction.
-            If None, if the best iteration exists and start_iteration is None or <= 0, the best iteration is used;
-            otherwise, all iterations from start_iteration are used.
-            If <= 0, all iterations from start_iteration are used (no limits).
+            Total number of iterations used in the prediction.
+            If None, if the best iteration exists and start_iteration <= 0, the best iteration is used;
+            otherwise, all iterations from ``start_iteration`` are used (no limits).
+            If <= 0, all iterations from ``start_iteration`` are used (no limits).
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
         pred_leaf : bool, optional (default=False)
@@ -2861,10 +2861,8 @@ class Booster(object):
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
         predictor = self._to_predictor(copy.deepcopy(kwargs))
-        if start_iteration is None or start_iteration < 0:
-            start_iteration = 0
         if num_iteration is None:
-            if start_iteration == 0:
+            if start_iteration <= 0:
                 num_iteration = self.best_iteration
             else:
                 num_iteration = -1
@@ -3113,18 +3111,23 @@ class Booster(object):
             for i in range_(self.__num_inner_eval):
                 ret.append((data_name, self.__name_inner_eval[i],
                             result[i], self.__higher_better_inner_eval[i]))
+        if callable(feval):
+            feval = [feval]
         if feval is not None:
             if data_idx == 0:
                 cur_data = self.train_set
             else:
                 cur_data = self.valid_sets[data_idx - 1]
-            feval_ret = feval(self.__inner_predict(data_idx), cur_data)
-            if isinstance(feval_ret, list):
-                for eval_name, val, is_higher_better in feval_ret:
+            for eval_function in feval:
+                if eval_function is None:
+                    continue
+                feval_ret = eval_function(self.__inner_predict(data_idx), cur_data)
+                if isinstance(feval_ret, list):
+                    for eval_name, val, is_higher_better in feval_ret:
+                        ret.append((data_name, eval_name, val, is_higher_better))
+                else:
+                    eval_name, val, is_higher_better = feval_ret
                     ret.append((data_name, eval_name, val, is_higher_better))
-            else:
-                eval_name, val, is_higher_better = feval_ret
-                ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
     def __inner_predict(self, data_idx):
