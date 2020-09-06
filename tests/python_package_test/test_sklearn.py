@@ -922,7 +922,7 @@ class TestSklearn(unittest.TestCase):
         self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('binary_logloss', gbm.evals_result_['training'])
 
-    def test_lgbmclassifier_multiple_eval_metrics(self):
+    def test_multiple_eval_metrics(self):
 
         X, y = load_breast_cancer(return_X_y=True)
 
@@ -958,99 +958,6 @@ class TestSklearn(unittest.TestCase):
         gbm = lgb.LGBMClassifier(**params).fit(eval_metric=['fair', 'error', None], **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 3)
         self.assertIn('binary_logloss', gbm.evals_result_['training'])
-
-    def test_lgbmregressor_multiple_eval_metrics(self):
-
-        X, y = load_boston(True)
-
-        params = {'n_estimators': 2, 'verbose': -1, 'metric': 'rmse'}
-        params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
-
-        # Verify that can receive a list of metrics, only callable
-        gbm = lgb.LGBMRegressor(**params).fit(eval_metric=[mse, decreasing_metric], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 3)
-        self.assertIn('custom MSE', gbm.evals_result_['training'])
-        self.assertIn('decreasing_metric', gbm.evals_result_['training'])
-        self.assertIn('rmse', gbm.evals_result_['training'])
-
-        # Verify that can receive a list of custom and built-in metrics
-        gbm = lgb.LGBMRegressor(**params).fit(eval_metric=[mse, decreasing_metric, 'mape'], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 4)
-        self.assertIn('custom MSE', gbm.evals_result_['training'])
-        self.assertIn('decreasing_metric', gbm.evals_result_['training'])
-        self.assertIn('mape', gbm.evals_result_['training'])
-        self.assertIn('rmse', gbm.evals_result_['training'])
-
-        # Verify that works as expected when eval_metric is empty
-        gbm = lgb.LGBMRegressor(**params).fit(eval_metric=[], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 1)
-        self.assertIn('rmse', gbm.evals_result_['training'])
-
-        # Verify that can receive a list of metrics, only built-in
-        gbm = lgb.LGBMRegressor(**params).fit(eval_metric=['mape', 'mae'], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 3)
-        self.assertIn('mape', gbm.evals_result_['training'])
-        self.assertIn('l1', gbm.evals_result_['training'])
-        self.assertIn('rmse', gbm.evals_result_['training'])
-
-        # Verify that eval_metric is robust to receiving a list with None
-        gbm = lgb.LGBMRegressor(**params).fit(eval_metric=['mape', 'mae', None], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 3)
-        self.assertIn('mape', gbm.evals_result_['training'])
-        self.assertIn('l1', gbm.evals_result_['training'])
-        self.assertIn('rmse', gbm.evals_result_['training'])
-
-    def test_lgbmranker_multiple_eval_metrics(self):
-
-        X, y = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                               '../../examples/lambdarank/rank.train'))
-
-        q = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    '../../examples/lambdarank/rank.train.query'))
-
-        params = {'n_estimators': 2, 'verbose': -1, 'metric': 'lambdarank'}
-        params_fit = {'X': X, 'y': y, 'eval_set': [(X, y)], 'verbose': False, 'group': q, 'eval_group': [q],
-                      'eval_at': [1, 3]}
-
-        # Verify that can receive a list of metrics, only callable
-        gbm = lgb.LGBMRanker(**params).fit(eval_metric=[constant_metric, decreasing_metric], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 4)
-        self.assertIn('error', gbm.evals_result_['training'])
-        self.assertIn('decreasing_metric', gbm.evals_result_['training'])
-        self.assertIn('ndcg@1', gbm.evals_result_['training'])
-        self.assertIn('ndcg@3', gbm.evals_result_['training'])
-
-        # Verify that can receive a list of custom and built-in metrics
-        gbm = lgb.LGBMRanker(**params).fit(eval_metric=[constant_metric, decreasing_metric, 'map'], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 6)
-        self.assertIn('error', gbm.evals_result_['training'])
-        self.assertIn('decreasing_metric', gbm.evals_result_['training'])
-        self.assertIn('map@1', gbm.evals_result_['training'])
-        self.assertIn('map@3', gbm.evals_result_['training'])
-        self.assertIn('ndcg@1', gbm.evals_result_['training'])
-        self.assertIn('ndcg@3', gbm.evals_result_['training'])
-
-        # Verify that works as expected when eval_metric is empty
-        gbm = lgb.LGBMRanker(**params).fit(eval_metric=[], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 2)
-        self.assertIn('ndcg@1', gbm.evals_result_['training'])
-        self.assertIn('ndcg@3', gbm.evals_result_['training'])
-
-        # Verify that can receive a list of metrics, only built-in
-        gbm = lgb.LGBMRanker(**params).fit(eval_metric=['map'], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 4)
-        self.assertIn('map@1', gbm.evals_result_['training'])
-        self.assertIn('map@3', gbm.evals_result_['training'])
-        self.assertIn('ndcg@1', gbm.evals_result_['training'])
-        self.assertIn('ndcg@3', gbm.evals_result_['training'])
-
-        # Verify that eval_metric is robust to receiving a list with None
-        gbm = lgb.LGBMRanker(**params).fit(eval_metric=['map', None], **params_fit)
-        self.assertEqual(len(gbm.evals_result_['training']), 4)
-        self.assertIn('map@1', gbm.evals_result_['training'])
-        self.assertIn('map@3', gbm.evals_result_['training'])
-        self.assertIn('ndcg@1', gbm.evals_result_['training'])
-        self.assertIn('ndcg@3', gbm.evals_result_['training'])
 
     def test_inf_handle(self):
         nrows = 100
