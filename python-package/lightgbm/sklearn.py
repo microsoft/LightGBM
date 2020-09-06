@@ -2,6 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 from __future__ import absolute_import
 
+import copy
 import warnings
 
 import numpy as np
@@ -501,12 +502,15 @@ class LGBMModel(_LGBMModelBase):
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
-        if not isinstance(eval_metric, list):
-            eval_metric = [eval_metric]
+        # Do not modify original args in fit function
+        # Refer to https://github.com/microsoft/LightGBM/pull/2619
+        eval_metric_list = copy.deepcopy(eval_metric)
+        if not isinstance(eval_metric_list, list):
+            eval_metric_list = [eval_metric_list]
 
         # Separate built-in from callable evaluation metrics
-        eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric if callable(f)]
-        eval_metrics_builtin = [m for m in eval_metric if isinstance(m, string_type)]
+        eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
+        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, string_type)]
 
         # register default metric for consistency with callable eval_metric case
         original_metric = self._objective if isinstance(self._objective, string_type) else None
