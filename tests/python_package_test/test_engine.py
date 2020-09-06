@@ -1804,7 +1804,7 @@ class TestEngine(unittest.TestCase):
                           params_class_3_verbose, metrics='binary_error', fobj=dummy_obj)
 
     def test_multiple_feval_train(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
 
         params = {'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
 
@@ -1827,7 +1827,7 @@ class TestEngine(unittest.TestCase):
         self.assertIn('decreasing_metric', evals_result['valid_0'])
 
     def test_multiple_feval_cv(self):
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
 
         params = {'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
 

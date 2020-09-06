@@ -924,7 +924,7 @@ class TestSklearn(unittest.TestCase):
 
     def test_lgbmclassifier_multiple_eval_metrics(self):
 
-        X, y = load_breast_cancer(True)
+        X, y = load_breast_cancer(return_X_y=True)
 
         params = {'n_estimators': 2, 'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
