@@ -147,7 +147,11 @@ Predictor <- R6::R6Class(
 
         # Check if data is a matrix
         if (is.matrix(data)) {
-          storage.mode(data) <- "double"
+          # this if() prevents the memory and computational costs
+          # of converting something that is already "double" to "double"
+          if (storage.mode(data) != "double") {
+            storage.mode(data) <- "double"
+          }
           preds <- lgb.call(
             "LGBM_BoosterPredictForMat_R"
             , ret = preds
