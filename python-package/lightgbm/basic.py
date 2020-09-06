@@ -3096,8 +3096,6 @@ class Booster(object):
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
-        if callable(feval):
-            feval = [feval]
         self.__get_eval_info()
         ret = []
         if self.__num_inner_eval > 0:
@@ -3113,6 +3111,8 @@ class Booster(object):
             for i in range_(self.__num_inner_eval):
                 ret.append((data_name, self.__name_inner_eval[i],
                             result[i], self.__higher_better_inner_eval[i]))
+        if callable(feval):
+            feval = [feval]
         if feval is not None:
             if data_idx == 0:
                 cur_data = self.train_set
