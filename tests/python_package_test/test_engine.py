@@ -1813,7 +1813,7 @@ class TestEngine(unittest.TestCase):
         train_dataset = lgb.Dataset(data=X_train, label=y_train, silent=True)
         validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset, silent=True)
         evals_result = {}
-        _ = lgb.train(
+        lgb.train(
             params=params,
             train_set=train_dataset,
             valid_sets=validation_dataset,
