@@ -43,6 +43,7 @@ if [[ $OS_NAME == "linux" ]]; then
             texinfo \
             texlive-latex-recommended \
             texlive-fonts-recommended \
+            texlive-fonts-extra \
             qpdf \
             || exit -1
 
