@@ -24,10 +24,6 @@ CVBooster <- R6::R6Class(
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
-#' @param obj objective function, can be character or custom objective function. Examples include
-#'            \code{regression}, \code{regression_l1}, \code{huber},
-#'             \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
-#' @param eval evaluation function, can be (list of) character or custom eval function
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
@@ -52,7 +48,7 @@ CVBooster <- R6::R6Class(
 #'                                   the number of real CPU cores, not the number of threads (most
 #'                                   CPU using hyper-threading to generate 2 threads per CPU core).}
 #'            }
-#'
+#' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
 #' @examples
@@ -114,7 +110,7 @@ lgb.cv <- function(params = list()
   params <- lgb.check.obj(params, obj)
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
-  feval <- NULL
+  eval_functions <- list(NULL)
 
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -122,9 +118,17 @@ lgb.cv <- function(params = list()
     params$objective <- "NONE"
   }
 
-  # Check for loss (function or not)
+  # If loss is a single function, store it as a 1-element list
+  # (for backwards compatibility). If it is a list of functions, store
+  # all of them
   if (is.function(eval)) {
-    feval <- eval
+    eval_functions <- list(eval)
+  }
+  if (methods::is(eval, "list")) {
+    eval_functions <- Filter(
+      f = is.function
+      , x = eval
+    )
   }
 
   # Init predictor to empty
@@ -266,6 +270,7 @@ lgb.cv <- function(params = list()
       callbacks
       , cb.early.stop(
         stopping_rounds = early_stopping_rounds
+        , first_metric_only = isTRUE(params[["first_metric_only"]])
         , verbose = verbose
       )
     )
@@ -357,7 +362,11 @@ lgb.cv <- function(params = list()
     # Update one boosting iteration
     msg <- lapply(cv_booster$boosters, function(fd) {
       fd$booster$update(fobj = fobj)
-      fd$booster$eval_valid(feval = feval)
+      out <- list()
+      for (eval_function in eval_functions) {
+        out <- append(out, fd$booster$eval_valid(feval = eval_function))
+      }
+      return(out)
     })
 
     # Prepare collection of evaluation results
@@ -384,7 +393,13 @@ lgb.cv <- function(params = list()
   # When early stopping is not activated, we compute the best iteration / score ourselves
   # based on the first first metric
   if (record && is.na(env$best_score)) {
-    first_metric <- cv_booster$boosters[[1L]][[1L]]$.__enclos_env__$private$eval_names[1L]
+    # when using a custom eval function, the metric name is returned from the
+    # function, so figure it out from record_evals
+    if (!is.null(eval_functions[1L])) {
+      first_metric <- names(cv_booster$record_evals[["valid"]])[1L]
+    } else {
+      first_metric <- cv_booster$.__enclos_env__$private$eval_names[1L]
+    }
     .find_best <- which.min
     if (isTRUE(env$eval_list[[1L]]$higher_better[1L])) {
       .find_best <- which.max
@@ -576,7 +591,8 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
       msg[[i]][[j]]$value }))
   })
 
-  # Get evaluation
+  # Get evaluation. Just taking the first element here to
+  # get structture (name, higher_bettter, data_name)
   ret_eval <- msg[[1L]]
 
   # Go through evaluation length items
