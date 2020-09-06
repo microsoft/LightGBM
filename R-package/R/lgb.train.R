@@ -246,7 +246,6 @@ lgb.train <- function(params = list(),
     )
   }
 
-  # "Categorize" callbacks
   cb <- categorize.callbacks(callbacks)
 
   # Construct booster with datasets
@@ -371,7 +370,6 @@ lgb.train <- function(params = list(),
 
   }
 
-  # Return booster
   return(booster)
 
 }

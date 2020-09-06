@@ -51,7 +51,6 @@ Predictor <- R6::R6Class(
 
       } else {
 
-        # Model file is unknown
         stop("lgb.Predictor: modelfile must be either a character filename or an lgb.Booster.handle")
 
       }
@@ -93,7 +92,6 @@ Predictor <- R6::R6Class(
         start_iteration <- 0L
       }
 
-      # Set temporary variable
       num_row <- 0L
 
       # Check if data is a file name and not a matrix
@@ -149,10 +147,7 @@ Predictor <- R6::R6Class(
 
         # Check if data is a matrix
         if (is.matrix(data)) {
-          # Check whether matrix is the correct type first ("double")
-          if (storage.mode(data) != "double") {
-            storage.mode(data) <- "double"
-          }
+          storage.mode(data) <- "double"
           preds <- lgb.call(
             "LGBM_BoosterPredictForMat_R"
             , ret = preds
@@ -193,7 +188,6 @@ Predictor <- R6::R6Class(
 
         } else {
 
-          # Cannot predict on unknown class
           stop("predict: cannot predict on data of class ", sQuote(class(data)))
 
         }
@@ -227,7 +221,6 @@ Predictor <- R6::R6Class(
 
       }
 
-      # Return predictions
       return(preds)
 
     }

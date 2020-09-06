@@ -45,8 +45,7 @@ If early stopping occurs, the model will have 'best_iter' field.}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
-\item{callbacks}{list of callback functions
-List of callback functions that are applied at each iteration.}
+\item{callbacks}{List of callback functions that are applied at each iteration.}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{
