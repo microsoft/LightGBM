@@ -55,7 +55,7 @@ def train(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
 
-    feval : callable, list of callable functions, or None, optional (default=None)
+    feval : callable, list of callable functions or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
@@ -443,7 +443,7 @@ def cv(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
 
-    feval : callable, list of callable functions, or None, optional (default=None)
+    feval : callable, list of callable functions or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.

@@ -388,7 +388,7 @@ class LGBMModel(_LGBMModelBase):
             Init score of eval data.
         eval_group : list of arrays or None, optional (default=None)
             Group data of eval data.
-        eval_metric : string, callable, list, or None, optional (default=None)
+        eval_metric : string, callable, list or None, optional (default=None)
             If string, it should be a built-in evaluation metric to use.
             If callable, it should be a custom evaluation metric, see note below for more details.
             If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
