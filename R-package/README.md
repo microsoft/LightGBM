@@ -12,7 +12,7 @@
     - [Installing from a Pre-compiled lib_lightgbm](#lib_lightgbm)
 * [Examples](#examples)
 * [Testing](#testing)
-* [Preparing a CRAN Package and Installing It](#preparing-a-cran-package-and-installing-it)
+* [Preparing a CRAN Package](#preparing-a-cran-package)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
 
@@ -222,8 +222,8 @@ Rscript -e " \
     "
 ```
 
-Preparing a CRAN Package and Installing It
-------------------------------------------
+Preparing a CRAN Package
+------------------------
 
 This section is primarily for maintainers, but may help users and contributors to understand the structure of the R package.
 
