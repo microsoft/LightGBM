@@ -86,8 +86,6 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
   }
 }
 
-https://github.com/microsoft/LightGBM/releases/download/v2.0.12/rtools35-x86_64.exe
-
 # download R and RTools
 Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
