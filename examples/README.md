@@ -12,7 +12,7 @@ Machine Learning Challenge Winning Solutions
 
 | Place         | Competition   | Solution  | Date |
 | ------------- |:------------- | --------- | -----|
-|1st      | [M5 Forecasting - Accuracy](https://www.kaggle.com/c/m5-forecasting-accuracy) | [link](https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/163684) | 2020.6 |
+|1st      | [M5 Forecasting - Uncertainty](https://www.kaggle.com/c/m5-forecasting-uncertainty) | [link](https://www.kaggle.com/c/m5-forecasting-uncertainty/discussion/163368) | 2020.7 |
 |3rd      | [M5 Forecasting - Uncertainty](https://www.kaggle.com/c/m5-forecasting-uncertainty) | [link](https://www.kaggle.com/c/m5-forecasting-uncertainty/discussion/166875) | 2020.7 |
 |3rd      | [ALASKA2 Image Steganalysis](https://www.kaggle.com/c/alaska2-image-steganalysis) | [link](https://www.kaggle.com/c/alaska2-image-steganalysis/discussion/168870) | 2020.7 |
 |1st      | [M5 Forecasting - Accuracy](https://www.kaggle.com/c/m5-forecasting-accuracy) | [link](https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/163684) | 2020.6 |
