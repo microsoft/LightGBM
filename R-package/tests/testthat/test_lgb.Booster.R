@@ -468,7 +468,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         )
         , data = dtrain
         , nrounds = nrounds
-        , verbose = 0
+        , verbose = 0L
     )
 
     model_str <- bst$save_model_to_string()
@@ -590,7 +590,7 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
         , verbose = 0L
     )
 
-    for (bst in cv_bst$boosters){
+    for (bst in cv_bst$boosters) {
         model_str <- bst[["booster"]]$save_model_to_string()
         params_in_file <- .params_from_model_string(model_str = model_str)
 

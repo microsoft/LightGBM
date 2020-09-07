@@ -228,7 +228,6 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
 context("training continuation")
 
 test_that("training continuation works", {
-  testthat::skip("This test is currently broken. See issue #2468 for details.")
   dtrain <- lgb.Dataset(
     train$data
     , label = train$label
@@ -242,21 +241,19 @@ test_that("training continuation works", {
     , learning_rate = 1.0
   )
 
-  # for the reference, use 10 iterations at once:
+  # train for 10 consecutive iterations
   bst <- lgb.train(param, dtrain, nrounds = 10L, watchlist)
   err_bst <- lgb.get.eval.result(bst, "train", "binary_logloss", 10L)
-  # first 5 iterations:
+
+  #  train for 5 iterations, save, load, train for 5 more
   bst1 <- lgb.train(param, dtrain, nrounds = 5L, watchlist)
-  # test continuing from a model in file
   model_file <- tempfile(fileext = ".model")
   lgb.save(bst1, model_file)
-  # continue for 5 more:
   bst2 <- lgb.train(param, dtrain, nrounds = 5L, watchlist, init_model = bst1)
   err_bst2 <- lgb.get.eval.result(bst2, "train", "binary_logloss", 10L)
-  expect_lt(abs(err_bst - err_bst2), 0.01)
 
-  bst2 <- lgb.train(param, dtrain, nrounds = 5L, watchlist, init_model = model_file)
-  err_bst2 <- lgb.get.eval.result(bst2, "train", "binary_logloss", 10L)
+  # evaluation metrics should be nearly identical for the model trained in 10 coonsecutive
+  # iterations and the one trained in 5-then-5.
   expect_lt(abs(err_bst - err_bst2), 0.01)
 })
 
