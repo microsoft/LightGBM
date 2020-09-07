@@ -22,6 +22,7 @@ You may also ping a member of the core team according to the relevant area of ex
 
 -  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke** (C++ code / R-package / Python-package)
 -  `@chivee <https://github.com/chivee>`__ **Qiwei Ye** (C++ code / Python-package)
+-  `@btrotta <https://github.com/btrotta>`__ **Belinda Trotta** (C++ code)
 -  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
 -  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package)
 -  `@wxchan <https://github.com/wxchan>`__ **Wenxuan Chen** (Python-package)
@@ -185,6 +186,23 @@ The appropriate splitting strategy depends on the task and domain of the data, i
 
 LightGBM supports loading data from zero-based LibSVM format file directly.
 
+14. Why CMake cannot find the compiler when compiling LightGBM with MinGW?
+--------------------------------------------------------------------------
+
+.. code-block:: bash
+
+    CMake Error: CMAKE_C_COMPILER not set, after EnableLanguage
+    CMake Error: CMAKE_CXX_COMPILER not set, after EnableLanguage
+
+This is a known issue of CMake when using MinGW. The easiest solution is to run again your ``cmake`` command to bypass the one time stopper from CMake. Or you can upgrade your version of CMake to at least version 3.17.0.
+
+See `Microsoft/LightGBM#3060 <https://github.com/microsoft/LightGBM/issues/3060#issuecomment-626338538>`__ for more details.
+
+15. Where can I find LightGBM's logo to use it in my presentation?
+------------------------------------------------------------------
+
+You can find LightGBM's logo in different file formats and resolutions `here <https://github.com/microsoft/LightGBM/tree/master/docs/logo>`__.
+
 ------
 
 R-package
@@ -210,7 +228,7 @@ This is a known bug: `Microsoft/LightGBM#539 <https://github.com/microsoft/Light
 3. ``error in data.table::data.table()...argument 2 is NULL``
 -------------------------------------------------------------
 
-If you experiencing this error when running `lightgbm`, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_. If you use ``lgb.dl()`` to build from source (i.e. not using pre-compiled dll), you need to upgrade your version of ``data.table`` to at least version 1.12.0.
+If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that some in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
 
 ------
 
@@ -277,6 +295,6 @@ We are doing our best to provide universal wheels which have high running speed 
 However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
 Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary :all: lightgbm``.
-For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#build-from-sources>`__.
+For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
 
 Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.

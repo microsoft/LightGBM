@@ -15,51 +15,26 @@
 
 #include <cstdint>
 
-#define TYPE_BITS 5
-// use .Internal(internalsID()) to uuid
-#define R_INTERNALS_UUID "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327"
+#define R_NO_REMAP
+#define R_USE_C99_IN_CXX
+#include <Rinternals.h>
 
-#ifdef R_VER_ABOVE_35
-  #define NAMED_BITS 16
-  struct lgbm_sxpinfo {
-    unsigned int type : 5;
-    unsigned int scalar : 1;
-    unsigned int obj : 1;
-    unsigned int alt : 1;
-    unsigned int gp : 16;
-    unsigned int mark : 1;
-    unsigned int debug : 1;
-    unsigned int trace : 1;
-    unsigned int spare : 1;
-    unsigned int gcgen : 1;
-    unsigned int gccls : 3;
-    unsigned int named : NAMED_BITS;
-    unsigned int extra : 32 - NAMED_BITS;
-  };
-
-  // 64bit pointer
-  #if INTPTR_MAX == INT64_MAX
-    typedef int64_t xlen_t;
-  #else
-    typedef int xlen_t;
-  #endif
-
-#else
-  struct lgbm_sxpinfo {
-    unsigned int type : 5;
-    unsigned int obj : 1;
-    unsigned int named : 2;
-    unsigned int gp : 16;
-    unsigned int mark : 1;
-    unsigned int debug : 1;
-    unsigned int trace : 1;
-    unsigned int spare : 1;
-    unsigned int gcgen : 1;
-    unsigned int gccls : 3;
-  };
-
-  typedef int xlen_t;
-#endif  // R_VER_ABOVE_35
+#define NAMED_BITS 16
+struct lgbm_sxpinfo {
+  unsigned int type : 5;
+  unsigned int scalar : 1;
+  unsigned int obj : 1;
+  unsigned int alt : 1;
+  unsigned int gp : 16;
+  unsigned int mark : 1;
+  unsigned int debug : 1;
+  unsigned int trace : 1;
+  unsigned int spare : 1;
+  unsigned int gcgen : 1;
+  unsigned int gccls : 3;
+  unsigned int named : NAMED_BITS;
+  unsigned int extra : 32 - NAMED_BITS;
+};
 
 struct lgbm_primsxp {
   int offset;
@@ -110,8 +85,8 @@ typedef struct LGBM_SER {
 } LGBM_SER, *LGBM_SE;
 
 struct lgbm_vecsxp {
-  xlen_t length;
-  xlen_t truelength;
+  R_xlen_t length;
+  R_xlen_t truelength;
 };
 
 typedef struct VECTOR_SER {

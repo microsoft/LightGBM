@@ -2,12 +2,15 @@
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#include <LightGBM/lightgbm_R.h>
+
+#include "lightgbm_R.h"
 
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
+
+#include <R_ext/Rdynload.h>
 
 #include <string>
 #include <cstdio>
@@ -155,16 +158,23 @@ LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   R_API_BEGIN();
   int len = 0;
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &len));
+  const size_t reserved_string_size = 256;
   std::vector<std::vector<char>> names(len);
   std::vector<char*> ptr_names(len);
   for (int i = 0; i < len; ++i) {
-    names[i].resize(256);
+    names[i].resize(reserved_string_size);
     ptr_names[i] = names[i].data();
   }
   int out_len;
-  CHECK_CALL(LGBM_DatasetGetFeatureNames(R_GET_PTR(handle),
-    ptr_names.data(), &out_len));
+  size_t required_string_size;
+  CHECK_CALL(
+    LGBM_DatasetGetFeatureNames(
+      R_GET_PTR(handle),
+      len, &out_len,
+      reserved_string_size, &required_string_size,
+      ptr_names.data()));
   CHECK_EQ(len, out_len);
+  CHECK_GE(reserved_string_size, required_string_size);
   auto merge_str = Join<char*>(ptr_names, "\t");
   EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len, merge_str.size() + 1);
   R_API_END();
@@ -531,6 +541,7 @@ LGBM_SE LGBM_BoosterPredictForFile_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE result_filename,
@@ -538,7 +549,7 @@ LGBM_SE LGBM_BoosterPredictForFile_R(LGBM_SE handle,
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   CHECK_CALL(LGBM_BoosterPredictForFile(R_GET_PTR(handle), R_CHAR_PTR(data_filename),
-    R_AS_INT(data_has_header), pred_type, R_AS_INT(num_iteration), R_CHAR_PTR(parameter),
+    R_AS_INT(data_has_header), pred_type, R_AS_INT(start_iteration), R_AS_INT(num_iteration), R_CHAR_PTR(parameter),
     R_CHAR_PTR(result_filename)));
   R_API_END();
 }
@@ -548,6 +559,7 @@ LGBM_SE LGBM_BoosterCalcNumPredict_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE out_len,
   LGBM_SE call_state) {
@@ -555,7 +567,7 @@ LGBM_SE LGBM_BoosterCalcNumPredict_R(LGBM_SE handle,
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   int64_t len = 0;
   CHECK_CALL(LGBM_BoosterCalcNumPredict(R_GET_PTR(handle), R_AS_INT(num_row),
-    pred_type, R_AS_INT(num_iteration), &len));
+    pred_type, R_AS_INT(start_iteration), R_AS_INT(num_iteration), &len));
   R_INT_PTR(out_len)[0] = static_cast<int>(len);
   R_API_END();
 }
@@ -570,6 +582,7 @@ LGBM_SE LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE out_result,
@@ -589,7 +602,7 @@ LGBM_SE LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   CHECK_CALL(LGBM_BoosterPredictForCSC(R_GET_PTR(handle),
     p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    nrow, pred_type, R_AS_INT(num_iteration), R_CHAR_PTR(parameter), &out_len, ptr_ret));
+    nrow, pred_type,  R_AS_INT(start_iteration), R_AS_INT(num_iteration), R_CHAR_PTR(parameter), &out_len, ptr_ret));
   R_API_END();
 }
 
@@ -600,6 +613,7 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE out_result,
@@ -615,22 +629,24 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForMat(R_GET_PTR(handle),
     p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
-    pred_type, R_AS_INT(num_iteration), R_CHAR_PTR(parameter), &out_len, ptr_ret));
+    pred_type, R_AS_INT(start_iteration), R_AS_INT(num_iteration), R_CHAR_PTR(parameter), &out_len, ptr_ret));
 
   R_API_END();
 }
 
 LGBM_SE LGBM_BoosterSaveModel_R(LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE filename,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_CHAR_PTR(filename)));
+  CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_CHAR_PTR(filename)));
   R_API_END();
 }
 
 LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
   LGBM_SE actual_len,
   LGBM_SE out_str,
@@ -638,13 +654,14 @@ LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
-  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
 
 LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
   LGBM_SE actual_len,
   LGBM_SE out_str,
@@ -652,7 +669,58 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
-  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
+  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
+}
+
+// .Call() calls
+static const R_CallMethodDef CallEntries[] = {
+  {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 3},
+  {"LGBM_DatasetCreateFromFile_R"     , (DL_FUNC) &LGBM_DatasetCreateFromFile_R     , 5},
+  {"LGBM_DatasetCreateFromCSC_R"      , (DL_FUNC) &LGBM_DatasetCreateFromCSC_R      , 10},
+  {"LGBM_DatasetCreateFromMat_R"      , (DL_FUNC) &LGBM_DatasetCreateFromMat_R      , 7},
+  {"LGBM_DatasetGetSubset_R"          , (DL_FUNC) &LGBM_DatasetGetSubset_R          , 6},
+  {"LGBM_DatasetSetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetSetFeatureNames_R    , 3},
+  {"LGBM_DatasetGetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetGetFeatureNames_R    , 5},
+  {"LGBM_DatasetSaveBinary_R"         , (DL_FUNC) &LGBM_DatasetSaveBinary_R         , 3},
+  {"LGBM_DatasetFree_R"               , (DL_FUNC) &LGBM_DatasetFree_R               , 2},
+  {"LGBM_DatasetSetField_R"           , (DL_FUNC) &LGBM_DatasetSetField_R           , 5},
+  {"LGBM_DatasetGetFieldSize_R"       , (DL_FUNC) &LGBM_DatasetGetFieldSize_R       , 4},
+  {"LGBM_DatasetGetField_R"           , (DL_FUNC) &LGBM_DatasetGetField_R           , 4},
+  {"LGBM_DatasetUpdateParamChecking_R", (DL_FUNC) &LGBM_DatasetUpdateParamChecking_R, 3},
+  {"LGBM_DatasetGetNumData_R"         , (DL_FUNC) &LGBM_DatasetGetNumData_R         , 3},
+  {"LGBM_DatasetGetNumFeature_R"      , (DL_FUNC) &LGBM_DatasetGetNumFeature_R      , 3},
+  {"LGBM_BoosterCreate_R"             , (DL_FUNC) &LGBM_BoosterCreate_R             , 4},
+  {"LGBM_BoosterFree_R"               , (DL_FUNC) &LGBM_BoosterFree_R               , 2},
+  {"LGBM_BoosterCreateFromModelfile_R", (DL_FUNC) &LGBM_BoosterCreateFromModelfile_R, 3},
+  {"LGBM_BoosterLoadModelFromString_R", (DL_FUNC) &LGBM_BoosterLoadModelFromString_R, 3},
+  {"LGBM_BoosterMerge_R"              , (DL_FUNC) &LGBM_BoosterMerge_R              , 3},
+  {"LGBM_BoosterAddValidData_R"       , (DL_FUNC) &LGBM_BoosterAddValidData_R       , 3},
+  {"LGBM_BoosterResetTrainingData_R"  , (DL_FUNC) &LGBM_BoosterResetTrainingData_R  , 3},
+  {"LGBM_BoosterResetParameter_R"     , (DL_FUNC) &LGBM_BoosterResetParameter_R     , 3},
+  {"LGBM_BoosterGetNumClasses_R"      , (DL_FUNC) &LGBM_BoosterGetNumClasses_R      , 3},
+  {"LGBM_BoosterUpdateOneIter_R"      , (DL_FUNC) &LGBM_BoosterUpdateOneIter_R      , 2},
+  {"LGBM_BoosterUpdateOneIterCustom_R", (DL_FUNC) &LGBM_BoosterUpdateOneIterCustom_R, 5},
+  {"LGBM_BoosterRollbackOneIter_R"    , (DL_FUNC) &LGBM_BoosterRollbackOneIter_R    , 2},
+  {"LGBM_BoosterGetCurrentIteration_R", (DL_FUNC) &LGBM_BoosterGetCurrentIteration_R, 3},
+  {"LGBM_BoosterGetUpperBoundValue_R" , (DL_FUNC) &LGBM_BoosterGetUpperBoundValue_R , 3},
+  {"LGBM_BoosterGetLowerBoundValue_R" , (DL_FUNC) &LGBM_BoosterGetLowerBoundValue_R , 3},
+  {"LGBM_BoosterGetEvalNames_R"       , (DL_FUNC) &LGBM_BoosterGetEvalNames_R       , 5},
+  {"LGBM_BoosterGetEval_R"            , (DL_FUNC) &LGBM_BoosterGetEval_R            , 4},
+  {"LGBM_BoosterGetNumPredict_R"      , (DL_FUNC) &LGBM_BoosterGetNumPredict_R      , 4},
+  {"LGBM_BoosterGetPredict_R"         , (DL_FUNC) &LGBM_BoosterGetPredict_R         , 4},
+  {"LGBM_BoosterPredictForFile_R"     , (DL_FUNC) &LGBM_BoosterPredictForFile_R     , 11},
+  {"LGBM_BoosterCalcNumPredict_R"     , (DL_FUNC) &LGBM_BoosterCalcNumPredict_R     , 9},
+  {"LGBM_BoosterPredictForCSC_R"      , (DL_FUNC) &LGBM_BoosterPredictForCSC_R      , 15},
+  {"LGBM_BoosterPredictForMat_R"      , (DL_FUNC) &LGBM_BoosterPredictForMat_R      , 12},
+  {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 5},
+  {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 7},
+  {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 7},
+  {NULL, NULL, 0}
+};
+
+void R_init_lightgbm(DllInfo *dll) {
+  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
 }

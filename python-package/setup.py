@@ -2,7 +2,6 @@
 """Setup lightgbm package."""
 from __future__ import absolute_import
 
-import distutils
 import io
 import logging
 import os
@@ -16,6 +15,8 @@ from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.sdist import sdist
+from distutils.dir_util import copy_tree
+from distutils.file_util import copy_file
 
 
 def find_lib():
@@ -35,7 +36,7 @@ def copy_files(use_gpu=False):
         if os.path.exists(src):
             dst = os.path.join(CURRENT_DIR, 'compile', folder_name)
             shutil.rmtree(dst, ignore_errors=True)
-            distutils.dir_util.copy_tree(src, dst, verbose=0)
+            copy_tree(src, dst, verbose=0)
         else:
             raise Exception('Cannot copy {0} folder'.format(src))
 
@@ -44,20 +45,20 @@ def copy_files(use_gpu=False):
         copy_files_helper('src')
         if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "windows")):
             os.makedirs(os.path.join(CURRENT_DIR, "compile", "windows"))
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
-                                      os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"),
-                                      verbose=0)
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj"),
-                                      os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj"),
-                                      verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
+                  os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"),
+                  verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj"),
+                  os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj"),
+                  verbose=0)
         if use_gpu:
             copy_files_helper('compute')
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeLists.txt"),
-                                      os.path.join(CURRENT_DIR, "compile", "CMakeLists.txt"),
-                                      verbose=0)
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "LICENSE"),
-                                      os.path.join(CURRENT_DIR, "LICENSE"),
-                                      verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeLists.txt"),
+                  os.path.join(CURRENT_DIR, "compile", "CMakeLists.txt"),
+                  verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "LICENSE"),
+                  os.path.join(CURRENT_DIR, "LICENSE"),
+                  verbose=0)
 
 
 def clear_path(path):
@@ -121,7 +122,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
 
-    if system() in ('Windows', 'Microsoft'):
+    if system() in {'Windows', 'Microsoft'}:
         if use_mingw:
             if use_mpi:
                 raise Exception('MPI version cannot be compiled by MinGW due to the miss of MPI library in it')
@@ -258,9 +259,9 @@ if __name__ == "__main__":
     LOG_PATH = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
     LOG_NOTICE = "The full version of error log was saved into {0}".format(LOG_PATH)
     if os.path.isfile(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt')):
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
-                                      os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
-                                      verbose=0)
+        copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
+                  os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
+                  verbose=0)
     version = io.open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
     readme = io.open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
 
@@ -276,7 +277,7 @@ if __name__ == "__main__":
           install_requires=[
               'numpy',
               'scipy',
-              'scikit-learn<=0.21.3'
+              'scikit-learn!=0.22.0'
           ],
           maintainer='Guolin Ke',
           maintainer_email='guolin.ke@microsoft.com',
@@ -304,4 +305,5 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.5',
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
+                       'Programming Language :: Python :: 3.8',
                        'Topic :: Scientific/Engineering :: Artificial Intelligence'])

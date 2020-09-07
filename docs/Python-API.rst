@@ -11,6 +11,7 @@ Data Structure API
 
     Dataset
     Booster
+    CVBooster
 
 Training API
 ------------
@@ -23,10 +24,6 @@ Training API
 
 Scikit-learn API
 ----------------
-
-.. warning::
-
-    The last supported version of scikit-learn is ``0.21.3``. Our estimators are incompatible with newer versions.
 
 .. autosummary::
     :toctree: pythonapi/

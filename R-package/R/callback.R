@@ -1,3 +1,11 @@
+# constants that control naming in lists
+.EVAL_KEY <- function() {
+  return("eval")
+}
+.EVAL_ERR_KEY <- function() {
+  return("eval_err")
+}
+
 #' @importFrom R6 R6Class
 CB_ENV <- R6::R6Class(
   "lgb.cb_env",
@@ -216,8 +224,8 @@ cb.record.evaluation <- function() {
 
         # Create dummy lists
         env$model$record_evals[[data_name]][[name]] <- list()
-        env$model$record_evals[[data_name]][[name]]$eval <- list()
-        env$model$record_evals[[data_name]][[name]]$eval_err <- list()
+        env$model$record_evals[[data_name]][[name]][[.EVAL_KEY()]] <- list()
+        env$model$record_evals[[data_name]][[name]][[.EVAL_ERR_KEY()]] <- list()
 
       }
 
@@ -238,12 +246,12 @@ cb.record.evaluation <- function() {
       name <- eval_res$name
 
       # Store evaluation data
-      env$model$record_evals[[data_name]][[name]]$eval <- c(
-        env$model$record_evals[[data_name]][[name]]$eval
+      env$model$record_evals[[data_name]][[name]][[.EVAL_KEY()]] <- c(
+        env$model$record_evals[[data_name]][[name]][[.EVAL_KEY()]]
         , eval_res$value
       )
-      env$model$record_evals[[data_name]][[name]]$eval_err <- c(
-        env$model$record_evals[[data_name]][[name]]$eval_err
+      env$model$record_evals[[data_name]][[name]][[.EVAL_ERR_KEY()]] <- c(
+        env$model$record_evals[[data_name]][[name]][[.EVAL_ERR_KEY()]]
         , eval_err
       )
 
@@ -260,7 +268,7 @@ cb.record.evaluation <- function() {
 
 }
 
-cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
+cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = TRUE) {
 
   # Initialize variables
   factor_to_bigger_better <- NULL
@@ -285,7 +293,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
       cat("Will train until there is no improvement in ", stopping_rounds, " rounds.\n\n", sep = "")
     }
 
-    # Maximization or minimization task
+    # Internally treat everything as a maximization task
     factor_to_bigger_better <<- rep.int(1.0, eval_len)
     best_iter <<- rep.int(-1L, eval_len)
     best_score <<- rep.int(-Inf, eval_len)
@@ -297,8 +305,8 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
       # Prepend message
       best_msg <<- c(best_msg, "")
 
-      # Check if maximization or minimization
-      if (!env$eval_list[[i]]$higher_better) {
+      # Internally treat everything as a maximization task
+      if (!isTRUE(env$eval_list[[i]]$higher_better)) {
         factor_to_bigger_better[i] <<- -1.0
       }
 
@@ -317,8 +325,16 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
     # Store iteration
     cur_iter <- env$iteration
 
+    # By default, any metric can trigger early stopping. This can be disabled
+    # with 'first_metric_only = TRUE'
+    if (isTRUE(first_metric_only)) {
+      evals_to_check <- 1L
+    } else {
+      evals_to_check <- seq_len(eval_len)
+    }
+
     # Loop through evaluation
-    for (i in seq_len(eval_len)) {
+    for (i in evals_to_check) {
 
       # Store score
       score <- env$eval_list[[i]]$value * factor_to_bigger_better[i]

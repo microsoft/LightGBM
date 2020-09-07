@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdint>
 #include <fstream>
 #include <vector>
 
@@ -36,6 +37,12 @@ class GOSS: public GBDT {
             const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, objective_function, training_metrics);
     ResetGoss();
+    if (objective_function_ == nullptr) {
+      // use customized objective function
+      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      gradients_.resize(total_size, 0.0f);
+      hessians_.resize(total_size, 0.0f);
+    }
   }
 
   void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
@@ -49,6 +56,23 @@ class GOSS: public GBDT {
     ResetGoss();
   }
 
+  bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
+    if (gradients != nullptr) {
+      // use customized objective function
+      CHECK(hessians != nullptr && objective_function_ == nullptr);
+      int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
+      #pragma omp parallel for schedule(static)
+      for (int64_t i = 0; i < total_size; ++i) {
+        gradients_[i] = gradients[i];
+        hessians_[i] = hessians[i];
+      }
+      return GBDT::TrainOneIter(gradients_.data(), hessians_.data());
+    } else {
+      CHECK(hessians == nullptr);
+      return GBDT::TrainOneIter(nullptr, nullptr);
+    }
+  }
+
   void ResetGoss() {
     CHECK_LE(config_->top_rate + config_->other_rate, 1.0f);
     CHECK(config_->top_rate > 0.0f && config_->other_rate > 0.0f);
@@ -59,7 +83,11 @@ class GOSS: public GBDT {
     balanced_bagging_ = false;
     bag_data_indices_.resize(num_data_);
     bagging_runner_.ReSize(num_data_);
-
+    bagging_rands_.clear();
+    for (int i = 0;
+         i < (num_data_ + bagging_rand_block_ - 1) / bagging_rand_block_; ++i) {
+      bagging_rands_.emplace_back(config_->bagging_seed + i);
+    }
     is_use_subset_ = false;
     if (config_->top_rate + config_->other_rate <= 0.5) {
       auto bag_data_cnt = static_cast<data_size_t>((config_->top_rate + config_->other_rate) * num_data_);
@@ -127,7 +155,32 @@ class GOSS: public GBDT {
     bag_data_cnt_ = num_data_;
     // not subsample for first iterations
     if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
-    GBDT::Bagging(iter);
+    auto left_cnt = bagging_runner_.Run<true>(
+        num_data_,
+        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
+            data_size_t*) {
+          data_size_t cur_left_count = 0;
+          cur_left_count = BaggingHelper(cur_start, cur_cnt, left);
+          return cur_left_count;
+        },
+        bag_data_indices_.data());
+    bag_data_cnt_ = left_cnt;
+    // set bagging data to tree learner
+    if (!is_use_subset_) {
+      tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+    } else {
+      // get subset
+      tmp_subset_->ReSize(bag_data_cnt_);
+      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
+                              bag_data_cnt_, false);
+      tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
+                                    bag_data_cnt_);
+    }
+  }
+
+ protected:
+  bool GetIsConstHessian(const ObjectiveFunction*) override {
+    return false;
   }
 };
 

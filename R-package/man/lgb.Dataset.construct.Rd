@@ -13,10 +13,10 @@ lgb.Dataset.construct(dataset)
 Construct Dataset explicitly
 }
 \examples{
-library(lightgbm)
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.construct(dtrain)
-
+}
 }

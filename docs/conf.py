@@ -100,6 +100,15 @@ project = 'LightGBM'
 copyright = '%s, Microsoft Corporation' % str(datetime.datetime.now().year)
 author = 'Microsoft Corporation'
 
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+html_logo = os.path.join(CURR_PATH, 'logo', 'LightGBM_logo_grey_text.svg')
+
+# The name of an image file (relative to this directory) to use as a favicon of
+# the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
+# pixels large.
+html_favicon = os.path.join(CURR_PATH, '_static', 'images', 'favicon.ico')
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
@@ -139,6 +148,7 @@ if C_API:
         "h": "c",
     }
     breathe_show_define_initializer = True
+    c_id_attributes = ['LIGHTGBM_C_EXPORT']
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -151,6 +161,7 @@ html_theme = 'sphinx_rtd_theme'
 # documentation.
 html_theme_options = {
     'includehidden': False,
+    'logo_only': True,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -162,6 +173,12 @@ html_static_path = ['_static']
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'LightGBMdoc'
+
+# -- Options for LaTeX output ---------------------------------------------
+
+# The name of an image file (relative to this directory) to place at the top of
+# the title page.
+latex_logo = os.path.join(CURR_PATH, 'logo', 'LightGBM_logo_black_text_small.png')
 
 
 def generate_doxygen_xml(app):
@@ -226,23 +243,34 @@ def generate_r_docs(app):
     echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile
     /home/docs/.conda/bin/conda create -q -y -n r_env \
         r-base=3.5.1=h1e0a451_2 \
-        r-devtools=1.13.6=r351h6115d3f_0 \
-        r-data.table=1.11.4=r351h96ca727_0 \
         r-jsonlite=1.5=r351h96ca727_0 \
         r-matrix=1.2_14=r351h96ca727_0 \
         r-testthat=2.0.0=r351h29659fb_0 \
-        cmake=3.14.0=h52cb24c_0 \
-        ca-certificates=2019.11.27=0
+        cmake=3.14.0=h52cb24c_0
     /home/docs/.conda/bin/conda install -q -y -n r_env -c conda-forge \
-        r-pkgdown=1.3.0=r35h6115d3f_1001 \
-        r-roxygen2=6.1.1=r35h0357c0b_1001
+        r-data.table=1.12.8=r35hcdcec82_0 \
+        r-pkgdown=1.5.1=r35h6115d3f_0 \
+        r-roxygen2=7.1.0=r35h0357c0b_0
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {0}
-    sed -i'.bak' '/# Build the package (do not touch this line!)/q' build_r.R
+    export R_LIBS="$CONDA_PREFIX/lib/R/library"
     Rscript build_r.R
-    Rscript build_r_site.R
-    """.format(os.path.join(CURR_PATH, os.path.pardir))
+    cd {1}
+    Rscript -e "roxygen2::roxygenize(load = 'installed')"
+    Rscript -e "pkgdown::build_site( \
+            lazy = FALSE \
+            , install = FALSE \
+            , devel = FALSE \
+            , examples = TRUE \
+            , run_dont_run = TRUE \
+            , seed = 42L \
+            , preview = FALSE \
+            , new_process = TRUE \
+        ) \
+        "
+    cd {0}
+    """.format(os.path.join(CURR_PATH, os.path.pardir), os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r"))
     try:
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.

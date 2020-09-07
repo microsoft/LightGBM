@@ -5,7 +5,7 @@ Booster <- R6::R6Class(
   public = list(
 
     best_iter = -1L,
-    best_score = NA,
+    best_score = NA_real_,
     record_evals = list(),
 
     # Finalize will free up the handles
@@ -31,7 +31,7 @@ Booster <- R6::R6Class(
 
       # Create parameters and handle
       params <- append(params, list(...))
-      handle <- 0.0
+      handle <- lgb.null.handle()
 
       # Attempts to create a handle for the dataset
       try({
@@ -424,7 +424,7 @@ Booster <- R6::R6Class(
     },
 
     # Save model
-    save_model = function(filename, num_iteration = NULL) {
+    save_model = function(filename, num_iteration = NULL, feature_importance_type = 0L) {
 
       # Check if number of iteration is non existent
       if (is.null(num_iteration)) {
@@ -437,6 +437,7 @@ Booster <- R6::R6Class(
         , ret = NULL
         , private$handle
         , as.integer(num_iteration)
+        , as.integer(feature_importance_type)
         , lgb.c_str(filename)
       )
 
@@ -445,7 +446,7 @@ Booster <- R6::R6Class(
     },
 
     # Save model to string
-    save_model_to_string = function(num_iteration = NULL) {
+    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L) {
 
       # Check if number of iteration is non existent
       if (is.null(num_iteration)) {
@@ -457,12 +458,13 @@ Booster <- R6::R6Class(
         "LGBM_BoosterSaveModelToString_R"
         , private$handle
         , as.integer(num_iteration)
+        , as.integer(feature_importance_type)
       ))
 
     },
 
     # Dump model in memory
-    dump_model = function(num_iteration = NULL) {
+    dump_model = function(num_iteration = NULL, feature_importance_type = 0L) {
 
       # Check if number of iteration is non existent
       if (is.null(num_iteration)) {
@@ -474,12 +476,14 @@ Booster <- R6::R6Class(
         "LGBM_BoosterDumpModel_R"
         , private$handle
         , as.integer(num_iteration)
+        , as.integer(feature_importance_type)
       )
 
     },
 
     # Predict on new data
     predict = function(data,
+                       start_iteration = NULL,
                        num_iteration = NULL,
                        rawscore = FALSE,
                        predleaf = FALSE,
@@ -491,10 +495,14 @@ Booster <- R6::R6Class(
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
       }
+      # Check if start iteration is non existent
+      if (is.null(start_iteration)) {
+        start_iteration <- 0L
+      }
 
       # Predict on new data
       predictor <- Predictor$new(private$handle, ...)
-      predictor$predict(data, num_iteration, rawscore, predleaf, predcontrib, header, reshape)
+      predictor$predict(data, start_iteration, num_iteration, rawscore, predleaf, predcontrib, header, reshape)
 
     },
 
@@ -596,7 +604,11 @@ Booster <- R6::R6Class(
           # Parse and store privately names
           names <- strsplit(names, "\t")[[1L]]
           private$eval_names <- names
-          private$higher_better_inner_eval <- grepl("^ndcg|^map|^auc", names)
+
+          # some metrics don't map cleanly to metric names, for example "ndcg@1" is just the
+          # ndcg metric evaluated at the first "query result" in learning-to-rank
+          metric_names <- gsub("@.*", "", names)
+          private$higher_better_inner_eval <- .METRICS_HIGHER_BETTER()[metric_names]
 
         }
 
@@ -691,7 +703,14 @@ Booster <- R6::R6Class(
 #' @description Predicted values based on class \code{lgb.Booster}
 #' @param object Object of class \code{lgb.Booster}
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
-#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
+#' @param start_iteration int or None, optional (default=None)
+#'                        Start index of the iteration to predict.
+#'                        If None or <= 0, starts from the first iteration.
+#' @param num_iteration int or None, optional (default=None)
+#'                      Limit number of iterations in the prediction.
+#'                      If None, if the best iteration exists and start_iteration is None or <= 0, the
+#'                      best iteration is used; otherwise, all iterations from start_iteration are used.
+#'                      If <= 0, all iterations from start_iteration are used (no limits).
 #' @param rawscore whether the prediction should be returned in the for of original untransformed
 #'                 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
 #'                 for logistic regression would result in predictions for log-odds instead of probabilities.
@@ -711,7 +730,7 @@ Booster <- R6::R6Class(
 #'         number of columns corresponding to the number of trees.
 #'
 #' @examples
-#' library(lightgbm)
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -723,16 +742,17 @@ Booster <- R6::R6Class(
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , valids = valids
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
 #' )
 #' preds <- predict(model, test$data)
+#' }
 #' @export
 predict.lgb.Booster <- function(object,
                                 data,
+                                start_iteration = NULL,
                                 num_iteration = NULL,
                                 rawscore = FALSE,
                                 predleaf = FALSE,
@@ -749,6 +769,7 @@ predict.lgb.Booster <- function(object,
   # Return booster predictions
   object$predict(
     data
+    , start_iteration
     , num_iteration
     , rawscore
     , predleaf
@@ -769,7 +790,7 @@ predict.lgb.Booster <- function(object,
 #' @return lgb.Booster
 #'
 #' @examples
-#' library(lightgbm)
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -781,46 +802,42 @@ predict.lgb.Booster <- function(object,
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , valids = valids
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
+#'   , early_stopping_rounds = 3L
 #' )
-#' lgb.save(model, "model.txt")
-#' load_booster <- lgb.load(filename = "model.txt")
+#' model_file <- tempfile(fileext = ".txt")
+#' lgb.save(model, model_file)
+#' load_booster <- lgb.load(filename = model_file)
 #' model_string <- model$save_model_to_string(NULL) # saves best iteration
 #' load_booster_from_str <- lgb.load(model_str = model_string)
-#'
+#' }
 #' @export
 lgb.load <- function(filename = NULL, model_str = NULL) {
 
-  if (is.null(filename) && is.null(model_str)) {
-    stop("lgb.load: either filename or model_str must be given")
-  }
+  filename_provided <- !is.null(filename)
+  model_str_provided <- !is.null(model_str)
 
-  # Load from filename
-  if (!is.null(filename) && !is.character(filename)) {
-    stop("lgb.load: filename should be character")
-  }
-
-  # Return new booster
-  if (!is.null(filename) && !file.exists(filename)) {
-    stop("lgb.load: file does not exist for supplied filename")
-  }
-  if (!is.null(filename)) {
+  if (filename_provided) {
+    if (!is.character(filename)) {
+      stop("lgb.load: filename should be character")
+    }
+    if (!file.exists(filename)) {
+      stop(sprintf("lgb.load: file '%s' passed to filename does not exist", filename))
+    }
     return(invisible(Booster$new(modelfile = filename)))
   }
 
-  # Load from model_str
-  if (!is.null(model_str) && !is.character(model_str)) {
-    stop("lgb.load: model_str should be character")
-  }
-  # Return new booster
-  if (!is.null(model_str)) {
+  if (model_str_provided) {
+    if (!is.character(model_str)) {
+      stop("lgb.load: model_str should be character")
+    }
     return(invisible(Booster$new(model_str = model_str)))
   }
 
+  stop("lgb.load: either filename or model_str must be given")
 }
 
 #' @name lgb.save
@@ -833,6 +850,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @return lgb.Booster
 #'
 #' @examples
+#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -851,7 +869,8 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
-#' lgb.save(model, "model.txt")
+#' lgb.save(model, tempfile(fileext = ".txt"))
+#' }
 #' @export
 lgb.save <- function(booster, filename, num_iteration = NULL) {
 
@@ -879,6 +898,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @return json format of model
 #'
 #' @examples
+#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -898,7 +918,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #'   , early_stopping_rounds = 5L
 #' )
 #' json_model <- lgb.dump(model)
-#'
+#' }
 #' @export
 lgb.dump <- function(booster, num_iteration = NULL) {
 
@@ -926,8 +946,8 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #' @return vector of evaluation result
 #'
 #' @examples
+#' \dontrun{
 #' # train a regression model
-#' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -939,11 +959,10 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
-#'   , nrounds = 10L
+#'   , nrounds = 5L
 #'   , valids = valids
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
-#'   , early_stopping_rounds = 5L
 #' )
 #'
 #' # Examine valid data_name values
@@ -954,6 +973,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'
 #' # Get L2 values for "test" dataset
 #' lgb.get.eval.result(model, "test", "l2")
+#' }
 #' @export
 lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_err = FALSE) {
 
@@ -995,11 +1015,11 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
   }
 
   # Create result
-  result <- booster$record_evals[[data_name]][[eval_name]]$eval
+  result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_KEY()]]
 
   # Check if error is requested
   if (is_err) {
-    result <- booster$record_evals[[data_name]][[eval_name]]$eval_err
+    result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_ERR_KEY()]]
   }
 
   # Check if iteration is non existant

@@ -45,7 +45,8 @@ If early stopping occurs, the model will have 'best_iter' field.}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
-\item{callbacks}{List of callback functions that are applied at each iteration.}
+\item{callbacks}{list of callback functions
+List of callback functions that are applied at each iteration.}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{
@@ -73,3 +74,20 @@ If early stopping occurs, the model will have 'best_iter' field.}
 \description{
 Simple interface for training a LightGBM model.
 }
+\section{Early Stopping}{
+
+
+         "early stopping" refers to stopping the training process if the model's performance on a given
+         validation set does not improve for several consecutive iterations.
+
+         If multiple arguments are given to \code{eval}, their order will be preserved. If you enable
+         early stopping by setting \code{early_stopping_rounds} in \code{params}, by default all
+         metrics will be considered for early stopping.
+
+         If you want to only consider the first metric for early stopping, pass
+         \code{first_metric_only = TRUE} in \code{params}. Note that if you also specify \code{metric}
+         in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
+         a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
+         or \code{objective} (passed into \code{params}).
+}
+

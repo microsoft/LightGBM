@@ -14,8 +14,8 @@
 
 namespace LightGBM {
 
-Tree::Tree(int max_leaves)
-  :max_leaves_(max_leaves) {
+Tree::Tree(int max_leaves, bool track_branch_features)
+  :max_leaves_(max_leaves), track_branch_features_(track_branch_features) {
   left_child_.resize(max_leaves_ - 1);
   right_child_.resize(max_leaves_ - 1);
   split_feature_inner_.resize(max_leaves_ - 1);
@@ -32,6 +32,9 @@ Tree::Tree(int max_leaves)
   internal_weight_.resize(max_leaves_ - 1);
   internal_count_.resize(max_leaves_ - 1);
   leaf_depth_.resize(max_leaves_);
+  if (track_branch_features_) {
+    branch_features_ = std::vector<std::vector<int>>(max_leaves_);
+  }
   // root is in the depth 0
   leaf_depth_[0] = 0;
   num_leaves_ = 1;
@@ -57,13 +60,7 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
   SetDecisionType(&decision_type_[new_node_idx], default_left, kDefaultLeftMask);
-  if (missing_type == MissingType::None) {
-    SetMissingType(&decision_type_[new_node_idx], 0);
-  } else if (missing_type == MissingType::Zero) {
-    SetMissingType(&decision_type_[new_node_idx], 1);
-  } else if (missing_type == MissingType::NaN) {
-    SetMissingType(&decision_type_[new_node_idx], 2);
-  }
+  SetMissingType(&decision_type_[new_node_idx], static_cast<int8_t>(missing_type));
   threshold_in_bin_[new_node_idx] = threshold_bin;
   threshold_[new_node_idx] = threshold_double;
   ++num_leaves_;
@@ -77,13 +74,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
-  if (missing_type == MissingType::None) {
-    SetMissingType(&decision_type_[new_node_idx], 0);
-  } else if (missing_type == MissingType::Zero) {
-    SetMissingType(&decision_type_[new_node_idx], 1);
-  } else if (missing_type == MissingType::NaN) {
-    SetMissingType(&decision_type_[new_node_idx], 2);
-  }
+  SetMissingType(&decision_type_[new_node_idx], static_cast<int8_t>(missing_type));
   threshold_in_bin_[new_node_idx] = num_cat_;
   threshold_[new_node_idx] = num_cat_;
   ++num_cat_;
@@ -316,9 +307,9 @@ std::string Tree::NodeToJSON(int index) const {
       str_buf << "\"default_left\":false," << '\n';
     }
     uint8_t missing_type = GetMissingType(decision_type_[index]);
-    if (missing_type == 0) {
+    if (missing_type == MissingType::None) {
       str_buf << "\"missing_type\":\"None\"," << '\n';
-    } else if (missing_type == 1) {
+    } else if (missing_type == MissingType::Zero) {
       str_buf << "\"missing_type\":\"Zero\"," << '\n';
     } else {
       str_buf << "\"missing_type\":\"NaN\"," << '\n';
@@ -347,9 +338,10 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
   std::stringstream str_buf;
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
-  if (missing_type == 0 || (missing_type == 1 && default_left && kZeroThreshold < threshold_[node])) {
+  if (missing_type == MissingType::None
+      || (missing_type == MissingType::Zero && default_left && kZeroThreshold < threshold_[node])) {
     str_buf << "if (fval <= " << threshold_[node] << ") {";
-  } else if (missing_type == 1) {
+  } else if (missing_type == MissingType::Zero) {
     if (default_left) {
       str_buf << "if (fval <= " << threshold_[node] << " || Tree::IsZero(fval)" << " || std::isnan(fval)) {";
     } else {
@@ -368,7 +360,7 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
 std::string Tree::CategoricalDecisionIfElse(int node) const {
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   std::stringstream str_buf;
-  if (missing_type == 2) {
+  if (missing_type == MissingType::NaN) {
     str_buf << "if (std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
   } else {
     str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
@@ -596,7 +588,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("leaf_weight")) {
-    leaf_weight_ = Common::StringToArrayFast<double>(key_vals["leaf_weight"], num_leaves_);
+    leaf_weight_ = Common::StringToArray<double>(key_vals["leaf_weight"], num_leaves_);
   } else {
     leaf_weight_.resize(num_leaves_);
   }
@@ -695,7 +687,9 @@ void Tree::TreeSHAP(const double *feature_values, double *phi,
                     double parent_one_fraction, int parent_feature_index) const {
   // extend the unique path
   PathElement* unique_path = parent_unique_path + unique_depth;
-  if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  if (unique_depth > 0) {
+    std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  }
   ExtendPath(unique_path, unique_depth, parent_zero_fraction,
              parent_one_fraction, parent_feature_index);
 
@@ -735,6 +729,58 @@ void Tree::TreeSHAP(const double *feature_values, double *phi,
 
     TreeSHAP(feature_values, phi, cold_index, unique_depth + 1, unique_path,
              cold_zero_fraction*incoming_zero_fraction, 0, split_feature_[node]);
+  }
+}
+
+// recursive sparse computation of SHAP values for a decision tree
+void Tree::TreeSHAPByMap(const std::unordered_map<int, double>& feature_values, std::unordered_map<int, double>* phi,
+                         int node, int unique_depth,
+                         PathElement *parent_unique_path, double parent_zero_fraction,
+                         double parent_one_fraction, int parent_feature_index) const {
+  // extend the unique path
+  PathElement* unique_path = parent_unique_path + unique_depth;
+  if (unique_depth > 0) {
+    std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
+  }
+  ExtendPath(unique_path, unique_depth, parent_zero_fraction,
+             parent_one_fraction, parent_feature_index);
+
+  // leaf node
+  if (node < 0) {
+    for (int i = 1; i <= unique_depth; ++i) {
+      const double w = UnwoundPathSum(unique_path, unique_depth, i);
+      const PathElement &el = unique_path[i];
+      (*phi)[el.feature_index] += w*(el.one_fraction - el.zero_fraction)*leaf_value_[~node];
+    }
+
+  // internal node
+  } else {
+    const int hot_index = Decision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
+    const int cold_index = (hot_index == left_child_[node] ? right_child_[node] : left_child_[node]);
+    const double w = data_count(node);
+    const double hot_zero_fraction = data_count(hot_index) / w;
+    const double cold_zero_fraction = data_count(cold_index) / w;
+    double incoming_zero_fraction = 1;
+    double incoming_one_fraction = 1;
+
+    // see if we have already split on this feature,
+    // if so we undo that split so we can redo it for this node
+    int path_index = 0;
+    for (; path_index <= unique_depth; ++path_index) {
+      if (unique_path[path_index].feature_index == split_feature_[node]) break;
+    }
+    if (path_index != unique_depth + 1) {
+      incoming_zero_fraction = unique_path[path_index].zero_fraction;
+      incoming_one_fraction = unique_path[path_index].one_fraction;
+      UnwindPath(unique_path, unique_depth, path_index);
+      unique_depth -= 1;
+    }
+
+    TreeSHAPByMap(feature_values, phi, hot_index, unique_depth + 1, unique_path,
+                  hot_zero_fraction*incoming_zero_fraction, incoming_one_fraction, split_feature_[node]);
+
+    TreeSHAPByMap(feature_values, phi, cold_index, unique_depth + 1, unique_path,
+                  cold_zero_fraction*incoming_zero_fraction, 0, split_feature_[node]);
   }
 }
 

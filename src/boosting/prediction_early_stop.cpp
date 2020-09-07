@@ -83,6 +83,9 @@ PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string&
   } else {
     Log::Fatal("Unknown early stopping type: %s", type.c_str());
   }
+
+  // Fix for compiler warnings about reaching end of control
+  return CreateNone(config);
 }
 
 }  // namespace LightGBM

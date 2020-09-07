@@ -524,9 +524,9 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 }
 
 
-Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
-                                               int** sample_indices, int num_col, const int* num_per_col,
-                                               size_t total_sample_size, data_size_t num_data) {
+Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
+                                                int** sample_indices, int num_col, const int* num_per_col,
+                                                size_t total_sample_size, data_size_t num_data) {
   int num_total_features = num_col;
   if (Network::num_machines() > 1) {
     num_total_features = Network::GlobalSyncUpByMax(num_total_features);
@@ -1208,7 +1208,7 @@ std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced
       std::stringstream buffer;
       buffer << forced_bins_stream.rdbuf();
       std::string err;
-      Json forced_bins_json = Json::parse(buffer.str(), err);
+      Json forced_bins_json = Json::parse(buffer.str(), &err);
       CHECK(forced_bins_json.is_array());
       std::vector<Json> forced_bins_arr = forced_bins_json.array_items();
       for (size_t i = 0; i < forced_bins_arr.size(); ++i) {

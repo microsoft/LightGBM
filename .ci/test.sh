@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
-    export CXX=g++-9
-    export CC=gcc-9
+    export CXX=g++-10
+    export CC=gcc-10
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
@@ -48,7 +48,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         -c conda-forge \
             libxml2 \
-            r-lintr>=2.0
+            "r-lintr>=2.0"
     pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
@@ -56,7 +56,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
-    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include || exit 0
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package || exit -1
     exit 0
 fi
 
@@ -69,12 +69,12 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "r-package" ]]; then
+if [[ "${TASK:0:9}" == "r-package" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz "scikit-learn<=0.21.3" scipy
+conda install -q -y -n $CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)

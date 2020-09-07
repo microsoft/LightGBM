@@ -32,8 +32,8 @@ Given a \code{lgb.Booster}, return evaluation results for a
              particular metric on a particular dataset.
 }
 \examples{
+\dontrun{
 # train a regression model
-library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -45,11 +45,10 @@ valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
-  , nrounds = 10L
+  , nrounds = 5L
   , valids = valids
   , min_data = 1L
   , learning_rate = 1.0
-  , early_stopping_rounds = 5L
 )
 
 # Examine valid data_name values
@@ -60,4 +59,5 @@ print(names(model$record_evals[["test"]]))
 
 # Get L2 values for "test" dataset
 lgb.get.eval.result(model, "test", "l2")
+}
 }
