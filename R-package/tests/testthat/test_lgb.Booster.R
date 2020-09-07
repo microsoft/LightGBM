@@ -446,7 +446,6 @@ test_that("Saving a model with different feature importance types works", {
     }, "Unknown importance type")
 })
 
-
 .params_from_model_string <- function(model_str) {
     file_lines <- strsplit(model_str, "\n")[[1L]]
     start_indx <- which(grepl("^parameters\\:$", file_lines)) + 1L
@@ -549,5 +548,63 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
     expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
     expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
     expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+
+})
+
+# this is almost identical to the test above it, but for lgb.cv(). A lot of code
+# is duplicated between lgb.train() and lgb.cv(), and this will catch cases where
+# one is updated and the other isn't
+test_that("lgb.cv() correctly handles passing through params to the model file", {
+    dtrain <- lgb.Dataset(
+        data = matrix(rnorm(500L), nrow = 100L)
+        , label = rnorm(100L)
+    )
+
+    # num_iterations values (all different)
+    num_iterations <- 4L
+    num_boost_round <- 2L
+    n_iter <- 3L
+    nrounds_kwarg <- 6L
+
+    # early_stopping_round values (all different)
+    early_stopping_round <- 2L
+    early_stopping_round_kwarg <- 3L
+    n_iter_no_change <- 4L
+
+    params <- list(
+        objective = "regression"
+        , metric = "l2"
+        , num_boost_round = num_boost_round
+        , num_iterations = num_iterations
+        , n_iter = n_iter
+        , early_stopping_round = early_stopping_round
+        , n_iter_no_change = n_iter_no_change
+    )
+
+    cv_bst <- lgb.cv(
+        params = params
+        , data = dtrain
+        , nrounds = nrounds_kwarg
+        , early_stopping_rounds = early_stopping_round_kwarg
+        , nfold = 3L
+        , verbose = 0L
+    )
+
+    for (bst in cv_bst$boosters){
+        model_str <- bst[["booster"]]$save_model_to_string()
+        params_in_file <- .params_from_model_string(model_str = model_str)
+
+        # parameters should match what was passed from the R package, and the "main" (non-alias)
+        # params values in `params` should be preferred to keyword argumentts or aliases
+        expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+        expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
+        expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+        expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
+
+        # none of the aliases shouold have been written to the model file
+        expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
+        expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
+        expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+    }
 
 })
