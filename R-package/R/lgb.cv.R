@@ -117,9 +117,10 @@ lgb.cv <- function(params = list()
     params$objective <- "NONE"
   }
 
-  # If loss is a single function, store it as a 1-element list
+  # If eval is a single function, store it as a 1-element list
   # (for backwards compatibility). If it is a list of functions, store
-  # all of them
+  # all of them. This makes it possible to pass any mix of strings like "auc"
+  # and custom functions to eval
   if (is.function(eval)) {
     eval_functions <- list(eval)
   }
@@ -586,7 +587,7 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
   })
 
   # Get evaluation. Just taking the first element here to
-  # get structture (name, higher_bettter, data_name)
+  # get structure (name, higher_better, data_name)
   ret_eval <- msg[[1L]]
 
   # Go through evaluation length items
