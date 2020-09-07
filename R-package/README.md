@@ -21,7 +21,7 @@ Installation
 
 For the easiest installation, go to ["Installing the CRAN package"](#installing-the-cran-package).
 
-If you experience any issues with that, try ["Installing from Source with CMake"](#install). This can produce a more efficient version of the library on Windows systems witth Visual Studio.
+If you experience any issues with that, try ["Installing from Source with CMake"](#install). This can produce a more efficient version of the library on Windows systems with Visual Studio.
 
 To build a GPU-enabled version of the package, follow the steps in ["Installing a GPU-enabled Build"](#installing-a-gpu-enabled-build)
 
