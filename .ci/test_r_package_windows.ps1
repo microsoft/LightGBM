@@ -12,23 +12,6 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
-# mirrors that host miktexsetup.zip do so only with explicitly-named
-# files like miktexsetup-2.4.5.zip, so hard-coding a link to an archive as a
-# way to peg to one mirror does not work
-#
-# this function will find the specific version of miktexsetup.zip at a given
-# mirror and download it
-function Download-Miktex-Setup {
-    param(
-        [string]$archive,
-        [string]$destfile
-    )
-    $PageContent = Invoke-WebRequest -Uri $archive -Method Get
-    $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup-2.*'
-    $FileToDownload = "${archive}/${SetupExeFile}"
-    Download-File-With-Retries $FileToDownload $destfile
-}
-
 # External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
 # status information) can cause failures in GitHub Actions PowerShell jobs.
 # See https://github.community/t/powershell-steps-fail-nondeterministically/115496
@@ -54,7 +37,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   #     * https://stackoverflow.com/a/46619260/3986677
   $RTOOLS_INSTALL_PATH = "C:\Rtools"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH/mingw_64/bin"
-  $env:RTOOLS_EXE_FILE = "Rtools35.exe"
+  $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
   $RTOOLS_INSTALL_PATH = "C:\rtools40"
@@ -71,7 +54,6 @@ $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$RTOOLS_INSTALL_PATH/usr/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
-$env:CTAN_MIKTEX_ARCHIVE = "$env:CTAN_MIRROR/setup/windows-x64/"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
 # hack to get around this:
@@ -104,10 +86,12 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
   }
 }
 
+https://github.com/microsoft/LightGBM/releases/download/v2.0.12/rtools35-x86_64.exe
+
 # download R and RTools
 Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
+Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 # Install R
 Write-Output "Installing R"
@@ -127,7 +111,7 @@ Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); insta
 #
 # MiKTeX always needs to be built to test a CRAN package.
 if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
-    Download-Miktex-Setup "$env:CTAN_MIKTEX_ARCHIVE" "miktexsetup-x64.zip"
+    Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-4.0-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
