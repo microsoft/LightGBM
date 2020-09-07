@@ -59,6 +59,21 @@ PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0/light
 remotes::install_url(PKG_URL)
 ```
 
+#### Custom Installation (Linux, Mac)
+
+The steps above should work on most systems, but users with highly-customized environments might want to change how R builds packages from source.
+
+To change the compiler used when installing the CRAN package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler).
+
+For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
+
+```make
+# ~/.R/Makevars
+CC=gcc-8
+CXX=g++-8
+CXX11=g++-8
+```
+
 ### Installing from Source with CMake <a name="install"></a>
 
 You need to install git and [CMake](https://cmake.org/) first.
@@ -247,17 +262,6 @@ After building the package, install it with a command like the following:
 
 ```shell
 R CMD install lightgbm_*.tar.gz
-```
-
-#### Custom Installation (Linux, Mac)
-
-To change the compiler used when installing the package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler). For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
-
-```make
-# ~/.R/Makevars
-CC=gcc-8
-CXX=g++-8
-CXX11=g++-8
 ```
 
 ### Changing the CRAN Package
