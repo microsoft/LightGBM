@@ -145,8 +145,6 @@ Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build wi
 
 After installing these other libraries, follow the steps in ["Installing from Source with CMake"](#install).
 
-If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual.
-
 ### Installing Precompiled Binaries
 
 **NOTE:** As of this writing, the precompiled binaries of the R package should be considered experimental. If you try them an experience any problems, please [open an issue](https://github.com/microsoft/LightGBM/issues).
