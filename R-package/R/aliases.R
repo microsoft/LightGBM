@@ -110,6 +110,13 @@
 }
 
 # [description]
+#     Name of the main num_iterations parameter. Stored here to avoid duplication
+#     in code that sets this based on other values
+.NUM_ITERATIONS_MAIN_PARAM <- function() {
+    return("num_iterations")
+}
+
+# [description]
 #     Per https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst#metric,
 #     a few different strings can be used to indicate "no metrics".
 # [returns]

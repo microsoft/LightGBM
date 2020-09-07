@@ -445,3 +445,109 @@ test_that("Saving a model with different feature importance types works", {
         model_string <- bst$save_model_to_string(feature_importance_type = UNSUPPORTED_IMPORTANCE)
     }, "Unknown importance type")
 })
+
+
+.params_from_model_string <- function(model_str) {
+    file_lines <- strsplit(model_str, "\n")[[1L]]
+    start_indx <- which(grepl("^parameters\\:$", file_lines)) + 1L
+    blank_line_indices <- which(file_lines == "")
+    end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
+    params <- file_lines[start_indx: end_indx]
+    return(params)
+}
+
+test_that("all parameters are stored correctly with save_model_to_string()", {
+    dtrain <- lgb.Dataset(
+        data = matrix(rnorm(500L), nrow = 100L)
+        , label = rnorm(100L)
+    )
+    nrounds <- 4L
+    bst <- lgb.train(
+        params = list(
+            objective = "regression"
+            , metric = "l2"
+        )
+        , data = dtrain
+        , nrounds = nrounds
+        , verbose = 0
+    )
+
+    model_str <- bst$save_model_to_string()
+    params_in_file <- .params_from_model_string(model_str = model_str)
+
+    # parameters should match what was passed from the R package
+    expect_equal(sum(grepl(pattern = "^\\[metric\\:", x = params_in_file)), 1L)
+    expect_equal(sum(params_in_file == "[metric: l2]"), 1L)
+
+    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+    expect_equal(sum(params_in_file == "[num_iterations: 4]"), 1L)
+
+    expect_equal(sum(grepl(pattern = "^\\[objective\\:", x = params_in_file)), 1L)
+    expect_equal(sum(params_in_file == "[objective: regression]"), 1L)
+
+    expect_equal(sum(grepl(pattern = "^\\[verbosity\\:", x = params_in_file)), 1L)
+    expect_equal(sum(params_in_file == "[verbosity: 0]"), 1L)
+
+    # early stopping should be off by default
+    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+    expect_equal(sum(params_in_file == "[early_stopping_round: 0]"), 1L)
+})
+
+test_that("early_stopping, num_iterations are stored correctly in model string even with aliases", {
+    dtrain <- lgb.Dataset(
+        data = matrix(rnorm(500L), nrow = 100L)
+        , label = rnorm(100L)
+    )
+    dvalid <- lgb.Dataset(
+        data = matrix(rnorm(500L), nrow = 100L)
+        , label = rnorm(100L)
+    )
+
+    # num_iterations values (all different)
+    num_iterations <- 4L
+    num_boost_round <- 2L
+    n_iter <- 3L
+    nrounds_kwarg <- 6L
+
+    # early_stopping_round values (all different)
+    early_stopping_round <- 2L
+    early_stopping_round_kwarg <- 3L
+    n_iter_no_change <- 4L
+
+    params <- list(
+        objective = "regression"
+        , metric = "l2"
+        , num_boost_round = num_boost_round
+        , num_iterations = num_iterations
+        , n_iter = n_iter
+        , early_stopping_round = early_stopping_round
+        , n_iter_no_change = n_iter_no_change
+    )
+
+    bst <- lgb.train(
+        params = params
+        , data = dtrain
+        , nrounds = nrounds_kwarg
+        , early_stopping_rounds = early_stopping_round_kwarg
+        , valids = list(
+            "random_valid" = dvalid
+        )
+        , verbose = 0L
+    )
+
+    model_str <- bst$save_model_to_string()
+    params_in_file <- .params_from_model_string(model_str = model_str)
+
+    # parameters should match what was passed from the R package, and the "main" (non-alias)
+    # params values in `params` should be preferred to keyword argumentts or aliases
+    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+    expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
+    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+    expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
+
+    # none of the aliases shouold have been written to the model file
+    expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
+    expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
+    expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+
+})

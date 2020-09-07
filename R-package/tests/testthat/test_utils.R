@@ -124,3 +124,61 @@ test_that("lgb.check.eval drops duplicate metrics and preserves order", {
     expect_named(params, "metric")
     expect_identical(params[["metric"]], list("l1", "l2", "rmse"))
 })
+
+context("lgb.check.wrapper_param")
+
+test_that("lgb.check.wrapper_param() uses passed-in keyword arg if no alias found in params", {
+    kwarg_val <- sample(seq_len(100L), size = 1L)
+    params <- lgb.check.wrapper_param(
+        main_param_name = "num_iterations"
+        , params = list()
+        , alternative_kwarg_value = kwarg_val
+    )
+    expect_equal(params[["num_iterations"]], kwarg_val)
+})
+
+test_that("lgb.check.wrapper_param() prefers main parameter to alias and keyword arg", {
+    num_iterations <- sample(seq_len(100L), size = 1L)
+    kwarg_val <- sample(seq_len(100L), size = 1L)
+    params <- lgb.check.wrapper_param(
+        main_param_name = "num_iterations"
+        , params = list(
+            num_iterations = num_iterations
+            , num_tree = sample(seq_len(100L), size = 1L)
+            , n_estimators = sample(seq_len(100L), size = 1L)
+        )
+        , alternative_kwarg_value = kwarg_val
+    )
+    expect_equal(params[["num_iterations"]], num_iterations)
+
+    # aliases should be removed
+    expect_identical(params, list(num_iterations = num_iterations))
+})
+
+test_that("lgb.check.wrapper_param() prefers alias to keyword arg", {
+    n_estimators <- sample(seq_len(100L), size = 1L)
+    num_tree <- sample(seq_len(100L), size = 1L)
+    kwarg_val <- sample(seq_len(100L), size = 1L)
+    params <- lgb.check.wrapper_param(
+        main_param_name = "num_iterations"
+        , params = list(
+            num_tree = num_tree
+            , n_estimators = n_estimators
+        )
+        , alternative_kwarg_value = kwarg_val
+    )
+    expect_equal(params[["num_iterations"]], num_tree)
+    expect_identical(params, list(num_iterations = num_tree))
+
+    # switching the order should switch which one is chosen
+    params2 <- lgb.check.wrapper_param(
+        main_param_name = "num_iterations"
+        , params = list(
+            n_estimators = n_estimators
+            , num_tree = num_tree
+        )
+        , alternative_kwarg_value = kwarg_val
+    )
+    expect_equal(params2[["num_iterations"]], n_estimators)
+    expect_identical(params2, list(num_iterations = n_estimators))
+})
