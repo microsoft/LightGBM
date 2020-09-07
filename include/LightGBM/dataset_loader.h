@@ -27,27 +27,6 @@ class DatasetLoader {
 
   LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
-  LIGHTGBM_EXPORT CTRProvider* ConstructCTRProviderFromMats(const int32_t nmat,
-    const int32_t* nrow,
-    const int32_t ncol,
-    const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
-    const std::function<double(int row_idx)>& get_label_fun,
-    const Config& config);
-
-  LIGHTGBM_EXPORT CTRProvider* ConstructCTRProviderFromCSR(
-    const int32_t nrow,
-    const int32_t ncol,
-    const std::function<std::vector<std::pair<int, double>>(int idx)>& get_row_fun,
-    const std::function<double(int row_idx)>& get_label_fun,
-    const Config& config);
-
-  LIGHTGBM_EXPORT CTRProvider* ConstructCTRProviderFromCSC(
-    const int32_t nrow,
-    const int32_t ncol,
-    const std::vector<std::vector<std::function<double(int row_idx)>>>& get_value_funcs,
-    const std::function<double(int row_idx)>& get_label_fun,
-    const Config& config);
-
   LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(std::vector<std::vector<double>>& sample_values,
     std::vector<std::vector<int>>& sample_indices,
     int num_col, const int* num_per_col,
