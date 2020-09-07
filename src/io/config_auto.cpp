@@ -256,6 +256,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "categorical_feature",
   "forcedbins_filename",
   "save_binary",
+  "start_iteration_predict",
   "num_iteration_predict",
   "predict_raw_score",
   "predict_leaf_index",
@@ -295,6 +296,10 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "gpu_platform_id",
   "gpu_device_id",
   "gpu_use_dp",
+  "num_ctr_folds",
+  "cat_converters",
+  "keep_old_cat_method",
+  "keep_raw_cat_data"
   });
   return params;
 }
@@ -513,6 +518,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "save_binary", &save_binary);
 
+  GetInt(params, "start_iteration_predict", &start_iteration_predict);
+
   GetInt(params, "num_iteration_predict", &num_iteration_predict);
 
   GetBool(params, "predict_raw_score", &predict_raw_score);
@@ -608,6 +615,15 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "gpu_device_id", &gpu_device_id);
 
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
+
+  GetInt(params, "num_ctr_folds", &num_ctr_folds);
+  CHECK(num_ctr_folds >= 2);
+
+  GetString(params, "cat_converters", &cat_converters);
+
+  GetBool(params, "keep_raw_cat_data", &keep_raw_cat_data);
+  
+  GetBool(params, "keep_old_cat_method", &keep_old_cat_method);
 }
 
 std::string Config::SaveMembersToString() const {

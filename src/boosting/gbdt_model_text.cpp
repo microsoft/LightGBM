@@ -334,6 +334,14 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
 
   ss << "feature_infos=" << Common::Join(feature_infos_, " ") << '\n';
 
+  // dump ctr information
+  if(ctr_provider_ != nullptr) {
+    ss << "ctr_provider=" << ctr_provider_->DumpModelInfo() << "\n"; 
+  }
+  else {
+    ss << "ctr_provider= " << "\n";
+  }
+
   int num_used_model = static_cast<int>(models_.size());
   int total_iteration = num_used_model / num_tree_per_iteration_;
   start_iteration = std::max(start_iteration, 0);
@@ -469,6 +477,15 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
     Common::Atoi(key_vals["max_feature_idx"].c_str(), &max_feature_idx_);
   } else {
     Log::Fatal("Model file doesn't specify max_feature_idx");
+    return false;
+  }
+  
+  // recover ctr information
+  if(key_vals.count("ctr_provider")) {
+    ctr_provider_ = CTRProvider::RecoverFromModelString(key_vals["ctr_provider"]);
+  }
+  else {
+    Log::Fatal("Model file doesn't specify ctr_provider");
     return false;
   }
 

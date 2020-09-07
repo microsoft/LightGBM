@@ -11,6 +11,7 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
+#include <LightGBM/ctr_provider.hpp>
 
 #include <string>
 #include <functional>
@@ -294,11 +295,11 @@ struct TrainingShareStates {
       hist_buf;
 
   void SetMultiValBin(MultiValBin* bin) {
+    num_threads = OMP_NUM_THREADS();
     if (bin == nullptr) {
       return;
     }
     multi_val_bin.reset(bin);
-    num_threads = OMP_NUM_THREADS();
     num_bin_aligned =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
@@ -375,7 +376,7 @@ class Dataset {
       if (is_feature_added[fidx]) { continue; }
       const int group = feature2group_[fidx];
       const int sub_feature = feature2subfeature_[fidx];
-      feature_groups_[group]->PushData(tid, sub_feature, row_idx, 0.0f);
+      push_data_func_(tid, row_idx, group, sub_feature, 0.0f);
     }
   }
 
@@ -386,7 +387,7 @@ class Dataset {
       if (feature_idx >= 0) {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
-        feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
+        push_data_func_(tid, row_idx, group, sub_feature, feature_values[i]);
       }
     }
   }
@@ -401,14 +402,14 @@ class Dataset {
         is_feature_added[feature_idx] = true;
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
-        feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
+        push_data_func_(tid, row_idx, group, sub_feature, inner_data.second);
       }
     }
     FinishOneRow(tid, row_idx, is_feature_added);
   }
 
   inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
-    feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+    push_data_func_(tid, row_idx, group, sub_feature, value);
   }
 
   inline int RealFeatureIndex(int fidx) const {
@@ -624,7 +625,9 @@ class Dataset {
   inline const std::vector<std::string>& feature_names() const { return feature_names_; }
 
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
-    if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
+    if (feature_names.size() != static_cast<size_t>(num_total_features_) && !(
+      ctr_provider_.get() != nullptr && static_cast<int>(feature_names.size()) == ctr_provider_->num_original_features()
+    )) {
       Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
     feature_names_ = std::vector<std::string>(feature_names);
@@ -647,6 +650,9 @@ class Dataset {
     }
     if (spaceInFeatureName) {
       Log::Warning("Find whitespaces in feature_names, replace with underlines");
+    }
+    if (ctr_provider_.get() != nullptr && ctr_provider_->num_cat_converters() > 0) {
+      ctr_provider_->ExtendFeatureNames(feature_names_);
     }
   }
 
@@ -674,7 +680,19 @@ class Dataset {
 
   void AddFeaturesFrom(Dataset* other);
 
+  void SetCTRProvider(CTRProvider* ctr_provider) {
+    ctr_provider_.reset(ctr_provider);
+  }
+
+  inline const CTRProvider* ctr_provider() const {
+    return ctr_provider_.get();
+  }
+
+  inline bool is_valid() const { return is_valid_; }
+
  private:
+  void CreatePushDataFunc();
+
   std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
@@ -710,6 +728,13 @@ class Dataset {
   bool use_missing_;
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
+  /*! \brief CTR provider, converts categorical feature values into CTR values */
+  std::unique_ptr<CTRProvider> ctr_provider_ = std::unique_ptr<CTRProvider>(nullptr);
+  /*! \brief a flag indicating whether the dataset is validation or not */
+  bool is_valid_ = false;
+
+  /*! \brief function to push one feature value of one data into a featue group */
+  std::function<void(int tid, data_size_t row_idx, int group, int sub_feature, double value)> push_data_func_;
 };
 
 }  // namespace LightGBM

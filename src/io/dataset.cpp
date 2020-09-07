@@ -312,6 +312,32 @@ std::vector<std::vector<int>> FastFeatureBundling(
   return features_in_group;
 }
 
+void Dataset::CreatePushDataFunc() {
+  // when use_ctr > 0, ctr_provider can still be nullptr due to early construction of training dataset before training
+  // in this case the use_ctr will be ignore
+  if(ctr_provider_.get() != nullptr && ctr_provider_->num_cat_converters() > 0) {
+    ctr_provider_->CreatePushDataFunction(used_feature_map_, feature2group_, feature2subfeature_,
+      [this](int tid, data_size_t row_idx, int group, int sub_feature, double value) {
+        feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+      });
+    if(is_valid_) {
+      push_data_func_ = [this](int tid, data_size_t row_idx, int group, int sub_feature, double value) {
+        ctr_provider_->PushValidOneData(tid, row_idx, group, sub_feature, value);
+      };
+    }
+    else {
+      push_data_func_ = [this](int tid, data_size_t row_idx, int group, int sub_feature, double value) {
+        ctr_provider_->PushTrainingOneData(tid, row_idx, group, sub_feature, value);
+      };
+    }
+  }
+  else {
+    push_data_func_ = [this](int tid, data_size_t row_idx, int group, int sub_feature, double value) {
+      feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+    };
+  }
+}
+
 void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                         int num_total_features,
                         const std::vector<std::vector<double>>& forced_bins,
@@ -370,8 +396,14 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       feature2group_[cur_fidx] = i;
       feature2subfeature_[cur_fidx] = j;
       cur_bin_mappers.emplace_back(ref_bin_mappers[real_fidx].release());
-      if (cur_bin_mappers.back()->GetDefaultBin() !=
-          cur_bin_mappers.back()->GetMostFreqBin()) {
+      if ((cur_bin_mappers.back()->GetDefaultBin() !=
+          cur_bin_mappers.back()->GetMostFreqBin()
+            // converted features have no need to push zero, its pushing will be handled by its corresponding categorical feature
+            && (ctr_provider_.get() == nullptr || real_fidx < ctr_provider_->num_original_features())
+          ) || (
+            // categorical feature always need to push zero, if ctr value is used.
+            ctr_provider_.get() != nullptr && ctr_provider_->is_categorical(real_fidx) && ctr_provider_->num_cat_converters() > 0
+          )) {
         feature_need_push_zeros_.push_back(cur_fidx);
       }
       ++cur_fidx;
@@ -417,6 +449,10 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
   use_missing_ = io_config.use_missing;
   zero_as_missing_ = io_config.zero_as_missing;
+
+  if(!is_valid_) {
+    CreatePushDataFunc();
+  }
 }
 
 void Dataset::FinishLoad() {
@@ -714,14 +750,10 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature2group_.clear();
   feature2subfeature_.clear();
   // copy feature bin mapper data
-  feature_need_push_zeros_.clear();
+  feature_need_push_zeros_ = dataset->feature_need_push_zeros_;
   for (int i = 0; i < num_features_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
     bin_mappers.emplace_back(new BinMapper(*(dataset->FeatureBinMapper(i))));
-    if (bin_mappers.back()->GetDefaultBin() !=
-        bin_mappers.back()->GetMostFreqBin()) {
-      feature_need_push_zeros_.push_back(i);
-    }
     feature_groups_.emplace_back(new FeatureGroup(&bin_mappers, num_data_));
     feature2group_.push_back(i);
     feature2subfeature_.push_back(0);
@@ -756,6 +788,11 @@ void Dataset::CreateValid(const Dataset* dataset) {
     }
   }
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
+  is_valid_ = true;
+  if(dataset->ctr_provider() != nullptr) {
+    ctr_provider_.reset(new CTRProvider(*dataset->ctr_provider()));
+  }
+  CreatePushDataFunc();
 }
 
 void Dataset::ReSize(data_size_t num_data) {

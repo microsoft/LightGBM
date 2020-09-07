@@ -57,6 +57,8 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   early_stopping_round_ = config_->early_stopping_round;
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
+  
+  ctr_provider_ = CTRProvider::RecoverFromModelString(train_data_->ctr_provider()->DumpModelInfo());
 
   // load forced_splits file
   if (!config->forcedsplits_filename.empty()) {
@@ -261,6 +263,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
       SaveModelToFile(0, -1, config_->saved_feature_importance_type, snapshot_out.c_str());
     }
   }
+  Log::Warning("train finished");
 }
 
 void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {
@@ -570,11 +573,13 @@ const double* GBDT::GetTrainingScore(int64_t* out_len) {
   return train_score_updater_->score();
 }
 
-void GBDT::PredictContrib(const double* features, double* output) const {
+void GBDT::PredictContrib(double* features, double* output) const {
+  ctr_provider_->ConvertCatToCTR(features);
   // set zero
   const int num_features = max_feature_idx_ + 1;
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_ * (num_features + 1));
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+  const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       models_[i * num_tree_per_iteration_ + k]->PredictContrib(features, num_features, output + k*(num_features + 1));
@@ -582,10 +587,12 @@ void GBDT::PredictContrib(const double* features, double* output) const {
   }
 }
 
-void GBDT::PredictContribByMap(const std::unordered_map<int, double>& features,
+void GBDT::PredictContribByMap(std::unordered_map<int, double>& features,
                                std::vector<std::unordered_map<int, double>>* output) const {
+  ctr_provider_->ConvertCatToCTR(features);
   const int num_features = max_feature_idx_ + 1;
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+  const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       models_[i * num_tree_per_iteration_ + k]->PredictContribByMap(features, num_features, &((*output)[k]));
@@ -792,6 +799,10 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     bagging_runner_.ReSize(0);
     is_use_subset_ = false;
   }
+}
+
+int GBDT::num_extra_features() const {
+  return ctr_provider_->CalcNumExtraFeatures();
 }
 
 }  // namespace LightGBM

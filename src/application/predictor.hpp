@@ -31,12 +31,13 @@ class Predictor {
   /*!
   * \brief Constructor
   * \param boosting Input boosting model
+  * \param start_iteration Start index of the iteration to predict
   * \param num_iteration Number of boosting round
   * \param is_raw_score True if need to predict result with raw score
   * \param predict_leaf_index True to output leaf index instead of prediction score
   * \param predict_contrib True to output feature contributions instead of prediction score
   */
-  Predictor(Boosting* boosting, int num_iteration, bool is_raw_score,
+  Predictor(Boosting* boosting, int start_iteration, int num_iteration, bool is_raw_score,
             bool predict_leaf_index, bool predict_contrib, bool early_stop,
             int early_stop_freq, double early_stop_margin) {
     early_stop_ = CreatePredictionEarlyStopInstance(
@@ -56,9 +57,9 @@ class Predictor {
       }
     }
 
-    boosting->InitPredict(num_iteration, predict_contrib);
+    boosting->InitPredict(start_iteration, num_iteration, predict_contrib);
     boosting_ = boosting;
-    num_pred_one_row_ = boosting_->NumPredictOneRow(
+    num_pred_one_row_ = boosting_->NumPredictOneRow(start_iteration,
         num_iteration, predict_leaf_index, predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_.resize(
@@ -167,7 +168,8 @@ class Predictor {
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
-    if (!header && !disable_shape_check && parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
+    if (!header && !disable_shape_check && 
+      !(boosting_->num_extra_features() + parser->NumFeatures() == boosting_->MaxFeatureIdx() + 1)) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
     }

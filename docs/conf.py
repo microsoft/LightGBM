@@ -100,6 +100,15 @@ project = 'LightGBM'
 copyright = '%s, Microsoft Corporation' % str(datetime.datetime.now().year)
 author = 'Microsoft Corporation'
 
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+html_logo = os.path.join(CURR_PATH, 'logo', 'LightGBM_logo_grey_text.svg')
+
+# The name of an image file (relative to this directory) to use as a favicon of
+# the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
+# pixels large.
+html_favicon = os.path.join(CURR_PATH, '_static', 'images', 'favicon.ico')
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
@@ -152,6 +161,7 @@ html_theme = 'sphinx_rtd_theme'
 # documentation.
 html_theme_options = {
     'includehidden': False,
+    'logo_only': True,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -163,6 +173,12 @@ html_static_path = ['_static']
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'LightGBMdoc'
+
+# -- Options for LaTeX output ---------------------------------------------
+
+# The name of an image file (relative to this directory) to place at the top of
+# the title page.
+latex_logo = os.path.join(CURR_PATH, 'logo', 'LightGBM_logo_black_text_small.png')
 
 
 def generate_doxygen_xml(app):
@@ -247,7 +263,7 @@ def generate_r_docs(app):
             , install = FALSE \
             , devel = FALSE \
             , examples = TRUE \
-            , run_dont_run = FALSE \
+            , run_dont_run = TRUE \
             , seed = 42L \
             , preview = FALSE \
             , new_process = TRUE \

@@ -5,9 +5,9 @@
  * \note
  * To avoid type conversion on large data, the most of our exposed interface supports both float32 and float64,
  * except the following:
- *   1. gradient and Hessian;
- *   2. current score for training and validation data.
- *   .
+ * 1. gradient and Hessian;
+ * 2. current score for training and validation data.
+ * .
  * The reason is that they are called frequently, and the type conversion on them may be time-cost.
  */
 #ifndef LIGHTGBM_C_API_H_
@@ -28,6 +28,7 @@ typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
 #define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
 #define C_API_DTYPE_INT32   (2)  /*!< \brief int32. */
 #define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
+#define C_API_DTYPE_NONE   (4)  /*!< \brief None. */
 
 #define C_API_PREDICT_NORMAL     (0)  /*!< \brief Normal prediction, with transform (if needed). */
 #define C_API_PREDICT_RAW_SCORE  (1)  /*!< \brief Predict raw score. */
@@ -161,7 +162,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
                                                 int indptr_type,
                                                 const int32_t* indices,
                                                 const void* data,
+                                                const void* label,
                                                 int data_type,
+                                                int label_type,
                                                 int64_t nindptr,
                                                 int64_t nelem,
                                                 int64_t num_col,
@@ -206,7 +209,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                                 int col_ptr_type,
                                                 const int32_t* indices,
                                                 const void* data,
+                                                const void* label,
                                                 int data_type,
+                                                int label_type,
                                                 int64_t ncol_ptr,
                                                 int64_t nelem,
                                                 int64_t num_row,
@@ -227,7 +232,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
+                                                const void* label,
                                                 int data_type,
+                                                int label_type,
                                                 int32_t nrow,
                                                 int32_t ncol,
                                                 int is_row_major,
@@ -250,7 +257,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
                                                  const void** data,
+                                                 const void* label,
                                                  int data_type,
+                                                 int label_type,
                                                  int32_t* nrow,
                                                  int32_t ncol,
                                                  int is_row_major,
@@ -390,6 +399,15 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
                                                 int* out);
 
 /*!
+ * \brief Get number of original features.
+ * \param handle Handle of dataset
+ * \param[out] out The address to hold number of features
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumOriginalFeature(DatasetHandle handle,
+                                                int* out);
+
+/*!
  * \brief Add features from ``source`` to ``target``.
  * \param target The handle of the dataset to add features to
  * \param source The handle of the dataset to take features from
@@ -421,6 +439,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreate(const DatasetHandle train_data,
 LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(const char* filename,
                                                       int* out_num_iterations,
                                                       BoosterHandle* out);
+
+LIGHTGBM_C_EXPORT int LGBM_PrintCTRStatus(const DatasetHandle dataset);                                                
 
 /*!
  * \brief Load an existing booster from string.
@@ -675,6 +695,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle,
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param result_filename Filename of result file in which predictions will be written
@@ -684,6 +705,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
                                                  const char* data_filename,
                                                  int data_has_header,
                                                  int predict_type,
+                                                 int start_iteration,
                                                  int num_iteration,
                                                  const char* parameter,
                                                  const char* result_filename);
@@ -697,6 +719,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param[out] out_len Length of prediction
  * \return 0 when succeed, -1 when failure happens
@@ -704,6 +727,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
                                                  int num_row,
                                                  int predict_type,
+                                                 int start_iteration,
                                                  int num_iteration,
                                                  int64_t* out_len);
 
@@ -736,6 +760,7 @@ LIGHTGBM_C_EXPORT int LGBM_FastConfigFree(FastConfigHandle fastConfig);
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
@@ -752,6 +777,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 int64_t nelem,
                                                 int64_t num_col,
                                                 int predict_type,
+                                                int start_iteration,
                                                 int num_iteration,
                                                 const char* parameter,
                                                 int64_t* out_len,
@@ -775,6 +801,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param num_col_or_row Number of columns for CSR or number of rows for CSC
  * \param predict_type What should be predicted, only feature contributions supported currently
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param matrix_type Type of matrix input and output, can be ``C_API_MATRIX_TYPE_CSR`` or ``C_API_MATRIX_TYPE_CSC``
@@ -794,6 +821,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
                                                       int64_t nelem,
                                                       int64_t num_col_or_row,
                                                       int predict_type,
+                                                      int start_iteration,
                                                       int num_iteration,
                                                       const char* parameter,
                                                       int matrix_type,
@@ -835,6 +863,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFreePredictSparse(void* indptr, int32_t* indic
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
@@ -851,6 +880,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
                                                          int64_t nelem,
                                                          int64_t num_col,
                                                          int predict_type,
+                                                         int start_iteration,
                                                          int num_iteration,
                                                          const char* parameter,
                                                          int64_t* out_len,
@@ -862,6 +892,13 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
  * Release the ``FastConfig`` by passing its handle to ``LGBM_FastConfigFree`` when no longer needed.
  *
  * \param handle Booster handle
+ * \param predict_type What should be predicted
+ *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
+ *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
+ *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
+ * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param num_col Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
@@ -869,6 +906,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
  * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
+                                                                 const int predict_type,
+                                                                 const int start_iteration,
+                                                                 const int num_iteration,
                                                                  const int data_type,
                                                                  const int64_t num_col,
                                                                  const char* parameter,
@@ -901,25 +941,17 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle h
  * \param data Pointer to the data space
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
- * \param predict_type What should be predicted
- *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
- *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
- *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
- *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
- * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
                                                              const void* indptr,
-                                                             int indptr_type,
+                                                             const int indptr_type,
                                                              const int32_t* indices,
                                                              const void* data,
-                                                             int64_t nindptr,
-                                                             int64_t nelem,
-                                                             int predict_type,
-                                                             int num_iteration,
+                                                             const int64_t nindptr,
+                                                             const int64_t nelem,
                                                              int64_t* out_len,
                                                              double* out_result);
 
@@ -944,6 +976,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fa
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iteration for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
@@ -960,6 +993,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                                                 int64_t nelem,
                                                 int64_t num_row,
                                                 int predict_type,
+                                                int start_iteration,
                                                 int num_iteration,
                                                 const char* parameter,
                                                 int64_t* out_len,
@@ -983,6 +1017,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iteration for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
@@ -996,6 +1031,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 int32_t ncol,
                                                 int is_row_major,
                                                 int predict_type,
+                                                int start_iteration,
                                                 int num_iteration,
                                                 const char* parameter,
                                                 int64_t* out_len,
@@ -1019,6 +1055,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iteration for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
@@ -1031,6 +1068,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
                                                          int ncol,
                                                          int is_row_major,
                                                          int predict_type,
+                                                         int start_iteration,
                                                          int num_iteration,
                                                          const char* parameter,
                                                          int64_t* out_len,
@@ -1042,6 +1080,13 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
  * Release the ``FastConfig`` by passing its handle to ``LGBM_FastConfigFree`` when no longer needed.
  *
  * \param handle Booster handle
+ * \param predict_type What should be predicted
+ *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
+ *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
+ *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
+ * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param ncol Number of columns
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
@@ -1049,8 +1094,11 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
  * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
-                                                                 int data_type,
-                                                                 int32_t ncol,
+                                                                 const int predict_type,
+                                                                 const int start_iteration,
+                                                                 const int num_iteration,
+                                                                 const int data_type,
+                                                                 const int32_t ncol,
                                                                  const char* parameter,
                                                                  FastConfigHandle *out_fastConfig);
 
@@ -1070,20 +1118,12 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle h
  *
  * \param fastConfig_handle FastConfig object handle returned by ``LGBM_BoosterPredictForMatSingleRowFastInit``
  * \param data Single-row array data (no other way than row-major form).
- * \param predict_type What should be predicted
- *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
- *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
- *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
- *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
- * \param num_iteration Number of iteration for prediction, <= 0 means no limit
  * \param[out] out_len Length of output result
  * \param[out] out_result Pointer to array with predictions
  * \return 0 when it succeeds, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fastConfig_handle,
                                                              const void* data,
-                                                             int predict_type,
-                                                             int num_iteration,
                                                              int64_t* out_len,
                                                              double* out_result);
 
@@ -1104,6 +1144,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fa
  *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
  *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
  *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
  * \param num_iteration Number of iteration for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param[out] out_len Length of output result
@@ -1116,6 +1157,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
                                                  int32_t nrow,
                                                  int32_t ncol,
                                                  int predict_type,
+                                                 int start_iteration,
                                                  int num_iteration,
                                                  const char* parameter,
                                                  int64_t* out_len,

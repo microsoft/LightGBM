@@ -1,3 +1,5 @@
+if: branch = master
+
 language: cpp
 
 git:
@@ -8,7 +10,7 @@ os:
   - linux
   - osx
 dist: bionic
-osx_image: xcode11.5
+osx_image: xcode12
 
 env:
   global:  # default values

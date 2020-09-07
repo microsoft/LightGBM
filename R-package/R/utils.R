@@ -6,17 +6,23 @@ lgb.is.Dataset <- function(x) {
   lgb.check.r6.class(x, "lgb.Dataset") # Checking if it is of class lgb.Dataset or not
 }
 
+lgb.null.handle <- function() {
+  if (.Machine$sizeof.pointer == 8L) {
+    return(NA_real_)
+  } else {
+    return(NA_integer_)
+  }
+}
+
 lgb.is.null.handle <- function(x) {
   is.null(x) || is.na(x)
 }
 
 lgb.encode.char <- function(arr, len) {
-
   if (!is.raw(arr)) {
-    stop("lgb.encode.char: Can only encode from raw type") # Not an object of type raw
+    stop("lgb.encode.char: Can only encode from raw type")
   }
-  rawToChar(arr[seq_len(len)]) # Return the conversion of raw type to character type
-
+  return(rawToChar(arr[seq_len(len)]))
 }
 
 # [description] Raise an error. Before raising that error, check for any error message
@@ -311,17 +317,43 @@ lgb.check.obj <- function(params, obj) {
 
 }
 
+# [description]
+#     Take any character values from eval and store them in params$metric.
+#     This has to account for the fact that `eval` could be a character vector,
+#     a function, a list of functions, or a list with a mix of strings and
+#     functions
 lgb.check.eval <- function(params, eval) {
 
-  # Check if metric is null, if yes put a list instead
   if (is.null(params$metric)) {
     params$metric <- list()
+  } else if (is.character(params$metric)) {
+    params$metric <- as.list(params$metric)
   }
 
-  # If 'eval' is a list or character vector, store it in 'metric'
-  if (is.character(eval) || identical(class(eval), "list")) {
-    params$metric <- append(params$metric, eval)
+  # if 'eval' is a character vector or list, find the character
+  # elements and add them to 'metric'
+  if (!is.function(eval)) {
+    for (i in seq_along(eval)) {
+      element <- eval[[i]]
+      if (is.character(element)) {
+        params$metric <- append(params$metric, element)
+      }
+    }
   }
+
+  # If more than one character metric was given, then "None" should
+  # not be included
+  if (length(params$metric) > 1L) {
+    params$metric <- Filter(
+        f = function(metric) {
+          !(metric %in% .NO_METRIC_STRINGS())
+        }
+        , x = params$metric
+    )
+  }
+
+  # duplicate metrics should be filtered out
+  params$metric <- as.list(unique(unlist(params$metric)))
 
   return(params)
 }

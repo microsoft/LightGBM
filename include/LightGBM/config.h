@@ -100,7 +100,7 @@ struct Config {
   // alias = task_type
   // desc = ``train``, for training, aliases: ``training``
   // desc = ``predict``, for prediction, aliases: ``prediction``, ``test``
-  // desc = ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <#io-parameters>`__
+  // desc = ``convert_model``, for converting model file into if-else format, see more information in `Convert Parameters <#convert-parameters>`__
   // desc = ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
@@ -145,6 +145,7 @@ struct Config {
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
+  // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
   // alias = train, train_data, train_data_file, data_filename
@@ -225,7 +226,7 @@ struct Config {
   // desc = set this to ``true`` to force col-wise histogram building
   // desc = enabling this is recommended when:
   // descl2 = the number of columns is large, or the total number of bins is large
-  // descl2 = ``num_threads`` is large, e.g. ``>20``
+  // descl2 = ``num_threads`` is large, e.g. ``> 20``
   // descl2 = you want to reduce memory cost
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
@@ -235,7 +236,7 @@ struct Config {
   // desc = set this to ``true`` to force row-wise histogram building
   // desc = enabling this is recommended when:
   // descl2 = the number of data points is large, and the total number of bins is relatively small
-  // descl2 = ``num_threads`` is relatively small, e.g. ``<=16``
+  // descl2 = ``num_threads`` is relatively small, e.g. ``<= 16``
   // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
   // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
@@ -440,7 +441,9 @@ struct Config {
   // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
 
+  // type = enum
   // alias = monotone_constraining_method, mc_method
+  // options = basic, intermediate
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
   // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
@@ -680,6 +683,12 @@ struct Config {
   #pragma endregion
 
   #pragma region Predict Parameters
+
+  // [no-save]
+  // desc = used only in ``prediction`` task
+  // desc = used to specify from which iteration to start the prediction
+  // desc = ``<= 0`` means from the first iteration
+  int start_iteration_predict = 0;
 
   // [no-save]
   // desc = used only in ``prediction`` task
@@ -958,6 +967,26 @@ struct Config {
 
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   bool gpu_use_dp = false;
+
+  #pragma endregion
+
+  #pragma region CTR Parameters
+
+  // desc = ways to convert categorical features, currently supports:
+  // desc = ctr[:prior], where prior is a real number used to smooth the calculation of CTR values
+  // desc = count, the count of the categorical feature value in the dataset
+  // desc = for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
+  std::string cat_converters = "";
+
+  // desc = whether to keep the original feature values after the dataset is constructed
+  // desc = if set false, then once dataset is constructed, the cat_converters cannot be changed through parameters in train method
+  bool keep_raw_cat_data = false;
+
+  // desc = number of folds that training data is divided into, to calculate ctr values
+  int num_ctr_folds = 4;
+
+  // desc = whether to use the old categorical handling
+  bool keep_old_cat_method = false;
 
   #pragma endregion
 

@@ -170,18 +170,21 @@ class TextReader {
     return ret;
   }
 
-  INDEX_T SampleFromFile(Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
+  INDEX_T SampleFromFile(Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data,
+    std::vector<INDEX_T>& sampled_data_indices) {
     INDEX_T cur_sample_cnt = 0;
     return ReadAllAndProcess([=, &random, &cur_sample_cnt,
-                              &out_sampled_data]
+                              &out_sampled_data, &sampled_data_indices]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
+        sampled_data_indices.push_back(line_idx);
         ++cur_sample_cnt;
       } else {
         const size_t idx = static_cast<size_t>(random->NextInt(0, static_cast<int>(line_idx + 1)));
         if (idx < static_cast<size_t>(sample_cnt)) {
           out_sampled_data->operator[](idx) = std::string(buffer, size);
+          sampled_data_indices[idx] = line_idx;
         }
       }
     });

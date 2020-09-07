@@ -27,9 +27,32 @@ class DatasetLoader {
 
   LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
-  LIGHTGBM_EXPORT Dataset* CostructFromSampleData(double** sample_values,
-    int** sample_indices, int num_col, const int* num_per_col,
-    size_t total_sample_size, data_size_t num_data);
+  LIGHTGBM_EXPORT CTRProvider* ConstructCTRProviderFromMats(const int32_t nmat,
+    const int32_t* nrow,
+    const int32_t ncol,
+    const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
+    const std::function<double(int row_idx)>& get_label_fun,
+    const Config& config);
+
+  LIGHTGBM_EXPORT CTRProvider* ConstructCTRProviderFromCSR(
+    const int32_t nrow,
+    const int32_t ncol,
+    const std::function<std::vector<std::pair<int, double>>(int idx)>& get_row_fun,
+    const std::function<double(int row_idx)>& get_label_fun,
+    const Config& config);
+
+  LIGHTGBM_EXPORT CTRProvider* ConstructCTRProviderFromCSC(
+    const int32_t nrow,
+    const int32_t ncol,
+    const std::vector<std::vector<std::function<double(int row_idx)>>>& get_value_funcs,
+    const std::function<double(int row_idx)>& get_label_fun,
+    const Config& config);
+
+  LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(std::vector<std::vector<double>>& sample_values,
+    std::vector<std::vector<int>>& sample_indices,
+    int num_col, const int* num_per_col,
+    size_t total_sample_size, data_size_t num_data,
+    CTRProvider* ctr_provider, const std::vector<int>* all_sample_indices);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;
@@ -38,6 +61,14 @@ class DatasetLoader {
 
   static std::vector<std::vector<double>> GetForcedBins(std::string forced_bins_path, int num_total_features,
                                                         const std::unordered_set<int>& categorical_features);
+
+  std::unordered_set<int>& GetParsedCategoricalFeatures() {
+    return categorical_features_;
+  }
+
+  const std::unordered_set<int>& GetParsedIgnoreFeatures() const {
+    return ignore_features_;
+  }
 
  private:
   Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
@@ -48,11 +79,19 @@ class DatasetLoader {
 
   std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
-  std::vector<std::string> SampleTextDataFromMemory(const std::vector<std::string>& data);
+  std::vector<std::string> SampleTextDataFromMemory(const std::vector<std::string>& data,
+    std::vector<data_size_t>& sampled_data_indices);
 
-  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, 
+    int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices, 
+    std::vector<data_size_t>& sampled_data_indices);
 
-  void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data, const Parser* parser, Dataset* dataset);
+  CTRProvider* ConstructCTRProviderFromTextData(const std::vector<std::string>& text_data, Parser* parser, const int num_machines);
+
+  CTRProvider* ConstructCTRProviderFromFile(const char* filename, Parser* parser, const int num_machines);
+
+  void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data,
+    const Parser* parser, std::vector<data_size_t>& sampled_data_indices, Dataset* dataset, CTRProvider* ctr_provider);
 
   /*! \brief Extract local features from memory */
   void ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser, Dataset* dataset);
