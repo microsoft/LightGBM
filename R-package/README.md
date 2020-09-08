@@ -5,7 +5,7 @@
 ### Contents
 
 * [Installation](#installation)
-    - [Installing the CRAN package](#installing-the-cran-package)
+    - [Installing the CRAN Package](#installing-the-cran-package)
     - [Installing from Source with CMake](#installing-from-source-with-cmake)
     - [Installing a GPU-enabled Build](#installing-a-gpu-enabled-build)
     - [Installing Precompiled Binaries](#installing-precompiled-binaries)
@@ -23,7 +23,7 @@ For the easiest installation, go to ["Installing the CRAN package"](#installing-
 
 If you experience any issues with that, try ["Installing from Source with CMake"](#install). This can produce a more efficient version of the library on Windows systems with Visual Studio.
 
-To build a GPU-enabled version of the package, follow the steps in ["Installing a GPU-enabled Build"](#installing-a-gpu-enabled-build)
+To build a GPU-enabled version of the package, follow the steps in ["Installing a GPU-enabled Build"](#installing-a-gpu-enabled-build).
 
 If any of the above options do not work for you or do not meet your needs, please let the maintainers know by [opening an issue](https://github.com/microsoft/LightGBM/issues).
 
@@ -45,7 +45,7 @@ model <- lgb.cv(
 
 ### Installing the CRAN package
 
-As of this writing, `LightGBM`'s R package is not available on CRAN. However, start with `LightGBM` 3.0.0, you can install a released source distribution. This is the same type of package that you'd install from CRAN. It does not require `CMake`, Visual Studio, or anything else outside the CRAN toolchain.
+As of this writing, `LightGBM`'s R package is not available on CRAN. However, start with `LightGBM` 3.0.0, you can install a released source distribution. This is the same type of package that you'd install from CRAN. It does not require `CMake`, `Visual Studio`, or anything else outside the CRAN toolchain.
 
 To install this package on any operating system:
 
