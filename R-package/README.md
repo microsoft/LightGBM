@@ -1,5 +1,6 @@
-LightGBM R-package
-==================
+# LightGBM R-package
+
+<img src="man/figures/logo.svg" align="right" alt="" width="175" />
 
 ### Contents
 
@@ -24,7 +25,7 @@ To install this package on any operating system:
 3. Copy that link into `PKG_URL` in the code below and run it.
 
 ```r
-PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r-cran.tar.gz"
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0/lightgbm-3.0.0-r-cran.tar.gz"
 
 remotes::install_url(PKG_URL)
 ```
@@ -250,7 +251,7 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
     ./R-package/recreate-configure.sh
     ```
 
-    If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker.
+    If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
 
     ```shell
     docker run \

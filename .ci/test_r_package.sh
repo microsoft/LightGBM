@@ -7,33 +7,29 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
+# hack to get around this:
+# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
+export _R_CHECK_SYSTEM_CLOCK_=0
+
 # Get details needed for installing R components
-#
-# NOTES:
-#    * Linux builds on Azure use a container and don't need these details
-if ! { [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]]; }; then
-    R_MAJOR_VERSION=( ${R_VERSION//./ } )
-    if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-        export R_MAC_VERSION=3.6.3
-        export R_LINUX_VERSION="3.6.3-1bionic"
-        export R_APT_REPO="bionic-cran35/"
-    elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-        export R_MAC_VERSION=4.0.2
-        export R_LINUX_VERSION="4.0.2-1.1804.0"
-        export R_APT_REPO="bionic-cran40/"
-    else
-        echo "Unrecognized R version: ${R_VERSION}"
-        exit -1
-    fi
+R_MAJOR_VERSION=( ${R_VERSION//./ } )
+if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+    export R_MAC_VERSION=3.6.3
+    export R_LINUX_VERSION="3.6.3-1bionic"
+    export R_APT_REPO="bionic-cran35/"
+elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
+    export R_MAC_VERSION=4.0.2
+    export R_LINUX_VERSION="4.0.2-1.1804.0"
+    export R_APT_REPO="bionic-cran40/"
+else
+    echo "Unrecognized R version: ${R_VERSION}"
+    exit -1
 fi
 
 # installing precompiled R for Ubuntu
 # https://cran.r-project.org/bin/linux/ubuntu/#installation
 # adding steps from https://stackoverflow.com/a/56378217/3986677 to get latest version
-#
-# This only needs to get run on Travis because R environment for Linux
-# used by Azure pipelines is set up in https://github.com/guolinke/lightgbm-ci-docker
-if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
+if [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
@@ -134,12 +130,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        cd ${BUILD_DIRECTORY}/R-package
-        autoconf \
-            --output configure \
-                configure.ac \
-        || exit -1
-        cd ${BUILD_DIRECTORY}
+        ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
 
         num_files_changed=$(
             git diff --name-only | wc -l
