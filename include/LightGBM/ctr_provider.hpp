@@ -220,6 +220,7 @@ public:
     for(const int fid : categorical_features) {
       categorical_features_.push_back(fid);
     }
+    std::sort(categorical_features_.begin(), categorical_features_.end());
     if(!config_.keep_old_cat_method && cat_converters_.size() > 0) {
       categorical_features.clear();
     }
