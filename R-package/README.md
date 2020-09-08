@@ -6,7 +6,7 @@
 
 * [Installation](#installation)
     - [Installing the CRAN Package](#installing-the-cran-package)
-    - [Installing from Source with CMake](#installing-from-source-with-cmake)
+    - [Installing from Source with CMake](#install)
     - [Installing a GPU-enabled Build](#installing-a-gpu-enabled-build)
     - [Installing Precompiled Binaries](#installing-precompiled-binaries)
     - [Installing from a Pre-compiled lib_lightgbm](#lib_lightgbm)
@@ -49,7 +49,7 @@ As of this writing, `LightGBM`'s R package is not available on CRAN. However, st
 
 To install this package on any operating system:
 
-1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases)
+1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases).
 2. Look for the artifact with a name like `lightgbm-{VERSION}-r-cran.tar.gz`. Right-click it and choose "copy link address".
 3. Copy that link into `PKG_URL` in the code below and run it.
 
