@@ -16,7 +16,6 @@ Machine Learning Challenge Winning Solutions
 |3rd      | [M5 Forecasting - Uncertainty](https://www.kaggle.com/c/m5-forecasting-uncertainty) | [link](https://www.kaggle.com/c/m5-forecasting-uncertainty/discussion/166875) | 2020.7 |
 |3rd      | [ALASKA2 Image Steganalysis](https://www.kaggle.com/c/alaska2-image-steganalysis) | [link](https://www.kaggle.com/c/alaska2-image-steganalysis/discussion/168870) | 2020.7 |
 |1st      | [M5 Forecasting - Accuracy](https://www.kaggle.com/c/m5-forecasting-accuracy) | [link](https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/163684) | 2020.6 |
-|2nd      | [Abstraction and Reasoning Challenge](https://www.kaggle.com/c/abstraction-and-reasoning-challenge/) | [link](https://www.kaggle.com/c/abstraction-and-reasoning-challenge/discussion/130468) | 2020.6 |
 |2nd      | [COVID19 Global Forecasting (Week 5)](https://www.kaggle.com/c/covid19-global-forecasting-week-5) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/143893) | 2020.5 |
 |3rd      | [COVID19 Global Forecasting (Week 5)](https://www.kaggle.com/c/covid19-global-forecasting-week-5) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/143029) | 2020.5 |
 |1st      | [COVID19 Global Forecasting (Week 4)](https://www.kaggle.com/c/covid19-global-forecasting-week-4) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/154804) | 2020.5 |
