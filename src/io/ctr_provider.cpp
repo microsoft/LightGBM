@@ -74,19 +74,28 @@ void CTRProvider::ExpandCountEncodings(std::vector<std::vector<int>>& sampled_no
   
   sampled_non_missing_data_indices.resize(num_total_features_);
   sampled_non_missing_feature_values.resize(num_total_features_);
+  std::vector<size_t> old_feature_sample_size(num_original_features_, 0);
+  for (const int fid : categorical_features_) {
+    old_feature_sample_size[fid] = sampled_non_missing_feature_values[fid].size();
+    CHECK(old_feature_sample_size[fid] == sampled_non_missing_data_indices[fid].size());
+  }
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (size_t i = 0; i < categorical_features_.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(categorical_features_.size()); ++i) {
     const int fid = categorical_features_[i];
     for (const auto& cat_converter : cat_converters_) {
       const int convert_fid = cat_converter->convert_fid(fid);
       if (convert_fid >= num_original_features_) {
         auto& count_feature_values = sampled_non_missing_feature_values[convert_fid];
         auto& count_feature_indices = sampled_non_missing_data_indices[convert_fid];
-        count_feature_values.resize(sampled_non_missing_feature_values[fid].size());
-        count_feature_indices.resize(sampled_non_missing_data_indices[fid].size());
-        if(ignored_features.count(fid) > 0) {
-          ignored_features.insert(convert_fid);
-        }
+        count_feature_values.resize(old_feature_sample_size[fid]);
+        count_feature_indices.resize(old_feature_sample_size[fid]);
+      }
+    }
+  }
+  for (const int fid : categorical_features_) {
+    if (ignored_features.count(fid) > 0) {
+      for (const auto& cat_converter : cat_converters_) {
+        ignored_features.insert(cat_converter->convert_fid(fid));
       }
     }
   }
@@ -98,8 +107,8 @@ void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>& fol
     //CHECK(Network::num_machines() == config_.num_machines);
     std::string ctr_stat_string;
     for(int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
-      ctr_stat_string += DumpDictToString(fold_label_sum[fold_id]) + "@";
-      ctr_stat_string += DumpDictToString(fold_total_count[fold_id]) + "@";
+      ctr_stat_string += DumpDictToString(fold_label_sum[fold_id], ' ') + "@";
+      ctr_stat_string += DumpDictToString(fold_total_count[fold_id], ' ') + "@";
     }
     const size_t max_ctr_values_string_size = Network::GlobalSyncUpByMax(ctr_stat_string.size()) + 1;
     std::vector<char> input_buffer(max_ctr_values_string_size), output_buffer(max_ctr_values_string_size * num_machines);
@@ -407,9 +416,9 @@ void CTRProvider::ReplaceCategoricalValues(const std::vector<data_size_t>& sampl
     std::unordered_set<int>& ignored_features) {
   if (cat_converters_.size() == 0) { return; }
   ExpandCountEncodings(sampled_non_missing_data_indices, sampled_non_missing_feature_values, ignored_features);
-  //parallelize by features
+  // parallelize by features
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (size_t i = 0; i < categorical_features_.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(categorical_features_.size()); ++i) {
     const int cat_fid = categorical_features_[i];
     for (size_t j = 0; j < sampled_non_missing_feature_values[cat_fid].size(); ++j) {
       const int feature_value = static_cast<int>(sampled_non_missing_feature_values[cat_fid][j]);

@@ -227,25 +227,25 @@ class GBDT : public GBDTBase {
     return num_pred_in_one_row;
   }
 
-  void PredictRaw(double* features, double* output,
+  void PredictRaw(const double* features, double* output,
                   const PredictionEarlyStopInstance* earlyStop) const override;
 
-  void PredictRawByMap(std::unordered_map<int, double>& features, double* output,
+  void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
                        const PredictionEarlyStopInstance* early_stop) const override;
 
-  void Predict(double* features, double* output,
+  void Predict(const double* features, double* output,
                const PredictionEarlyStopInstance* earlyStop) const override;
 
-  void PredictByMap(std::unordered_map<int, double>& features, double* output,
+  void PredictByMap(const std::unordered_map<int, double>& features, double* output,
                     const PredictionEarlyStopInstance* early_stop) const override;
 
-  void PredictLeafIndex(double* features, double* output) const override;
+  void PredictLeafIndex(const double* features, double* output) const override;
 
-  void PredictLeafIndexByMap(std::unordered_map<int, double>& features, double* output) const override;
+  void PredictLeafIndexByMap(const std::unordered_map<int, double>& features, double* output) const override;
 
-  void PredictContrib(double* features, double* output) const override;
+  void PredictContrib(const double* features, double* output) const override;
 
-  void PredictContribByMap(std::unordered_map<int, double>& features,
+  void PredictContribByMap(const std::unordered_map<int, double>& features,
                            std::vector<std::unordered_map<int, double>>* output) const override;
 
   /*!
@@ -390,7 +390,11 @@ class GBDT : public GBDTBase {
   */
   const char* SubModelName() const override { return "tree"; }
 
-  int num_extra_features() const override; 
+  int NumExtraFeatures() const override; 
+
+  void ConvertCatValues(double* features) const override;
+
+  void ConvertCatValues(std::unordered_map<int, double>& features) const override;
 
  protected:
   virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {

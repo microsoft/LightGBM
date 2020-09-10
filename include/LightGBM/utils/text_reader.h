@@ -171,23 +171,39 @@ class TextReader {
   }
 
   INDEX_T SampleFromFile(Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data,
-    std::vector<INDEX_T>& sampled_data_indices) {
+    std::vector<INDEX_T>* sampled_data_indices) {
     INDEX_T cur_sample_cnt = 0;
-    return ReadAllAndProcess([=, &random, &cur_sample_cnt,
+    if (sampled_data_indices == nullptr) {
+      return ReadAllAndProcess([=, &random, &cur_sample_cnt,
                               &out_sampled_data, &sampled_data_indices]
-    (INDEX_T line_idx, const char* buffer, size_t size) {
-      if (cur_sample_cnt < sample_cnt) {
-        out_sampled_data->emplace_back(buffer, size);
-        sampled_data_indices.push_back(line_idx);
-        ++cur_sample_cnt;
-      } else {
-        const size_t idx = static_cast<size_t>(random->NextInt(0, static_cast<int>(line_idx + 1)));
-        if (idx < static_cast<size_t>(sample_cnt)) {
-          out_sampled_data->operator[](idx) = std::string(buffer, size);
-          sampled_data_indices[idx] = line_idx;
+      (INDEX_T line_idx, const char* buffer, size_t size) {
+        if (cur_sample_cnt < sample_cnt) {
+          out_sampled_data->emplace_back(buffer, size);
+          ++cur_sample_cnt;
+        } else {
+          const size_t idx = static_cast<size_t>(random->NextInt(0, static_cast<int>(line_idx + 1)));
+          if (idx < static_cast<size_t>(sample_cnt)) {
+            out_sampled_data->operator[](idx) = std::string(buffer, size);
+          }
         }
-      }
-    });
+      });
+    } else {
+      return ReadAllAndProcess([=, &random, &cur_sample_cnt,
+                                &out_sampled_data, &sampled_data_indices]
+      (INDEX_T line_idx, const char* buffer, size_t size) {
+        if (cur_sample_cnt < sample_cnt) {
+          out_sampled_data->emplace_back(buffer, size);
+          sampled_data_indices->push_back(line_idx);
+          ++cur_sample_cnt;
+        } else {
+          const size_t idx = static_cast<size_t>(random->NextInt(0, static_cast<int>(line_idx + 1)));
+          if (idx < static_cast<size_t>(sample_cnt)) {
+            out_sampled_data->operator[](idx) = std::string(buffer, size);
+            sampled_data_indices->operator[](idx) = line_idx;
+          }
+        }
+      });
+    }
   }
   /*!
   * \brief Read part of text data from file in memory, use filter_fun to filter data

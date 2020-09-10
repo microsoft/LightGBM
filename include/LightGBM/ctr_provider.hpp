@@ -21,18 +21,25 @@ namespace LightGBM {
 class CTRProvider {
 public:
   class CatConverter {
-    private:
+    protected:
       std::unordered_map<int, int> cat_fid_to_convert_fid_;
     public:
       virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/) = 0;
+
       virtual std::string DumpToString() const = 0;
+
+      virtual std::string Name() const = 0;
+
       virtual void SetPrior(const double /*prior*/) {}
+
       void RegisterConvertFid(const int cat_fid, const int convert_fid) {
         cat_fid_to_convert_fid_[cat_fid] = convert_fid;
       }
+
       int convert_fid(const int cat_fid) {
-        return cat_fid_to_convert_fid_[cat_fid];
+        return cat_fid_to_convert_fid_.at(cat_fid);
       }
+
       int CalcNumExtraFeatures() const {
         int num_extra_features = 0;
         for (const auto& pair : cat_fid_to_convert_fid_) {
@@ -41,6 +48,39 @@ public:
           }
         }
         return num_extra_features;
+      }
+
+      static CatConverter* CreateFromString(const std::string& model_string) {
+        std::vector<std::string> split_model_string = Common::Split(model_string.c_str(), ",");
+        if (split_model_string.size() != 2) {
+          Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
+        }
+        const std::string& cat_converter_name = split_model_string[0];
+        const std::string& feature_map = split_model_string[1];
+        CatConverter* cat_converter = nullptr;
+        if (Common::StartsWith(cat_converter_name, std::string("label_mean_ctr"))) {
+          double prior = 0.0f;
+          Common::Atof(Common::Split(cat_converter_name.c_str(), ':')[1].c_str(), &prior);
+          cat_converter = new CTRConverterLabelMean();
+          cat_converter->SetPrior(prior);
+        } else if (Common::StartsWith(cat_converter_name, std::string("ctr"))) {
+          double prior = 0.0f;
+          Common::Atof(Common::Split(cat_converter_name.c_str(), ':')[1].c_str(), &prior);
+          cat_converter = new CTRConverter(prior);
+        } else if (cat_converter_name == std::string("count")) {
+          cat_converter = new CountConverter();
+        } else {
+          Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
+        }
+        std::stringstream feature_map_stream(feature_map);
+        int key = 0, val = 0;
+        while (feature_map_stream >> key) {
+          CHECK(feature_map_stream.get() == ':');
+          feature_map_stream >> val;
+          cat_converter->cat_fid_to_convert_fid_[key] = val;
+          feature_map_stream.get();
+        }
+        return cat_converter;
       }
   };
 
@@ -51,9 +91,15 @@ public:
         return (sum_label + prior_) / (sum_count + 1.0f);
       }
 
-      std::string DumpToString() const override {
+      std::string Name() const override {
         std::stringstream str_stream;
         str_stream << "ctr:" << prior_;
+        return str_stream.str();
+      }
+
+      std::string DumpToString() const override {
+        std::stringstream str_stream;
+        str_stream << Name() << "," << DumpDictToString(cat_fid_to_convert_fid_, '#');
         return str_stream.str();
       }
     private:
@@ -68,8 +114,14 @@ public:
         return all_fold_sum_count;
       }
       
-      std::string DumpToString() const override {
+      std::string Name() const override {
         return std::string("count");
+      }
+
+      std::string DumpToString() const override {
+        std::stringstream str_stream;
+        str_stream << Name() << "," << DumpDictToString(cat_fid_to_convert_fid_, '#');
+        return str_stream.str();
       }
   };
 
@@ -79,16 +131,29 @@ public:
       virtual void SetPrior(const double prior) {
         prior_ = prior;
         prior_set_ = true;
-      } 
+      }
+
       inline virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/) override {
         if(!prior_set_) {
           Log::Fatal("CTRConverterLabelMean is not ready since the prior value is not set.");
         }
-        return (sum_label + prior_) / (sum_count + 1.0f);
+        if (sum_count == 0.0) {
+          return prior_;
+        } else {
+          return sum_label / sum_count;
+        }
+        //return (sum_label + prior_) / (sum_count + 10.0f);
       }
-      std::string DumpToString() const override {
+
+      std::string Name() const override {
         std::stringstream str_stream;
         str_stream << "label_mean_ctr:" << prior_;
+        return str_stream.str();
+      }
+
+      std::string DumpToString() const override {
+        std::stringstream str_stream;
+        str_stream << Name() << "," << DumpDictToString(cat_fid_to_convert_fid_, '#');
         return str_stream.str();
       }
 
@@ -218,7 +283,10 @@ public:
     categorical_features_.clear();
     categorical_features_.shrink_to_fit();
     for(const int fid : categorical_features) {
-      categorical_features_.push_back(fid);
+      if (fid < num_original_features_) {
+        // the feature has non missing value in the sampled data
+        categorical_features_.push_back(fid);
+      }
     }
     std::sort(categorical_features_.begin(), categorical_features_.end());
     if(!config_.keep_old_cat_method && cat_converters_.size() > 0) {
@@ -324,9 +392,7 @@ public:
     push_valid_data_func_(tid, row_idx, group, sub_feature, value);
   }
 
-  double prior() const { return prior_; }
-
-  bool is_categorical(const int fid) const { 
+  bool IsCategorical(const int fid) const { 
     if(fid < num_original_features_) {
       return is_categorical_feature_[fid]; 
     }
@@ -335,23 +401,19 @@ public:
     }
   }
 
-  int num_categorical_features() const { return static_cast<int>(categorical_features_.size()); }
+  int ConvertFidToCatFid(int convert_fid) const { return convert_fid_to_cat_fid_.at(convert_fid); }
 
-  int convert_fid_to_cat_fid(int convert_fid) const { return convert_fid_to_cat_fid_.at(convert_fid); }
+  inline int GetNumOriginalFeatures() const { return num_original_features_; }
 
-  int num_threads() const { return num_threads_; }
-
-  inline int num_original_features() const { return num_original_features_; }
-
-  inline int num_total_features_after_expand() const { 
+  inline int GetNumTotalFeatures() const { 
     return num_total_features_;
   }
 
-  inline int num_cat_converters() const {
+  inline int GetNumCatConverters() const {
     return static_cast<int>(cat_converters_.size());
   }
 
-  inline int max_bin_for_feature(const int fid) const {
+  inline int GetMaxBinForFeature(const int fid) const {
     max_bin_by_feature_[fid];
   }
 
@@ -375,12 +437,13 @@ public:
 
   void ExtendFeatureNames(std::vector<std::string>& feature_names) const {
     CHECK(static_cast<int>(feature_names.size()) == num_original_features_);
+    const std::vector<std::string> old_feature_names = feature_names;
     feature_names.resize(num_total_features_);
     for (int fid = 0; fid < num_original_features_; ++fid) {
       if (is_categorical_feature_[fid]) {
         for (const auto& cat_converter : cat_converters_) {
           const int convert_fid = cat_converter->convert_fid(fid);
-          feature_names[convert_fid] = feature_names[fid] + std::string("_") + cat_converter->DumpToString();
+          feature_names[convert_fid] = old_feature_names[fid] + std::string("[") + cat_converter->Name() + std::string("]");
         }
       }
     }
@@ -440,21 +503,7 @@ private:
     cat_converters_.clear();
     std::string cat_converter_string;
     while (str_stream >> cat_converter_string) {
-      if (Common::StartsWith(cat_converter_string, std::string("label_mean_ctr"))) {
-        double prior = 0.0f;
-        Common::Atof(Common::Split(cat_converter_string.c_str(), ':')[1].c_str(), &prior);
-        cat_converters_.push_back(new CTRConverterLabelMean());
-        cat_converters_.back()->SetPrior(prior);
-      } else if (Common::StartsWith(cat_converter_string, std::string("ctr"))) {
-        double prior = 0.0f;
-        Common::Atof(Common::Split(cat_converter_string.c_str(), ':')[1].c_str(), &prior);
-        cat_converters_.push_back(new CTRConverter(prior));
-      }
-      else if (cat_converter_string == std::string("count")) {
-        cat_converters_.push_back(new CountConverter());
-      } else {
-        Log::Fatal("Unknown cat converter string %s", cat_converter_string.c_str());
-      }
+      cat_converters_.push_back(CatConverter::CreateFromString(cat_converter_string));
     }
   }
   
@@ -479,7 +528,7 @@ private:
 
   // dump a dictionary to string
   template <typename T>
-  static std::string DumpDictToString(const std::unordered_map<int, T>& dict) {
+  static std::string DumpDictToString(const std::unordered_map<int, T>& dict, const char delimiter) {
     std::stringstream str_buf;
     if(dict.empty()) {
       return str_buf.str();
@@ -488,7 +537,7 @@ private:
     str_buf << iter->first << ":" << iter->second;
     ++iter;
     for(; iter != dict.end(); ++iter) {
-      str_buf << " " << iter->first << ":" << iter->second;
+      str_buf << delimiter << iter->first << ":" << iter->second;
     }
     return str_buf.str();
   }

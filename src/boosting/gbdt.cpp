@@ -573,8 +573,7 @@ const double* GBDT::GetTrainingScore(int64_t* out_len) {
   return train_score_updater_->score();
 }
 
-void GBDT::PredictContrib(double* features, double* output) const {
-  ctr_provider_->ConvertCatToCTR(features);
+void GBDT::PredictContrib(const double* features, double* output) const {
   // set zero
   const int num_features = max_feature_idx_ + 1;
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_ * (num_features + 1));
@@ -587,9 +586,8 @@ void GBDT::PredictContrib(double* features, double* output) const {
   }
 }
 
-void GBDT::PredictContribByMap(std::unordered_map<int, double>& features,
+void GBDT::PredictContribByMap(const std::unordered_map<int, double>& features,
                                std::vector<std::unordered_map<int, double>>* output) const {
-  ctr_provider_->ConvertCatToCTR(features);
   const int num_features = max_feature_idx_ + 1;
   const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
   for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
@@ -801,7 +799,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   }
 }
 
-int GBDT::num_extra_features() const {
+int GBDT::NumExtraFeatures() const {
   return ctr_provider_->CalcNumExtraFeatures();
 }
 

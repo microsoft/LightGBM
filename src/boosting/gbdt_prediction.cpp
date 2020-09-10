@@ -10,11 +10,10 @@
 
 namespace LightGBM {
 
-void GBDT::PredictRaw(double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
   int early_stop_round_counter = 0;
   // set zero
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);
-  ctr_provider_->ConvertCatToCTR(features);
   const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
   for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
@@ -32,11 +31,10 @@ void GBDT::PredictRaw(double* features, double* output, const PredictionEarlySto
   }
 }
 
-void GBDT::PredictRawByMap(std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+void GBDT::PredictRawByMap(const std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {
   int early_stop_round_counter = 0;
   // set zero
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);
-  ctr_provider_->ConvertCatToCTR(features);
   const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
   for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
@@ -54,7 +52,7 @@ void GBDT::PredictRawByMap(std::unordered_map<int, double>& features, double* ou
   }
 }
 
-void GBDT::Predict(double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+void GBDT::Predict(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
   PredictRaw(features, output, early_stop);
   if (average_output_) {
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
@@ -66,7 +64,7 @@ void GBDT::Predict(double* features, double* output, const PredictionEarlyStopIn
   }
 }
 
-void GBDT::PredictByMap(std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+void GBDT::PredictByMap(const std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {
   PredictRawByMap(features, output, early_stop);
   if (average_output_) {
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
@@ -78,7 +76,7 @@ void GBDT::PredictByMap(std::unordered_map<int, double>& features, double* outpu
   }
 }
 
-void GBDT::PredictLeafIndex(double* features, double* output) const {
+void GBDT::PredictLeafIndex(const double* features, double* output) const {
   int start_tree = start_iteration_for_pred_ * num_tree_per_iteration_;
   int num_trees = num_iteration_for_pred_ * num_tree_per_iteration_;
   const auto* models_ptr = models_.data() + start_tree;
@@ -87,13 +85,21 @@ void GBDT::PredictLeafIndex(double* features, double* output) const {
   }
 }
 
-void GBDT::PredictLeafIndexByMap(std::unordered_map<int, double>& features, double* output) const {
+void GBDT::PredictLeafIndexByMap(const std::unordered_map<int, double>& features, double* output) const {
   int start_tree = start_iteration_for_pred_ * num_tree_per_iteration_;
   int num_trees = num_iteration_for_pred_ * num_tree_per_iteration_;
   const auto* models_ptr = models_.data() + start_tree;
   for (int i = 0; i < num_trees; ++i) {
     output[i] = models_ptr[i]->PredictLeafIndexByMap(features);
   }
+}
+
+void GBDT::ConvertCatValues(double* features) const {
+  ctr_provider_->ConvertCatToCTR(features);
+}
+
+void GBDT::ConvertCatValues(std::unordered_map<int, double>& features) const {
+  ctr_provider_->ConvertCatToCTR(features);
 }
 
 }  // namespace LightGBM

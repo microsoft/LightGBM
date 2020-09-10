@@ -131,10 +131,10 @@ class LIGHTGBM_EXPORT Boosting {
   * \param output Prediction result for this record
   * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
-  virtual void PredictRaw(double* features, double* output,
+  virtual void PredictRaw(const double* features, double* output,
                           const PredictionEarlyStopInstance* early_stop) const = 0;
 
-  virtual void PredictRawByMap(std::unordered_map<int, double>& features, double* output,
+  virtual void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
                                const PredictionEarlyStopInstance* early_stop) const = 0;
 
 
@@ -144,10 +144,10 @@ class LIGHTGBM_EXPORT Boosting {
   * \param output Prediction result for this record
   * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
-  virtual void Predict(double* features, double* output,
+  virtual void Predict(const double* features, double* output,
                        const PredictionEarlyStopInstance* early_stop) const = 0;
 
-  virtual void PredictByMap(std::unordered_map<int, double>& features, double* output,
+  virtual void PredictByMap(const std::unordered_map<int, double>& features, double* output,
                             const PredictionEarlyStopInstance* early_stop) const = 0;
 
 
@@ -157,19 +157,19 @@ class LIGHTGBM_EXPORT Boosting {
   * \param output Prediction result for this record
   */
   virtual void PredictLeafIndex(
-    double* features, double* output) const = 0;
+    const double* features, double* output) const = 0;
 
   virtual void PredictLeafIndexByMap(
-    std::unordered_map<int, double>& features, double* output) const = 0;
+    const std::unordered_map<int, double>& features, double* output) const = 0;
 
   /*!
   * \brief Feature contributions for the model's prediction of one record
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
   */
-  virtual void PredictContrib(double* features, double* output) const = 0;
+  virtual void PredictContrib(const double* features, double* output) const = 0;
 
-  virtual void PredictContribByMap(std::unordered_map<int, double>& features,
+  virtual void PredictContribByMap(const std::unordered_map<int, double>& features,
                                    std::vector<std::unordered_map<int, double>>* output) const = 0;
 
   /*!
@@ -295,7 +295,20 @@ class LIGHTGBM_EXPORT Boosting {
   */
   virtual const char* SubModelName() const = 0;
 
-  virtual int num_extra_features() const { return 0; }
+  /*!
+  * \brief Get the extra feature numbers by categorical converters 
+  */
+  virtual int NumExtraFeatures() const = 0;
+
+  /*!
+  * \brief Convert categorical values
+  */
+  virtual void ConvertCatValues(double* features) const = 0;
+
+  /*!
+  * \brief Convert categorical values
+  */
+  virtual void ConvertCatValues(std::unordered_map<int, double>& features) const = 0;
 
   Boosting() = default;
   /*! \brief Disable copy */

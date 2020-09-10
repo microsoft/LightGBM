@@ -41,7 +41,7 @@ class DatasetLoader {
   static std::vector<std::vector<double>> GetForcedBins(std::string forced_bins_path, int num_total_features,
                                                         const std::unordered_set<int>& categorical_features);
 
-  std::unordered_set<int>& GetParsedCategoricalFeatures() {
+  std::unordered_set<int> GetParsedCategoricalFeatures() {
     return categorical_features_;
   }
 
@@ -59,18 +59,18 @@ class DatasetLoader {
   std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
   std::vector<std::string> SampleTextDataFromMemory(const std::vector<std::string>& data,
-    std::vector<data_size_t>& sampled_data_indices);
+    std::vector<data_size_t>* sampled_data_indices);
 
   std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, 
     int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices, 
-    std::vector<data_size_t>& sampled_data_indices);
+    std::vector<data_size_t>* sampled_data_indices);
 
   CTRProvider* ConstructCTRProviderFromTextData(const std::vector<std::string>& text_data, Parser* parser, const int num_machines);
 
   CTRProvider* ConstructCTRProviderFromFile(const char* filename, Parser* parser, const int num_machines);
 
   void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data,
-    const Parser* parser, std::vector<data_size_t>& sampled_data_indices, Dataset* dataset, CTRProvider* ctr_provider);
+    const Parser* parser, const std::vector<data_size_t>& sampled_data_indices, Dataset* dataset, CTRProvider* ctr_provider);
 
   /*! \brief Extract local features from memory */
   void ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser, Dataset* dataset);

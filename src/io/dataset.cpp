@@ -315,7 +315,7 @@ std::vector<std::vector<int>> FastFeatureBundling(
 void Dataset::CreatePushDataFunc() {
   // when use_ctr > 0, ctr_provider can still be nullptr due to early construction of training dataset before training
   // in this case the use_ctr will be ignore
-  if(ctr_provider_.get() != nullptr && ctr_provider_->num_cat_converters() > 0) {
+  if(ctr_provider_.get() != nullptr && ctr_provider_->GetNumCatConverters() > 0) {
     ctr_provider_->CreatePushDataFunction(used_feature_map_, feature2group_, feature2subfeature_,
       [this](int tid, data_size_t row_idx, int group, int sub_feature, double value) {
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
@@ -399,10 +399,10 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       if ((cur_bin_mappers.back()->GetDefaultBin() !=
           cur_bin_mappers.back()->GetMostFreqBin()
             // converted features have no need to push zero, its pushing will be handled by its corresponding categorical feature
-            && (ctr_provider_.get() == nullptr || real_fidx < ctr_provider_->num_original_features())
+            && (ctr_provider_.get() == nullptr || real_fidx < ctr_provider_->GetNumOriginalFeatures())
           ) || (
             // categorical feature always need to push zero, if ctr value is used.
-            ctr_provider_.get() != nullptr && ctr_provider_->is_categorical(real_fidx) && ctr_provider_->num_cat_converters() > 0
+            ctr_provider_.get() != nullptr && ctr_provider_->IsCategorical(real_fidx) && ctr_provider_->GetNumCatConverters() > 0
           )) {
         feature_need_push_zeros_.push_back(cur_fidx);
       }

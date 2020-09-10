@@ -626,7 +626,7 @@ class Dataset {
 
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_) && !(
-      ctr_provider_.get() != nullptr && static_cast<int>(feature_names.size()) == ctr_provider_->num_original_features()
+      ctr_provider_.get() != nullptr && static_cast<int>(feature_names.size()) == ctr_provider_->GetNumOriginalFeatures()
     )) {
       Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
@@ -651,7 +651,7 @@ class Dataset {
     if (spaceInFeatureName) {
       Log::Warning("Find whitespaces in feature_names, replace with underlines");
     }
-    if (ctr_provider_.get() != nullptr && ctr_provider_->num_cat_converters() > 0) {
+    if (ctr_provider_.get() != nullptr && ctr_provider_->GetNumCatConverters() > 0) {
       ctr_provider_->ExtendFeatureNames(feature_names_);
     }
   }

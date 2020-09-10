@@ -974,13 +974,10 @@ struct Config {
 
   // desc = ways to convert categorical features, currently supports:
   // desc = ctr[:prior], where prior is a real number used to smooth the calculation of CTR values
+  // desc = if the prior value is missing, use the label mean of training data
   // desc = count, the count of the categorical feature value in the dataset
   // desc = for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
   std::string cat_converters = "";
-
-  // desc = whether to keep the original feature values after the dataset is constructed
-  // desc = if set false, then once dataset is constructed, the cat_converters cannot be changed through parameters in train method
-  bool keep_raw_cat_data = false;
 
   // desc = number of folds that training data is divided into, to calculate ctr values
   int num_ctr_folds = 4;

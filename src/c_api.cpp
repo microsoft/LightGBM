@@ -384,7 +384,7 @@ class Booster {
                const Config& config,
                double* out_result, int64_t* out_len) {
     if (!config.predict_disable_shape_check && 
-      (ncol != boosting_->MaxFeatureIdx() + 1 - boosting_->num_extra_features())) {
+      (ncol != boosting_->MaxFeatureIdx() + 1 - boosting_->NumExtraFeatures())) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
@@ -399,7 +399,7 @@ class Booster {
 
   Predictor CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
     if (!config.predict_disable_shape_check && 
-      (ncol != boosting_->MaxFeatureIdx() + 1 - boosting_->num_extra_features())) {
+      (ncol != boosting_->MaxFeatureIdx() + 1 - boosting_->NumExtraFeatures())) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
@@ -1074,9 +1074,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
     DatasetLoader loader(config, nullptr, 1, nullptr);
     CTRProvider* ctr_provider = new CTRProvider(config, 1, nmat, get_row_fun, get_label_fun, nrow);
-    const bool has_cat_convert = ctr_provider->num_cat_converters() > 0;
+    const bool has_cat_convert = ctr_provider->GetNumCatConverters() > 0;
     std::vector<bool> is_categorical_feature(ncol, false);
-    for(const int fid : loader.GetParsedCategoricalFeatures()) {
+    const auto& categorical_features = loader.GetParsedCategoricalFeatures();
+    for(const int fid : categorical_features) {
       is_categorical_feature[fid] = true;
     }
     int offset = 0;
@@ -1163,8 +1164,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     std::vector<bool> is_categorical_feature(num_col, false);
     DatasetLoader loader(config, nullptr, 1, nullptr);
     CTRProvider* ctr_provider = new CTRProvider(config, 1, get_row_fun, get_label_fun, nrow, num_col);
-    const bool has_cat_convert = ctr_provider->num_cat_converters() > 0;
-    for(const int fid : loader.GetParsedCategoricalFeatures()) {
+    const bool has_cat_convert = ctr_provider->GetNumCatConverters() > 0;
+    const auto& categorical_features = loader.GetParsedCategoricalFeatures();
+    for(const int fid : categorical_features) {
       is_categorical_feature[fid] = true;
     }
     sample_cnt = static_cast<int>(sample_indices.size());
@@ -1331,7 +1333,8 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     std::vector<LightGBM::label_t> sample_label;
     std::vector<bool> is_categorical_feature(ncol_ptr - 1, false);
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    for(const int fid : loader.GetParsedCategoricalFeatures()) {
+    const auto& categorical_features = loader.GetParsedCategoricalFeatures();
+    for(const int fid : categorical_features) {
       is_categorical_feature[fid] = true;
     }
 
@@ -1345,7 +1348,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       }
     }
     CTRProvider* ctr_provider = new CTRProvider(config, 1, col_iter_funcs, get_label_fun, nrow, ncol_ptr - 1);
-    const bool has_cat_converters = ctr_provider->num_cat_converters() > 0;
+    const bool has_cat_converters = ctr_provider->GetNumCatConverters() > 0;
 
     OMP_INIT_EX();
     if(has_cat_converters) {
@@ -1395,7 +1398,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
     auto bin_mapper = ret->FeatureBinMapper(feature_idx);
     if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin() &&
-      !(ret->ctr_provider() != nullptr && ret->ctr_provider()->is_categorical(i))) {
+      !(ret->ctr_provider() != nullptr && ret->ctr_provider()->IsCategorical(i))) {
       int row_idx = 0;
       while (row_idx < nrow) {
         auto pair = col_it.NextNonZero();
@@ -1579,7 +1582,7 @@ int LGBM_DatasetGetNumOriginalFeature(DatasetHandle handle,
                               int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
-  *out = dataset->ctr_provider()->num_original_features();
+  *out = dataset->ctr_provider()->GetNumOriginalFeatures();
   API_END();
 }
 
