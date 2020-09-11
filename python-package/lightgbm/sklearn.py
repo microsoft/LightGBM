@@ -945,11 +945,12 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=[1, 2, 3, 4, 5], early_stopping_rounds=None, verbose=True,
+            eval_at=None, early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         # check group data
+        eval_at = eval_at or [1, 2, 3, 4, 5]
         if group is None:
             raise ValueError("Should set group for ranking task")
 
