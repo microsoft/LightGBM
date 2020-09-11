@@ -75,7 +75,6 @@ lgb.importance <- function(model, percentage = TRUE) {
     )]
   }
 
-  # Return importance table
   return(tree_imp_dt)
 
 }
