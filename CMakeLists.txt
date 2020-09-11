@@ -450,6 +450,11 @@ if(__BUILD_FOR_R)
   endif(MSVC)
 endif(__BUILD_FOR_R)
 
+# fmtlib/fmt
+add_subdirectory(external_libs/fmt)
+TARGET_LINK_LIBRARIES(lightgbm PUBLIC fmt::fmt)
+TARGET_LINK_LIBRARIES(_lightgbm PUBLIC fmt::fmt)
+
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
