@@ -171,7 +171,7 @@ check_succeeded="yes"
 (
     R CMD check ${PKG_TARBALL} \
         --as-cran \
-        --run-dontrun \
+        --run-donttest \
     || check_succeeded="no"
 ) &
 

@@ -165,9 +165,9 @@ if ($env:COMPILER -ne "MSVC") {
   Write-Output "Running R CMD check"
   if ($env:R_BUILD_TYPE -eq "cran") {
     # CRAN packages must pass without --no-multiarch (build on 64-bit and 32-bit)
-    $check_args = "c('CMD', 'check', '--as-cran', '--run-dontrun', '$PKG_FILE_NAME')"
+    $check_args = "c('CMD', 'check', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   } else {
-    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-dontrun', '$PKG_FILE_NAME')"
+    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   }
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
 
