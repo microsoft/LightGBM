@@ -1,5 +1,43 @@
 # CRAN Submission History
 
+## v3.0.0 - Submission 5 - (September 11, 2020)
+
+### CRAN Response
+
+### Maintainer Notes
+
+## v3.0.0 - Submission 4 - (September 4, 2020)
+
+### CRAN Response
+
+> Thanks, if the running time is the only reason to wrap the examples in
+\donttest, please replace \donttest by \donttest (\donttest examples are
+not executed in the CRAN checks).
+
+> Please replace cat() by message() or warning() in your functions (except
+for print() and summary() functions). Messages and warnings can be
+suppressed if needed.
+
+> Missing Rd-tags:
+  lightgbm/man/dimnames.lgb.Dataset.Rd: \value
+  lightgbm/man/lgb.Dataset.construct.Rd: \value
+  lightgbm/man/lgb.prepare.Rd: \value
+  ...
+
+> Please add the tag and explain in detail the returned objects.
+
+### Maintainer Notes
+
+responded to CRAN with the following:
+
+All examples have been wrapped with `\donttest` as requested. We have replied to Swetlana Herbrandt asking for clarification on what this item in the R 4.0.2 changelog (https://cran.r-project.org/doc/manuals/r-devel/NEWS.html) means:
+
+> "`R CMD check --as-cran` now runs \donttest examples (which are run by example()) instead of instructing the tester to do so. This can be temporarily circumvented during development by setting environment variable `_R_CHECK_DONTTEST_EXAMPLES_` to a false value."
+
+All uses of `cat()` have been replaced with `print()`. We chose `print()` over `message()` because it's important that they be written to stdout alongside all the other logs coming from the library's C++ code. `message()` and `warning()` write to stderr.
+
+All exported objects now have `\value{}` statements in their documentation files in `man/`.
+
 ## v3.0.0 - Submission 3 - (August 29, 2020)
 
 ### CRAN response
@@ -12,8 +50,8 @@ the form
 * if those are not available: authors (year) https:... with no space after 'doi:', 'arXiv:', 'https:' and angle brackets for auto-linking.
 * (If you want to add a title as well please put it in quotes: "Title")
 
-* \dontrun{} should only be used if the example really cannot be executed (e.g. because of missing additional software, missing API keys, ...) by the user. That's why wrapping examples in \dontrun{} adds the comment ("# Not run:") as a warning for the user. Does not seem necessary. Please unwrap the examples if they are executable in < 5 sec, or replace
-\dontrun{} with \donttest{}.
+* \donttest{} should only be used if the example really cannot be executed (e.g. because of missing additional software, missing API keys, ...) by the user. That's why wrapping examples in \donttest{} adds the comment ("# Not run:") as a warning for the user. Does not seem necessary. Please unwrap the examples if they are executable in < 5 sec, or replace
+\donttest{} with \donttest{}.
 
 * Please do not modify the global environment (e.g. by using <<-) in your
 functions. This is not allowed by the CRAN policies.
@@ -32,7 +70,7 @@ All authors from the original LightGBM paper have been added to Authors@R as `"a
 
 lightgbm's code does use `<<-`, but it does not modify the global environment.  The uses of `<<-` in R/lgb.interprete.R and R/callback.R are in functions which are called in an environment created by the lightgbm functions that call them, and this operator is used to reach one level up into the calling function's environment.
 
-We chose to wrap our examples in `\dontrun{}` because we found, through testing on https://builder.r-hub.io/ and in our own continuous integration environments, that their run time varies a lot between platforms, and we cannot guarantee that all examples will run in under 5 seconds. We intentionally chose `\dontrun{}` over `\donttest{}` because this item in the R 4.0.0 changelog (https://cran.r-project.org/doc/manuals/r-devel/NEWS.html) seems to indicate that \donttest will be ignored by CRAN's automated checks:
+We chose to wrap our examples in `\donttest{}` because we found, through testing on https://builder.r-hub.io/ and in our own continuous integration environments, that their run time varies a lot between platforms, and we cannot guarantee that all examples will run in under 5 seconds. We intentionally chose `\donttest{}` over `\donttest{}` because this item in the R 4.0.0 changelog (https://cran.r-project.org/doc/manuals/r-devel/NEWS.html) seems to indicate that \donttest will be ignored by CRAN's automated checks:
 
 > "`R CMD check --as-cran` now runs \donttest examples (which are run by example()) instead of instructing the tester to do so. This can be temporarily circumvented during development by setting environment variable `_R_CHECK_DONTTEST_EXAMPLES_` to a false value."
 

@@ -71,6 +71,9 @@ List of callback functions that are applied at each iteration.}
                         CPU using hyper-threading to generate 2 threads per CPU core).}
 }}
 }
+\value{
+a trained \code{lgb.Booster}
+}
 \description{
 Simple interface for training a LightGBM model.
 }

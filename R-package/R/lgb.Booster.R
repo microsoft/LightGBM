@@ -730,7 +730,7 @@ Booster <- R6::R6Class(
 #'         number of columns corresponding to the number of trees.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -790,7 +790,7 @@ predict.lgb.Booster <- function(object,
 #' @return lgb.Booster
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -850,7 +850,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @return lgb.Booster
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -898,7 +898,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @return json format of model
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -943,10 +943,10 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'              (the default), evaluation results for all iterations will be returned.
 #' @param is_err TRUE will return evaluation error instead
 #'
-#' @return vector of evaluation result
+#' @return numeric vector of evaluation result
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # train a regression model
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
