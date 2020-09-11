@@ -30,13 +30,24 @@ suppressed if needed.
 
 responded to CRAN with the following:
 
-All examples have been wrapped with `\donttest` as requested. We have replied to Swetlana Herbrandt asking for clarification on what this item in the R 4.0.2 changelog (https://cran.r-project.org/doc/manuals/r-devel/NEWS.html) means:
-
-> "`R CMD check --as-cran` now runs \donttest examples (which are run by example()) instead of instructing the tester to do so. This can be temporarily circumvented during development by setting environment variable `_R_CHECK_DONTTEST_EXAMPLES_` to a false value."
+All examples have been wrapped with `\donttest` as requested. We have replied to Swetlana Herbrandt asking for clarification on the donttest news item in the R 4.0.2 changelog (https://cran.r-project.org/doc/manuals/r-devel/NEWS.html).
 
 All uses of `cat()` have been replaced with `print()`. We chose `print()` over `message()` because it's important that they be written to stdout alongside all the other logs coming from the library's C++ code. `message()` and `warning()` write to stderr.
 
 All exported objects now have `\value{}` statements in their documentation files in `man/`.
+
+**we also replied directly to CRAN's feedback email**
+
+> Swetlana,
+
+> Thank you for your comments. I've just created a new submission that I believe addresses them.
+
+> Can you help us understand something? In your message you said "\donttest examples are
+not executed in the CRAN checks)", but in https://cran.r-project.org/doc/manuals/r-devel/NEWS.html  we see the following:
+
+> > "`R CMD check --as-cran` now runs \donttest examples (which are run by example()) instead of instructing the tester to do so. This can be temporarily circumvented during development by setting environment variable `_R_CHECK_DONTTEST_EXAMPLES_` to a false value."
+
+> Could you help us understand how both of those statements can be true?
 
 ## v3.0.0 - Submission 3 - (August 29, 2020)
 
@@ -134,7 +145,7 @@ For the note about included files, that is my fault. I had extra files laying ar
 
 NOTE: 3.0.0-1 was never released to CRAN. CRAN was on vacation August 14-24, 2020, and in that time version 3.0.0-1 (a release candidate) became 3.0.0.
 
-### CRAN respoonse
+### CRAN response
 
 > Please only ship the CRAN template for the MIT license.
 
