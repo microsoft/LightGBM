@@ -13,7 +13,7 @@ set.seed(708L)
 #               This is used to mock the situation where an evaluation
 #               metric increases every iteration
 ACCUMULATOR_NAME <- "INCREASING_METRIC_ACUMULATOR"
-assign(x = "INCREASING_METRIC_ACUMULATOR", value = 0.0, envir = .GlobalEnv)
+assign(x = ACCUMULATOR_NAME, value = 0.0, envir = .GlobalEnv)
 
 .increasing_metric <- function(preds, dtrain) {
   if (!exists(ACCUMULATOR_NAME, envir = .GlobalEnv)) {

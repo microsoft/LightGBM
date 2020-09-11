@@ -105,7 +105,6 @@ Dataset <- R6::R6Class(
         , ...
       )
 
-      # Return ret
       return(invisible(ret))
 
     },
@@ -312,7 +311,6 @@ Dataset <- R6::R6Class(
         stop("lgb.Dataset.construct: label should be set")
       }
 
-      # Return self
       return(invisible(self))
 
     },
@@ -405,7 +403,6 @@ Dataset <- R6::R6Class(
 
       }
 
-      # Return self
       return(invisible(self))
 
     },
@@ -504,7 +501,6 @@ Dataset <- R6::R6Class(
 
       }
 
-      # Return self
       return(invisible(self))
 
     },
@@ -677,7 +673,6 @@ Dataset <- R6::R6Class(
     # Set predictor
     set_predictor = function(predictor) {
 
-      # Return self is identical predictor
       if (identical(private$predictor, predictor)) {
         return(invisible(self))
       }
@@ -848,7 +843,6 @@ dim.lgb.Dataset <- function(x, ...) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
   }
 
-  # Return dimensions
   x$dim()
 
 }
@@ -905,10 +899,8 @@ dimnames.lgb.Dataset <- function(x) {
     stop("lgb.Dataset does not have rownames")
   }
 
-  # Check for second value missing
   if (is.null(value[[2L]])) {
 
-    # No column names
     x$set_colnames(NULL)
     return(x)
 
@@ -1015,7 +1007,6 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
     stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  # Return information
   dataset$getinfo(name)
 
 }
@@ -1065,7 +1056,6 @@ setinfo <- function(dataset, ...) {
 #' @export
 setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(dataset)) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
@@ -1098,7 +1088,6 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' @export
 lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(dataset)) {
     stop("lgb.Dataset.set.categorical: input dataset should be an lgb.Dataset object")
   }

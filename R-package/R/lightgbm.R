@@ -1,8 +1,7 @@
 #' @name lgb_shared_params
 #' @title Shared parameter docs
 #' @description Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
-#' @param callbacks list of callback functions
-#'        List of callback functions that are applied at each iteration.
+#' @param callbacks List of callback functions that are applied at each iteration.
 #' @param data a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
 #'             may allow you to pass other types of data like \code{matrix} and then separately supply
 #'             \code{label} as a keyword argument.
@@ -156,7 +155,6 @@ lightgbm <- function(data,
   # Store model under a specific name
   bst$save_model(save_name)
 
-  # Return booster
   return(bst)
 }
 

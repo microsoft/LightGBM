@@ -7,7 +7,7 @@
 lgb.prepare2(...)
 }
 \arguments{
-\item{...}{catch-all too match old calls}
+\item{...}{catch-all to match old calls}
 }
 \value{
 Nothing. This function always raises an exception
