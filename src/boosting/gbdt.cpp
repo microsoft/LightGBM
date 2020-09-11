@@ -660,6 +660,9 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   objective_function_ = objective_function;
   if (objective_function_ != nullptr) {
     CHECK_EQ(num_tree_per_iteration_, objective_function_->NumModelPerIteration());
+    if (objective_function_->IsRenewTreeOutput() && !config_->monotone_constraints.empty()) {
+      Log::Fatal('Cannot use ``monotone_constraints`` in %s objective, please disable it.', objective_function_->GetName());
+    }
   }
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
