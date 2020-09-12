@@ -445,7 +445,7 @@ struct AdvancedConstraintEntry : ConstraintEntry {
   }
 
   bool UpdateMaxAndReturnBoolIfChanged(double new_max) final {
-    for (unsigned int i = 0; i < constraints.size(); i++) {
+    for (size_t i = 0; i < constraints.size(); ++i) {
       constraints[i].UpdateMax(new_max, true);
     }
     // even if nothing changed, this could have been unconstrained so it needs
