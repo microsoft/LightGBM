@@ -424,7 +424,7 @@ struct AdvancedConstraintEntry : ConstraintEntry {
   }
 
   void UpdateMin(double new_min) final {
-    for (unsigned int i = 0; i < constraints.size(); i++) {
+    for (size_t i = 0; i < constraints.size(); ++i) {
       constraints[i].UpdateMin(new_min, false);
     }
   }
