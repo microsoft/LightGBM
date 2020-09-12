@@ -430,7 +430,7 @@ struct AdvancedConstraintEntry : ConstraintEntry {
   }
 
   void UpdateMax(double new_max) final {
-    for (unsigned int i = 0; i < constraints.size(); i++) {
+    for (size_t i = 0; i < constraints.size(); ++i) {
       constraints[i].UpdateMax(new_max, false);
     }
   }
