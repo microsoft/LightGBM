@@ -702,9 +702,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     FeatureHistogram* histogram_array_, int feature_index, int real_fidx,
     bool is_feature_used, int num_data, const LeafSplits* leaf_splits,
     SplitInfo* best_split) {
-  if (!is_feature_used) {
-    return;
-  }
   SplitInfo new_split;
   double parent_output;
   if (leaf_splits->leaf_index() == 0) {
@@ -730,7 +727,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         leaf_splits->leaf_index(), config_->monotone_penalty);
     new_split.gain *= penalty;
   }
-  if (new_split > *best_split) {
+  if (new_split > *best_split && is_feature_used) {
     *best_split = new_split;
   }
 }
