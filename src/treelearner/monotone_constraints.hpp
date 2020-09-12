@@ -413,7 +413,7 @@ struct AdvancedConstraintEntry : ConstraintEntry {
   }
 
   // for each feature, an array of constraints needs to be stored
-  explicit AdvancedConstraintEntry(unsigned int num_features) {
+  explicit AdvancedConstraintEntry(int num_features) {
     constraints.resize(num_features);
   }
 
