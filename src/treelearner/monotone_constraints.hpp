@@ -123,7 +123,7 @@ struct FeatureMinOrMaxConstraints {
   }
 
   void UpdateMin(double min) {
-    for (unsigned int j = 0; j < constraints.size(); j++) {
+    for (size_t j = 0; j < constraints.size(); ++j) {
       if (min > constraints[j]) {
         constraints[j] = min;
       }
