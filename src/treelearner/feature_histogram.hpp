@@ -951,8 +951,8 @@ class FeatureHistogram {
           best_threshold = static_cast<uint32_t>(t - 1 + offset);
           best_gain = current_gain;
           if (USE_MC) {
-            best_right_constraints = (constraints->RightToBasicConstraint());
-            best_left_constraints = (constraints->LeftToBasicConstraint());
+            best_right_constraints = constraints->RightToBasicConstraint();
+            best_left_constraints = constraints->LeftToBasicConstraint();
           }
         }
       }
@@ -1039,8 +1039,8 @@ class FeatureHistogram {
           best_threshold = static_cast<uint32_t>(t + offset);
           best_gain = current_gain;
           if (USE_MC) {
-            best_right_constraints = (constraints->RightToBasicConstraint());
-            best_left_constraints = (constraints->LeftToBasicConstraint());
+            best_right_constraints = constraints->RightToBasicConstraint();
+            best_left_constraints = constraints->LeftToBasicConstraint();
           }
         }
       }
