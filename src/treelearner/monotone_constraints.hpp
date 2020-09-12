@@ -878,7 +878,7 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
     // the previous constraint that still applies needs to be recorded
     double previous_constraint;
     double current_constraint;
-    for (unsigned int i = 0; i < feature_constraint->thresholds.size();) {
+    for (size_t i = 0; i < feature_constraint->thresholds.size();) {
       current_constraint = feature_constraint->constraints[i];
       // easy case when the thresholds match
       if (feature_constraint->thresholds[i] == it_start) {
