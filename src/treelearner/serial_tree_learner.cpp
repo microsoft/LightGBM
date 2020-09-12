@@ -727,6 +727,8 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         leaf_splits->leaf_index(), config_->monotone_penalty);
     new_split.gain *= penalty;
   }
+  // it is needed to filter the features after above code. 
+  // Otherwise, the `is_splittable` in `FeatureHistogram` will be wrong, and cause some features being accidentally filtered in the later nodes.
   if (new_split > *best_split && is_feature_used) {
     *best_split = new_split;
   }
