@@ -72,7 +72,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   if (objective_function_ != nullptr) {
     num_tree_per_iteration_ = objective_function_->NumModelPerIteration();
     if (objective_function_->IsRenewTreeOutput() && !config->monotone_constraints.empty()) {
-      Log::Fatal('Cannot use ``monotone_constraints`` in %s objective, please disable it.', objective_function_->GetName());
+      Log::Fatal("Cannot use ``monotone_constraints`` in %s objective, please disable it.", objective_function_->GetName());
     }
   }
 
@@ -661,7 +661,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   if (objective_function_ != nullptr) {
     CHECK_EQ(num_tree_per_iteration_, objective_function_->NumModelPerIteration());
     if (objective_function_->IsRenewTreeOutput() && !config_->monotone_constraints.empty()) {
-      Log::Fatal('Cannot use ``monotone_constraints`` in %s objective, please disable it.', objective_function_->GetName());
+      Log::Fatal("Cannot use ``monotone_constraints`` in %s objective, please disable it.", objective_function_->GetName());
     }
   }
   is_constant_hessian_ = GetIsConstHessian(objective_function);
@@ -717,7 +717,7 @@ void GBDT::ResetConfig(const Config* config) {
     CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->feature_contri.size());
   }
   if (objective_function_ != nullptr && objective_function_->IsRenewTreeOutput() && !config->monotone_constraints.empty()) {
-    Log::Fatal('Cannot use ``monotone_constraints`` in %s objective, please disable it.', objective_function_->GetName());
+    Log::Fatal("Cannot use ``monotone_constraints`` in %s objective, please disable it.", objective_function_->GetName());
   }
   early_stopping_round_ = new_config->early_stopping_round;
   shrinkage_rate_ = new_config->learning_rate;
