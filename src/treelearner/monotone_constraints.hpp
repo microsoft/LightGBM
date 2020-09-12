@@ -876,7 +876,9 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
     // [0, 1, 2] and  [cstr1, cstr2, cstr1]
     // so since we loop through thresholds only once,
     // the previous constraint that still applies needs to be recorded
-    double previous_constraint;
+    double previous_constraint = use_max_operator
+      ? -std::numeric_limits<double>::max()
+      : std::numeric_limits<double>::max();
     double current_constraint;
     for (size_t i = 0; i < feature_constraint->thresholds.size();) {
       current_constraint = feature_constraint->constraints[i];
