@@ -714,7 +714,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
 
   bool is_feature_numerical = train_data_->FeatureBinMapper(feature_index)
                                   ->bin_type() == BinType::NumericalBin;
-  if (is_feature_numerical) {
+  if (is_feature_numerical & !config_->monotone_constraints.empty()) {
     constraints_->RecomputeConstraintsIfNeeded(
         constraints_.get(), feature_index, ~(leaf_splits->leaf_index()),
         train_data_->FeatureNumBin(feature_index));
