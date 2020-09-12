@@ -856,7 +856,7 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
   AdvancedLeafConstraints(const Config *config, int num_leaves,
                           int num_features)
       : IntermediateLeafConstraints(config, num_leaves) {
-    for (int i = 0; i < num_leaves; i++) {
+    for (int i = 0; i < num_leaves; ++i) {
       entries_[i] = new AdvancedConstraintEntry(num_features);
     }
   }
