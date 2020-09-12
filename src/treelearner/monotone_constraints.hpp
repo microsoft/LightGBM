@@ -163,10 +163,10 @@ struct CumulativeFeatureConstraint {
     CHECK_NE(cumulative_extremum->size(), 0);
 #endif
 
-    std::size_t n_exts = cumulative_extremum->size();
+    size_t n_exts = cumulative_extremum->size();
     int step = is_direction_from_left_to_right ? 1 : -1;
-    std::size_t start = is_direction_from_left_to_right ? 0 : n_exts - 1;
-    std::size_t end = is_direction_from_left_to_right ? n_exts - 1 : 0;
+    size_t start = is_direction_from_left_to_right ? 0 : n_exts - 1;
+    size_t end = is_direction_from_left_to_right ? n_exts - 1 : 0;
 
     for (auto i = start; i != end; i = i + step) {
       (*cumulative_extremum)[i + step] = extremum_function(
