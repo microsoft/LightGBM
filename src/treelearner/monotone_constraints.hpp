@@ -146,10 +146,10 @@ struct CumulativeFeatureConstraint {
   std::vector<double> cumulative_min_constraints_right_to_left;
   std::vector<double> cumulative_max_constraints_left_to_right;
   std::vector<double> cumulative_max_constraints_right_to_left;
-  unsigned int index_min_constraints_left_to_right;
-  unsigned int index_min_constraints_right_to_left;
-  unsigned int index_max_constraints_left_to_right;
-  unsigned int index_max_constraints_right_to_left;
+  size_t index_min_constraints_left_to_right;
+  size_t index_min_constraints_right_to_left;
+  size_t index_max_constraints_left_to_right;
+  size_t index_max_constraints_right_to_left;
 
   static void CumulativeExtremum(
       const double &(*extremum_function)(const double &, const double &),
