@@ -461,7 +461,7 @@ struct AdvancedConstraintEntry : ConstraintEntry {
 class BasicLeafConstraints : public LeafConstraintsBase {
  public:
   explicit BasicLeafConstraints(int num_leaves) : num_leaves_(num_leaves) {
-    for (int i = 0; i < num_leaves; i++) {
+    for (int i = 0; i < num_leaves; ++i) {
       entries_.push_back(new BasicConstraintEntry());
     }
   }
