@@ -418,7 +418,7 @@ struct AdvancedConstraintEntry : ConstraintEntry {
   }
 
   void Reset() final {
-    for (unsigned int i = 0; i < constraints.size(); i++) {
+    for (size_t i = 0; i < constraints.size(); ++i) {
       constraints[i].Reset();
     }
   }
