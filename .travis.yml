@@ -9,7 +9,7 @@ git:
 os:
   - linux
   - osx
-dist: focal
+dist: bionic
 osx_image: xcode12
 
 env:
