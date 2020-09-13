@@ -7,6 +7,7 @@
 #include "gpu_tree_learner.h"
 #include "parallel_tree_learner.h"
 #include "serial_tree_learner.h"
+#include "linear_tree_learner.h"
 
 namespace LightGBM {
 
@@ -14,7 +15,14 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
                                             const Config* config) {
   if (device_type == std::string("cpu")) {
     if (learner_type == std::string("serial")) {
-      return new SerialTreeLearner(config);
+      if (config->linear_tree) {
+#ifdef LGB_R_BUILD
+        Log::Fatal("Linear tree learner does not work with R package.");
+#endif  // LGB_R_BUILD
+        return new LinearTreeLearner(config);
+      } else {
+        return new SerialTreeLearner(config);
+      }
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<SerialTreeLearner>(config);
     } else if (learner_type == std::string("data")) {
