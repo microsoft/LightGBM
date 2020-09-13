@@ -69,8 +69,9 @@ class LeafSplits {
     leaf_index_ = 0;
     data_indices_ = nullptr;
     Threading::SumReduction<data_size_t, double, double>(
-        0, num_data_in_leaf_, 1024,
+        0, num_data_in_leaf_, 2048,
         [=](int, data_size_t start, data_size_t end, double* s1, double* s2) {
+          *s1 = *s2 = 0;
           for (data_size_t i = start; i < end; ++i) {
             *s1 += gradients[i];
             *s2 += hessians[i];
@@ -90,9 +91,10 @@ class LeafSplits {
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     Threading::SumReduction<data_size_t, double, double>(
-        0, num_data_in_leaf_, 1024,
+        0, num_data_in_leaf_, 2048,
         [=](int, data_size_t start, data_size_t end, double* s1, double* s2) {
           for (data_size_t i = start; i < end; ++i) {
+            *s1 = *s2 = 0;
             data_size_t idx = data_indices_[i];
             *s1 += gradients[idx];
             *s2 += hessians[idx];

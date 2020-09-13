@@ -229,6 +229,10 @@ void GBDT::Bagging(int iter) {
         bag_data_indices_.data());
     bag_data_cnt_ = left_cnt;
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
+    // check bagging results, for debug. should be removed before merge.
+    for (data_size_t i = 1; i < bag_data_cnt_; ++i) {
+      CHECK_GT(bag_data_indices_[i], bag_data_indices_[i - 1]);
+    }
     // set bagging data to tree learner
     if (!is_use_subset_) {
       tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);

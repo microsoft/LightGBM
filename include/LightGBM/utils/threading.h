@@ -18,6 +18,7 @@ namespace LightGBM {
 
 class Threading {
  public:
+
   template <typename INDEX_T>
   static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block,
                                int* out_nblock, INDEX_T* block_size) {
@@ -25,6 +26,7 @@ class Threading {
     BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
                        block_size);
   }
+
   template <typename INDEX_T>
   static inline void BlockInfo(int num_threads, INDEX_T cnt,
                                INDEX_T min_cnt_per_block, int* out_nblock,
@@ -38,6 +40,7 @@ class Threading {
       *block_size = cnt;
     }
   }
+
   template <typename INDEX_T>
   static inline void BlockInfoForceSize(int num_threads, INDEX_T cnt,
                                         INDEX_T min_cnt_per_block,
@@ -53,6 +56,14 @@ class Threading {
     } else {
       *block_size = cnt;
     }
+  }
+
+  template <typename INDEX_T>
+  static inline void BlockInfoForceSize(INDEX_T cnt, INDEX_T min_cnt_per_block,
+                                        int* out_nblock, INDEX_T* block_size) {
+    int num_threads = OMP_NUM_THREADS();
+    BlockInfoForceSize<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
+                                block_size);
   }
 
   template <typename INDEX_T>
@@ -83,7 +94,8 @@ class Threading {
       VAL1_T* res1, VAL2_T* res2) {
     int n_block = 1;
     INDEX_T num_inner = end - start;
-    BlockInfo<INDEX_T>(end - start, min_block_size, &n_block, &num_inner);
+    BlockInfoForceSize<INDEX_T>(end - start, min_block_size, &n_block,
+                                &num_inner);
     std::vector<VAL1_T> val_1s(n_block, static_cast<VAL1_T>(0));
     std::vector<VAL2_T> val_2s(n_block, static_cast<VAL2_T>(0));
     OMP_INIT_EX();
