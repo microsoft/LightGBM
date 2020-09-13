@@ -2,15 +2,15 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+#include "linear_tree_learner.h"
 
+#include <algorithm>
 
 #ifndef LGB_R_BUILD
 // preprocessor definition ensures we use only MPL2-licensed code
 #define EIGEN_MPL2_ONLY
 #include <Eigen/Dense>
 #endif  // !LGB_R_BUILD
-
-#include "linear_tree_learner.h"
 
 namespace LightGBM {
 

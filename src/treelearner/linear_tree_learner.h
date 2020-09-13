@@ -5,13 +5,20 @@
 #ifndef LIGHTGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
 
+#include <string>
+#include <cmath>
+#include <cstdio>
+#include <memory>
+#include <random>
+#include <vector>
+
 #include "serial_tree_learner.h"
 
 namespace LightGBM {
 
 class LinearTreeLearner: public SerialTreeLearner {
  public:
-   explicit LinearTreeLearner(const Config* config) : SerialTreeLearner(config) {};
+  explicit LinearTreeLearner(const Config* config) : SerialTreeLearner(config) {}
 
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
