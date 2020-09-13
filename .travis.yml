@@ -24,7 +24,7 @@ env:
     - TASK=check-docs
     - TASK=mpi METHOD=source
     - TASK=mpi METHOD=pip PYTHON_VERSION=3.7
-    - TASK=gpu METHOD=source PYTHON_VERSION=3.6
+    - TASK=gpu METHOD=source PYTHON_VERSION=3.5
     - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
 
 matrix:
@@ -47,7 +47,7 @@ before_install:
         export COMPILER="gcc";
     else
         export OS_NAME="linux";
-        export COMPILER="gcc";
+        export COMPILER="clang";
     fi
   - export CONDA="$HOME/miniconda"
   - export PATH="$CONDA/bin:$PATH"
