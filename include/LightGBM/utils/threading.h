@@ -18,7 +18,6 @@ namespace LightGBM {
 
 class Threading {
  public:
-
   template <typename INDEX_T>
   static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block,
                                int* out_nblock, INDEX_T* block_size) {
