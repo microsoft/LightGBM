@@ -47,7 +47,7 @@ before_install:
         export COMPILER="gcc";
     else
         export OS_NAME="linux";
-        export COMPILER="clang";
+        export COMPILER="gcc";
     fi
   - export CONDA="$HOME/miniconda"
   - export PATH="$CONDA/bin:$PATH"
