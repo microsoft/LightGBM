@@ -719,7 +719,7 @@ void GBDT::ResetConfig(const Config* config) {
   if (train_data_ != nullptr) {
     ResetBaggingConfig(new_config.get(), false);
   }
-  if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedbins_filename) {
+  if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedsplits_filename) {
     // load forced_splits file
     if (!new_config->forcedsplits_filename.empty()) {
       std::ifstream forced_splits_file(
