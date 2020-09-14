@@ -26,7 +26,7 @@ endif(APPLE)
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)
   set(USE_GPU OFF CACHE BOOL "" FORCE)
-  message(WARNING "WARNING: building library with integrated OpenCL components")
+  message(STATUS "Building library with integrated OpenCL components")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
