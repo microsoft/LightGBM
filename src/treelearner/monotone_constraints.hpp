@@ -880,7 +880,7 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
       ? -std::numeric_limits<double>::max()
       : std::numeric_limits<double>::max();
     double current_constraint;
-    for (size_t i = 0; i < feature_constraint->thresholds.size();) {
+    for (size_t i = 0; i < feature_constraint->thresholds.size(); ++i) {
       current_constraint = feature_constraint->constraints[i];
       // easy case when the thresholds match
       if (feature_constraint->thresholds[i] == it_start) {
@@ -908,14 +908,13 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
                 feature_constraint->constraints.begin() + i, extremum);
             feature_constraint->thresholds.insert(
                 feature_constraint->thresholds.begin() + i, it_start);
-            i += 1;
+            ++i;
           }
         }
       }
       // easy case when the end thresholds match
       if (feature_constraint->thresholds[i] == it_end) {
         end_done = true;
-        i += 1;
         break;
       }
       // if they don't then, the previous constraint needs to be added back
@@ -929,7 +928,6 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
               feature_constraint->thresholds.begin() + i, it_end);
         }
         end_done = true;
-        i += 1;
         break;
       }
       // If 2 successive constraints are the same then the second one may as
@@ -941,10 +939,9 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
         feature_constraint->thresholds.erase(
             feature_constraint->thresholds.begin() + i);
         previous_constraint = current_constraint;
-        i -= 1;
+        --i;
       }
       previous_constraint = current_constraint;
-      i += 1;
     }
     // if the loop didn't get to an index greater than it_start, it needs to be
     // added at the end
