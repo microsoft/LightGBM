@@ -33,7 +33,6 @@
 #' @export
 readRDS.lgb.Booster <- function(file = "", refhook = NULL) {
 
-  # Read RDS file
   object <- readRDS(file = file, refhook = refhook)
 
   # Check if object has the model stored
