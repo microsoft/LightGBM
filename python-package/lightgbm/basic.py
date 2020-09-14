@@ -2987,7 +2987,7 @@ class Booster(object):
             new_booster.handle,
             predictor.handle))
         leaf_preds = leaf_preds.reshape(-1)
-        ptr_data, __, _ = c_int_array(leaf_preds)
+        ptr_data, _, _ = c_int_array(leaf_preds)
         _safe_call(_LIB.LGBM_BoosterRefit(
             new_booster.handle,
             ptr_data,

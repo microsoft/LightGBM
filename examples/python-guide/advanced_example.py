@@ -186,8 +186,7 @@ gbm = lgb.train(params,
                 num_boost_round=10,
                 init_model=gbm,
                 fobj=loglikelihood,
-                feval=lambda preds, train_data: [binary_error(preds, train_data),
-                                                 accuracy(preds, train_data)],
+                feval=[binary_error, accuracy],
                 valid_sets=lgb_eval)
 
 print('Finished 50 - 60 rounds with self-defined objective function '
