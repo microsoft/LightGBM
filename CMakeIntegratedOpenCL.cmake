@@ -60,7 +60,7 @@ ExternalProject_Add(Boost
   BUILD_COMMAND ${BOOST_BUILD} -sBOOST_ROOT=${BOOST_BASE}/source -a -q -j ${J} --with-headers --with-chrono --with-filesystem --with-system link=static runtime-link=shared variant=release threading=multi cxxflags="${BOOST_FLAGS}"
   INSTALL_COMMAND ""
 )
-set(BOOST_INCLUDE ${BOOST_BASE}/source CACHE PATH "")
+set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
 set(BOOST_LIBRARY ${BOOST_BASE}/source/stage/lib CACHE PATH "")
 list(APPEND INTEGRATED_OPENCL_INCLUDES ${BOOST_INCLUDE})
 if(MSVC)
