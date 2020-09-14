@@ -6,13 +6,10 @@ set(OPENCL_HEADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-Headers.git
 set(OPENCL_HEADER_TAG "1b2a1850f410aaaaeaa56cead5a179b5aea4918e")
 
 set(OPENCL_LOADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-ICD-Loader.git")
-set(OPENCL_LOADER_TAG "862eebe7ca733c398334a8db8481172a7d3a3c47")
+set(OPENCL_LOADER_TAG "98ca71fb9f8484f1cd1999f55224bf9e8d18693b")
 
 set(BOOST_REPOSITORY "https://github.com/boostorg/boost.git")
 set(BOOST_TAG "boost-${BOOST_VERSION_DOT}.0")
-execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} OUTPUT_VARIABLE LIGHTGBM_TAG OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
-string(SHA1 INTEGRATED_OPENCL_STAMP "${OPENCL_HEADER_REPOSITORY}@${OPENCL_HEADER_TAG};${OPENCL_LOADER_REPOSITORY}@${OPENCL_LOADER_TAG};${BOOST_REPOSITORY}@${BOOST_TAG};lightgbm@${LIGHTGBM_TAG}")
-message(STATUS "Integrated OpenCL build stamp: ${INTEGRATED_OPENCL_STAMP}")
 
 # Build Independent OpenCL library
 include(FetchContent)
@@ -82,7 +79,7 @@ if(MSVC)
   list(APPEND INTEGRATED_OPENCL_LIBRARIES ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib)
   list(APPEND INTEGRATED_OPENCL_LIBRARIES ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib)
 else()
-  message(FATAL_ERROR "MinGW Boost library names not yet specified")
+  message(FATAL_ERROR "Integrated OpenCL build is not yet available for MinGW")
 endif()
 
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
