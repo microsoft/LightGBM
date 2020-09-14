@@ -14,7 +14,7 @@ OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(BUILD_STATIC_LIB "Build static library" OFF)
-OPTION(BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
+OPTION(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
@@ -67,7 +67,7 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
-if(BUILD_FOR_R)
+if(__BUILD_FOR_R)
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
@@ -75,7 +75,7 @@ if(BUILD_FOR_R)
     message(STATUS "LIBR_CORE_LIBRARY: ${LIBR_CORE_LIBRARY}")
     include_directories(${LIBR_INCLUDE_DIRS})
     ADD_DEFINITIONS(-DLGB_R_BUILD)
-endif(BUILD_FOR_R)
+endif(__BUILD_FOR_R)
 
 if(USE_TIMETAG)
     ADD_DEFINITIONS(-DTIMETAG)
@@ -235,9 +235,9 @@ list(APPEND SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for
 # use with the R package
-if(BUILD_FOR_R)
+if(__BUILD_FOR_R)
   list(APPEND SOURCES "src/lightgbm_R.cpp")
-endif(BUILD_FOR_R)
+endif(__BUILD_FOR_R)
 
 if (BUILD_STATIC_LIB)
   add_library(_lightgbm STATIC ${SOURCES})
@@ -315,13 +315,13 @@ if(WIN32 AND (MINGW OR CYGWIN))
     TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
 endif()
 
-if(BUILD_FOR_R)
+if(__BUILD_FOR_R)
   if(MSVC)
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_MSVC_CORE_LIBRARY})
   else()
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
   endif(MSVC)
-endif(BUILD_FOR_R)
+endif(__BUILD_FOR_R)
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
