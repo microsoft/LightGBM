@@ -262,8 +262,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
 
   std::vector<SplitInfo> smaller_bestsplit_per_features(this->num_features_);
   std::vector<SplitInfo> larger_bestsplit_per_features(this->num_features_);
-  double smaller_leaf_parent_output = GetParentOutput(tree, this->smaller_leaf_splits_.get());
-  double larger_leaf_parent_output = GetParentOutput(tree, this->larger_leaf_splits_.get());
+  double smaller_leaf_parent_output = this->GetParentOutput(tree, this->smaller_leaf_splits_.get());
+  double larger_leaf_parent_output = this->GetParentOutput(tree, this->larger_leaf_splits_.get());
   OMP_INIT_EX();
   // find splits
 #pragma omp parallel for schedule(static)
@@ -357,8 +357,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
       this->col_sampler_.GetByNode(tree, this->smaller_leaf_splits_->leaf_index());
   std::vector<int8_t> larger_node_used_features =
       this->col_sampler_.GetByNode(tree, this->larger_leaf_splits_->leaf_index());
-  double smaller_leaf_parent_output = GetParentOutput(tree, this->smaller_leaf_splits_global_.get());
-  double larger_leaf_parent_output = GetParentOutput(tree, this->larger_leaf_splits_global_.get());
+  double smaller_leaf_parent_output = this->GetParentOutput(tree, this->smaller_leaf_splits_global_.get());
+  double larger_leaf_parent_output = this->GetParentOutput(tree, this->larger_leaf_splits_global_.get());
   // find best split from local aggregated histograms
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static) num_threads(this->share_state_->num_threads)

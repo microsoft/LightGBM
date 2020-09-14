@@ -180,8 +180,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
       this->col_sampler_.GetByNode(tree, this->smaller_leaf_splits_->leaf_index());
   std::vector<int8_t> larger_node_used_features =
       this->col_sampler_.GetByNode(tree, this->larger_leaf_splits_->leaf_index());
-  double smaller_leaf_parent_output = GetParentOutput(tree, this->smaller_leaf_splits_.get());
-  double larger_leaf_parent_output = GetParentOutput(tree, this->larger_leaf_splits_.get());
+  double smaller_leaf_parent_output = this->GetParentOutput(tree, this->smaller_leaf_splits_.get());
+  double larger_leaf_parent_output = this->GetParentOutput(tree, this->larger_leaf_splits_.get());
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
