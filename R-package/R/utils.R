@@ -1,9 +1,9 @@
 lgb.is.Booster <- function(x) {
-  lgb.check.r6.class(x, "lgb.Booster") # Checking if it is of class lgb.Booster or not
+  lgb.check.r6.class(x, "lgb.Booster")
 }
 
 lgb.is.Dataset <- function(x) {
-  lgb.check.r6.class(x, "lgb.Dataset") # Checking if it is of class lgb.Dataset or not
+  lgb.check.r6.class(x, "lgb.Dataset")
 }
 
 lgb.null.handle <- function() {
@@ -53,7 +53,6 @@ lgb.last_error <- function() {
     )
   }
 
-  # Return error
   stop("api error: ", lgb.encode.char(err_msg, act_len))
 }
 
@@ -105,7 +104,6 @@ lgb.call.return.str <- function(fun_name, ...) {
     buf <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
   }
 
-  # Return encoded character
   return(lgb.encode.char(buf, act_len))
 
 }
@@ -168,7 +166,6 @@ lgb.params2str <- function(params, ...) {
     return(lgb.c_str(""))
   }
 
-  # Return string separated by a space per element
   return(lgb.c_str(paste0(ret, collapse = " ")))
 
 }
@@ -180,7 +177,6 @@ lgb.check_interaction_constraints <- function(params, column_names) {
 
   if (!is.null(params[["interaction_constraints"]])) {
 
-    # validation
     if (!methods::is(params[["interaction_constraints"]], "list")) {
         stop("interaction_constraints must be a list")
     }
@@ -234,7 +230,6 @@ lgb.check_interaction_constraints <- function(params, column_names) {
 
 lgb.c_str <- function(x) {
 
-  # Perform character to raw conversion
   ret <- charToRaw(as.character(x))
   ret <- c(ret, as.raw(0L))
   ret
@@ -300,19 +295,16 @@ lgb.check.obj <- function(params, obj) {
     # If the objective is a character, check if it is a known objective
     if (!(params$objective %in% OBJECTIVES)) {
 
-      # Interrupt on unknown objective name
       stop("lgb.check.obj: objective name error should be one of (", paste0(OBJECTIVES, collapse = ", "), ")")
 
     }
 
   } else if (!is.function(params$objective)) {
 
-    # If objective is not a character nor a function, then stop
     stop("lgb.check.obj: objective should be a character or a function")
 
   }
 
-  # Return parameters
   return(params)
 
 }
