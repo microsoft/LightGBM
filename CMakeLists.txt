@@ -168,8 +168,8 @@ if(USE_CUDA)
      -DIGNORE_INDICES
     )
 
-    message(STATUS ALLFEATS_DEFINES: ${ALLFEATS_DEFINES})
-    message(STATUS FULLDATA_DEFINES: ${FULLDATA_DEFINES})
+    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
+    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
 
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)

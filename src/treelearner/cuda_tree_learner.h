@@ -153,12 +153,6 @@ class CUDATreeLearner: public SerialTreeLearner {
      * \param data_indices Array of data example IDs to be included in histogram, will be copied to GPU.
      *                     Set to nullptr to skip copy to GPU.
      * \param num_data Number of data examples to be included in histogram
-     * \param gradients Array of gradients for all examples.
-     * \param hessians Array of hessians for all examples.
-     * \param ordered_gradients Ordered gradients will be generated and copied to GPU when gradients is not nullptr, 
-     *                     Set gradients to nullptr to skip copy to GPU.
-     * \param ordered_hessians Ordered hessians will be generated and copied to GPU when hessians is not nullptr, 
-     *                     Set hessians to nullptr to skip copy to GPU.
      * \return true if GPU kernel is launched, false if GPU is not used
     */
     bool ConstructGPUHistogramsAsync(
@@ -188,9 +182,6 @@ class CUDATreeLearner: public SerialTreeLearner {
      *  With bin size <=16, there are 8 features per DWORD.
      */
     int dword_features_;
-    /*! \brief total number of dense feature-group tuples on GPU.
-     * Each feature tuple is 4-byte (4 features if each feature takes a byte) */
-    // int num_dense_feature4_;
     /*! \brief Max number of bins of training data, used to determine 
      * which GPU kernel to use */
     int max_num_bin_;
@@ -230,7 +221,6 @@ class CUDATreeLearner: public SerialTreeLearner {
     /*! \brief Host memory pointer for histogram outputs */
     void *host_histogram_outputs_;
     /*! CUDA waitlist object for waiting for data transfer before kernel execution */
-    // cudaEvent_t kernel_wait_obj_;
     std::vector<cudaEvent_t> kernel_wait_obj_;
     /*! CUDA waitlist object for reading output histograms after kernel execution */
     std::vector<cudaEvent_t> histograms_wait_obj_;

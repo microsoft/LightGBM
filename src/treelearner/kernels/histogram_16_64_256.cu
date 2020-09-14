@@ -303,7 +303,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         if (ltid == 0) {
             sync_counters[feature_id] = 0;
         }
-    // }
 #else
     }
     // only 1 work group, no need to increase counter
@@ -316,7 +315,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         acc_type const * __restrict__ feature_subhists =
                  reinterpret_cast<acc_type *>(output_buf) + output_offset * 3 * NUM_BINS;
         // skip reading the data already in local memory
-        // unsigned int skip_id = feature_id ^ output_offset;
         unsigned int skip_id = group_id - output_offset;
         // locate output histogram location for this feature4
         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
@@ -615,7 +613,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         if (ltid == 0) {
             sync_counters[feature_id] = 0;
         }
-    // }
 #else
     }
     // only 1 work group, no need to increase counter
@@ -628,7 +625,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         acc_type const * __restrict__ feature_subhists =
                  reinterpret_cast<acc_type *>(output_buf) + output_offset * 3 * NUM_BINS;
         // skip reading the data already in local memory
-        // unsigned int skip_id = feature_id ^ output_offset;
         unsigned int skip_id = group_id - output_offset;
         // locate output histogram location for this feature4
         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;
@@ -928,7 +924,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         if (ltid == 0) {
             sync_counters[feature_id] = 0;
         }
-    // }
 #else
     }
     // only 1 work group, no need to increase counter
@@ -941,7 +936,6 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
         acc_type const * __restrict__ feature_subhists =
                  reinterpret_cast<acc_type *>(output_buf) + output_offset * 3 * NUM_BINS;
         // skip reading the data already in local memory
-        // unsigned int skip_id = feature_id ^ output_offset;
         unsigned int skip_id = group_id - output_offset;
         // locate output histogram location for this feature4
         acc_type *__restrict__ hist_buf = hist_buf_base + feature_id * 2 * NUM_BINS;

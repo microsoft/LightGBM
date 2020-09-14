@@ -210,7 +210,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetObjectiveType(params, &objective);
   GetDeviceType(params, &device_type);
   if (device_type == std::string("cuda")) {
-    LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
+    LGBM_config_::current_device = lgbm_device_cuda;
   }
   GetTreeLearnerType(params, &tree_learner);
 

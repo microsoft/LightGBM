@@ -14,7 +14,7 @@
 #define CUDASUCCESS_OR_FATAL(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true) {
   if (code != cudaSuccess) {
-    LightGBM::Log::Fatal("CUDA_RUNTIME: %s %s %d\n", cudaGetErrorString(code), file, line);
+    LightGBM::Log::Fatal("[CUDA] %s %s %d\n", cudaGetErrorString(code), file, line);
     if (abort) exit(code);
   }
 }

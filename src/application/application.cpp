@@ -41,7 +41,7 @@ Application::Application(int argc, char** argv) {
   }
 
   if (config_.device_type == std::string("cuda")) {
-      LightGBM::LGBM_config_::current_device = lgbm_device_cuda;
+      LGBM_config_::current_device = lgbm_device_cuda;
   }
 }
 

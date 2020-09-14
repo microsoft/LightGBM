@@ -43,7 +43,7 @@ struct CHAllocator {
     T* ptr;
     if (n == 0) return NULL;
     #ifdef USE_CUDA
-      if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda) {
+      if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
           Log::Warning("Defaulting to malloc in CHAllocator!!!");
@@ -62,7 +62,7 @@ struct CHAllocator {
     (void)n;  // UNUSED
     if (p == NULL) return;
     #ifdef USE_CUDA
-      if (LightGBM::LGBM_config_::current_device == lgbm_device_cuda) {
+      if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
         cudaPointerGetAttributes(&attributes, p);
         if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {

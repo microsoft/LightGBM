@@ -309,7 +309,7 @@ void CUDATreeLearner::prevAllocateGPUMemory() {
   // histogram bin entry size depends on the precision (single/double)
   hist_bin_entry_sz_ = 2 * (config_->gpu_use_dp ? sizeof(hist_t) : sizeof(gpu_hist_t));  // two elements in this "size"
 
-  CUDASUCCESS_OR_FATAL(cudaHostAlloc(reinterpret_cast<void **>(&host_histogram_outputs_), (size_t)(num_dense_feature_groups_ * device_bin_size_ * hist_bin_entry_sz_), cudaHostAllocPortable));
+  CUDASUCCESS_OR_FATAL(cudaHostAlloc(reinterpret_cast<void **>(&host_histogram_outputs_), static_cast<size_t>(num_dense_feature_groups_ * device_bin_size_ * hist_bin_entry_sz_), cudaHostAllocPortable));
 
   nthreads_ = std::min(omp_get_max_threads(), num_dense_feature_groups_ / dword_features_);
   nthreads_ = std::max(nthreads_, 1);
@@ -485,7 +485,7 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
   int gpu_count;
 
   CUDASUCCESS_OR_FATAL(cudaGetDeviceCount(&gpu_count));
-  num_gpu_ = (gpu_count < num_gpu)? gpu_count : num_gpu;
+  num_gpu_ = (gpu_count < num_gpu) ? gpu_count : num_gpu;
 
   // set cpu threads
   cpu_threads_ = reinterpret_cast<pthread_t **>(_mm_malloc(sizeof(pthread_t *)*num_gpu_, 16));
