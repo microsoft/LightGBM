@@ -365,9 +365,11 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   std::vector<int8_t> larger_node_used_features;
   double smaller_leaf_parent_output = GetParentOutput(tree, smaller_leaf_splits_.get());
   double larger_leaf_parent_output = 0;
+  if (larger_leaf_splits_ != nullptr && larger_leaf_splits_->leaf_index() >= 0) {
+    larger_leaf_parent_output = GetParentOutput(tree, larger_leaf_splits_.get());
+  }
   if (larger_leaf_splits_->leaf_index() >= 0) {
     larger_node_used_features = col_sampler_.GetByNode(tree, larger_leaf_splits_->leaf_index());
-    double larger_leaf_parent_output = GetParentOutput(tree, larger_leaf_splits_.get());
   }
   OMP_INIT_EX();
 // find splits
@@ -713,7 +715,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   SplitInfo new_split;
   histogram_array_[feature_index].FindBestThreshold(
       leaf_splits->sum_gradients(), leaf_splits->sum_hessians(), num_data,
-      constraints_->Get(leaf_splits->leaf_index()),  parent_output, &new_split);
+      constraints_->Get(leaf_splits->leaf_index()), parent_output, &new_split);
   new_split.feature = real_fidx;
   if (cegb_ != nullptr) {
     new_split.gain -=
