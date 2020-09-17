@@ -396,6 +396,7 @@ class MultiValBin {
 
   virtual double num_element_per_row() const = 0;
 
+  virtual std::vector<uint32_t> offsets() const = 0;
 
   virtual void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t>& values) = 0;
 
@@ -405,7 +406,8 @@ class MultiValBin {
 
   virtual MultiValBin* CreateLike(data_size_t num_data, int num_bin,
                                   int num_feature,
-                                  double estimate_element_per_row) const = 0;
+                                  double estimate_element_per_row,
+                                  const std::vector<uint32_t>& offsets) const = 0;
 
   virtual void CopySubcol(const MultiValBin* full_bin,
                           const std::vector<int>& used_feature_index,
@@ -414,7 +416,7 @@ class MultiValBin {
                           const std::vector<uint32_t>& delta) = 0;
 
   virtual void ReSize(data_size_t num_data, int num_bin, int num_feature,
-                      double estimate_element_per_row) = 0;
+                      double estimate_element_per_row, const std::vector<uint32_t>& num_bin_per_feature) = 0;
 
   virtual void CopySubrowAndSubcol(
       const MultiValBin* full_bin, const data_size_t* used_indices,
@@ -444,10 +446,10 @@ class MultiValBin {
   virtual bool IsSparse() = 0;
 
   static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin,
-                                        int num_feature, double sparse_rate);
+                                        int num_feature, double sparse_rate, const std::vector<uint32_t>& offsets);
 
   static MultiValBin* CreateMultiValDenseBin(data_size_t num_data, int num_bin,
-                                             int num_feature);
+                                             int num_feature, const std::vector<uint32_t>& offsets);
 
   static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin, double estimate_element_per_row);
 

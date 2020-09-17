@@ -449,6 +449,7 @@ void PushDataToMultiValBin(
           for (data_size_t i = start; i < end; ++i) {
             cur_data.clear();
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+              // for sparse bin, we store the feature bin values with offset added
               auto cur_bin = (*iters)[tid][j]->Get(i);
               if (cur_bin == most_freq_bins[j]) {
                 continue;
@@ -471,11 +472,12 @@ void PushDataToMultiValBin(
           }
           for (data_size_t i = start; i < end; ++i) {
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+              // for dense bin, the original feature bin values are used
               auto cur_bin = (*iters)[tid][j]->Get(i);
               if (cur_bin == most_freq_bins[j]) {
                 cur_bin = 0;
               } else {
-                cur_bin += offsets[j];
+                //cur_bin += offsets[j];
                 if (most_freq_bins[j] == 0) {
                   cur_bin -= 1;
                 }
@@ -527,7 +529,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
              sum_sparse_rate);
   std::unique_ptr<MultiValBin> ret;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
-                                           num_feature, sum_sparse_rate));
+                                           num_feature, sum_sparse_rate, offsets));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
@@ -580,7 +582,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
              1.0 - sum_dense_ratio);
   ret.reset(MultiValBin::CreateMultiValBin(
       num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()),
-      1.0 - sum_dense_ratio));
+      1.0 - sum_dense_ratio, offsets));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
@@ -1095,11 +1097,11 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
       if (share_state->multi_val_bin_subset == nullptr) {
         share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
             share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
-            multi_val_bin->num_element_per_row()));
+            multi_val_bin->num_element_per_row(), multi_val_bin->offsets()));
       } else {
         share_state->multi_val_bin_subset->ReSize(
             share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
-            multi_val_bin->num_element_per_row());
+            multi_val_bin->num_element_per_row(), multi_val_bin->offsets());
       }
       share_state->multi_val_bin_subset->CopySubrow(
           multi_val_bin, share_state->bagging_use_indices,
@@ -1112,13 +1114,14 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     std::vector<uint32_t> upper_bound;
     std::vector<uint32_t> lower_bound;
     std::vector<uint32_t> delta;
+    std::vector<uint32_t> offsets;
     share_state->hist_move_src.clear();
     share_state->hist_move_dest.clear();
     share_state->hist_move_size.clear();
 
     int num_total_bin = 1;
     int new_num_total_bin = 1;
-
+    offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
     for (int i = 0; i < num_groups_; ++i) {
       int f_start = group_feature_start_[i];
       if (feature_groups_[i]->is_multi_val_) {
@@ -1131,7 +1134,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
           num_total_bin += cur_num_bin;
           if (is_feature_used[f_start + j]) {
             new_num_total_bin += cur_num_bin;
-
+            offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
             lower_bound.push_back(num_total_bin - cur_num_bin);
             upper_bound.push_back(num_total_bin);
 
@@ -1155,7 +1158,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
         num_total_bin += cur_num_bin;
         if (is_group_used) {
           new_num_total_bin += cur_num_bin;
-
+          offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
           lower_bound.push_back(num_total_bin - cur_num_bin);
           upper_bound.push_back(num_total_bin);
 
@@ -1175,10 +1178,10 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
         share_state->is_use_subrow ? share_state->bagging_indices_cnt : num_data_;
     if (share_state->multi_val_bin_subset == nullptr) {
       share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
-          num_data, new_num_total_bin, num_used, sum_used_dense_ratio));
+          num_data, new_num_total_bin, num_used, sum_used_dense_ratio, offsets));
     } else {
       share_state->multi_val_bin_subset->ReSize(num_data, new_num_total_bin,
-                                               num_used, sum_used_dense_ratio);
+                                               num_used, sum_used_dense_ratio, offsets);
     }
     if (share_state->is_use_subrow) {
       share_state->multi_val_bin_subset->CopySubrowAndSubcol(
