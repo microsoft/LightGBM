@@ -77,7 +77,7 @@ class MultiValDenseBin : public MultiValBin {
         const VAL_T* data_ptr = data_.data() + j_start;
         for (auto j = 0; j < num_feature_; ++j) {
           const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
-          const auto ti = bin == 0 ? 0 : (bin + offsets_[j]) << 1;
+          const auto ti = bin == 0 ? 0 : (bin + offsets_[j] - 1) << 1;
           if (ORDERED) {
             grad[ti] += gradients[i];
             hess[ti] += hessians[i];
@@ -94,7 +94,7 @@ class MultiValDenseBin : public MultiValBin {
       const VAL_T* data_ptr = data_.data() + j_start;
       for (auto j = 0; j < num_feature_; ++j) {
         const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
-        const auto ti = bin == 0 ? 0 : (bin + offsets_[j]) << 1;
+        const auto ti = bin == 0 ? 0 : (bin + offsets_[j] - 1) << 1;
         if (ORDERED) {
           grad[ti] += gradients[i];
           hess[ti] += hessians[i];

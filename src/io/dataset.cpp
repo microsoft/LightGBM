@@ -472,12 +472,12 @@ void PushDataToMultiValBin(
           }
           for (data_size_t i = start; i < end; ++i) {
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-              // for dense bin, the original feature bin values are used
+              // for dense bin, the feature bin values without offsets are used
               auto cur_bin = (*iters)[tid][j]->Get(i);
               if (cur_bin == most_freq_bins[j]) {
                 cur_bin = 0;
               } else {
-                //cur_bin += offsets[j];
+                cur_bin += 1;//offsets[j];
                 if (most_freq_bins[j] == 0) {
                   cur_bin -= 1;
                 }
@@ -676,8 +676,10 @@ TrainingShareStates* Dataset::GetShareStates(
           "And if memory is not enough, you can set `force_col_wise=true`.",
           overhead_cost * 1e-3);
       if (rowwise_state->multi_val_bin->IsSparse()) {
+        Log::Warning("is sparse");
         Log::Debug("Using Sparse Multi-Val Bin");
       } else {
+        Log::Warning("is dense");
         Log::Debug("Using Dense Multi-Val Bin");
       }
       return rowwise_state.release();
