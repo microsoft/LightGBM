@@ -155,7 +155,6 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
                           , las = 1L
                       )]
 
-  # Return invisibly
   return(invisible(NULL))
 
 }
