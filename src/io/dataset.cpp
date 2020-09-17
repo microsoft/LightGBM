@@ -477,7 +477,7 @@ void PushDataToMultiValBin(
               if (cur_bin == most_freq_bins[j]) {
                 cur_bin = 0;
               } else {
-                cur_bin += 1;//offsets[j];
+                cur_bin += 1; // +1 to make sure that cur_bin is positive
                 if (most_freq_bins[j] == 0) {
                   cur_bin -= 1;
                 }
