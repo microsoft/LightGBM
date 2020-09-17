@@ -298,7 +298,8 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "gpu_use_dp",
   "num_ctr_folds",
   "cat_converters",
-  "keep_old_cat_method"
+  "keep_old_cat_method",
+  "prior_weight"
   });
   return params;
 }
@@ -621,6 +622,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetString(params, "cat_converters", &cat_converters);
 
   GetBool(params, "keep_old_cat_method", &keep_old_cat_method);
+
+  GetDouble(params, "prior_weight", &prior_weight);
 }
 
 std::string Config::SaveMembersToString() const {

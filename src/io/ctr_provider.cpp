@@ -83,7 +83,7 @@ void CTRProvider::ExpandCountEncodings(std::vector<std::vector<int>>& sampled_no
   for (int i = 0; i < static_cast<int>(categorical_features_.size()); ++i) {
     const int fid = categorical_features_[i];
     for (const auto& cat_converter : cat_converters_) {
-      const int convert_fid = cat_converter->convert_fid(fid);
+      const int convert_fid = cat_converter->GetConvertFid(fid);
       if (convert_fid >= num_original_features_) {
         auto& count_feature_values = sampled_non_missing_feature_values[convert_fid];
         auto& count_feature_indices = sampled_non_missing_data_indices[convert_fid];
@@ -95,7 +95,7 @@ void CTRProvider::ExpandCountEncodings(std::vector<std::vector<int>>& sampled_no
   for (const int fid : categorical_features_) {
     if (ignored_features.count(fid) > 0) {
       for (const auto& cat_converter : cat_converters_) {
-        ignored_features.insert(cat_converter->convert_fid(fid));
+        ignored_features.insert(cat_converter->GetConvertFid(fid));
       }
     }
   }
@@ -199,7 +199,7 @@ void CTRProvider::CreatePushDataFunction(const std::vector<int>& used_feature_id
         const double all_count = count_info_[outer_feature_index][config_.num_ctr_folds][cat_feature_value];
         for (const auto& cat_converter : cat_converters_) {
           const double convert_value = TrimConvertValue(cat_converter->CalcValue(label_sum, total_count, all_count));
-          const int convert_fid = cat_converter->convert_fid(outer_feature_index);
+          const int convert_fid = cat_converter->GetConvertFid(outer_feature_index);
           const int inner_convert_fid = used_feature_idx[convert_fid];
           if (inner_convert_fid >= 0) {
             const int convert_group = feature_to_group[inner_convert_fid];
@@ -225,7 +225,7 @@ void CTRProvider::CreatePushDataFunction(const std::vector<int>& used_feature_id
         const double total_count = count_dict.count(cat_feature_value) == 0 ? 0.0 : count_dict.at(cat_feature_value);
         for (const auto& cat_converter : cat_converters_) {
           const double convert_value = TrimConvertValue(cat_converter->CalcValue(label_sum, total_count, total_count));
-          const int convert_fid = cat_converter->convert_fid(outer_feature_index);
+          const int convert_fid = cat_converter->GetConvertFid(outer_feature_index);
           const int inner_convert_fid = used_feature_idx[convert_fid];
           if (inner_convert_fid >= 0) {
             const int convert_group = feature_to_group[inner_convert_fid];
@@ -373,7 +373,7 @@ void CTRProvider::FinishProcess(const int num_machines) {
 
   // set prior for label mean ctr converter
   for (size_t i = 0; i < cat_converters_.size(); ++i) {
-    cat_converters_[i]->SetPrior(prior_);
+    cat_converters_[i]->SetPrior(prior_, config_.prior_weight);
   }
 
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
@@ -429,7 +429,7 @@ void CTRProvider::ReplaceCategoricalValues(const std::vector<data_size_t>& sampl
       const double all_total_count = count_info_.at(cat_fid).at(config_.num_ctr_folds).at(feature_value);
       for (const auto& cat_converter : cat_converters_) {
         const double convert_value = TrimConvertValue(cat_converter->CalcValue(label_sum, total_count, all_total_count));
-        const int convert_fid = cat_converter->convert_fid(cat_fid);
+        const int convert_fid = cat_converter->GetConvertFid(cat_fid);
         sampled_non_missing_feature_values[convert_fid][j] = convert_value;
         sampled_non_missing_data_indices[convert_fid][j] = sampled_non_missing_data_indices[cat_fid][j];
       }
@@ -448,7 +448,7 @@ void CTRProvider::ConvertCatToCTR(double* features) const {
     }
     for (const auto& cat_converter : cat_converters_) {
       const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
-      const int convert_fid = cat_converter->convert_fid(pair.first);
+      const int convert_fid = cat_converter->GetConvertFid(pair.first);
       features[convert_fid] = convert_value;
     }
   }
@@ -466,7 +466,7 @@ void CTRProvider::ConvertCatToCTR(std::unordered_map<int, double>& features) con
       }
       for (const auto& cat_converter : cat_converters_) {
         const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
-        const int convert_fid = cat_converter->convert_fid(pair.first);
+        const int convert_fid = cat_converter->GetConvertFid(pair.first);
         features[convert_fid] = convert_value;
       }
     }

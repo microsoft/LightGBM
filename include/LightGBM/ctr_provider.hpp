@@ -30,13 +30,13 @@ public:
 
       virtual std::string Name() const = 0;
 
-      virtual void SetPrior(const double /*prior*/) {}
+      virtual void SetPrior(const double /*prior*/, const double /*prior_weight*/) {}
 
       void RegisterConvertFid(const int cat_fid, const int convert_fid) {
         cat_fid_to_convert_fid_[cat_fid] = convert_fid;
       }
 
-      int convert_fid(const int cat_fid) {
+      int GetConvertFid(const int cat_fid) {
         return cat_fid_to_convert_fid_.at(cat_fid);
       }
 
@@ -50,7 +50,7 @@ public:
         return num_extra_features;
       }
 
-      static CatConverter* CreateFromString(const std::string& model_string) {
+      static CatConverter* CreateFromString(const std::string& model_string, const double prior_weight) {
         std::vector<std::string> split_model_string = Common::Split(model_string.c_str(), ",");
         if (split_model_string.size() != 2) {
           Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
@@ -62,7 +62,7 @@ public:
           double prior = 0.0f;
           Common::Atof(Common::Split(cat_converter_name.c_str(), ':')[1].c_str(), &prior);
           cat_converter = new CTRConverterLabelMean();
-          cat_converter->SetPrior(prior);
+          cat_converter->SetPrior(prior, prior_weight);
         } else if (Common::StartsWith(cat_converter_name, std::string("ctr"))) {
           double prior = 0.0f;
           Common::Atof(Common::Split(cat_converter_name.c_str(), ':')[1].c_str(), &prior);
@@ -128,8 +128,9 @@ public:
   class CTRConverterLabelMean: public CatConverter {
     public:
       CTRConverterLabelMean() { prior_set_ = false; }
-      virtual void SetPrior(const double prior) {
+      virtual void SetPrior(const double prior, const double prior_weight) {
         prior_ = prior;
+        prior_weight_ = prior_weight;
         prior_set_ = true;
       }
 
@@ -137,12 +138,7 @@ public:
         if(!prior_set_) {
           Log::Fatal("CTRConverterLabelMean is not ready since the prior value is not set.");
         }
-        if (sum_count == 0.0) {
-          return prior_;
-        } else {
-          return sum_label / sum_count;
-        }
-        //return (sum_label + prior_) / (sum_count + 10.0f);
+        return (sum_label + prior_weight_ * prior_) / (sum_count + prior_weight_);
       }
 
       std::string Name() const override {
@@ -159,6 +155,7 @@ public:
 
     private:
       double prior_;
+      double prior_weight_;
       bool prior_set_;
   };
 
@@ -442,7 +439,7 @@ public:
     for (int fid = 0; fid < num_original_features_; ++fid) {
       if (is_categorical_feature_[fid]) {
         for (const auto& cat_converter : cat_converters_) {
-          const int convert_fid = cat_converter->convert_fid(fid);
+          const int convert_fid = cat_converter->GetConvertFid(fid);
           feature_names[convert_fid] = old_feature_names[fid] + std::string("[") + cat_converter->Name() + std::string("]");
         }
       }
@@ -503,7 +500,7 @@ private:
     cat_converters_.clear();
     std::string cat_converter_string;
     while (str_stream >> cat_converter_string) {
-      cat_converters_.push_back(CatConverter::CreateFromString(cat_converter_string));
+      cat_converters_.push_back(CatConverter::CreateFromString(cat_converter_string, config_.prior_weight));
     }
   }
   

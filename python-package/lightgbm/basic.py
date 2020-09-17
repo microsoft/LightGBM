@@ -941,7 +941,7 @@ class Dataset(object):
     def __init__(self, data, label=None, reference=None,
                  weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
-                 free_raw_data=True, cat_converters='', keep_raw_cat_data=False):
+                 free_raw_data=True, cat_converters=''):
         """Initialize Dataset.
 
         Parameters
@@ -985,8 +985,6 @@ class Dataset(object):
             3. stat, the old LightGBM method.
             For example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features,
             with the 3 different ways separated by ','.
-        keep_raw_cat_data: bool, optional (default=False)
-            If True, the original values of categorical features will not be freed after Dataset construction
         """
         self.handle = None
         self.data = data
@@ -1009,7 +1007,6 @@ class Dataset(object):
         self.monotone_constraints = None
         self.version = 0
         self.cat_converters = cat_converters
-        self.keep_raw_cat_data = keep_raw_cat_data
 
     def __del__(self):
         try:
@@ -1094,14 +1091,13 @@ class Dataset(object):
                    weight=None, group=None, init_score=None, predictor=None,
                    silent=False, feature_name='auto',
                    categorical_feature='auto', params=None, 
-                   cat_converters='', keep_raw_cat_data=False):
+                   cat_converters=''):
         if data is None:
             self.handle = None
             return self
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             self.cat_converters = reference.cat_converters
-            self.keep_raw_cat_data = reference.keep_raw_cat_data
             categorical_feature = reference.categorical_feature
         data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
                                                                                              feature_name,
@@ -1146,10 +1142,6 @@ class Dataset(object):
             params['cat_converters'] = self.cat_converters
         elif params['cat_converters'] == '':
             self.cat_converters = params['cat_converters']
-        if self.keep_raw_cat_data:
-            params['keep_raw_cat_data'] = self.keep_raw_cat_data
-        elif params['keep_raw_cat_data']:
-            self.keep_raaw_cat_data = params['keep_raw_cat_data']
         params_str = param_dict_to_str(params)
         self.params = params
         # process for reference dataset
@@ -1689,7 +1681,7 @@ class Dataset(object):
         if self.handle is not None and feature_name is not None and feature_name != 'auto':
             if len(feature_name) != self.num_original_feature():
                 raise ValueError("Length of feature_name({}) and num_feature({}) don't match"
-                                 .format(len(feature_name), self.num_feature()))
+                                 .format(len(feature_name), self.num_original_feature()))
             c_feature_name = [c_str(name) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,

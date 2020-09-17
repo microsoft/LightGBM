@@ -438,9 +438,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreate(const DatasetHandle train_data,
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(const char* filename,
                                                       int* out_num_iterations,
-                                                      BoosterHandle* out);
-
-LIGHTGBM_C_EXPORT int LGBM_PrintCTRStatus(const DatasetHandle dataset);                                                
+                                                      BoosterHandle* out);                                        
 
 /*!
  * \brief Load an existing booster from string.

@@ -985,6 +985,9 @@ struct Config {
   // desc = whether to use the old categorical handling
   bool keep_old_cat_method = false;
 
+  // desc = weight of prior in CTR calculation
+  double prior_weight = 1.0f;
+
   #pragma endregion
 
   #pragma endregion
