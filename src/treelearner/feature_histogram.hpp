@@ -1167,9 +1167,9 @@ class HistogramPool {
       for (int j = 0; j < train_data->num_features(); ++j) {
         offsets->push_back(num_total_bin);
         num_total_bin += train_data->FeatureBinMapper(j)->num_bin();
-        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
+        /*if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
           num_total_bin -= 1;
-        }
+        }*/
       }
     }
     return num_total_bin;
@@ -1203,7 +1203,7 @@ class HistogramPool {
       pool_[i].reset(new FeatureHistogram[train_data->num_features()]);
       data_[i].resize(num_total_bin * 2);
       for (int j = 0; j < train_data->num_features(); ++j) {
-        pool_[i][j].Init(data_[i].data() + offsets[j] * 2, &feature_metas_[j]);
+        pool_[i][j].Init(data_[i].data() + (offsets[j] + feature_metas_[j].offset) * 2, &feature_metas_[j]);
       }
       OMP_LOOP_EX_END();
     }

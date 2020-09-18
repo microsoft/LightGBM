@@ -61,11 +61,7 @@ class MultiValDenseBin : public MultiValBin {
     data_size_t i = start;
     hist_t* grad = out;
     hist_t* hess = out + 1;
-    std::vector<uint32_t> offsets(offsets_.size());
-    for (size_t i = 0; i < offsets_.size(); ++i) {
-      offsets[i] = offsets_[i] - 1;
-    }
-    const uint32_t* offsets_ptr = offsets.data();
+    const uint32_t* offsets_ptr = offsets_.data();
     if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
       const data_size_t pf_end = end - pf_offset;
@@ -82,7 +78,7 @@ class MultiValDenseBin : public MultiValBin {
         const VAL_T* data_ptr = data_.data() + j_start;
         for (auto j = 0; j < num_feature_; ++j) {
           const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
-          const auto ti = static_cast<uint32_t>(static_cast<bool>(bin)) * ((bin + offsets_ptr[j]) << 1);
+          const auto ti = /*static_cast<uint32_t>(static_cast<bool>(bin)) **/ ((bin + offsets_ptr[j]) << 1);
           if (ORDERED) {
             grad[ti] += gradients[i];
             hess[ti] += hessians[i];
@@ -99,7 +95,7 @@ class MultiValDenseBin : public MultiValBin {
       const VAL_T* data_ptr = data_.data() + j_start;
       for (auto j = 0; j < num_feature_; ++j) {
         const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
-        const auto ti = static_cast<uint32_t>(static_cast<bool>(bin)) * ((bin + offsets_ptr[j]) << 1);
+        const auto ti = /*static_cast<uint32_t>(static_cast<bool>(bin)) **/ ((bin + offsets_ptr[j]) << 1);
         if (ORDERED) {
           grad[ti] += gradients[i];
           hess[ti] += hessians[i];

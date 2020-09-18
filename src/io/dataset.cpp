@@ -474,14 +474,14 @@ void PushDataToMultiValBin(
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
               // for dense bin, the feature bin values without offsets are used
               auto cur_bin = (*iters)[tid][j]->Get(i);
-              if (cur_bin == most_freq_bins[j]) {
+              /*if (cur_bin == most_freq_bins[j]) {
                 cur_bin = 0;
               } else {
                 cur_bin += 1; // +1 to make sure that cur_bin is positive
                 if (most_freq_bins[j] == 0) {
                   cur_bin -= 1;
                 }
-              }
+              }*/
               cur_data[j] = cur_bin;
             }
             ret->PushOneRow(tid, i, cur_data);
@@ -554,9 +554,9 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
         sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
         num_total_bin += bin_mapper->num_bin();
-        if (most_freq_bins.back() == 0) {
+        /*if (most_freq_bins.back() == 0) {
           num_total_bin -= 1;
-        }
+        }*/
         offsets.push_back(num_total_bin);
 #pragma omp parallel for schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
@@ -1130,9 +1130,9 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
         for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
           const auto& bin_mapper = feature_groups_[i]->bin_mappers_[j];
           int cur_num_bin = bin_mapper->num_bin();
-          if (bin_mapper->GetMostFreqBin() == 0) {
+          /*if (bin_mapper->GetMostFreqBin() == 0) {
             cur_num_bin -= 1;
-          }
+          }*/
           num_total_bin += cur_num_bin;
           if (is_feature_used[f_start + j]) {
             new_num_total_bin += cur_num_bin;
