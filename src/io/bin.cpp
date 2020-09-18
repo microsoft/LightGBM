@@ -680,10 +680,13 @@ namespace LightGBM {
     }
     // should be < 256 and < 65536 instead of <=, since the bin value can be +1 later on
     if (max_bin < 256) {
+      Log::Warning("using uint8_t");
       return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature, offsets);
     } else if (num_bin < 65536) {
+      Log::Warning("using uint16_t");
       return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature, offsets);
     } else {
+      Log::Warning("using uint32_t");
       return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature, offsets);
     }
   }
