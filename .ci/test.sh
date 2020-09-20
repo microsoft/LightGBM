@@ -128,6 +128,16 @@ if [[ $TASK == "gpu" ]]; then
         exit 0
     fi
     cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
+elif [[ $TASK == "cuda" ]]; then
+    sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
+    grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+    if [[ $METHOD == "pip" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
+        exit 0
+    fi
+    cmake -DUSE_CUDA=ON ..
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
