@@ -377,7 +377,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(new FeatureGroup(
-        cur_cnt_features, static_cast<bool>(group_is_multi_val[i]), &cur_bin_mappers, num_data_)));
+        cur_cnt_features, group_is_multi_val[i], &cur_bin_mappers, num_data_)));
   }
   feature_groups_.shrink_to_fit();
   group_bin_boundaries_.clear();
