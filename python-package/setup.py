@@ -91,7 +91,7 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
+def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
                 use_hdfs=False, boost_root=None, boost_dir=None,
                 boost_include_dir=None, boost_librarydir=None,
                 opencl_include_dir=None, opencl_library=None,
@@ -122,6 +122,8 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
             cmake_cmd.append("-DOpenCL_INCLUDE_DIR={0}".format(opencl_include_dir))
         if opencl_library:
             cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
+    elif use_cuda:
+        cmake_cmd.append("-DUSE_CUDA=ON")
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if nomp:
@@ -196,6 +198,7 @@ class CustomInstall(install):
         ('mingw', 'm', 'Compile with MinGW'),
         ('integrated-opencl', None, 'Compile integrated OpenCL version'),
         ('gpu', 'g', 'Compile GPU version'),
+        ('cuda', None, 'Compile CUDA version'),
         ('mpi', None, 'Compile MPI version'),
         ('nomp', None, 'Compile version without OpenMP support'),
         ('hdfs', 'h', 'Compile HDFS version'),
@@ -214,6 +217,7 @@ class CustomInstall(install):
         self.mingw = 0
         self.integrated_opencl = 0
         self.gpu = 0
+        self.cuda = 0
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
@@ -237,7 +241,7 @@ class CustomInstall(install):
         open(LOG_PATH, 'wb').close()
         if not self.precompile:
             copy_files(integrated_opencl=self.integrated_opencl, use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi,
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_cuda=self.cuda, use_mpi=self.mpi,
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,

@@ -2,11 +2,17 @@ if(__INTEGRATE_OPENCL)
   cmake_minimum_required(VERSION 3.11)
 elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
+elseif(USE_CUDA)
+  cmake_minimum_required(VERSION 3.16)
 else()
   cmake_minimum_required(VERSION 2.8)
 endif()
 
-PROJECT(lightgbm)
+if(USE_CUDA)
+  PROJECT(lightgbm LANGUAGES C CXX CUDA)
+else()
+  PROJECT(lightgbm LANGUAGES C CXX)
+endif()
 
 OPTION(USE_MPI "Enable MPI-based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
@@ -14,6 +20,7 @@ OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
+OPTION(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(BUILD_STATIC_LIB "Build static library" OFF)
 OPTION(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
@@ -103,6 +110,10 @@ else()
     ADD_DEFINITIONS(-DUSE_SOCKET)
 endif(USE_MPI)
 
+if(USE_CUDA)
+    SET(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
+endif(USE_CUDA)
+
 if(USE_OPENMP)
     find_package(OpenMP REQUIRED)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -140,6 +151,67 @@ if(__INTEGRATE_OPENCL)
         message(FATAL_ERROR "Integrated OpenCL build is available only for Windows")
     endif(WIN32)
 endif(__INTEGRATE_OPENCL)
+
+if(USE_CUDA)
+    find_package(CUDA REQUIRED)
+    include_directories(${CUDA_INCLUDE_DIRS})
+    LIST(APPEND CMAKE_CUDA_FLAGS -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall)
+    CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS 6.0 6.1 6.2 7.0 7.5+PTX)
+
+    LIST(APPEND CMAKE_CUDA_FLAGS ${CUDA_ARCH_FLAGS})
+    if(USE_DEBUG)
+      SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
+    else()
+      SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -lineinfo")
+    endif()
+    string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+    message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
+
+    ADD_DEFINITIONS(-DUSE_CUDA)
+    if (NOT DEFINED CMAKE_CUDA_STANDARD)
+      set(CMAKE_CUDA_STANDARD 11)
+      set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    endif()
+
+    set(BASE_DEFINES
+     -DPOWER_FEATURE_WORKGROUPS=12
+     -DUSE_CONSTANT_BUF=0
+    )
+    set(ALLFEATS_DEFINES
+     ${BASE_DEFINES}
+     -DENABLE_ALL_FEATURES
+    )
+    set(FULLDATA_DEFINES
+     ${ALLFEATS_DEFINES}
+     -DIGNORE_INDICES
+    )
+
+    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
+    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
+
+    function(add_histogram hsize hname hadd hconst hdir)
+      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
+      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+      if(hadd)
+        list(APPEND histograms histo${hsize}${hname})
+        set(histograms ${histograms} PARENT_SCOPE)
+      endif()
+      target_compile_definitions(
+        histo${hsize}${hname} PRIVATE
+        -DCONST_HESSIAN=${hconst}
+        ${hdir}
+      )
+    endfunction()
+
+    foreach (hsize _16_64_256)
+      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
+      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
+      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
+      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
+      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
+      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
+    endforeach()
+endif(USE_CUDA)
 
 if(USE_HDFS)
     find_package(JNI REQUIRED)
@@ -246,6 +318,9 @@ file(GLOB SOURCES
     src/objective/*.cpp
     src/network/*.cpp
     src/treelearner/*.cpp
+if(USE_CUDA)
+    src/treelearner/*.cu
+endif(USE_CUDA)
 )
 
 add_executable(lightgbm src/main.cpp ${SOURCES})
@@ -333,6 +408,19 @@ if(__INTEGRATE_OPENCL)
   target_link_libraries(lightgbm PRIVATE ${INTEGRATED_OPENCL_LIBRARIES})
   target_link_libraries(_lightgbm PRIVATE ${INTEGRATED_OPENCL_LIBRARIES})
 endif()
+
+if(USE_CUDA)
+  set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  TARGET_LINK_LIBRARIES(
+    lightgbm
+    ${histograms}
+  )
+  set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  TARGET_LINK_LIBRARIES(
+    _lightgbm
+    ${histograms}
+  )
+endif(USE_CUDA)
 
 if(USE_HDFS)
   TARGET_LINK_LIBRARIES(lightgbm ${HDFS_CXX_LIBRARIES})
