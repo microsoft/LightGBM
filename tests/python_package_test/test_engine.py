@@ -1034,6 +1034,51 @@ class TestEngine(unittest.TestCase):
         # validate the values are the same
         np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
 
+    def test_contribs_sparse_multiclass(self):
+        n_features = 20
+        n_samples = 100
+        n_labels = 4
+        # generate CSR sparse dataset
+        X, y = make_multilabel_classification(n_samples=n_samples,
+                                              sparse=True,
+                                              n_features=n_features,
+                                              n_classes=1,
+                                              n_labels=n_labels)
+        y = y.flatten()
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'multiclass',
+            'num_class': n_labels,
+            'verbose': -1,
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20)
+        contribs_csr = gbm.predict(X_test, pred_contrib=True)
+        self.assertTrue(isinstance(contribs_csr, list))
+        for perclass_contribs_csr in contribs_csr:
+            self.assertTrue(isspmatrix_csr(perclass_contribs_csr))
+        # convert data to dense and get back same contribs
+        contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
+        # validate the values are the same
+        contribs_csr_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csr]), 0, 1)
+        contribs_csr_arr_re = contribs_csr_array.reshape((contribs_csr_array.shape[0],
+                                                          contribs_csr_array.shape[1] * contribs_csr_array.shape[2]))
+        np.testing.assert_allclose(contribs_csr_arr_re, contribs_dense)
+        contribs_dense_re = contribs_dense.reshape(contribs_csr_array.shape)
+        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
+                                       - np.sum(contribs_dense_re, axis=2)), 1e-4)
+        # validate using CSC matrix
+        X_test_csc = X_test.tocsc()
+        contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
+        self.assertTrue(isinstance(contribs_csc, list))
+        for perclass_contribs_csc in contribs_csc:
+            self.assertTrue(isspmatrix_csc(perclass_contribs_csc))
+        # validate the values are the same
+        contribs_csc_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csc]), 0, 1)
+        contribs_csc_array = contribs_csc_array.reshape((contribs_csc_array.shape[0],
+                                                         contribs_csc_array.shape[1] * contribs_csc_array.shape[2]))
+        np.testing.assert_allclose(contribs_csc_array, contribs_dense)
+
     @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
     def test_int32_max_sparse_contribs(self):
         params = {

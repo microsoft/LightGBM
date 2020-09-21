@@ -515,6 +515,7 @@ class Booster {
                   out_indices, out_data, data_type, &is_data_float32, num_matrices);
     std::vector<int> row_sizes(num_matrices * nrow);
     std::vector<int64_t> row_matrix_offsets(num_matrices * nrow);
+    std::vector<int64_t> matrix_offsets(num_matrices);
     int64_t row_vector_cnt = 0;
     for (int m = 0; m < num_matrices; ++m) {
       for (int64_t i = 0; i < static_cast<int64_t>(agg.size()); ++i) {
@@ -528,6 +529,12 @@ class Booster {
           row_matrix_offsets[row_vector_cnt] = static_cast<int64_t>(row_sizes[row_vector_cnt - 1] + row_matrix_offsets[row_vector_cnt - 1]);
         }
         row_vector_cnt++;
+      }
+      if (m == 0) {
+        matrix_offsets[m] = 0;
+      }
+      if (m + 1 < num_matrices) {
+        matrix_offsets[m + 1] = static_cast<int64_t>(matrix_offsets[m] + row_matrix_offsets[row_vector_cnt - 1] + row_sizes[row_vector_cnt - 1]);
       }
     }
     // copy vector results to output for each row
@@ -546,7 +553,7 @@ class Booster {
         OMP_LOOP_EX_BEGIN();
         auto row_vector = agg[i];
         int64_t row_start_index = matrix_start_index + i;
-        int64_t element_index = row_matrix_offsets[row_start_index];
+        int64_t element_index = row_matrix_offsets[row_start_index] + matrix_offsets[m];
         int64_t indptr_loop_index = indptr_index + i;
         for (auto it = row_vector[m].begin(); it != row_vector[m].end(); ++it) {
           (*out_indices)[element_index] = it->first;
@@ -646,13 +653,16 @@ class Booster {
       } else {
         (reinterpret_cast<int64_t*>(*out_col_ptr))[col_ptr_index] = last_column_start_index + last_column_size;
       }
-      if (m != 0) {
-        matrix_start_indices[m] = matrix_start_indices[m - 1] +
-          last_column_start_index +
-          last_column_size;
+      if (m + 1 < num_matrices) {
+        matrix_start_indices[m + 1] = matrix_start_indices[m] + last_column_start_index + last_column_size;
       }
+      col_ptr_index++;
     }
+    // Note: we parallelize across matrices instead of rows because of the column_counts[m][col_idx] increment inside the loop
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static)
     for (int m = 0; m < num_matrices; ++m) {
+      OMP_LOOP_EX_BEGIN();
       for (int64_t i = 0; i < static_cast<int64_t>(agg.size()); ++i) {
         auto row_vector = agg[i];
         for (auto it = row_vector[m].begin(); it != row_vector[m].end(); ++it) {
@@ -671,7 +681,9 @@ class Booster {
           }
         }
       }
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     out_len[0] = elements_size;
     out_len[1] = col_ptr_size;
   }
