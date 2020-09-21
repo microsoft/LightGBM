@@ -719,7 +719,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         constraints_.get(), feature_index, ~(leaf_splits->leaf_index()),
         train_data_->FeatureNumBin(feature_index));
   }
-  
+
   SplitInfo new_split;
   double parent_output;
   if (leaf_splits->leaf_index() == 0) {
