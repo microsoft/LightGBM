@@ -345,15 +345,15 @@ void Config::CheckParamConflict() {
     min_data_in_leaf = 2;
     Log::Warning("min_data_in_leaf has been increased to 2 because this is required when path smoothing is active.");
   }
-  if (is_parallel && monotone_constraints_method == std::string("intermediate")) {
+  if (is_parallel && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
     // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
-    Log::Warning("Cannot use \"intermediate\" monotone constraints in parallel learning, auto set to \"basic\" method.");
+    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints in parallel learning, auto set to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
-  if (feature_fraction_bynode != 1.0 && monotone_constraints_method == std::string("intermediate")) {
+  if (feature_fraction_bynode != 1.0 && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
     // "intermediate" monotone constraints need to recompute splits. If the features are sampled when computing the
     // split initially, then the sampling needs to be recorded or done once again, which is currently not supported
-    Log::Warning("Cannot use \"intermediate\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
+    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
   if (max_depth > 0 && monotone_penalty >= max_depth) {

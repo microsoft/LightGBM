@@ -462,7 +462,7 @@ Learning Control Parameters
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
--  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, aliases: ``monotone_constraining_method``, ``mc_method``
+-  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, ``advanced``, aliases: ``monotone_constraining_method``, ``mc_method``
 
    -  used only if ``monotone_constraints`` is set
 
@@ -471,6 +471,8 @@ Learning Control Parameters
       -  ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
 
       -  ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+
+      -  ``advanced``, an `even more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
 
 -  ``monotone_penalty`` :raw-html:`<a id="monotone_penalty" title="Permalink to this parameter" href="#monotone_penalty">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``monotone_splits_penalty``, ``ms_penalty``, ``mc_penalty``, constraints: ``monotone_penalty >= 0.0``
 
