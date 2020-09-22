@@ -30,7 +30,7 @@ def find_lib():
     return LIB_PATH
 
 
-def copy_files(opencl_python_package=False, use_gpu=False):
+def copy_files(integrated_opencl=False, use_gpu=False):
 
     def copy_files_helper(folder_name):
         src = os.path.join(CURRENT_DIR, os.path.pardir, folder_name)
@@ -58,9 +58,9 @@ def copy_files(opencl_python_package=False, use_gpu=False):
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeLists.txt"),
                   os.path.join(CURRENT_DIR, "compile", "CMakeLists.txt"),
                   verbose=0)
-        if opencl_python_package:
-            copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeOpenCLPythonPackage.txt"),
-                      os.path.join(CURRENT_DIR, "compile", "CMakeOpenCLPythonPackage.txt"),
+        if integrated_opencl:
+            copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeIntegratedOpenCL.cmake"),
+                      os.path.join(CURRENT_DIR, "compile", "CMakeIntegratedOpenCL.cmake"),
                       verbose=0)
         if use_gpu:
             copy_files_helper('compute')
@@ -88,11 +88,11 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
+def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
                 use_hdfs=False, boost_root=None, boost_dir=None,
                 boost_include_dir=None, boost_librarydir=None,
                 opencl_include_dir=None, opencl_library=None,
-                nomp=False, bit32=False, opencl_python_package=False):
+                nomp=False, bit32=False, integrated_opencl=False):
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
         shutil.rmtree(os.path.join(CURRENT_DIR, "build_cpp"))
@@ -102,12 +102,9 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
     logger.info("Starting to compile the library.")
 
     cmake_cmd = ["cmake", "../compile/"]
-    if opencl_python_package:
+    if integrated_opencl:
         use_gpu = False
-        use_mpi = False
-        nomp = False
-        use_hdfs = False
-        cmake_cmd.append("-D__OPENCL_PYTHON_PACKAGE=ON")
+        cmake_cmd.append("-D__INTEGRATE_OPENCL=ON")
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
         if boost_root:
@@ -122,6 +119,8 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
             cmake_cmd.append("-DOpenCL_INCLUDE_DIR={0}".format(opencl_include_dir))
         if opencl_library:
             cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
+    elif use_cuda:
+        cmake_cmd.append("-DUSE_CUDA=ON")
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if nomp:
@@ -141,7 +140,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
         else:
             status = 1
             lib_path = os.path.join(CURRENT_DIR, "compile", "windows", "x64", "DLL", "lib_lightgbm.dll")
-            if not any((use_gpu, use_mpi, use_hdfs, nomp, bit32, opencl_python_package)):
+            if not any((use_gpu, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v142", "v141", "v140")
                 for pt in platform_toolsets:
@@ -194,8 +193,9 @@ class CustomInstall(install):
 
     user_options = install.user_options + [
         ('mingw', 'm', 'Compile with MinGW'),
-        ('opencl-python-package', None, 'Compile integrated OpenCL version'),
+        ('integrated-opencl', None, 'Compile integrated OpenCL version'),
         ('gpu', 'g', 'Compile GPU version'),
+        ('cuda', None, 'Compile CUDA version'),
         ('mpi', None, 'Compile MPI version'),
         ('nomp', None, 'Compile version without OpenMP support'),
         ('hdfs', 'h', 'Compile HDFS version'),
@@ -212,8 +212,9 @@ class CustomInstall(install):
     def initialize_options(self):
         install.initialize_options(self)
         self.mingw = 0
-        self.opencl_python_package = 0
+        self.integrated_opencl = 0
         self.gpu = 0
+        self.cuda = 0
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
@@ -236,12 +237,12 @@ class CustomInstall(install):
                                 "please use 64-bit Python instead.")
         open(LOG_PATH, 'wb').close()
         if not self.precompile:
-            copy_files(opencl_python_package=self.opencl_python_package, use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi,
+            copy_files(integrated_opencl=self.integrated_opencl, use_gpu=self.gpu)
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_cuda=self.cuda, use_mpi=self.mpi,
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
-                        nomp=self.nomp, bit32=self.bit32, opencl_python_package=self.opencl_python_package)
+                        nomp=self.nomp, bit32=self.bit32, integrated_opencl=self.integrated_opencl)
         install.run(self)
         if os.path.isfile(LOG_PATH):
             os.remove(LOG_PATH)
@@ -250,7 +251,7 @@ class CustomInstall(install):
 class CustomSdist(sdist):
 
     def run(self):
-        copy_files(opencl_python_package=True, use_gpu=True)
+        copy_files(integrated_opencl=True, use_gpu=True)
         open(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt'), 'w').close()
         if os.path.exists(os.path.join(CURRENT_DIR, 'lightgbm', 'Release')):
             shutil.rmtree(os.path.join(CURRENT_DIR, 'lightgbm', 'Release'))
@@ -332,7 +333,6 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 2',
                        'Programming Language :: Python :: 2.7',
                        'Programming Language :: Python :: 3',
-                       'Programming Language :: Python :: 3.5',
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
                        'Programming Language :: Python :: 3.8',

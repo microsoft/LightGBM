@@ -526,6 +526,23 @@ class TestEngine(unittest.TestCase):
         results_auc_mu = {}
         lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
         self.assertAlmostEqual(results_auc_mu['training']['auc_mu'][-1], 0.5)
+        # test that weighted data gives different auc_mu
+        lgb_X = lgb.Dataset(X, label=y)
+        lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.abs(np.random.normal(size=y.shape)))
+        results_unweighted = {}
+        results_weighted = {}
+        params = dict(params, num_classes=10, num_leaves=5)
+        lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_unweighted)
+        lgb.train(params, lgb_X_weighted, num_boost_round=10, valid_sets=[lgb_X_weighted],
+                  evals_result=results_weighted)
+        self.assertLess(results_weighted['training']['auc_mu'][-1], 1)
+        self.assertNotEqual(results_unweighted['training']['auc_mu'][-1], results_weighted['training']['auc_mu'][-1])
+        # test that equal data weights give same auc_mu as unweighted data
+        lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.ones(y.shape) * 0.5)
+        lgb.train(params, lgb_X_weighted, num_boost_round=10, valid_sets=[lgb_X_weighted],
+                  evals_result=results_weighted)
+        self.assertAlmostEqual(results_unweighted['training']['auc_mu'][-1], results_weighted['training']['auc_mu'][-1],
+                               places=5)
         # should give 1 when accuracy = 1
         X = X[:10, :]
         y = y[:10]
@@ -538,7 +555,7 @@ class TestEngine(unittest.TestCase):
         results = {}
         lgb.train(params, lgb_X, num_boost_round=100, valid_sets=[lgb_X], evals_result=results)
         self.assertAlmostEqual(results['training']['auc_mu'][-1], 1)
-        # test loading weights
+        # test loading class weights
         Xy = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                      '../../examples/multiclass_classification/multiclass.train'))
         y = Xy[:, 0]
@@ -1016,6 +1033,51 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(isspmatrix_csc(contribs_csc))
         # validate the values are the same
         np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
+
+    def test_contribs_sparse_multiclass(self):
+        n_features = 20
+        n_samples = 100
+        n_labels = 4
+        # generate CSR sparse dataset
+        X, y = make_multilabel_classification(n_samples=n_samples,
+                                              sparse=True,
+                                              n_features=n_features,
+                                              n_classes=1,
+                                              n_labels=n_labels)
+        y = y.flatten()
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'multiclass',
+            'num_class': n_labels,
+            'verbose': -1,
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20)
+        contribs_csr = gbm.predict(X_test, pred_contrib=True)
+        self.assertTrue(isinstance(contribs_csr, list))
+        for perclass_contribs_csr in contribs_csr:
+            self.assertTrue(isspmatrix_csr(perclass_contribs_csr))
+        # convert data to dense and get back same contribs
+        contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
+        # validate the values are the same
+        contribs_csr_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csr]), 0, 1)
+        contribs_csr_arr_re = contribs_csr_array.reshape((contribs_csr_array.shape[0],
+                                                          contribs_csr_array.shape[1] * contribs_csr_array.shape[2]))
+        np.testing.assert_allclose(contribs_csr_arr_re, contribs_dense)
+        contribs_dense_re = contribs_dense.reshape(contribs_csr_array.shape)
+        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True)
+                                       - np.sum(contribs_dense_re, axis=2)), 1e-4)
+        # validate using CSC matrix
+        X_test_csc = X_test.tocsc()
+        contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
+        self.assertTrue(isinstance(contribs_csc, list))
+        for perclass_contribs_csc in contribs_csc:
+            self.assertTrue(isspmatrix_csc(perclass_contribs_csc))
+        # validate the values are the same
+        contribs_csc_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csc]), 0, 1)
+        contribs_csc_array = contribs_csc_array.reshape((contribs_csc_array.shape[0],
+                                                         contribs_csc_array.shape[1] * contribs_csc_array.shape[2]))
+        np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
     @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
     def test_int32_max_sparse_contribs(self):
@@ -1802,6 +1864,51 @@ class TestEngine(unittest.TestCase):
         # binary metric with non-default num_class for custom objective
         self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
                           params_class_3_verbose, metrics='binary_error', fobj=dummy_obj)
+
+    def test_multiple_feval_train(self):
+        X, y = load_breast_cancer(return_X_y=True)
+
+        params = {'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
+
+        X_train, X_validation, y_train, y_validation = train_test_split(X, y, test_size=0.2)
+
+        train_dataset = lgb.Dataset(data=X_train, label=y_train, silent=True)
+        validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset, silent=True)
+        evals_result = {}
+        lgb.train(
+            params=params,
+            train_set=train_dataset,
+            valid_sets=validation_dataset,
+            num_boost_round=5,
+            feval=[constant_metric, decreasing_metric],
+            evals_result=evals_result)
+
+        self.assertEqual(len(evals_result['valid_0']), 3)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('error', evals_result['valid_0'])
+        self.assertIn('decreasing_metric', evals_result['valid_0'])
+
+    def test_multiple_feval_cv(self):
+        X, y = load_breast_cancer(return_X_y=True)
+
+        params = {'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
+
+        train_dataset = lgb.Dataset(data=X, label=y, silent=True)
+
+        cv_results = lgb.cv(
+            params=params,
+            train_set=train_dataset,
+            num_boost_round=5,
+            feval=[constant_metric, decreasing_metric])
+
+        # Expect three metrics but mean and stdv for each metric
+        self.assertEqual(len(cv_results), 6)
+        self.assertIn('binary_logloss-mean', cv_results)
+        self.assertIn('error-mean', cv_results)
+        self.assertIn('decreasing_metric-mean', cv_results)
+        self.assertIn('binary_logloss-stdv', cv_results)
+        self.assertIn('error-stdv', cv_results)
+        self.assertIn('decreasing_metric-stdv', cv_results)
 
     @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
     def test_model_size(self):

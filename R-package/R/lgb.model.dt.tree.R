@@ -79,7 +79,6 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   feature_names <- parsed_json_model$feature_names[split_feature_indx]
   tree_dt[, split_feature := feature_names]
 
-  # Return tree
   return(tree_dt)
 
 }
@@ -171,7 +170,6 @@ single.tree.parse <- function(lgb_tree) {
   # Store index
   single_tree_dt[, tree_index := lgb_tree$tree_index]
 
-  # Return tree
   return(single_tree_dt)
 
 }

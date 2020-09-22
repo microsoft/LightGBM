@@ -12,6 +12,7 @@
 #include <memory>
 #include <vector>
 
+#include "cuda_tree_learner.h"
 #include "gpu_tree_learner.h"
 #include "serial_tree_learner.h"
 

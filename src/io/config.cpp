@@ -4,6 +4,7 @@
  */
 #include <LightGBM/config.h>
 
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/random.h>
@@ -126,6 +127,8 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
       *device_type = "cpu";
     } else if (value == std::string("gpu")) {
       *device_type = "gpu";
+    } else if (value == std::string("cuda")) {
+      *device_type = "cuda";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());
     }
@@ -206,6 +209,9 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetMetricType(params, &metric);
   GetObjectiveType(params, &objective);
   GetDeviceType(params, &device_type);
+  if (device_type == std::string("cuda")) {
+    LGBM_config_::current_device = lgbm_device_cuda;
+  }
   GetTreeLearnerType(params, &tree_learner);
 
   GetMembersFromString(params);
@@ -319,11 +325,18 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-  // force col-wise for gpu
-  if (device_type == std::string("gpu")) {
+  // force col-wise for gpu & CUDA
+  if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
     force_col_wise = true;
     force_row_wise = false;
   }
+
+  // force gpu_use_dp for CUDA
+  if (device_type == std::string("cuda") && !gpu_use_dp) {
+    Log::Warning("CUDA currently requires double precision calculations.");
+    gpu_use_dp = true;
+  }
+
   // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the split is calculated
   // the count is calculated using the proportion of hessian in the leaf which is rounded up to nearest int, so it can
   // be 1 when there is actually no data in the leaf. In rare cases this can cause a bug because with path smoothing the

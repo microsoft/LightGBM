@@ -326,7 +326,16 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
     is_feature_used[feature_index] = 1;
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
+
+#ifdef USE_CUDA
+  if (LGBM_config_::current_learner == use_cpu_learner) {
+    SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
+  } else {
+    ConstructHistograms(is_feature_used, use_subtract);
+  }
+#else
   ConstructHistograms(is_feature_used, use_subtract);
+#endif
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
 }
 
@@ -702,9 +711,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     FeatureHistogram* histogram_array_, int feature_index, int real_fidx,
     bool is_feature_used, int num_data, const LeafSplits* leaf_splits,
     SplitInfo* best_split) {
-  if (!is_feature_used) {
-    return;
-  }
   SplitInfo new_split;
   double parent_output;
   if (leaf_splits->leaf_index() == 0) {
@@ -730,7 +736,9 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         leaf_splits->leaf_index(), config_->monotone_penalty);
     new_split.gain *= penalty;
   }
-  if (new_split > *best_split) {
+  // it is needed to filter the features after the above code.
+  // Otherwise, the `is_splittable` in `FeatureHistogram` will be wrong, and cause some features being accidentally filtered in the later nodes.
+  if (new_split > *best_split && is_feature_used) {
     *best_split = new_split;
   }
 }
