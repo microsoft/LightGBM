@@ -443,11 +443,12 @@ struct Config {
 
   // type = enum
   // alias = monotone_constraining_method, mc_method
-  // options = basic, intermediate
+  // options = basic, intermediate, advanced
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
   // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
   // descl2 = ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+  // descl2 = ``advanced``, an `even more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
   std::string monotone_constraints_method = "basic";
 
   // alias = monotone_splits_penalty, ms_penalty, mc_penalty
@@ -965,8 +966,13 @@ struct Config {
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
-  // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
+  // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used in OpenCL implementation and double precision is used in CUDA implementation)
   bool gpu_use_dp = false;
+
+  // check = >0
+  // desc = number of GPUs
+  // desc = **Note**: can be used only in CUDA implementation
+  int num_gpu = 1;
 
   #pragma endregion
 

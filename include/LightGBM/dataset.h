@@ -589,6 +589,14 @@ class Dataset {
     return feature_groups_[i]->is_multi_val_;
   }
 
+  inline size_t FeatureGroupSizesInByte(int group) const {
+    return feature_groups_[group]->FeatureGroupSizesInByte();
+  }
+
+  inline void* FeatureGroupData(int group) const {
+    return feature_groups_[group]->FeatureGroupData();
+  }
+
   inline double RealThreshold(int i, uint32_t threshold) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];

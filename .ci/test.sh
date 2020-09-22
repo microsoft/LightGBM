@@ -16,7 +16,7 @@ cd $BUILD_DIRECTORY
 if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     cd $BUILD_DIRECTORY/docs
     conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
-    pip install --user -r requirements.txt rstcheck
+    pip install --user -r requirements.txt rstcheck git+git://github.com/linkchecker/linkchecker.git@b9390c9ef63f7e1e210b48bc7fe97f76e8d39501
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
@@ -26,11 +26,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
     sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
-    if [[ $OS_NAME == "linux" ]]; then
-        sudo apt-get update
-        sudo apt-get install linkchecker
-        linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
-    fi
+    linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     # check the consistency of parameters' descriptions and other stuff
     cp $BUILD_DIRECTORY/docs/Parameters.rst $BUILD_DIRECTORY/docs/Parameters-backup.rst
     cp $BUILD_DIRECTORY/src/io/config_auto.cpp $BUILD_DIRECTORY/src/io/config_auto-backup.cpp
@@ -132,6 +128,16 @@ if [[ $TASK == "gpu" ]]; then
         exit 0
     fi
     cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
+elif [[ $TASK == "cuda" ]]; then
+    sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
+    grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+    if [[ $METHOD == "pip" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
+        exit 0
+    fi
+    cmake -DUSE_CUDA=ON ..
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
