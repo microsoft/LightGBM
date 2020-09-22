@@ -265,13 +265,13 @@ class CustomSdist(sdist):
 
 
 class CustomBdistWheel(bdist_wheel):
-    """Supports --opencl-python-package to allow building OpenCL wheels on Windows.
+    """Supports --integrated-opencl to allow building OpenCL wheels on Windows.
 
     Other install options should be added over time when needed.
     """
 
     user_options = bdist_wheel.user_options + [
-        ('opencl-python-package', None, 'Compile integrated OpenCL version'),
+        ('integrated-opencl', None, 'Compile integrated OpenCL version'),
     ]
 
     def initialize_options(self):
@@ -280,7 +280,7 @@ class CustomBdistWheel(bdist_wheel):
 
     def run(self):
         install = self.distribution.get_command_obj('install')
-        install.opencl_python_package = self.opencl_python_package
+        install.integrated_opencl = self.integrated_opencl
         bdist_wheel.run(self)
 
 
