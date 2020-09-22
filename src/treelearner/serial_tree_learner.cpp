@@ -781,7 +781,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
   // can't use GetParentOutput because leaf_splits doesn't have weight property set
   double parent_output = 0;
   if (config_->path_smooth > kEpsilon) {
-    double parent_output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, true, false>(
+    parent_output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, true, false>(
       sum_gradients, sum_hessians, config_->lambda_l1, config_->lambda_l2, config_->max_delta_step,
       BasicConstraint(), config_->path_smooth, static_cast<data_size_t>(num_data), 0);
   }
