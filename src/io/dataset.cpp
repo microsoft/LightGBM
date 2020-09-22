@@ -474,6 +474,11 @@ void PushDataToMultiValBin(
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
               // for dense bin, the feature bin values without offsets are used
               auto cur_bin = (*iters)[tid][j]->Get(i);
+              /*if (j == 7) {
+                if (cur_bin != 0) {
+                  Log::Warning("feature 7 bin %d in push", cur_bin);
+                }
+              }*/
               /*if (cur_bin == most_freq_bins[j]) {
                 cur_bin = 0;
               } else {
@@ -548,7 +553,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   int num_total_bin = 1;
   offsets.push_back(num_total_bin);
   for (int gid = 0; gid < num_groups_; ++gid) {
-    if (feature_groups_[gid]->is_multi_val_) {
+    //if (feature_groups_[gid]->is_multi_val_) {
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
         sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
@@ -564,18 +569,23 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
               feature_groups_[gid]->SubFeatureIterator(fid));
         }
       }
-    } else {
+    /*} else {
       most_freq_bins.push_back(0);
-      num_total_bin += feature_groups_[gid]->bin_offsets_.back() - 1;
+      //num_total_bin += feature_groups_[gid]->bin_offsets_.back() - 1;
+      for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
+        const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
+        num_total_bin += bin_mapper->num_bin();
+        offsets.push_back(num_total_bin);
+      }
       for (int tid = 0; tid < num_threads; ++tid) {
         iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
       }
-      offsets.push_back(num_total_bin);
+      //offsets.push_back(num_total_bin);
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
         sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
       }
-    }
+    }*/
   }
   sum_dense_ratio /= static_cast<double>(most_freq_bins.size());
   Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",

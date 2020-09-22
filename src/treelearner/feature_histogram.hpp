@@ -20,6 +20,8 @@
 #include "monotone_constraints.hpp"
 #include "split_info.hpp"
 
+#include <fstream>
+
 namespace LightGBM {
 
 class FeatureMetainfo {
@@ -1171,6 +1173,7 @@ class HistogramPool {
           num_total_bin -= 1;
         }*/
       }
+      offsets->push_back(num_total_bin);
     }
     return num_total_bin;
   }
@@ -1201,7 +1204,7 @@ class HistogramPool {
     for (int i = old_cache_size; i < cache_size; ++i) {
       OMP_LOOP_EX_BEGIN();
       pool_[i].reset(new FeatureHistogram[train_data->num_features()]);
-      data_[i].resize(num_total_bin * 2);
+      data_[i].resize(num_total_bin * 2 + 2);
       for (int j = 0; j < train_data->num_features(); ++j) {
         pool_[i][j].Init(data_[i].data() + (offsets[j] + feature_metas_[j].offset) * 2, &feature_metas_[j]);
       }
