@@ -284,7 +284,7 @@ class AveragePrecisionMetric: public Metric {
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back("ap");
+    name_.emplace_back("average_precision");
 
     num_data_ = num_data;
     // get label

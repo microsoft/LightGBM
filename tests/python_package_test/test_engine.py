@@ -2412,7 +2412,7 @@ class TestEngine(unittest.TestCase):
         res = {}
         lgb_X = lgb.Dataset(X, label=y)
         est = lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=res)
-        ap = res['training']['ap'][-1]
+        ap = res['training']['average_precision'][-1]
         pred = est.predict(X)
         sklearn_ap = average_precision_score(y, pred)
         self.assertAlmostEqual(ap, sklearn_ap)
@@ -2420,4 +2420,4 @@ class TestEngine(unittest.TestCase):
         y[:] = 1
         lgb_X = lgb.Dataset(X, label=y)
         lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], evals_result=res)
-        self.assertAlmostEqual(res['training']['ap'][-1], 1)
+        self.assertAlmostEqual(res['training']['average_precision'][-1], 1)
