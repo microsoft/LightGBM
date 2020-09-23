@@ -1,7 +1,7 @@
 #' @title removed functions
 #' @name lgb.prepare
 #' @description removed functions
-#' @param ... catch-all too match old calls
+#' @param ... catch-all to match old calls
 #' @return Nothing. This function always raises an exception
 #' @export
 lgb.prepare <- function(...) {
@@ -11,7 +11,7 @@ lgb.prepare <- function(...) {
 #' @title removed functions
 #' @name lgb.prepare2
 #' @description removed functions
-#' @param ... catch-all too match old calls
+#' @param ... catch-all to match old calls
 #' @return Nothing. This function always raises an exception
 #' @export
 lgb.prepare2 <- function(...) {

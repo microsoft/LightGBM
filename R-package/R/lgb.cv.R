@@ -91,7 +91,6 @@ lgb.cv <- function(params = list()
                    , ...
                    ) {
 
-  # validate parameters
   if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
@@ -118,9 +117,10 @@ lgb.cv <- function(params = list()
     params$objective <- "NONE"
   }
 
-  # If loss is a single function, store it as a 1-element list
+  # If eval is a single function, store it as a 1-element list
   # (for backwards compatibility). If it is a list of functions, store
-  # all of them
+  # all of them. This makes it possible to pass any mix of strings like "auc"
+  # and custom functions to eval
   if (is.function(eval)) {
     eval_functions <- list(eval)
   }
@@ -276,7 +276,6 @@ lgb.cv <- function(params = list()
     )
   }
 
-  # Categorize callbacks
   cb <- categorize.callbacks(callbacks)
 
   # Construct booster for each fold. The data.table() code below is used to
@@ -354,7 +353,6 @@ lgb.cv <- function(params = list()
     env$iteration <- i
     env$eval_list <- list()
 
-    # Loop through "pre_iter" element
     for (f in cb$pre_iter) {
       f(env)
     }
@@ -430,7 +428,6 @@ lgb.cv <- function(params = list()
     })
   }
 
-  # Return booster
   return(cv_booster)
 
 }
@@ -493,7 +490,6 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 
   }
 
-  # Return folds
   return(folds)
 
 }
@@ -564,7 +560,6 @@ lgb.stratified.folds <- function(y, k = 10L) {
 
   }
 
-  # Return data
   out <- split(seq(along = y), foldVector)
   names(out) <- NULL
   out
@@ -592,7 +587,7 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
   })
 
   # Get evaluation. Just taking the first element here to
-  # get structture (name, higher_bettter, data_name)
+  # get structure (name, higher_better, data_name)
   ret_eval <- msg[[1L]]
 
   # Go through evaluation length items
@@ -600,7 +595,6 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
     ret_eval[[j]]$value <- mean(eval_result[[j]])
   }
 
-  # Preinit evaluation error
   ret_eval_err <- NULL
 
   # Check for standard deviation

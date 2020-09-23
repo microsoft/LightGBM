@@ -79,7 +79,6 @@ lgb.plot.importance <- function(tree_imp,
     )
   )
 
-  # Do plot
   tree_imp[.N:1L,
            graphics::barplot(
                height = get(measure)
@@ -92,7 +91,6 @@ lgb.plot.importance <- function(tree_imp,
                , las = 1L
            )]
 
-  # Return invisibly
   invisible(tree_imp)
 
 }

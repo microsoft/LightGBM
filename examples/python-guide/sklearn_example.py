@@ -62,7 +62,7 @@ print('Starting training with multiple custom eval functions...')
 # train
 gbm.fit(X_train, y_train,
         eval_set=[(X_test, y_test)],
-        eval_metric=lambda y_true, y_pred: [rmsle(y_true, y_pred), rae(y_true, y_pred)],
+        eval_metric=[rmsle, rae],
         early_stopping_rounds=5)
 
 print('Starting predicting...')
