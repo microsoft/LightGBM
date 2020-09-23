@@ -276,7 +276,7 @@ class CustomBdistWheel(bdist_wheel):
 
     def initialize_options(self):
         bdist_wheel.initialize_options(self)
-        self.opencl_python_package = False
+        self.integrated_opencl = False
 
     def run(self):
         install = self.distribution.get_command_obj('install')
