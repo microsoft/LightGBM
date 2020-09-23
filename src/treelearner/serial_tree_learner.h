@@ -114,12 +114,16 @@ class SerialTreeLearner: public TreeLearner {
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
+  /*! \brief Get output of parent node, used for path smoothing */
+  double GetParentOutput(const Tree* tree, const LeafSplits* leaf_splits) const;
+
  protected:
   void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
                                   int feature_index, int real_fidx,
                                   bool is_feature_used, int num_data,
                                   const LeafSplits* leaf_splits,
-                                  SplitInfo* best_split);
+                                  SplitInfo* best_split, double parent_output);
+
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
