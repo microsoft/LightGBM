@@ -1,10 +1,46 @@
 # CRAN Submission History
 
-## v3.0.0 - Submission 5 - (September 11, 2020)
+## v3.0.0 - Submission 6 - (TBD)
 
 ### CRAN Response
 
 ### Maintainer Notes
+
+## v3.0.0 - Submission 5 - (September 11, 2020)
+
+### CRAN Response
+
+Accepted to CRAN!
+
+Please correct the problems below before 2020-10-05 to safely retain your package on CRAN:
+
+```text
+checking installed package size ... NOTE
+  installed size is 49.7Mb
+  sub-directories of 1Mb or more:
+    libs 49.1Mb
+
+"network/socket_wrapper.hpp", line 30: Error: Could not open include file<ifaddrs.h>.
+"network/socket_wrapper.hpp", line 216: Error: The type "ifaddrs" is incomplete.
+"network/socket_wrapper.hpp", line 217: Error: The type "ifaddrs" is incomplete.
+"network/socket_wrapper.hpp", line 220: Error: The type "ifaddrs" is incomplete.
+"network/socket_wrapper.hpp", line 222: Error: The type "ifaddrs" is incomplete.
+"network/socket_wrapper.hpp", line 214: Error: The function "getifaddrs" must have a prototype.
+"network/socket_wrapper.hpp", line 228: Error: The function "freeifaddrs" must have a prototype.
+"network/linkers_socket.cpp", line 76: Warning: A non-POD object of type "std::chrono::duration<double, std::ratio<1, 1000>>" passed as a variable argument to function "static LightGBM::Log::Info(const char*, ...)".
+7 Error(s) and 1 Warning(s) detected.
+*** Error code 2
+make: Fatal error: Command failed for target `network/linkers_socket.o'
+Current working directory /tmp/RtmpNfaavG/R.INSTALL40a84f70130a/lightgbm/src
+ERROR: compilation failed for package ‘lightgbm’
+* removing ‘/home/ripley/R/Lib32/lightgbm’
+```
+
+### Maintainer Notes
+
+Will try using a patch that `psutil` has used to fix missing `ifaddrs.h` on Solaris 10: https://github.com/microsoft/LightGBM/issues/629#issuecomment-665091451.
+
+If that doesn't work, we can detect Solaris and disable distributed training on that operating system.
 
 ## v3.0.0 - Submission 4 - (September 4, 2020)
 
