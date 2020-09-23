@@ -449,7 +449,7 @@ void PushDataToMultiValBin(
           for (data_size_t i = start; i < end; ++i) {
             cur_data.clear();
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-              // for sparse bin, we store the feature bin values with offset added
+              // for sparse multi value bin, we store the feature bin values with offset added
               auto cur_bin = (*iters)[tid][j]->Get(i);
               if (cur_bin == most_freq_bins[j]) {
                 continue;
@@ -472,21 +472,8 @@ void PushDataToMultiValBin(
           }
           for (data_size_t i = start; i < end; ++i) {
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-              // for dense bin, the feature bin values without offsets are used
+              // for dense multi value bin, the feature bin values without offsets are used
               auto cur_bin = (*iters)[tid][j]->Get(i);
-              /*if (j == 7) {
-                if (cur_bin != 0) {
-                  Log::Warning("feature 7 bin %d in push", cur_bin);
-                }
-              }*/
-              /*if (cur_bin == most_freq_bins[j]) {
-                cur_bin = 0;
-              } else {
-                cur_bin += 1; // +1 to make sure that cur_bin is positive
-                if (most_freq_bins[j] == 0) {
-                  cur_bin -= 1;
-                }
-              }*/
               cur_data[j] = cur_bin;
             }
             ret->PushOneRow(tid, i, cur_data);
@@ -550,18 +537,32 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
   std::vector<uint32_t> offsets;
-  int num_total_bin = 1;
+  int ncol = 0;
+  for (int gid = 0; gid < num_groups_; ++gid) {
+    if (feature_groups_[gid]->is_multi_val_) {
+      ncol += feature_groups_[gid]->num_feature_;
+    } else {
+      ncol += 1;
+    }
+    for (int fid = 0; fid < feature_groups_[fid]->num_feature_; ++fid) {
+      const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
+      sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
+    }
+  }
+  sum_dense_ratio /= ncol;
+  const int offset = (1.0f - sum_dense_ratio) >=
+    MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
+  int num_total_bin = offset;
   offsets.push_back(num_total_bin);
   for (int gid = 0; gid < num_groups_; ++gid) {
-    //if (feature_groups_[gid]->is_multi_val_) {
+    if (feature_groups_[gid]->is_multi_val_) {
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
-        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
         num_total_bin += bin_mapper->num_bin();
-        /*if (most_freq_bins.back() == 0) {
-          num_total_bin -= 1;
-        }*/
+        if (most_freq_bins.back() == 0) {
+          num_total_bin -= offset;
+        }
         offsets.push_back(num_total_bin);
 #pragma omp parallel for schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
@@ -569,25 +570,16 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
               feature_groups_[gid]->SubFeatureIterator(fid));
         }
       }
-    /*} else {
+    } else {
       most_freq_bins.push_back(0);
-      //num_total_bin += feature_groups_[gid]->bin_offsets_.back() - 1;
-      for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
-        const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
-        num_total_bin += bin_mapper->num_bin();
-        offsets.push_back(num_total_bin);
-      }
+      num_total_bin += feature_groups_[gid]->bin_offsets_.back() - offset;
       for (int tid = 0; tid < num_threads; ++tid) {
         iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
       }
-      //offsets.push_back(num_total_bin);
-      for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
-        const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
-        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
-      }
-    }*/
+      offsets.push_back(num_total_bin);
+    }
   }
-  sum_dense_ratio /= static_cast<double>(most_freq_bins.size());
+  CHECK(static_cast<int>(most_freq_bins.size()) == ncol);
   Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",
              1.0 - sum_dense_ratio);
   ret.reset(MultiValBin::CreateMultiValBin(
@@ -1131,8 +1123,9 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     share_state->hist_move_dest.clear();
     share_state->hist_move_size.clear();
 
-    int num_total_bin = 1;
-    int new_num_total_bin = 1;
+    const int offset = !share_state->is_colwise && !share_state->multi_val_bin->IsSparse() ? 0 : 1;
+    int num_total_bin = offset;
+    int new_num_total_bin = offset;
     offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
     for (int i = 0; i < num_groups_; ++i) {
       int f_start = group_feature_start_[i];
@@ -1140,9 +1133,9 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
         for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
           const auto& bin_mapper = feature_groups_[i]->bin_mappers_[j];
           int cur_num_bin = bin_mapper->num_bin();
-          /*if (bin_mapper->GetMostFreqBin() == 0) {
-            cur_num_bin -= 1;
-          }*/
+          if (bin_mapper->GetMostFreqBin() == 0) {
+            cur_num_bin -= offset;
+          }
           num_total_bin += cur_num_bin;
           if (is_feature_used[f_start + j]) {
             new_num_total_bin += cur_num_bin;
@@ -1166,7 +1159,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
             break;
           }
         }
-        int cur_num_bin = feature_groups_[i]->bin_offsets_.back() - 1;
+        int cur_num_bin = feature_groups_[i]->bin_offsets_.back() - offset;
         num_total_bin += cur_num_bin;
         if (is_group_used) {
           new_num_total_bin += cur_num_bin;

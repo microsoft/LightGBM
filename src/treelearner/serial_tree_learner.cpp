@@ -60,7 +60,9 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   ordered_hessians_.resize(num_data_);
 
   GetShareStates(train_data_, is_constant_hessian, true);
-  histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_colwise, config_, max_cache_size, config_->num_leaves);
+  histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_colwise, 
+  !share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse(),
+  config_, max_cache_size, config_->num_leaves);
   Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
@@ -130,7 +132,9 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     // at least need 2 leaves
     max_cache_size = std::max(2, max_cache_size);
     max_cache_size = std::min(max_cache_size, config_->num_leaves);
-    histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_colwise, config_, max_cache_size, config_->num_leaves);
+    histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_colwise,
+    !share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse(),
+    config_, max_cache_size, config_->num_leaves);
 
     // push split information for all leaves
     best_split_per_leaf_.resize(config_->num_leaves);
@@ -334,9 +338,19 @@ void SerialTreeLearner::ConstructHistograms(
     const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::ConstructHistograms",
                                   global_timer);
+  int offset = 1;
+  if (!share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse() &&
+    train_data_->FeatureBinMapper(0)->GetMostFreqBin() > 0) {
+    offset = 0;
+  }
+  if (share_state_->is_colwise &&
+    train_data_->IsDenseMultiGroup(train_data_->Feature2Group(0)) &&
+    train_data_->FeatureBinMapper(0)->GetMostFreqBin() > 0) {
+    offset = 0;
+  }
   // construct smaller leaf
   hist_t* ptr_smaller_leaf_hist_data =
-      smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
+      smaller_leaf_histogram_array_[0].RawData() - kHistOffset * offset;
   train_data_->ConstructHistograms(
       is_feature_used, smaller_leaf_splits_->data_indices(),
       smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
@@ -346,7 +360,7 @@ void SerialTreeLearner::ConstructHistograms(
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
     hist_t* ptr_larger_leaf_hist_data =
-        larger_leaf_histogram_array_[0].RawData() - kHistOffset;
+        larger_leaf_histogram_array_[0].RawData() - kHistOffset * offset;
     train_data_->ConstructHistograms(
         is_feature_used, larger_leaf_splits_->data_indices(),
         larger_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,

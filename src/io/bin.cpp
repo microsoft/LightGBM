@@ -656,7 +656,6 @@ namespace LightGBM {
 
   MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature, 
     double sparse_rate, const std::vector<uint32_t>& offsets) {
-    const double multi_val_bin_sparse_threshold = 0.25f;
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
       const double average_element_per_row = (1.0 - sparse_rate) * num_feature;
       return CreateMultiValSparseBin(num_data, num_bin,

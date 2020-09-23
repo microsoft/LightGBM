@@ -1150,35 +1150,54 @@ class HistogramPool {
   }
 
   static int GetNumTotalHistogramBins(const Dataset* train_data,
-    bool is_hist_colwise, std::vector<int>* offsets) {
-    int num_total_bin = static_cast<int>(train_data->NumTotalBin());
+    bool is_hist_colwise, bool is_dense_rowwise, std::vector<int>* offsets) {
+    const int offset = is_dense_rowwise || is_hist_colwise ? 0 : 1;
+    int num_total_bin = offset;
     offsets->clear();
-    if (is_hist_colwise) {
-      int offset = 0;
-      for (int j = 0; j < train_data->num_features(); ++j) {
-        offset += train_data->SubFeatureBinOffset(j);
-        offsets->push_back(offset);
-        auto num_bin = train_data->FeatureNumBin(j);
-        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-          num_bin -= 1;
+    for (int i = 0; i < train_data->num_features(); ++i) {
+      int group = train_data->Feature2Group(i);
+      if (train_data->IsDenseMultiGroup(group)) {
+        const BinMapper* bin_mapper = train_data->FeatureBinMapper(i);
+        if (bin_mapper->GetMostFreqBin() == 0) {
+          offsets->push_back(num_total_bin + 1 - offset);
+          num_total_bin += bin_mapper->num_bin() - offset;
+        } else {
+          offsets->push_back(num_total_bin);
+          num_total_bin += bin_mapper->num_bin();
         }
-        offset += num_bin;
-      }
-    } else {
-      num_total_bin = 1;
-      for (int j = 0; j < train_data->num_features(); ++j) {
-        offsets->push_back(num_total_bin);
-        num_total_bin += train_data->FeatureBinMapper(j)->num_bin();
-        /*if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
+      } else if (train_data->IsMultiGroup(group)) {
+        if (is_hist_colwise) {
+          num_total_bin += train_data->SubFeatureBinOffset(i);
+        }
+        const BinMapper* bin_mapper = train_data->FeatureBinMapper(i);
+        if (is_dense_rowwise && bin_mapper->GetMostFreqBin() == 0) {
+          offsets->push_back(num_total_bin + 1);
+        } else {
+          offsets->push_back(num_total_bin);
+        }
+        num_total_bin += bin_mapper->num_bin();
+        if (bin_mapper->GetMostFreqBin() == 0 && !is_dense_rowwise) {
           num_total_bin -= 1;
-        }*/
+        }
+      } else {
+        if (is_hist_colwise || is_dense_rowwise) {
+          num_total_bin += train_data->SubFeatureBinOffset(i);
+        }
+        offsets->push_back(num_total_bin);
+        const BinMapper* bin_mapper = train_data->FeatureBinMapper(i);
+        num_total_bin += bin_mapper->num_bin();
+        if (bin_mapper->GetMostFreqBin() == 0) {
+          num_total_bin -= 1;
+        }
       }
-      offsets->push_back(num_total_bin);
+    }
+    if (is_hist_colwise) {
+      CHECK(num_total_bin == static_cast<int>(train_data->NumTotalBin()));
     }
     return num_total_bin;
   }
 
-  void DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise,
+  void DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise, bool is_dense_rowwise,
                          const Config* config, int cache_size, int total_size) {
     if (feature_metas_.empty()) {
       SetFeatureInfo<true, true>(train_data, config, &feature_metas_);
@@ -1198,15 +1217,15 @@ class HistogramPool {
     }
     std::vector<int> offsets;
     int num_total_bin =
-        this->GetNumTotalHistogramBins(train_data, is_hist_colwise, &offsets);
+        this->GetNumTotalHistogramBins(train_data, is_hist_colwise, is_dense_rowwise, &offsets);
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int i = old_cache_size; i < cache_size; ++i) {
       OMP_LOOP_EX_BEGIN();
       pool_[i].reset(new FeatureHistogram[train_data->num_features()]);
-      data_[i].resize(num_total_bin * 2 + 2);
+      data_[i].resize(num_total_bin * 2);
       for (int j = 0; j < train_data->num_features(); ++j) {
-        pool_[i][j].Init(data_[i].data() + (offsets[j] + feature_metas_[j].offset) * 2, &feature_metas_[j]);
+        pool_[i][j].Init(data_[i].data() + offsets[j] * 2, &feature_metas_[j]);
       }
       OMP_LOOP_EX_END();
     }

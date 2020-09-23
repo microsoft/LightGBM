@@ -33,15 +33,27 @@ class FeatureGroup {
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     data_size_t num_data) : num_feature_(num_feature), is_multi_val_(is_multi_val), is_sparse_(false) {
     CHECK_EQ(static_cast<int>(bin_mappers->size()), num_feature);
-    // use bin at zero to store most_freq_bin
-    num_total_bin_ = 1;
-    bin_offsets_.emplace_back(num_total_bin_);
     auto& ref_bin_mappers = *bin_mappers;
+    double sum_sparse_rate = 0.0f;
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_.emplace_back(ref_bin_mappers[i].release());
+      sum_sparse_rate += bin_mappers_.back()->sparse_rate();
+    }
+    sum_sparse_rate /= num_feature_;
+    int offset = 1;
+    if (sum_sparse_rate >= MultiValBin::multi_val_bin_sparse_threshold && is_multi_val) {
+      offset = 0;
+      is_dense_multi_val_ = true;
+    } else {
+      is_dense_multi_val_ = false;
+    }
+    // use bin at zero to store most_freq_bin only when using dense multi val bin
+    num_total_bin_ = offset;
+    bin_offsets_.emplace_back(num_total_bin_);
+    for (int i = 0; i < num_feature_; ++i) {
       auto num_bin = bin_mappers_[i]->num_bin();
       if (bin_mappers_[i]->GetMostFreqBin() == 0) {
-        num_bin -= 1;
+        num_bin -= offset;
       }
       num_total_bin_ += num_bin;
       bin_offsets_.emplace_back(num_total_bin_);
@@ -52,6 +64,7 @@ class FeatureGroup {
   FeatureGroup(const FeatureGroup& other, int num_data) {
     num_feature_ = other.num_feature_;
     is_multi_val_ = other.is_multi_val_;
+    is_dense_multi_val_ = other.is_dense_multi_val_;
     is_sparse_ = other.is_sparse_;
     num_total_bin_ = other.num_total_bin_;
     bin_offsets_ = other.bin_offsets_;
@@ -68,6 +81,7 @@ class FeatureGroup {
     CHECK_EQ(static_cast<int>(bin_mappers->size()), 1);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
+    is_dense_multi_val_ = false;
     bin_offsets_.emplace_back(num_total_bin_);
     auto& ref_bin_mappers = *bin_mappers;
     for (int i = 0; i < num_feature_; ++i) {
@@ -94,6 +108,8 @@ class FeatureGroup {
     // get is_sparse
     is_multi_val_ = *(reinterpret_cast<const bool*>(memory_ptr));
     memory_ptr += sizeof(is_multi_val_);
+    is_dense_multi_val_ = *(reinterpret_cast<const bool*>(memory_ptr));
+    memory_ptr += sizeof(is_dense_multi_val_);
     is_sparse_ = *(reinterpret_cast<const bool*>(memory_ptr));
     memory_ptr += sizeof(is_sparse_);
     num_feature_ = *(reinterpret_cast<const int*>(memory_ptr));
@@ -157,7 +173,11 @@ class FeatureGroup {
       bin -= 1;
     }
     if (is_multi_val_) {
-      multi_bin_data_[sub_feature_idx]->Push(tid, line_idx, bin + 1);
+      if (is_dense_multi_val_) {
+        multi_bin_data_[sub_feature_idx]->Push(tid, line_idx, bin);
+      } else {
+        multi_bin_data_[sub_feature_idx]->Push(tid, line_idx, bin + 1);
+      }
     } else {
       bin += bin_offsets_[sub_feature_idx];
       bin_data_->Push(tid, line_idx, bin);
@@ -191,10 +211,16 @@ class FeatureGroup {
       uint32_t max_bin = bin_offsets_[sub_feature + 1] - 1;
       return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
     } else {
-      int addi = bin_mappers_[sub_feature]->GetMostFreqBin() == 0 ? 0 : 1;
-      uint32_t min_bin = 1;
-      uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1 + addi;
-      return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin, most_freq_bin);
+      if (is_dense_multi_val_) {
+        uint32_t min_bin = 0;
+        uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1;
+        return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin, most_freq_bin);
+      } else {
+        int addi = bin_mappers_[sub_feature]->GetMostFreqBin() == 0 ? 0 : 1;
+        uint32_t min_bin = 1;
+        uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1 + addi;
+        return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin, most_freq_bin);
+      }
     }
   }
 
@@ -261,16 +287,17 @@ class FeatureGroup {
         }
       }
     } else {
-      int addi = bin_mappers_[sub_feature]->GetMostFreqBin() == 0 ? 0 : 1;
+      int addi = bin_mappers_[sub_feature]->GetMostFreqBin() == 0 || is_dense_multi_val_ ? 0 : 1;
+      uint32_t min_bin = addi;
       uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1 + addi;
       if (bin_mappers_[sub_feature]->bin_type() == BinType::NumericalBin) {
         auto missing_type = bin_mappers_[sub_feature]->missing_type();
         return multi_bin_data_[sub_feature]->Split(
-            max_bin, default_bin, most_freq_bin, missing_type, default_left,
+            min_bin, max_bin, default_bin, most_freq_bin, missing_type, default_left,
             *threshold, data_indices, cnt, lte_indices, gt_indices);
       } else {
         return multi_bin_data_[sub_feature]->SplitCategorical(
-            max_bin, most_freq_bin, threshold, num_threshold, data_indices, cnt,
+            min_bin, max_bin, most_freq_bin, threshold, num_threshold, data_indices, cnt,
             lte_indices, gt_indices);
       }
     }
@@ -330,6 +357,7 @@ class FeatureGroup {
   FeatureGroup(const FeatureGroup& other) {
     num_feature_ = other.num_feature_;
     is_multi_val_ = other.is_multi_val_;
+    is_dense_multi_val_ = other.is_dense_multi_val_;
     is_sparse_ = other.is_sparse_;
     num_total_bin_ = other.num_total_bin_;
     bin_offsets_ = other.bin_offsets_;
@@ -353,7 +381,7 @@ class FeatureGroup {
     if (is_multi_val) {
       multi_bin_data_.clear();
       for (int i = 0; i < num_feature_; ++i) {
-        int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;
+        int addi = bin_mappers_[i]->GetMostFreqBin() == 0 || is_dense_multi_val_ ? 0 : 1;
         if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
           multi_bin_data_.emplace_back(Bin::CreateSparseBin(
               num_data, bin_mappers_[i]->num_bin() + addi));
@@ -387,6 +415,7 @@ class FeatureGroup {
   std::vector<std::unique_ptr<Bin>> multi_bin_data_;
   /*! \brief True if this feature is sparse */
   bool is_multi_val_;
+  bool is_dense_multi_val_;
   bool is_sparse_;
   int num_total_bin_;
 };

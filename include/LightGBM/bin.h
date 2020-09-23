@@ -453,6 +453,8 @@ class MultiValBin {
 
   static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin, double estimate_element_per_row);
 
+  static constexpr double multi_val_bin_sparse_threshold = 0.25f;
+
   virtual MultiValBin* Clone() = 0;
 };
 

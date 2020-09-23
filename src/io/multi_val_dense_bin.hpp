@@ -61,11 +61,7 @@ class MultiValDenseBin : public MultiValBin {
     data_size_t i = start;
     hist_t* grad = out;
     hist_t* hess = out + 1;
-    std::vector<uint32_t> offsets(offsets_.size());
-    for (size_t i = 0; i < offsets.size(); ++i) {
-      offsets[i] = offsets_[i] - 1;
-    }
-    const uint32_t* offsets_ptr = offsets.data();
+    const uint32_t* offsets_ptr = offsets_.data();
     if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
       const data_size_t pf_end = end - pf_offset;
