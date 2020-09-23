@@ -12,7 +12,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file, make_multilabel_classification)
-from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score, average_precision_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
 
 try:
@@ -2507,3 +2507,24 @@ class TestEngine(unittest.TestCase):
         inner_test(X, y, params, early_stopping_rounds=1)
         inner_test(X, y, params, early_stopping_rounds=5)
         inner_test(X, y, params, early_stopping_rounds=None)
+
+    def test_average_precision_metric(self):
+        # test against sklearn average precision metric
+        X, y = load_breast_cancer(return_X_y=True)
+        params = {
+            'objective': 'binary',
+            'metric': 'average_precision',
+            'verbose': -1
+        }
+        res = {}
+        lgb_X = lgb.Dataset(X, label=y)
+        est = lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=res)
+        ap = res['training']['average_precision'][-1]
+        pred = est.predict(X)
+        sklearn_ap = average_precision_score(y, pred)
+        self.assertAlmostEqual(ap, sklearn_ap)
+        # test that average precision is 1 where model predicts perfectly
+        y[:] = 1
+        lgb_X = lgb.Dataset(X, label=y)
+        lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], evals_result=res)
+        self.assertAlmostEqual(res['training']['average_precision'][-1], 1)
