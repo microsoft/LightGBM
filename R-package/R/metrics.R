@@ -22,6 +22,7 @@
         , "ndcg" = TRUE
         , "map" = TRUE
         , "auc" = TRUE
+        , "average_precision" = TRUE
         , "binary_logloss" = FALSE
         , "binary_error" = FALSE
         , "auc_mu" = TRUE
