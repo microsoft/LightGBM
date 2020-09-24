@@ -1008,210 +1008,210 @@ class FunctionTimer {
 extern Common::Timer global_timer;
 
 
-/*!
- * Provides locale-independent alternatives to Common's methods.
- * Essential to make models robust to locale settings.
- */
-namespace CommonC {
-
-  template<typename T>
-  inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
-    return LightGBM::Common::Join(strs, delimiter, true);
-  }
-
-  template<typename T>
-  inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
-    return LightGBM::Common::Join(strs, start, end, delimiter, true);
-  }
-
-  inline static const char* Atof(const char* p, double* out) {
-    return LightGBM::Common::Atof(p, out);
-  }
-
-  template<typename T, bool is_float>
-  struct __StringToTHelperFast {
-    const char* operator()(const char*p, T* out) const {
-      return LightGBM::Common::Atoi(p, out);
-    }
-  };
-
   /*!
-   * \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
-   *          has **less** floating point precision than ``__StringToTHelper``.
-   *          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
-   *          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
-   */
-  template<typename T>
-  struct __StringToTHelperFast<T, true> {
-    const char* operator()(const char*p, T* out) const {
-      double tmp = 0.0f;
-      auto ret = Atof(p, &tmp);
-      *out = static_cast<T>(tmp);
+  * Provides locale-independent alternatives to Common's methods.
+  * Essential to make models robust to locale settings.
+  */
+  namespace CommonC {
+
+    template<typename T>
+    inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
+      return LightGBM::Common::Join(strs, delimiter, true);
+    }
+
+    template<typename T>
+    inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
+      return LightGBM::Common::Join(strs, start, end, delimiter, true);
+    }
+
+    inline static const char* Atof(const char* p, double* out) {
+      return LightGBM::Common::Atof(p, out);
+    }
+
+    template<typename T, bool is_float>
+    struct __StringToTHelperFast {
+      const char* operator()(const char*p, T* out) const {
+        return LightGBM::Common::Atoi(p, out);
+      }
+    };
+
+    /*!
+    * \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
+    *          has **less** floating point precision than ``__StringToTHelper``.
+    *          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+    *          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
+    */
+    template<typename T>
+    struct __StringToTHelperFast<T, true> {
+      const char* operator()(const char*p, T* out) const {
+        double tmp = 0.0f;
+        auto ret = Atof(p, &tmp);
+        *out = static_cast<T>(tmp);
+        return ret;
+      }
+    };
+
+    template<typename T, bool is_float>
+    struct __StringToTHelper {
+      T operator()(const std::string& str) const {
+        T ret = 0;
+        LightGBM::Common::Atoi(str.c_str(), &ret);
+        return ret;
+      }
+    };
+
+    /*!
+    * \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
+    *          has **less** floating point precision than ``__StringToTHelper``.
+    *          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+    *          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
+    * \note It is possible that ``fast_double_parser::parse_number`` is faster than ``Common::Atof``.
+    */
+    template<typename T>
+    struct __StringToTHelper<T, true> {
+      T operator()(const std::string& str) const {
+        double tmp;
+
+        // Fast (common) path: For numeric inputs in RFC 7159 format:
+        const bool fast_parse_succeeded = fast_double_parser::parse_number(str.c_str(), &tmp);
+        
+        // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc. Fallback to standard library:
+        if (!fast_parse_succeeded) {      
+          std::stringstream ss;
+          Common::C_stringstream(ss);
+          ss << str;
+          ss >> tmp;
+        }
+
+        return static_cast<T>(tmp);
+      }
+    };
+
+    /*!
+    * Safely formats a value onto a buffer according to a format string and null-terminates it.
+    *
+    * \note It checks that the full value was written or forcefully aborts.
+    *       This safety check serves to prevent incorrect internal API usage.
+    *       Correct usage will never incur in this problem:
+    *         - The received buffer size shall be sufficient at all times for the input format string and value.
+    */
+    template <typename T>
+    inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
+        auto result = fmt::format_to_n(buffer, buf_len, format, value);
+        if (result.size >= buf_len) {
+          Log::Fatal("Numerical conversion failed. Buffer is too small.");
+        }
+        buffer[result.size] = '\0';
+    }
+
+    template<typename T, bool is_float, bool high_precision>
+    struct __TToStringHelper {
+      void operator()(T value, char* buffer, size_t buf_len) const {
+        format_to_buf(buffer, buf_len, "{}", value);
+      }
+    };
+
+    template<typename T>
+    struct __TToStringHelper<T, true, false> {
+      void operator()(T value, char* buffer, size_t buf_len) const {
+        format_to_buf(buffer, buf_len, "{:g}", value);
+      }
+    };
+
+    template<typename T>
+    struct __TToStringHelper<T, true, true> {
+      void operator()(T value, char* buffer, size_t buf_len) const {
+        format_to_buf(buffer, buf_len, "{:.17g}", value);
+      }
+    };
+
+    /*!
+    * \warning Beware that due to internal use of ``Common::Atof`` in ``__StringToTHelperFast``,
+    *          this method has less precision for floating point numbers than ``StringToArray``,
+    *          which calls ``__StringToTHelper``.
+    *          As such, ``StringToArrayFast`` and ``StringToArray`` are not equivalent!
+    *          Both versions were kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+    */
+    template<typename T>
+    inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
+      if (n == 0) {
+        return std::vector<T>();
+      }
+      auto p_str = str.c_str();
+      __StringToTHelperFast<T, std::is_floating_point<T>::value> helper;
+      std::vector<T> ret(n);
+      for (int i = 0; i < n; ++i) {
+        p_str = helper(p_str, &ret[i]);
+      }
       return ret;
     }
-  };
 
-  template<typename T, bool is_float>
-  struct __StringToTHelper {
-    T operator()(const std::string& str) const {
-      T ret = 0;
-      LightGBM::Common::Atoi(str.c_str(), &ret);
+    /*!
+    * \warning Do not replace calls to this method by ``StringToArrayFast``.
+    *          This method is more precise for floating point numbers.
+    *          Check ``StringToArrayFast`` for more details.
+    */
+    template<typename T>
+    inline static std::vector<T> StringToArray(const std::string& str, int n) {
+      if (n == 0) {
+        return std::vector<T>();
+      }
+      std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), ' ');
+      CHECK_EQ(strs.size(), static_cast<size_t>(n));
+      std::vector<T> ret;
+      ret.reserve(strs.size());
+      __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+      for (const auto& s : strs) {
+        ret.push_back(helper(s));
+      }
       return ret;
     }
-  };
 
-  /*!
-   * \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
-   *          has **less** floating point precision than ``__StringToTHelper``.
-   *          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
-   *          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
-   * \note It is possible that ``fast_double_parser::parse_number`` is faster than ``Common::Atof``.
-   */
-  template<typename T>
-  struct __StringToTHelper<T, true> {
-    T operator()(const std::string& str) const {
-      double tmp;
-
-      // Fast (common) path: For numeric inputs in RFC 7159 format:
-      const bool fast_parse_succeeded = fast_double_parser::parse_number(str.c_str(), &tmp);
-      
-      // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc. Fallback to standard library:
-      if (!fast_parse_succeeded) {      
-        std::stringstream ss;
-        Common::C_stringstream(ss);
-        ss << str;
-        ss >> tmp;
+    /*!
+    * \warning Do not replace calls to this method by ``StringToArrayFast``.
+    *          This method is more precise for floating point numbers.
+    *          Check ``StringToArrayFast`` for more details.
+    */
+    template<typename T>
+    inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
+      std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), delimiter);
+      std::vector<T> ret;
+      ret.reserve(strs.size());
+      __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+      for (const auto& s : strs) {
+        ret.push_back(helper(s));
       }
-
-      return static_cast<T>(tmp);
+      return ret;
     }
-  };
 
-  /*!
-  * Safely formats a value onto a buffer according to a format string and null-terminates it.
-  *
-  * \note It checks that the full value was written or forcefully aborts.
-  *       This safety check serves to prevent incorrect internal API usage.
-  *       Correct usage will never incur in this problem:
-  *         - The received buffer size shall be sufficient at all times for the input format string and value.
-  */
-  template <typename T>
-  inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
-      auto result = fmt::format_to_n(buffer, buf_len, format, value);
-      if (result.size >= buf_len) {
-        Log::Fatal("Numerical conversion failed. Buffer is too small.");
+    /*!
+    * Converts an array to a string with with values separated by the space character.
+    * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
+    * and is locale-independent.
+    * 
+    * \note If ``high_precision_output`` is set to true,
+    *       floating point values are output with more digits of precision.
+    */
+    template<bool high_precision_output=false, typename T>
+    inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
+      if (arr.empty() || n == 0) {
+        return std::string("");
       }
-      buffer[result.size] = '\0';
-  }
+      __TToStringHelper<T, std::is_floating_point<T>::value, high_precision_output> helper;
+      const size_t buf_len = high_precision_output ? 32 : 16;
+      std::vector<char> buffer(buf_len);
+      std::stringstream str_buf;
+      Common::C_stringstream(str_buf);
+      helper(arr[0], buffer.data(), buf_len);
+      str_buf << buffer.data();
+      for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
+        helper(arr[i], buffer.data(), buf_len);
+        str_buf << ' ' << buffer.data();
+      }
+      return str_buf.str();
+    }
 
-  template<typename T, bool is_float, bool high_precision>
-  struct __TToStringHelper {
-    void operator()(T value, char* buffer, size_t buf_len) const {
-      format_to_buf(buffer, buf_len, "{}", value);
-    }
-  };
-
-  template<typename T>
-  struct __TToStringHelper<T, true, false> {
-    void operator()(T value, char* buffer, size_t buf_len) const {
-      format_to_buf(buffer, buf_len, "{:g}", value);
-    }
-  };
-
-  template<typename T>
-  struct __TToStringHelper<T, true, true> {
-    void operator()(T value, char* buffer, size_t buf_len) const {
-      format_to_buf(buffer, buf_len, "{:.17g}", value);
-    }
-  };
-
-  /*!
-   * \warning Beware that due to internal use of ``Common::Atof`` in ``__StringToTHelperFast``,
-   *          this method has less precision for floating point numbers than ``StringToArray``,
-   *          which calls ``__StringToTHelper``.
-   *          As such, ``StringToArrayFast`` and ``StringToArray`` are not equivalent!
-   *          Both versions were kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
-   */
-  template<typename T>
-  inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
-    if (n == 0) {
-      return std::vector<T>();
-    }
-    auto p_str = str.c_str();
-    __StringToTHelperFast<T, std::is_floating_point<T>::value> helper;
-    std::vector<T> ret(n);
-    for (int i = 0; i < n; ++i) {
-      p_str = helper(p_str, &ret[i]);
-    }
-    return ret;
-  }
-
-  /*!
-   * \warning Do not replace calls to this method by ``StringToArrayFast``.
-   *          This method is more precise for floating point numbers.
-   *          Check ``StringToArrayFast`` for more details.
-   */
-  template<typename T>
-  inline static std::vector<T> StringToArray(const std::string& str, int n) {
-    if (n == 0) {
-      return std::vector<T>();
-    }
-    std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), ' ');
-    CHECK_EQ(strs.size(), static_cast<size_t>(n));
-    std::vector<T> ret;
-    ret.reserve(strs.size());
-    __StringToTHelper<T, std::is_floating_point<T>::value> helper;
-    for (const auto& s : strs) {
-      ret.push_back(helper(s));
-    }
-    return ret;
-  }
-
-  /*!
-   * \warning Do not replace calls to this method by ``StringToArrayFast``.
-   *          This method is more precise for floating point numbers.
-   *          Check ``StringToArrayFast`` for more details.
-   */
-  template<typename T>
-  inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
-    std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), delimiter);
-    std::vector<T> ret;
-    ret.reserve(strs.size());
-    __StringToTHelper<T, std::is_floating_point<T>::value> helper;
-    for (const auto& s : strs) {
-      ret.push_back(helper(s));
-    }
-    return ret;
-  }
-
-  /*!
-  * Converts an array to a string with with values separated by the space character.
-  * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
-  * and is locale-independent.
-  * 
-  * \note If ``high_precision_output`` is set to true,
-  *       floating point values are output with more digits of precision.
-  */
-  template<bool high_precision_output=false, typename T>
-  inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
-    if (arr.empty() || n == 0) {
-      return std::string("");
-    }
-    __TToStringHelper<T, std::is_floating_point<T>::value, high_precision_output> helper;
-    const size_t buf_len = high_precision_output ? 32 : 16;
-    std::vector<char> buffer(buf_len);
-    std::stringstream str_buf;
-    Common::C_stringstream(str_buf);
-    helper(arr[0], buffer.data(), buf_len);
-    str_buf << buffer.data();
-    for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-      helper(arr[i], buffer.data(), buf_len);
-      str_buf << ' ' << buffer.data();
-    }
-    return str_buf.str();
-  }
-
-} // Namespace CommonC
+  } // Namespace CommonC
 
 
 }  // namespace LightGBM
