@@ -1,8 +1,13 @@
 /* 
+/*!
+* Copyright (c) 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola.
+ * Licensed under the BSD 3-Clause License.
+ * See https://github.com/giampaolo/psutil/blob/master/LICENSE
+ */
 
+/*
 - https://lists.samba.org/archive/samba-technical/2009-February/063079.html
 - https://github.com/giampaolo/psutil/blob/master/psutil/arch/solaris/v10/ifaddrs.h
-
 */
 
 #ifndef __IFADDRS_H__
