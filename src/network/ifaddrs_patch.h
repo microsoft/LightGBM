@@ -1,4 +1,3 @@
-/* 
 /*!
 * Copyright (c) 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola.
  * Licensed under the BSD 3-Clause License.
