@@ -1,10 +1,33 @@
 # CRAN Submission History
 
-## v3.0.0 - Submission 6 - (September 24, 2020)
+## v3.0.0 - Submission 7 - (September 24, 2020)
 
-### CRAN Response
+### CRAN response
 
 ### Maintainer Notes
+
+## v3.0.0 - Submission 6 - (September 24, 2020)
+
+### CRAN response
+
+Failing pre-checks.
+
+### `R CMD check` results
+
+```text
+* checking CRAN incoming feasibility ... WARNING
+Maintainer: ‘Guolin Ke <guolin.ke@microsoft.com>’
+
+Insufficient package version (submitted: 3.0.0, existing: 3.0.0)
+
+Days since last update: 4
+```
+
+### Maintainer Notes
+
+Did not think the version needed to be incremented if submitting a package in response to CRAN saying "you are failing checks and will be kicked off if you don't fix it", but I guess you do!
+
+This can be fixed by just re-submitting but with the version changed froom `3.0.0` to `3.0.0.1`.
 
 ## v3.0.0 - Submission 5 - (September 11, 2020)
 
