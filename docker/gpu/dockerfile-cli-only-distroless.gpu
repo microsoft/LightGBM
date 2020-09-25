@@ -51,27 +51,25 @@ COPY --from=build \
     /opt/LightGBM/
 COPY --from=build \
     /usr/lib/x86_64-linux-gnu/libOpenCL.so.1 \
-	/usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.65.1 \
-	/usr/lib/x86_64-linux-gnu/libboost_system.so.1.65.1 \
-	/usr/lib/x86_64-linux-gnu/libgomp.so.1 \
-	/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
-	/usr/lib/x86_64-linux-gnu/
+    /usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.65.1 \
+    /usr/lib/x86_64-linux-gnu/libboost_system.so.1.65.1 \
+    /usr/lib/x86_64-linux-gnu/libgomp.so.1 \
+    /usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
+    /usr/lib/x86_64-linux-gnu/
 COPY --from=build \
-	/lib/x86_64-linux-gnu/libm.so.6 \
-	/lib/x86_64-linux-gnu/libgcc_s.so.1 \
-	/lib/x86_64-linux-gnu/libpthread.so.0 \
-	/lib/x86_64-linux-gnu/libc.so.6 \
-	/lib/x86_64-linux-gnu/libdl.so.2 \
-	/lib/x86_64-linux-gnu/
+    /lib/x86_64-linux-gnu/libm.so.6 \
+    /lib/x86_64-linux-gnu/libgcc_s.so.1 \
+    /lib/x86_64-linux-gnu/libpthread.so.0 \
+    /lib/x86_64-linux-gnu/libc.so.6 \
+    /lib/x86_64-linux-gnu/libdl.so.2 \
+    /lib/x86_64-linux-gnu/
 COPY --from=build \
-	/lib64/ld-linux-x86-64.so.2 \
-	/lib64/
+    /lib64/ld-linux-x86-64.so.2 \
+    /lib64/
 COPY --from=build /etc/OpenCL/vendors/nvidia.icd /etc/OpenCL/vendors/nvidia.icd
 
 ENV PATH /opt/LightGBM:${PATH}
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
-
-LABEL maintainer=rs7wz@virginia.edu
 
 ENTRYPOINT ["lightgbm"]
