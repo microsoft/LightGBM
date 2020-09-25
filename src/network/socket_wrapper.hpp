@@ -25,14 +25,8 @@
 
 #else
 
-#include <string.h>
-#include <stdlib.h>
-#include <net/if.h>
-#include <sys/sockio.h>
-
 #include <arpa/inet.h>
 #include <fcntl.h>
-// #include <ifaddrs.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -41,7 +35,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "ifaddrs_patch.h"
+// ifaddrs.h is not available on Solaris 10
+#ifndef ON_SOLARIS
+  #include <ifaddrs.h>
+#else
+  #include "ifaddrs_patch.h"
+#endif
 
 #endif  // defined(_WIN32)
 

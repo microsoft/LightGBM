@@ -127,6 +127,16 @@ then
     fi
 fi
 
+###########
+# Solaris #
+###########
+
+# some headers used in lib_lightgbm are not available on the Solaris
+# systems CRAN tests on
+if [ $(uname) = "SunOS" ]; then
+  LGB_CPPFLAGS+=" -DON_SOLARIS=1"
+fi
+
 # substitute variables from this script into Makevars.in
 AC_SUBST(OPENMP_CXXFLAGS)
 AC_SUBST(OPENMP_LIB)

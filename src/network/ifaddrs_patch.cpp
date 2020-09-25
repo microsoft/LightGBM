@@ -3,6 +3,7 @@
  * Licensed under the BSD 3-Clause License.
  * See https://github.com/giampaolo/psutil/blob/master/LICENSE
  */
+#ifdef ON_SOLARIS
 
 #include <string.h>
 #include <stdlib.h>
@@ -124,6 +125,5 @@ error:
     return (-1);
 }
 
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
+#endif
+// ON_SOLARIS
