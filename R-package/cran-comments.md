@@ -1,6 +1,6 @@
 # CRAN Submission History
 
-## v3.0.0 - Submission 6 - (TBD)
+## v3.0.0 - Submission 6 - (September 24, 2020)
 
 ### CRAN Response
 
@@ -38,9 +38,7 @@ ERROR: compilation failed for package ‘lightgbm’
 
 ### Maintainer Notes
 
-Will try using a patch that `psutil` has used to fix missing `ifaddrs.h` on Solaris 10: https://github.com/microsoft/LightGBM/issues/629#issuecomment-665091451.
-
-If that doesn't work, we can detect Solaris and disable distributed training on that operating system.
+Added a patch that `psutil` has used to fix missing `ifaddrs.h` on Solaris 10: https://github.com/microsoft/LightGBM/issues/629#issuecomment-665091451.
 
 ## v3.0.0 - Submission 4 - (September 4, 2020)
 
