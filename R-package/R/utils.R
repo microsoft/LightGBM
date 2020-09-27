@@ -1,9 +1,9 @@
 lgb.is.Booster <- function(x) {
-  lgb.check.r6.class(x, "lgb.Booster") # Checking if it is of class lgb.Booster or not
+  lgb.check.r6.class(x, "lgb.Booster")
 }
 
 lgb.is.Dataset <- function(x) {
-  lgb.check.r6.class(x, "lgb.Dataset") # Checking if it is of class lgb.Dataset or not
+  lgb.check.r6.class(x, "lgb.Dataset")
 }
 
 lgb.null.handle <- function() {
@@ -53,7 +53,6 @@ lgb.last_error <- function() {
     )
   }
 
-  # Return error
   stop("api error: ", lgb.encode.char(err_msg, act_len))
 }
 
@@ -105,7 +104,6 @@ lgb.call.return.str <- function(fun_name, ...) {
     buf <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
   }
 
-  # Return encoded character
   return(lgb.encode.char(buf, act_len))
 
 }
@@ -168,7 +166,6 @@ lgb.params2str <- function(params, ...) {
     return(lgb.c_str(""))
   }
 
-  # Return string separated by a space per element
   return(lgb.c_str(paste0(ret, collapse = " ")))
 
 }
@@ -180,7 +177,6 @@ lgb.check_interaction_constraints <- function(params, column_names) {
 
   if (!is.null(params[["interaction_constraints"]])) {
 
-    # validation
     if (!methods::is(params[["interaction_constraints"]], "list")) {
         stop("interaction_constraints must be a list")
     }
@@ -234,7 +230,6 @@ lgb.check_interaction_constraints <- function(params, column_names) {
 
 lgb.c_str <- function(x) {
 
-  # Perform character to raw conversion
   ret <- charToRaw(as.character(x))
   ret <- c(ret, as.raw(0L))
   ret
@@ -300,19 +295,16 @@ lgb.check.obj <- function(params, obj) {
     # If the objective is a character, check if it is a known objective
     if (!(params$objective %in% OBJECTIVES)) {
 
-      # Interrupt on unknown objective name
       stop("lgb.check.obj: objective name error should be one of (", paste0(OBJECTIVES, collapse = ", "), ")")
 
     }
 
   } else if (!is.function(params$objective)) {
 
-    # If objective is not a character nor a function, then stop
     stop("lgb.check.obj: objective should be a character or a function")
 
   }
 
-  # Return parameters
   return(params)
 
 }
@@ -355,5 +347,64 @@ lgb.check.eval <- function(params, eval) {
   # duplicate metrics should be filtered out
   params$metric <- as.list(unique(unlist(params$metric)))
 
+  return(params)
+}
+
+
+# [description]
+#
+#     Resolve differences between passed-in keyword arguments, parameters,
+#     and parameter aliases. This function exists because some functions in the
+#     package take in parameters through their own keyword arguments other than
+#     the `params` list.
+#
+#     If the same underlying parameter is provided multiple
+#     ways, the first item in this list is used:
+#
+#         1. the main (non-alias) parameter found in `params`
+#         2. the first alias of that parameter found in `params`
+#         3. the keyword argument passed in
+#
+#     For example, "num_iterations" can also be provided to lgb.train()
+#     via keyword "nrounds". lgb.train() will choose one value for this parameter
+#     based on the first match in this list:
+#
+#         1. params[["num_iterations]]
+#         2. the first alias of "num_iterations" found in params
+#         3. the nrounds keyword argument
+#
+#     If multiple aliases are found in `params` for the same parameter, they are
+#     all removed before returning `params`.
+#
+# [return]
+#     params with num_iterations set to the chosen value, and other aliases
+#     of num_iterations removed
+lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_value) {
+
+  aliases <- .PARAMETER_ALIASES()[[main_param_name]]
+  aliases_provided <- names(params)[names(params) %in% aliases]
+  aliases_provided <- aliases_provided[aliases_provided != main_param_name]
+
+  # prefer the main parameter
+  if (!is.null(params[[main_param_name]])) {
+    for (param in aliases_provided) {
+      params[[param]] <- NULL
+    }
+    return(params)
+  }
+
+  # if the main parameter wasn't proovided, prefer the first alias
+  if (length(aliases_provided) > 0L) {
+    first_param <- aliases_provided[1L]
+    params[[main_param_name]] <- params[[first_param]]
+    for (param in aliases_provided) {
+      params[[param]] <- NULL
+    }
+    return(params)
+  }
+
+  # if not provided in params at all, use the alternative value provided
+  # through a keyword argument from lgb.train(), lgb.cv(), etc.
+  params[[main_param_name]] <- alternative_kwarg_value
   return(params)
 }

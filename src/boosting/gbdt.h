@@ -8,6 +8,7 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/threading.h>
 
@@ -479,10 +480,19 @@ class GBDT : public GBDTBase {
   std::vector<std::unique_ptr<Tree>> models_;
   /*! \brief Max feature index of training data*/
   int max_feature_idx_;
+
+#ifdef USE_CUDA
+  /*! \brief First order derivative of training data */
+  std::vector<score_t, CHAllocator<score_t>> gradients_;
+  /*! \brief Second order derivative of training data */
+  std::vector<score_t, CHAllocator<score_t>> hessians_;
+#else
   /*! \brief First order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> gradients_;
-  /*! \brief Secend order derivative of training data */
+  /*! \brief Second order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> hessians_;
+#endif
+
   /*! \brief Store the indices of in-bag data */
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
   /*! \brief Number of in-bag data */
