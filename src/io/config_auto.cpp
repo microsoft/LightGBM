@@ -299,7 +299,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "num_ctr_folds",
   "cat_converters",
   "keep_old_cat_method",
-  "prior_weight"
+  "prior_weight",
   "num_gpu",
   });
   return params;
