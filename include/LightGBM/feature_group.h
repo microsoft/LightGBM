@@ -31,7 +31,7 @@ class FeatureGroup {
   */
   FeatureGroup(int num_feature, int8_t is_multi_val,
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-    data_size_t num_data) : num_feature_(num_feature), is_multi_val_(static_cast<bool>(is_multi_val)), is_sparse_(false) {
+    data_size_t num_data) : num_feature_(num_feature), is_multi_val_(is_multi_val > 0), is_sparse_(false) {
     CHECK_EQ(static_cast<int>(bin_mappers->size()), num_feature);
     // use bin at zero to store most_freq_bin
     num_total_bin_ = 1;
