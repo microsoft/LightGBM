@@ -718,9 +718,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     FeatureHistogram* histogram_array_, int feature_index, int real_fidx,
     int8_t is_feature_used, int num_data, const LeafSplits* leaf_splits,
     SplitInfo* best_split, double parent_output) {
-  if (!is_feature_used) {
-    return;
-  }
   bool is_feature_numerical = train_data_->FeatureBinMapper(feature_index)
                                   ->bin_type() == BinType::NumericalBin;
   if (is_feature_numerical & !config_->monotone_constraints.empty()) {
