@@ -14,6 +14,9 @@ void CTRProvider::GenTrainingDataFoldID() {
   for(int thread_id = 0; thread_id < num_threads_; ++thread_id) {
       mt_generators.emplace_back(config_.seed + thread_id);
   }
+  fold_num_data_.resize(config_.num_ctr_folds + 1, 0);
+  fold_num_data_.back() = num_data_;
+  std::vector<std::vector<data_size_t>> thread_fold_num_data(num_threads_);
   const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
   std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
   training_data_fold_id_.clear();
@@ -23,9 +26,16 @@ void CTRProvider::GenTrainingDataFoldID() {
   for(int thread_id = 0; thread_id < num_threads_; ++thread_id) {
     int block_start = block_size * thread_id;
     int block_end = std::min(block_start + block_size, num_data_);
+    thread_fold_num_data[thread_id].resize(config_.num_ctr_folds, 0);
     std::mt19937& generator = mt_generators[thread_id];
     for(int index = block_start; index < block_end; ++index) {
       training_data_fold_id_[index] = fold_distribution(generator);
+      thread_fold_num_data[thread_id][training_data_fold_id_[index]] += 1;
+    }
+  }
+  for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      fold_num_data_[fold_id] += thread_fold_num_data[thread_id][fold_id];
     }
   }
 }
@@ -193,12 +203,13 @@ void CTRProvider::CreatePushDataFunction(const std::vector<int>& used_feature_id
       const int outer_feature_index = group_subfeature_to_outer_feature.at(group).at(sub_feature);
       if(is_categorical_feature_[outer_feature_index] && cat_converters_.size() > 0) {
         const int fold_id = training_data_fold_id_[row_idx];
+        const double prior = fold_prior_[fold_id];
         const int cat_feature_value = static_cast<int>(value);
         const double label_sum = label_info_[outer_feature_index][fold_id][cat_feature_value];
         const double total_count = count_info_[outer_feature_index][fold_id][cat_feature_value];
         const double all_count = count_info_[outer_feature_index][config_.num_ctr_folds][cat_feature_value];
         for (const auto& cat_converter : cat_converters_) {
-          const double convert_value = TrimConvertValue(cat_converter->CalcValue(label_sum, total_count, all_count));
+          const double convert_value = TrimConvertValue(cat_converter->CalcValue(label_sum, total_count, all_count, prior));
           const int convert_fid = cat_converter->GetConvertFid(outer_feature_index);
           const int inner_convert_fid = used_feature_idx[convert_fid];
           if (inner_convert_fid >= 0) {
@@ -268,24 +279,24 @@ void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double lab
       }
     }
   }
-  thread_label_sum_[thread_id] += label;
+  thread_fold_label_sum_[thread_id][fold_id] += label;
 }
 
 void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, 
   std::vector<bool>& is_feature_processed, const int thread_id) {
-  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, thread_count_info_[thread_id], thread_label_info_[thread_id]);
-  thread_label_sum_[thread_id] += label;
+  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, thread_count_info_[thread_id], 
+    thread_label_info_[thread_id], thread_fold_label_sum_[thread_id]);
 }
 
 void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, std::vector<bool>& is_feature_processed) {
-  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, count_info_, label_info_);
-  prior_ += label;
+  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, count_info_, label_info_, fold_label_sum_);
 }
 
-void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, 
+void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx,
   std::vector<bool>& is_feature_processed,
   std::unordered_map<int, std::vector<std::unordered_map<int, int>>>& count_info,
-  std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info) {
+  std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info,
+  std::vector<label_t>& label_sum) {
   const int fold_id = training_data_fold_id_[line_idx];
   for (size_t i = 0; i < is_feature_processed.size(); ++i) {
     is_feature_processed[i] = false;
@@ -316,6 +327,7 @@ void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>&
       }
     }
   }
+  label_sum[fold_id] += label;
 }
 
 void CTRProvider::FinishProcess(const int num_machines) {
@@ -340,36 +352,46 @@ void CTRProvider::FinishProcess(const int num_machines) {
           if (feature_fold_label_info.count(pair.first) == 0) {
             feature_fold_label_info[pair.first] = pair.second;
           } else {
-            feature_fold_label_info[pair.first] += pair.second; 
+            feature_fold_label_info[pair.first] += pair.second;
           }
         }
       }
     }
   }
-  for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-    prior_ += thread_label_sum_[thread_id];
+  for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      fold_label_sum_[fold_id] += thread_fold_label_sum_[thread_id][fold_id];
+    }
+    fold_label_sum_.back() += fold_label_sum_[fold_id];
   }
   thread_count_info_.clear();
   thread_label_info_.clear();
   thread_count_info_.shrink_to_fit();
   thread_label_info_.shrink_to_fit();
-  thread_label_sum_.clear();
-  thread_label_sum_.shrink_to_fit();
+  thread_fold_label_sum_.clear();
+  thread_fold_label_sum_.shrink_to_fit();
 
   // gather from machines
   if(num_machines > 1) {
     for(size_t i = 0; i < categorical_features_.size(); ++i) {
       SyncCTRStat(label_info_.at(categorical_features_[i]), count_info_.at(categorical_features_[i]), num_machines);
     }
-    const double local_label_sum = prior_;
-    const int local_num_data = static_cast<int>(num_data_);
-    int global_num_data = 0;
-    SyncCTRPrior(local_label_sum, local_num_data, prior_, global_num_data, num_machines);
-    prior_ /= global_num_data;
+    for (int fold_id = 0; fold_id < config_.num_ctr_folds + 1; ++fold_id) {
+      const double local_label_sum = fold_label_sum_[fold_id];
+      const int local_num_data = static_cast<int>(fold_num_data_[fold_id]);
+      int global_num_data = 0;
+      double global_label_sum = 0.0f;
+      SyncCTRPrior(local_label_sum, local_num_data, global_label_sum, global_num_data, num_machines);
+    }
   }
-  else {
-    prior_ /= num_data_;
+  for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+    fold_label_sum_[fold_id] = fold_label_sum_.back() - fold_label_sum_[fold_id];
+    fold_num_data_[fold_id] = fold_num_data_.back() - fold_num_data_[fold_id];
   }
+  for (int fold_id = 0; fold_id < config_.num_ctr_folds + 1; ++fold_id) {
+    fold_prior_[fold_id] = fold_label_sum_[fold_id] * 1.0f / fold_num_data_[fold_id];
+  }
+  prior_ = fold_prior_.back();
 
   // set prior for label mean ctr converter
   for (size_t i = 0; i < cat_converters_.size(); ++i) {
@@ -426,9 +448,10 @@ void CTRProvider::ReplaceCategoricalValues(const std::vector<data_size_t>& sampl
       const int fold_id = training_data_fold_id_[data_index];
       const double label_sum = label_info_.at(cat_fid).at(fold_id).at(feature_value);
       const double total_count = count_info_.at(cat_fid).at(fold_id).at(feature_value);
+      const double prior = fold_prior_[fold_id];
       const double all_total_count = count_info_.at(cat_fid).at(config_.num_ctr_folds).at(feature_value);
       for (const auto& cat_converter : cat_converters_) {
-        const double convert_value = TrimConvertValue(cat_converter->CalcValue(label_sum, total_count, all_total_count));
+        const double convert_value = TrimConvertValue(cat_converter->CalcValue(label_sum, total_count, all_total_count, prior));
         const int convert_fid = cat_converter->GetConvertFid(cat_fid);
         sampled_non_missing_feature_values[convert_fid][j] = convert_value;
         sampled_non_missing_data_indices[convert_fid][j] = sampled_non_missing_data_indices[cat_fid][j];

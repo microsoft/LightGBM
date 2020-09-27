@@ -24,7 +24,9 @@ public:
     protected:
       std::unordered_map<int, int> cat_fid_to_convert_fid_;
     public:
-      virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/) = 0;
+      virtual double CalcValue(const double sum_label, const double sum_count, const double all_fold_sum_count, const double prior) = 0;
+
+      virtual double CalcValue(const double sum_label, const double sum_count, const double all_fold_sum_count) = 0;
 
       virtual std::string DumpToString() const = 0;
 
@@ -52,11 +54,10 @@ public:
 
       static CatConverter* CreateFromString(const std::string& model_string, const double prior_weight) {
         std::vector<std::string> split_model_string = Common::Split(model_string.c_str(), ",");
-        if (split_model_string.size() != 2) {
+        if (split_model_string.size() > 2 || split_model_string.size() == 0) {
           Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
         }
         const std::string& cat_converter_name = split_model_string[0];
-        const std::string& feature_map = split_model_string[1];
         CatConverter* cat_converter = nullptr;
         if (Common::StartsWith(cat_converter_name, std::string("label_mean_ctr"))) {
           double prior = 0.0f;
@@ -72,13 +73,17 @@ public:
         } else {
           Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
         }
-        std::stringstream feature_map_stream(feature_map);
-        int key = 0, val = 0;
-        while (feature_map_stream >> key) {
-          CHECK(feature_map_stream.get() == ':');
-          feature_map_stream >> val;
-          cat_converter->cat_fid_to_convert_fid_[key] = val;
-          feature_map_stream.get();
+        cat_converter->cat_fid_to_convert_fid_.clear();
+        if (split_model_string.size() == 2) {
+          const std::string& feature_map = split_model_string[1];
+          std::stringstream feature_map_stream(feature_map);
+          int key = 0, val = 0;
+          while (feature_map_stream >> key) {
+            CHECK(feature_map_stream.get() == ':');
+            feature_map_stream >> val;
+            cat_converter->cat_fid_to_convert_fid_[key] = val;
+            feature_map_stream.get();
+          }
         }
         return cat_converter;
       }
@@ -88,7 +93,15 @@ public:
     public:
       CTRConverter(const double prior): prior_(prior) {}
       inline virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/) override {
-        return (sum_label + prior_) / (sum_count + 1.0f);
+        return (sum_label + prior_ * prior_weight_) / (sum_count + prior_weight_);
+      }
+
+      inline virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/, const double /*prior*/) override {
+        return (sum_label + prior_ * prior_weight_) / (sum_count + prior_weight_);
+      }
+
+      virtual void SetPrior(const double /*prior*/, const double prior_weight) {
+        prior_weight_ = prior_weight;
       }
 
       std::string Name() const override {
@@ -104,6 +117,7 @@ public:
       }
     private:
       const double prior_;
+      double prior_weight_;
   };
 
   class CountConverter: public CatConverter {
@@ -111,6 +125,11 @@ public:
       CountConverter() {}
     private:
       inline virtual double CalcValue(const double /*sum_label*/, const double /*sum_count*/, const double all_fold_sum_count) override {
+        return all_fold_sum_count;
+      }
+
+      inline virtual double CalcValue(const double /*sum_label*/, const double /*sum_count*/,
+        const double all_fold_sum_count, const double /*prior*/) override {
         return all_fold_sum_count;
       }
       
@@ -139,6 +158,13 @@ public:
           Log::Fatal("CTRConverterLabelMean is not ready since the prior value is not set.");
         }
         return (sum_label + prior_weight_ * prior_) / (sum_count + prior_weight_);
+      }
+
+      inline virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/, const double prior) override {
+        if(!prior_set_) {
+          Log::Fatal("CTRConverterLabelMean is not ready since the prior value is not set.");
+        }
+        return (sum_label + prior * prior_weight_) / (sum_count + prior_weight_);
       }
 
       std::string Name() const override {
@@ -295,16 +321,20 @@ public:
     for (const int fid : categorical_features_) {
       is_categorical_feature_[fid] = true;
     }
-
+    fold_prior_.resize(config_.num_ctr_folds + 1, 0.0f);
     if (cat_converters_.size() > 0) {
       // prepare to accumulate ctr statistics
-      thread_label_sum_.resize(num_threads_, 0.0f);
+      fold_label_sum_.resize(config_.num_ctr_folds + 1, 0.0f);
+      thread_fold_label_sum_.resize(num_threads_);
       thread_count_info_.resize(num_threads_);
       thread_label_info_.resize(num_threads_);
-      for(const int fid : categorical_features_) {
+      for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+        thread_fold_label_sum_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
+      }
+      for (const int fid : categorical_features_) {
         count_info_[fid].resize(config_.num_ctr_folds + 1);
         label_info_[fid].resize(config_.num_ctr_folds + 1);
-        for(int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+        for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
           thread_count_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
           thread_label_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
         }
@@ -506,7 +536,8 @@ private:
   
   void ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, std::vector<bool>& is_feature_processed,
     std::unordered_map<int, std::vector<std::unordered_map<int, int>>>& count_info,
-    std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info);
+    std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info,
+    std::vector<label_t>& label_sum);
 
   // generate fold ids for training data, each data point will be randomly allocated into one fold
   void GenTrainingDataFoldID();
@@ -565,6 +596,8 @@ private:
   std::vector<int> training_data_fold_id_;
   // maps converted feature index to the feature index of original categorical feature
   std::unordered_map<int, int> convert_fid_to_cat_fid_;
+  // prior used per fold
+  std::vector<double> fold_prior_;
   // mean of labels of sampled data
   double prior_;
   // record whether a feature is categorical in the original data
@@ -590,8 +623,12 @@ private:
   std::vector<std::unordered_map<int, std::vector<std::unordered_map<int, int>>>> thread_count_info_;
   // the accumulated label sum information for ctr per thread
   std::vector<std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>> thread_label_info_;
-  // the accumulated label sum per thread
-  std::vector<label_t> thread_label_sum_;
+  // the accumulated label sum per fold
+  std::vector<label_t> fold_label_sum_;
+  // the accumulated label sum per thread per fold
+  std::vector<std::vector<label_t>> thread_fold_label_sum_;
+  // number of data per fold
+  std::vector<data_size_t> fold_num_data_;
   // categorical value converters
   std::vector<CatConverter*> cat_converters_;
   // max bin by feature
