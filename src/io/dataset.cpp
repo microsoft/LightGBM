@@ -6,6 +6,7 @@
 #include <LightGBM/dataset.h>
 
 #include <LightGBM/feature_group.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
@@ -360,13 +361,24 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
         "constant.");
   }
   auto features_in_group = NoGroup(used_features);
+
+  auto is_sparse = io_config.is_enable_sparse;
+  if (io_config.device_type == std::string("cuda")) {
+      LGBM_config_::current_device = lgbm_device_cuda;
+      if (is_sparse) {
+        Log::Warning("Using sparse features with CUDA is currently not supported.");
+      }
+      is_sparse = false;
+  }
+
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
+    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");
     features_in_group = FastFeatureBundling(
         *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
         num_sample_col, static_cast<data_size_t>(total_sample_cnt),
-        used_features, num_data_, io_config.device_type == std::string("gpu"),
-        io_config.is_enable_sparse, &group_is_multi_val);
+        used_features, num_data_, lgbm_is_gpu_used,
+        is_sparse, &group_is_multi_val);
   }
 
   num_features_ = 0;

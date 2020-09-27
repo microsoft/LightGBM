@@ -409,6 +409,8 @@ class SparseBin : public Bin {
 
   data_size_t num_data() const override { return num_data_; }
 
+  void* get_data() override { return nullptr; }
+
   void FinishLoad() override {
     // get total non zero size
     size_t pair_cnt = 0;
