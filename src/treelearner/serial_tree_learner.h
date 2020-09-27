@@ -8,6 +8,7 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/random.h>
@@ -113,12 +114,16 @@ class SerialTreeLearner: public TreeLearner {
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
+  /*! \brief Get output of parent node, used for path smoothing */
+  double GetParentOutput(const Tree* tree, const LeafSplits* leaf_splits) const;
+
  protected:
   void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
                                   int feature_index, int real_fidx,
                                   int8_t is_feature_used, int num_data,
                                   const LeafSplits* leaf_splits,
-                                  SplitInfo* best_split);
+                                  SplitInfo* best_split, double parent_output);
+
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
@@ -201,6 +206,11 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
+#elif USE_CUDA
+  /*! \brief gradients of current iteration, ordered for cache optimized */
+  std::vector<score_t, CHAllocator<score_t>> ordered_gradients_;
+  /*! \brief hessians of current iteration, ordered for cache optimized */
+  std::vector<score_t, CHAllocator<score_t>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> ordered_gradients_;
