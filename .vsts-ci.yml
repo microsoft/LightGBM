@@ -1,10 +1,12 @@
 trigger:
   branches:
     include:
-    - '*'
+    - master
   tags:
     include:
     - v*
+pr:
+- master
 variables:
   PYTHON_VERSION: 3.8
   CONDA_ENV: test-env
@@ -28,7 +30,6 @@ jobs:
         TASK: regular
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.7
@@ -79,7 +80,6 @@ jobs:
         PYTHON_VERSION: 3.7
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
   steps:

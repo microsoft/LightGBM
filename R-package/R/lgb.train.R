@@ -3,10 +3,6 @@
 #' @description Logic to train with LightGBM
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
-#' @param obj objective function, can be character or custom objective function. Examples include
-#'            \code{regression}, \code{regression_l1}, \code{huber},
-#'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
-#' @param eval evaluation function, can be (a list of) character or custom eval function
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
@@ -26,9 +22,11 @@
 #'                                   the number of real CPU cores, not the number of threads (most
 #'                                   CPU using hyper-threading to generate 2 threads per CPU core).}
 #'            }
+#' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained booster model \code{lgb.Booster}.
 #'
 #' @examples
+#' \dontrun{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -46,6 +44,7 @@
 #'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 3L
 #' )
+#' }
 #' @export
 lgb.train <- function(params = list(),
                       data,
@@ -88,7 +87,23 @@ lgb.train <- function(params = list(),
   params <- lgb.check.obj(params, obj)
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
-  feval <- NULL
+  eval_functions <- list(NULL)
+
+  # set some parameters, resolving the way they were passed in with other parameters
+  # in `params`.
+  # this ensures that the model stored with Booster$save() correctly represents
+  # what was passed in
+  params <- lgb.check.wrapper_param(
+    main_param_name = "num_iterations"
+    , params = params
+    , alternative_kwarg_value = nrounds
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "early_stopping_round"
+    , params = params
+    , alternative_kwarg_value = early_stopping_rounds
+  )
+  early_stopping_rounds <- params[["early_stopping_round"]]
 
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -96,9 +111,18 @@ lgb.train <- function(params = list(),
     params$objective <- "NONE"
   }
 
-  # Check for loss (function or not)
+  # If eval is a single function, store it as a 1-element list
+  # (for backwards compatibility). If it is a list of functions, store
+  # all of them. This makes it possible to pass any mix of strings like "auc"
+  # and custom functions to eval
   if (is.function(eval)) {
-    feval <- eval
+    eval_functions <- list(eval)
+  }
+  if (methods::is(eval, "list")) {
+    eval_functions <- Filter(
+      f = is.function
+      , x = eval
+    )
   }
 
   # Init predictor to empty
@@ -116,13 +140,7 @@ lgb.train <- function(params = list(),
   if (!is.null(predictor)) {
     begin_iteration <- predictor$current_iter() + 1L
   }
-  # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
-  n_trees <- .PARAMETER_ALIASES()[["num_iterations"]]
-  if (any(names(params) %in% n_trees)) {
-    end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1L]]] - 1L
-  } else {
-    end_iteration <- begin_iteration + nrounds - 1L
-  }
+  end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
 
   # Check interaction constraints
   cnames <- NULL
@@ -190,18 +208,8 @@ lgb.train <- function(params = list(),
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
 
-  # If early stopping was passed as a parameter in params(), prefer that to keyword argument
-  # early_stopping_rounds by overwriting the value in 'early_stopping_rounds'
-  early_stop <- .PARAMETER_ALIASES()[["early_stopping_round"]]
-  early_stop_param_indx <- names(params) %in% early_stop
-  if (any(early_stop_param_indx)) {
-    first_early_stop_param <- which(early_stop_param_indx)[[1L]]
-    first_early_stop_param_name <- names(params)[[first_early_stop_param]]
-    early_stopping_rounds <- params[[first_early_stop_param_name]]
-  }
-
   # Did user pass parameters that indicate they want to use early stopping?
-  using_early_stopping_via_args <- !is.null(early_stopping_rounds)
+  using_early_stopping <- !is.null(early_stopping_rounds) && early_stopping_rounds > 0L
 
   boosting_param_names <- .PARAMETER_ALIASES()[["boosting"]]
   using_dart <- any(
@@ -216,7 +224,7 @@ lgb.train <- function(params = list(),
   # Cannot use early stopping with 'dart' boosting
   if (using_dart) {
     warning("Early stopping is not available in 'dart' mode.")
-    using_early_stopping_via_args <- FALSE
+    using_early_stopping <- FALSE
 
     # Remove the cb.early.stop() function if it was passed in to callbacks
     callbacks <- Filter(
@@ -228,17 +236,17 @@ lgb.train <- function(params = list(),
   }
 
   # If user supplied early_stopping_rounds, add the early stopping callback
-  if (using_early_stopping_via_args) {
+  if (using_early_stopping) {
     callbacks <- add.cb(
       callbacks
       , cb.early.stop(
         stopping_rounds = early_stopping_rounds
+        , first_metric_only = isTRUE(params[["first_metric_only"]])
         , verbose = verbose
       )
     )
   }
 
-  # "Categorize" callbacks
   cb <- categorize.callbacks(callbacks)
 
   # Construct booster with datasets
@@ -278,13 +286,28 @@ lgb.train <- function(params = list(),
     # Collection: Has validation dataset?
     if (length(valids) > 0L) {
 
-      # Validation has training dataset?
-      if (valid_contain_train) {
-        eval_list <- append(eval_list, booster$eval_train(feval = feval))
+      # Get evaluation results with passed-in functions
+      for (eval_function in eval_functions) {
+
+        # Validation has training dataset?
+        if (valid_contain_train) {
+          eval_list <- append(eval_list, booster$eval_train(feval = eval_function))
+        }
+
+        eval_list <- append(eval_list, booster$eval_valid(feval = eval_function))
       }
 
-      # Has no validation dataset
-      eval_list <- append(eval_list, booster$eval_valid(feval = feval))
+      # Calling booster$eval_valid() will get
+      # evaluation results with the metrics in params$metric by calling LGBM_BoosterGetEval_R",
+      # so need to be sure that gets called, which it wouldn't be above if no functions
+      # were passed in
+      if (length(eval_functions) == 0L) {
+        if (valid_contain_train) {
+          eval_list <- append(eval_list, booster$eval_train(feval = eval_function))
+        }
+        eval_list <- append(eval_list, booster$eval_valid(feval = eval_function))
+      }
+
     }
 
     # Write evaluation result in environment
@@ -310,7 +333,7 @@ lgb.train <- function(params = list(),
 
     # when using a custom eval function, the metric name is returned from the
     # function, so figure it out from record_evals
-    if (!is.null(feval)) {
+    if (!is.null(eval_functions[1L])) {
       first_metric <- names(booster$record_evals[[first_valid_name]])[1L]
     } else {
       first_metric <- booster$.__enclos_env__$private$eval_names[1L]
@@ -348,7 +371,6 @@ lgb.train <- function(params = list(),
 
   }
 
-  # Return booster
   return(booster)
 
 }

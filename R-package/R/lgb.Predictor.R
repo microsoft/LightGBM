@@ -51,7 +51,6 @@ Predictor <- R6::R6Class(
 
       } else {
 
-        # Model file is unknown
         stop("lgb.Predictor: modelfile must be either a character filename or an lgb.Booster.handle")
 
       }
@@ -76,6 +75,7 @@ Predictor <- R6::R6Class(
 
     # Predict from data
     predict = function(data,
+                       start_iteration = NULL,
                        num_iteration = NULL,
                        rawscore = FALSE,
                        predleaf = FALSE,
@@ -87,8 +87,11 @@ Predictor <- R6::R6Class(
       if (is.null(num_iteration)) {
         num_iteration <- -1L
       }
+      # Check if start iterations is existing - if not, then set it to 0 (start from the first iteration)
+      if (is.null(start_iteration)) {
+        start_iteration <- 0L
+      }
 
-      # Set temporary variable
       num_row <- 0L
 
       # Check if data is a file name and not a matrix
@@ -108,6 +111,7 @@ Predictor <- R6::R6Class(
           , as.integer(rawscore)
           , as.integer(predleaf)
           , as.integer(predcontrib)
+          , as.integer(start_iteration)
           , as.integer(num_iteration)
           , private$params
           , lgb.c_str(tmp_filename)
@@ -134,6 +138,7 @@ Predictor <- R6::R6Class(
           , as.integer(rawscore)
           , as.integer(predleaf)
           , as.integer(predcontrib)
+          , as.integer(start_iteration)
           , as.integer(num_iteration)
         )
 
@@ -142,7 +147,8 @@ Predictor <- R6::R6Class(
 
         # Check if data is a matrix
         if (is.matrix(data)) {
-          # Check whether matrix is the correct type first ("double")
+          # this if() prevents the memory and computational costs
+          # of converting something that is already "double" to "double"
           if (storage.mode(data) != "double") {
             storage.mode(data) <- "double"
           }
@@ -156,6 +162,7 @@ Predictor <- R6::R6Class(
             , as.integer(rawscore)
             , as.integer(predleaf)
             , as.integer(predcontrib)
+            , as.integer(start_iteration)
             , as.integer(num_iteration)
             , private$params
           )
@@ -178,13 +185,13 @@ Predictor <- R6::R6Class(
             , as.integer(rawscore)
             , as.integer(predleaf)
             , as.integer(predcontrib)
+            , as.integer(start_iteration)
             , as.integer(num_iteration)
             , private$params
           )
 
         } else {
 
-          # Cannot predict on unknown class
           stop("predict: cannot predict on data of class ", sQuote(class(data)))
 
         }
@@ -218,7 +225,6 @@ Predictor <- R6::R6Class(
 
       }
 
-      # Return predictions
       return(preds)
 
     }

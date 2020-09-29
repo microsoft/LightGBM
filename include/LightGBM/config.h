@@ -443,11 +443,12 @@ struct Config {
 
   // type = enum
   // alias = monotone_constraining_method, mc_method
-  // options = basic, intermediate
+  // options = basic, intermediate, advanced
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
   // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
   // descl2 = ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+  // descl2 = ``advanced``, an `even more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
   std::string monotone_constraints_method = "basic";
 
   // alias = monotone_splits_penalty, ms_penalty, mc_penalty
@@ -686,6 +687,12 @@ struct Config {
 
   // [no-save]
   // desc = used only in ``prediction`` task
+  // desc = used to specify from which iteration to start the prediction
+  // desc = ``<= 0`` means from the first iteration
+  int start_iteration_predict = 0;
+
+  // [no-save]
+  // desc = used only in ``prediction`` task
   // desc = used to specify how many trained iterations will be used in prediction
   // desc = ``<= 0`` means no limit
   int num_iteration_predict = -1;
@@ -868,6 +875,7 @@ struct Config {
   // descl2 = ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``, ``rank_xendcg``, ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
   // descl2 = ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
+  // descl2 = ``average_precision``, `average precision score <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
   // descl2 = ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
   // descl2 = ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
   // descl2 = ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
@@ -959,8 +967,13 @@ struct Config {
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
-  // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
+  // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used in OpenCL implementation and double precision is used in CUDA implementation)
   bool gpu_use_dp = false;
+
+  // check = >0
+  // desc = number of GPUs
+  // desc = **Note**: can be used only in CUDA implementation
+  int num_gpu = 1;
 
   #pragma endregion
 

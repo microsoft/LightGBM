@@ -17,9 +17,13 @@
 
 namespace LightGBM {
 
+int LGBM_config_::current_device = lgbm_device_cpu;
+int LGBM_config_::current_learner = use_cpu_learner;
+
 GBDT::GBDT()
     : iter_(0),
       train_data_(nullptr),
+      config_(nullptr),
       objective_function_(nullptr),
       early_stopping_round_(0),
       es_first_metric_only_(false),
@@ -57,6 +61,10 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   early_stopping_round_ = config_->early_stopping_round;
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
+
+  if (config_->device_type == std::string("cuda")) {
+    LGBM_config_::current_learner = use_cuda_learner;
+  }
 
   // load forced_splits file
   if (!config->forcedsplits_filename.empty()) {
@@ -574,7 +582,8 @@ void GBDT::PredictContrib(const double* features, double* output) const {
   // set zero
   const int num_features = max_feature_idx_ + 1;
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_ * (num_features + 1));
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+  const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       models_[i * num_tree_per_iteration_ + k]->PredictContrib(features, num_features, output + k*(num_features + 1));
@@ -585,7 +594,8 @@ void GBDT::PredictContrib(const double* features, double* output) const {
 void GBDT::PredictContribByMap(const std::unordered_map<int, double>& features,
                                std::vector<std::unordered_map<int, double>>* output) const {
   const int num_features = max_feature_idx_ + 1;
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+  const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       models_[i * num_tree_per_iteration_ + k]->PredictContribByMap(features, num_features, &((*output)[k]));
@@ -716,7 +726,7 @@ void GBDT::ResetConfig(const Config* config) {
   if (train_data_ != nullptr) {
     ResetBaggingConfig(new_config.get(), false);
   }
-  if (config_->forcedsplits_filename != new_config->forcedbins_filename) {
+  if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedsplits_filename) {
     // load forced_splits file
     if (!new_config->forcedsplits_filename.empty()) {
       std::ifstream forced_splits_file(

@@ -15,7 +15,7 @@
 #' The \code{lgb.plot.interpretation} function creates a \code{barplot}.
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' Logit <- function(x) {
 #'   log(x / (1.0 - x))
 #' }
@@ -155,7 +155,6 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
                           , las = 1L
                       )]
 
-  # Return invisibly
   return(invisible(NULL))
 
 }

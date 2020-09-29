@@ -25,7 +25,6 @@ CB_ENV <- R6::R6Class(
 
 cb.reset.parameters <- function(new_params) {
 
-  # Check for parameter list
   if (!identical(class(new_params), "list")) {
     stop(sQuote("new_params"), " must be a list")
   }
@@ -151,7 +150,6 @@ merge.eval.string <- function(env) {
 
   }
 
-  # Return tabulated separated message
   paste0(msg, collapse = "\t")
 
 }
@@ -188,7 +186,6 @@ cb.print.evaluation <- function(period = 1L) {
   attr(callback, "call") <- match.call()
   attr(callback, "name") <- "cb.print.evaluation"
 
-  # Return callback
   callback
 
 }
@@ -198,7 +195,6 @@ cb.record.evaluation <- function() {
   # Create callback
   callback <- function(env) {
 
-    # Return empty if empty evaluation list
     if (length(env$eval_list) <= 0L) {
       return()
     }
@@ -263,14 +259,12 @@ cb.record.evaluation <- function() {
   attr(callback, "call") <- match.call()
   attr(callback, "name") <- "cb.record.evaluation"
 
-  # Return callback
   callback
 
 }
 
-cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
+cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = TRUE) {
 
-  # Initialize variables
   factor_to_bigger_better <- NULL
   best_iter <- NULL
   best_score <- NULL
@@ -325,8 +319,16 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
     # Store iteration
     cur_iter <- env$iteration
 
+    # By default, any metric can trigger early stopping. This can be disabled
+    # with 'first_metric_only = TRUE'
+    if (isTRUE(first_metric_only)) {
+      evals_to_check <- 1L
+    } else {
+      evals_to_check <- seq_len(eval_len)
+    }
+
     # Loop through evaluation
-    for (i in seq_len(eval_len)) {
+    for (i in evals_to_check) {
 
       # Store score
       score <- env$eval_list[[i]]$value * factor_to_bigger_better[i]
@@ -389,11 +391,9 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
     }
   }
 
-  # Set attributes
   attr(callback, "call") <- match.call()
   attr(callback, "name") <- "cb.early.stop"
 
-  # Return callback
   callback
 
 }

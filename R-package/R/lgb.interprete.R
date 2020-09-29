@@ -16,6 +16,7 @@
 #'         Contribution columns to each class.
 #'
 #' @examples
+#' \dontrun{
 #' Logit <- function(x) log(x / (1.0 - x))
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -38,7 +39,7 @@
 #' )
 #'
 #' tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
-#'
+#' }
 #' @importFrom data.table as.data.table
 #' @export
 lgb.interprete <- function(model,
@@ -87,7 +88,6 @@ lgb.interprete <- function(model,
     )
   }
 
-  # Return interpretation list
   return(tree_interpretation_dt_list)
 
 }
@@ -131,7 +131,6 @@ single.tree.interprete <- function(tree_dt,
   # Perform leaf to root conversion
   leaf_to_root(leaf_dt[["leaf_parent"]], leaf_dt[["leaf_value"]])
 
-  # Return formatted data.table
   data.table::data.table(
     Feature = feature_seq
     , Contribution = diff.default(value_seq)
@@ -232,6 +231,5 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
 
   }
 
-  # Return interpretation tree
   return(tree_interpretation_dt)
 }

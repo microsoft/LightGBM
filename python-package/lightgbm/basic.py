@@ -519,7 +519,7 @@ class _InnerPredictor(object):
         this.pop('handle', None)
         return this
 
-    def predict(self, data, num_iteration=-1,
+    def predict(self, data, start_iteration=0, num_iteration=-1,
                 raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False,
                 is_reshape=True):
         """Predict logic.
@@ -529,6 +529,8 @@ class _InnerPredictor(object):
         data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             When data type is string, it represents the path of txt file.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration to predict.
         num_iteration : int, optional (default=-1)
             Iteration used for prediction.
         raw_score : bool, optional (default=False)
@@ -560,8 +562,6 @@ class _InnerPredictor(object):
         if pred_contrib:
             predict_type = C_API_PREDICT_CONTRIB
         int_data_has_header = 1 if data_has_header else 0
-        if num_iteration > self.num_total_iteration:
-            num_iteration = self.num_total_iteration
 
         if isinstance(data, string_type):
             with _TempFile() as f:
@@ -570,6 +570,7 @@ class _InnerPredictor(object):
                     c_str(data),
                     ctypes.c_int(int_data_has_header),
                     ctypes.c_int(predict_type),
+                    ctypes.c_int(start_iteration),
                     ctypes.c_int(num_iteration),
                     c_str(self.pred_parameter),
                     c_str(f.name)))
@@ -578,26 +579,26 @@ class _InnerPredictor(object):
                 preds = [float(token) for line in lines for token in line.split('\t')]
                 preds = np.array(preds, dtype=np.float64, copy=False)
         elif isinstance(data, scipy.sparse.csr_matrix):
-            preds, nrow = self.__pred_for_csr(data, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_csr(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, scipy.sparse.csc_matrix):
-            preds, nrow = self.__pred_for_csc(data, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_csc(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, np.ndarray):
-            preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, list):
             try:
                 data = np.array(data)
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
-            preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, DataTable):
-            preds, nrow = self.__pred_for_np2d(data.to_numpy(), num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
         else:
             try:
                 warnings.warn('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
                 raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
-            preds, nrow = self.__pred_for_csr(csr, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_csr(csr, start_iteration, num_iteration, predict_type)
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
@@ -609,7 +610,7 @@ class _InnerPredictor(object):
                                  % (preds.size, nrow))
         return preds
 
-    def __get_num_preds(self, num_iteration, nrow, predict_type):
+    def __get_num_preds(self, start_iteration, num_iteration, nrow, predict_type):
         """Get size of prediction result."""
         if nrow > MAX_INT32:
             raise LightGBMError('LightGBM cannot perform prediction for data'
@@ -621,22 +622,23 @@ class _InnerPredictor(object):
             self.handle,
             ctypes.c_int(nrow),
             ctypes.c_int(predict_type),
+            ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             ctypes.byref(n_preds)))
         return n_preds.value
 
-    def __pred_for_np2d(self, mat, num_iteration, predict_type):
+    def __pred_for_np2d(self, mat, start_iteration, num_iteration, predict_type):
         """Predict for a 2-D numpy matrix."""
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray or list must be 2 dimensional')
 
-        def inner_predict(mat, num_iteration, predict_type, preds=None):
+        def inner_predict(mat, start_iteration, num_iteration, predict_type, preds=None):
             if mat.dtype == np.float32 or mat.dtype == np.float64:
                 data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
             else:  # change non-float data to float data, need to copy
                 data = np.array(mat.reshape(mat.size), dtype=np.float32)
             ptr_data, type_ptr_data, _ = c_float_array(data)
-            n_preds = self.__get_num_preds(num_iteration, mat.shape[0], predict_type)
+            n_preds = self.__get_num_preds(start_iteration, num_iteration, mat.shape[0], predict_type)
             if preds is None:
                 preds = np.zeros(n_preds, dtype=np.float64)
             elif len(preds.shape) != 1 or len(preds) != n_preds:
@@ -650,6 +652,7 @@ class _InnerPredictor(object):
                 ctypes.c_int(mat.shape[1]),
                 ctypes.c_int(C_API_IS_ROW_MAJOR),
                 ctypes.c_int(predict_type),
+                ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 c_str(self.pred_parameter),
                 ctypes.byref(out_num_preds),
@@ -662,16 +665,16 @@ class _InnerPredictor(object):
         if nrow > MAX_INT32:
             sections = np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
-            n_preds = [self.__get_num_preds(num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
+            n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
             for chunk, (start_idx_pred, end_idx_pred) in zip_(np.array_split(mat, sections),
                                                               zip_(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
-                inner_predict(chunk, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
+                inner_predict(chunk, start_iteration, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
             return preds, nrow
         else:
-            return inner_predict(mat, num_iteration, predict_type)
+            return inner_predict(mat, start_iteration, num_iteration, predict_type)
 
     def __create_sparse_native(self, cs, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
                                indptr_type, data_type, is_csr=True):
@@ -719,11 +722,11 @@ class _InnerPredictor(object):
             return cs_output_matrices[0]
         return cs_output_matrices
 
-    def __pred_for_csr(self, csr, num_iteration, predict_type):
+    def __pred_for_csr(self, csr, start_iteration, num_iteration, predict_type):
         """Predict for a CSR data."""
-        def inner_predict(csr, num_iteration, predict_type, preds=None):
+        def inner_predict(csr, start_iteration, num_iteration, predict_type, preds=None):
             nrow = len(csr.indptr) - 1
-            n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
+            n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
             if preds is None:
                 preds = np.zeros(n_preds, dtype=np.float64)
             elif len(preds.shape) != 1 or len(preds) != n_preds:
@@ -747,6 +750,7 @@ class _InnerPredictor(object):
                 ctypes.c_int64(len(csr.data)),
                 ctypes.c_int64(csr.shape[1]),
                 ctypes.c_int(predict_type),
+                ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 c_str(self.pred_parameter),
                 ctypes.byref(out_num_preds),
@@ -755,7 +759,7 @@ class _InnerPredictor(object):
                 raise ValueError("Wrong length for predict results")
             return preds, nrow
 
-        def inner_predict_sparse(csr, num_iteration, predict_type):
+        def inner_predict_sparse(csr, start_iteration, num_iteration, predict_type):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
             csr_indices = csr.indices.astype(np.int32, copy=False)
@@ -781,6 +785,7 @@ class _InnerPredictor(object):
                 ctypes.c_int64(len(csr.data)),
                 ctypes.c_int64(csr.shape[1]),
                 ctypes.c_int(predict_type),
+                ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 c_str(self.pred_parameter),
                 ctypes.c_int(matrix_type),
@@ -794,25 +799,25 @@ class _InnerPredictor(object):
             return matrices, nrow
 
         if predict_type == C_API_PREDICT_CONTRIB:
-            return inner_predict_sparse(csr, num_iteration, predict_type)
+            return inner_predict_sparse(csr, start_iteration, num_iteration, predict_type)
         nrow = len(csr.indptr) - 1
         if nrow > MAX_INT32:
             sections = [0] + list(np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)) + [nrow]
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
-            n_preds = [self.__get_num_preds(num_iteration, i, predict_type) for i in np.diff(sections)]
+            n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff(sections)]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
             for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip_(zip_(sections, sections[1:]),
                                                                              zip_(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
-                inner_predict(csr[start_idx:end_idx], num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
+                inner_predict(csr[start_idx:end_idx], start_iteration, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
             return preds, nrow
         else:
-            return inner_predict(csr, num_iteration, predict_type)
+            return inner_predict(csr, start_iteration, num_iteration, predict_type)
 
-    def __pred_for_csc(self, csc, num_iteration, predict_type):
+    def __pred_for_csc(self, csc, start_iteration, num_iteration, predict_type):
         """Predict for a CSC data."""
-        def inner_predict_sparse(csc, num_iteration, predict_type):
+        def inner_predict_sparse(csc, start_iteration, num_iteration, predict_type):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csc.data)
             csc_indices = csc.indices.astype(np.int32, copy=False)
@@ -838,6 +843,7 @@ class _InnerPredictor(object):
                 ctypes.c_int64(len(csc.data)),
                 ctypes.c_int64(csc.shape[0]),
                 ctypes.c_int(predict_type),
+                ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 c_str(self.pred_parameter),
                 ctypes.c_int(matrix_type),
@@ -852,10 +858,10 @@ class _InnerPredictor(object):
 
         nrow = csc.shape[0]
         if nrow > MAX_INT32:
-            return self.__pred_for_csr(csc.tocsr(), num_iteration, predict_type)
+            return self.__pred_for_csr(csc.tocsr(), start_iteration, num_iteration, predict_type)
         if predict_type == C_API_PREDICT_CONTRIB:
-            return inner_predict_sparse(csc, num_iteration, predict_type)
-        n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
+            return inner_predict_sparse(csc, start_iteration, num_iteration, predict_type)
+        n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
         preds = np.zeros(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
 
@@ -876,6 +882,7 @@ class _InnerPredictor(object):
             ctypes.c_int64(len(csc.data)),
             ctypes.c_int64(csc.shape[0]),
             ctypes.c_int(predict_type),
+            ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             c_str(self.pred_parameter),
             ctypes.byref(out_num_preds),
@@ -2806,7 +2813,7 @@ class Booster(object):
                                                           default=json_default_with_numpy))
         return ret
 
-    def predict(self, data, num_iteration=None,
+    def predict(self, data, start_iteration=0, num_iteration=None,
                 raw_score=False, pred_leaf=False, pred_contrib=False,
                 data_has_header=False, is_reshape=True, **kwargs):
         """Make a prediction.
@@ -2816,10 +2823,14 @@ class Booster(object):
         data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration to predict.
+            If <= 0, starts from the first iteration.
         num_iteration : int or None, optional (default=None)
-            Limit number of iterations in the prediction.
-            If None, if the best iteration exists, it is used; otherwise, all iterations are used.
-            If <= 0, all iterations are used (no limits).
+            Total number of iterations used in the prediction.
+            If None, if the best iteration exists and start_iteration <= 0, the best iteration is used;
+            otherwise, all iterations from ``start_iteration`` are used (no limits).
+            If <= 0, all iterations from ``start_iteration`` are used (no limits).
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
         pred_leaf : bool, optional (default=False)
@@ -2851,8 +2862,11 @@ class Booster(object):
         """
         predictor = self._to_predictor(copy.deepcopy(kwargs))
         if num_iteration is None:
-            num_iteration = self.best_iteration
-        return predictor.predict(data, num_iteration,
+            if start_iteration <= 0:
+                num_iteration = self.best_iteration
+            else:
+                num_iteration = -1
+        return predictor.predict(data, start_iteration, num_iteration,
                                  raw_score, pred_leaf, pred_contrib,
                                  data_has_header, is_reshape)
 
@@ -2892,7 +2906,7 @@ class Booster(object):
             new_booster.handle,
             predictor.handle))
         leaf_preds = leaf_preds.reshape(-1)
-        ptr_data, type_ptr_data, _ = c_int_array(leaf_preds)
+        ptr_data, _, _ = c_int_array(leaf_preds)
         _safe_call(_LIB.LGBM_BoosterRefit(
             new_booster.handle,
             ptr_data,
@@ -3097,18 +3111,23 @@ class Booster(object):
             for i in range_(self.__num_inner_eval):
                 ret.append((data_name, self.__name_inner_eval[i],
                             result[i], self.__higher_better_inner_eval[i]))
+        if callable(feval):
+            feval = [feval]
         if feval is not None:
             if data_idx == 0:
                 cur_data = self.train_set
             else:
                 cur_data = self.valid_sets[data_idx - 1]
-            feval_ret = feval(self.__inner_predict(data_idx), cur_data)
-            if isinstance(feval_ret, list):
-                for eval_name, val, is_higher_better in feval_ret:
+            for eval_function in feval:
+                if eval_function is None:
+                    continue
+                feval_ret = eval_function(self.__inner_predict(data_idx), cur_data)
+                if isinstance(feval_ret, list):
+                    for eval_name, val, is_higher_better in feval_ret:
+                        ret.append((data_name, eval_name, val, is_higher_better))
+                else:
+                    eval_name, val, is_higher_better = feval_ret
                     ret.append((data_name, eval_name, val, is_higher_better))
-            else:
-                eval_name, val, is_higher_better = feval_ret
-                ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
     def __inner_predict(self, data_idx):
