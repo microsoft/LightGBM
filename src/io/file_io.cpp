@@ -46,10 +46,14 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
     return fread(buffer, 1, bytes, file_);
   }
 
-  size_t Write(const void* buffer, size_t bytes) const {
-    // 4 bytes alignment
-    CHECK_EQ(bytes % 4, 0);
-    return fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
+  size_t Write(const void* buffer, size_t bytes, bool pad_to_4bytes) const {
+    auto ret = fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
+    if (bytes % 4 != 0) {
+      size_t pading = bytes / 4 * 4 + 4 - bytes;
+      std::vector<char> tmp(pading, 0);
+      ret += fwrite(tmp.data(), pading, 1, file_) == 1 ? pading : 0;
+    }
+    return ret;
   }
 
  private:
@@ -96,7 +100,7 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
     return FileOperation<void*>(data, bytes, &hdfsRead);
   }
 
-  size_t Write(const void* data, size_t bytes) const {
+  size_t Write(const void* data, size_t bytes, bool) const {
     return FileOperation<const void*>(data, bytes, &hdfsWrite);
   }
 

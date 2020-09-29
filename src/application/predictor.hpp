@@ -242,8 +242,8 @@ class Predictor {
       }
       OMP_THROW_EX();
       for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {
-        writer->Write(result_to_write[i].c_str(), result_to_write[i].size());
-        writer->Write("\n", 1);
+        writer->Write(result_to_write[i].c_str(), result_to_write[i].size(), false);
+        writer->Write("\n", 1, false);
       }
     };
     predict_data_reader.ReadAllAndProcessParallel(process_fun);

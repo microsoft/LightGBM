@@ -28,9 +28,10 @@ struct VirtualFileWriter {
    * \brief Append buffer to file
    * \param data Buffer to write from
    * \param bytes Number of bytes to write from buffer
+   * \param pad_to_4bytes
    * \return Number of bytes written
    */
-  virtual size_t Write(const void* data, size_t bytes) const = 0;
+  virtual size_t Write(const void* data, size_t bytes, bool pad_to_4bytes) const = 0;
   /*!
    * \brief Create appropriate writer for filename
    * \param filename Filename of the data
@@ -43,6 +44,14 @@ struct VirtualFileWriter {
    * \return True when the file exists
    */
   static bool Exists(const std::string& filename);
+
+  static size_t AlignedSize(size_t bytes) {
+    if (bytes % 4 == 0) {
+      return bytes;
+    } else {
+      return bytes / 4 * 4 + 4;
+    }
+  }
 };
 
 /**

@@ -286,8 +286,10 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 
   // check token
   size_t size_of_token = std::strlen(Dataset::binary_file_token);
-  size_t read_cnt = reader->Read(buffer.data(), sizeof(char) * size_of_token);
-  if (read_cnt != sizeof(char) * size_of_token) {
+  size_t read_cnt = reader->Read(
+      buffer.data(),
+      VirtualFileWriter::AlignedSize(sizeof(char) * size_of_token));
+  if (read_cnt < sizeof(char) * size_of_token) {
     Log::Fatal("Binary file error: token has the wrong size");
   }
   if (std::string(buffer.data()) != std::string(Dataset::binary_file_token)) {
@@ -330,10 +332,10 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(dataset->bin_construct_sample_cnt_);
   dataset->min_data_in_bin_ = *(reinterpret_cast<const int*>(mem_ptr));
   mem_ptr += sizeof(dataset->min_data_in_bin_);
-  dataset->use_missing_ = (*(reinterpret_cast<const int*>(mem_ptr)) > 0);
-  mem_ptr += sizeof(int);
-  dataset->zero_as_missing_ = (*(reinterpret_cast<const int*>(mem_ptr)) > 0);
-  mem_ptr += sizeof(int);
+  dataset->use_missing_ = *(reinterpret_cast<const int*>(mem_ptr));
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->use_missing_));
+  dataset->zero_as_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->zero_as_missing_));
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
   for (int i = 0; i < dataset->num_total_features_; ++i) {
@@ -412,11 +414,12 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     int str_len = *(reinterpret_cast<const int*>(mem_ptr));
     mem_ptr += sizeof(int);
     std::stringstream str_buf;
+    auto tmp_arr = reinterpret_cast<const char*>(mem_ptr);
     for (int j = 0; j < str_len; ++j) {
-      char tmp_char = *(reinterpret_cast<const char*>(mem_ptr));
-      mem_ptr += sizeof(char);
+      char tmp_char = tmp_arr[j];
       str_buf << tmp_char;
     }
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(char) * str_len);
     dataset->feature_names_.emplace_back(str_buf.str());
   }
   // get forced_bin_bounds_

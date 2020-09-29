@@ -523,10 +523,10 @@ namespace LightGBM {
   int BinMapper::SizeForSpecificBin(int bin) {
     int size = 0;
     size += sizeof(int);
-    size += sizeof(MissingType);
-    size += sizeof(bool);
+    size += VirtualFileWriter::AlignedSize(sizeof(MissingType));
+    size += VirtualFileWriter::AlignedSize(sizeof(bool));
     size += sizeof(double);
-    size += sizeof(BinType);
+    size += VirtualFileWriter::AlignedSize(sizeof(BinType));
     size += 2 * sizeof(double);
     size += bin * sizeof(double);
     size += sizeof(uint32_t) * 2;
@@ -537,13 +537,13 @@ namespace LightGBM {
     std::memcpy(buffer, &num_bin_, sizeof(num_bin_));
     buffer += sizeof(num_bin_);
     std::memcpy(buffer, &missing_type_, sizeof(missing_type_));
-    buffer += sizeof(missing_type_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(missing_type_));
     std::memcpy(buffer, &is_trivial_, sizeof(is_trivial_));
-    buffer += sizeof(is_trivial_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(is_trivial_));
     std::memcpy(buffer, &sparse_rate_, sizeof(sparse_rate_));
     buffer += sizeof(sparse_rate_);
     std::memcpy(buffer, &bin_type_, sizeof(bin_type_));
-    buffer += sizeof(bin_type_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(bin_type_));
     std::memcpy(buffer, &min_val_, sizeof(min_val_));
     buffer += sizeof(min_val_);
     std::memcpy(buffer, &max_val_, sizeof(max_val_));
@@ -563,13 +563,13 @@ namespace LightGBM {
     std::memcpy(&num_bin_, buffer, sizeof(num_bin_));
     buffer += sizeof(num_bin_);
     std::memcpy(&missing_type_, buffer, sizeof(missing_type_));
-    buffer += sizeof(missing_type_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(missing_type_));
     std::memcpy(&is_trivial_, buffer, sizeof(is_trivial_));
-    buffer += sizeof(is_trivial_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(is_trivial_));
     std::memcpy(&sparse_rate_, buffer, sizeof(sparse_rate_));
     buffer += sizeof(sparse_rate_);
     std::memcpy(&bin_type_, buffer, sizeof(bin_type_));
-    buffer += sizeof(bin_type_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(bin_type_));
     std::memcpy(&min_val_, buffer, sizeof(min_val_));
     buffer += sizeof(min_val_);
     std::memcpy(&max_val_, buffer, sizeof(max_val_));
@@ -592,25 +592,30 @@ namespace LightGBM {
   }
 
   void BinMapper::SaveBinaryToFile(const VirtualFileWriter* writer) const {
-    writer->Write(&num_bin_, sizeof(num_bin_));
-    writer->Write(&missing_type_, sizeof(missing_type_));
-    writer->Write(&is_trivial_, sizeof(is_trivial_));
-    writer->Write(&sparse_rate_, sizeof(sparse_rate_));
-    writer->Write(&bin_type_, sizeof(bin_type_));
-    writer->Write(&min_val_, sizeof(min_val_));
-    writer->Write(&max_val_, sizeof(max_val_));
-    writer->Write(&default_bin_, sizeof(default_bin_));
-    writer->Write(&most_freq_bin_, sizeof(most_freq_bin_));
+    writer->Write(&num_bin_, sizeof(num_bin_),  true);
+    writer->Write(&missing_type_, sizeof(missing_type_), true);
+    writer->Write(&is_trivial_, sizeof(is_trivial_), true);
+    writer->Write(&sparse_rate_, sizeof(sparse_rate_), true);
+    writer->Write(&bin_type_, sizeof(bin_type_), true);
+    writer->Write(&min_val_, sizeof(min_val_), true);
+    writer->Write(&max_val_, sizeof(max_val_), true);
+    writer->Write(&default_bin_, sizeof(default_bin_), true);
+    writer->Write(&most_freq_bin_, sizeof(most_freq_bin_), true);
     if (bin_type_ == BinType::NumericalBin) {
-      writer->Write(bin_upper_bound_.data(), sizeof(double) * num_bin_);
+      writer->Write(bin_upper_bound_.data(), sizeof(double) * num_bin_, true);
     } else {
-      writer->Write(bin_2_categorical_.data(), sizeof(int) * num_bin_);
+      writer->Write(bin_2_categorical_.data(), sizeof(int) * num_bin_, true);
     }
   }
 
   size_t BinMapper::SizesInByte() const {
-    size_t ret = sizeof(num_bin_) + sizeof(missing_type_) + sizeof(is_trivial_) + sizeof(sparse_rate_)
-      + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_) + sizeof(most_freq_bin_);
+    size_t ret = sizeof(num_bin_) +
+                 VirtualFileWriter::AlignedSize(sizeof(missing_type_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(is_trivial_)) +
+                 sizeof(sparse_rate_) +
+                 VirtualFileWriter::AlignedSize(sizeof(bin_type_)) +
+                 sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_) +
+                 sizeof(most_freq_bin_);
     if (bin_type_ == BinType::NumericalBin) {
       ret += sizeof(double) *  num_bin_;
     } else {

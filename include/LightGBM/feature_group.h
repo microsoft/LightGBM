@@ -93,9 +93,9 @@ class FeatureGroup {
     const char* memory_ptr = reinterpret_cast<const char*>(memory);
     // get is_sparse
     is_multi_val_ = *(reinterpret_cast<const bool*>(memory_ptr));
-    memory_ptr += sizeof(is_multi_val_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(is_multi_val_));
     is_sparse_ = *(reinterpret_cast<const bool*>(memory_ptr));
-    memory_ptr += sizeof(is_sparse_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(is_sparse_));
     num_feature_ = *(reinterpret_cast<const int*>(memory_ptr));
     memory_ptr += sizeof(num_feature_);
     // get bin mapper
@@ -301,9 +301,9 @@ class FeatureGroup {
   * \param file File want to write
   */
   void SaveBinaryToFile(const VirtualFileWriter* writer) const {
-    writer->Write(&is_multi_val_, sizeof(is_multi_val_));
-    writer->Write(&is_sparse_, sizeof(is_sparse_));
-    writer->Write(&num_feature_, sizeof(num_feature_));
+    writer->Write(&is_multi_val_, sizeof(is_multi_val_), true);
+    writer->Write(&is_sparse_, sizeof(is_sparse_), true);
+    writer->Write(&num_feature_, sizeof(num_feature_), true);
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_[i]->SaveBinaryToFile(writer);
     }
@@ -320,7 +320,9 @@ class FeatureGroup {
   * \brief Get sizes in byte of this object
   */
   size_t SizesInByte() const {
-    size_t ret = sizeof(is_multi_val_) + sizeof(is_sparse_) + sizeof(num_feature_);
+    size_t ret = VirtualFileWriter::AlignedSize(sizeof(is_multi_val_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(is_sparse_)) +
+                 sizeof(num_feature_);
     for (int i = 0; i < num_feature_; ++i) {
       ret += bin_mappers_[i]->SizesInByte();
     }
