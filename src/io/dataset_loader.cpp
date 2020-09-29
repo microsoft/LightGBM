@@ -332,7 +332,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(dataset->bin_construct_sample_cnt_);
   dataset->min_data_in_bin_ = *(reinterpret_cast<const int*>(mem_ptr));
   mem_ptr += sizeof(dataset->min_data_in_bin_);
-  dataset->use_missing_ = *(reinterpret_cast<const int*>(mem_ptr));
+  dataset->use_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
   mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->use_missing_));
   dataset->zero_as_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
   mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->zero_as_missing_));
@@ -428,7 +428,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     int num_bounds = *(reinterpret_cast<const int*>(mem_ptr));
     mem_ptr += sizeof(int);
     dataset->forced_bin_bounds_[i] = std::vector<double>();
-    const double* tmp_ptr_forced_bounds = reinterpret_cast<const double*>(mem_ptr);
+    const double* tmp_ptr_forced_bounds =
+        reinterpret_cast<const double*>(mem_ptr);
     for (int j = 0; j < num_bounds; ++j) {
       double bound = tmp_ptr_forced_bounds[j];
       dataset->forced_bin_bounds_[i].push_back(bound);

@@ -936,7 +936,9 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
 
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
-      size_of_header += feature_names_[i].size() + sizeof(int);
+      size_of_header +=
+          VirtualFileWriter::AlignedSize(feature_names_[i].size()) +
+          sizeof(int);
     }
     // size of forced bins
     for (int i = 0; i < num_total_features_; ++i) {
