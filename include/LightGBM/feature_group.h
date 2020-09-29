@@ -301,9 +301,9 @@ class FeatureGroup {
   * \param file File want to write
   */
   void SaveBinaryToFile(const VirtualFileWriter* writer) const {
-    writer->Write(&is_multi_val_, sizeof(is_multi_val_), true);
-    writer->Write(&is_sparse_, sizeof(is_sparse_), true);
-    writer->Write(&num_feature_, sizeof(num_feature_), true);
+    writer->AlignedWrite(&is_multi_val_, sizeof(is_multi_val_));
+    writer->AlignedWrite(&is_sparse_, sizeof(is_sparse_));
+    writer->AlignedWrite(&num_feature_, sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_[i]->SaveBinaryToFile(writer);
     }

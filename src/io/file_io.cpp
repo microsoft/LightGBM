@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <sstream>
 #include <unordered_map>
-#include <vector>
 
 #ifdef USE_HDFS
 #include <hdfs.h>
@@ -47,14 +46,8 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
     return fread(buffer, 1, bytes, file_);
   }
 
-  size_t Write(const void* buffer, size_t bytes, bool pad_to_4bytes) const {
-    auto ret = fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
-    if (pad_to_4bytes && bytes % 4 != 0) {
-      size_t padding = bytes / 4 * 4 + 4 - bytes;
-      std::vector<char> tmp(padding, 0);
-      ret += fwrite(tmp.data(), padding, 1, file_) == 1 ? padding : 0;
-    }
-    return ret;
+  size_t Write(const void* buffer, size_t bytes) const {
+    return fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
   }
 
  private:
@@ -101,14 +94,8 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
     return FileOperation<void*>(data, bytes, &hdfsRead);
   }
 
-  size_t Write(const void* data, size_t bytes, bool pad_to_4bytes) const {
-    auto ret = FileOperation<const void*>(data, bytes, &hdfsWrite);
-    if (pad_to_4bytes && bytes % 4 != 0) {
-      size_t padding = bytes / 4 * 4 + 4 - bytes;
-      std::vector<char> tmp(padding, 0);
-      ret += FileOperation<const void*>(tmp.data(), padding, &hdfsWrite); == 1 ? padding : 0;
-    }
-    return ret;
+  size_t Write(const void* data, size_t bytes) const {
+    return FileOperation<const void*>(data, bytes, &hdfsWrite);
   }
 
  private:

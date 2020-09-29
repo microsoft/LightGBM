@@ -11,6 +11,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 namespace LightGBM {
 
@@ -31,7 +32,17 @@ struct VirtualFileWriter {
    * \param pad_to_4bytes
    * \return Number of bytes written
    */
-  virtual size_t Write(const void* data, size_t bytes, bool pad_to_4bytes) const = 0;
+  virtual size_t Write(const void* data, size_t bytes) const = 0;
+
+  size_t AlignedWrite(const void* data, size_t bytes) const {
+    auto ret = Write(data, bytes);
+    if (bytes % 4 != 0) {
+      size_t padding = bytes / 4 * 4 + 4 - bytes;
+      std::vector<char> tmp(padding, 0);
+      ret += Write(tmp.data(), padding);
+    }
+    return ret;
+  }
   /*!
    * \brief Create appropriate writer for filename
    * \param filename Filename of the data

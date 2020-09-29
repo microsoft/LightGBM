@@ -501,15 +501,16 @@ void Metadata::LoadFromMemory(const void* memory) {
 }
 
 void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
-  writer->Write(&num_data_, sizeof(num_data_), true);
-  writer->Write(&num_weights_, sizeof(num_weights_), true);
-  writer->Write(&num_queries_, sizeof(num_queries_), true);
-  writer->Write(label_.data(), sizeof(label_t) * num_data_, true);
+  writer->AlignedWrite(&num_data_, sizeof(num_data_));
+  writer->AlignedWrite(&num_weights_, sizeof(num_weights_));
+  writer->AlignedWrite(&num_queries_, sizeof(num_queries_));
+  writer->AlignedWrite(label_.data(), sizeof(label_t) * num_data_);
   if (!weights_.empty()) {
-    writer->Write(weights_.data(), sizeof(label_t) * num_weights_, true);
+    writer->AlignedWrite(weights_.data(), sizeof(label_t) * num_weights_);
   }
   if (!query_boundaries_.empty()) {
-    writer->Write(query_boundaries_.data(), sizeof(data_size_t) * (num_queries_ + 1), true);
+    writer->AlignedWrite(query_boundaries_.data(),
+                         sizeof(data_size_t) * (num_queries_ + 1));
   }
   if (num_init_score_ > 0) {
     Log::Warning("Please note that `init_score` is not saved in binary file.\n"

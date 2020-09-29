@@ -452,7 +452,7 @@ class DenseBin : public Bin {
   }
 
   void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
-    writer->Write(data_.data(), sizeof(VAL_T) * data_.size(), true);
+    writer->AlignedWrite(data_.data(), sizeof(VAL_T) * data_.size());
   }
 
   size_t SizesInByte() const override {
