@@ -50,9 +50,9 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
   size_t Write(const void* buffer, size_t bytes, bool pad_to_4bytes) const {
     auto ret = fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
     if (pad_to_4bytes && bytes % 4 != 0) {
-      size_t pading = bytes / 4 * 4 + 4 - bytes;
-      std::vector<char> tmp(pading, 0);
-      ret += fwrite(tmp.data(), pading, 1, file_) == 1 ? pading : 0;
+      size_t padding = bytes / 4 * 4 + 4 - bytes;
+      std::vector<char> tmp(padding, 0);
+      ret += fwrite(tmp.data(), padding, 1, file_) == 1 ? padding : 0;
     }
     return ret;
   }
@@ -101,8 +101,14 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
     return FileOperation<void*>(data, bytes, &hdfsRead);
   }
 
-  size_t Write(const void* data, size_t bytes, bool) const {
-    return FileOperation<const void*>(data, bytes, &hdfsWrite);
+  size_t Write(const void* data, size_t bytes, bool pad_to_4bytes) const {
+    auto ret = FileOperation<const void*>(data, bytes, &hdfsWrite);
+    if (pad_to_4bytes && bytes % 4 != 0) {
+      size_t padding = bytes / 4 * 4 + 4 - bytes;
+      std::vector<char> tmp(padding, 0);
+      ret += FileOperation<const void*>(tmp.data(), padding, &hdfsWrite); == 1 ? padding : 0;
+    }
+    return ret;
   }
 
  private:
