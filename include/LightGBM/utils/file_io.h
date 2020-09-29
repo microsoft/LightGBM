@@ -33,7 +33,7 @@ struct VirtualFileWriter {
    */
   virtual size_t Write(const void* data, size_t bytes) const = 0;
 
-  size_t AlignedWrite(const void* data, size_t bytes, size_t alignment = 4) const {
+  size_t AlignedWrite(const void* data, size_t bytes, size_t alignment = 8) const {
     auto ret = Write(data, bytes);
     if (bytes % alignment != 0) {
       size_t padding = AlignedSize(bytes, alignment) - bytes;
@@ -55,7 +55,7 @@ struct VirtualFileWriter {
    */
   static bool Exists(const std::string& filename);
 
-  static size_t AlignedSize(size_t bytes, size_t alignment = 4) {
+  static size_t AlignedSize(size_t bytes, size_t alignment = 8) {
     if (bytes % alignment == 0) {
       return bytes;
     } else {
