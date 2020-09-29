@@ -29,7 +29,6 @@ struct VirtualFileWriter {
    * \brief Append buffer to file
    * \param data Buffer to write from
    * \param bytes Number of bytes to write from buffer
-   * \param pad_to_4bytes
    * \return Number of bytes written
    */
   virtual size_t Write(const void* data, size_t bytes) const = 0;
@@ -37,7 +36,7 @@ struct VirtualFileWriter {
   size_t AlignedWrite(const void* data, size_t bytes) const {
     auto ret = Write(data, bytes);
     if (bytes % 4 != 0) {
-      size_t padding = bytes / 4 * 4 + 4 - bytes;
+      size_t padding = AlignedSize(bytes) - bytes;
       std::vector<char> tmp(padding, 0);
       ret += Write(tmp.data(), padding);
     }
