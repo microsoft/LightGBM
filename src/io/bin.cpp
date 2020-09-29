@@ -593,19 +593,19 @@ namespace LightGBM {
   }
 
   void BinMapper::SaveBinaryToFile(const VirtualFileWriter* writer) const {
-    writer->AlignedWrite(&num_bin_, sizeof(num_bin_));
+    writer->Write(&num_bin_, sizeof(num_bin_));
     writer->AlignedWrite(&missing_type_, sizeof(missing_type_));
     writer->AlignedWrite(&is_trivial_, sizeof(is_trivial_));
-    writer->AlignedWrite(&sparse_rate_, sizeof(sparse_rate_));
+    writer->Write(&sparse_rate_, sizeof(sparse_rate_));
     writer->AlignedWrite(&bin_type_, sizeof(bin_type_));
-    writer->AlignedWrite(&min_val_, sizeof(min_val_));
-    writer->AlignedWrite(&max_val_, sizeof(max_val_));
-    writer->AlignedWrite(&default_bin_, sizeof(default_bin_));
-    writer->AlignedWrite(&most_freq_bin_, sizeof(most_freq_bin_));
+    writer->Write(&min_val_, sizeof(min_val_));
+    writer->Write(&max_val_, sizeof(max_val_));
+    writer->Write(&default_bin_, sizeof(default_bin_));
+    writer->Write(&most_freq_bin_, sizeof(most_freq_bin_));
     if (bin_type_ == BinType::NumericalBin) {
-      writer->AlignedWrite(bin_upper_bound_.data(), sizeof(double) * num_bin_);
+      writer->Write(bin_upper_bound_.data(), sizeof(double) * num_bin_);
     } else {
-      writer->AlignedWrite(bin_2_categorical_.data(), sizeof(int) * num_bin_);
+      writer->Write(bin_2_categorical_.data(), sizeof(int) * num_bin_);
     }
   }
 
