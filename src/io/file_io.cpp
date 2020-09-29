@@ -47,6 +47,8 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
   }
 
   size_t Write(const void* buffer, size_t bytes) const {
+    // 4 bytes alignment
+    CHECK_EQ(bytes % 4, 0);
     return fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
   }
 

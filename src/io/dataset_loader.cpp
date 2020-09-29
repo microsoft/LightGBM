@@ -330,10 +330,10 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(dataset->bin_construct_sample_cnt_);
   dataset->min_data_in_bin_ = *(reinterpret_cast<const int*>(mem_ptr));
   mem_ptr += sizeof(dataset->min_data_in_bin_);
-  dataset->use_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
-  mem_ptr += sizeof(dataset->use_missing_);
-  dataset->zero_as_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
-  mem_ptr += sizeof(dataset->zero_as_missing_);
+  dataset->use_missing_ = (*(reinterpret_cast<const int*>(mem_ptr)) > 0);
+  mem_ptr += sizeof(int);
+  dataset->zero_as_missing_ = (*(reinterpret_cast<const int*>(mem_ptr)) > 0);
+  mem_ptr += sizeof(int);
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
   for (int i = 0; i < dataset->num_total_features_; ++i) {

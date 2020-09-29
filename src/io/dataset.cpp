@@ -929,7 +929,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
       + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
       + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_
-      + sizeof(int32_t) * num_total_features_ + sizeof(int) * 3 + sizeof(bool) * 2;
+      + sizeof(int32_t) * num_total_features_ + sizeof(int) * 3 + sizeof(int) * 2;
 
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
@@ -950,8 +950,11 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(&bin_construct_sample_cnt_,
                   sizeof(bin_construct_sample_cnt_));
     writer->Write(&min_data_in_bin_, sizeof(min_data_in_bin_));
-    writer->Write(&use_missing_, sizeof(use_missing_));
-    writer->Write(&zero_as_missing_, sizeof(zero_as_missing_));
+    int bool_to_int = 0;
+    bool_to_int = use_missing_ ? 1 : 0;
+    writer->Write(&bool_to_int, sizeof(bool_to_int));
+    bool_to_int = zero_as_missing_ ? 1 : 0;
+    writer->Write(&bool_to_int, sizeof(bool_to_int));
     writer->Write(used_feature_map_.data(), sizeof(int) * num_total_features_);
     writer->Write(&num_groups_, sizeof(num_groups_));
     writer->Write(real_feature_idx_.data(), sizeof(int) * num_features_);
