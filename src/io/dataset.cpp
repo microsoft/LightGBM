@@ -953,7 +953,6 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(&bin_construct_sample_cnt_,
                   sizeof(bin_construct_sample_cnt_), true);
     writer->Write(&min_data_in_bin_, sizeof(min_data_in_bin_), true);
-    int bool_to_int = 0;
     writer->Write(&use_missing_, sizeof(use_missing_), true);
     writer->Write(&zero_as_missing_, sizeof(zero_as_missing_), true);
     writer->Write(used_feature_map_.data(), sizeof(int) * num_total_features_, true);
@@ -969,7 +968,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       ArrayArgs<int32_t>::Assign(&max_bin_by_feature_, -1, num_total_features_);
     }
     writer->Write(max_bin_by_feature_.data(),
-                  sizeof(int32_t) * num_total_features_);
+                  sizeof(int32_t) * num_total_features_, true);
     if (ArrayArgs<int32_t>::CheckAll(max_bin_by_feature_, -1)) {
       max_bin_by_feature_.clear();
     }
@@ -982,7 +981,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     }
     // write forced bins
     for (int i = 0; i < num_total_features_; ++i) {
-      int num_bounds = static_cast<int>(forced_bin_bounds_[i].size(), true);
+      int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
       writer->Write(&num_bounds, sizeof(int), true);
 
       for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {

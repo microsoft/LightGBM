@@ -48,7 +48,7 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
 
   size_t Write(const void* buffer, size_t bytes, bool pad_to_4bytes) const {
     auto ret = fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
-    if (bytes % 4 != 0) {
+    if (pad_to_4bytes && bytes % 4 != 0) {
       size_t pading = bytes / 4 * 4 + 4 - bytes;
       std::vector<char> tmp(pading, 0);
       ret += fwrite(tmp.data(), pading, 1, file_) == 1 ? pading : 0;

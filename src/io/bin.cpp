@@ -523,10 +523,11 @@ namespace LightGBM {
   int BinMapper::SizeForSpecificBin(int bin) {
     int size = 0;
     size += sizeof(int);
-    size += VirtualFileWriter::AlignedSize(sizeof(MissingType));
-    size += VirtualFileWriter::AlignedSize(sizeof(bool));
+    size +=
+        static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(MissingType)));
+    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(bool)));
     size += sizeof(double);
-    size += VirtualFileWriter::AlignedSize(sizeof(BinType));
+    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(BinType)));
     size += 2 * sizeof(double);
     size += bin * sizeof(double);
     size += sizeof(uint32_t) * 2;
