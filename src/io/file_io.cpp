@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <sstream>
 #include <unordered_map>
+#include <vector>
 
 #ifdef USE_HDFS
 #include <hdfs.h>
