@@ -38,7 +38,7 @@ class Tree {
   */
   Tree(const char* str, size_t* used_len);
 
-  ~Tree();
+  ~Tree() noexcept = default;
 
   /*!
   * \brief Performing a split on tree leaves.
