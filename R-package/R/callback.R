@@ -150,7 +150,7 @@ merge.eval.string <- function(env) {
 
   }
 
-  paste0(msg, collapse = "\t")
+  paste0(msg, collapse = "  ")
 
 }
 
