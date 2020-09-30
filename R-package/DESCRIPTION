@@ -15,6 +15,7 @@ Authors@R: c(
     person("Qiwei", "Ye", role = c("aut")),
     person("Tie-Yan", "Liu", role = c("aut")),
     person("Yachen", "Yan", role = c("ctb")),
+    person("James", "Lamb", email="jaylamb20@gmail.com", role = c("aut")),
     person("Microsoft Corporation", role = c("cph")),
     person("Dropbox, Inc.", role = c("cph")),
     person("Jay", "Loden", role = c("cph")),
