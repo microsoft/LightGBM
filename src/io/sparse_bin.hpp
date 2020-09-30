@@ -501,14 +501,15 @@ class SparseBin : public Bin {
   }
 
   void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
-    writer->Write(&num_vals_, sizeof(num_vals_));
-    writer->Write(deltas_.data(), sizeof(uint8_t) * (num_vals_ + 1));
-    writer->Write(vals_.data(), sizeof(VAL_T) * num_vals_);
+    writer->AlignedWrite(&num_vals_, sizeof(num_vals_));
+    writer->AlignedWrite(deltas_.data(), sizeof(uint8_t) * (num_vals_ + 1));
+    writer->AlignedWrite(vals_.data(), sizeof(VAL_T) * num_vals_);
   }
 
   size_t SizesInByte() const override {
-    return sizeof(num_vals_) + sizeof(uint8_t) * (num_vals_ + 1) +
-           sizeof(VAL_T) * num_vals_;
+    return VirtualFileWriter::AlignedSize(sizeof(num_vals_)) +
+           VirtualFileWriter::AlignedSize(sizeof(uint8_t) * (num_vals_ + 1)) +
+           VirtualFileWriter::AlignedSize(sizeof(VAL_T) * num_vals_);
   }
 
   void LoadFromMemory(
@@ -516,9 +517,9 @@ class SparseBin : public Bin {
       const std::vector<data_size_t>& local_used_indices) override {
     const char* mem_ptr = reinterpret_cast<const char*>(memory);
     data_size_t tmp_num_vals = *(reinterpret_cast<const data_size_t*>(mem_ptr));
-    mem_ptr += sizeof(tmp_num_vals);
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(tmp_num_vals));
     const uint8_t* tmp_delta = reinterpret_cast<const uint8_t*>(mem_ptr);
-    mem_ptr += sizeof(uint8_t) * (tmp_num_vals + 1);
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(uint8_t) * (tmp_num_vals + 1));
     const VAL_T* tmp_vals = reinterpret_cast<const VAL_T*>(mem_ptr);
 
     deltas_.clear();

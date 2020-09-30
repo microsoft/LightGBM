@@ -449,10 +449,12 @@ class DenseBin : public Bin {
   }
 
   void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
-    writer->Write(data_.data(), sizeof(VAL_T) * data_.size());
+    writer->AlignedWrite(data_.data(), sizeof(VAL_T) * data_.size());
   }
 
-  size_t SizesInByte() const override { return sizeof(VAL_T) * data_.size(); }
+  size_t SizesInByte() const override {
+    return VirtualFileWriter::AlignedSize(sizeof(VAL_T) * data_.size());
+  }
 
   DenseBin<VAL_T, IS_4BIT>* Clone() override;
 
