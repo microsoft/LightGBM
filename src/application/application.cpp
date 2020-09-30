@@ -11,6 +11,7 @@
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
@@ -37,6 +38,10 @@ Application::Application(int argc, char** argv) {
   }
   if (config_.data.size() == 0 && config_.task != TaskType::kConvertModel) {
     Log::Fatal("No training/prediction data, application quit");
+  }
+
+  if (config_.device_type == std::string("cuda")) {
+      LGBM_config_::current_device = lgbm_device_cuda;
   }
 }
 

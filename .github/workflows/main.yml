@@ -135,7 +135,6 @@ jobs:
               export R_LINUX_VERSION=3.6.3-1bionic
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA_ENV="test-env"
           export CONDA="$HOME/miniconda"
           export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
           export R_VERSION="${{ matrix.r_version }}"
@@ -165,5 +164,5 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-    - name: note that all tests succeeded
+    - name: Note that all tests succeeded
       run: echo "🎉"
