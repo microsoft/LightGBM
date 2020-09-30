@@ -172,14 +172,14 @@ class LambdarankNDCG : public RankingObjective {
         const data_size_t high_rank = label[sorted_idx[i]] > label[sorted_idx[j]] ? i : j;
         const data_size_t high = sorted_idx[high_rank];
         const int high_label = static_cast<int>(label[high]);
-        const double high_score = score_adjusted[high];
+        const double high_score = score[high];
         const double high_label_gain = label_gain_[high_label];
         const double high_discount = DCGCalculator::GetDiscount(high_rank);
         
         const data_size_t low_rank = label[sorted_idx[i]] > label[sorted_idx[j]] ? j : i;
         const data_size_t low = sorted_idx[low_rank];
         const int low_label = static_cast<int>(label[low]);
-        const double low_score = score_adjusted[low];
+        const double low_score = score[low];
         const double low_label_gain = label_gain_[low_label];
         const double low_discount = DCGCalculator::GetDiscount(low_rank);
 
