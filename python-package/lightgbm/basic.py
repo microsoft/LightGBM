@@ -1731,9 +1731,9 @@ class Dataset(object):
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
             self.handle,
-            num_feature,
+            ctypes.c_int(num_feature),
             ctypes.byref(tmp_out_len),
-            reserved_string_buffer_size,
+            ctypes.c_size_t(reserved_string_buffer_size),
             ctypes.byref(required_string_buffer_size),
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
