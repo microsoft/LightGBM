@@ -174,7 +174,6 @@ jobs:
       - name: install
         shell: bash
         run: |
-          cd /github/workspace
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
           sh build-cran-package.sh
           Rdevel CMD install lightgbm_*.tar.gz
@@ -182,7 +181,7 @@ jobs:
         shell: bash
         run: |
           cd R-package/tests
-          Rscript testthat.R
+          Rscriptdevel testthat.R
 
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
