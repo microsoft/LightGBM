@@ -36,6 +36,13 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
+    if [[ $TASK == "cuda" ]]; then
+        apt-get update
+        apt-get install --no-install-recommends -y curl wget
+        curl -sL https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh -o cmake.sh
+        chmod +x cmake.sh
+        ./cmake.sh --prefix=/usr/local --exclude-subdir
+    fi
     if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi

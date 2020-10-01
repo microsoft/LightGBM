@@ -15,26 +15,26 @@ jobs:
     steps:
       - name: Setup or update software on host machine
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-              curl \
-              wget \
-              git \
-              apt-transport-https \
-              ca-certificates \
-              gnupg-agent \
-              software-properties-common
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
-          curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-          curl -sL https://nvidia.github.io/nvidia-docker/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-              docker-ce \
-              docker-ce-cli \
-              containerd.io \
-              nvidia-docker2
-          sudo systemctl restart docker
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                apt-transport-https \
+                ca-certificates \
+                curl \
+                git \
+                gnupg-agent \
+                software-properties-common \
+                wget
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
+            curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+            curl -sL https://nvidia.github.io/nvidia-docker/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                containerd.io \
+                docker-ce \
+                docker-ce-cli \
+                nvidia-docker2
+            sudo systemctl restart docker
       - name: Remove old folder with repository
         run: sudo rm -rf $GITHUB_WORKSPACE
       - name: Checkout repository
@@ -54,17 +54,9 @@ jobs:
             CONDA_ENV=test-env
             EOF
             cat > docker-script.sh <<EOF
-            nvidia-smi
             export CONDA=\$HOME/miniconda
             export PATH=\$CONDA/bin:\$PATH
-            apt-get update
-            apt-get install --no-install-recommends -y \
-                curl \
-                wget
-            curl -sL https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh -o cmake.sh
-            chmod +x cmake.sh
-            ./cmake.sh --prefix=/usr/local --exclude-subdir
-            rm cmake.sh
+            nvidia-smi
             $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
             $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
             EOF
