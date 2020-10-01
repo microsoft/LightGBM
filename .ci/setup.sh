@@ -19,6 +19,11 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
+    if [[ $(uname -m) == "aarch64" ]]; then
+        sudo rm -f $(which cmake)  # remove x86 cmake
+        sudo apt-get update
+        sudo apt-get install -y cmake
+    fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
@@ -37,7 +42,11 @@ else  # Linux
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
     if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
-        wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        CONDA_SCRIPT=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        if [[ $(uname -m) == "aarch64" ]]; then
+            CONDA_SCRIPT=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
+        fi
+        wget -q -O conda.sh $CONDA_SCRIPT
     fi
 fi
 

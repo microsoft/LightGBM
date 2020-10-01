@@ -106,9 +106,16 @@ elif [[ $TASK == "bdist" ]]; then
             cp dist/lightgbm-$LGB_VER-py2.py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     else
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
+        cd $BUILD_DIRECTORY/python-package
+        if [[ $(uname -m) == "aarch64" ]]; then
+            python setup.py bdist_wheel --plat-name=manylinux2014_aarch64 || exit -1
+            WHEEL=dist/lightgbm-$LGB_VER-py3-none-manylinux2014_aarch64.whl
+        else
+            python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
+            WHEEL=dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl
+        fi
         if [[ $AZURE == "true" ]]; then
-            cp dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
+            cp $WHEEL $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     fi
     pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1

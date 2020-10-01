@@ -6,11 +6,17 @@ git:
   submodules: true
   depth: 5
 
+
+arch:
+  - amd64
+  - arm64-graviton2
 os:
   - linux
   - osx
 dist: focal
 osx_image: xcode12
+virt: vm
+group: edge
 
 env:
   global:  # default values
@@ -37,6 +43,20 @@ matrix:
       env: TASK=lint
     - os: osx
       env: TASK=check-docs
+    - arch: arm64-graviton2
+      env: TASK=sdist PYTHON_VERSION=2.7
+    - arch: arm64-graviton2
+      env: TASK=gpu METHOD=source
+    - arch: arm64-graviton2
+      env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    - arch: arm64-graviton2
+      env: TASK=lint
+    - arch: arm64-graviton2
+      env: TASK=check-docs
+  include:
+    - arch: arm64-graviton2
+      os: linux
+      env: TASK=sdist PYTHON_VERSION=3.6
 
 before_install:
   - test -n $CC  && unset CC
@@ -45,11 +65,18 @@ before_install:
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         export OS_NAME="macos";
         export COMPILER="gcc";
+    elif [[ $(uname -m) == "aarch64" ]]; then
+        export OS_NAME="linux";
+        export COMPILER="gcc";
     else
         export OS_NAME="linux";
         export COMPILER="clang";
     fi
-  - export CONDA="$HOME/miniconda"
+  - if [[ $(uname -m) == "aarch64" ]]; then
+        export CONDA="$HOME/miniforge3";
+    else
+        export CONDA="$HOME/miniconda";
+    fi
   - export PATH="$CONDA/bin:$PATH"
   - export CONDA_ENV="test-env"
   - export LGB_VER=$(head -n 1 VERSION.txt)
