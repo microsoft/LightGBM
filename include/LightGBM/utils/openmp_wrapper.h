@@ -81,7 +81,7 @@ class ThreadExceptionHelper {
   inline int omp_get_thread_num() {return 0;}
   inline int OMP_NUM_THREADS() { return 1; }
 #ifdef __cplusplus
-};  // extern "C"
+}  // extern "C"
 #endif
 
 #define OMP_INIT_EX()

@@ -1,6 +1,6 @@
-context("lgb.prepare_rules2()")
+context("lgb.convert_with_rules()")
 
-test_that("lgb.prepare_rules2() rejects inputs that are not a data.table or data.frame", {
+test_that("lgb.convert_with_rules() rejects inputs that are not a data.table or data.frame", {
     bad_inputs <- list(
         matrix(1.0:10.0, 2L, 5L)
         , TRUE
@@ -14,12 +14,12 @@ test_that("lgb.prepare_rules2() rejects inputs that are not a data.table or data
     )
     for (bad_input in bad_inputs) {
         expect_error({
-            conversion_result <- lgb.prepare_rules2(bad_input)
-        }, regexp = "lgb.prepare_rules2: you provided", fixed = TRUE)
+            conversion_result <- lgb.convert_with_rules(bad_input)
+        }, regexp = "lgb.convert_with_rules: you provided", fixed = TRUE)
     }
 })
 
-test_that("lgb.prepare_rules2() should work correctly for a dataset with only character columns", {
+test_that("lgb.convert_with_rules() should work correctly for a dataset with only character columns", {
     testDF <- data.frame(
         col1 = c("a", "b", "c")
         , col2 =  c("green", "green", "red")
@@ -27,7 +27,7 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with only ch
     )
     testDT <- data.table::as.data.table(testDF)
     for (input_data in list(testDF, testDT)) {
-        conversion_result <- lgb.prepare_rules2(input_data)
+        conversion_result <- lgb.convert_with_rules(input_data)
         # dataset should have been converted to integer
         converted_dataset <- conversion_result[["data"]]
         expect_identical(class(input_data), class(converted_dataset))
@@ -44,7 +44,7 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with only ch
     }
 })
 
-test_that("lgb.prepare_rules2() should work correctly for a dataset with only factor columns", {
+test_that("lgb.convert_with_rules() should work correctly for a dataset with only factor columns", {
     testDF <- data.frame(
         col1 = as.factor(c("a", "b", "c"))
         , col2 =  as.factor(c("green", "green", "red"))
@@ -52,7 +52,7 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with only fa
     )
     testDT <- data.table::as.data.table(testDF)
     for (input_data in list(testDF, testDT)) {
-        conversion_result <- lgb.prepare_rules2(input_data)
+        conversion_result <- lgb.convert_with_rules(input_data)
         # dataset should have been converted to integer
         converted_dataset <- conversion_result[["data"]]
         expect_identical(class(input_data), class(converted_dataset))
@@ -69,7 +69,7 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with only fa
     }
 })
 
-test_that("lgb.prepare_rules2() should not change a dataset with only integer columns", {
+test_that("lgb.convert_with_rules() should not change a dataset with only integer columns", {
     testDF <- data.frame(
         col1 = 11L:15L
         , col2 = 16L:20L
@@ -77,7 +77,7 @@ test_that("lgb.prepare_rules2() should not change a dataset with only integer co
     )
     testDT <- data.table::as.data.table(testDF)
     for (input_data in list(testDF, testDT)) {
-        conversion_result <- lgb.prepare_rules2(input_data)
+        conversion_result <- lgb.convert_with_rules(input_data)
         # dataset should have been converted to integer
         converted_dataset <- conversion_result[["data"]]
         expect_identical(converted_dataset, input_data)
@@ -87,7 +87,7 @@ test_that("lgb.prepare_rules2() should not change a dataset with only integer co
     }
 })
 
-test_that("lgb.prepare_rules2() should work correctly for a dataset with numeric, factor, and character columns", {
+test_that("lgb.convert_with_rules() should work correctly for a dataset with numeric, factor, and character columns", {
     testDF <- data.frame(
         character_col = c("a", "b", "c")
         , numeric_col = c(1.0, 9.0, 10.0)
@@ -96,7 +96,7 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with numeric
     )
     testDT <- data.table::as.data.table(testDF)
     for (input_data in list(testDF, testDT)) {
-        conversion_result <- lgb.prepare_rules2(input_data)
+        conversion_result <- lgb.convert_with_rules(input_data)
         # dataset should have been converted to numeric
         converted_dataset <- conversion_result[["data"]]
         expect_identical(class(input_data), class(converted_dataset))
@@ -111,13 +111,13 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with numeric
         expect_identical(rules[["character_col"]], c("a" = 1L, "b" = 2L, "c" = 3L))
         expect_identical(rules[["factor_col"]], c("n" = 1L, "y" = 2L))
 
-        # today, lgb.prepare2() does  not convert numeric  columns
+        # today, lgb.convert_with_rules() does not convert numeric columns
         expect_identical(class(converted_dataset[["numeric_col"]]), "numeric")
         expect_identical(converted_dataset[["numeric_col"]], c(1.0, 9.0, 10.0))
     }
 })
 
-test_that("lgb.prepare_rules2() should work correctly for a dataset with missing values", {
+test_that("lgb.convert_with_rules() should convert missing values to the expected value", {
     testDF <- data.frame(
         character_col = c("a", NA_character_, "c")
         , na_col = rep(NA, 3L)
@@ -131,30 +131,32 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with missing
     )
     testDT <- data.table::as.data.table(testDF)
     for (input_data in list(testDF, testDT)) {
-        conversion_result <- lgb.prepare_rules2(input_data)
+        conversion_result <- lgb.convert_with_rules(input_data)
         # dataset should have been converted to integer
         converted_dataset <- conversion_result[["data"]]
         expect_identical(class(input_data), class(converted_dataset))
 
         expect_identical(class(converted_dataset[["character_col"]]), "integer")
-        expect_identical(converted_dataset[["character_col"]], c(1L, NA_integer_, 2L))
+        expect_identical(converted_dataset[["character_col"]], c(1L, 0L, 2L))
 
+        # does not try to fill 0s in for already-integer columns
         expect_identical(class(converted_dataset[["integer_col"]]), "integer")
         expect_identical(converted_dataset[["integer_col"]], c(1L, 9L, NA_integer_))
+        expect_identical(class(converted_dataset[["na_int_col"]]), "integer")
+        expect_identical(converted_dataset[["na_int_col"]], rep(NA_integer_, nrow(converted_dataset)))
 
         expect_identical(class(converted_dataset[["factor_col"]]), "integer")
         expect_identical(converted_dataset[["factor_col"]], c(1L, 1L, 2L))
 
-        # NAs of any type should be converted to numeric
-        for (col in c("na_int_col", "na_character_col")) {
-            expect_identical(class(converted_dataset[[col]]), "integer")
-            expect_identical(converted_dataset[[col]], rep(NA_integer_, nrow(converted_dataset)))
-        }
+        # NAs in character columns should be converted to 0
+        expect_identical(class(converted_dataset[["na_character_col"]]), "integer")
+        expect_identical(converted_dataset[["na_character_col"]], rep(0L, nrow(converted_dataset)))
 
-        # today, lgb.prepare2() does not convert logical columns
-        expect_identical(class(converted_dataset[["na_col"]]), "logical")
+        # logical should be converted to integer
+        expect_identical(class(converted_dataset[["na_col"]]), "integer")
+        expect_identical(converted_dataset[["na_col"]], rep(-1L, 3L))
 
-        # today, lgb.prepare2() does not convert numeric columns to integer
+        # lgb.convert_with_rules() should not convert numeric columns to integer
         expect_identical(class(converted_dataset[["na_real_col"]]), "numeric")
         expect_identical(converted_dataset[["na_real_col"]], rep(NA_real_, nrow(converted_dataset)))
         expect_identical(class(converted_dataset[["numeric_col"]]), "numeric")
@@ -164,13 +166,13 @@ test_that("lgb.prepare_rules2() should work correctly for a dataset with missing
         rules <- conversion_result$rules
         expect_is(rules, "list")
         expect_length(rules, 3L)
-        expect_identical(rules[["character_col"]], stats::setNames(c(1L, NA_integer_, 2L), c("a", NA, "c")))
-        expect_identical(rules[["na_character_col"]], stats::setNames(NA_integer_, NA))
+        expect_identical(rules[["character_col"]], c("a" = 1L, "c" = 2L))
         expect_identical(rules[["factor_col"]], c("n" = 1L, "y" = 2L))
+        expect_identical(rules[["na_col"]], stats::setNames(c(0L, 1L), c(FALSE, TRUE)))
     }
 })
 
-test_that("lgb.prepare_rules2() should work correctly if you provide your own well-formed rules", {
+test_that("lgb.convert_with_rules() should work correctly if you provide your own well-formed rules", {
     testDF <- data.frame(
         character_col = c("a", NA_character_, "c", "a", "a", "c")
         , na_col = rep(NA, 6L)
@@ -183,9 +185,11 @@ test_that("lgb.prepare_rules2() should work correctly if you provide your own we
         , stringsAsFactors = FALSE
     )
     testDT <- data.table::as.data.table(testDF)
-    # value used by lgb.prepare_rules2() when it encounters a categorical value that
+
+    # value used by lgb.convert_with_rules() when it encounters a categorical value that
     # is not in the provided rules
     UNKNOWN_FACTOR_VALUE <- 0L
+    UNKNOWN_LOGICAL_VALUE <- -1L
     for (input_data in list(testDF, testDT)) {
         custom_rules <- list(
             "character_col" = c(
@@ -197,7 +201,7 @@ test_that("lgb.prepare_rules2() should work correctly if you provide your own we
                 , "y" = 66L
             )
         )
-        conversion_result <- lgb.prepare_rules2(
+        conversion_result <- lgb.convert_with_rules(
             data = input_data
             , rules = custom_rules
         )
@@ -212,10 +216,14 @@ test_that("lgb.prepare_rules2() should work correctly if you provide your own we
         expect_identical(class(converted_dataset[["factor_col"]]), "integer")
         expect_identical(converted_dataset[["factor_col"]], c(65L, 65L, 66L, 66L, 65L, 65L))
 
-        # columns not specified in rules are not going to be converted
-        for (col in c("na_col", "na_real_col", "na_int_col", "na_character_col", "numeric_col", "integer_col")) {
+        # columns not specified in rules are not going to be converted, unless they are all NA
+        for (col in c("na_real_col", "na_int_col", "numeric_col", "integer_col")) {
             expect_identical(converted_dataset[[col]], input_data[[col]])
         }
+
+        # non-numeric/integer columns that are all NA should have been filled in
+        expect_identical(converted_dataset[["na_col"]], rep(UNKNOWN_LOGICAL_VALUE, 6L))
+        expect_identical(converted_dataset[["na_character_col"]], rep(UNKNOWN_FACTOR_VALUE, 6L))
 
         # the rules you passed in should be returned unchanged
         rules <- conversion_result$rules
@@ -223,7 +231,7 @@ test_that("lgb.prepare_rules2() should work correctly if you provide your own we
     }
 })
 
-test_that("lgb.prepare_rules2() should modify data.tables in-place", {
+test_that("lgb.convert_with_rules() should modify data.tables in-place", {
     testDT <- data.table::data.table(
         character_col = c("a", NA_character_, "c")
         , na_col = rep(NA, 3L)
@@ -234,7 +242,7 @@ test_that("lgb.prepare_rules2() should modify data.tables in-place", {
         , factor_col = as.factor(c("n", "n", "y"))
         , integer_col = c(1L, 9L, NA_integer_)
     )
-    conversion_result <- lgb.prepare_rules2(testDT)
+    conversion_result <- lgb.convert_with_rules(testDT)
     resultDT <- conversion_result[["data"]]
     expect_identical(resultDT, testDT)
 })

@@ -6,7 +6,7 @@
 #define LIGHTGBM_R_H_
 
 #include <LightGBM/c_api.h>
-#include <LightGBM/R_object_helper.h>
+#include "R_object_helper.h"
 
 /*!
 * \brief get string message of the last error
@@ -489,6 +489,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForFile_R(
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE result_filename,
@@ -511,6 +512,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCalcNumPredict_R(
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE out_len,
   LGBM_SE call_state
@@ -545,6 +547,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForCSC_R(
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE out_result,
@@ -574,6 +577,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForMat_R(
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE is_predcontrib,
+  LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE out_result,
@@ -590,6 +594,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForMat_R(
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModel_R(
   LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE filename,
   LGBM_SE call_state
 );
@@ -604,6 +609,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModel_R(
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModelToString_R(
   LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
   LGBM_SE actual_len,
   LGBM_SE out_str,
@@ -620,6 +626,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModelToString_R(
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterDumpModel_R(
   LGBM_SE handle,
   LGBM_SE num_iteration,
+  LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
   LGBM_SE actual_len,
   LGBM_SE out_str,

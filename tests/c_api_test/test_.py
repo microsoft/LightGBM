@@ -236,7 +236,7 @@ def test_booster():
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
         if i % 10 == 0:
             print('%d iteration test AUC %f' % (i, result[0]))
-    LIB.LGBM_BoosterSaveModel(booster, 0, -1, c_str('model.txt'))
+    LIB.LGBM_BoosterSaveModel(booster, 0, -1, 0, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
     free_dataset(train)
     free_dataset(test)
@@ -263,6 +263,7 @@ def test_booster():
         mat.shape[1],
         1,
         1,
+        0,
         25,
         c_str(''),
         ctypes.byref(num_preb),
@@ -273,6 +274,17 @@ def test_booster():
                            '../../examples/binary_classification/binary.test')),
         0,
         0,
+        0,
+        25,
+        c_str(''),
+        c_str('preb.txt'))
+    LIB.LGBM_BoosterPredictForFile(
+        booster2,
+        c_str(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                           '../../examples/binary_classification/binary.test')),
+        0,
+        0,
+        10,
         25,
         c_str(''),
         c_str('preb.txt'))

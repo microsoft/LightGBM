@@ -19,8 +19,10 @@ Please note that \code{init_score} is not saved in binary file.
              If you need it, please set it again after loading Dataset.
 }
 \examples{
+\dontrun{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
-lgb.Dataset.save(dtrain, "data.bin")
+lgb.Dataset.save(dtrain, tempfile(fileext = ".bin"))
+}
 }

@@ -300,8 +300,10 @@ class FeatureHistogram {
     }
 
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
-    bool is_full_categorical = meta_->missing_type == MissingType::None;
-    int used_bin = meta_->num_bin - 1 + is_full_categorical;
+    const int8_t offset = meta_->offset;
+    const int bin_start = 1 - offset;
+    const int bin_end = meta_->num_bin - offset;
+    int used_bin = -1;
 
     std::vector<int> sorted_idx;
     double l2 = meta_->config->lambda_l2;
@@ -312,11 +314,11 @@ class FeatureHistogram {
     int rand_threshold = 0;
     if (use_onehot) {
       if (USE_RAND) {
-        if (used_bin > 0) {
-          rand_threshold = meta_->rand.NextInt(0, used_bin);
+        if (bin_end - bin_start > 0) {
+          rand_threshold = meta_->rand.NextInt(bin_start, bin_end);
         }
       }
-      for (int t = 0; t < used_bin; ++t) {
+      for (int t = bin_start; t < bin_end; ++t) {
         const auto grad = GET_GRAD(data_, t);
         const auto hess = GET_HESS(data_, t);
         data_size_t cnt =
@@ -366,7 +368,7 @@ class FeatureHistogram {
         }
       }
     } else {
-      for (int i = 0; i < used_bin; ++i) {
+      for (int i = bin_start; i < bin_end; ++i) {
         if (Common::RoundInt(GET_HESS(data_, i) * cnt_factor) >=
             meta_->config->cat_smooth) {
           sorted_idx.push_back(i);
@@ -379,11 +381,11 @@ class FeatureHistogram {
       auto ctr_fun = [this](double sum_grad, double sum_hess) {
         return (sum_grad) / (sum_hess + meta_->config->cat_smooth);
       };
-      std::sort(sorted_idx.begin(), sorted_idx.end(),
-                [this, &ctr_fun](int i, int j) {
-                  return ctr_fun(GET_GRAD(data_, i), GET_HESS(data_, i)) <
-                         ctr_fun(GET_GRAD(data_, j), GET_HESS(data_, j));
-                });
+      std::stable_sort(
+          sorted_idx.begin(), sorted_idx.end(), [this, &ctr_fun](int i, int j) {
+            return ctr_fun(GET_GRAD(data_, i), GET_HESS(data_, i)) <
+                   ctr_fun(GET_GRAD(data_, j), GET_HESS(data_, j));
+          });
 
       std::vector<int> find_direction(1, 1);
       std::vector<int> start_position(1, 0);
@@ -489,19 +491,19 @@ class FeatureHistogram {
       if (use_onehot) {
         output->num_cat_threshold = 1;
         output->cat_threshold =
-            std::vector<uint32_t>(1, static_cast<uint32_t>(best_threshold));
+            std::vector<uint32_t>(1, static_cast<uint32_t>(best_threshold + offset));
       } else {
         output->num_cat_threshold = best_threshold + 1;
         output->cat_threshold =
             std::vector<uint32_t>(output->num_cat_threshold);
         if (best_dir == 1) {
           for (int i = 0; i < output->num_cat_threshold; ++i) {
-            auto t = sorted_idx[i];
+            auto t = sorted_idx[i] + offset;
             output->cat_threshold[i] = t;
           }
         } else {
           for (int i = 0; i < output->num_cat_threshold; ++i) {
-            auto t = sorted_idx[used_bin - 1 - i];
+            auto t = sorted_idx[used_bin - 1 - i] + offset;
             output->cat_threshold[i] = t;
           }
         }
@@ -649,16 +651,14 @@ class FeatureHistogram {
     double gain_shift = GetLeafGainGivenOutput<true>(
         sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, parent_output);
     double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
-    bool is_full_categorical = meta_->missing_type == MissingType::None;
-    int used_bin = meta_->num_bin - 1 + is_full_categorical;
-    if (threshold >= static_cast<uint32_t>(used_bin)) {
+    if (threshold >= static_cast<uint32_t>(meta_->num_bin) || threshold == 0) {
       output->gain = kMinScore;
       Log::Warning("Invalid categorical threshold split");
       return;
     }
     const double cnt_factor = num_data / sum_hessian;
-    const auto grad = GET_GRAD(data_, threshold);
-    const auto hess = GET_HESS(data_, threshold);
+    const auto grad = GET_GRAD(data_, threshold - meta_->offset);
+    const auto hess = GET_HESS(data_, threshold - meta_->offset);
     data_size_t cnt =
         static_cast<data_size_t>(Common::RoundInt(hess * cnt_factor));
 
@@ -1147,6 +1147,34 @@ class HistogramPool {
     }
   }
 
+  static int GetNumTotalHistogramBins(const Dataset* train_data,
+    bool is_hist_colwise, std::vector<int>* offsets) {
+    int num_total_bin = static_cast<int>(train_data->NumTotalBin());
+    offsets->clear();
+    if (is_hist_colwise) {
+      int offset = 0;
+      for (int j = 0; j < train_data->num_features(); ++j) {
+        offset += train_data->SubFeatureBinOffset(j);
+        offsets->push_back(offset);
+        auto num_bin = train_data->FeatureNumBin(j);
+        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
+          num_bin -= 1;
+        }
+        offset += num_bin;
+      }
+    } else {
+      num_total_bin = 1;
+      for (int j = 0; j < train_data->num_features(); ++j) {
+        offsets->push_back(num_total_bin);
+        num_total_bin += train_data->FeatureBinMapper(j)->num_bin();
+        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
+          num_total_bin -= 1;
+        }
+      }
+    }
+    return num_total_bin;
+  }
+
   void DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise,
                          const Config* config, int cache_size, int total_size) {
     if (feature_metas_.empty()) {
@@ -1165,30 +1193,9 @@ class HistogramPool {
       pool_.resize(cache_size);
       data_.resize(cache_size);
     }
-    int num_total_bin = static_cast<int>(train_data->NumTotalBin());
-
     std::vector<int> offsets;
-    if (is_hist_colwise) {
-      int offset = 0;
-      for (int j = 0; j < train_data->num_features(); ++j) {
-        offset += train_data->SubFeatureBinOffset(j);
-        offsets.push_back(offset);
-        auto num_bin = train_data->FeatureNumBin(j);
-        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-          num_bin -= 1;
-        }
-        offset += num_bin;
-      }
-    } else {
-      num_total_bin = 1;
-      for (int j = 0; j < train_data->num_features(); ++j) {
-        offsets.push_back(num_total_bin);
-        num_total_bin += train_data->FeatureBinMapper(j)->num_bin();
-        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-          num_total_bin -= 1;
-        }
-      }
-    }
+    int num_total_bin =
+        this->GetNumTotalHistogramBins(train_data, is_hist_colwise, &offsets);
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int i = old_cache_size; i < cache_size; ++i) {

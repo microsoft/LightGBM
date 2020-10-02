@@ -186,6 +186,23 @@ The appropriate splitting strategy depends on the task and domain of the data, i
 
 LightGBM supports loading data from zero-based LibSVM format file directly.
 
+14. Why CMake cannot find the compiler when compiling LightGBM with MinGW?
+--------------------------------------------------------------------------
+
+.. code-block:: bash
+
+    CMake Error: CMAKE_C_COMPILER not set, after EnableLanguage
+    CMake Error: CMAKE_CXX_COMPILER not set, after EnableLanguage
+
+This is a known issue of CMake when using MinGW. The easiest solution is to run again your ``cmake`` command to bypass the one time stopper from CMake. Or you can upgrade your version of CMake to at least version 3.17.0.
+
+See `Microsoft/LightGBM#3060 <https://github.com/microsoft/LightGBM/issues/3060#issuecomment-626338538>`__ for more details.
+
+15. Where can I find LightGBM's logo to use it in my presentation?
+------------------------------------------------------------------
+
+You can find LightGBM's logo in different file formats and resolutions `here <https://github.com/microsoft/LightGBM/tree/master/docs/logo>`__.
+
 ------
 
 R-package
@@ -278,6 +295,6 @@ We are doing our best to provide universal wheels which have high running speed 
 However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
 Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary :all: lightgbm``.
-For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#build-from-sources>`__.
+For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
 
 Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.
