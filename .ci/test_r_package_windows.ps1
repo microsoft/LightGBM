@@ -56,6 +56,10 @@ $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
+# hack to get around this:
+# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
+$env:_R_CHECK_SYSTEM_CLOCK_ = 0
+
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
