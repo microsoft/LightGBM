@@ -561,9 +561,9 @@ Refer to `GPU Docker folder <https://github.com/microsoft/LightGBM/tree/master/d
 Build CUDA Version (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `original GPU version <#build-gpu-version>`__ of LightGBM is based on OpenCL. This version is a separate implementation and requires NVIDIA graphics card with compute capability 6.0 and higher.
+The `original GPU build <#build-gpu-version>`__ of LightGBM is based on OpenCL.
 
-This version is very experimental and we suggest using it only when it is impossible to use OpenCL version, for instance, on IBM POWER microprocessors.
+The CUDA-based build is a separate implementation and requires an NVIDIA graphics card with compute capability 6.0 and higher. It should be considered experimental, and we suggest using it only when it is impossible to use OpenCL version (for example, on IBM POWER microprocessors).
 
 **Note**: only Linux is supported, other operating systems are not supported yet.
 
@@ -574,7 +574,7 @@ On Linux a CUDA version of LightGBM can be built using **CUDA**, **CMake** and *
 
 The following dependencies should be installed before compilation:
 
--  **CUDA** libraries.
+-  **CUDA** libraries. Please refer to `this detailed guide`_.
 
 -  **CMake** 3.16 or later.
 
@@ -784,3 +784,5 @@ Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 .. _Boost Binaries: https://bintray.com/boostorg/release/boost-binaries/_latestVersion#files
 
 .. _SWIG: http://www.swig.org/download.html
+
+.. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html

@@ -968,7 +968,7 @@ struct Config {
   int gpu_device_id = -1;
 
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
-  // desc = **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is supported yet
+  // desc = **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
   bool gpu_use_dp = false;
 
   // check = >0

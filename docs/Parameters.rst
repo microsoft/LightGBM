@@ -1126,7 +1126,7 @@ GPU Parameters
 
    -  set this to ``true`` to use double precision math on GPU (by default single precision is used)
 
-   -  **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is supported yet
+   -  **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
 
 -  ``num_gpu`` :raw-html:`<a id="num_gpu" title="Permalink to this parameter" href="#num_gpu">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``num_gpu > 0``
 
