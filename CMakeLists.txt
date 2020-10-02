@@ -448,10 +448,11 @@ endif(__BUILD_FOR_R)
 #if (NOT BUILD_STATIC_LIB)
 #  OPTION(BUILD_SHARED_LIBS "Build shared libs" ON)  # fmt reads this flag.
 #endif(NOT BUILD_STATIC_LIB)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -funroll-loops")
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -funroll-loops")
 add_subdirectory(external_libs/fmt)
-TARGET_LINK_LIBRARIES(lightgbm fmt::fmt)
-TARGET_LINK_LIBRARIES(_lightgbm fmt::fmt)
+set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
+TARGET_LINK_LIBRARIES(lightgbm fmt)
+TARGET_LINK_LIBRARIES(_lightgbm fmt)
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
