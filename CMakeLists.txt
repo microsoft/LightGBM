@@ -445,6 +445,9 @@ if(__BUILD_FOR_R)
 endif(__BUILD_FOR_R)
 
 # fmtlib/fmt
+if (NOT BUILD_STATIC_LIB)
+  OPTION(BUILD_SHARED_LIBS "Build shared libs" ON)  # fmt reads this flag.
+endif(NOT BUILD_STATIC_LIB)
 add_subdirectory(external_libs/fmt)
 TARGET_LINK_LIBRARIES(lightgbm fmt::fmt)
 TARGET_LINK_LIBRARIES(_lightgbm fmt::fmt)
