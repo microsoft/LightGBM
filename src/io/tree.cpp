@@ -220,7 +220,7 @@ double Tree::GetLowerBoundValue() const {
 std::string Tree::ToString() const {
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
-  
+
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
   str_buf << "split_feature="
