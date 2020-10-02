@@ -8,9 +8,6 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include "../../../external_libs/fmt/include/fmt/format.h"
-#include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
-
 #include <limits>
 #include <string>
 #include <algorithm>
@@ -29,6 +26,9 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "../../../external_libs/fmt/include/fmt/format.h"
+#include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
 
 #ifdef _MSC_VER
 #include <intrin.h>
