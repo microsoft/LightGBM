@@ -286,8 +286,10 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 
   // check token
   size_t size_of_token = std::strlen(Dataset::binary_file_token);
-  size_t read_cnt = reader->Read(buffer.data(), sizeof(char) * size_of_token);
-  if (read_cnt != sizeof(char) * size_of_token) {
+  size_t read_cnt = reader->Read(
+      buffer.data(),
+      VirtualFileWriter::AlignedSize(sizeof(char) * size_of_token));
+  if (read_cnt < sizeof(char) * size_of_token) {
     Log::Fatal("Binary file error: token has the wrong size");
   }
   if (std::string(buffer.data()) != std::string(Dataset::binary_file_token)) {
@@ -317,53 +319,59 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   // get header
   const char* mem_ptr = buffer.data();
   dataset->num_data_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
-  mem_ptr += sizeof(dataset->num_data_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->num_data_));
   dataset->num_features_ = *(reinterpret_cast<const int*>(mem_ptr));
-  mem_ptr += sizeof(dataset->num_features_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->num_features_));
   dataset->num_total_features_ = *(reinterpret_cast<const int*>(mem_ptr));
-  mem_ptr += sizeof(dataset->num_total_features_);
+  mem_ptr +=
+      VirtualFileWriter::AlignedSize(sizeof(dataset->num_total_features_));
   dataset->label_idx_ = *(reinterpret_cast<const int*>(mem_ptr));
-  mem_ptr += sizeof(dataset->label_idx_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->label_idx_));
   dataset->max_bin_ = *(reinterpret_cast<const int*>(mem_ptr));
-  mem_ptr += sizeof(dataset->max_bin_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->max_bin_));
   dataset->bin_construct_sample_cnt_ = *(reinterpret_cast<const int*>(mem_ptr));
-  mem_ptr += sizeof(dataset->bin_construct_sample_cnt_);
+  mem_ptr += VirtualFileWriter::AlignedSize(
+      sizeof(dataset->bin_construct_sample_cnt_));
   dataset->min_data_in_bin_ = *(reinterpret_cast<const int*>(mem_ptr));
-  mem_ptr += sizeof(dataset->min_data_in_bin_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->min_data_in_bin_));
   dataset->use_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
-  mem_ptr += sizeof(dataset->use_missing_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->use_missing_));
   dataset->zero_as_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
-  mem_ptr += sizeof(dataset->zero_as_missing_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->zero_as_missing_));
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
   for (int i = 0; i < dataset->num_total_features_; ++i) {
     dataset->used_feature_map_.push_back(tmp_feature_map[i]);
   }
-  mem_ptr += sizeof(int) * dataset->num_total_features_;
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(int) *
+                                            dataset->num_total_features_);
   // num_groups
   dataset->num_groups_ = *(reinterpret_cast<const int*>(mem_ptr));
-  mem_ptr += sizeof(dataset->num_groups_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->num_groups_));
   // real_feature_idx_
   const int* tmp_ptr_real_feature_idx_ = reinterpret_cast<const int*>(mem_ptr);
   dataset->real_feature_idx_.clear();
   for (int i = 0; i < dataset->num_features_; ++i) {
     dataset->real_feature_idx_.push_back(tmp_ptr_real_feature_idx_[i]);
   }
-  mem_ptr += sizeof(int) * dataset->num_features_;
+  mem_ptr +=
+      VirtualFileWriter::AlignedSize(sizeof(int) * dataset->num_features_);
   // feature2group
   const int* tmp_ptr_feature2group = reinterpret_cast<const int*>(mem_ptr);
   dataset->feature2group_.clear();
   for (int i = 0; i < dataset->num_features_; ++i) {
     dataset->feature2group_.push_back(tmp_ptr_feature2group[i]);
   }
-  mem_ptr += sizeof(int) * dataset->num_features_;
+  mem_ptr +=
+      VirtualFileWriter::AlignedSize(sizeof(int) * dataset->num_features_);
   // feature2subfeature
   const int* tmp_ptr_feature2subfeature = reinterpret_cast<const int*>(mem_ptr);
   dataset->feature2subfeature_.clear();
   for (int i = 0; i < dataset->num_features_; ++i) {
     dataset->feature2subfeature_.push_back(tmp_ptr_feature2subfeature[i]);
   }
-  mem_ptr += sizeof(int) * dataset->num_features_;
+  mem_ptr +=
+      VirtualFileWriter::AlignedSize(sizeof(int) * dataset->num_features_);
   // group_bin_boundaries
   const uint64_t* tmp_ptr_group_bin_boundaries = reinterpret_cast<const uint64_t*>(mem_ptr);
   dataset->group_bin_boundaries_.clear();
@@ -378,7 +386,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   for (int i = 0; i < dataset->num_groups_; ++i) {
     dataset->group_feature_start_.push_back(tmp_ptr_group_feature_start[i]);
   }
-  mem_ptr += sizeof(int) * (dataset->num_groups_);
+  mem_ptr +=
+      VirtualFileWriter::AlignedSize(sizeof(int) * (dataset->num_groups_));
 
   // group_feature_cnt_
   const int* tmp_ptr_group_feature_cnt = reinterpret_cast<const int*>(mem_ptr);
@@ -386,7 +395,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   for (int i = 0; i < dataset->num_groups_; ++i) {
     dataset->group_feature_cnt_.push_back(tmp_ptr_group_feature_cnt[i]);
   }
-  mem_ptr += sizeof(int) * (dataset->num_groups_);
+  mem_ptr +=
+      VirtualFileWriter::AlignedSize(sizeof(int) * (dataset->num_groups_));
 
   if (!config_.max_bin_by_feature.empty()) {
     CHECK_EQ(static_cast<size_t>(dataset->num_total_features_), config_.max_bin_by_feature.size());
@@ -400,7 +410,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       dataset->max_bin_by_feature_.push_back(tmp_ptr_max_bin_by_feature[i]);
     }
   }
-  mem_ptr += sizeof(int32_t) * (dataset->num_total_features_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(int32_t) *
+                                            (dataset->num_total_features_));
   if (ArrayArgs<int32_t>::CheckAll(dataset->max_bin_by_feature_, -1)) {
     dataset->max_bin_by_feature_.clear();
   }
@@ -410,22 +421,24 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   // write feature names
   for (int i = 0; i < dataset->num_total_features_; ++i) {
     int str_len = *(reinterpret_cast<const int*>(mem_ptr));
-    mem_ptr += sizeof(int);
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(int));
     std::stringstream str_buf;
+    auto tmp_arr = reinterpret_cast<const char*>(mem_ptr);
     for (int j = 0; j < str_len; ++j) {
-      char tmp_char = *(reinterpret_cast<const char*>(mem_ptr));
-      mem_ptr += sizeof(char);
+      char tmp_char = tmp_arr[j];
       str_buf << tmp_char;
     }
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(char) * str_len);
     dataset->feature_names_.emplace_back(str_buf.str());
   }
   // get forced_bin_bounds_
   dataset->forced_bin_bounds_ = std::vector<std::vector<double>>(dataset->num_total_features_, std::vector<double>());
   for (int i = 0; i < dataset->num_total_features_; ++i) {
     int num_bounds = *(reinterpret_cast<const int*>(mem_ptr));
-    mem_ptr += sizeof(int);
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(int));
     dataset->forced_bin_bounds_[i] = std::vector<double>();
-    const double* tmp_ptr_forced_bounds = reinterpret_cast<const double*>(mem_ptr);
+    const double* tmp_ptr_forced_bounds =
+        reinterpret_cast<const double*>(mem_ptr);
     for (int j = 0; j < num_bounds; ++j) {
       double bound = tmp_ptr_forced_bounds[j];
       dataset->forced_bin_bounds_[i].push_back(bound);
