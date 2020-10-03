@@ -176,7 +176,7 @@ jobs:
         run: |
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
           sh build-cran-package.sh
-          Rdevel CMD install lightgbm_*.tar.gz
+          Rdevel CMD INSTALL lightgbm_*.tar.gz
       - name: test
         shell: bash
         run: |
