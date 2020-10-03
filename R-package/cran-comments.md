@@ -1,10 +1,65 @@
 # CRAN Submission History
 
-## v3.0.0 - Submission 7 - (September 24, 2020)
+## v3.0.0.2 - Submission 1 - (September 29, 2020)
 
 ### CRAN response
 
+First response was a message talking about failing checks on 3.0.0.
+
+```text
+package lightgbm_3.0.0.2.tar.gz has been auto-processed.
+The auto-check found additional issues for the last version released on CRAN:
+gcc-UBSAN <link>
+valgrind <link>
+CRAN incoming checks do not test for these additional issues and you will need an appropriately instrumented build of R to reproduce these.
+Hence please reply-all and explain: Have these been fixed?
+
+Please correct before 2020-10-05 to safely retain your package on CRAN.
+
+There is still a valgrind error. This did not happen when tested on
+submission, but the tests did run until timeout at 4 hours. When you
+write illegally, corruption is common.
+
+Illegal writes are serious errors.
+```
+
+Then in later responses to email correspondence with CRAN, CRAN expressed frustration with the number of failed submission and banned this package from new submissions for a month.
+
+The content of that frustrated message was regrettable and it does not need to be preserved forever in this file.
+
 ### Maintainer Notes
+
+The 3.0.0.x series is officially not making it to CRAN. We will wait until November, and try again.
+
+Detailed plan about what will be tried before November 2020 to increase the likelihood of success for that package: https://github.com/microsoft/LightGBM/pull/3338#issuecomment-702756840.
+
+## v3.0.0.1 - Submission 1 - (September 24, 2020)
+
+### CRAN response
+
+```text
+Thanks, we see:
+
+Still lots of alignment errors, such as
+
+lightgbm.Rcheck/tests/testthat.Rout:io/dataset_loader.cpp:340:59:
+runtime error: reference binding to misaligned address 0x7f51fefad81e for type 'const value_type', which requires 4 byte alignment
+lightgbm.Rcheck/tests/testthat.Rout:/usr/include/c++/10/bits/stl_vector.h:1198:21:
+runtime error: reference binding to misaligned address 0x7f51fefad81e for type 'const int', which requires 4 byte alignment lightgbm.Rcheck/tests/testthat.Rout:/usr/include/c++/10/bits/vector.tcc:449:28:runtime
+error: reference binding to misaligned address 0x7f51fefad81e for type 'const type', which requires 4 byte alignment
+lightgbm.Rcheck/tests/testthat.Rout:/usr/include/c++/10/bits/move.h:77:36:
+runtime error: reference binding to misaligned address 0x7f51fefad81e for type 'const int', which requires 4 byte alignment
+lightgbm.Rcheck/tests/testthat.Rout:/usr/include/c++/10/bits/alloc_traits.h:512:17:
+runtime error: reference binding to misaligned address 0x7f51fefad81e for type 'const type', which requires 4 byte alignment
+
+Please fix and resubmit.
+```
+
+### Maintainer Notes
+
+Ok, these are the notes from the UBSAN tests. Was able to reproduce them with https://github.com/microsoft/LightGBM/pull/3338#issuecomment-700399862, and they were fixed in https://github.com/microsoft/LightGBM/pull/3415.
+
+Struggling to replicate the valgrind result (running `R CMD check --use-valgrind` returns no issues), so trying submission again. Hoping that the fixes for mis-alignment fix the other errors too.
 
 ## v3.0.0 - Submission 6 - (September 24, 2020)
 
