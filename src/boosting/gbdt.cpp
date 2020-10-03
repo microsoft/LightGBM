@@ -17,6 +17,9 @@
 
 namespace LightGBM {
 
+int LGBM_config_::current_device = lgbm_device_cpu;
+int LGBM_config_::current_learner = use_cpu_learner;
+
 GBDT::GBDT()
     : iter_(0),
       train_data_(nullptr),
@@ -59,6 +62,10 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
+  if (config_->device_type == std::string("cuda")) {
+    LGBM_config_::current_learner = use_cuda_learner;
+  }
+
   // load forced_splits file
   if (!config->forcedsplits_filename.empty()) {
     std::ifstream forced_splits_file(config->forcedsplits_filename.c_str());
@@ -72,6 +79,9 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   num_tree_per_iteration_ = num_class_;
   if (objective_function_ != nullptr) {
     num_tree_per_iteration_ = objective_function_->NumModelPerIteration();
+    if (objective_function_->IsRenewTreeOutput() && !config->monotone_constraints.empty()) {
+      Log::Fatal("Cannot use ``monotone_constraints`` in %s objective, please disable it.", objective_function_->GetName());
+    }
   }
 
   is_constant_hessian_ = GetIsConstHessian(objective_function);
@@ -658,6 +668,9 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   objective_function_ = objective_function;
   if (objective_function_ != nullptr) {
     CHECK_EQ(num_tree_per_iteration_, objective_function_->NumModelPerIteration());
+    if (objective_function_->IsRenewTreeOutput() && !config_->monotone_constraints.empty()) {
+      Log::Fatal("Cannot use ``monotone_constraints`` in %s objective, please disable it.", objective_function_->GetName());
+    }
   }
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
@@ -711,6 +724,9 @@ void GBDT::ResetConfig(const Config* config) {
   if (!config->feature_contri.empty()) {
     CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->feature_contri.size());
   }
+  if (objective_function_ != nullptr && objective_function_->IsRenewTreeOutput() && !config->monotone_constraints.empty()) {
+    Log::Fatal("Cannot use ``monotone_constraints`` in %s objective, please disable it.", objective_function_->GetName());
+  }
   early_stopping_round_ = new_config->early_stopping_round;
   shrinkage_rate_ = new_config->learning_rate;
   if (tree_learner_ != nullptr) {
@@ -719,7 +735,7 @@ void GBDT::ResetConfig(const Config* config) {
   if (train_data_ != nullptr) {
     ResetBaggingConfig(new_config.get(), false);
   }
-  if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedbins_filename) {
+  if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedsplits_filename) {
     // load forced_splits file
     if (!new_config->forcedsplits_filename.empty()) {
       std::ifstream forced_splits_file(

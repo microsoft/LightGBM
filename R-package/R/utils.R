@@ -349,3 +349,62 @@ lgb.check.eval <- function(params, eval) {
 
   return(params)
 }
+
+
+# [description]
+#
+#     Resolve differences between passed-in keyword arguments, parameters,
+#     and parameter aliases. This function exists because some functions in the
+#     package take in parameters through their own keyword arguments other than
+#     the `params` list.
+#
+#     If the same underlying parameter is provided multiple
+#     ways, the first item in this list is used:
+#
+#         1. the main (non-alias) parameter found in `params`
+#         2. the first alias of that parameter found in `params`
+#         3. the keyword argument passed in
+#
+#     For example, "num_iterations" can also be provided to lgb.train()
+#     via keyword "nrounds". lgb.train() will choose one value for this parameter
+#     based on the first match in this list:
+#
+#         1. params[["num_iterations]]
+#         2. the first alias of "num_iterations" found in params
+#         3. the nrounds keyword argument
+#
+#     If multiple aliases are found in `params` for the same parameter, they are
+#     all removed before returning `params`.
+#
+# [return]
+#     params with num_iterations set to the chosen value, and other aliases
+#     of num_iterations removed
+lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_value) {
+
+  aliases <- .PARAMETER_ALIASES()[[main_param_name]]
+  aliases_provided <- names(params)[names(params) %in% aliases]
+  aliases_provided <- aliases_provided[aliases_provided != main_param_name]
+
+  # prefer the main parameter
+  if (!is.null(params[[main_param_name]])) {
+    for (param in aliases_provided) {
+      params[[param]] <- NULL
+    }
+    return(params)
+  }
+
+  # if the main parameter wasn't proovided, prefer the first alias
+  if (length(aliases_provided) > 0L) {
+    first_param <- aliases_provided[1L]
+    params[[main_param_name]] <- params[[first_param]]
+    for (param in aliases_provided) {
+      params[[param]] <- NULL
+    }
+    return(params)
+  }
+
+  # if not provided in params at all, use the alternative value provided
+  # through a keyword argument from lgb.train(), lgb.cv(), etc.
+  params[[main_param_name]] <- alternative_kwarg_value
+  return(params)
+}
