@@ -27,6 +27,8 @@ OBJECTS = \
     boosting/gbdt_model_text.o \
     boosting/gbdt_prediction.o \
     boosting/prediction_early_stop.o \
+    external_libs/fmt/format.o \
+    external_libs/fmt/os.o \
     io/bin.o \
     io/config.o \
     io/config_auto.o \
