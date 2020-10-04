@@ -185,6 +185,11 @@ if ($env:COMPILER -ne "MSVC") {
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
   Check-Output $install_succeeded
+  # some errors are not raised above, but can be found in the logs
+  if (Get-Content "$INSTALL_LOG_FILE_NAME" | Select-String -Pattern "ERROR" -Quiet) {
+      echo "ERRORs have been found installing lightgbm"
+      Check-Output $False
+  }
 }
 
 # Checking that we actually got the expected compiler. The R package has some logic
