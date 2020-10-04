@@ -160,6 +160,10 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
+  # if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -Quiet) {
+  #     echo "ERRORs have been found by R CMD check!"
+  #     Check-Output $False
+  # }
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
       echo "WARNINGS have been found by R CMD check!"
       Check-Output $False
