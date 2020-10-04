@@ -6,7 +6,6 @@
 #               R sources files during installation).
 # [return] A named list, where each key is a parameter relevant to lgb.DataSet and each value is a character
 #          vector of corresponding aliases.
-,,,,
 .DATASET_PARAMETERS <- function() {
     return(list(
         "bin_construct_sample_cnt" = c(
