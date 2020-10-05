@@ -170,7 +170,7 @@ if (!use_precompile) {
   if (use_gpu) {
     cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
   }
-  cmake_args <- c(cmake_args, "-DBUILD_FOR_R=ON")
+  cmake_args <- c(cmake_args, "-D__BUILD_FOR_R=ON")
 
   # Pass in R version, used to help find R executable for linking
   R_version_string <- paste(

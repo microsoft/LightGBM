@@ -1731,9 +1731,9 @@ class Dataset(object):
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
             self.handle,
-            num_feature,
+            ctypes.c_int(num_feature),
             ctypes.byref(tmp_out_len),
-            reserved_string_buffer_size,
+            ctypes.c_size_t(reserved_string_buffer_size),
             ctypes.byref(required_string_buffer_size),
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
@@ -2906,7 +2906,7 @@ class Booster(object):
             new_booster.handle,
             predictor.handle))
         leaf_preds = leaf_preds.reshape(-1)
-        ptr_data, type_ptr_data, _ = c_int_array(leaf_preds)
+        ptr_data, _, _ = c_int_array(leaf_preds)
         _safe_call(_LIB.LGBM_BoosterRefit(
             new_booster.handle,
             ptr_data,
@@ -2976,9 +2976,9 @@ class Booster(object):
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
             self.handle,
-            num_feature,
+            ctypes.c_int(num_feature),
             ctypes.byref(tmp_out_len),
-            reserved_string_buffer_size,
+            ctypes.c_size_t(reserved_string_buffer_size),
             ctypes.byref(required_string_buffer_size),
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
@@ -3111,18 +3111,23 @@ class Booster(object):
             for i in range_(self.__num_inner_eval):
                 ret.append((data_name, self.__name_inner_eval[i],
                             result[i], self.__higher_better_inner_eval[i]))
+        if callable(feval):
+            feval = [feval]
         if feval is not None:
             if data_idx == 0:
                 cur_data = self.train_set
             else:
                 cur_data = self.valid_sets[data_idx - 1]
-            feval_ret = feval(self.__inner_predict(data_idx), cur_data)
-            if isinstance(feval_ret, list):
-                for eval_name, val, is_higher_better in feval_ret:
+            for eval_function in feval:
+                if eval_function is None:
+                    continue
+                feval_ret = eval_function(self.__inner_predict(data_idx), cur_data)
+                if isinstance(feval_ret, list):
+                    for eval_name, val, is_higher_better in feval_ret:
+                        ret.append((data_name, eval_name, val, is_higher_better))
+                else:
+                    eval_name, val, is_higher_better = feval_ret
                     ret.append((data_name, eval_name, val, is_higher_better))
-            else:
-                eval_name, val, is_higher_better = feval_ret
-                ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
     def __inner_predict(self, data_idx):
@@ -3170,9 +3175,9 @@ class Booster(object):
                 ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                     self.handle,
-                    self.__num_inner_eval,
+                    ctypes.c_int(self.__num_inner_eval),
                     ctypes.byref(tmp_out_len),
-                    reserved_string_buffer_size,
+                    ctypes.c_size_t(reserved_string_buffer_size),
                     ctypes.byref(required_string_buffer_size),
                     ptr_string_buffers))
                 if self.__num_inner_eval != tmp_out_len.value:
