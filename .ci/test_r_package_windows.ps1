@@ -153,6 +153,9 @@ if ($env:COMPILER -ne "MSVC") {
   }
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
+  Write-Output "------------------"
+  Write-Output "exit code: $check_succeeded"
+  Write-Output "------------------"
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
