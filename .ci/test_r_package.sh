@@ -29,6 +29,8 @@ fi
 # installing precompiled R for Ubuntu
 # https://cran.r-project.org/bin/linux/ubuntu/#installation
 # adding steps from https://stackoverflow.com/a/56378217/3986677 to get latest version
+#
+# `devscripts` is required for 'checkbashisms' (https://github.com/r-lib/actions/issues/111)
 if [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
@@ -39,6 +41,7 @@ if [[ $OS_NAME == "linux" ]]; then
     sudo apt-get install \
         --no-install-recommends \
         -y --allow-downgrades \
+            devscripts \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-recommended \
@@ -47,13 +50,12 @@ if [[ $OS_NAME == "linux" ]]; then
             qpdf \
             || exit -1
 
-    # https://github.com/r-lib/actions/issues/111
+    
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
                 autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
-                devscripts \
                 || exit -1
     fi
 fi
@@ -61,11 +63,11 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
     if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew install \
-            automake \
-            checkbashisms
+        brew install automake
     fi
-    brew install qpdf
+    brew install \
+        checkbashisms \
+        qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self

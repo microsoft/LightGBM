@@ -88,7 +88,6 @@ lgb.interprete <- function(model,
     )
   }
 
-  # Return interpretation list
   return(tree_interpretation_dt_list)
 
 }
@@ -132,7 +131,6 @@ single.tree.interprete <- function(tree_dt,
   # Perform leaf to root conversion
   leaf_to_root(leaf_dt[["leaf_parent"]], leaf_dt[["leaf_value"]])
 
-  # Return formatted data.table
   data.table::data.table(
     Feature = feature_seq
     , Contribution = diff.default(value_seq)
@@ -233,6 +231,5 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
 
   }
 
-  # Return interpretation tree
   return(tree_interpretation_dt)
 }

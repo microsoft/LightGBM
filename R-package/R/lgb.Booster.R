@@ -180,7 +180,6 @@ Booster <- R6::R6Class(
       private$num_dataset <- private$num_dataset + 1L
       private$is_predicted_cur_iter <- c(private$is_predicted_cur_iter, FALSE)
 
-      # Return self
       return(invisible(self))
 
     },
@@ -200,7 +199,6 @@ Booster <- R6::R6Class(
         , params_str
       )
 
-      # Return self
       return(invisible(self))
 
     },
@@ -304,7 +302,6 @@ Booster <- R6::R6Class(
         private$is_predicted_cur_iter[[i]] <- FALSE
       }
 
-      # Return self
       return(invisible(self))
 
     },
@@ -418,7 +415,6 @@ Booster <- R6::R6Class(
         )
       }
 
-      # Return ret
       return(ret)
 
     },
@@ -441,7 +437,6 @@ Booster <- R6::R6Class(
         , lgb.c_str(filename)
       )
 
-      # Return self
       return(invisible(self))
     },
 
@@ -471,7 +466,6 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      # Return dumped model
       lgb.call.return.str(
         "LGBM_BoosterDumpModel_R"
         , private$handle
@@ -582,7 +576,6 @@ Booster <- R6::R6Class(
         private$is_predicted_cur_iter[[idx]] <- TRUE
       }
 
-      # Return prediction buffer
       return(private$predict_buffer[[data_name]])
     },
 
@@ -614,7 +607,6 @@ Booster <- R6::R6Class(
 
       }
 
-      # Return evaluation names
       return(private$eval_names)
 
     },
@@ -690,7 +682,6 @@ Booster <- R6::R6Class(
         ret <- append(ret, list(res))
       }
 
-      # Return ret
       return(ret)
 
     }
@@ -761,7 +752,6 @@ predict.lgb.Booster <- function(object,
                                 reshape = FALSE,
                                 ...) {
 
-  # Check booster existence
   if (!lgb.is.Booster(object)) {
     stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
   }
@@ -874,12 +864,10 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @export
 lgb.save <- function(booster, filename, num_iteration = NULL) {
 
-  # Check if booster is booster
   if (!lgb.is.Booster(booster)) {
     stop("lgb.save: booster should be an ", sQuote("lgb.Booster"))
   }
 
-  # Check if file name is character
   if (!(is.character(filename) && length(filename) == 1L)) {
     stop("lgb.save: filename should be a string")
   }
@@ -922,7 +910,6 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @export
 lgb.dump <- function(booster, num_iteration = NULL) {
 
-  # Check if booster is booster
   if (!lgb.is.Booster(booster)) {
     stop("lgb.save: booster should be an ", sQuote("lgb.Booster"))
   }
@@ -1014,7 +1001,6 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
     stop("lgb.get.eval.result: wrong eval name")
   }
 
-  # Create result
   result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_KEY()]]
 
   # Check if error is requested

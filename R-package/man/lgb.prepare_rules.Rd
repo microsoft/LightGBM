@@ -7,7 +7,7 @@
 lgb.prepare_rules(...)
 }
 \arguments{
-\item{...}{catch-all too match old calls}
+\item{...}{catch-all to match old calls}
 }
 \description{
 removed functions

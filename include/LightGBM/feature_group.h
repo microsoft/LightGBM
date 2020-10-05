@@ -31,9 +31,9 @@ class FeatureGroup {
   * \param num_data Total number of data
   * \param is_enable_sparse True if enable sparse feature
   */
-  FeatureGroup(int num_feature, bool is_multi_val,
+  FeatureGroup(int num_feature, int8_t is_multi_val,
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-    data_size_t num_data) : num_feature_(num_feature), is_multi_val_(is_multi_val), is_sparse_(false) {
+    data_size_t num_data) : num_feature_(num_feature), is_multi_val_(is_multi_val > 0), is_sparse_(false) {
     CHECK_EQ(static_cast<int>(bin_mappers->size()), num_feature);
     // use bin at zero to store most_freq_bin
     num_total_bin_ = 1;
@@ -95,11 +95,11 @@ class FeatureGroup {
     const char* memory_ptr = reinterpret_cast<const char*>(memory);
     // get is_sparse
     is_multi_val_ = *(reinterpret_cast<const bool*>(memory_ptr));
-    memory_ptr += sizeof(is_multi_val_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(is_multi_val_));
     is_sparse_ = *(reinterpret_cast<const bool*>(memory_ptr));
-    memory_ptr += sizeof(is_sparse_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(is_sparse_));
     num_feature_ = *(reinterpret_cast<const int*>(memory_ptr));
-    memory_ptr += sizeof(num_feature_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(num_feature_));
     // get bin mapper
     bin_mappers_.clear();
     bin_offsets_.clear();
@@ -247,6 +247,17 @@ class FeatureGroup {
     return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
   }
 
+  inline size_t FeatureGroupSizesInByte() {
+    return bin_data_->SizesInByte();
+  }
+
+  inline void* FeatureGroupData() {
+    if (is_multi_val_) {
+      return nullptr;
+    }
+    return bin_data_->get_data();
+  }
+
   inline data_size_t Split(int sub_feature, const uint32_t* threshold,
                            int num_threshold, bool default_left,
                            const data_size_t* data_indices, data_size_t cnt,
@@ -309,9 +320,9 @@ class FeatureGroup {
    * \param file File want to write
    */
   void SaveBinaryToFile(const VirtualFileWriter* writer) const {
-    writer->Write(&is_multi_val_, sizeof(is_multi_val_));
-    writer->Write(&is_sparse_, sizeof(is_sparse_));
-    writer->Write(&num_feature_, sizeof(num_feature_));
+    writer->AlignedWrite(&is_multi_val_, sizeof(is_multi_val_));
+    writer->AlignedWrite(&is_sparse_, sizeof(is_sparse_));
+    writer->AlignedWrite(&num_feature_, sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_[i]->SaveBinaryToFile(writer);
     }
@@ -328,8 +339,9 @@ class FeatureGroup {
    * \brief Get sizes in byte of this object
    */
   size_t SizesInByte() const {
-    size_t ret =
-        sizeof(is_multi_val_) + sizeof(is_sparse_) + sizeof(num_feature_);
+    size_t ret = VirtualFileWriter::AlignedSize(sizeof(is_multi_val_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(is_sparse_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
       ret += bin_mappers_[i]->SizesInByte();
     }
