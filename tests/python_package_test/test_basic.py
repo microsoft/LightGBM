@@ -212,13 +212,17 @@ class TestBasic(unittest.TestCase):
 
             # test that method works for different data types
             d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
+            res_feature_names = [name for name in names]
+            idx = 1
             for idx, x_2 in enumerate(xxs, 2):
                 original_type = type(d1.get_data())
                 d2 = lgb.Dataset(x_2, feature_name=names, free_raw_data=False).construct()
                 d1.add_features_from(d2)
                 self.assertIsInstance(d1.get_data(), original_type)
                 self.assertTupleEqual(d1.get_data().shape, (n_row, n_col * idx))
-                # TODO: add wrapper for LGBM_DatasetGetFeatureNames and test duplicated names
+                res_feature_names += ['D{}_{}'.format(idx, name) for name in names]
+                idx += 1
+                self.assertListEqual(d1.feature_name, res_feature_names)
 
     def test_cegb_affects_behavior(self):
         X = np.random.random((100, 5))

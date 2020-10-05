@@ -1969,6 +1969,7 @@ class Dataset(object):
             err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
                         if was_none else "Freeing raw data")
             warnings.warn(err_msg)
+        self.feature_name = self.get_feature_name()
         return self
 
     def _dump_text(self, filename):
