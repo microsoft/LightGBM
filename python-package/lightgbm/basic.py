@@ -1970,6 +1970,10 @@ class Dataset(object):
                         if was_none else "Freeing raw data")
             warnings.warn(err_msg)
         self.feature_name = self.get_feature_name()
+        warnings.warn("Reseting categorical features.\n"
+                      "You can set new categorical features via ``set_categorical_feature`` method")
+        self.categorical_feature = "auto"
+        self.pandas_categorical = None
         return self
 
     def _dump_text(self, filename):
