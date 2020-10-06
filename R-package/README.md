@@ -429,10 +429,6 @@ RDvalgrind \
 | cat
 ```
 
-#### rchk
-
-[`rchk`](https://github.com/kalibera/rchk) is a static analyzer for C/C++ code used in R packages. It can catch issues like failing to `PROTECT` / `UNPROTECT` calls correctly, which can result in a failure to protect memory from R's garbage collector.
-
 External (Unofficial) Repositories
 ----------------------------------
 
