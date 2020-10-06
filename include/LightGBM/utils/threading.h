@@ -25,6 +25,7 @@ class Threading {
     BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
                        block_size);
   }
+
   template <typename INDEX_T>
   static inline void BlockInfo(int num_threads, INDEX_T cnt,
                                INDEX_T min_cnt_per_block, int* out_nblock,
@@ -38,6 +39,7 @@ class Threading {
       *block_size = cnt;
     }
   }
+
   template <typename INDEX_T>
   static inline void BlockInfoForceSize(int num_threads, INDEX_T cnt,
                                         INDEX_T min_cnt_per_block,
@@ -53,6 +55,14 @@ class Threading {
     } else {
       *block_size = cnt;
     }
+  }
+
+  template <typename INDEX_T>
+  static inline void BlockInfoForceSize(INDEX_T cnt, INDEX_T min_cnt_per_block,
+                                        int* out_nblock, INDEX_T* block_size) {
+    int num_threads = OMP_NUM_THREADS();
+    BlockInfoForceSize<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
+                                block_size);
   }
 
   template <typename INDEX_T>
@@ -72,6 +82,37 @@ class Threading {
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    return n_block;
+  }
+
+  template <typename INDEX_T, typename VAL1_T, typename VAL2_T>
+  static inline int SumReduction(
+      INDEX_T start, INDEX_T end, INDEX_T min_block_size,
+      const std::function<void(int, INDEX_T, INDEX_T, VAL1_T* res1,
+                               VAL2_T* res2)>& inner_fun,
+      VAL1_T* res1, VAL2_T* res2) {
+    int n_block = 1;
+    INDEX_T num_inner = end - start;
+    BlockInfoForceSize<INDEX_T>(end - start, min_block_size, &n_block,
+                                &num_inner);
+    std::vector<VAL1_T> val_1s(n_block, static_cast<VAL1_T>(0));
+    std::vector<VAL2_T> val_2s(n_block, static_cast<VAL2_T>(0));
+    OMP_INIT_EX();
+#pragma omp parallel for schedule(static, 1)
+    for (int i = 0; i < n_block; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      INDEX_T inner_start = start + num_inner * i;
+      INDEX_T inner_end = std::min(end, inner_start + num_inner);
+      inner_fun(i, inner_start, inner_end, &val_1s[i], &val_2s[i]);
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+    *res1 = 0;
+    *res2 = 0;
+    for (int i = 0; i < n_block; ++i) {
+      *res1 += val_1s[i];
+      *res2 += val_2s[i];
+    }
     return n_block;
   }
 };

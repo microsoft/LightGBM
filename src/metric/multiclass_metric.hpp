@@ -336,7 +336,7 @@ class AucMuMetric : public Metric {
       }
     }
     ans = (2.0 * ans / num_class_) / (num_class_ - 1);
-    return std::vector<double>(1.0, ans);
+    return std::vector<double>(1, ans);
   }
 
  private:
