@@ -28,5 +28,6 @@ jobs:
         shell: bash
         run: |
           cd R-package/tests
-          Rscriptdevel testthat.R 2>&1 | tee ubsan-tests.log | cat
+          Rscriptdevel testthat.R 2>&1 > ubsan-tests.log
+          cat ubsan-tests.log
           exit $(cat ubsan-tests.log | grep "runtime error" | wc -l)
