@@ -3,7 +3,7 @@
  * Licensed under the BSD 3-Clause License.
  * See https://github.com/giampaolo/psutil/blob/master/LICENSE
  */
-#ifdef ON_SOLARIS
+#if defined(sun) || defined(__sun)
 
 #include <string.h>
 #include <stdlib.h>
@@ -126,4 +126,4 @@ error:
 }
 
 #endif
-// ON_SOLARIS
+// defined(sun) || defined(__sun)
