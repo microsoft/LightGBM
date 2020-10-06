@@ -1,0 +1,32 @@
+name: R package (ASAN/UBSAN)
+
+on:
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  test:
+    name: Debian Linux, R-devel, GCC ASAN/UBSAN
+    if: github.event.comment.body == '/gha run r-sanitizers-check' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    container:
+      image: rhub/rocker-gcc-san
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: install
+        shell: bash
+        run: |
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
+          sh build-cran-package.sh
+          Rdevel CMD INSTALL lightgbm_*.tar.gz
+      - name: test
+        shell: bash
+        run: |
+          cd R-package/tests
+          Rscriptdevel testthat.R 2>&1 | tee ubsan-tests.log | cat
+          exit $(cat ubsan-tests.log | grep "runtime error" | wc -l)
