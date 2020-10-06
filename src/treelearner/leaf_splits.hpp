@@ -6,6 +6,7 @@
 #define LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 
 #include <LightGBM/meta.h>
+#include <LightGBM/utils/threading.h>
 
 #include <limits>
 #include <vector>
@@ -67,15 +68,16 @@ class LeafSplits {
     num_data_in_leaf_ = num_data_;
     leaf_index_ = 0;
     data_indices_ = nullptr;
-    double tmp_sum_gradients = 0.0f;
-    double tmp_sum_hessians = 0.0f;
-#pragma omp parallel for schedule(static) reduction(+:tmp_sum_gradients, tmp_sum_hessians)
-    for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
-      tmp_sum_gradients += gradients[i];
-      tmp_sum_hessians += hessians[i];
-    }
-    sum_gradients_ = tmp_sum_gradients;
-    sum_hessians_ = tmp_sum_hessians;
+    Threading::SumReduction<data_size_t, double, double>(
+        0, num_data_in_leaf_, 2048,
+        [=](int, data_size_t start, data_size_t end, double* s1, double* s2) {
+          *s1 = *s2 = 0;
+          for (data_size_t i = start; i < end; ++i) {
+            *s1 += gradients[i];
+            *s2 += hessians[i];
+          }
+        },
+        &sum_gradients_, &sum_hessians_);
   }
 
   /*!
@@ -88,16 +90,17 @@ class LeafSplits {
   void Init(int leaf, const DataPartition* data_partition, const score_t* gradients, const score_t* hessians) {
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
-    double tmp_sum_gradients = 0.0f;
-    double tmp_sum_hessians = 0.0f;
-#pragma omp parallel for schedule(static) reduction(+:tmp_sum_gradients, tmp_sum_hessians)
-    for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
-      data_size_t idx = data_indices_[i];
-      tmp_sum_gradients += gradients[idx];
-      tmp_sum_hessians += hessians[idx];
-    }
-    sum_gradients_ = tmp_sum_gradients;
-    sum_hessians_ = tmp_sum_hessians;
+    Threading::SumReduction<data_size_t, double, double>(
+        0, num_data_in_leaf_, 2048,
+        [=](int, data_size_t start, data_size_t end, double* s1, double* s2) {
+          *s1 = *s2 = 0;
+          for (data_size_t i = start; i < end; ++i) {
+            data_size_t idx = data_indices_[i];
+            *s1 += gradients[idx];
+            *s2 += hessians[idx];
+          }
+        },
+        &sum_gradients_, &sum_hessians_);
   }
 
 
