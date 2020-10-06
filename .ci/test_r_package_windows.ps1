@@ -25,6 +25,7 @@ function Run-R-Code-Redirect-Stderr {
   )
   $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode; sink()"
   Rscript --vanilla -e $decorated_code
+  return $?
 }
 
 # Get details needed for installing R components
