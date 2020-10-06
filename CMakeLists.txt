@@ -451,10 +451,6 @@ if(__BUILD_FOR_R)
 endif(__BUILD_FOR_R)
 
 # fmtlib/fmt
-#if (NOT BUILD_STATIC_LIB)
-#  OPTION(BUILD_SHARED_LIBS "Build shared libs" ON)  # fmt reads this flag.
-#endif(NOT BUILD_STATIC_LIB)
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -funroll-loops")
 add_subdirectory(external_libs/fmt)
 set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 TARGET_LINK_LIBRARIES(lightgbm fmt)
