@@ -25,7 +25,6 @@ function Run-R-Code-Redirect-Stderr {
   )
   $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode; sink()"
   Rscript --vanilla -e $decorated_code
-  Exit $?
 }
 
 # Get details needed for installing R components
@@ -154,9 +153,6 @@ if ($env:COMPILER -ne "MSVC") {
   }
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
-  Write-Output "------------------"
-  Write-Output "exit code: $check_succeeded"
-  Write-Output "------------------"
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
@@ -164,10 +160,10 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
-  # if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
-  #     echo "ERRORs have been found by R CMD check!"
-  #     Check-Output $False
-  # }
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
+      echo "ERRORs have been found by R CMD check!"
+      Check-Output $False
+  }
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
       echo "WARNINGS have been found by R CMD check!"
       Check-Output $False
