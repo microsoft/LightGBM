@@ -163,11 +163,11 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
-  # if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -Quiet) {
+  # if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
   #     echo "ERRORs have been found by R CMD check!"
   #     Check-Output $False
   # }
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
       echo "WARNINGS have been found by R CMD check!"
       Check-Output $False
   }
@@ -189,7 +189,7 @@ if ($env:COMPILER -ne "MSVC") {
   Write-Output "----- end of build and install logs -----"
   Check-Output $install_succeeded
   # some errors are not raised above, but can be found in the logs
-  if (Get-Content "$INSTALL_LOG_FILE_NAME" | Select-String -Pattern "ERROR" -Quiet) {
+  if (Get-Content "$INSTALL_LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
       echo "ERRORs have been found installing lightgbm"
       Check-Output $False
   }
