@@ -150,6 +150,7 @@ Cross validation logic used by LightGBM
 
 \examples{
 \donttest{
+stop("I am an error")
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
