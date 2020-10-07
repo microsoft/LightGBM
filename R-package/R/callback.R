@@ -174,7 +174,6 @@ cb.print.evaluation <- function(period = 1L) {
         # Check if message is existing
         if (nchar(msg) > 0L) {
           print(merge.eval.string(env = env))
-          cat(merge.eval.string(env = env), "\n")
         }
 
       }
