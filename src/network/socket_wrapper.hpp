@@ -36,7 +36,7 @@
 #include <unistd.h>
 
 // ifaddrs.h is not available on Solaris 10
-#if defined(sun) || defined(__sun)
+#if (defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))
   #include "ifaddrs_patch.h"
 #else
   #include <ifaddrs.h>
