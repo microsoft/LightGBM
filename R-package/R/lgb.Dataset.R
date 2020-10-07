@@ -870,7 +870,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #' print(dtrain, verbose = TRUE)
 #' }
 #' @rdname dimnames.lgb.Dataset
-#' @return A list with the dimensioon names of the dataset
+#' @return A list with the dimension names of the dataset
 #' @export
 dimnames.lgb.Dataset <- function(x) {
 
@@ -885,7 +885,7 @@ dimnames.lgb.Dataset <- function(x) {
 }
 
 #' @rdname dimnames.lgb.Dataset
-#' @return A list with the dimensioon names of the dataset
+#' @return A list with the dimension names of the dataset
 #' @export
 `dimnames<-.lgb.Dataset` <- function(x, value) {
 

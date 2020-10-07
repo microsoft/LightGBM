@@ -340,7 +340,7 @@ mv \
 
 ### Testing the CRAN Package
 
-`{lightgbm}` is tested automatically on every commit, across many combinations of operating system, R version, and compiler. This section describes how to test the package loccally while you are developing.
+`{lightgbm}` is tested automatically on every commit, across many combinations of operating system, R version, and compiler. This section describes how to test the package locally while you are developing.
 
 #### Windows, Mac, and Linux
 
@@ -361,7 +361,7 @@ sh build-cran-package.sh
 package_tarball <- paste0("lightgbm_", readLines("VERSION.txt")[1], ".tar.gz")
 rhub::check(
     path = package_tarball
-    , email = "jaylamb20@gmail.com"
+    , email = "your_email_here"
     , check_args = "--as-cran"
     , platform = c(
         "solaris-x86-patched"
@@ -386,18 +386,18 @@ docker run \
     /bin/bash
 
 cd /opt/LightGBM
-Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.rstudio.com')"
+Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
 
 sh build-cran-package.sh
 
 Rdevel CMD install lightgbm_*.tar.gz
 cd R-package/tests
-Rscriptdevel ttestthat.R
+Rscriptdevel testthat.R
 ```
 
 #### Valgrind
 
-All packages uplooaded to CRAN must be built and tested without raising any issues from `valgrind`. `valgrind` is a profiler that can catch serious issues like memory leaks and illegal writes. For more information, see [this blog post](https://reside-ic.github.io/blog/debugging-and-fixing-crans-additional-checks-errors/).
+All packages uploaded to CRAN must be built and tested without raising any issues from `valgrind`. `valgrind` is a profiler that can catch serious issues like memory leaks and illegal writes. For more information, see [this blog post](https://reside-ic.github.io/blog/debugging-and-fixing-crans-additional-checks-errors/).
 
 You can replicate these checks locally using Docker. Note that instrumented versions of R built to use `valgrind` run much slower, and these tests may take as long as 20 minutes to run.
 
@@ -408,7 +408,7 @@ docker run \
         wch1/r-debug
 
 cd /opt/LightGBM
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.rstudio.com')"
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
 
 sh build-cran-package.sh
 

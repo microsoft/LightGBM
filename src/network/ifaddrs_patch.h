@@ -1,16 +1,16 @@
 /*!
-* Copyright (c) 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola.
+ * Copyright (c) 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola.
  * Licensed under the BSD 3-Clause License.
  * See https://github.com/giampaolo/psutil/blob/master/LICENSE
  */
 
 /*
-- https://lists.samba.org/archive/samba-technical/2009-February/063079.html
-- https://github.com/giampaolo/psutil/blob/master/psutil/arch/solaris/v10/ifaddrs.h
-*/
+ * - https://lists.samba.org/archive/samba-technical/2009-February/063079.html
+ * - https://github.com/giampaolo/psutil/blob/master/psutil/arch/solaris/v10/ifaddrs.h
+ */
 
-#ifndef __IFADDRS_H__
-#define __IFADDRS_H__
+#ifndef LIGHTGBM_NETWORK_IFADDRS_PATCH_H_
+#define LIGHTGBM_NETWORK_IFADDRS_PATCH_H_
 
 #include <sys/socket.h>
 #include <net/if.h>
@@ -31,4 +31,4 @@ struct ifaddrs {
 extern int getifaddrs(struct ifaddrs **);
 extern void freeifaddrs(struct ifaddrs *);
 
-#endif
+#endif  // LIGHTGBM_NETWORK_IFADDRS_PATCH_H_
