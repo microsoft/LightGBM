@@ -159,6 +159,28 @@ jobs:
           $env:TASK = "${{ matrix.task }}"
           conda init powershell
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
+  test-r-valgrind:
+    name: r-package (ubuntu-latest, R-devel, valgrind)
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    container:
+      image: wch1/r-debug
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: install
+        shell: bash
+        run: |
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
+          sh build-cran-package.sh
+          RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz
+      - name: test
+        shell: bash
+        run: |
+          ./.ci/test_r_package_valgrind.sh
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest
