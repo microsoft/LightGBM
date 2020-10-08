@@ -174,7 +174,7 @@ jobs:
       - name: install
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
+          RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
           sh build-cran-package.sh
           RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz
       - name: test
