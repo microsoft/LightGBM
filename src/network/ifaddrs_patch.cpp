@@ -126,4 +126,3 @@ error:
 }
 
 #endif  // (defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))
-
