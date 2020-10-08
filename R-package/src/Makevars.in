@@ -40,6 +40,7 @@ OBJECTS = \
     metric/dcg_calculator.o \
     metric/metric.o \
     objective/objective_function.o \
+    network/ifaddrs_patch.o \
     network/linker_topo.o \
     network/linkers_mpi.o \
     network/linkers_socket.o \
