@@ -370,6 +370,97 @@ mv \
     lightgbm-${LGB_VERSION}-r40-windows.zip
 ```
 
+### Testing the CRAN Package
+
+`{lightgbm}` is tested automatically on every commit, across many combinations of operating system, R version, and compiler. This section describes how to test the package locally while you are developing.
+
+#### Windows, Mac, and Linux
+
+```shell
+sh build-cran-package.sh
+R CMD check --as-cran lightgbm_*.tar.gz
+```
+
+#### Solaris
+
+All packages uploaded to CRAN must pass `R CMD check` on Solaris 10. To test LightGBM on this operating system, you can use the free service [R Hub](https://builder.r-hub.io/), a free service generously provided by the R Consortium.
+
+```shell
+sh build-cran-package.sh
+```
+
+```r
+package_tarball <- paste0("lightgbm_", readLines("VERSION.txt")[1], ".tar.gz")
+rhub::check(
+    path = package_tarball
+    , email = "your_email_here"
+    , check_args = "--as-cran"
+    , platform = c(
+        "solaris-x86-patched"
+        , "solaris-x86-patched-ods"
+    )
+    , env_vars = c(
+        "R_COMPILE_AND_INSTALL_PACKAGES" = "always"
+    )
+)
+```
+
+#### UBSAN
+
+All packages uploaded to CRAN must pass a build using `gcc` instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN). For more background, see [this blog post](http://dirk.eddelbuettel.com/code/sanitizers.html).
+
+You can replicate these checks locally using Docker.
+
+```shell
+docker run \
+    -v $(pwd):/opt/LightGBM \
+    -it rhub/rocker-gcc-san \
+    /bin/bash
+
+cd /opt/LightGBM
+Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+
+sh build-cran-package.sh
+
+Rdevel CMD install lightgbm_*.tar.gz
+cd R-package/tests
+Rscriptdevel testthat.R
+```
+
+#### Valgrind
+
+All packages uploaded to CRAN must be built and tested without raising any issues from `valgrind`. `valgrind` is a profiler that can catch serious issues like memory leaks and illegal writes. For more information, see [this blog post](https://reside-ic.github.io/blog/debugging-and-fixing-crans-additional-checks-errors/).
+
+You can replicate these checks locally using Docker. Note that instrumented versions of R built to use `valgrind` run much slower, and these tests may take as long as 20 minutes to run.
+
+```shell
+docker run \
+    -v $(pwd):/opt/LightGBM \
+    -it \
+        wch1/r-debug
+
+cd /opt/LightGBM
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+
+sh build-cran-package.sh
+
+RDvalgrind CMD INSTALL \
+    --preclean \
+    --install-tests \
+        lightgbm_*.tar.gz
+
+cd R-package/tests
+
+RDvalgrind \
+    --no-readline \
+    --vanilla \
+    -d valgrind \
+        -f testthat.R \
+2>&1 \
+| tee out.log \
+| cat
+```
+
 External (Unofficial) Repositories
 ----------------------------------
 

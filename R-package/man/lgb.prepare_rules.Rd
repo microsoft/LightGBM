@@ -9,6 +9,9 @@ lgb.prepare_rules(...)
 \arguments{
 \item{...}{catch-all to match old calls}
 }
+\value{
+Nothing. This function always raises an exception
+}
 \description{
 removed functions
 }

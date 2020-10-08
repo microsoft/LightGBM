@@ -12,13 +12,13 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 \item{refhook}{a hook function for handling reference objects.}
 }
 \value{
-\code{lgb.Booster}.
+\code{lgb.Booster}
 }
 \description{
 Attempts to load a model stored in a \code{.rds} file, using \code{\link[base]{readRDS}}
 }
 \examples{
-\dontrun{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
