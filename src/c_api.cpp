@@ -18,7 +18,6 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
 
-#include <limits.h>
 #include <string>
 #include <cstdio>
 #include <functional>
@@ -114,8 +113,6 @@ class Booster {
 
   Booster(const Dataset* train_data,
           const char* parameters) {
-    int i = INT_MIN;
-    int j = -i;
     auto param = Config::Str2Map(parameters);
     config_.Set(param);
     if (config_.num_threads > 0) {
