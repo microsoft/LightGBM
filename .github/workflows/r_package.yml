@@ -171,13 +171,13 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
-      - name: install
+      - name: Install packages
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org')"
           sh build-cran-package.sh
-          Rdevel CMD INSTALL lightgbm_*.tar.gz
-      - name: test
+          Rdevel CMD INSTALL lightgbm_*.tar.gz || exit -1
+      - name: Run tests with sanitizers
         shell: bash
         run: |
           cd R-package/tests
