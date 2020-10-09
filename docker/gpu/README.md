@@ -6,7 +6,7 @@
 
 # Small Dockerfile for LightGBM GPU CLI-only Version
 
-`dockerfile-cli-only.gpu` - A multi-stage build based on the `nvidia/opencl:devel-ubuntu18.04` (build) and `nvidia/opencl:runtime` (production) images. LightGBM (CLI-only) can be utilized in GPU and CPU modes. The resulting image size is around 100 MB.
+`dockerfile-cli-only.gpu` - A multi-stage build based on the `nvidia/opencl:devel` (build) and `nvidia/opencl:runtime` (production) images. LightGBM (CLI-only) can be utilized in GPU and CPU modes. The resulting image size is around 100 MB.
 
 ---
 
