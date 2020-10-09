@@ -165,7 +165,9 @@ class LambdarankNDCG : public RankingObjective {
     double sum_lambdas = 0.0;
     // start accmulate lambdas by pairs that contain at least one document above truncation level
     for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
+      if (score[sorted_idx[i]] == kMinScore) { continue; }
       for (data_size_t j = i + 1; j < cnt; ++j) {
+        if (score[sorted_idx[j]] == kMinScore) { continue; }
         // skip pairs with the same labels
         if (label[sorted_idx[i]] == label[sorted_idx[j]]) { continue; }
         
@@ -183,8 +185,6 @@ class LambdarankNDCG : public RankingObjective {
         const double low_label_gain = label_gain_[low_label];
         const double low_discount = DCGCalculator::GetDiscount(low_rank);
 
-        if (high_score == kMinScore || low_score == kMinScore) { continue; }
-  
         const double delta_score = high_score - low_score;
 
         // get dcg gap
