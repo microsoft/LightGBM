@@ -40,6 +40,7 @@ if __name__ == "__main__":
         status = get_status(get_runs())
         if status != 'rerun':
             break
+        print("Waiting workflow status to be reported...")
         sleep(60)
     if status == 'fail':
         exit(1)
