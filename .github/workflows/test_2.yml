@@ -1,0 +1,36 @@
+name: Test 2
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  test:
+    name: Test 2
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Setup and run tests on Linux and macOS
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          sleep 20
+          exit 0
+  all-successful:
+    # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+    - name: Note that all tests succeeded
+      run: echo "🎉"
