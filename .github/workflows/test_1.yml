@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    name: CUDA
+    name: Test 1
     runs-on: ubuntu-latest
     if: github.event.comment.body == '/gha run' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
     timeout-minutes: 60
@@ -21,4 +21,4 @@ jobs:
       - name: Test
         run: |
             sleep 2m
-            exit 0
+            exit -1
