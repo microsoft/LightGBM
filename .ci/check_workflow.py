@@ -14,7 +14,7 @@ def get_runs():
                    if i['event'] == 'pull_request_review_comment' and
                    (i.get('pull_requests') and
                     i['pull_requests'][0]['number'] == int(environ.get("GITHUB_REF").split('/')[-2]) or
-                    i['head_branch'] == (environ.get("GITHUB_HEAD_REF").split('/')[-1])]
+                    i['head_branch'] == environ.get("GITHUB_HEAD_REF").split('/')[-1])]
     return sorted(pr_runs, key=lambda i: i['run_number'], reverse=True)
 
 
