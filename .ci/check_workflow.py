@@ -9,9 +9,9 @@ def get_runs():
     with request.urlopen("https://api.github.com/repos/microsoft/LightGBM/actions/workflows/test_1.yml/runs") as url:
         data = json.loads(url.read().decode())
     pr_runs = []
-    if environ.get("GITHUB_EVENT_NAME", "").lower() == "pull_request":
+    if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
         pr_runs = [i for i in data['workflow_runs']
-                   if i['event'].lower() == 'pull_request_review_comment' and
+                   if i['event'] == 'pull_request_review_comment' and
                    i.get('pull_requests') and
                    i['pull_requests'][0]['number'] == int(environ.get("GITHUB_REF").split('/')[-2])]
     return sorted(pr_runs, key=lambda i: i['run_number'], reverse=True)
