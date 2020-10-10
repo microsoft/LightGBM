@@ -12,8 +12,9 @@ def get_runs():
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
         pr_runs = [i for i in data['workflow_runs']
                    if i['event'] == 'pull_request_review_comment' and
-                   i.get('pull_requests') and
-                   i['pull_requests'][0]['number'] == int(environ.get("GITHUB_REF").split('/')[-2])]
+                   (i.get('pull_requests') and
+                    i['pull_requests'][0]['number'] == int(environ.get("GITHUB_REF").split('/')[-2]) or
+                    i['head_branch'] == (environ.get("GITHUB_HEAD_REF").split('/')[-1])]
     return sorted(pr_runs, key=lambda i: i['run_number'], reverse=True)
 
 
