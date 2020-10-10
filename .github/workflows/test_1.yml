@@ -21,4 +21,4 @@ jobs:
       - name: Test
         run: |
             sleep 2m
-            exit -1
+            exit 0
