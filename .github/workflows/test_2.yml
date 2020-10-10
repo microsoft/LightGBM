@@ -39,10 +39,13 @@ jobs:
           from os import environ
           from sys import exit
           from time import sleep
-          from urllib import request
+          try:
+              from urllib.request import urlopen
+          except ImportError:
+              from urllib2 import urlopen
 
           def get_runs():
-              with request.urlopen("https://api.github.com/repos/microsoft/LightGBM/actions/workflows/test_1.yml/runs") as url:
+              with urlopen("https://api.github.com/repos/microsoft/LightGBM/actions/workflows/test_1.yml/runs") as url:
                   data = json.loads(url.read().decode())
               pr_runs = []
               if environ.get("GITHUB_EVENT_NAME", "").lower() == "pull_request":
