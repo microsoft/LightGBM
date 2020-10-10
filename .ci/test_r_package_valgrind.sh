@@ -7,7 +7,9 @@ RDvalgrind \
   --vanilla \
   -d valgrind \
   -f testthat.R \
-  2>&1 > out.log
+  &> out.log || exit -1
+
+cat out.log
 
 cat out.log | grep -E "^\=" > valgrind-logs.log
 
