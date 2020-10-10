@@ -20,5 +20,5 @@ jobs:
           submodules: true
       - name: Test
         run: |
-            sleep 2m
+            sleep 3m
             exit 0
