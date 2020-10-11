@@ -47,7 +47,7 @@
 #' }
 #' @export
 lgb.train <- function(params = list(),
-                      data,
+                      data = data,
                       nrounds = 10L,
                       valids = list(),
                       obj = NULL,
@@ -82,10 +82,10 @@ lgb.train <- function(params = list(),
 
   # Setup temporary variables
   additional_params <- list(...)
-  params <- append(params, additional_params)
+  params <- append(params = params, additional_params = additional_params)
   params$verbose <- verbose
-  params <- lgb.check.obj(params, obj)
-  params <- lgb.check.eval(params, eval)
+  params <- lgb.check.obj(params = params, obj = obj)
+  params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
 
@@ -238,7 +238,7 @@ lgb.train <- function(params = list(),
   # If user supplied early_stopping_rounds, add the early stopping callback
   if (using_early_stopping) {
     callbacks <- add.cb(
-      callbacks
+      callbacks = callbacks
       , cb.early.stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
