@@ -52,7 +52,7 @@ CVBooster <- R6::R6Class(
 #' @return a trained model \code{lgb.CVBooster}.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -466,7 +466,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 
     # When doing group, stratified is not possible (only random selection)
     if (nfold > length(group)) {
-      stop("\n\tYou requested too many folds for the number of available groups.\n")
+      stop("\nYou requested too many folds for the number of available groups.\n")
     }
 
     # Degroup the groups

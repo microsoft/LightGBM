@@ -29,7 +29,7 @@ For regression, binary classification and lambdarank model, a \code{list} of \co
 Computes feature contribution components of rawscore prediction.
 }
 \examples{
-\dontrun{
+\donttest{
 Logit <- function(x) log(x / (1.0 - x))
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
