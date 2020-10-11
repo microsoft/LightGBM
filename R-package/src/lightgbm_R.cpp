@@ -673,7 +673,6 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   inner_char_buf.clear();
-  inner_char_buf.shrink_to_fit();
   R_API_END();
 }
 
