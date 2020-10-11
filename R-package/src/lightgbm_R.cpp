@@ -506,7 +506,8 @@ LGBM_SE LGBM_BoosterGetNumPredict_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t len;
   CHECK_CALL(LGBM_BoosterGetNumPredict(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
-  R_INT64_PTR(out)[0] = len;
+  // R_INT64_PTR(out)[0] = len;
+  R_INT_PTR(out)[0] = static_cast<int>(len);
   R_API_END();
 }
 
@@ -671,6 +672,8 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
+  inner_char_buf.clear();
+  inner_char_buf.shrink_to_fit();
   R_API_END();
 }
 
