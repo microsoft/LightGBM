@@ -5,7 +5,7 @@ cd R-package/tests
 RDvalgrind \
   --no-readline \
   --vanilla \
-  -d valgrind \
+  -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes" \
   -f testthat.R \
   &> out.log || exit -1
 
