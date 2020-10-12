@@ -92,8 +92,7 @@ OPENMP_CXXFLAGS=""
 
 if test `uname -s` = "Linux"
 then
-    #OPENMP_CXXFLAGS="\$(SHLIB_OPENMP_CXXFLAGS)"
-    OPENMP_CXXFLAGS=""
+    OPENMP_CXXFLAGS="\$(SHLIB_OPENMP_CXXFLAGS)"
 fi
 
 if test `uname -s` = "Darwin"
