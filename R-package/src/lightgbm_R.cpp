@@ -37,6 +37,7 @@
 
 using LightGBM::Common::Join;
 using LightGBM::Common::Split;
+using LightGBM::Common::VectorFree;
 using LightGBM::Log;
 
 LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
