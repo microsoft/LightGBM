@@ -215,6 +215,7 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
       vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
+    VectorFree(&vec);
   } else if (!strcmp("init_score", name)) {
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, R_REAL_PTR(field_data), len, C_API_DTYPE_FLOAT64));
   } else {

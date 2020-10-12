@@ -363,7 +363,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
 
   for (int i = 0; i < num_used_model - start_model; ++i) {
     ss << tree_strs[i];
-    tree_strs[i].clear();
+    tree_strs[i] = "";
   }
   Common::VectorFree(&tree_strs);
   ss << "end of trees" << "\n";
@@ -388,6 +388,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   for (size_t i = 0; i < pairs.size(); ++i) {
     ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << '\n';
   }
+  Common::VectorFree(&pairs);
   if (config_ != nullptr) {
     ss << "\nparameters:" << '\n';
     ss << config_->ToString() << "\n";
