@@ -115,6 +115,7 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
   str_buf << "}" << '\n';
 
   str_buf << "}" << '\n';
+
   return str_buf.str();
 }
 
