@@ -239,8 +239,7 @@ lgb.train <- function(params = list(),
   if (using_early_stopping) {
     callbacks <- add.cb(
       cb_list = callbacks
-      , cb = cb
-      , cb.early.stop(
+      , cb = cb.early.stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
         , verbose = verbose
