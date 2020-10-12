@@ -24,16 +24,15 @@
 #define R_API_BEGIN() \
   try {
 #define R_API_END() } \
-  catch(std::exception& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.what()); UNPROTECT(1); return call_state;} \
-  catch(std::string& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.c_str()); UNPROTECT(1); return call_state; } \
-  catch(...) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError("unknown exception"); UNPROTECT(1); return call_state;} \
+  catch(std::exception& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.what()); return call_state;} \
+  catch(std::string& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.c_str()); return call_state;} \
+  catch(...) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError("unknown exception"); return call_state;} \
   UNPROTECT(1); \
   return call_state;
 
 #define CHECK_CALL(x) \
   if ((x) != 0) { \
     R_INT_PTR(call_state)[0] = -1;\
-    UNPROTECT(1); \
     return call_state;\
   }
 
