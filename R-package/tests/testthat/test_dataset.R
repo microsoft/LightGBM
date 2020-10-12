@@ -36,7 +36,7 @@ test_that("lgb.Dataset: getinfo & setinfo", {
   expect_true(length(getinfo(dtest, "init_score")) == 0L)
 
   # any other label should error
-  # expect_error(setinfo(dtest, "asdf", test_label))
+  expect_error(setinfo(dtest, "asdf", test_label))
 })
 
 test_that("lgb.Dataset: slice, dim", {
