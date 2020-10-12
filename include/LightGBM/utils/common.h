@@ -634,6 +634,12 @@ inline static std::string Join(const std::vector<T>& strs, size_t start, size_t 
   return str_buf.str();
 }
 
+template<typename T>
+inline static void VectorFree(std::vector<T>* vec) {
+  auto& ref = *vec;
+  std::vector<T>().swap(ref);
+}
+
 inline static int64_t Pow2RoundUp(int64_t x) {
   int64_t t = 1;
   for (int i = 0; i < 64; ++i) {

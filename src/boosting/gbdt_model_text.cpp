@@ -357,13 +357,13 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
 
   ss << "tree_sizes=" << Common::Join(tree_sizes, " ") << '\n';
   ss << '\n';
-  std::vector<size_t>().swap(tree_sizes);
+  Common::VectorFree(&tree_sizes);
 
   for (int i = 0; i < num_used_model - start_model; ++i) {
     ss << tree_strs[i];
     tree_strs[i].clear();
   }
-  tree_strs.clear();
+  Common::VectorFree(&tree_strs);
   ss << "end of trees" << "\n";
   std::vector<double> feature_importances = FeatureImportance(
       num_iteration, feature_importance_type);
@@ -375,7 +375,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
       pairs.emplace_back(feature_importances_int, feature_names_[i]);
     }
   }
-  feature_importances.clear();
+  Common::VectorFree(&feature_importances);
   // sort the importance
   std::stable_sort(pairs.begin(), pairs.end(),
                    [](const std::pair<size_t, std::string>& lhs,
