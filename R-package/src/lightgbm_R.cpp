@@ -628,7 +628,7 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   int32_t nrow = R_AS_INT(num_row);
   int32_t ncol = R_AS_INT(num_col);
 
-  double* p_mat = R_REAL_PTR(data);
+  const double* p_mat = R_REAL_PTR(data);
   double* ptr_ret = R_REAL_PTR(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForMat(R_GET_PTR(handle),
