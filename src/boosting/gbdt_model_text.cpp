@@ -357,7 +357,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
 
   ss << "tree_sizes=" << Common::Join(tree_sizes, " ") << '\n';
   ss << '\n';
-  tree_sizes.clear();
+  std::vector<size_t>.swap(tree_sizes);
 
   for (int i = 0; i < num_used_model - start_model; ++i) {
     ss << tree_strs[i];
