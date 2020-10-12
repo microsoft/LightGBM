@@ -19,7 +19,7 @@ Predictor <- R6::R6Class(
           , ret = NULL
           , private$handle
         )
-        private$handle <- lgb.null.handle()
+        private$handle <- NULL
 
       }
 

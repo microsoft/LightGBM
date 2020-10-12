@@ -14,7 +14,7 @@ Dataset <- R6::R6Class(
 
         # Freeing up handle
         lgb.call("LGBM_DatasetFree_R", ret = NULL, private$handle)
-        private$handle <- lgb.null.handle()
+        private$handle <- NULL
 
       }
 
