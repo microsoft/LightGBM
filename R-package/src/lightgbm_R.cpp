@@ -37,7 +37,6 @@
 
 using LightGBM::Common::Join;
 using LightGBM::Common::Split;
-using LightGBM::Common::VectorFree;
 using LightGBM::Log;
 
 LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
@@ -215,7 +214,6 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
       vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
-    VectorFree(&vec);
   } else if (!strcmp("init_score", name)) {
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, R_REAL_PTR(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
@@ -225,7 +223,6 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
       vec[i] = static_cast<float>(R_REAL_PTR(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_FLOAT32));
-    VectorFree(&vec);
   }
   R_API_END();
 }
@@ -659,7 +656,6 @@ LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
-  VectorFree(&inner_char_buf);
   R_API_END();
 }
 
@@ -675,7 +671,6 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(feature_importance_type), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
-  VectorFree(&inner_char_buf);
   R_API_END();
 }
 
