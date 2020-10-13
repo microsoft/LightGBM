@@ -4,7 +4,6 @@
  */
 #ifndef LIGHTGBM_OPENMP_WRAPPER_H_
 #define LIGHTGBM_OPENMP_WRAPPER_H_
-#undef _OPENMP
 #ifdef _OPENMP
 
 #include <LightGBM/utils/log.h>
