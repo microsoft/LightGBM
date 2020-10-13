@@ -53,7 +53,8 @@ $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$RTOOLS_INSTALL_PATH/usr/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
-$env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
+# $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
+$env:CTAN_MIRROR = "https://ctan.math.washington.edu/tex-archive/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
 # hack to get around this:
