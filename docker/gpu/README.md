@@ -1,6 +1,6 @@
 # Tiny Distroless Dockerfile for LightGBM GPU CLI-only Version
 
-`dockerfile-cli-only-distroless.gpu` - A multi-stage build based on the `nvidia/opencl:devel` (build) and `distroless/cc-debian10` (production) images. LightGBM (CLI-only) can be utilized in GPU and CPU modes. The resulting image size is around 15 MB.
+`dockerfile-cli-only-distroless.gpu` - A multi-stage build based on the `nvidia/opencl:devel-ubuntu18.04` (build) and `distroless/cc-debian10` (production) images. LightGBM (CLI-only) can be utilized in GPU and CPU modes. The resulting image size is around 15 MB.
 
 ---
 
