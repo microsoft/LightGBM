@@ -378,13 +378,13 @@ test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
   for (nround_value in c(-10L, 0L)) {
-    # expect_error({
-    #   bst <- lgb.train(
-    #     params
-    #     , dtrain
-    #     , nround_value
-    #   )
-    # }, "nrounds should be greater than zero")
+    expect_error({
+      bst <- lgb.train(
+        params
+        , dtrain
+        , nround_value
+      )
+    }, "nrounds should be greater than zero")
   }
 })
 
@@ -428,14 +428,14 @@ test_that("lgb.train() errors if 'valids' is a list of lgb.Dataset objects but s
     "valid1" = lgb.Dataset(matrix(rnorm(10L), 5L, 2L))
     , lgb.Dataset(matrix(rnorm(10L), 2L, 5L))
   )
-  # expect_error({
-  #   bst <- lgb.train(
-  #     params = list(objective = "regression", metric = "l2,l1")
-  #     , data = lgb.Dataset(train$data, label = train$label)
-  #     , 10L
-  #     , valids = valids
-  #   )
-  # }, regexp = "each element of valids must have a name")
+  expect_error({
+    bst <- lgb.train(
+      params = list(objective = "regression", metric = "l2,l1")
+      , data = lgb.Dataset(train$data, label = train$label)
+      , 10L
+      , valids = valids
+    )
+  }, regexp = "each element of valids must have a name")
 })
 
 test_that("lgb.train() throws an informative error if 'valids' contains lgb.Dataset objects but none have names", {
@@ -443,14 +443,14 @@ test_that("lgb.train() throws an informative error if 'valids' contains lgb.Data
     lgb.Dataset(matrix(rnorm(10L), 5L, 2L))
     , lgb.Dataset(matrix(rnorm(10L), 2L, 5L))
   )
-  # expect_error({
-  #   bst <- lgb.train(
-  #     params = list(objective = "regression", metric = "l2,l1")
-  #     , data = lgb.Dataset(train$data, label = train$label)
-  #     , 10L
-  #     , valids = valids
-  #   )
-  # }, regexp = "each element of valids must have a name")
+  expect_error({
+    bst <- lgb.train(
+      params = list(objective = "regression", metric = "l2,l1")
+      , data = lgb.Dataset(train$data, label = train$label)
+      , 10L
+      , valids = valids
+    )
+  }, regexp = "each element of valids must have a name")
 })
 
 test_that("lgb.train() works with force_col_wise and force_row_wise", {
