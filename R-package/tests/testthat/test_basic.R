@@ -170,14 +170,14 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
   for (nround_value in c(-10L, 0L)) {
-    # expect_error({
-    #   bst <- lightgbm(
-    #     data = dtrain
-    #     , params = params
-    #     , nrounds = nround_value
-    #     , save_name = tempfile(fileext = ".model")
-    #   )
-    # }, "nrounds should be greater than zero")
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = nround_value
+        , save_name = tempfile(fileext = ".model")
+      )
+    }, "nrounds should be greater than zero")
   }
 })
 
@@ -278,15 +278,15 @@ test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", metric = "l2,l1")
   for (nround_value in c(-10L, 0L)) {
-    # expect_error({
-    #   bst <- lgb.cv(
-    #     params
-    #     , dtrain
-    #     , nround_value
-    #     , nfold = 5L
-    #     , min_data = 1L
-    #   )
-    # }, "nrounds should be greater than zero")
+    expect_error({
+      bst <- lgb.cv(
+        params
+        , dtrain
+        , nround_value
+        , nfold = 5L
+        , min_data = 1L
+      )
+    }, "nrounds should be greater than zero")
   }
 })
 
@@ -300,15 +300,15 @@ test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset 
     , matrix(data = seq_len(10L), 2L, 5L)
   )
   for (val in bad_values) {
-    # expect_error({
-    #   bst <- lgb.cv(
-    #     params = list(objective = "regression", metric = "l2,l1")
-    #     , data = val
-    #     , 10L
-    #     , nfold = 5L
-    #     , min_data = 1L
-    #   )
-    # }, regexp = "'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'", fixed = TRUE)
+    expect_error({
+      bst <- lgb.cv(
+        params = list(objective = "regression", metric = "l2,l1")
+        , data = val
+        , 10L
+        , nfold = 5L
+        , min_data = 1L
+      )
+    }, regexp = "'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'", fixed = TRUE)
   }
 })
 
@@ -398,13 +398,13 @@ test_that("lgb.train() throws an informative error if 'data' is not an lgb.Datas
     , matrix(data = seq_len(10L), 2L, 5L)
   )
   for (val in bad_values) {
-    # expect_error({
-    #   bst <- lgb.train(
-    #     params = list(objective = "regression", metric = "l2,l1")
-    #     , data = val
-    #     , 10L
-    #   )
-    # }, regexp = "data must be an lgb.Dataset instance", fixed = TRUE)
+    expect_error({
+      bst <- lgb.train(
+        params = list(objective = "regression", metric = "l2,l1")
+        , data = val
+        , 10L
+      )
+    }, regexp = "data must be an lgb.Dataset instance", fixed = TRUE)
   }
 })
 
@@ -413,14 +413,14 @@ test_that("lgb.train() throws an informative error if 'valids' is not a list of 
     "valid1" = data.frame(x = rnorm(5L), y = rnorm(5L))
     , "valid2" = data.frame(x = rnorm(5L), y = rnorm(5L))
   )
-  # expect_error({
-  #   bst <- lgb.train(
-  #     params = list(objective = "regression", metric = "l2,l1")
-  #     , data = lgb.Dataset(train$data, label = train$label)
-  #     , 10L
-  #     , valids = valids
-  #   )
-  # }, regexp = "valids must be a list of lgb.Dataset elements")
+  expect_error({
+    bst <- lgb.train(
+      params = list(objective = "regression", metric = "l2,l1")
+      , data = lgb.Dataset(train$data, label = train$label)
+      , 10L
+      , valids = valids
+    )
+  }, regexp = "valids must be a list of lgb.Dataset elements")
 })
 
 test_that("lgb.train() errors if 'valids' is a list of lgb.Dataset objects but some do not have names", {
@@ -1624,39 +1624,39 @@ context("interaction constraints")
 test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", interaction_constraints = "[1,2],[3]")
-    # expect_error({
-    #   bst <- lightgbm(
-    #     data = dtrain
-    #     , params = params
-    #     , nrounds = 2L
-    #   )
-    # }, "interaction_constraints must be a list")
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2L
+      )
+    }, "interaction_constraints must be a list")
 })
 
 test_that(paste0("lgb.train() throws an informative error if the members of interaction_constraints ",
                  "are not character or numeric vectors"), {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", interaction_constraints = list(list(1L, 2L), list(3L)))
-    # expect_error({
-    #   bst <- lightgbm(
-    #     data = dtrain
-    #     , params = params
-    #     , nrounds = 2L
-    #   )
-    # }, "every element in interaction_constraints must be a character vector or numeric vector")
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2L
+      )
+    }, "every element in interaction_constraints must be a character vector or numeric vector")
 })
 
 test_that("lgb.train() throws an informative error if interaction_constraints contains a too large index", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression",
                  interaction_constraints = list(c(1L, length(colnames(train$data)) + 1L), 3L))
-    # expect_error({
-    #   bst <- lightgbm(
-    #     data = dtrain
-    #     , params = params
-    #     , nrounds = 2L
-    #   )
-    # }, "supplied a too large value in interaction_constraints")
+    expect_error({
+      bst <- lightgbm(
+        data = dtrain
+        , params = params
+        , nrounds = 2L
+      )
+    }, "supplied a too large value in interaction_constraints")
 })
 
 test_that(paste0("lgb.train() gives same result when interaction_constraints is specified as a list of ",
