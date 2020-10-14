@@ -124,7 +124,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
         lgb.load(filename = file_to_check)
     }, regexp = "passed to filename does not exist")
 
-    if given, model_str should be a string
+    # if given, model_str should be a string
     expect_error({
         lgb.load(model_str = c(4.0, 5.0, 6.0))
     }, regexp = "model_str should be character")
