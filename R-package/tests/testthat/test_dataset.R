@@ -36,7 +36,7 @@ test_that("lgb.Dataset: getinfo & setinfo", {
   expect_true(length(getinfo(dtest, "init_score")) == 0L)
 
   # any other label should error
-  # expect_error(setinfo(dtest, "asdf", test_label))
+  expect_error(setinfo(dtest, "asdf", test_label))
 })
 
 test_that("lgb.Dataset: slice, dim", {
@@ -54,9 +54,9 @@ test_that("lgb.Dataset: colnames", {
   expect_equal(colnames(dtest), colnames(test_data))
   lgb.Dataset.construct(dtest)
   expect_equal(colnames(dtest), colnames(test_data))
-  # expect_error({
-  #   colnames(dtest) <- "asdf"
-  # })
+  expect_error({
+    colnames(dtest) <- "asdf"
+  })
   new_names <- make.names(seq_len(ncol(test_data)))
   expect_silent(colnames(dtest) <- new_names)
   expect_equal(colnames(dtest), new_names)
@@ -107,26 +107,26 @@ test_that("lgb.Dataset should throw an error if 'reference' is provided but of t
   test_data <- agaricus.test$data[1L:100L, ]
   test_label <- agaricus.test$label[1L:100L]
   # Try to trick lgb.Dataset() into accepting bad input
-  # expect_error({
-  #   dtest <- lgb.Dataset(
-  #     data = test_data
-  #     , label = test_label
-  #     , reference = data.frame(x = seq_len(10L), y = seq_len(10L))
-  #   )
-  # }, regexp = "reference must be a")
+  expect_error({
+    dtest <- lgb.Dataset(
+      data = test_data
+      , label = test_label
+      , reference = data.frame(x = seq_len(10L), y = seq_len(10L))
+    )
+  }, regexp = "reference must be a")
 })
 
 test_that("Dataset$new() should throw an error if 'predictor' is provided but of the wrong format", {
   data(agaricus.test, package = "lightgbm")
   test_data <- agaricus.test$data[1L:100L, ]
   test_label <- agaricus.test$label[1L:100L]
-  # expect_error({
-  #   dtest <- Dataset$new(
-  #     data = test_data
-  #     , label = test_label
-  #     , predictor = data.frame(x = seq_len(10L), y = seq_len(10L))
-  #   )
-  # }, regexp = "predictor must be a", fixed = TRUE)
+  expect_error({
+    dtest <- Dataset$new(
+      data = test_data
+      , label = test_label
+      , predictor = data.frame(x = seq_len(10L), y = seq_len(10L))
+    )
+  }, regexp = "predictor must be a", fixed = TRUE)
 })
 
 test_that("Dataset$get_params() successfully returns parameters if you passed them", {
