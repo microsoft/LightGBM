@@ -43,13 +43,13 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         , min_data = 1L
         , learning_rate = 1.0
     )
-    # expect_error({
-    #     eval_results <- lgb.get.eval.result(
-    #         booster = model
-    #         , data_name = "testing"
-    #         , eval_name = "l2"
-    #     )
-    # }, regexp = "Only the following datasets exist in record evals: [test]", fixed = TRUE)
+    expect_error({
+        eval_results <- lgb.get.eval.result(
+            booster = model
+            , data_name = "testing"
+            , eval_name = "l2"
+        )
+    }, regexp = "Only the following datasets exist in record evals: [test]", fixed = TRUE)
 })
 
 test_that("lgb.get.eval.result() should throw an informative error for incorrect eval_name", {
@@ -76,13 +76,13 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         , min_data = 1L
         , learning_rate = 1.0
     )
-    # expect_error({
-    #     eval_results <- lgb.get.eval.result(
-    #         booster = model
-    #         , data_name = "test"
-    #         , eval_name = "l1"
-    #     )
-    # }, regexp = "Only the following eval_names exist for dataset.*\\: \\[l2\\]", fixed = FALSE)
+    expect_error({
+        eval_results <- lgb.get.eval.result(
+            booster = model
+            , data_name = "test"
+            , eval_name = "l1"
+        )
+    }, regexp = "Only the following eval_names exist for dataset.*\\: \\[l2\\]", fixed = FALSE)
 })
 
 context("lgb.load()")
@@ -375,11 +375,11 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
         , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
-    # expect_error({
-    #     bst$update(
-    #         train_set = data.frame(x = rnorm(10L))
-    #     )
-    # }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
+    expect_error({
+        bst$update(
+            train_set = data.frame(x = rnorm(10L))
+        )
+    }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
 })
 
 context("save_model")
