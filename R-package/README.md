@@ -454,7 +454,7 @@ cd R-package/tests
 RDvalgrind \
     --no-readline \
     --vanilla \
-    -d valgrind \
+    -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes" \
         -f testthat.R \
 2>&1 \
 | tee out.log \
