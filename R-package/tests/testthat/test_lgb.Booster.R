@@ -7,19 +7,15 @@ test_that("lgb.get.eval.result() should throw an informative error if booster is
         , c("a", "b")
         , NA
         , 10L
-        , lgb.Dataset(
-            data = matrix(1.0:10.0, 2L, 5L)
-            , params = list()
-        )
     )
     for (bad_input in bad_inputs) {
-        # expect_error({
-        #     lgb.get.eval.result(
-        #         booster = bad_input
-        #         , data_name = "test"
-        #         , eval_name = "l2"
-        #     )
-        # }, regexp = "Can only use", fixed = TRUE)
+        expect_error({
+            lgb.get.eval.result(
+                booster = bad_input
+                , data_name = "test"
+                , eval_name = "l2"
+            )
+        }, regexp = "Can only use", fixed = TRUE)
     }
 })
 
@@ -108,30 +104,30 @@ test_that("lgb.load() gives the expected error messages given different incorrec
     )
 
     # you have to give model_str or filename
-    # expect_error({
-    #     lgb.load()
-    # }, regexp = "either filename or model_str must be given")
-    # expect_error({
-    #     lgb.load(filename = NULL, model_str = NULL)
-    # }, regexp = "either filename or model_str must be given")
+    expect_error({
+        lgb.load()
+    }, regexp = "either filename or model_str must be given")
+    expect_error({
+        lgb.load(filename = NULL, model_str = NULL)
+    }, regexp = "either filename or model_str must be given")
 
     # if given, filename should be a string that points to an existing file
     model_file <- tempfile(fileext = ".model")
-    # expect_error({
-    #     lgb.load(filename = list(model_file))
-    # }, regexp = "filename should be character")
+    expect_error({
+        lgb.load(filename = list(model_file))
+    }, regexp = "filename should be character")
     file_to_check <- paste0("a.model")
     while (file.exists(file_to_check)) {
         file_to_check <- paste0("a", file_to_check)
     }
-    # expect_error({
-    #     lgb.load(filename = file_to_check)
-    # }, regexp = "passed to filename does not exist")
+    expect_error({
+        lgb.load(filename = file_to_check)
+    }, regexp = "passed to filename does not exist")
 
-    # if given, model_str should be a string
-    # expect_error({
-    #     lgb.load(model_str = c(4.0, 5.0, 6.0))
-    # }, regexp = "model_str should be character")
+    if given, model_str should be a string
+    expect_error({
+        lgb.load(model_str = c(4.0, 5.0, 6.0))
+    }, regexp = "model_str should be character")
 
 })
 
