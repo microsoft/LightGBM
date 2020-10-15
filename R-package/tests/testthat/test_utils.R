@@ -76,6 +76,8 @@ test_that("lgb.last_error() correctly returns errors from the C++ side", {
     expect_error({
         dvalid1$construct()
     }, regexp = "[LightGBM] [Fatal] Length of label is not same with #data", fixed = TRUE)
+    lgb.call("LGBM_DatasetFree_R", ret = NULL, dvalid1$.__enclos_env__$private$handle)
+    dvalid1$.__enclos_env__$private$handle <- NULL
 })
 
 context("lgb.check.eval")
