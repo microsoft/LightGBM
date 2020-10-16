@@ -226,7 +226,7 @@ if [[ $R_BUILD_TYPE == "cran" ]]; then
         | wc -l
     )
     if [[ $pragma_warning_present -ne 0 ]]; then
-        echo "Unknown pragma warning is present, pragmas should have been remove before build"
+        echo "Unknown pragma warning is present, pragmas should have been removed before build"
         exit -1
     fi
 fi
