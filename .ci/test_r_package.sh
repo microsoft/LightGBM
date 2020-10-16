@@ -216,3 +216,17 @@ if [[ $OS_NAME == "macos" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
         exit -1
     fi
 fi
+
+# this check makes sure that no "warning: unknown pragma ignored" logs
+# reach the user leading them to believe that something went wrong
+if [[ $OS_NAME == "macos" || $OS_NAME == "linux" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
+    pragma_warning_present=$(
+        cat $BUILD_LOG_FILE \
+        | grep -E "warning: unknown pragma ignored" \
+        | wc -l
+    )
+    if [[ $pragma_warning_present -ne 0 ]]; then
+        echo "Unknown pragma warning is present, pragmas should have been remove before build"
+        exit -1
+    fi
+fi
