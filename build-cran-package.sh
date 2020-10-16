@@ -50,19 +50,20 @@ cd ${TEMP_R_DIR}
     sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" DESCRIPTION
     sed -i.bak -e "s/~~DATE~~/${CURRENT_DATE}/" DESCRIPTION
 
-    # Remove 'region' and 'endregion' pragmas. This won't change
-    # the correctness of the code. CRAN does not allow you
-    # to use compiler flag '-Wno-unknown-pragmas' or
+    # Remove 'region', 'endregion', and 'warning' pragmas.
+    # This won't change the correctness of the code. CRAN does
+    # not allow you to use compiler flag '-Wno-unknown-pragmas' or
     # pragmas that suppress warnings.
     echo "Removing unknown pragmas in headers"
-    for file in src/include/LightGBM/*.h; do
+    for file in $(find . -name *.h); do
       sed \
         -i.bak \
         -e 's/^.*#pragma region.*$//' \
         -e 's/^.*#pragma endregion.*$//' \
+        -e 's/^.*#pragma warning.*$//' \
         "${file}"
     done
-    rm src/include/LightGBM/*.h.bak
+    find . -name *.h.bak -exec rm {} \;
 
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called
