@@ -219,7 +219,7 @@ fi
 
 # this check makes sure that no "warning: unknown pragma ignored" logs
 # reach the user leading them to believe that something went wrong
-if [[ $OS_NAME == "macos" || $OS_NAME == "linux" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
+if [[ $R_BUILD_TYPE == "cran" ]]; then
     pragma_warning_present=$(
         cat $BUILD_LOG_FILE \
         | grep -E "warning: unknown pragma ignored" \
