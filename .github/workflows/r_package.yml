@@ -184,32 +184,10 @@ jobs:
           Rscriptdevel testthat.R 2>&1 > ubsan-tests.log
           cat ubsan-tests.log
           exit $(cat ubsan-tests.log | grep "runtime error" | wc -l)
-  test-r-valgrind:
-    name: r-package (ubuntu-latest, R-devel, valgrind)
-    timeout-minutes: 120
-    runs-on: ubuntu-latest
-    container:
-      image: wch1/r-debug
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v1
-        with:
-          fetch-depth: 5
-          submodules: true
-      - name: install
-        shell: bash
-        run: |
-          RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
-          sh build-cran-package.sh
-          RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz
-      - name: test
-        shell: bash
-        run: |
-          ./.ci/test_r_package_valgrind.sh
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest
-    needs: [test, test-r-sanitizers, test-r-valgrind]
+    needs: [test, test-r-sanitizers]
     steps:
     - name: Note that all tests succeeded
       run: echo "🎉"

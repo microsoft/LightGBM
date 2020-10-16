@@ -51,7 +51,7 @@ fi
 # ==1312==    by 0x499FB01: bcEval (eval.c:7078)
 # ==1312==    by 0x498B67F: Rf_eval (eval.c:727)
 # ==1312==    by 0x498E414: R_execClosure (eval.c:1895)
-# bytes_possibly_lost=$(
+bytes_possibly_lost=$(
     cat valgrind-logs.log \
     | grep -E "possibly lost\: .*" \
     | sed 's/^.*possibly lost\: \(.*\) bytes.*$/\1/' \
