@@ -55,7 +55,7 @@ cd ${TEMP_R_DIR}
     # not allow you to use compiler flag '-Wno-unknown-pragmas' or
     # pragmas that suppress warnings.
     echo "Removing unknown pragmas in headers"
-    for file in $(find . -regex '.*\.\(h\|cpp\|hpp\)$'); do
+    for file in $(find . -name '*.h' -o -name '*.hpp' -o -name '*.cpp'); do
       sed \
         -i.bak \
         -e 's/^.*#pragma region.*$//' \
@@ -63,7 +63,7 @@ cd ${TEMP_R_DIR}
         -e 's/^.*#pragma warning.*$//' \
         "${file}"
     done
-    find . -regex '.*\.\(h\|cpp\|hpp\)\.bak$' -exec rm {} \;
+    find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
 
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called
