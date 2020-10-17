@@ -18,13 +18,12 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
-      - name: install
+      - name: Install packages
         shell: bash
         run: |
           RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'http://cran.r-project.org')"
           sh build-cran-package.sh
-          RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz
-      - name: test
+          RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz  || exit -1
+      - name: Run tests with valgrind
         shell: bash
-        run: |
-          ./.ci/test_r_package_valgrind.sh
+        run: ./.ci/test_r_package_valgrind.sh
