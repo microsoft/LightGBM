@@ -22,7 +22,7 @@ def rerun_workflow(runs):
         req = request.Request(url="https://api.github.com/repos/microsoft/LightGBM/actions/runs/{}/rerun".format(runs[0]["id"]),
                               headers={"accept": "application/vnd.github.v3+json"})
         try:
-            res = request.urlopen(req).
+            res = request.urlopen(req)
             if res.getcode() != 201:
                 print(res.getcode())
                 exit(1)
