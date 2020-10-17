@@ -1,0 +1,30 @@
+name: Test 1
+
+on:
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  test:
+    name: Test 1
+    runs-on: ubuntu-latest
+    if: github.event.comment.body == '/gha run' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Test
+        run: |
+            sleep 2m
+            exit -1
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Rerun main workflow
+        run: python "$GITHUB_WORKSPACE/.ci/rerun_workflow.py"
