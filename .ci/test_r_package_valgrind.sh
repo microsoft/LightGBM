@@ -2,19 +2,22 @@
 
 cd R-package/tests
 
+ALL_LOGS_FILE="out.log"
+VALGRIND_LOGS_FILE="valgrind-logs.log"
+
 RDvalgrind \
   --no-readline \
   --vanilla \
   -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes" \
   -f testthat.R \
-  &> out.log || exit -1
+  2>&1 > ${ALL_LOGS_FILE} || exit -1
 
-cat out.log
+cat ${ALL_LOGS_FILE}
 
-cat out.log | grep -E "^\=" > valgrind-logs.log
+cat ${ALL_LOGS_FILE} | grep -E "^\=" > ${VALGRIND_LOGS_FILE}
 
 bytes_definitely_lost=$(
-  cat valgrind-logs.log \
+  cat ${VALGRIND_LOGS_FILE} \
       | grep -E "definitely lost\: .*" \
       | sed 's/^.*definitely lost\: \(.*\) bytes.*$/\1/' \
       | tr -d ","
@@ -25,7 +28,7 @@ if [[ ${bytes_definitely_lost} -gt 0 ]]; then
 fi
 
 bytes_indirectly_lost=$(
-    cat valgrind-logs.log \
+    cat ${VALGRIND_LOGS_FILE} \
     | grep -E "indirectly lost\: .*" \
     | sed 's/^.*indirectly lost\: \(.*\) bytes.*$/\1/' \
     | tr -d ","
@@ -52,7 +55,7 @@ fi
 # ==1312==    by 0x498B67F: Rf_eval (eval.c:727)
 # ==1312==    by 0x498E414: R_execClosure (eval.c:1895)
 bytes_possibly_lost=$(
-    cat valgrind-logs.log \
+    cat ${VALGRIND_LOGS_FILE} \
     | grep -E "possibly lost\: .*" \
     | sed 's/^.*possibly lost\: \(.*\) bytes.*$/\1/' \
     | tr -d ","
@@ -61,5 +64,3 @@ if [[ ${bytes_possibly_lost} -gt 352 ]]; then
     echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
     exit -1
 fi
-
-exit 0

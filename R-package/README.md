@@ -463,7 +463,7 @@ RDvalgrind \
 
 These tests can also be triggered on any pull request by leaving a "Comment" review with the following comment:
 
-> /gha run r-valgrind-tests
+> /gha run r-valgrind
 
 External (Unofficial) Repositories
 ----------------------------------
