@@ -4,10 +4,10 @@
 #' @param file a connection or the name of the file where the R object is saved to or read from.
 #' @param refhook a hook function for handling reference objects.
 #'
-#' @return \code{lgb.Booster}.
+#' @return \code{lgb.Booster}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -33,7 +33,6 @@
 #' @export
 readRDS.lgb.Booster <- function(file = "", refhook = NULL) {
 
-  # Read RDS file
   object <- readRDS(file = file, refhook = refhook)
 
   # Check if object has the model stored

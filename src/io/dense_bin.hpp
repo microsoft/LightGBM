@@ -7,6 +7,7 @@
 #define LIGHTGBM_IO_DENSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <cstdint>
 #include <cstring>
@@ -310,7 +311,7 @@ class DenseBin : public Bin {
   data_size_t SplitCategoricalInner(uint32_t min_bin, uint32_t max_bin,
                                     uint32_t most_freq_bin,
                                     const uint32_t* threshold,
-                                    int num_threahold,
+                                    int num_threshold,
                                     const data_size_t* data_indices,
                                     data_size_t cnt, data_size_t* lte_indices,
                                     data_size_t* gt_indices) const {
@@ -318,7 +319,9 @@ class DenseBin : public Bin {
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
-    if (Common::FindInBitset(threshold, num_threahold, most_freq_bin)) {
+    int8_t offset = most_freq_bin == 0 ? 1 : 0;
+    if (most_freq_bin > 0 &&
+        Common::FindInBitset(threshold, num_threshold, most_freq_bin)) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
@@ -329,8 +332,8 @@ class DenseBin : public Bin {
         default_indices[(*default_count)++] = idx;
       } else if (!USE_MIN_BIN && bin == 0) {
         default_indices[(*default_count)++] = idx;
-      } else if (Common::FindInBitset(threshold, num_threahold,
-                                      bin - min_bin)) {
+      } else if (Common::FindInBitset(threshold, num_threshold,
+                                      bin - min_bin + offset)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;
@@ -341,26 +344,28 @@ class DenseBin : public Bin {
 
   data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
                                uint32_t most_freq_bin,
-                               const uint32_t* threshold, int num_threahold,
+                               const uint32_t* threshold, int num_threshold,
                                const data_size_t* data_indices, data_size_t cnt,
                                data_size_t* lte_indices,
                                data_size_t* gt_indices) const override {
     return SplitCategoricalInner<true>(min_bin, max_bin, most_freq_bin,
-                                       threshold, num_threahold, data_indices,
+                                       threshold, num_threshold, data_indices,
                                        cnt, lte_indices, gt_indices);
   }
 
   data_size_t SplitCategorical(uint32_t max_bin, uint32_t most_freq_bin,
-                               const uint32_t* threshold, int num_threahold,
+                               const uint32_t* threshold, int num_threshold,
                                const data_size_t* data_indices, data_size_t cnt,
                                data_size_t* lte_indices,
                                data_size_t* gt_indices) const override {
     return SplitCategoricalInner<false>(1, max_bin, most_freq_bin, threshold,
-                                        num_threahold, data_indices, cnt,
+                                        num_threshold, data_indices, cnt,
                                         lte_indices, gt_indices);
   }
 
   data_size_t num_data() const override { return num_data_; }
+
+  void* get_data() override { return data_.data(); }
 
   void FinishLoad() override {
     if (IS_4BIT) {
@@ -447,16 +452,22 @@ class DenseBin : public Bin {
   }
 
   void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
-    writer->Write(data_.data(), sizeof(VAL_T) * data_.size());
+    writer->AlignedWrite(data_.data(), sizeof(VAL_T) * data_.size());
   }
 
-  size_t SizesInByte() const override { return sizeof(VAL_T) * data_.size(); }
+  size_t SizesInByte() const override {
+    return VirtualFileWriter::AlignedSize(sizeof(VAL_T) * data_.size());
+  }
 
   DenseBin<VAL_T, IS_4BIT>* Clone() override;
 
  private:
   data_size_t num_data_;
+#ifdef USE_CUDA
+  std::vector<VAL_T, CHAllocator<VAL_T>> data_;
+#else
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
+#endif
   std::vector<uint8_t> buf_;
 
   DenseBin<VAL_T, IS_4BIT>(const DenseBin<VAL_T, IS_4BIT>& other)

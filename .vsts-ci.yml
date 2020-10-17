@@ -30,7 +30,6 @@ jobs:
         TASK: regular
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.7
@@ -81,7 +80,6 @@ jobs:
         PYTHON_VERSION: 3.7
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
   steps:

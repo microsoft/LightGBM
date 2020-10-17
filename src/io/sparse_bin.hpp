@@ -355,7 +355,7 @@ class SparseBin : public Bin {
   data_size_t SplitCategoricalInner(uint32_t min_bin, uint32_t max_bin,
                                     uint32_t most_freq_bin,
                                     const uint32_t* threshold,
-                                    int num_threahold,
+                                    int num_threshold,
                                     const data_size_t* data_indices,
                                     data_size_t cnt, data_size_t* lte_indices,
                                     data_size_t* gt_indices) const {
@@ -364,7 +364,8 @@ class SparseBin : public Bin {
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
     SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
-    if (Common::FindInBitset(threshold, num_threahold, most_freq_bin)) {
+    int8_t offset = most_freq_bin == 0 ? 1 : 0;
+    if (most_freq_bin > 0 && Common::FindInBitset(threshold, num_threshold, most_freq_bin)) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
@@ -375,8 +376,8 @@ class SparseBin : public Bin {
         default_indices[(*default_count)++] = idx;
       } else if (!USE_MIN_BIN && bin == 0) {
         default_indices[(*default_count)++] = idx;
-      } else if (Common::FindInBitset(threshold, num_threahold,
-                                      bin - min_bin)) {
+      } else if (Common::FindInBitset(threshold, num_threshold,
+                                      bin - min_bin + offset)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;
@@ -387,26 +388,28 @@ class SparseBin : public Bin {
 
   data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
                                uint32_t most_freq_bin,
-                               const uint32_t* threshold, int num_threahold,
+                               const uint32_t* threshold, int num_threshold,
                                const data_size_t* data_indices, data_size_t cnt,
                                data_size_t* lte_indices,
                                data_size_t* gt_indices) const override {
     return SplitCategoricalInner<true>(min_bin, max_bin, most_freq_bin,
-                                       threshold, num_threahold, data_indices,
+                                       threshold, num_threshold, data_indices,
                                        cnt, lte_indices, gt_indices);
   }
 
   data_size_t SplitCategorical(uint32_t max_bin, uint32_t most_freq_bin,
-                               const uint32_t* threshold, int num_threahold,
+                               const uint32_t* threshold, int num_threshold,
                                const data_size_t* data_indices, data_size_t cnt,
                                data_size_t* lte_indices,
                                data_size_t* gt_indices) const override {
     return SplitCategoricalInner<false>(1, max_bin, most_freq_bin, threshold,
-                                        num_threahold, data_indices, cnt,
+                                        num_threshold, data_indices, cnt,
                                         lte_indices, gt_indices);
   }
 
   data_size_t num_data() const override { return num_data_; }
+
+  void* get_data() override { return nullptr; }
 
   void FinishLoad() override {
     // get total non zero size
@@ -500,14 +503,15 @@ class SparseBin : public Bin {
   }
 
   void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
-    writer->Write(&num_vals_, sizeof(num_vals_));
-    writer->Write(deltas_.data(), sizeof(uint8_t) * (num_vals_ + 1));
-    writer->Write(vals_.data(), sizeof(VAL_T) * num_vals_);
+    writer->AlignedWrite(&num_vals_, sizeof(num_vals_));
+    writer->AlignedWrite(deltas_.data(), sizeof(uint8_t) * (num_vals_ + 1));
+    writer->AlignedWrite(vals_.data(), sizeof(VAL_T) * num_vals_);
   }
 
   size_t SizesInByte() const override {
-    return sizeof(num_vals_) + sizeof(uint8_t) * (num_vals_ + 1) +
-           sizeof(VAL_T) * num_vals_;
+    return VirtualFileWriter::AlignedSize(sizeof(num_vals_)) +
+           VirtualFileWriter::AlignedSize(sizeof(uint8_t) * (num_vals_ + 1)) +
+           VirtualFileWriter::AlignedSize(sizeof(VAL_T) * num_vals_);
   }
 
   void LoadFromMemory(
@@ -515,9 +519,9 @@ class SparseBin : public Bin {
       const std::vector<data_size_t>& local_used_indices) override {
     const char* mem_ptr = reinterpret_cast<const char*>(memory);
     data_size_t tmp_num_vals = *(reinterpret_cast<const data_size_t*>(mem_ptr));
-    mem_ptr += sizeof(tmp_num_vals);
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(tmp_num_vals));
     const uint8_t* tmp_delta = reinterpret_cast<const uint8_t*>(mem_ptr);
-    mem_ptr += sizeof(uint8_t) * (tmp_num_vals + 1);
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(uint8_t) * (tmp_num_vals + 1));
     const VAL_T* tmp_vals = reinterpret_cast<const VAL_T*>(mem_ptr);
 
     deltas_.clear();

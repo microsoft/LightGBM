@@ -52,7 +52,7 @@ void PrintHistograms(hist_t* h, size_t size) {
   double total_hess = 0;
   for (size_t i = 0; i < size; ++i) {
     printf("%03lu=%9.3g,%9.3g\t", i, GET_GRAD(h, i), GET_HESS(h, i));
-    if ((i & 2) == 2)
+    if ((i & 3) == 3)
         printf("\n");
     total_hess += GET_HESS(h, i);
   }
@@ -1068,10 +1068,10 @@ void GPUTreeLearner::FindBestSplits(const Tree* tree) {
     }
     size_t bin_size = train_data_->FeatureNumBin(feature_index) + 1;
     printf("Feature %d smaller leaf:\n", feature_index);
-    PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() - 1, bin_size);
+    PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
     printf("Feature %d larger leaf:\n", feature_index);
-    PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() - 1, bin_size);
+    PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
   }
 #endif
 }

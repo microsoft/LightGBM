@@ -7,33 +7,31 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
+# hack to get around this:
+# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
+export _R_CHECK_SYSTEM_CLOCK_=0
+
 # Get details needed for installing R components
-#
-# NOTES:
-#    * Linux builds on Azure use a container and don't need these details
-if ! { [[ $AZURE == "true" ]] && [[ $OS_NAME == "linux" ]]; }; then
-    R_MAJOR_VERSION=( ${R_VERSION//./ } )
-    if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-        export R_MAC_VERSION=3.6.3
-        export R_LINUX_VERSION="3.6.3-1bionic"
-        export R_APT_REPO="bionic-cran35/"
-    elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-        export R_MAC_VERSION=4.0.2
-        export R_LINUX_VERSION="4.0.2-1.1804.0"
-        export R_APT_REPO="bionic-cran40/"
-    else
-        echo "Unrecognized R version: ${R_VERSION}"
-        exit -1
-    fi
+R_MAJOR_VERSION=( ${R_VERSION//./ } )
+if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+    export R_MAC_VERSION=3.6.3
+    export R_LINUX_VERSION="3.6.3-1bionic"
+    export R_APT_REPO="bionic-cran35/"
+elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
+    export R_MAC_VERSION=4.0.2
+    export R_LINUX_VERSION="4.0.2-1.1804.0"
+    export R_APT_REPO="bionic-cran40/"
+else
+    echo "Unrecognized R version: ${R_VERSION}"
+    exit -1
 fi
 
 # installing precompiled R for Ubuntu
 # https://cran.r-project.org/bin/linux/ubuntu/#installation
 # adding steps from https://stackoverflow.com/a/56378217/3986677 to get latest version
 #
-# This only needs to get run on Travis because R environment for Linux
-# used by Azure pipelines is set up in https://github.com/guolinke/lightgbm-ci-docker
-if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
+# `devscripts` is required for 'checkbashisms' (https://github.com/r-lib/actions/issues/111)
+if [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
@@ -43,6 +41,7 @@ if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
     sudo apt-get install \
         --no-install-recommends \
         -y --allow-downgrades \
+            devscripts \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-recommended \
@@ -51,13 +50,12 @@ if [[ $AZURE != "true" ]] && [[ $OS_NAME == "linux" ]]; then
             qpdf \
             || exit -1
 
-    # https://github.com/r-lib/actions/issues/111
+    
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
                 autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
-                devscripts \
                 || exit -1
     fi
 fi
@@ -65,11 +63,11 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
     if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew install \
-            automake \
-            checkbashisms
+        brew install automake
     fi
-    brew install qpdf
+    brew install \
+        checkbashisms \
+        qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self
@@ -134,12 +132,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        cd ${BUILD_DIRECTORY}/R-package
-        autoconf \
-            --output configure \
-                configure.ac \
-        || exit -1
-        cd ${BUILD_DIRECTORY}
+        ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
 
         num_files_changed=$(
             git diff --name-only | wc -l
@@ -172,7 +165,7 @@ check_succeeded="yes"
 (
     R CMD check ${PKG_TARBALL} \
         --as-cran \
-        --run-dontrun \
+        --run-donttest \
     || check_succeeded="no"
 ) &
 
@@ -199,11 +192,7 @@ if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     exit -1
 fi
 
-if [[ $OS_NAME == "linux" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
-    ALLOWED_CHECK_NOTES=2
-else
-    ALLOWED_CHECK_NOTES=1
-fi
+ALLOWED_CHECK_NOTES=2
 NUM_CHECK_NOTES=$(
     cat ${LOG_FILE_NAME} \
         | grep -e '^Status: .* NOTE.*' \
@@ -224,6 +213,20 @@ if [[ $OS_NAME == "macos" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
     )
     if [[ $omp_working -ne 1 ]]; then
         echo "OpenMP was not found, and should be when testing the CRAN package on macOS"
+        exit -1
+    fi
+fi
+
+# this check makes sure that no "warning: unknown pragma ignored" logs
+# reach the user leading them to believe that something went wrong
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    pragma_warning_present=$(
+        cat $BUILD_LOG_FILE \
+        | grep -E "warning: unknown pragma ignored" \
+        | wc -l
+    )
+    if [[ $pragma_warning_present -ne 0 ]]; then
+        echo "Unknown pragma warning is present, pragmas should have been removed before build"
         exit -1
     fi
 fi

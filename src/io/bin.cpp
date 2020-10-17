@@ -439,7 +439,6 @@ namespace LightGBM {
           }
         }
       }
-      num_bin_ = 0;
       int rest_cnt = static_cast<int>(total_sample_cnt - na_cnt);
       if (rest_cnt > 0) {
         const int SPARSE_RATIO = 100;
@@ -449,23 +448,25 @@ namespace LightGBM {
         }
         // sort by counts
         Common::SortForPair<int, int>(&counts_int, &distinct_values_int, 0, true);
-        // avoid first bin is zero
-        if (distinct_values_int[0] == 0) {
-          if (counts_int.size() == 1) {
-            counts_int.push_back(0);
-            distinct_values_int.push_back(distinct_values_int[0] + 1);
-          }
-          std::swap(counts_int[0], counts_int[1]);
-          std::swap(distinct_values_int[0], distinct_values_int[1]);
-        }
         // will ignore the categorical of small counts
-        int cut_cnt = static_cast<int>((total_sample_cnt - na_cnt) * 0.99f);
+        int cut_cnt = static_cast<int>(
+            Common::RoundInt((total_sample_cnt - na_cnt) * 0.99f));
         size_t cur_cat = 0;
         categorical_2_bin_.clear();
         bin_2_categorical_.clear();
         int used_cnt = 0;
-        max_bin = std::min(static_cast<int>(distinct_values_int.size()), max_bin);
+        int distinct_cnt = static_cast<int>(distinct_values_int.size());
+        if (na_cnt > 0) {
+          ++distinct_cnt;
+        }
+        max_bin = std::min(distinct_cnt, max_bin);
         cnt_in_bin.clear();
+
+        // Push the dummy bin for NaN
+        bin_2_categorical_.push_back(-1);
+        categorical_2_bin_[-1] = 0;
+        cnt_in_bin.push_back(0);
+        num_bin_ = 1;
         while (cur_cat < distinct_values_int.size()
                && (used_cnt < cut_cnt || num_bin_ < max_bin)) {
           if (counts_int[cur_cat] < min_data_in_bin && cur_cat > 1) {
@@ -478,21 +479,14 @@ namespace LightGBM {
           ++num_bin_;
           ++cur_cat;
         }
-        // need an additional bin for NaN
-        if (cur_cat == distinct_values_int.size() && na_cnt > 0) {
-          // use -1 to represent NaN
-          bin_2_categorical_.push_back(-1);
-          categorical_2_bin_[-1] = num_bin_;
-          cnt_in_bin.push_back(0);
-          ++num_bin_;
-        }
         // Use MissingType::None to represent this bin contains all categoricals
         if (cur_cat == distinct_values_int.size() && na_cnt == 0) {
           missing_type_ = MissingType::None;
         } else {
           missing_type_ = MissingType::NaN;
         }
-        cnt_in_bin.back() += static_cast<int>(total_sample_cnt - used_cnt);
+        // fix count of NaN bin
+        cnt_in_bin[0] = static_cast<int>(total_sample_cnt - used_cnt);
       }
     }
 
@@ -511,13 +505,6 @@ namespace LightGBM {
       default_bin_ = ValueToBin(0);
       most_freq_bin_ =
           static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
-      if (bin_type_ == BinType::CategoricalBin) {
-        if (most_freq_bin_ == 0) {
-          CHECK_GT(num_bin_, 1);
-          // FIXME: how to enable `most_freq_bin_ = 0` for categorical features
-          most_freq_bin_ = 1;
-        }
-      }
       const double max_sparse_rate =
           static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
       // When most_freq_bin_ != default_bin_, there are some additional data loading costs.
@@ -535,36 +522,37 @@ namespace LightGBM {
 
   int BinMapper::SizeForSpecificBin(int bin) {
     int size = 0;
-    size += sizeof(int);
-    size += sizeof(MissingType);
-    size += sizeof(bool);
+    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(int)));
+    size +=
+        static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(MissingType)));
+    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(bool)));
     size += sizeof(double);
-    size += sizeof(BinType);
+    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(BinType)));
     size += 2 * sizeof(double);
     size += bin * sizeof(double);
-    size += sizeof(uint32_t) * 2;
+    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(uint32_t))) * 2;
     return size;
   }
 
   void BinMapper::CopyTo(char * buffer) const {
     std::memcpy(buffer, &num_bin_, sizeof(num_bin_));
-    buffer += sizeof(num_bin_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(num_bin_));
     std::memcpy(buffer, &missing_type_, sizeof(missing_type_));
-    buffer += sizeof(missing_type_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(missing_type_));
     std::memcpy(buffer, &is_trivial_, sizeof(is_trivial_));
-    buffer += sizeof(is_trivial_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(is_trivial_));
     std::memcpy(buffer, &sparse_rate_, sizeof(sparse_rate_));
     buffer += sizeof(sparse_rate_);
     std::memcpy(buffer, &bin_type_, sizeof(bin_type_));
-    buffer += sizeof(bin_type_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(bin_type_));
     std::memcpy(buffer, &min_val_, sizeof(min_val_));
     buffer += sizeof(min_val_);
     std::memcpy(buffer, &max_val_, sizeof(max_val_));
     buffer += sizeof(max_val_);
     std::memcpy(buffer, &default_bin_, sizeof(default_bin_));
-    buffer += sizeof(default_bin_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(default_bin_));
     std::memcpy(buffer, &most_freq_bin_, sizeof(most_freq_bin_));
-    buffer += sizeof(most_freq_bin_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(most_freq_bin_));
     if (bin_type_ == BinType::NumericalBin) {
       std::memcpy(buffer, bin_upper_bound_.data(), num_bin_ * sizeof(double));
     } else {
@@ -574,23 +562,23 @@ namespace LightGBM {
 
   void BinMapper::CopyFrom(const char * buffer) {
     std::memcpy(&num_bin_, buffer, sizeof(num_bin_));
-    buffer += sizeof(num_bin_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(num_bin_));
     std::memcpy(&missing_type_, buffer, sizeof(missing_type_));
-    buffer += sizeof(missing_type_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(missing_type_));
     std::memcpy(&is_trivial_, buffer, sizeof(is_trivial_));
-    buffer += sizeof(is_trivial_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(is_trivial_));
     std::memcpy(&sparse_rate_, buffer, sizeof(sparse_rate_));
     buffer += sizeof(sparse_rate_);
     std::memcpy(&bin_type_, buffer, sizeof(bin_type_));
-    buffer += sizeof(bin_type_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(bin_type_));
     std::memcpy(&min_val_, buffer, sizeof(min_val_));
     buffer += sizeof(min_val_);
     std::memcpy(&max_val_, buffer, sizeof(max_val_));
     buffer += sizeof(max_val_);
     std::memcpy(&default_bin_, buffer, sizeof(default_bin_));
-    buffer += sizeof(default_bin_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(default_bin_));
     std::memcpy(&most_freq_bin_, buffer, sizeof(most_freq_bin_));
-    buffer += sizeof(most_freq_bin_);
+    buffer += VirtualFileWriter::AlignedSize(sizeof(most_freq_bin_));
     if (bin_type_ == BinType::NumericalBin) {
       bin_upper_bound_ = std::vector<double>(num_bin_);
       std::memcpy(bin_upper_bound_.data(), buffer, num_bin_ * sizeof(double));
@@ -605,15 +593,15 @@ namespace LightGBM {
   }
 
   void BinMapper::SaveBinaryToFile(const VirtualFileWriter* writer) const {
-    writer->Write(&num_bin_, sizeof(num_bin_));
-    writer->Write(&missing_type_, sizeof(missing_type_));
-    writer->Write(&is_trivial_, sizeof(is_trivial_));
+    writer->AlignedWrite(&num_bin_, sizeof(num_bin_));
+    writer->AlignedWrite(&missing_type_, sizeof(missing_type_));
+    writer->AlignedWrite(&is_trivial_, sizeof(is_trivial_));
     writer->Write(&sparse_rate_, sizeof(sparse_rate_));
-    writer->Write(&bin_type_, sizeof(bin_type_));
+    writer->AlignedWrite(&bin_type_, sizeof(bin_type_));
     writer->Write(&min_val_, sizeof(min_val_));
     writer->Write(&max_val_, sizeof(max_val_));
-    writer->Write(&default_bin_, sizeof(default_bin_));
-    writer->Write(&most_freq_bin_, sizeof(most_freq_bin_));
+    writer->AlignedWrite(&default_bin_, sizeof(default_bin_));
+    writer->AlignedWrite(&most_freq_bin_, sizeof(most_freq_bin_));
     if (bin_type_ == BinType::NumericalBin) {
       writer->Write(bin_upper_bound_.data(), sizeof(double) * num_bin_);
     } else {
@@ -622,8 +610,14 @@ namespace LightGBM {
   }
 
   size_t BinMapper::SizesInByte() const {
-    size_t ret = sizeof(num_bin_) + sizeof(missing_type_) + sizeof(is_trivial_) + sizeof(sparse_rate_)
-      + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_) + sizeof(most_freq_bin_);
+    size_t ret = VirtualFileWriter::AlignedSize(sizeof(num_bin_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(missing_type_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(is_trivial_)) +
+                 sizeof(sparse_rate_) +
+                 VirtualFileWriter::AlignedSize(sizeof(bin_type_)) +
+                 sizeof(min_val_) + sizeof(max_val_) +
+                 VirtualFileWriter::AlignedSize(sizeof(default_bin_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(most_freq_bin_));
     if (bin_type_ == BinType::NumericalBin) {
       ret += sizeof(double) *  num_bin_;
     } else {

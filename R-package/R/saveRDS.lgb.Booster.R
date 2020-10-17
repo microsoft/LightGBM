@@ -18,7 +18,7 @@
 #' @return NULL invisibly.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -52,10 +52,8 @@ saveRDS.lgb.Booster <- function(object,
   # Check if object has a raw value (and if the user wants to store the raw)
   if (is.na(object$raw) && raw) {
 
-    # Save model
     object$save()
 
-    # Save RDS
     saveRDS(
       object
       , file = file
@@ -70,7 +68,6 @@ saveRDS.lgb.Booster <- function(object,
 
   } else {
 
-    # Save as usual
     saveRDS(
       object
       , file = file

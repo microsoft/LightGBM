@@ -17,6 +17,12 @@ if test -d ${TEMP_R_DIR}; then
 fi
 mkdir -p ${TEMP_R_DIR}
 
+CURRENT_DATE=$(date +'%Y-%m-%d')
+
+# R packages cannot have versions like 3.0.0rc1, but
+# 3.0.0-1 is acceptable
+LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
+
 # move relevant files
 cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
@@ -30,6 +36,7 @@ cd ${TEMP_R_DIR}
     rm -r src/cmake/
     rm -r inst/
     rm -r pkgdown/
+    rm cran-comments.md
     rm AUTOCONF_UBUNTU_VERSION
     rm recreate-configure.sh
 
@@ -37,19 +44,26 @@ cd ${TEMP_R_DIR}
     # for the R package
     rm src/main.cpp
 
-    # Remove 'region' and 'endregion' pragmas. This won't change
-    # the correctness of the code. CRAN does not allow you
-    # to use compiler flag '-Wno-unknown-pragmas' or
+    # configure.ac and DESCRIPTION have placeholders for version
+    # and date so they don't have to be updated manually
+    sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" configure.ac
+    sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" DESCRIPTION
+    sed -i.bak -e "s/~~DATE~~/${CURRENT_DATE}/" DESCRIPTION
+
+    # Remove 'region', 'endregion', and 'warning' pragmas.
+    # This won't change the correctness of the code. CRAN does
+    # not allow you to use compiler flag '-Wno-unknown-pragmas' or
     # pragmas that suppress warnings.
     echo "Removing unknown pragmas in headers"
-    for file in src/include/LightGBM/*.h; do
+    for file in $(find . -name '*.h' -o -name '*.hpp' -o -name '*.cpp'); do
       sed \
         -i.bak \
         -e 's/^.*#pragma region.*$//' \
         -e 's/^.*#pragma endregion.*$//' \
+        -e 's/^.*#pragma warning.*$//' \
         "${file}"
     done
-    rm src/include/LightGBM/*.h.bak
+    find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
 
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called

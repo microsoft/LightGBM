@@ -12,23 +12,6 @@ function Download-File-With-Retries {
   } while(!$?);
 }
 
-# mirrors that host miktexsetup.zip do so only with explicitly-named
-# files like miktexsetup-2.4.5.zip, so hard-coding a link to an archive as a
-# way to peg to one mirror does not work
-#
-# this function will find the specific version of miktexsetup.zip at a given
-# mirror and download it
-function Download-Miktex-Setup {
-    param(
-        [string]$archive,
-        [string]$destfile
-    )
-    $PageContent = Invoke-WebRequest -Uri $archive -Method Get
-    $SetupExeFile = $PageContent.Links.href | Select-String -Pattern 'miktexsetup-2.*'
-    $FileToDownload = "${archive}/${SetupExeFile}"
-    Download-File-With-Retries $FileToDownload $destfile
-}
-
 # External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
 # status information) can cause failures in GitHub Actions PowerShell jobs.
 # See https://github.community/t/powershell-steps-fail-nondeterministically/115496
@@ -54,7 +37,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   #     * https://stackoverflow.com/a/46619260/3986677
   $RTOOLS_INSTALL_PATH = "C:\Rtools"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH/mingw_64/bin"
-  $env:RTOOLS_EXE_FILE = "Rtools35.exe"
+  $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
   $RTOOLS_INSTALL_PATH = "C:\rtools40"
@@ -71,8 +54,11 @@ $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$RTOOLS_INSTALL_PATH/usr/bin;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
-$env:CTAN_MIKTEX_ARCHIVE = "$env:CTAN_MIRROR/setup/windows-x64/"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
+
+# hack to get around this:
+# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
+$env:_R_CHECK_SYSTEM_CLOCK_ = 0
 
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
@@ -103,7 +89,7 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 # download R and RTools
 Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/Rtools/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
+Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 # Install R
 Write-Output "Installing R"
@@ -123,7 +109,7 @@ Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); insta
 #
 # MiKTeX always needs to be built to test a CRAN package.
 if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
-    Download-Miktex-Setup "$env:CTAN_MIKTEX_ARCHIVE" "miktexsetup-x64.zip"
+    Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-4.0-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
@@ -132,7 +118,7 @@ if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
-    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE)" ; Check-Output $?
+    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
     conda install -q -y --no-deps pandoc
 }
 
@@ -147,7 +133,7 @@ if ($env:COMPILER -ne "MSVC") {
   if ($env:R_BUILD_TYPE -eq "cmake") {
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
-    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE)" ; Check-Output $?
+    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
@@ -158,8 +144,14 @@ if ($env:COMPILER -ne "MSVC") {
     cd "C:\$R_CMD_CHECK_DIR\"
   }
 
-  Write-Output "Running R CMD check as CRAN"
-  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-dontrun', '$PKG_FILE_NAME'), echo = TRUE, windows_verbatim_args = FALSE)" ; $check_succeeded = $?
+  Write-Output "Running R CMD check"
+  if ($env:R_BUILD_TYPE -eq "cran") {
+    # CRAN packages must pass without --no-multiarch (build on 64-bit and 32-bit)
+    $check_args = "c('CMD', 'check', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
+  } else {
+    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
+  }
+  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
@@ -168,7 +160,11 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -Quiet) {
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
+      echo "ERRORs have been found by R CMD check!"
+      Check-Output $False
+  }
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
       echo "WARNINGS have been found by R CMD check!"
       Check-Output $False
   }
@@ -189,6 +185,11 @@ if ($env:COMPILER -ne "MSVC") {
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
   Check-Output $install_succeeded
+  # some errors are not raised above, but can be found in the logs
+  if (Get-Content "$INSTALL_LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
+      echo "ERRORs have been found installing lightgbm"
+      Check-Output $False
+  }
 }
 
 # Checking that we actually got the expected compiler. The R package has some logic
