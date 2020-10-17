@@ -3,8 +3,6 @@ name: R valgrind tests
 on:
   pull_request_review_comment:
     types: [created]
-  issue_comment:
-    types: [created]
 
 jobs:
   test-r-valgrind:
