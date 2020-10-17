@@ -187,7 +187,13 @@ if [[ $check_succeeded == "no" ]]; then
     exit -1
 fi
 
-if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
+num_warnings=$(
+    cat ${LOG_FILE_NAME} \
+    | grep -q -R "WARNING" \
+    | grep -v "was built under R version" \
+    | wc -l
+)
+if [[ ${num_warnings} -gt 0 ]]; then
     echo "WARNINGS have been found by R CMD check!"
     exit -1
 fi

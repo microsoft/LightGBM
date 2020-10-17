@@ -164,7 +164,7 @@ if ($env:COMPILER -ne "MSVC") {
       echo "ERRORs have been found by R CMD check!"
       Check-Output $False
   }
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet | Select-String -Pattern "was built under R version" -NotMatch -CaseSensitive -Quiet) {
       echo "WARNINGS have been found by R CMD check!"
       Check-Output $False
   }
