@@ -18,13 +18,13 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
-      - name: Test
-        run: |
-            sleep 2m
-            exit -1
       - name: Install Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
       - name: Rerun main workflow
         run: python "$GITHUB_WORKSPACE/.ci/rerun_workflow.py"
+      - name: Test
+        run: |
+            sleep 2m
+            exit -1

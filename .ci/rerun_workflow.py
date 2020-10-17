@@ -29,4 +29,4 @@ def rerun_workflow(runs):
 
 
 if __name__ == "__main__":
-    status = rerun_workflow(get_runs())
+    rerun_workflow(get_runs())
