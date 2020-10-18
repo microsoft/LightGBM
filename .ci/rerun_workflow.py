@@ -21,7 +21,7 @@ def rerun_workflow(runs):
     if runs:
         req = request.Request(url="https://api.github.com/repos/microsoft/LightGBM/actions/runs/{}/rerun".format(runs[0]["id"]),
                               headers={"accept": "application/vnd.github.v3+json",
-                                       "authorization": "Bearer {}".format(environ.get("SECRET_GITHUB_TOKEN"))},
+                                       "authorization": "Bearer {}".format(environ.get("GITHUB_TOKEN"))},
                               method="POST")
         try:
             res = request.urlopen(req)

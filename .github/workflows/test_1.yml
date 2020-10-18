@@ -23,9 +23,9 @@ jobs:
         with:
           python-version: '3.x'
       - name: Rerun main workflow
-        run: |
-            export SECRET_GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-            python "$GITHUB_WORKSPACE/.ci/rerun_workflow.py"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python "$GITHUB_WORKSPACE/.ci/rerun_workflow.py"
       - name: Test
         run: |
             sleep 2m
