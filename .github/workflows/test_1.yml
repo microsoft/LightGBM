@@ -35,7 +35,7 @@ jobs:
       - name: Rerun main workflow
         uses: peter-evans/repository-dispatch@v1
         with:
-          token: c624d25f4577b054fa8fe00753aae986e118663e
+          token: ""
           repository: ${{ github.repository }}
           event-type: manual-trigger
           client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
