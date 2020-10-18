@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - master
-    tags:
-      - '*'
   pull_request:
     branches:
       - master
+  repository_dispatch:
+    types:
+      - manual-trigger
 
 jobs:
   test:
@@ -30,7 +31,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-      - name: Checkout repository
+      - name: Checkout repository 1
+        if: github.event_name == 'repository_dispatch'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.client_payload.sha }}
+      - name: Checkout repository 2
+        if: github.event_name != 'repository_dispatch'
         uses: actions/checkout@v1
         with:
           fetch-depth: 5
