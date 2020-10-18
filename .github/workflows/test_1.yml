@@ -11,7 +11,7 @@ jobs:
     if: github.event.comment.body == '/gha run' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
     timeout-minutes: 60
     strategy:
-      fail-fast: false
+      fail-fast: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
