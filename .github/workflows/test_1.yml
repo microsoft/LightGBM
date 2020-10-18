@@ -25,8 +25,7 @@ jobs:
       - name: Rerun main workflow
         # Unfortunately, GitHub doesn't allow to rerun successful workflows via REST API:
         # https://stackoverflow.com/a/56684569
-        run: |
-            git tag tmp-rerun && git push --tags && git tag -d tmp-rerun && git push origin :tmp-rerun
+        run: git tag tmp-rerun && git push --tags && git tag -d tmp-rerun && git push origin :tmp-rerun
       - name: Test
         run: |
             sleep 2m
