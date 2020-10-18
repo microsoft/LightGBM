@@ -43,7 +43,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $RTOOLS_INSTALL_PATH = "C:\rtools40"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH/mingw64/bin"
   $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.2"
+  $env:R_WINDOWS_VERSION = "4.0.3"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -164,7 +164,7 @@ if ($env:COMPILER -ne "MSVC") {
       echo "ERRORs have been found by R CMD check!"
       Check-Output $False
   }
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet | Select-String -Pattern "was built under R version" -NotMatch -CaseSensitive -Quiet) {
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
       echo "WARNINGS have been found by R CMD check!"
       Check-Output $False
   }

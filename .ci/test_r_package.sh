@@ -18,8 +18,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.0.2
-    export R_LINUX_VERSION="4.0.2-1.1804.0"
+    export R_MAC_VERSION=4.0.3
+    export R_LINUX_VERSION="4.0.3-1.1804.0"
     export R_APT_REPO="bionic-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -187,13 +187,7 @@ if [[ $check_succeeded == "no" ]]; then
     exit -1
 fi
 
-num_warnings=$(
-    cat ${LOG_FILE_NAME} \
-    | grep -q -R "WARNING" \
-    | grep -v "was built under R version" \
-    | wc -l
-)
-if [[ ${num_warnings} -gt 0 ]]; then
+if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     echo "WARNINGS have been found by R CMD check!"
     exit -1
 fi
