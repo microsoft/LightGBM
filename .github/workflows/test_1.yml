@@ -25,10 +25,12 @@ jobs:
       - name: Rerun main workflow
         # Unfortunately, GitHub doesn't allow to rerun successful workflows via REST API:
         # https://stackoverflow.com/a/56684569
+# git tag tmp-rerun && git push --tags && git tag -d tmp-rerun && git push origin :tmp-rerun
         run: |
             git config --global user.name "GitHub Actions Bot"
             git config --global user.email "bot@noreply.github.com"
-            git tag tmp-rerun && git push --tags && git tag -d tmp-rerun && git push origin :tmp-rerun
+            git commit --allow-empty -m "trigger GitHub actions"
+            git push
       - name: Test
         run: |
             sleep 2m
