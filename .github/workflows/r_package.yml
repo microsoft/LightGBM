@@ -163,8 +163,7 @@ jobs:
     name: r-package (ubuntu-latest, R-devel, GCC ASAN/UBSAN)
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container:
-      image: rhub/rocker-gcc-san
+    container: rhub/rocker-gcc-san
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
