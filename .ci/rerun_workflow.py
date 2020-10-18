@@ -1,4 +1,5 @@
 import json
+import os
 from os import environ
 from sys import exit
 from urllib import request
@@ -21,7 +22,7 @@ def rerun_workflow(runs):
     if runs:
         req = request.Request(url="https://api.github.com/repos/microsoft/LightGBM/actions/runs/{}/rerun".format(runs[0]["id"]),
                               headers={"accept": "application/vnd.github.v3+json",
-                                       "authorization": environ.get("GITHUB_TOKEN")},
+                                       "authorization": "Bearer {}".format(os.getenv("GITHUB_TOKEN"))},
                               method="POST")
         try:
             res = request.urlopen(req)
