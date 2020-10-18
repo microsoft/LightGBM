@@ -28,7 +28,8 @@ def rerun_workflow(runs):
             if res.getcode() != 201:
                 print(res.getcode())
                 exit(1)
-        except Exception:
+        except Exception as ex:
+            print(ex)
             exit(1)
 
 
