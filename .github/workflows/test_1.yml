@@ -13,17 +13,10 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - name: Checkout repository 1
-        if: github.event_name == 'pull_request'
+      - name: Checkout repository
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 5
-          submodules: true
-      - name: Checkout repository 2
-        if: github.event_name == 'push'
-        uses: actions/checkout@v2
-        with:
           fetch-depth: 5
           submodules: true
       - name: Install Python
