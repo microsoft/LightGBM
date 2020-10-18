@@ -23,9 +23,10 @@ jobs:
         with:
           python-version: '3.x'
       - name: Rerun main workflow
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python "$GITHUB_WORKSPACE/.ci/rerun_workflow.py"
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git tag tmp-rerun && git push --tags && git tag -d tmp-rerun && git push origin :tmp-rerun
+# python "$GITHUB_WORKSPACE/.ci/rerun_workflow.py"
       - name: Test
         run: |
             sleep 2m
