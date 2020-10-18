@@ -1,5 +1,4 @@
 import json
-import os
 from os import environ
 from sys import exit
 from urllib import request
@@ -22,15 +21,17 @@ def rerun_workflow(runs):
     if runs:
         req = request.Request(url="https://api.github.com/repos/microsoft/LightGBM/actions/runs/{}/rerun".format(runs[0]["id"]),
                               headers={"accept": "application/vnd.github.v3+json",
-                                       "authorization": "Token {}".format(os.getenv("GITHUB_TOKEN"))},
+                                       "authorization": "Token {}".format(environ.get("GITHUB_TOKEN"))},
                               method="POST")
         try:
             res = request.urlopen(req)
             if res.getcode() != 201:
-                print(res.getcode())
-                exit(1)
-        except Exception as ex:
-            print(ex)
+                raise Exception("Cannot rerun workflow. HTTP status code: {}.\n"
+                                "Probably you should just wait and try again later\n"
+                                "because GitHub Actions doesn't allow to rerun workflows "
+                                "with 'in-progress' status".format(res.getcode()))
+        except BaseException as e:
+            print(e)
             exit(1)
 
 
