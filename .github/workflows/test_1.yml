@@ -26,7 +26,7 @@ jobs:
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            git config --global user.name "${{ github.event.user.login }}"
+            git config --global user.name 'GitHub Actions Bot'
             git tag tmp-rerun && git push --tags && git tag -d tmp-rerun && git push origin :tmp-rerun
 # python "$GITHUB_WORKSPACE/.ci/rerun_workflow.py"
       - name: Test
