@@ -27,6 +27,7 @@ jobs:
         # https://stackoverflow.com/a/56684569
         run: |
             git config --global user.name "GitHub Actions Bot"
+            git config --global user.email "bot@noreply.github.com"
             git tag tmp-rerun && git push --tags && git tag -d tmp-rerun && git push origin :tmp-rerun
       - name: Test
         run: |
