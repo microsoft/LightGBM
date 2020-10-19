@@ -86,7 +86,7 @@ LINTERS_TO_USE <- list(
     , "unneeded_concatenation" = lintr::unneeded_concatenation_linter
 )
 
-print(sprintf("Found %i R files to lint\n", length(FILES_TO_LINT)))
+print(paste0("LINT INFO: ", length(FILES_TO_LINT), " R files need linting"))
 
 results <- NULL
 
@@ -112,6 +112,8 @@ for (r_file in FILES_TO_LINT) {
 }
 
 issues_found <- length(results)
+
+print(paste0("Total linting issues found: ", issues_found))
 
 if (issues_found > 0L) {
     print(results)
