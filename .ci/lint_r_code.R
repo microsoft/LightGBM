@@ -86,7 +86,7 @@ LINTERS_TO_USE <- list(
     , "unneeded_concatenation" = lintr::unneeded_concatenation_linter
 )
 
-noquote(paste0("LINT INFO: ", length(FILES_TO_LINT), " R files need linting"))
+noquote(paste0(length(FILES_TO_LINT), " R files need linting"))
 
 results <- NULL
 
