@@ -32,6 +32,8 @@ public:
 
       virtual std::string Name() const = 0;
 
+      virtual CatConverter* Copy() const = 0;
+
       virtual void SetPrior(const double /*prior*/, const double /*prior_weight*/) {}
 
       void RegisterConvertFid(const int cat_fid, const int convert_fid) {
@@ -115,6 +117,11 @@ public:
         str_stream << Name() << "," << DumpDictToString(cat_fid_to_convert_fid_, '#');
         return str_stream.str();
       }
+
+      CatConverter* Copy() const override {
+        return new CTRConverter(prior_);
+      }
+
     private:
       const double prior_;
       double prior_weight_;
@@ -123,6 +130,10 @@ public:
   class CountConverter: public CatConverter {
     public:
       CountConverter() {}
+
+      CatConverter* Copy() const override {
+        return new CountConverter();
+      }
     private:
       inline virtual double CalcValue(const double /*sum_label*/, const double /*sum_count*/, const double all_fold_sum_count) override {
         return all_fold_sum_count;
@@ -177,6 +188,12 @@ public:
         std::stringstream str_stream;
         str_stream << Name() << "," << DumpDictToString(cat_fid_to_convert_fid_, '#');
         return str_stream.str();
+      }
+
+      CatConverter* Copy() const override {
+        CatConverter* ret = new CTRConverterLabelMean();
+        ret->SetPrior(prior_, prior_weight_);
+        return ret;
       }
 
     private:
@@ -507,6 +524,47 @@ private:
     }
   }
   
+  CTRProvider(const CTRProvider& other):
+  config_(other.config_) {
+    num_data_ = other.num_data_;
+    categorical_features_ = other.categorical_features_;
+    training_data_fold_id_.resize(other.training_data_fold_id_.size());
+    num_threads_ = other.num_threads_;
+    #pragma omp parallel for schedule(static) num_threads(num_threads_)
+    for (size_t i = 0; i < training_data_fold_id_.size(); ++i) {
+      training_data_fold_id_[i] = other.training_data_fold_id_[i];
+    }
+    convert_fid_to_cat_fid_ = other.convert_fid_to_cat_fid_;
+    fold_prior_ = other.fold_prior_;
+    is_categorical_feature_ = other.is_categorical_feature_;
+    push_training_data_func_ = nullptr;
+    push_valid_data_func_ = nullptr;
+    num_original_features_ = other.num_original_features_;
+    num_total_features_ = other.num_total_features_;
+    for (const auto& pair : other.count_info_) {
+      count_info_[pair.first] = pair.second;
+    }
+    for (const auto& pair : other.label_info_) {
+      label_info_[pair.first] = pair.second;
+    }
+    thread_count_info_.resize(num_threads_);
+    thread_label_info_.resize(num_threads_);
+    #pragma omp parallel for schedule(static) num_threads(num_threads_)
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      thread_count_info_[thread_id] = other.thread_count_info_[thread_id];
+      thread_label_info_[thread_id] = other.thread_label_info_[thread_id];
+    }
+    fold_label_sum_ = other.fold_label_sum_;
+    thread_fold_label_sum_ = other.thread_fold_label_sum_;
+    fold_num_data_ = other.fold_num_data_;
+    max_bin_by_feature_ = other.max_bin_by_feature_;
+    convert_calc_func_ = nullptr;
+    cat_converters_.clear();
+    for (const std::unique_ptr<CatConverter>& cat_converter: cat_converters_) {
+      cat_converters_.emplace_back(cat_converter->Copy());
+    }
+  }
+
   void ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, std::vector<bool>& is_feature_processed,
     std::unordered_map<int, std::vector<std::unordered_map<int, int>>>& count_info,
     std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info,
