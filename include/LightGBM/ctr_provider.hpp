@@ -370,33 +370,6 @@ public:
 
   void ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, std::vector<bool>& is_feature_processed);
 
-  static std::vector<CatConverter*> ParseCatConverters(const std::string cat_converters_string) {
-    std::vector<CatConverter*> cat_converters;
-    const std::string ctr_string = std::string("ctr");
-    const std::string count_string = std::string("count");
-    if (cat_converters_string.size() > 0) {
-      for (auto converter : Common::Split(cat_converters_string.c_str(), ',')) {
-        if (Common::StartsWith(converter, ctr_string)) {
-          if (converter.size() > ctr_string.size()) {
-            // get priror value
-            double prior = 0.0f;
-            Common::Atof(Common::Split(converter.c_str(), ':').back().c_str(), &prior);
-            cat_converters.push_back(new CTRConverter(prior));
-          } else {
-            cat_converters.push_back(new CTRConverterLabelMean());
-          }
-        }
-        else if (converter == count_string) {
-          cat_converters.push_back(new CountConverter());
-        }
-        else {
-          Log::Fatal("Unknow cat converter %s", converter.c_str());
-        }
-      } 
-    }
-    return cat_converters;
-  }
-
   std::string DumpModelInfo() const;
 
   static CTRProvider* RecoverFromModelString(const std::string model_string);
@@ -484,7 +457,7 @@ private:
       for (auto token : Common::Split(config_.cat_converters.c_str(), ',')) {
         if (Common::StartsWith(token, "ctr")) {
           if (token.size() == ctr_string.size()) {
-            cat_converters_.emplace_back(CTRProvider::CTRConverterLabelMean());
+            cat_converters_.emplace_back(new CTRProvider::CTRConverterLabelMean());
           } else {
             double prior = 0.0f;
             if (!Common::AtofAndCheck(token.c_str() + ctr_string.size() + 1, &prior)) {
