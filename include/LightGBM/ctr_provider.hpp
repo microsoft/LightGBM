@@ -328,8 +328,8 @@ public:
     convert_fid_to_cat_fid_ = other.convert_fid_to_cat_fid_;
     fold_prior_ = other.fold_prior_;
     is_categorical_feature_ = other.is_categorical_feature_;
-    push_training_data_func_ = nullptr;
-    push_valid_data_func_ = nullptr;
+    push_training_data_func_ = other.push_training_data_func_;
+    push_valid_data_func_ = other.push_valid_data_func_;
     num_original_features_ = other.num_original_features_;
     num_total_features_ = other.num_total_features_;
     for (const auto& pair : other.count_info_) {
