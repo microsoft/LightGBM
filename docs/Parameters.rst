@@ -955,7 +955,9 @@ Objective Parameters
 
    -  used only in ``lambdarank`` application
 
-   -  used for truncating the max DCG, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
+   -  controls the number of top-results to focus on during training, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`
+
+   -  is closely related to the desirable cutoff k in the metric NDCG@k that we aim at optimizing the ranker for. The optimal setting for this parameter is likely to be slightly higher than k (e.g., k + 3) to include more pairs of documents to train on, but perhaps not too high to avoid deviating too much from the desired target metric NDCG@k
 
 -  ``lambdarank_norm`` :raw-html:`<a id="lambdarank_norm" title="Permalink to this parameter" href="#lambdarank_norm">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
