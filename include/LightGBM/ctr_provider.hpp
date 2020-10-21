@@ -38,7 +38,7 @@ public:
         cat_fid_to_convert_fid_[cat_fid] = convert_fid;
       }
 
-      int GetConvertFid(const int cat_fid) {
+      int GetConvertFid(const int cat_fid) const {
         return cat_fid_to_convert_fid_.at(cat_fid);
       }
 
@@ -342,7 +342,7 @@ public:
 
       size_t append_from = 0;
       if (!config_.keep_old_cat_method) {
-        const auto& cat_converter = cat_converters_[0];
+        auto& cat_converter = cat_converters_[0];
         for (int fid : categorical_features_) {
           cat_converter->RegisterConvertFid(fid, fid);
           convert_fid_to_cat_fid_[fid] = fid;
@@ -350,7 +350,7 @@ public:
         append_from = 1;
       }
       for (size_t i = append_from; i < cat_converters_.size(); ++i) {
-        const auto& cat_converter = cat_converters_[i];
+        auto& cat_converter = cat_converters_[i];
         for (const int& fid : categorical_features_) {
           cat_converter->RegisterConvertFid(fid, num_total_features_);
           convert_fid_to_cat_fid_[num_total_features_] = fid;
@@ -456,7 +456,7 @@ public:
 
   int CalcNumExtraFeatures() const {
     int num_extra_features = 0;
-    for (const CatConverter* cat_converter : cat_converters_) {
+    for (const auto& cat_converter : cat_converters_) {
       num_extra_features += cat_converter->CalcNumExtraFeatures();
     }
     return num_extra_features;
@@ -484,16 +484,16 @@ private:
       for (auto token : Common::Split(config_.cat_converters.c_str(), ',')) {
         if (Common::StartsWith(token, "ctr")) {
           if (token.size() == ctr_string.size()) {
-            cat_converters_.push_back(new CTRProvider::CTRConverterLabelMean());
+            cat_converters_.emplace_back(CTRProvider::CTRConverterLabelMean());
           } else {
             double prior = 0.0f;
             if (!Common::AtofAndCheck(token.c_str() + ctr_string.size() + 1, &prior)) {
               Log::Fatal("CTR prior of cat_converter specification %s is not a valid float value.", token.c_str());
             }
-            cat_converters_.push_back(new CTRProvider::CTRConverter(prior));
+            cat_converters_.emplace_back(new CTRProvider::CTRConverter(prior));
           }
         } else if(token == std::string("count")) {
-          cat_converters_.push_back(new CTRProvider::CountConverter());
+          cat_converters_.emplace_back(new CTRProvider::CountConverter());
         }
         else {
           Log::Fatal("Unknown cat_converters specification %s.", token.c_str());
@@ -530,7 +530,7 @@ private:
     cat_converters_.clear();
     std::string cat_converter_string;
     while (str_stream >> cat_converter_string) {
-      cat_converters_.push_back(CatConverter::CreateFromString(cat_converter_string, config_.prior_weight));
+      cat_converters_.emplace_back(CatConverter::CreateFromString(cat_converter_string, config_.prior_weight));
     }
   }
   
@@ -630,7 +630,7 @@ private:
   // number of data per fold
   std::vector<data_size_t> fold_num_data_;
   // categorical value converters
-  std::vector<CatConverter*> cat_converters_;
+  std::vector<std::unique_ptr<CatConverter>> cat_converters_;
   // max bin by feature
   std::vector<int> max_bin_by_feature_;
   // calculaton function of convert values
