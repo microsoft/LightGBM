@@ -355,6 +355,22 @@ public:
     }
   }
 
+  ~CTRProvider() {
+    training_data_fold_id_.clear();
+    training_data_fold_id_.shrink_to_fit();
+    convert_fid_to_cat_fid_.clear();
+    fold_prior_.clear();
+    fold_prior_.shrink_to_fit();
+    is_categorical_feature_.clear();
+    is_categorical_feature_.shrink_to_fit();
+    count_info_.clear();
+    label_info_.clear();
+    max_bin_by_feature_.clear();
+    max_bin_by_feature_.shrink_to_fit();
+    cat_converters_.clear();
+    cat_converters_.shrink_to_fit();
+  }
+
   void Init(const data_size_t num_data, const int num_original_features, std::unordered_set<int>& categorical_features) {
     num_data_ = num_data;
     num_original_features_ = num_original_features;
