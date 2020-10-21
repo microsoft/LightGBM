@@ -322,10 +322,11 @@ public:
     training_data_fold_id_.resize(other.training_data_fold_id_.size());
     num_threads_ = other.num_threads_;
     #pragma omp parallel for schedule(static) num_threads(num_threads_)
-    for (size_t i = 0; i < training_data_fold_id_.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(training_data_fold_id_.size()); ++i) {
       training_data_fold_id_[i] = other.training_data_fold_id_[i];
     }
     convert_fid_to_cat_fid_ = other.convert_fid_to_cat_fid_;
+    prior_ = other.prior_;
     fold_prior_ = other.fold_prior_;
     is_categorical_feature_ = other.is_categorical_feature_;
     push_training_data_func_ = other.push_training_data_func_;
@@ -338,15 +339,13 @@ public:
     for (const auto& pair : other.label_info_) {
       label_info_[pair.first] = pair.second;
     }
-    thread_count_info_.resize(num_threads_);
-    thread_label_info_.resize(num_threads_);
-    #pragma omp parallel for schedule(static) num_threads(num_threads_)
-    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-      thread_count_info_[thread_id] = other.thread_count_info_[thread_id];
-      thread_label_info_[thread_id] = other.thread_label_info_[thread_id];
-    }
+    thread_count_info_.clear();
+    thread_label_info_.clear();
+    thread_fold_label_sum_.clear();
+    thread_count_info_.shrink_to_fit();
+    thread_label_info_.shrink_to_fit();
+    thread_fold_label_sum_.shrink_to_fit();
     fold_label_sum_ = other.fold_label_sum_;
-    thread_fold_label_sum_ = other.thread_fold_label_sum_;
     fold_num_data_ = other.fold_num_data_;
     max_bin_by_feature_ = other.max_bin_by_feature_;
     convert_calc_func_ = nullptr;
