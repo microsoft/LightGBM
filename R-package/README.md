@@ -454,12 +454,16 @@ cd R-package/tests
 RDvalgrind \
     --no-readline \
     --vanilla \
-    -d valgrind \
+    -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes" \
         -f testthat.R \
 2>&1 \
 | tee out.log \
 | cat
 ```
+
+These tests can also be triggered on any pull request by leaving a "Comment" review with the following comment:
+
+> /gha run r-valgrind
 
 External (Unofficial) Repositories
 ----------------------------------

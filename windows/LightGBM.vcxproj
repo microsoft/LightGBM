@@ -294,6 +294,7 @@
     <ClInclude Include="..\src\treelearner\feature_histogram.hpp" />
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp" />
     <ClInclude Include="..\src\treelearner\linear_tree_learner.h" />
+    <ClInclude Include="..\src\treelearner\monotone_constraints.hpp" />
     <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
