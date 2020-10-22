@@ -48,9 +48,6 @@ Tree::Tree(int max_leaves, bool track_branch_features)
   max_depth_ = -1;
 }
 
-Tree::~Tree() {
-}
-
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
                 int left_cnt, int right_cnt, double left_weight, double right_weight, float gain,

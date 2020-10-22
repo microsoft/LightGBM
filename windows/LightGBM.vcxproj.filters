@@ -222,6 +222,9 @@
     <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp">
       <Filter>include\LightGBM\utils\yamc</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\treelearner\monotone_constraints.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
