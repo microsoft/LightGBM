@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - brew_swig
+    - master
   tags:
     include:
     - v*
