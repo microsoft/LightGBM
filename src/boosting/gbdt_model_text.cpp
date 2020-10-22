@@ -483,7 +483,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   
   // recover ctr information
   if(key_vals.count("ctr_provider")) {
-    ctr_provider_ = CTRProvider::RecoverFromModelString(key_vals["ctr_provider"]);
+    ctr_provider_.reset(CTRProvider::RecoverFromModelString(key_vals["ctr_provider"]));
   }
   else {
     Log::Fatal("Model file doesn't specify ctr_provider");

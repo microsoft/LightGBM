@@ -536,7 +536,7 @@ class GBDT : public GBDTBase {
   std::vector<Random> bagging_rands_;
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
-  const CTRProvider* ctr_provider_;
+  std::unique_ptr<const CTRProvider> ctr_provider_;
 };
 
 }  // namespace LightGBM
