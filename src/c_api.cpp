@@ -1343,12 +1343,12 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
         row_idx = pair.first;
         // no more data
         if (row_idx < 0) { break; }
-        ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
+        ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, pair.second);
       }
     } else {
       for (int row_idx = 0; row_idx < nrow; ++row_idx) {
         auto val = col_it.Get(row_idx);
-        ret->PushOneData(tid, row_idx, group, sub_feature, val);
+        ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, val);
       }
     }
     OMP_LOOP_EX_END();

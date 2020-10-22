@@ -419,8 +419,14 @@ class Dataset {
     FinishOneRow(tid, row_idx, is_feature_added);
   }
 
-  inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
+  inline void PushOneData(int tid, data_size_t row_idx, int group, int feature_idx, int sub_feature, double value) {
     feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+    if (has_raw_) {
+      int feat_ind = numeric_feature_map_[feature_idx];
+      if (feat_ind >= 0) {
+        raw_data_[feat_ind][row_idx] = value;
+      }
+    }
   }
 
   inline int RealFeatureIndex(int fidx) const {
