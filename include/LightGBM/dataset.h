@@ -709,7 +709,7 @@ class Dataset {
   /*! \brief Set has_raw_ */
   inline void SetHasRaw(bool has_raw) { has_raw_ = has_raw; }
 
-  /*! \brief Resize raw_data_, use current number of features */
+  /*! \brief Resize raw_data_ */
   inline void ResizeRaw(int num_rows) {
     if (static_cast<int>(raw_data_.size()) > num_numeric_features_) {
       raw_data_.resize(num_numeric_features_);
@@ -718,11 +718,8 @@ class Dataset {
       raw_data_[i].resize(num_rows);
     }
     int curr_size = static_cast<int>(raw_data_.size());
-    for (int i = curr_size; i < num_features_; ++i) {
-      int feat_ind = numeric_feature_map_[i];
-      if (feat_ind >= 0) {
-        raw_data_.push_back(std::vector<float>(num_rows, 0));
-      }
+    for (int i = curr_size; i < num_numeric_features_; ++i) {
+      raw_data_.push_back(std::vector<float>(num_rows, 0));
     }
   }
 
