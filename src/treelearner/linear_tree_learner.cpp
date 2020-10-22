@@ -227,13 +227,15 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
   }
   // clear the coefficient matrices
-  for (int tid = 0; tid < num_threads; ++tid) {
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < num_threads; ++i) {
     for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       int num_feat = leaf_features[leaf_num].size();
-      std::fill(XTHX_by_thread_[tid][leaf_num].begin(), XTHX_by_thread_[tid][leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
-      std::fill(XTg_by_thread_[tid][leaf_num].begin(), XTg_by_thread_[tid][leaf_num].begin() + num_feat + 1, 0);
+      std::fill(XTHX_by_thread_[i][leaf_num].begin(), XTHX_by_thread_[i][leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
+      std::fill(XTg_by_thread_[i][leaf_num].begin(), XTg_by_thread_[i][leaf_num].begin() + num_feat + 1, 0);
     }
   }
+#pragma omp parallel for schedule(static)
   for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
     int num_feat = leaf_features[leaf_num].size();
     std::fill(XTHX_[leaf_num].begin(), XTHX_[leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
