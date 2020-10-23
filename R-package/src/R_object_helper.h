@@ -104,8 +104,6 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
 #define R_INT_PTR(x)   (reinterpret_cast<int*> DATAPTR(x))
 
-#define R_INT64_PTR(x) (reinterpret_cast<int64_t*> DATAPTR(x))
-
 #define R_REAL_PTR(x)  (reinterpret_cast<double*> DATAPTR(x))
 
 #define R_AS_INT(x)    (*(reinterpret_cast<int*> DATAPTR(x)))

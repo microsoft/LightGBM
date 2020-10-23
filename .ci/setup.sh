@@ -15,7 +15,7 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install open-mpi
     fi
     if [[ $AZURE == "true" ]] && [[ $TASK == "sdist" ]]; then
-        brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/f3544543a3115023fc7ca962c21d14b443f419d0/Formula/swig.rb  # swig 3.0.12
+        brew install swig@3
     fi
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux

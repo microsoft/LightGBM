@@ -85,6 +85,8 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , ref_handle
   )
   expect_false(is.na(handle))
+  lgb.call("LGBM_DatasetFree_R", ret = NULL, handle)
+  handle <- NULL
 })
 
 test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
