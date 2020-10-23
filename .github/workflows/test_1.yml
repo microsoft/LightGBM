@@ -32,14 +32,14 @@ jobs:
 #            git config --global user.email "bot@noreply.github.com"
 #            git commit --allow-empty -m "trigger GitHub actions"
 #            git push
-      - name: Rerun main workflow
-        uses: peter-evans/repository-dispatch@v1
-        with:
-          token: ${{ secrets.WORKFLOW }}
-          repository: ${{ github.repository }}
-          event-type: manual-trigger
-          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+#      - name: Rerun main workflow
+#        uses: peter-evans/repository-dispatch@v1
+#        with:
+#          token: ${{ secrets.WORKFLOW }}
+#          repository: ${{ github.repository }}
+#          event-type: manual-trigger
+#          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
       - name: Test
         run: |
-            sleep 2m
+            sleep 1m
             exit -1
