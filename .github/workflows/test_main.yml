@@ -7,9 +7,13 @@ on:
   pull_request:
     branches:
       - master
-  repository_dispatch:
+  workflow_run:
+    workflows: ["Test 1"]
     types:
-      - manual-trigger
+      - requested
+#  repository_dispatch:
+#    types:
+#      - manual-trigger
 
 jobs:
   test:
