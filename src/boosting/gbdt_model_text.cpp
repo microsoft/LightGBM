@@ -393,7 +393,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
     ss << loaded_parameter_ << "\n";
     ss << "end of parameters" << '\n';
   }
-  return std::move(ss.str());
+  return ss.str();
 }
 
 bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, int feature_importance_type, const char* filename) const {
@@ -618,7 +618,7 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
   } else {
     Log::Fatal("Unknown importance type: only support split=0 and gain=1");
   }
-  return std::move(feature_importances);
+  return feature_importances;
 }
 
 }  // namespace LightGBM
