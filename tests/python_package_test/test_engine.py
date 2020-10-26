@@ -7,8 +7,6 @@ import psutil
 import random
 import unittest
 
-from functools import lru_cache
-
 import lightgbm as lgb
 import numpy as np
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
@@ -21,6 +19,19 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+try:
+    from functools import lru_cache
+except ImportError:
+    warnings.warn("Could not import functools.lru_cache", RuntimeWarning)
+    def lru_cache(user_function, maxsize=None):
+        @wraps(user_function)
+        def wrapper(*args, **kwargs):
+            arg_key = tuple(args, [item for item in kwargs.items()])
+            if arg_key not in cache:
+                cache[arg_key] = user_function(*args)
+            return cache[arg_key]
+        return wrapper
 
 
 decreasing_generator = itertools.count(0, -1)
