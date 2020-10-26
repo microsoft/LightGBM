@@ -14,6 +14,7 @@ try:
     from functools import lru_cache
 except ImportError:
     warnings.warn("Could not import functools.lru_cache", RuntimeWarning)
+
     def lru_cache(user_function, maxsize=None):
         @wraps(user_function)
         def wrapper(*args, **kwargs):

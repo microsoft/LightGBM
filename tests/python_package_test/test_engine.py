@@ -24,6 +24,7 @@ try:
     from functools import lru_cache
 except ImportError:
     warnings.warn("Could not import functools.lru_cache", RuntimeWarning)
+
     def lru_cache(user_function, maxsize=None):
         @wraps(user_function)
         def wrapper(*args, **kwargs):
@@ -68,13 +69,16 @@ def categorize(continuous_x):
 def _load_boston(**kwargs):
     return load_boston(**kwargs)
 
+
 @lru_cache(maxsize=None)
 def _load_breast_cancer(**kwargs):
     return load_breast_cancer(**kwargs)
 
+
 @lru_cache(maxsize=None)
 def _load_digits(**kwargs):
     return load_digits(**kwargs)
+
 
 @lru_cache(maxsize=None)
 def _load_iris(**kwargs):
