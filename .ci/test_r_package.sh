@@ -18,8 +18,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.0.2
-    export R_LINUX_VERSION="4.0.2-1.1804.0"
+    export R_MAC_VERSION=4.0.3
+    export R_LINUX_VERSION="4.0.3-1.1804.0"
     export R_APT_REPO="bionic-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -165,7 +165,7 @@ check_succeeded="yes"
 (
     R CMD check ${PKG_TARBALL} \
         --as-cran \
-        --run-dontrun \
+        --run-donttest \
     || check_succeeded="no"
 ) &
 
@@ -213,6 +213,20 @@ if [[ $OS_NAME == "macos" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
     )
     if [[ $omp_working -ne 1 ]]; then
         echo "OpenMP was not found, and should be when testing the CRAN package on macOS"
+        exit -1
+    fi
+fi
+
+# this check makes sure that no "warning: unknown pragma ignored" logs
+# reach the user leading them to believe that something went wrong
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    pragma_warning_present=$(
+        cat $BUILD_LOG_FILE \
+        | grep -E "warning: unknown pragma ignored" \
+        | wc -l
+    )
+    if [[ $pragma_warning_present -ne 0 ]]; then
+        echo "Unknown pragma warning is present, pragmas should have been removed before build"
         exit -1
     fi
 fi

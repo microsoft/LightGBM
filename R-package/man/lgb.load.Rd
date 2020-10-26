@@ -19,7 +19,7 @@ Load LightGBM takes in either a file path or model string.
               If both are provided, Load will default to loading from file
 }
 \examples{
-\dontrun{
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

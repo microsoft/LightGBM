@@ -120,9 +120,9 @@ class StringArray
      * @param num_elements Number of strings to store in the array.
      * @param string_size The size of each string in the array.
      */
-    void _allocate_strings(int num_elements, int string_size)
+    void _allocate_strings(size_t num_elements, size_t string_size)
     {
-        for (int i = 0; i < num_elements; ++i)
+        for (size_t i = 0; i < num_elements; ++i)
         {
             // Leave space for \0 terminator:
             _array[i] = new (std::nothrow) char[string_size + 1];
