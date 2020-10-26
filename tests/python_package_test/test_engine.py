@@ -7,7 +7,7 @@ import psutil
 import random
 import unittest
 
-from functools import lru_cache
+from functools import cache
 
 import lightgbm as lgb
 import numpy as np
@@ -53,19 +53,19 @@ def categorize(continuous_x):
     return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
 
 
-@lru_cache
+@cache
 def _load_boston(**kwargs):
     return load_boston(**kwargs)
 
-@lru_cache
+@cache
 def _load_breast_cancer(**kwargs):
     return load_breast_cancer(**kwargs)
 
-@lru_cache
+@cache
 def _load_digits(**kwargs):
     return load_digits(**kwargs)
 
-@lru_cache
+@cache
 def _load_iris(**kwargs):
     return load_iris(**kwargs)
 
