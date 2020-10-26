@@ -60,8 +60,9 @@ class LeafSplits {
   }
 
   /*!
-   * \brief Init splits on current leaf, it will traverse all data to sum up the
-   * results \param gradients \param hessians
+   * \brief Init splits on the current leaf, it will traverse all data to sum up the results
+   * \param gradients
+   * \param hessians
    */
   void Init(const score_t* gradients, const score_t* hessians) {
     num_data_in_leaf_ = num_data_;
