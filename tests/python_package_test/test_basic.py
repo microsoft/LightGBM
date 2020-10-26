@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from functools import cache
+from functools import lru_cache
 
 import lightgbm as lgb
 import numpy as np
@@ -13,7 +13,7 @@ from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlig
 from sklearn.model_selection import train_test_split
 
 
-@cache
+@lru_cache(maxsize=None)
 def _load_breast_cancer(**kwargs):
     return load_breast_cancer(**kwargs)
 

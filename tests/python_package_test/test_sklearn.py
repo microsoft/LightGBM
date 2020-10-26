@@ -6,7 +6,7 @@ import os
 import unittest
 import warnings
 
-from functools import cache
+from functools import lru_cache
 
 import lightgbm as lgb
 import numpy as np
@@ -76,23 +76,23 @@ def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
 
-@cache
+@lru_cache(maxsize=None)
 def _load_boston(**kwargs):
     return load_boston(**kwargs)
 
-@cache
+@lru_cache(maxsize=None)
 def _load_breast_cancer(**kwargs):
     return load_breast_cancer(**kwargs)
 
-@cache
+@lru_cache(maxsize=None)
 def _load_digits(**kwargs):
     return load_digits(**kwargs)
 
-@cache
+@lru_cache(maxsize=None)
 def _load_iris(**kwargs):
     return load_iris(**kwargs)
 
-@cache
+@lru_cache(maxsize=None)
 def _load_linnerud(**kwargs):
     return load_linnerud(**kwargs)
 
