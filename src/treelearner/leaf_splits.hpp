@@ -60,47 +60,64 @@ class LeafSplits {
   }
 
   /*!
-  * \brief Init splits on current leaf, it will traverse all data to sum up the results
-  * \param gradients
-  * \param hessians
-  */
+   * \brief Init splits on current leaf, it will traverse all data to sum up the
+   * results \param gradients \param hessians
+   */
   void Init(const score_t* gradients, const score_t* hessians) {
     num_data_in_leaf_ = num_data_;
     leaf_index_ = 0;
     data_indices_ = nullptr;
-    Threading::SumReduction<data_size_t, double, double>(
-        0, num_data_in_leaf_, 2048,
-        [=](int, data_size_t start, data_size_t end, double* s1, double* s2) {
-          *s1 = *s2 = 0;
-          for (data_size_t i = start; i < end; ++i) {
-            *s1 += gradients[i];
-            *s2 += hessians[i];
-          }
-        },
-        &sum_gradients_, &sum_hessians_);
+    if (num_data_in_leaf_ < 4096) {
+      sum_gradients_ = 0.0f;
+      sum_hessians_ = 0.0f;
+      for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
+        sum_gradients_ += gradients[i];
+        sum_hessians_ += hessians[i];
+      }
+    } else {
+      Threading::SumReduction<data_size_t, double, double>(
+          0, num_data_in_leaf_, 2048,
+          [=](int, data_size_t start, data_size_t end, double* s1, double* s2) {
+            for (data_size_t i = start; i < end; ++i) {
+              *s1 += gradients[i];
+              *s2 += hessians[i];
+            }
+          },
+          &sum_gradients_, &sum_hessians_);
+    }
   }
 
   /*!
-  * \brief Init splits on current leaf of partial data.
-  * \param leaf Index of current leaf
-  * \param data_partition current data partition
-  * \param gradients
-  * \param hessians
-  */
-  void Init(int leaf, const DataPartition* data_partition, const score_t* gradients, const score_t* hessians) {
+   * \brief Init splits on current leaf of partial data.
+   * \param leaf Index of current leaf
+   * \param data_partition current data partition
+   * \param gradients
+   * \param hessians
+   */
+  void Init(int leaf, const DataPartition* data_partition,
+            const score_t* gradients, const score_t* hessians) {
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
-    Threading::SumReduction<data_size_t, double, double>(
-        0, num_data_in_leaf_, 2048,
-        [=](int, data_size_t start, data_size_t end, double* s1, double* s2) {
-          *s1 = *s2 = 0;
-          for (data_size_t i = start; i < end; ++i) {
-            data_size_t idx = data_indices_[i];
-            *s1 += gradients[idx];
-            *s2 += hessians[idx];
-          }
-        },
-        &sum_gradients_, &sum_hessians_);
+    if (num_data_in_leaf_ < 4096) {
+      sum_gradients_ = 0.0f;
+      sum_hessians_ = 0.0f;
+      for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
+        const data_size_t idx = data_indices_[i];
+        sum_gradients_ += gradients[idx];
+        sum_hessians_ += hessians[idx];
+      }
+    } else {
+      Threading::SumReduction<data_size_t, double, double>(
+          0, num_data_in_leaf_, 2048,
+          [=](int, data_size_t start, data_size_t end, double* s1, double* s2) {
+            for (data_size_t i = start; i < end; ++i) {
+              const data_size_t idx = data_indices_[i];
+              *s1 += gradients[idx];
+              *s2 += hessians[idx];
+            }
+          },
+          &sum_gradients_, &sum_hessians_);
+    }
   }
 
 
