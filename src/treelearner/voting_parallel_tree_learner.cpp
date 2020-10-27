@@ -55,8 +55,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   larger_buffer_read_start_pos_.resize(this->num_features_);
   global_data_count_in_leaf_.resize(this->config_->num_leaves);
 
-  smaller_leaf_splits_global_.reset(new LeafSplits(train_data->num_data(), config_));
-  larger_leaf_splits_global_.reset(new LeafSplits(train_data->num_data(), config_));
+  smaller_leaf_splits_global_.reset(new LeafSplits(train_data->num_data(), this->config_));
+  larger_leaf_splits_global_.reset(new LeafSplits(train_data->num_data(), this->config_));
 
   local_config_ = *this->config_;
   local_config_.min_data_in_leaf /= num_machines_;
