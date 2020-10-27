@@ -71,7 +71,7 @@ class Threading {
       const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
     int n_block = 1;
     INDEX_T num_inner = end - start;
-    BlockInfo<INDEX_T>(end - start, min_block_size, &n_block, &num_inner);
+    BlockInfo<INDEX_T>(num_inner, min_block_size, &n_block, &num_inner);
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < n_block; ++i) {
@@ -93,20 +93,16 @@ class Threading {
       VAL1_T* res1, VAL2_T* res2) {
     int n_block = 1;
     INDEX_T num_inner = end - start;
-    BlockInfoForceSize<INDEX_T>(end - start, min_block_size, &n_block,
+    BlockInfoForceSize<INDEX_T>(num_inner, min_block_size, &n_block,
                                 &num_inner);
     std::vector<VAL1_T> val_1s(n_block, static_cast<VAL1_T>(0));
     std::vector<VAL2_T> val_2s(n_block, static_cast<VAL2_T>(0));
-    OMP_INIT_EX();
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static)
     for (int i = 0; i < n_block; ++i) {
-      OMP_LOOP_EX_BEGIN();
       INDEX_T inner_start = start + num_inner * i;
       INDEX_T inner_end = std::min(end, inner_start + num_inner);
       inner_fun(i, inner_start, inner_end, &val_1s[i], &val_2s[i]);
-      OMP_LOOP_EX_END();
     }
-    OMP_THROW_EX();
     *res1 = 0;
     *res2 = 0;
     for (int i = 0; i < n_block; ++i) {
