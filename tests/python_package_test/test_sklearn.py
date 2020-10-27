@@ -22,19 +22,7 @@ from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
 from sklearn.utils.validation import check_is_fitted
 
-try:
-    from functools import lru_cache
-except ImportError:
-    warnings.warn("Could not import functools.lru_cache", RuntimeWarning)
-
-    def lru_cache(user_function, maxsize=None):
-        @wraps(user_function)
-        def wrapper(*args, **kwargs):
-            arg_key = tuple(args, [item for item in kwargs.items()])
-            if arg_key not in cache:
-                cache[arg_key] = user_function(*args)
-            return cache[arg_key]
-        return wrapper
+from .utils import lru_cache
 
 
 decreasing_generator = itertools.count(0, -1)

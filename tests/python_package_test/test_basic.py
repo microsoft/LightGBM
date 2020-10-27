@@ -10,19 +10,7 @@ from scipy import sparse
 from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
-try:
-    from functools import lru_cache
-except ImportError:
-    warnings.warn("Could not import functools.lru_cache", RuntimeWarning)
-
-    def lru_cache(user_function, maxsize=None):
-        @wraps(user_function)
-        def wrapper(*args, **kwargs):
-            arg_key = tuple(args, [item for item in kwargs.items()])
-            if arg_key not in cache:
-                cache[arg_key] = user_function(*args)
-            return cache[arg_key]
-        return wrapper
+from .utils import lru_cache
 
 
 @lru_cache(maxsize=None)
