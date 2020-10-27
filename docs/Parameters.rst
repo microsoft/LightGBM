@@ -193,6 +193,16 @@ Core Parameters
 
    -  this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
 
+-  ``deterministic`` :raw-html:`<a id="deterministic" title="Permalink to this parameter" href="#deterministic">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only with ``cpu`` device type
+
+   -  ``deterministic=true`` should ensure the stable results when using the same data and the same parameters (and different ``num_threads``), but it may be slightly slower.
+
+   -  when you use the different seeds, different LightGBM versions, the binaries complied by different compilers, or in different systems, the results are expected to be different.
+
+   -  you can raise issues in LightGBM GitHub repo when you meet the unstable results.
+
 Learning Control Parameters
 ---------------------------
 

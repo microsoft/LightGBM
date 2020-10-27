@@ -218,6 +218,12 @@ struct Config {
   // desc = this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
   int seed = 0;
 
+  // desc = used only with ``cpu`` device type
+  // desc = ``deterministic=true`` should ensure the stable results when using the same data and the same parameters (and different ``num_threads``), but it may be slightly slower.
+  // desc = when you use the different seeds, different LightGBM versions, the binaries complied by different compilers, or in different systems, the results are expected to be different.
+  // desc = you can raise issues in LightGBM GitHub repo when you meet the unstable results.
+  bool deterministic = false;
+
   #pragma endregion
 
   #pragma region Learning Control Parameters
