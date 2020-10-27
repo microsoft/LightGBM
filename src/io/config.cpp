@@ -359,6 +359,12 @@ void Config::CheckParamConflict() {
   if (max_depth > 0 && monotone_penalty >= max_depth) {
     Log::Warning("Monotone penalty greater than tree depth. Monotone features won't be used.");
   }
+  if (min_data_in_leaf <= 0 and min_sum_hessian_in_leaf <= kEpsilon) {
+    Log::Warning(
+        "Cannot set both min_data_in_leaf and min_sum_hessian_in_leaf to 0. "
+        "Will set min_data_in_leaf to 1.");
+    min_data_in_leaf = 1;
+  }
 }
 
 std::string Config::ToString() const {
