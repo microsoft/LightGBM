@@ -146,8 +146,8 @@ class TestSklearn(unittest.TestCase):
                 eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
                 callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
         self.assertLessEqual(gbm.best_iteration_, 24)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.5769)
-        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.5920)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@1'], 0.5674)
+        self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.578)
 
     def test_xendcg(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))

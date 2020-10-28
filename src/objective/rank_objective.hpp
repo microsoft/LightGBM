@@ -163,35 +163,34 @@ class LambdarankNDCG : public RankingObjective {
     }
     const double worst_score = score[sorted_idx[worst_idx]];
     double sum_lambdas = 0.0;
-    // start accmulate lambdas by pairs
-    for (data_size_t i = 0; i < cnt; ++i) {
-      const data_size_t high = sorted_idx[i];
-      const int high_label = static_cast<int>(label[high]);
-      const double high_score = score[high];
-      if (high_score == kMinScore) {
-        continue;
-      }
-      const double high_label_gain = label_gain_[high_label];
-      const double high_discount = DCGCalculator::GetDiscount(i);
-      double high_sum_lambda = 0.0;
-      double high_sum_hessian = 0.0;
-      for (data_size_t j = 0; j < cnt; ++j) {
-        // skip same data
-        if (i == j) {
-          continue;
+    // start accmulate lambdas by pairs that contain at least one document above truncation level
+    for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
+      if (score[sorted_idx[i]] == kMinScore) { continue; }
+      for (data_size_t j = i + 1; j < cnt; ++j) {
+        if (score[sorted_idx[j]] == kMinScore) { continue; }
+        // skip pairs with the same labels
+        if (label[sorted_idx[i]] == label[sorted_idx[j]]) { continue; }
+        data_size_t high_rank, low_rank;
+        if (label[sorted_idx[i]] > label[sorted_idx[j]]) {
+          high_rank = i;
+          low_rank = j;
+        } else {
+          high_rank = j;
+          low_rank = i;
         }
-        const data_size_t low = sorted_idx[j];
+        const data_size_t high = sorted_idx[high_rank];
+        const int high_label = static_cast<int>(label[high]);
+        const double high_score = score[high];
+        const double high_label_gain = label_gain_[high_label];
+        const double high_discount = DCGCalculator::GetDiscount(high_rank);
+        const data_size_t low = sorted_idx[low_rank];
         const int low_label = static_cast<int>(label[low]);
         const double low_score = score[low];
-        // only consider pair with different label
-        if (high_label <= low_label || low_score == kMinScore) {
-          continue;
-        }
+        const double low_label_gain = label_gain_[low_label];
+        const double low_discount = DCGCalculator::GetDiscount(low_rank);
 
         const double delta_score = high_score - low_score;
 
-        const double low_label_gain = label_gain_[low_label];
-        const double low_discount = DCGCalculator::GetDiscount(j);
         // get dcg gap
         const double dcg_gap = high_label_gain - low_label_gain;
         // get discount of this pair
@@ -208,16 +207,13 @@ class LambdarankNDCG : public RankingObjective {
         // update
         p_lambda *= -sigmoid_ * delta_pair_NDCG;
         p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
-        high_sum_lambda += p_lambda;
-        high_sum_hessian += p_hessian;
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
+        lambdas[high] += static_cast<score_t>(p_lambda);
+        hessians[high] += static_cast<score_t>(p_hessian);
         // lambda is negative, so use minus to accumulate
         sum_lambdas -= 2 * p_lambda;
       }
-      // update
-      lambdas[high] += static_cast<score_t>(high_sum_lambda);
-      hessians[high] += static_cast<score_t>(high_sum_hessian);
     }
     if (norm_ && sum_lambdas > 0) {
       double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
