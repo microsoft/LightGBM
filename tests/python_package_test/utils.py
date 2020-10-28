@@ -1,8 +1,8 @@
-
 try:
     from functools import lru_cache
 except ImportError:
     import warnings
+    from functools import wraps
     warnings.warn("Could not import functools.lru_cache", RuntimeWarning)
 
     def lru_cache(user_function, maxsize=None):
