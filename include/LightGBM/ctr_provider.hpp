@@ -36,6 +36,10 @@ public:
 
       virtual void SetPrior(const double /*prior*/, const double /*prior_weight*/) {}
 
+      void SetCatFidToConvertFid(const std::unordered_map<int, int>& cat_fid_to_convert_fid) {
+        cat_fid_to_convert_fid_ = cat_fid_to_convert_fid;
+      }
+
       void RegisterConvertFid(const int cat_fid, const int convert_fid) {
         cat_fid_to_convert_fid_[cat_fid] = convert_fid;
       }
@@ -119,7 +123,9 @@ public:
       }
 
       CatConverter* Copy() const override {
-        return new CTRConverter(prior_);
+        CatConverter* ret = new CTRConverter(prior_);
+        ret->SetCatFidToConvertFid(cat_fid_to_convert_fid_);
+        return ret;
       }
 
     private:
@@ -132,7 +138,9 @@ public:
       CountConverter() {}
 
       CatConverter* Copy() const override {
-        return new CountConverter();
+        CatConverter* ret = new CountConverter();
+        ret->SetCatFidToConvertFid(cat_fid_to_convert_fid_);
+        return ret;
       }
     private:
       inline virtual double CalcValue(const double /*sum_label*/, const double /*sum_count*/, const double all_fold_sum_count) override {
@@ -193,6 +201,7 @@ public:
       CatConverter* Copy() const override {
         CatConverter* ret = new CTRConverterLabelMean();
         ret->SetPrior(prior_, prior_weight_);
+        ret->SetCatFidToConvertFid(cat_fid_to_convert_fid_);
         return ret;
       }
 
@@ -350,7 +359,7 @@ public:
     max_bin_by_feature_ = other.max_bin_by_feature_;
     convert_calc_func_ = nullptr;
     cat_converters_.clear();
-    for (const std::unique_ptr<CatConverter>& cat_converter: cat_converters_) {
+    for (const std::unique_ptr<CatConverter>& cat_converter: other.cat_converters_) {
       cat_converters_.emplace_back(cat_converter->Copy());
     }
   }
