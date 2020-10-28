@@ -1,3 +1,4 @@
+# coding: utf-8
 try:
     from functools import lru_cache
 except ImportError:
@@ -9,7 +10,7 @@ except ImportError:
 
         def _lru_wrapper(user_function):
             def wrapper(*args, **kwargs):
-                arg_key = (args, tuple([item for item in kwargs.items()]))
+                arg_key = (args, tuple(kwargs.items()))
                 if arg_key not in cache:
                     cache[arg_key] = user_function(*args, **kwargs)
                 return cache[arg_key]
