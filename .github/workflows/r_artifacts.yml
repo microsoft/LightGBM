@@ -25,8 +25,8 @@ jobs:
           LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
           ARTIFACT_NAME=lightgbm-${LGB_VERSION}-r-cran.tar.gz
           mv lightgbm_${LGB_VERSION}.tar.gz ${ARTIFACT_NAME}
-          echo "::set-output name=artifact_name::${ARTIFACT_NAME}\n"
-          echo "::set-output name=artifact_path::$(pwd)/${ARTIFACT_NAME}\n"
+          echo "::set-output name=artifact_name::${ARTIFACT_NAME}"
+          echo "::set-output name=artifact_path::$(pwd)/${ARTIFACT_NAME}"
       - name: Upload package
         uses: actions/upload-artifact@v2
         with:
