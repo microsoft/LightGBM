@@ -7,21 +7,16 @@ import lightgbm as lgb
 import numpy as np
 
 from scipy import sparse
-from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
+from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
-from .utils import lru_cache
-
-
-@lru_cache(maxsize=None)
-def _load_breast_cancer(**kwargs):
-    return load_breast_cancer(**kwargs)
+from .utils import load_breast_cancer, lru_cache
 
 
 class TestBasic(unittest.TestCase):
 
     def test(self):
-        X_train, X_test, y_train, y_test = train_test_split(*_load_breast_cancer(return_X_y=True),
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                             test_size=0.1, random_state=2)
         train_data = lgb.Dataset(X_train, label=y_train)
         valid_data = train_data.create_valid(X_test, label=y_test)
@@ -93,7 +88,7 @@ class TestBasic(unittest.TestCase):
         os.remove(tname)
 
     def test_chunked_dataset(self):
-        X_train, X_test, y_train, y_test = train_test_split(*_load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
 
         chunk_size = X_train.shape[0] // 10 + 1
         X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
@@ -316,7 +311,7 @@ class TestBasic(unittest.TestCase):
             self.assertAlmostEqual(data.label[1], data.weight[1])
             self.assertListEqual(data.feature_name, data.get_feature_name())
 
-        X, y = _load_breast_cancer(return_X_y=True)
+        X, y = load_breast_cancer(return_X_y=True)
         sequence = np.ones(y.shape[0])
         sequence[0] = np.nan
         sequence[1] = np.inf

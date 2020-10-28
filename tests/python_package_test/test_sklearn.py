@@ -10,9 +10,7 @@ import lightgbm as lgb
 import numpy as np
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
-from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris, load_linnerud, load_svmlight_file,
-                              make_multilabel_classification)
+from sklearn.datasets import load_svmlight_file, make_multilabel_classification
 from sklearn.exceptions import SkipTestWarning
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
@@ -22,7 +20,7 @@ from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
 from sklearn.utils.validation import check_is_fitted
 
-from .utils import lru_cache
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, lru_cache
 
 
 decreasing_generator = itertools.count(0, -1)
@@ -76,35 +74,10 @@ def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
 
-@lru_cache(maxsize=None)
-def _load_boston(**kwargs):
-    return load_boston(**kwargs)
-
-
-@lru_cache(maxsize=None)
-def _load_breast_cancer(**kwargs):
-    return load_breast_cancer(**kwargs)
-
-
-@lru_cache(maxsize=None)
-def _load_digits(**kwargs):
-    return load_digits(**kwargs)
-
-
-@lru_cache(maxsize=None)
-def _load_iris(**kwargs):
-    return load_iris(**kwargs)
-
-
-@lru_cache(maxsize=None)
-def _load_linnerud(**kwargs):
-    return load_linnerud(**kwargs)
-
-
 class TestSklearn(unittest.TestCase):
 
     def test_binary(self):
-        X, y = _load_breast_cancer(return_X_y=True)
+        X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -113,7 +86,7 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_regression(self):
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -122,7 +95,7 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_multiclass(self):
-        X, y = _load_digits(n_class=10, return_X_y=True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -165,7 +138,7 @@ class TestSklearn(unittest.TestCase):
         self.assertGreater(gbm.best_score_['valid_0']['ndcg@3'], 0.6253)
 
     def test_regression_with_custom_objective(self):
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -174,7 +147,7 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_binary_classification_with_custom_objective(self):
-        X, y = _load_digits(n_class=2, return_X_y=True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
@@ -186,7 +159,7 @@ class TestSklearn(unittest.TestCase):
         self.assertLess(ret, 0.05)
 
     def test_dart(self):
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(boosting_type='dart', n_estimators=50)
         gbm.fit(X_train, y_train)
@@ -199,7 +172,7 @@ class TestSklearn(unittest.TestCase):
     def test_stacking_classifier(self):
         from sklearn.ensemble import StackingClassifier
 
-        X, y = _load_iris(return_X_y=True)
+        X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         classifiers = [('gbm1', lgb.LGBMClassifier(n_estimators=3)),
                        ('gbm2', lgb.LGBMClassifier(n_estimators=3))]
@@ -226,7 +199,7 @@ class TestSklearn(unittest.TestCase):
     def test_stacking_regressor(self):
         from sklearn.ensemble import StackingRegressor
 
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
                       ('gbm2', lgb.LGBMRegressor(n_estimators=3))]
@@ -245,7 +218,7 @@ class TestSklearn(unittest.TestCase):
         self.assertEqual(len(reg.final_estimator_.feature_importances_), 15)
 
     def test_grid_search(self):
-        X, y = _load_iris(return_X_y=True)
+        X, y = load_iris(return_X_y=True)
         y = y.astype(str)  # utilize label encoder at it's max power
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
                                                             random_state=42)
@@ -275,7 +248,7 @@ class TestSklearn(unittest.TestCase):
         self.assertLessEqual(score, 1.)
 
     def test_random_search(self):
-        X, y = _load_iris(return_X_y=True)
+        X, y = load_iris(return_X_y=True)
         y = y.astype(str)  # utilize label encoder at it's max power
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
                                                             random_state=42)
@@ -329,7 +302,7 @@ class TestSklearn(unittest.TestCase):
     # sklearn < 0.23 does not have as_frame parameter
     @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
     def test_multioutput_regressor(self):
-        bunch = _load_linnerud(as_frame=True)  # returns a Bunch instance
+        bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
         X, y = bunch['data'], bunch['target']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
                                                             random_state=42)
@@ -368,7 +341,7 @@ class TestSklearn(unittest.TestCase):
     # sklearn < 0.23 does not have as_frame parameter
     @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
     def test_regressor_chain(self):
-        bunch = _load_linnerud(as_frame=True)  # returns a Bunch instance
+        bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
         X, y = bunch['data'], bunch['target']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         order = [2, 0, 1]
@@ -385,7 +358,7 @@ class TestSklearn(unittest.TestCase):
             self.assertIsInstance(regressor.booster_, lgb.Booster)
 
     def test_clone_and_property(self):
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
         gbm.fit(X, y, verbose=False)
 
@@ -393,7 +366,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIsInstance(gbm.booster_, lgb.Booster)
         self.assertIsInstance(gbm.feature_importances_, np.ndarray)
 
-        X, y = _load_digits(n_class=2, return_X_y=True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         clf = lgb.LGBMClassifier(n_estimators=10, silent=True)
         clf.fit(X, y, verbose=False)
         self.assertListEqual(sorted(clf.classes_), [0, 1])
@@ -402,7 +375,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIsInstance(clf.feature_importances_, np.ndarray)
 
     def test_joblib(self):
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
                                 silent=True, importance_type='split')
@@ -427,7 +400,7 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_allclose(pred_origin, pred_pickle)
 
     def test_random_state_object(self):
-        X, y = _load_iris(return_X_y=True)
+        X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         state1 = np.random.RandomState(123)
         state2 = np.random.RandomState(123)
@@ -460,14 +433,14 @@ class TestSklearn(unittest.TestCase):
                           df1, df3)
 
     def test_feature_importances_single_leaf(self):
-        data = _load_iris(return_X_y=False)
+        data = load_iris(return_X_y=False)
         clf = lgb.LGBMClassifier(n_estimators=10)
         clf.fit(data.data, data.target)
         importances = clf.feature_importances_
         self.assertEqual(len(importances), 4)
 
     def test_feature_importances_type(self):
-        data = _load_iris(return_X_y=False)
+        data = load_iris(return_X_y=False)
         clf = lgb.LGBMClassifier(n_estimators=10)
         clf.fit(data.data, data.target)
         clf.set_params(importance_type='split')
@@ -591,7 +564,7 @@ class TestSklearn(unittest.TestCase):
 
     def test_predict(self):
         # With default params
-        iris = _load_iris(return_X_y=False)
+        iris = load_iris(return_X_y=False)
         X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target,
                                                             test_size=0.2, random_state=42)
 
@@ -671,7 +644,7 @@ class TestSklearn(unittest.TestCase):
                           res_engine, res_sklearn_params)
 
     def test_evaluate_train_set(self):
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)], verbose=False)
@@ -684,7 +657,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('l2', gbm.evals_result_['valid_1'])
 
     def test_metrics(self):
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         params = {'n_estimators': 2, 'verbose': -1}
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
@@ -724,7 +697,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('mape', gbm.evals_result_['training'])
 
         # non-default metric with multiple metrics in eval_metric for LGBMClassifier
-        X_classification, y_classification = _load_breast_cancer(return_X_y=True)
+        X_classification, y_classification = load_breast_cancer(return_X_y=True)
         params_classification = {'n_estimators': 2, 'verbose': -1,
                                  'objective': 'binary', 'metric': 'binary_logloss'}
         params_fit_classification = {'X': X_classification, 'y': y_classification,
@@ -907,7 +880,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('mape', gbm.evals_result_['training'])
         self.assertIn('error', gbm.evals_result_['training'])
 
-        X, y = _load_digits(n_class=3, return_X_y=True)
+        X, y = load_digits(n_class=3, return_X_y=True)
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # default metric and invalid binary metric is replaced with multiclass alternative
@@ -934,7 +907,7 @@ class TestSklearn(unittest.TestCase):
         self.assertIn('multi_logloss', gbm.evals_result_['training'])
         self.assertIn('multi_error', gbm.evals_result_['training'])
 
-        X, y = _load_digits(n_class=2, return_X_y=True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
 
         # default metric and invalid multiclass metric is replaced with binary alternative
@@ -951,7 +924,7 @@ class TestSklearn(unittest.TestCase):
 
     def test_multiple_eval_metrics(self):
 
-        X, y = _load_breast_cancer(return_X_y=True)
+        X, y = load_breast_cancer(return_X_y=True)
 
         params = {'n_estimators': 2, 'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
         params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
@@ -1030,7 +1003,7 @@ class TestSklearn(unittest.TestCase):
                     self.assertEqual(assumed_iteration if eval_set_name != 'training' else gbm.n_estimators,
                                      gbm.best_iteration_)
 
-        X, y = _load_boston(return_X_y=True)
+        X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=72)
         params = {'n_estimators': 30,
@@ -1111,7 +1084,7 @@ class TestSklearn(unittest.TestCase):
         fit_and_check(['valid_0', 'valid_1'], ['l1', 'l2'], iter_min_l2, True)
 
     def test_class_weight(self):
-        X, y = _load_digits(n_class=10, return_X_y=True)
+        X, y = load_digits(n_class=10, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         y_train_str = y_train.astype('str')
         y_test_str = y_test.astype('str')
@@ -1145,7 +1118,7 @@ class TestSklearn(unittest.TestCase):
                                            gbm_str.evals_result_[eval_set][metric])
 
     def test_continue_training_with_model(self):
-        X, y = _load_digits(n_class=3, return_X_y=True)
+        X, y = load_digits(n_class=3, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         init_gbm = lgb.LGBMClassifier(n_estimators=5).fit(X_train, y_train, eval_set=(X_test, y_test),
                                                           verbose=False)
@@ -1160,7 +1133,7 @@ class TestSklearn(unittest.TestCase):
     # sklearn < 0.22 requires passing "attributes" argument
     @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
     def test_check_is_fitted(self):
-        X, y = _load_digits(n_class=2, return_X_y=True)
+        X, y = load_digits(n_class=2, return_X_y=True)
         est = lgb.LGBMModel(n_estimators=5, objective="binary")
         clf = lgb.LGBMClassifier(n_estimators=5)
         reg = lgb.LGBMRegressor(n_estimators=5)
