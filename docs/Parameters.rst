@@ -197,11 +197,13 @@ Core Parameters
 
    -  used only with ``cpu`` device type
 
-   -  ``deterministic=true`` should ensure the stable results when using the same data and the same parameters (and different ``num_threads``), but it may be slightly slower.
+   -  setting this to ``true`` should ensure the stable results when using the same data and the same parameters (and different ``num_threads``)
 
-   -  when you use the different seeds, different LightGBM versions, the binaries complied by different compilers, or in different systems, the results are expected to be different.
+   -  when you use the different seeds, different LightGBM versions, the binaries compiled by different compilers, or in different systems, the results are expected to be different
 
-   -  you can raise issues in LightGBM GitHub repo when you meet the unstable results.
+   -  you can `raise issues <https://github.com/microsoft/LightGBM/issues>`__ in LightGBM GitHub repo when you meet the unstable results
+
+   -  **Note**: setting this to ``true`` may slow down the training
 
 Learning Control Parameters
 ---------------------------
