@@ -139,7 +139,9 @@ jobs:
           export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
           export R_VERSION="${{ matrix.r_version }}"
           export R_BUILD_TYPE="${{ matrix.build_type }}"
+          export R_LIB_PATH="~/Rlib"
           $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/setup_r_package.sh
           $GITHUB_WORKSPACE/.ci/test.sh
       - name: Use conda on Windows
         if: startsWith(matrix.os, 'windows')
