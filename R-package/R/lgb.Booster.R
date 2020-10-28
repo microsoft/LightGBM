@@ -44,7 +44,7 @@ Booster <- R6::R6Class(
           }
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
           params <- modifyList(params, train_set$get_params())
-          params_str <- lgb.params2str(params)
+          params_str <- lgb.params2str(params = params)
           # Store booster handle
           handle <- lgb.call(
             "LGBM_BoosterCreate_R"
@@ -98,7 +98,7 @@ Booster <- R6::R6Class(
 
           # Create booster from model
           handle <- lgb.call(
-            fun_name="LGBM_BoosterLoadModelFromString_R"
+            fun_name = "LGBM_BoosterLoadModelFromString_R"
             , ret = handle
             , lgb.c_str(model_str)
           )
@@ -127,7 +127,7 @@ Booster <- R6::R6Class(
         private$handle <- handle
         private$num_class <- 1L
         private$num_class <- lgb.call(
-          fun_name="LGBM_BoosterGetNumClasses_R"
+          fun_name = "LGBM_BoosterGetNumClasses_R"
           , ret = private$num_class
           , private$handle
         )
@@ -189,7 +189,7 @@ Booster <- R6::R6Class(
 
       # Append parameters
       params <- append(params, list(...))
-      params_str <- lgb.params2str(params)
+      params_str <- lgb.params2str(params = params)
 
       # Reset parameters
       lgb.call(
@@ -268,7 +268,7 @@ Booster <- R6::R6Class(
 
         # Return custom boosting gradient/hessian
         ret <- lgb.call(
-          fun_name="LGBM_BoosterUpdateOneIterCustom_R"
+          fun_name = "LGBM_BoosterUpdateOneIterCustom_R"
           , ret = NULL
           , private$handle
           , gpair$grad
@@ -311,7 +311,7 @@ Booster <- R6::R6Class(
 
       cur_iter <- 0L
       lgb.call(
-        fun_name="LGBM_BoosterGetCurrentIteration_R"
+        fun_name = "LGBM_BoosterGetCurrentIteration_R"
         , ret = cur_iter
         , private$handle
       )
@@ -323,7 +323,7 @@ Booster <- R6::R6Class(
 
       upper_bound <- 0.0
       lgb.call(
-        fun_name="LGBM_BoosterGetUpperBoundValue_R"
+        fun_name = "LGBM_BoosterGetUpperBoundValue_R"
         , ret = upper_bound
         , private$handle
       )
@@ -335,7 +335,7 @@ Booster <- R6::R6Class(
 
       lower_bound <- 0.0
       lgb.call(
-        fun_name="LGBM_BoosterGetLowerBoundValue_R"
+        fun_name = "LGBM_BoosterGetLowerBoundValue_R"
         , ret = lower_bound
         , private$handle
       )
@@ -387,7 +387,10 @@ Booster <- R6::R6Class(
       }
 
       # Evaluate data
-      private$inner_eval(name, data_idx, feval)
+      private$inner_eval(
+        name = name,
+        data_idx = data_idx,
+        feval = feval)
 
     },
 
@@ -429,7 +432,7 @@ Booster <- R6::R6Class(
 
       # Save booster model
       lgb.call(
-        fun_name="LGBM_BoosterSaveModel_R"
+        fun_name = "LGBM_BoosterSaveModel_R"
         , ret = NULL
         , private$handle
         , as.integer(num_iteration)
@@ -450,7 +453,7 @@ Booster <- R6::R6Class(
 
       # Return model string
       return(lgb.call.return.str(
-        fun_name="LGBM_BoosterSaveModelToString_R"
+        fun_name = "LGBM_BoosterSaveModelToString_R"
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
@@ -467,7 +470,7 @@ Booster <- R6::R6Class(
       }
 
       lgb.call.return.str(
-        "LGBM_BoosterDumpModel_R"
+        fun_name = "LGBM_BoosterDumpModel_R"
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
@@ -496,7 +499,15 @@ Booster <- R6::R6Class(
 
       # Predict on new data
       predictor <- Predictor$new(private$handle, ...)
-      predictor$predict(data, start_iteration, num_iteration, rawscore, predleaf, predcontrib, header, reshape)
+      predictor$predict(
+        data = data, 
+        start_iteration = start_iteration, 
+        num_iteration = num_iteration, 
+        rawscore = rawscore,
+        predleaf = predleaf, 
+        predcontrib = predcontrib, 
+        header = header, 
+        reshape = reshape)
 
     },
 
@@ -554,7 +565,7 @@ Booster <- R6::R6Class(
         # Store predictions
         npred <- 0L
         npred <- lgb.call(
-          fun_name="LGBM_BoosterGetNumPredict_R"
+          fun_name = "LGBM_BoosterGetNumPredict_R"
           , ret = npred
           , private$handle
           , as.integer(idx - 1L)
@@ -587,7 +598,7 @@ Booster <- R6::R6Class(
 
         # Get evaluation names
         names <- lgb.call.return.str(
-          fun_name="LGBM_BoosterGetEvalNames_R"
+          fun_name = "LGBM_BoosterGetEvalNames_R"
           , private$handle
         )
 
@@ -631,7 +642,7 @@ Booster <- R6::R6Class(
         # Create evaluation values
         tmp_vals <- numeric(length(private$eval_names))
         tmp_vals <- lgb.call(
-          fun_name="LGBM_BoosterGetEval_R"
+          fun_name = "LGBM_BoosterGetEval_R"
           , ret = tmp_vals
           , private$handle
           , as.integer(data_idx - 1L)
@@ -758,14 +769,14 @@ predict.lgb.Booster <- function(object,
 
   # Return booster predictions
   object$predict(
-    data
-    , start_iteration
-    , num_iteration
-    , rawscore
-    , predleaf
-    , predcontrib
-    , header
-    , reshape
+    data = data
+    , start_iteration = start_iteration
+    , num_iteration = num_iteration
+    , rawscore = rawscore
+    , predleaf =  predleaf
+    , predcontrib =  predcontrib
+    , header = header
+    , reshape = reshape
     , ...
   )
 }
@@ -873,7 +884,9 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
   }
 
   # Store booster
-  invisible(booster$save_model(filename, num_iteration))
+  invisible(booster$save_model(
+    filename = filename, 
+    num_iterations = num_iteration))
 
 }
 
@@ -915,7 +928,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
   }
 
   # Return booster at requested iteration
-  booster$dump_model(num_iteration)
+  booster$dump_model(num_iteration =  num_iteration)
 
 }
 
