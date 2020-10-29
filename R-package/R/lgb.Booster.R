@@ -509,7 +509,7 @@ Booster <- R6::R6Class(
           , predcontrib = predcontrib
           , header = header
           , reshape = reshape
-        )
+      )
 
     },
 
