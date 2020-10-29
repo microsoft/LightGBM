@@ -889,7 +889,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
   invisible(booster$save_model(
     filename = filename
     , num_iterations = num_iteration
-    ))
+  ))
 
 }
 
