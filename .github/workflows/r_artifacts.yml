@@ -8,7 +8,6 @@ jobs:
   cran-package:
     name: cran-package
     if: github.event.comment.body == '/gha build r-artifacts' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
-    timeout-minutes: 120
     runs-on: ubuntu-latest
     container: rocker/r-base
     steps:
@@ -21,7 +20,7 @@ jobs:
         shell: bash
         id: build_package
         run: |
-          sh build-cran-package.sh
+          sh build-cran-package.sh || exit -1
           LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
           ARTIFACT_NAME=lightgbm-${LGB_VERSION}-r-cran.tar.gz
           mv lightgbm_${LGB_VERSION}.tar.gz ${ARTIFACT_NAME}
