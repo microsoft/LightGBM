@@ -45,22 +45,22 @@ jobs:
             compiler: gcc
             r_version: 4.0
             build_type: cmake
-          - os: macOS-latest
+          - os: macos-11.0
             task: r-package
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-          - os: macOS-latest
+          - os: macos-11.0
             task: r-package
             compiler: gcc
             r_version: 4.0
             build_type: cmake
-          - os: macOS-latest
+          - os: macos-11.0
             task: r-package
             compiler: clang
             r_version: 3.6
             build_type: cmake
-          - os: macOS-latest
+          - os: macos-11.0
             task: r-package
             compiler: clang
             r_version: 4.0
@@ -105,7 +105,7 @@ jobs:
             compiler: gcc
             r_version: 4.0
             build_type: cran
-          - os: macOS-latest
+          - os: macos-11.0
             task: r-package
             compiler: clang
             r_version: 4.0
@@ -121,13 +121,13 @@ jobs:
           fetch-depth: 5
           submodules: true
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'macos-11.0' || matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
           export GITHUB_ACTIONS="true"
-          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+          if [[ "${{ matrix.os }}" == "macos-11.0" ]]; then
               export OS_NAME="macos"
               export R_MAC_VERSION=3.6.3
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
