@@ -39,7 +39,7 @@ Booster <- R6::R6Class(
         # Check if training dataset is not null
         if (!is.null(train_set)) {
           # Check if training dataset is lgb.Dataset or not
-          if (!lgb.check.r6.class(train_set, "lgb.Dataset")) {
+          if (!lgb.Dataset = lgb.check.r6.class(train_set, "lgb.Dataset")) {
             stop("lgb.Booster: Can only use lgb.Dataset as training data")
           }
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
@@ -149,7 +149,7 @@ Booster <- R6::R6Class(
     add_valid = function(data, name) {
 
       # Check if data is lgb.Dataset
-      if (!lgb.check.r6.class(data, "lgb.Dataset")) {
+      if (!lgb.Dataset = lgb.check.r6.class(data, "lgb.Dataset")) {
         stop("lgb.Booster.add_valid: Can only use lgb.Dataset as validation data")
       }
 
@@ -216,7 +216,7 @@ Booster <- R6::R6Class(
       if (!is.null(train_set)) {
 
         # Check if training set is lgb.Dataset
-        if (!lgb.check.r6.class(train_set, "lgb.Dataset")) {
+        if (!lgb.Dataset = lgb.check.r6.class(train_set, "lgb.Dataset")) {
           stop("lgb.Booster.update: Only can use lgb.Dataset as training data")
         }
 
@@ -346,7 +346,7 @@ Booster <- R6::R6Class(
     eval = function(data, name, feval = NULL) {
 
       # Check if dataset is lgb.Dataset
-      if (!lgb.check.r6.class(data, "lgb.Dataset")) {
+      if (!lgb.Dataset = lgb.check.r6.class(data, "lgb.Dataset")) {
         stop("lgb.Booster.eval: Can only use lgb.Dataset to eval")
       }
 
@@ -499,7 +499,7 @@ Booster <- R6::R6Class(
       }
 
       # Predict on new data
-      predictor <- Predictor$new(private$handle, ...)
+      predictor <- Predictor$new(private$handle = private$handle, ...)
       predictor$predict(
           data = data
           , start_iteration = start_iteration
@@ -515,7 +515,7 @@ Booster <- R6::R6Class(
 
     # Transform into predictor
     to_predictor = function() {
-      Predictor$new(private$handle)
+      Predictor$new(private$handle = private$handle)
     },
 
     # Used for save
@@ -525,7 +525,7 @@ Booster <- R6::R6Class(
     save = function() {
 
       # Overwrite model in object
-      self$raw <- self$save_model_to_string(NULL)
+      self$raw <- self$save_model_to_string(null = NULL)
 
     }
 
