@@ -263,17 +263,17 @@ class LGBMModel(_LGBMModelBase):
 
             y_true : array-like of shape = [n_samples]
                 The target values.
-            y_pred : array-like of shape = ``[n_samples]`` or shape = ``[n_samples * n_classes]`` (for multi-class
-                task). The predicted values. Note: For classification tasks, ``y_pred`` is assumed to be in the
+            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class tasks).
+                The predicted values. Note: For classification tasks, ``y_pred`` is assumed to be in the
                 pre-transformed space, i.e. pre-logistic-transform for binary classification or pre-softmax-transform
                 for multi-class classification.
             group : array-like
                 Group/query data, used for ranking task.
-            grad : array-like of shape = ``[n_samples]`` or shape = ``[n_samples * n_classes]`` (for multi-class tasks).
+            grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class tasks).
                 The value of the first order derivative (gradient) of the loss with respect to the elements of
                 ``y_pred`` for each sample point. E.g. For multi-class tasks, ``grad[0]`` is the derivative of the
                 loss function with respect to the pre-transformed output for sample 0, class 0.
-            hess : array-like of shape = ``[n_samples]`` or shape = ``[n_samples * n_classes]`` (for multi-class task).
+            hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task).
                 The value of the second order derivative (Hessian) of the loss with respect to the elements of
                 ``y_pred`` for each sample point. E.g. ``hess[0]`` is the second derivative of the loss function
                 with respect to the pre-transformed output for sample 0, class 0.
