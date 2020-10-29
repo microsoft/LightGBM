@@ -48,13 +48,14 @@ jobs:
         run: |
             status="${{ job.status }}"
             status=${status/cancelled/failure}
+            data=$(jq -n \
+              --arg state $status \
+              --arg url "${{ github.run_id }}" \
+              --arg name "${{ github.workflow }}/${{ job.name }}" \
+              '{"state":$state,"target_url":$url,"context":$name}')
             curl \
               -X POST \
               -H "Accept: application/vnd.github.v3+json" \
               -H "Authorization: token ${{ secrets.WORKFLOW }}" \
-              -d $(jq -n \
-                --arg state $status \
-                --arg url "${{ github.run_id }}" \
-                --arg name "${{ github.workflow }}/${{ job.name }}" \
-                '{"state":$state,"target_url":$url,"context":$name}') \
+              -d "$data" \
               "https://api.github.com/repos/microsoft/LightGBM/statuses/${{ github.event.pull_request.head.sha }}"
