@@ -388,7 +388,7 @@ Booster <- R6::R6Class(
 
       # Evaluate data
       private$inner_eval(
-        name = name
+        data_name = name
          , data_idx = data_idx
          , feval = feval)
 
@@ -771,13 +771,13 @@ predict.lgb.Booster <- function(object,
   # Return booster predictions
   object$predict(
     data = data
-    , start_iteration = start_iteration
-    , num_iteration = num_iteration
-    , rawscore = rawscore
-    , predleaf =  predleaf
-    , predcontrib =  predcontrib
-    , header = header
-    , reshape = reshape
+      , start_iteration = start_iteration
+      , num_iteration = num_iteration
+      , rawscore = rawscore
+      , predleaf =  predleaf
+      , predcontrib =  predcontrib
+      , header = header
+      , reshape = reshape
     , ...
   )
 }
