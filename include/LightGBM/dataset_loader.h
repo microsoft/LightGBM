@@ -19,13 +19,14 @@ class DatasetLoader {
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines, const std::unique_ptr<CTRProvider>& ctr_provider);
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename) {
-    return LoadFromFile(filename, 0, 1);
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, const std::unique_ptr<CTRProvider>& ctr_provider) {
+    return LoadFromFile(filename, 0, 1, ctr_provider);
   }
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
+  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data,
+    const std::unique_ptr<CTRProvider>& ctr_provider);
 
   LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(std::vector<std::vector<double>>& sample_values,
     std::vector<std::vector<int>>& sample_indices,
@@ -58,19 +59,25 @@ class DatasetLoader {
 
   std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
-  std::vector<std::string> SampleTextDataFromMemory(const std::vector<std::string>& data,
-    std::vector<data_size_t>* sampled_data_indices);
+  std::vector<std::string> SampleTextDataFromMemory(const std::vector<std::string>& data);
+
+  std::vector<std::string> SampleTextDataFromMemoryWithIndices(
+    const std::vector<std::string>& data,
+    std::vector<data_size_t>* sampled_indices);
 
   std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, 
-    int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices, 
-    std::vector<data_size_t>* sampled_data_indices);
+    int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+
+  std::vector<std::string> SampleTextDataFromFileWithIndices(const char* filename, const Metadata& metadata, int rank, 
+    int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices,
+    std::vector<data_size_t>* sampled_indices);
 
   CTRProvider* ConstructCTRProviderFromTextData(const std::vector<std::string>& text_data, Parser* parser, const int num_machines);
 
   CTRProvider* ConstructCTRProviderFromFile(const char* filename, Parser* parser, const int num_machines);
 
   void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data,
-    const Parser* parser, const std::vector<data_size_t>& sampled_data_indices, Dataset* dataset, CTRProvider* ctr_provider);
+    const Parser* parser, Dataset* dataset, const std::vector<data_size_t>& sampled_indices);
 
   /*! \brief Extract local features from memory */
   void ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser, Dataset* dataset);

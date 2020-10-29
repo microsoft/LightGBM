@@ -408,14 +408,8 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       feature2group_[cur_fidx] = i;
       feature2subfeature_[cur_fidx] = j;
       cur_bin_mappers.emplace_back(ref_bin_mappers[real_fidx].release());
-      if ((cur_bin_mappers.back()->GetDefaultBin() !=
-          cur_bin_mappers.back()->GetMostFreqBin()
-            // converted features have no need to push zero, its pushing will be handled by its corresponding categorical feature
-            && (ctr_provider_.get() == nullptr || real_fidx < ctr_provider_->GetNumOriginalFeatures())
-          ) || (
-            // categorical feature always need to push zero, if ctr value is used.
-            ctr_provider_.get() != nullptr && ctr_provider_->IsCategorical(real_fidx) && ctr_provider_->GetNumCatConverters() > 0
-          )) {
+      if (cur_bin_mappers.back()->GetDefaultBin() !=
+          cur_bin_mappers.back()->GetMostFreqBin()) {
         feature_need_push_zeros_.push_back(cur_fidx);
       }
       ++cur_fidx;

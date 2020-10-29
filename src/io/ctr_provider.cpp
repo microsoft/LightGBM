@@ -263,8 +263,9 @@ void CTRProvider::SyncCTRPrior(const double label_sum, const int local_num_data,
     }
   }
 
-void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double label, int line_idx, const int thread_id) {
-  const int fold_id = training_data_fold_id_[line_idx];
+void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double label,
+  int /*line_idx*/, const int thread_id, const int fold_id) {
+  //const int fold_id = training_data_fold_id_[line_idx];
   auto& count_info = thread_count_info_[thread_id];
   auto& label_info = thread_label_info_[thread_id];
   for (int fid = 0; fid < num_original_features_; ++fid) {
@@ -283,24 +284,28 @@ void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double lab
 }
 
 void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, 
-  std::vector<bool>& is_feature_processed, const int thread_id) {
+  std::vector<bool>& is_feature_processed, const int thread_id, const int fold_id) {
   ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, thread_count_info_[thread_id], 
-    thread_label_info_[thread_id], thread_fold_label_sum_[thread_id]);
+    thread_label_info_[thread_id], thread_fold_label_sum_[thread_id], thread_fold_num_data_[thread_id], fold_id);
 }
 
-void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, std::vector<bool>& is_feature_processed) {
-  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, count_info_, label_info_, fold_label_sum_);
+void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, 
+  int line_idx, std::vector<bool>& is_feature_processed, const int fold_id) {
+  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, 
+    count_info_, label_info_, fold_label_sum_, fold_num_data_, fold_id);
 }
 
-void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx,
+void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line, double label, int /*line_idx*/,
   std::vector<bool>& is_feature_processed,
   std::unordered_map<int, std::vector<std::unordered_map<int, int>>>& count_info,
   std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info,
-  std::vector<label_t>& label_sum) {
-  const int fold_id = training_data_fold_id_[line_idx];
+  std::vector<label_t>& label_sum,
+  std::vector<int>& num_data,
+  const int fold_id) {
   for (size_t i = 0; i < is_feature_processed.size(); ++i) {
     is_feature_processed[i] = false;
   }
+  ++num_data[fold_id];
   for (const auto& pair : one_line) {
     const int fid = pair.first;
     if (is_categorical_feature_[fid]) {
@@ -357,6 +362,12 @@ void CTRProvider::FinishProcess(const int num_machines) {
         }
       }
     }
+  }
+  for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      fold_num_data_[fold_id] += thread_fold_num_data_[thread_id][fold_id];
+    }
+    fold_num_data_.back() += fold_num_data_[fold_id];
   }
   for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
     for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
@@ -491,6 +502,107 @@ void CTRProvider::ConvertCatToCTR(std::unordered_map<int, double>& features) con
         const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
         const int convert_fid = cat_converter->GetConvertFid(pair.first);
         features[convert_fid] = convert_value;
+      }
+    }
+  }
+}
+
+void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features, const int line_idx) const {
+  std::vector<bool> feature_processed(num_original_features_, false);
+  for (const int fid : categorical_features_) {
+    feature_processed[fid] = false;
+  }
+  const size_t n_pairs = features.size();
+  const int fold_id = training_data_fold_id_[line_idx];
+  for (size_t i = 0; i < n_pairs; ++i) {
+    auto& pair = features[i];
+    const int fid = pair.first;
+    if (is_categorical_feature_[fid]) {
+      const int cat_value = static_cast<int>(pair.second);
+      const auto& label_info = label_info_.at(fid).at(fold_id);
+      const auto& count_info = count_info_.at(fid).at(fold_id);
+      double label_sum = 0.0f, total_count = 0.0f;
+      if (label_info.count(cat_value)) {
+        label_sum = label_info.at(cat_value);
+        total_count = count_info.at(cat_value);    
+      }
+      for (const auto& cat_converter: cat_converters_) {
+        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
+        const int convert_fid = cat_converter->GetConvertFid(fid);
+        if (convert_fid == fid) {
+          pair.second = convert_value;
+        }
+        else {
+          // assert that convert_fid in this case is larger than all the original feature indices
+          features.emplace_back(convert_fid, convert_value);
+        }
+      }
+      feature_processed[fid] = true;
+    }
+  }
+  for (const int fid : categorical_features_) {
+    if (!feature_processed[fid]) {
+      const auto& label_info = label_info_.at(fid).back();
+      const auto& count_info = count_info_.at(fid).back();
+      double label_sum = 0.0f, total_count = 0.0f;
+      if (label_info.count(0)) {
+        label_sum = label_info.at(0);
+        total_count = count_info.at(0);    
+      }
+      for (const auto& cat_converter: cat_converters_) {
+        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
+        const int convert_fid = cat_converter->GetConvertFid(fid);
+        features.emplace_back(convert_fid, convert_value);
+      }
+    }
+  }
+}
+
+void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features) const {
+  std::vector<bool> feature_processed(num_original_features_, false);
+  for (const int fid : categorical_features_) {
+    feature_processed[fid] = false;
+  }
+  const size_t n_pairs = features.size();
+  for (size_t i = 0; i < n_pairs; ++i) {
+    auto& pair = features[i];
+    const int fid = pair.first;
+    if (is_categorical_feature_[fid]) {
+      const int cat_value = static_cast<int>(pair.second);
+      const auto& label_info = label_info_.at(fid).back();
+      const auto& count_info = count_info_.at(fid).back();
+      double label_sum = 0.0f, total_count = 0.0f;
+      if (label_info.count(cat_value)) {
+        label_sum = label_info.at(cat_value);
+        total_count = count_info.at(cat_value);    
+      }
+      for (const auto& cat_converter: cat_converters_) {
+        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
+        const int convert_fid = cat_converter->GetConvertFid(fid);
+        if (convert_fid == fid) {
+          pair.second = convert_value;
+        }
+        else {
+          // assert that convert_fid in this case is larger than all the original feature indices
+          features.emplace_back(convert_fid, convert_value);
+        }
+      }
+      feature_processed[fid] = true;
+    }
+  }
+  for (const int fid : categorical_features_) {
+    if (!feature_processed[fid]) {
+      const auto& label_info = label_info_.at(fid).back();
+      const auto& count_info = count_info_.at(fid).back();
+      double label_sum = 0.0f, total_count = 0.0f;
+      if (label_info.count(0)) {
+        label_sum = label_info.at(0);
+        total_count = count_info.at(0);    
+      }
+      for (const auto& cat_converter: cat_converters_) {
+        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
+        const int convert_fid = cat_converter->GetConvertFid(fid);
+        features.emplace_back(convert_fid, convert_value);
       }
     }
   }

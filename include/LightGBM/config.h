@@ -984,7 +984,7 @@ struct Config {
   // desc = if the prior value is missing, use the label mean of training data
   // desc = count, the count of the categorical feature value in the dataset
   // desc = for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
-  std::string cat_converters = "";
+  std::string cat_converters = std::string("");
 
   // desc = number of folds that training data is divided into, to calculate ctr values
   int num_ctr_folds = 4;

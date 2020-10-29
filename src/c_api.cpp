@@ -909,16 +909,24 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
+
+  std::unique_ptr<CTRProvider> ctr_provider(nullptr);
+  if (!config.cat_converters.empty()) {
+    ctr_provider.reset(CTRProvider::CreateCTRProvider(config, Network::num_machines(), filename));
+  }
+
   DatasetLoader loader(config, nullptr, 1, filename);
+
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
-      *out = loader.LoadFromFile(filename);
+      *out = loader.LoadFromFile(filename, ctr_provider);
     } else {
-      *out = loader.LoadFromFile(filename, Network::rank(), Network::num_machines());
+      *out = loader.LoadFromFile(filename, Network::rank(), Network::num_machines(), ctr_provider);
     }
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename,
-                                                    reinterpret_cast<const Dataset*>(reference));
+                                                    reinterpret_cast<const Dataset*>(reference),
+                                                    ctr_provider);
   }
   API_END();
 }
