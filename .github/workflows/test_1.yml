@@ -42,10 +42,11 @@ jobs:
       - name: Send status
         if: ${{ always() }}
         run: |
-            export COMMIT_STATUS="${${{ job.status }}/cancelled/failure}"
+            status=${{ job.status }}
+            status=${status/cancelled/failure}
             data=$(jq -n \
-              --arg state $COMMIT_STATUS \
-              --arg url "https://github.com/microsoft/LightGBM/actions/runs/${{ github.run_id }}" \
+              --arg state $status \
+              --arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
               --arg name "${{ github.workflow }}" \
               '{"state":$state,"target_url":$url,"context":$name}')
             curl \
@@ -53,4 +54,4 @@ jobs:
               -H "Accept: application/vnd.github.v3+json" \
               -H "Authorization: token ${{ secrets.WORKFLOW }}" \
               -d "$data" \
-              "https://api.github.com/repos/microsoft/LightGBM/statuses/${{ github.event.pull_request.head.sha }}"
+              "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}"
