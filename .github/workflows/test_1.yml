@@ -41,13 +41,15 @@ jobs:
             exit -1
       - name: Send status
         if: ${{ always() }}
+        env:
+          JOB_NAME: "${{ jobs.test.name }}"
+          COMMIT_STATUS: "${{ job.status }}"
         run: |
-            status="${{ job.status }}"
-            status=${status/cancelled/failure}
+            export COMMIT_STATUS=${COMMIT_STATUS/cancelled/failure}
             data=$(jq -n \
-              --arg state $status \
+              --arg state $COMMIT_STATUS \
               --arg url "https://github.com/microsoft/LightGBM/actions/runs/${{ github.run_id }}" \
-              --arg name "${{ github.workflow }} / ${{ github.job }}" \
+              --arg name "${{ github.workflow }} / $JOB_NAME" \
               '{"state":$state,"target_url":$url,"context":$name}')
             curl \
               -X POST \
