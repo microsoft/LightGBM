@@ -1,16 +1,16 @@
 name: Test main
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
     branches:
       - master
-  workflow_run:
-    workflows: ["Test 1"]
-    types:
-      - requested
+#  push:
+#    branches:
+#      - master
+#  workflow_run:
+#    workflows: ["Test 1"]
+#    types:
+#      - requested
 #  repository_dispatch:
 #    types:
 #      - manual-trigger
@@ -35,13 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-      - name: Checkout repository 1
-        if: github.event_name == 'repository_dispatch'
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.client_payload.sha }}
-      - name: Checkout repository 2
-        if: github.event_name != 'repository_dispatch'
+      - name: Checkout repository
         uses: actions/checkout@v1
         with:
           fetch-depth: 5

@@ -41,5 +41,20 @@ jobs:
 #          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
       - name: Test
         run: |
-            sleep 1m
+            sleep 30s
             exit -1
+      - name: Send status
+        if: ${{ always() }}
+        run: |
+            status="${{ job.status }}"
+            status=${status/cancelled/failure}
+            curl \
+              -X POST \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Authorization: token ${{ secrets.WORKFLOW }}" \
+              -d $(jq -n \
+                --arg state $status \
+                --arg url "${{ github.run_id }}" \
+                --arg name "${{ github.workflow }}/${{ job.name }}" \
+                '{"state":$state,"target_url":$url,"context":$name}') \
+              "https://api.github.com/repos/microsoft/LightGBM/statuses/${{ github.event.pull_request.head.sha }}"
