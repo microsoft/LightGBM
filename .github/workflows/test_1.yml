@@ -43,8 +43,10 @@ jobs:
         if: ${{ always() }}
         env:
           JOB_NAME: "${{ jobs.test.name }}"
-          COMMIT_STATUS: "${{ job.status }}"
+#          COMMIT_STATUS: "${{ job.status }}"
         run: |
+            echo "${{ toJson(github) }}"
+            echo "${{ toJson(job) }}"
             export COMMIT_STATUS=${COMMIT_STATUS/cancelled/failure}
             data=$(jq -n \
               --arg state $COMMIT_STATUS \
