@@ -19,10 +19,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 5
           submodules: true
-      - name: Install Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
 #      - name: Rerun main workflow
         # Unfortunately, GitHub doesn't allow to rerun successful workflows via REST API:
         # https://stackoverflow.com/a/56684569
@@ -50,8 +46,8 @@ jobs:
             status=${status/cancelled/failure}
             data=$(jq -n \
               --arg state $status \
-              --arg url "https://github.com/microsoft/LightGBM/runs/${{ github.run_id }}" \
-              --arg name "${{ github.workflow }}/${{ job.name }}" \
+              --arg url "https://github.com/microsoft/LightGBM/actions/runs/${{ github.run_id }}" \
+              --arg name "${{ github.workflow }} / ${{ jobs.${{ github.job }}.name }}" \
               '{"state":$state,"target_url":$url,"context":$name}')
             curl \
               -X POST \
