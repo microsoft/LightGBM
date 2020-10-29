@@ -47,7 +47,7 @@ jobs:
             data=$(jq -n \
               --arg state $status \
               --arg url "https://github.com/microsoft/LightGBM/actions/runs/${{ github.run_id }}" \
-              --arg name "${{ github.workflow }} / ${{ ${{ github.job }}.name }}" \
+              --arg name "${{ github.workflow }} / ${{ github.job }}" \
               '{"state":$state,"target_url":$url,"context":$name}')
             curl \
               -X POST \
