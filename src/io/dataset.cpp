@@ -6,6 +6,7 @@
 #include <LightGBM/dataset.h>
 
 #include <LightGBM/feature_group.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/threading.h>
@@ -334,13 +335,24 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
         "constant.");
   }
   auto features_in_group = NoGroup(used_features);
+
+  auto is_sparse = io_config.is_enable_sparse;
+  if (io_config.device_type == std::string("cuda")) {
+      LGBM_config_::current_device = lgbm_device_cuda;
+      if (is_sparse) {
+        Log::Warning("Using sparse features with CUDA is currently not supported.");
+      }
+      is_sparse = false;
+  }
+
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
+    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");
     features_in_group = FastFeatureBundling(
         *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
         num_sample_col, static_cast<data_size_t>(total_sample_cnt),
-        used_features, num_data_, io_config.device_type == std::string("gpu"),
-        io_config.is_enable_sparse, &group_is_multi_val);
+        used_features, num_data_, lgbm_is_gpu_used,
+        is_sparse, &group_is_multi_val);
   }
 
   num_features_ = 0;
@@ -353,14 +365,17 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   real_feature_idx_.resize(num_features_);
   feature2group_.resize(num_features_);
   feature2subfeature_.resize(num_features_);
-  int num_multi_val_group = 0;
   feature_need_push_zeros_.clear();
+  group_bin_boundaries_.clear();
+  uint64_t num_total_bin = 0;
+  group_bin_boundaries_.push_back(num_total_bin);
+  group_feature_start_.resize(num_groups_);
+  group_feature_cnt_.resize(num_groups_);
   for (int i = 0; i < num_groups_; ++i) {
     auto cur_features = features_in_group[i];
     int cur_cnt_features = static_cast<int>(cur_features.size());
-    if (group_is_multi_val[i]) {
-      ++num_multi_val_group;
-    }
+    group_feature_start_[i] = cur_fidx;
+    group_feature_cnt_[i] = cur_cnt_features;
     // get bin_mappers
     std::vector<std::unique_ptr<BinMapper>> cur_bin_mappers;
     for (int j = 0; j < cur_cnt_features; ++j) {
@@ -376,31 +391,10 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       }
       ++cur_fidx;
     }
-    feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(new FeatureGroup(
-        cur_cnt_features, group_is_multi_val[i], &cur_bin_mappers, num_data_)));
-  }
-  feature_groups_.shrink_to_fit();
-  group_bin_boundaries_.clear();
-  uint64_t num_total_bin = 0;
-  group_bin_boundaries_.push_back(num_total_bin);
-  for (int i = 0; i < num_groups_; ++i) {
+    feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
+      new FeatureGroup(cur_cnt_features, group_is_multi_val[i], &cur_bin_mappers, num_data_)));
     num_total_bin += feature_groups_[i]->num_total_bin_;
     group_bin_boundaries_.push_back(num_total_bin);
-  }
-  int last_group = 0;
-  group_feature_start_.reserve(num_groups_);
-  group_feature_cnt_.reserve(num_groups_);
-  group_feature_start_.push_back(0);
-  group_feature_cnt_.push_back(1);
-  for (int i = 1; i < num_features_; ++i) {
-    const int group = feature2group_[i];
-    if (group == last_group) {
-      group_feature_cnt_.back() = group_feature_cnt_.back() + 1;
-    } else {
-      group_feature_start_.push_back(i);
-      group_feature_cnt_.push_back(1);
-      last_group = group;
-    }
   }
   if (!io_config.max_bin_by_feature.empty()) {
     CHECK_EQ(static_cast<size_t>(num_total_features_),
@@ -719,8 +713,13 @@ void Dataset::CreateValid(const Dataset* dataset) {
   num_groups_ = num_features_;
   feature2group_.clear();
   feature2subfeature_.clear();
-  // copy feature bin mapper data
+
   feature_need_push_zeros_.clear();
+  group_bin_boundaries_.clear();
+  uint64_t num_total_bin = 0;
+  group_bin_boundaries_.push_back(num_total_bin);
+  group_feature_start_.resize(num_groups_);
+  group_feature_cnt_.resize(num_groups_);
   for (int i = 0; i < num_features_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
     bin_mappers.emplace_back(new BinMapper(*(dataset->FeatureBinMapper(i))));
@@ -731,6 +730,10 @@ void Dataset::CreateValid(const Dataset* dataset) {
     feature_groups_.emplace_back(new FeatureGroup(&bin_mappers, num_data_));
     feature2group_.push_back(i);
     feature2subfeature_.push_back(0);
+    num_total_bin += feature_groups_[i]->num_total_bin_;
+    group_bin_boundaries_.push_back(num_total_bin);
+    group_feature_start_[i] = i;
+    group_feature_cnt_[i] = 1;
   }
 
   feature_groups_.shrink_to_fit();
@@ -739,28 +742,6 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature_names_ = dataset->feature_names_;
   label_idx_ = dataset->label_idx_;
   real_feature_idx_ = dataset->real_feature_idx_;
-  group_bin_boundaries_.clear();
-  uint64_t num_total_bin = 0;
-  group_bin_boundaries_.push_back(num_total_bin);
-  for (int i = 0; i < num_groups_; ++i) {
-    num_total_bin += feature_groups_[i]->num_total_bin_;
-    group_bin_boundaries_.push_back(num_total_bin);
-  }
-  int last_group = 0;
-  group_feature_start_.reserve(num_groups_);
-  group_feature_cnt_.reserve(num_groups_);
-  group_feature_start_.push_back(0);
-  group_feature_cnt_.push_back(1);
-  for (int i = 1; i < num_features_; ++i) {
-    const int group = feature2group_[i];
-    if (group == last_group) {
-      group_feature_cnt_.back() = group_feature_cnt_.back() + 1;
-    } else {
-      group_feature_start_.push_back(i);
-      group_feature_cnt_.push_back(1);
-      last_group = group;
-    }
-  }
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
@@ -918,47 +899,61 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     }
     Log::Info("Saving data to binary file %s", bin_filename);
     size_t size_of_token = std::strlen(binary_file_token);
-    writer->Write(binary_file_token, size_of_token);
+    writer->AlignedWrite(binary_file_token, size_of_token);
     // get size of header
-    size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
-      + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
-      + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_
-      + sizeof(int32_t) * num_total_features_ + sizeof(int) * 3 + sizeof(bool) * 2;
+    size_t size_of_header =
+        VirtualFileWriter::AlignedSize(sizeof(num_data_)) +
+        VirtualFileWriter::AlignedSize(sizeof(num_features_)) +
+        VirtualFileWriter::AlignedSize(sizeof(num_total_features_)) +
+        VirtualFileWriter::AlignedSize(sizeof(int) * num_total_features_) +
+        VirtualFileWriter::AlignedSize(sizeof(label_idx_)) +
+        VirtualFileWriter::AlignedSize(sizeof(num_groups_)) +
+        3 * VirtualFileWriter::AlignedSize(sizeof(int) * num_features_) +
+        sizeof(uint64_t) * (num_groups_ + 1) +
+        2 * VirtualFileWriter::AlignedSize(sizeof(int) * num_groups_) +
+        VirtualFileWriter::AlignedSize(sizeof(int32_t) * num_total_features_) +
+        VirtualFileWriter::AlignedSize(sizeof(int)) * 3 +
+        VirtualFileWriter::AlignedSize(sizeof(bool)) * 2;
 
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
-      size_of_header += feature_names_[i].size() + sizeof(int);
+      size_of_header +=
+          VirtualFileWriter::AlignedSize(feature_names_[i].size()) +
+          VirtualFileWriter::AlignedSize(sizeof(int));
     }
     // size of forced bins
     for (int i = 0; i < num_total_features_; ++i) {
-      size_of_header +=
-          forced_bin_bounds_[i].size() * sizeof(double) + sizeof(int);
+      size_of_header += forced_bin_bounds_[i].size() * sizeof(double) +
+                        VirtualFileWriter::AlignedSize(sizeof(int));
     }
     writer->Write(&size_of_header, sizeof(size_of_header));
     // write header
-    writer->Write(&num_data_, sizeof(num_data_));
-    writer->Write(&num_features_, sizeof(num_features_));
-    writer->Write(&num_total_features_, sizeof(num_total_features_));
-    writer->Write(&label_idx_, sizeof(label_idx_));
-    writer->Write(&max_bin_, sizeof(max_bin_));
-    writer->Write(&bin_construct_sample_cnt_,
-                  sizeof(bin_construct_sample_cnt_));
-    writer->Write(&min_data_in_bin_, sizeof(min_data_in_bin_));
-    writer->Write(&use_missing_, sizeof(use_missing_));
-    writer->Write(&zero_as_missing_, sizeof(zero_as_missing_));
-    writer->Write(used_feature_map_.data(), sizeof(int) * num_total_features_);
-    writer->Write(&num_groups_, sizeof(num_groups_));
-    writer->Write(real_feature_idx_.data(), sizeof(int) * num_features_);
-    writer->Write(feature2group_.data(), sizeof(int) * num_features_);
-    writer->Write(feature2subfeature_.data(), sizeof(int) * num_features_);
+    writer->AlignedWrite(&num_data_, sizeof(num_data_));
+    writer->AlignedWrite(&num_features_, sizeof(num_features_));
+    writer->AlignedWrite(&num_total_features_, sizeof(num_total_features_));
+    writer->AlignedWrite(&label_idx_, sizeof(label_idx_));
+    writer->AlignedWrite(&max_bin_, sizeof(max_bin_));
+    writer->AlignedWrite(&bin_construct_sample_cnt_,
+                         sizeof(bin_construct_sample_cnt_));
+    writer->AlignedWrite(&min_data_in_bin_, sizeof(min_data_in_bin_));
+    writer->AlignedWrite(&use_missing_, sizeof(use_missing_));
+    writer->AlignedWrite(&zero_as_missing_, sizeof(zero_as_missing_));
+    writer->AlignedWrite(used_feature_map_.data(),
+                         sizeof(int) * num_total_features_);
+    writer->AlignedWrite(&num_groups_, sizeof(num_groups_));
+    writer->AlignedWrite(real_feature_idx_.data(), sizeof(int) * num_features_);
+    writer->AlignedWrite(feature2group_.data(), sizeof(int) * num_features_);
+    writer->AlignedWrite(feature2subfeature_.data(),
+                         sizeof(int) * num_features_);
     writer->Write(group_bin_boundaries_.data(),
                   sizeof(uint64_t) * (num_groups_ + 1));
-    writer->Write(group_feature_start_.data(), sizeof(int) * num_groups_);
-    writer->Write(group_feature_cnt_.data(), sizeof(int) * num_groups_);
+    writer->AlignedWrite(group_feature_start_.data(),
+                         sizeof(int) * num_groups_);
+    writer->AlignedWrite(group_feature_cnt_.data(), sizeof(int) * num_groups_);
     if (max_bin_by_feature_.empty()) {
       ArrayArgs<int32_t>::Assign(&max_bin_by_feature_, -1, num_total_features_);
     }
-    writer->Write(max_bin_by_feature_.data(),
+    writer->AlignedWrite(max_bin_by_feature_.data(),
                   sizeof(int32_t) * num_total_features_);
     if (ArrayArgs<int32_t>::CheckAll(max_bin_by_feature_, -1)) {
       max_bin_by_feature_.clear();
@@ -966,14 +961,14 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     // write feature names
     for (int i = 0; i < num_total_features_; ++i) {
       int str_len = static_cast<int>(feature_names_[i].size());
-      writer->Write(&str_len, sizeof(int));
+      writer->AlignedWrite(&str_len, sizeof(int));
       const char* c_str = feature_names_[i].c_str();
-      writer->Write(c_str, sizeof(char) * str_len);
+      writer->AlignedWrite(c_str, sizeof(char) * str_len);
     }
     // write forced bins
     for (int i = 0; i < num_total_features_; ++i) {
       int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
-      writer->Write(&num_bounds, sizeof(int));
+      writer->AlignedWrite(&num_bounds, sizeof(int));
 
       for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
         writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
@@ -1301,10 +1296,11 @@ void Dataset::ConstructHistogramsInner(
   int multi_val_groud_id = -1;
   used_dense_group.reserve(num_groups_);
   for (int group = 0; group < num_groups_; ++group) {
+    const int f_start = group_feature_start_[group];
     const int f_cnt = group_feature_cnt_[group];
     bool is_group_used = false;
     for (int j = 0; j < f_cnt; ++j) {
-      const int fidx = group_feature_start_[group] + j;
+      const int fidx = f_start + j;
       if (is_feature_used[fidx]) {
         is_group_used = true;
         break;
@@ -1476,37 +1472,131 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
         "Cannot add features from other Dataset with a different number of "
         "rows");
   }
-  PushVector(&feature_names_, other->feature_names_);
-  PushVector(&feature2subfeature_, other->feature2subfeature_);
-  PushVector(&group_feature_cnt_, other->group_feature_cnt_);
-  PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
-  feature_groups_.reserve(other->feature_groups_.size());
-  // FIXME: fix the multiple multi-val feature groups, they need to be merged
-  // into one multi-val group
-  for (auto& fg : other->feature_groups_) {
-    feature_groups_.emplace_back(new FeatureGroup(*fg));
-  }
-  for (auto feature_idx : other->used_feature_map_) {
-    if (feature_idx >= 0) {
-      used_feature_map_.push_back(feature_idx + num_features_);
-    } else {
-      used_feature_map_.push_back(-1);  // Unused feature.
+  int mv_gid = -1;
+  int other_mv_gid = -1;
+  for (int i = 0; i < num_groups_; ++i) {
+    if (IsMultiGroup(i)) {
+      mv_gid = i;
     }
   }
-  PushOffset(&real_feature_idx_, other->real_feature_idx_, num_total_features_);
-  PushOffset(&feature2group_, other->feature2group_, num_groups_);
-  auto bin_offset = group_bin_boundaries_.back();
-  // Skip the leading 0 when copying group_bin_boundaries.
-  for (auto i = other->group_bin_boundaries_.begin() + 1;
-       i < other->group_bin_boundaries_.end(); ++i) {
-    group_bin_boundaries_.push_back(*i + bin_offset);
+  for (int i = 0; i < other->num_groups_; ++i) {
+    if (other->IsMultiGroup(i)) {
+      other_mv_gid = i;
+    }
   }
-  PushOffset(&group_feature_start_, other->group_feature_start_, num_features_);
-  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_, other->max_bin_by_feature_, other->num_total_features_, -1);
+  // Only one multi-val group, just simply merge
+  if (mv_gid < 0 || other_mv_gid < 0) {
+    PushVector(&feature2subfeature_, other->feature2subfeature_);
+    PushVector(&group_feature_cnt_, other->group_feature_cnt_);
+    feature_groups_.reserve(other->feature_groups_.size());
+    for (auto& fg : other->feature_groups_) {
+      feature_groups_.emplace_back(new FeatureGroup(*fg));
+    }
+    for (auto feature_idx : other->used_feature_map_) {
+      if (feature_idx >= 0) {
+        used_feature_map_.push_back(feature_idx + num_features_);
+      } else {
+        used_feature_map_.push_back(-1);  // Unused feature.
+      }
+    }
+    PushOffset(&real_feature_idx_, other->real_feature_idx_,
+               num_total_features_);
+    PushOffset(&feature2group_, other->feature2group_, num_groups_);
+    auto bin_offset = group_bin_boundaries_.back();
+    // Skip the leading 0 when copying group_bin_boundaries.
+    for (auto i = other->group_bin_boundaries_.begin() + 1;
+         i < other->group_bin_boundaries_.end(); ++i) {
+      group_bin_boundaries_.push_back(*i + bin_offset);
+    }
+    PushOffset(&group_feature_start_, other->group_feature_start_,
+               num_features_);
+    num_groups_ += other->num_groups_;
+    num_features_ += other->num_features_;
+  } else {
+    std::vector<std::vector<int>> features_in_group;
+    for (int i = 0; i < num_groups_; ++i) {
+      int f_start = group_feature_start_[i];
+      int f_cnt = group_feature_cnt_[i];
+      features_in_group.emplace_back();
+      for (int j = 0; j < f_cnt; ++j) {
+        features_in_group.back().push_back(f_start + j);
+      }
+    }
+    feature_groups_[mv_gid]->AddFeaturesFrom(
+        other->feature_groups_[other_mv_gid].get());
+    for (int i = 0; i < other->num_groups_; ++i) {
+      int f_start = other->group_feature_start_[i];
+      int f_cnt = other->group_feature_cnt_[i];
+      if (i == other_mv_gid) {
+        for (int j = 0; j < f_cnt; ++j) {
+          features_in_group[mv_gid].push_back(f_start + j);
+        }
+      } else {
+        features_in_group.emplace_back();
+        for (int j = 0; j < f_cnt; ++j) {
+          features_in_group.back().push_back(f_start + j);
+        }
+        feature_groups_.emplace_back(
+            new FeatureGroup(*other->feature_groups_[i]));
+      }
+    }
+    // regenerate other fields
+    num_groups_ += other->num_groups_ - 1;
+    CHECK(num_groups_ == static_cast<int>(features_in_group.size()));
+    num_features_ += other->num_features_;
 
-  num_features_ += other->num_features_;
+    int cur_fidx = 0;
+    used_feature_map_ = std::vector<int>(num_total_features_, -1);
+    real_feature_idx_.resize(num_features_);
+    feature2group_.resize(num_features_);
+    feature2subfeature_.resize(num_features_);
+    group_feature_start_.resize(num_groups_);
+    group_feature_cnt_.resize(num_groups_);
+
+    group_bin_boundaries_.clear();
+    uint64_t num_total_bin = 0;
+    group_bin_boundaries_.push_back(num_total_bin);
+    for (int i = 0; i < num_groups_; ++i) {
+      auto cur_features = features_in_group[i];
+      int cur_cnt_features = static_cast<int>(cur_features.size());
+      group_feature_start_[i] = cur_fidx;
+      group_feature_cnt_[i] = cur_cnt_features;
+      for (int j = 0; j < cur_cnt_features; ++j) {
+        int real_fidx = cur_features[j];
+        used_feature_map_[real_fidx] = cur_fidx;
+        real_feature_idx_[cur_fidx] = real_fidx;
+        feature2group_[cur_fidx] = i;
+        feature2subfeature_[cur_fidx] = j;
+        ++cur_fidx;
+      }
+      num_total_bin += feature_groups_[i]->num_total_bin_;
+      group_bin_boundaries_.push_back(num_total_bin);
+    }
+  }
+  std::unordered_set<std::string> feature_names_set;
+  for (const auto& val : feature_names_) {
+    feature_names_set.emplace(val);
+  }
+  for (const auto& val : other->feature_names_) {
+    std::string new_name = val;
+    int cnt = 2;
+    while (feature_names_set.count(new_name)) {
+      new_name = "D" + std::to_string(cnt) + "_" + val;
+      ++cnt;
+    }
+    if (new_name != val) {
+      Log::Warning(
+        "Find the same feature name (%s) in Dataset::AddFeaturesFrom, change "
+        "its name to (%s)",
+        val.c_str(), new_name.c_str());
+    }
+    feature_names_set.emplace(new_name);
+    feature_names_.push_back(new_name);
+  }
+  PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
+  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_,
+                   other->max_bin_by_feature_, other->num_total_features_, -1);
   num_total_features_ += other->num_total_features_;
-  num_groups_ += other->num_groups_;
 }
 
 }  // namespace LightGBM

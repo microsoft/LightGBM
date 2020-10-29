@@ -318,6 +318,8 @@ htmlcov/
 .coverage.*
 .cache
 nosetests.xml
+prof/
+*.prof
 coverage.xml
 *,cover
 .hypothesis/

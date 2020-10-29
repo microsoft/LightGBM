@@ -97,6 +97,7 @@ NULL
 #'                             CPU using hyper-threading to generate 2 threads per CPU core).}
 #'     }
 #' @inheritSection lgb_shared_params Early Stopping
+#' @return a trained \code{lgb.Booster}
 #' @export
 lightgbm <- function(data,
                      label = NULL,
@@ -121,7 +122,7 @@ lightgbm <- function(data,
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(dtrain)) {
-    dtrain <- lgb.Dataset(data, label = label, weight = weight)
+    dtrain <- lgb.Dataset(data = data, label = label, weight = weight)
   }
 
   train_args <- list(
@@ -152,7 +153,7 @@ lightgbm <- function(data,
   )
 
   # Store model under a specific name
-  bst$save_model(save_name)
+  bst$save_model(filename = save_name)
 
   return(bst)
 }

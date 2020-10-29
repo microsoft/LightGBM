@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
  */
 #ifndef LIGHTGBM_FEATURE_GROUP_H_
 #define LIGHTGBM_FEATURE_GROUP_H_
@@ -17,7 +18,8 @@ namespace LightGBM {
 
 class Dataset;
 class DatasetLoader;
-/*! \brief Using to store data and providing some operations on one feature group*/
+/*! \brief Using to store data and providing some operations on one feature
+ * group*/
 class FeatureGroup {
  public:
   friend Dataset;
@@ -29,9 +31,9 @@ class FeatureGroup {
   * \param num_data Total number of data
   * \param is_enable_sparse True if enable sparse feature
   */
-  FeatureGroup(int num_feature, bool is_multi_val,
+  FeatureGroup(int num_feature, int8_t is_multi_val,
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-    data_size_t num_data) : num_feature_(num_feature), is_multi_val_(is_multi_val), is_sparse_(false) {
+    data_size_t num_data) : num_feature_(num_feature), is_multi_val_(is_multi_val > 0), is_sparse_(false) {
     CHECK_EQ(static_cast<int>(bin_mappers->size()), num_feature);
     auto& ref_bin_mappers = *bin_mappers;
     double sum_sparse_rate = 0.0f;
@@ -97,23 +99,23 @@ class FeatureGroup {
   }
 
   /*!
-  * \brief Constructor from memory
-  * \param memory Pointer of memory
-  * \param num_all_data Number of global data
-  * \param local_used_indices Local used indices, empty means using all data
-  */
+   * \brief Constructor from memory
+   * \param memory Pointer of memory
+   * \param num_all_data Number of global data
+   * \param local_used_indices Local used indices, empty means using all data
+   */
   FeatureGroup(const void* memory, data_size_t num_all_data,
-    const std::vector<data_size_t>& local_used_indices) {
+               const std::vector<data_size_t>& local_used_indices) {
     const char* memory_ptr = reinterpret_cast<const char*>(memory);
     // get is_sparse
     is_multi_val_ = *(reinterpret_cast<const bool*>(memory_ptr));
-    memory_ptr += sizeof(is_multi_val_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(is_multi_val_));
     is_dense_multi_val_ = *(reinterpret_cast<const bool*>(memory_ptr));
-    memory_ptr += sizeof(is_dense_multi_val_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(is_dense_multi_val_));
     is_sparse_ = *(reinterpret_cast<const bool*>(memory_ptr));
-    memory_ptr += sizeof(is_sparse_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(is_sparse_));
     num_feature_ = *(reinterpret_cast<const int*>(memory_ptr));
-    memory_ptr += sizeof(num_feature_);
+    memory_ptr += VirtualFileWriter::AlignedSize(sizeof(num_feature_));
     // get bin mapper
     bin_mappers_.clear();
     bin_offsets_.clear();
@@ -138,9 +140,11 @@ class FeatureGroup {
       for (int i = 0; i < num_feature_; ++i) {
         int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;
         if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
-          multi_bin_data_.emplace_back(Bin::CreateSparseBin(num_data, bin_mappers_[i]->num_bin() + addi));
+          multi_bin_data_.emplace_back(Bin::CreateSparseBin(
+              num_data, bin_mappers_[i]->num_bin() + addi));
         } else {
-          multi_bin_data_.emplace_back(Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
+          multi_bin_data_.emplace_back(
+              Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
         }
         multi_bin_data_.back()->LoadFromMemory(memory_ptr, local_used_indices);
         memory_ptr += multi_bin_data_.back()->SizesInByte();
@@ -157,18 +161,20 @@ class FeatureGroup {
   }
 
   /*! \brief Destructor */
-  ~FeatureGroup() {
-  }
+  ~FeatureGroup() {}
 
   /*!
-  * \brief Push one record, will auto convert to bin and push to bin data
-  * \param tid Thread id
-  * \param idx Index of record
-  * \param value feature value of record
-  */
-  inline void PushData(int tid, int sub_feature_idx, data_size_t line_idx, double value) {
+   * \brief Push one record, will auto convert to bin and push to bin data
+   * \param tid Thread id
+   * \param idx Index of record
+   * \param value feature value of record
+   */
+  inline void PushData(int tid, int sub_feature_idx, data_size_t line_idx,
+                       double value) {
     uint32_t bin = bin_mappers_[sub_feature_idx]->ValueToBin(value);
-    if (bin == bin_mappers_[sub_feature_idx]->GetMostFreqBin()) { return; }
+    if (bin == bin_mappers_[sub_feature_idx]->GetMostFreqBin()) {
+      return;
+    }
     if (bin_mappers_[sub_feature_idx]->GetMostFreqBin() == 0) {
       bin -= 1;
     }
@@ -204,6 +210,23 @@ class FeatureGroup {
     }
   }
 
+  void AddFeaturesFrom(const FeatureGroup* other) {
+    CHECK(is_multi_val_);
+    CHECK(other->is_multi_val_);
+    for (int i = 0; i < other->num_feature_; ++i) {
+      const auto& other_bin_mapper = other->bin_mappers_[i];
+      bin_mappers_.emplace_back(new BinMapper(*other_bin_mapper));
+      auto num_bin = other_bin_mapper->num_bin();
+      if (other_bin_mapper->GetMostFreqBin() == 0) {
+        num_bin -= 1;
+      }
+      num_total_bin_ += num_bin;
+      bin_offsets_.emplace_back(num_total_bin_);
+      multi_bin_data_.emplace_back(other->multi_bin_data_[i]->Clone());
+    }
+    num_feature_ += other->num_feature_;
+  }
+
   inline BinIterator* SubFeatureIterator(int sub_feature) {
     uint32_t most_freq_bin = bin_mappers_[sub_feature]->GetMostFreqBin();
     if (!is_multi_val_) {
@@ -214,12 +237,14 @@ class FeatureGroup {
       if (is_dense_multi_val_) {
         uint32_t min_bin = 0;
         uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1;
-        return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin, most_freq_bin);
+        return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin,
+                                                         most_freq_bin);
       } else {
         int addi = bin_mappers_[sub_feature]->GetMostFreqBin() == 0 ? 0 : 1;
         uint32_t min_bin = 1;
         uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1 + addi;
-        return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin, most_freq_bin);
+        return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin,
+                                                         most_freq_bin);
       }
     }
   }
@@ -227,7 +252,7 @@ class FeatureGroup {
   inline void FinishLoad() {
     if (is_multi_val_) {
       OMP_INIT_EX();
-      #pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided)
       for (int i = 0; i < num_feature_; ++i) {
         OMP_LOOP_EX_BEGIN();
         multi_bin_data_[i]->FinishLoad();
@@ -239,11 +264,6 @@ class FeatureGroup {
     }
   }
 
-  /*!
-   * \brief Returns a BinIterator that can access the entire feature group's raw data.
-   *        The RawGet() function of the iterator should be called for best efficiency.
-   * \return A pointer to the BinIterator object
-   */
   inline BinIterator* FeatureGroupIterator() {
     if (is_multi_val_) {
       return nullptr;
@@ -252,6 +272,17 @@ class FeatureGroup {
     uint32_t max_bin = bin_offsets_.back() - 1;
     uint32_t most_freq_bin = 0;
     return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
+  }
+
+  inline size_t FeatureGroupSizesInByte() {
+    return bin_data_->SizesInByte();
+  }
+
+  inline void* FeatureGroupData() {
+    if (is_multi_val_) {
+      return nullptr;
+    }
+    return bin_data_->get_data();
   }
 
   inline data_size_t Split(int sub_feature, const uint32_t* threshold,
@@ -304,22 +335,22 @@ class FeatureGroup {
   }
 
   /*!
-  * \brief From bin to feature value
-  * \param bin
-  * \return FeatureGroup value of this bin
-  */
+   * \brief From bin to feature value
+   * \param bin
+   * \return FeatureGroup value of this bin
+   */
   inline double BinToValue(int sub_feature_idx, uint32_t bin) const {
     return bin_mappers_[sub_feature_idx]->BinToValue(bin);
   }
 
   /*!
-  * \brief Save binary data to file
-  * \param file File want to write
-  */
+   * \brief Save binary data to file
+   * \param file File want to write
+   */
   void SaveBinaryToFile(const VirtualFileWriter* writer) const {
-    writer->Write(&is_multi_val_, sizeof(is_multi_val_));
-    writer->Write(&is_sparse_, sizeof(is_sparse_));
-    writer->Write(&num_feature_, sizeof(num_feature_));
+    writer->AlignedWrite(&is_multi_val_, sizeof(is_multi_val_));
+    writer->AlignedWrite(&is_sparse_, sizeof(is_sparse_));
+    writer->AlignedWrite(&num_feature_, sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_[i]->SaveBinaryToFile(writer);
     }
@@ -333,10 +364,12 @@ class FeatureGroup {
   }
 
   /*!
-  * \brief Get sizes in byte of this object
-  */
+   * \brief Get sizes in byte of this object
+   */
   size_t SizesInByte() const {
-    size_t ret = sizeof(is_multi_val_) + sizeof(is_sparse_) + sizeof(num_feature_);
+    size_t ret = VirtualFileWriter::AlignedSize(sizeof(is_multi_val_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(is_sparse_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
       ret += bin_mappers_[i]->SizesInByte();
     }
@@ -392,8 +425,9 @@ class FeatureGroup {
       }
       is_multi_val_ = true;
     } else {
-      if (force_sparse || (!force_dense && num_feature_ == 1 &&
-                           bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
+      if (force_sparse ||
+          (!force_dense && num_feature_ == 1 &&
+           bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
         is_sparse_ = true;
         bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
       } else {
@@ -420,7 +454,6 @@ class FeatureGroup {
   int num_total_bin_;
 };
 
-
 }  // namespace LightGBM
 
-#endif   // LIGHTGBM_FEATURE_GROUP_H_
+#endif  // LIGHTGBM_FEATURE_GROUP_H_

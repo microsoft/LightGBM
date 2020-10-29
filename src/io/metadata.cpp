@@ -472,44 +472,46 @@ void Metadata::LoadFromMemory(const void* memory) {
   const char* mem_ptr = reinterpret_cast<const char*>(memory);
 
   num_data_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
-  mem_ptr += sizeof(num_data_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(num_data_));
   num_weights_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
-  mem_ptr += sizeof(num_weights_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(num_weights_));
   num_queries_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
-  mem_ptr += sizeof(num_queries_);
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(num_queries_));
 
   if (!label_.empty()) { label_.clear(); }
   label_ = std::vector<label_t>(num_data_);
   std::memcpy(label_.data(), mem_ptr, sizeof(label_t) * num_data_);
-  mem_ptr += sizeof(label_t) * num_data_;
+  mem_ptr += VirtualFileWriter::AlignedSize(sizeof(label_t) * num_data_);
 
   if (num_weights_ > 0) {
     if (!weights_.empty()) { weights_.clear(); }
     weights_ = std::vector<label_t>(num_weights_);
     std::memcpy(weights_.data(), mem_ptr, sizeof(label_t) * num_weights_);
-    mem_ptr += sizeof(label_t) * num_weights_;
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(label_t) * num_weights_);
     weight_load_from_file_ = true;
   }
   if (num_queries_ > 0) {
     if (!query_boundaries_.empty()) { query_boundaries_.clear(); }
     query_boundaries_ = std::vector<data_size_t>(num_queries_ + 1);
     std::memcpy(query_boundaries_.data(), mem_ptr, sizeof(data_size_t) * (num_queries_ + 1));
-    mem_ptr += sizeof(data_size_t) * (num_queries_ + 1);
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(data_size_t) *
+                                              (num_queries_ + 1));
     query_load_from_file_ = true;
   }
   LoadQueryWeights();
 }
 
 void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
-  writer->Write(&num_data_, sizeof(num_data_));
-  writer->Write(&num_weights_, sizeof(num_weights_));
-  writer->Write(&num_queries_, sizeof(num_queries_));
-  writer->Write(label_.data(), sizeof(label_t) * num_data_);
+  writer->AlignedWrite(&num_data_, sizeof(num_data_));
+  writer->AlignedWrite(&num_weights_, sizeof(num_weights_));
+  writer->AlignedWrite(&num_queries_, sizeof(num_queries_));
+  writer->AlignedWrite(label_.data(), sizeof(label_t) * num_data_);
   if (!weights_.empty()) {
-    writer->Write(weights_.data(), sizeof(label_t) * num_weights_);
+    writer->AlignedWrite(weights_.data(), sizeof(label_t) * num_weights_);
   }
   if (!query_boundaries_.empty()) {
-    writer->Write(query_boundaries_.data(), sizeof(data_size_t) * (num_queries_ + 1));
+    writer->AlignedWrite(query_boundaries_.data(),
+                         sizeof(data_size_t) * (num_queries_ + 1));
   }
   if (num_init_score_ > 0) {
     Log::Warning("Please note that `init_score` is not saved in binary file.\n"
@@ -518,14 +520,16 @@ void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
 }
 
 size_t Metadata::SizesInByte() const {
-  size_t size = sizeof(num_data_) + sizeof(num_weights_)
-    + sizeof(num_queries_);
-  size += sizeof(label_t) * num_data_;
+  size_t size = VirtualFileWriter::AlignedSize(sizeof(num_data_)) +
+                VirtualFileWriter::AlignedSize(sizeof(num_weights_)) +
+                VirtualFileWriter::AlignedSize(sizeof(num_queries_));
+  size += VirtualFileWriter::AlignedSize(sizeof(label_t) * num_data_);
   if (!weights_.empty()) {
-    size += sizeof(label_t) * num_weights_;
+    size += VirtualFileWriter::AlignedSize(sizeof(label_t) * num_weights_);
   }
   if (!query_boundaries_.empty()) {
-    size += sizeof(data_size_t) * (num_queries_ + 1);
+    size += VirtualFileWriter::AlignedSize(sizeof(data_size_t) *
+                                           (num_queries_ + 1));
   }
   return size;
 }
