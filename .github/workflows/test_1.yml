@@ -50,7 +50,7 @@ jobs:
             status=${status/cancelled/failure}
             data=$(jq -n \
               --arg state $status \
-              --arg url "${{ github.run_id }}" \
+              --arg url "https://github.com/microsoft/LightGBM/runs/${{ github.run_id }}" \
               --arg name "${{ github.workflow }}/${{ job.name }}" \
               '{"state":$state,"target_url":$url,"context":$name}')
             curl \
