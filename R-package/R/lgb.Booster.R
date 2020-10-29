@@ -888,7 +888,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
   # Store booster
   invisible(booster$save_model(
     filename = filename
-    , num_iterations = num_iteration
+    , num_iteration = num_iteration
   ))
 
 }
