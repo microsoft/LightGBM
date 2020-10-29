@@ -42,8 +42,8 @@ jobs:
       - name: Send status
         if: ${{ always() }}
         env:
-          JOB_NAME: "${{ jobs.test.name }}"
-#          COMMIT_STATUS: "${{ job.status }}"
+#          JOB_NAME: "${{ jobs.test.name }}"
+          COMMIT_STATUS: "${{ job.status }}"
         run: |
             echo "${{ toJson(github) }}"
             echo "${{ toJson(job) }}"
