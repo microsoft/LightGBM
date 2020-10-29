@@ -388,9 +388,9 @@ Booster <- R6::R6Class(
 
       # Evaluate data
       private$inner_eval(
-        name = name,
-        data_idx = data_idx,
-        feval = feval)
+        name = name
+         , data_idx = data_idx
+         , feval = feval)
 
     },
 
@@ -500,14 +500,14 @@ Booster <- R6::R6Class(
       # Predict on new data
       predictor <- Predictor$new(private$handle, ...)
       predictor$predict(
-        data = data, 
-        start_iteration = start_iteration, 
-        num_iteration = num_iteration, 
-        rawscore = rawscore,
-        predleaf = predleaf, 
-        predcontrib = predcontrib, 
-        header = header, 
-        reshape = reshape
+         data = data
+          , start_iteration = start_iteration
+          , num_iteration = num_iteration
+          , rawscore = rawscore
+          , predleaf = predleaf
+          , predcontrib = predcontrib
+          , header = header
+          , reshape = reshape
         )
 
     },
@@ -886,8 +886,8 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 
   # Store booster
   invisible(booster$save_model(
-    filename = filename, 
-    num_iterations = num_iteration))
+    filename = filename
+    , num_iterations = num_iteration))
 
 }
 
