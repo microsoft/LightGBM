@@ -507,7 +507,8 @@ Booster <- R6::R6Class(
         predleaf = predleaf, 
         predcontrib = predcontrib, 
         header = header, 
-        reshape = reshape)
+        reshape = reshape
+        )
 
     },
 
