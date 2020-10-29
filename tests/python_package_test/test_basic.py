@@ -10,7 +10,7 @@ from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
-from .utils import load_breast_cancer, lru_cache
+from .utils import load_breast_cancer
 
 
 class TestBasic(unittest.TestCase):

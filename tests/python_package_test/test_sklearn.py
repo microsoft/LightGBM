@@ -20,7 +20,7 @@ from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
 from sklearn.utils.validation import check_is_fitted
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, lru_cache
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
 
 
 decreasing_generator = itertools.count(0, -1)

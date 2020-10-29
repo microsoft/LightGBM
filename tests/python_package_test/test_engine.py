@@ -19,7 +19,7 @@ try:
 except ImportError:
     import pickle
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, lru_cache
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris
 
 
 decreasing_generator = itertools.count(0, -1)
