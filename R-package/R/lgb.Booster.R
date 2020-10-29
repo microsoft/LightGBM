@@ -391,7 +391,7 @@ Booster <- R6::R6Class(
         data_name = name
          , data_idx = data_idx
          , feval = feval
-         )
+      )
 
     },
 
