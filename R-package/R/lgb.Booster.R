@@ -39,7 +39,7 @@ Booster <- R6::R6Class(
         # Check if training dataset is not null
         if (!is.null(train_set)) {
           # Check if training dataset is lgb.Dataset or not
-          if (!lgb.check.r6.class(train_set, "lgb.Dataset")) {
+          if (!(lgb.Dataset = lgb.check.r6.class(train_set, "lgb.Dataset"))) {
             stop("lgb.Booster: Can only use lgb.Dataset as training data")
           }
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
@@ -499,7 +499,7 @@ Booster <- R6::R6Class(
       }
 
       # Predict on new data
-      predictor <- Predictor$new(private$handle = private$handle, ...)
+      predictor <- Predictor$new(private$handle, ...)
       predictor$predict(
           data = data
           , start_iteration = start_iteration
