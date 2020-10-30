@@ -499,7 +499,7 @@ Booster <- R6::R6Class(
       }
 
       # Predict on new data
-      predictor <- Predictor$new(private$handle, ...)
+      predictor <- Predictor$new(private$handle = private$handle, ...)
       predictor$predict(
           data = data
           , start_iteration = start_iteration
