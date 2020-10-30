@@ -525,7 +525,7 @@ Booster <- R6::R6Class(
     save = function() {
 
       # Overwrite model in object
-      self$raw <- self$save_model_to_string(NULL)
+      self$raw <- self$save_model_to_string(null = NULL)
 
     }
 
