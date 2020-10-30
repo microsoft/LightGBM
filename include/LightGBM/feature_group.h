@@ -43,13 +43,13 @@ class FeatureGroup {
     }
     sum_sparse_rate /= num_feature_;
     int offset = 1;
-    if (sum_sparse_rate >= MultiValBin::multi_val_bin_sparse_threshold && is_multi_val) {
+    is_dense_multi_val_ = false;
+    if (sum_sparse_rate < MultiValBin::multi_val_bin_sparse_threshold && is_multi_val_) {
+      // use dense multi val bin
       offset = 0;
       is_dense_multi_val_ = true;
-    } else {
-      is_dense_multi_val_ = false;
     }
-    // use bin at zero to store most_freq_bin only when using dense multi val bin
+    // use bin at zero to store most_freq_bin only when not using dense multi val bin
     num_total_bin_ = offset;
     bin_offsets_.emplace_back(num_total_bin_);
     for (int i = 0; i < num_feature_; ++i) {
@@ -414,7 +414,7 @@ class FeatureGroup {
     if (is_multi_val) {
       multi_bin_data_.clear();
       for (int i = 0; i < num_feature_; ++i) {
-        int addi = bin_mappers_[i]->GetMostFreqBin() == 0 || is_dense_multi_val_ ? 0 : 1;
+        int addi = (bin_mappers_[i]->GetMostFreqBin() == 0 || is_dense_multi_val_) ? 0 : 1;
         if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
           multi_bin_data_.emplace_back(Bin::CreateSparseBin(
               num_data, bin_mappers_[i]->num_bin() + addi));
