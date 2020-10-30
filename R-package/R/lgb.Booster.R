@@ -346,7 +346,7 @@ Booster <- R6::R6Class(
     eval = function(data, name, feval = NULL) {
 
       # Check if dataset is lgb.Dataset
-      if (!(lgb.Dataset = lgb.check.r6.class(data, "lgb.Dataset"))) {
+      if (!lgb.check.r6.class(object = data, name = "lgb.Dataset"))
         stop("lgb.Booster.eval: Can only use lgb.Dataset to eval")
       }
 
