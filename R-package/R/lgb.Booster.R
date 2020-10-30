@@ -216,7 +216,7 @@ Booster <- R6::R6Class(
       if (!is.null(train_set)) {
 
         # Check if training set is lgb.Dataset
-        if (!lgb.check.r6.class(object = train_set , name = "lgb.Dataset")) {
+        if (!lgb.check.r6.class(object = train_set, name = "lgb.Dataset")) {
           stop("lgb.Booster.update: Only can use lgb.Dataset as training data")
         }
 
