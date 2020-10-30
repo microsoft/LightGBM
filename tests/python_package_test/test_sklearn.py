@@ -10,9 +10,7 @@ import lightgbm as lgb
 import numpy as np
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
-from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris, load_linnerud, load_svmlight_file,
-                              make_multilabel_classification)
+from sklearn.datasets import load_svmlight_file, make_multilabel_classification
 from sklearn.exceptions import SkipTestWarning
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
@@ -21,6 +19,8 @@ from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOu
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
 from sklearn.utils.validation import check_is_fitted
+
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
 
 
 decreasing_generator = itertools.count(0, -1)

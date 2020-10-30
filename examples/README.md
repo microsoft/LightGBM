@@ -20,6 +20,7 @@ Machine Learning Challenge Winning Solutions
 |3rd      | [COVID19 Global Forecasting (Week 5)](https://www.kaggle.com/c/covid19-global-forecasting-week-5) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/143029) | 2020.5 |
 |1st      | [COVID19 Global Forecasting (Week 4)](https://www.kaggle.com/c/covid19-global-forecasting-week-4) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/154804) | 2020.5 |
 |2nd      | [COVID19 Global Forecasting (Week 4)](https://www.kaggle.com/c/covid19-global-forecasting-week-4) | [link](https://www.kaggle.com/c/covid19-global-forecasting-week-5/discussion/144081) | 2020.5 |
+|2nd      | [2019 Data Science Bowl](https://www.kaggle.com/c/data-science-bowl-2019) | [link](https://www.kaggle.com/c/data-science-bowl-2019/discussion/127388) | 2020.1 |
 | 3rd     | [RSNA Intracranial Hemorrhage Detection](https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection) | [link](https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection/discussion/117223#latest-673643) | 2019.11 |
 | 1st     | [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) | [link](https://www.kaggle.com/c/ieee-fraud-detection/discussion/111308) | 2019.10 |
 | 2nd     | [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) | [link](https://www.kaggle.com/c/ieee-fraud-detection/discussion/111321) | 2019.10 |

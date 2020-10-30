@@ -7,8 +7,10 @@ import lightgbm as lgb
 import numpy as np
 
 from scipy import sparse
-from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
+from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
+
+from .utils import load_breast_cancer
 
 
 class TestBasic(unittest.TestCase):
@@ -213,7 +215,6 @@ class TestBasic(unittest.TestCase):
             # test that method works for different data types
             d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
             res_feature_names = [name for name in names]
-            idx = 1
             for idx, x_2 in enumerate(xxs, 2):
                 original_type = type(d1.get_data())
                 d2 = lgb.Dataset(x_2, feature_name=names, free_raw_data=False).construct()
@@ -221,7 +222,6 @@ class TestBasic(unittest.TestCase):
                 self.assertIsInstance(d1.get_data(), original_type)
                 self.assertTupleEqual(d1.get_data().shape, (n_row, n_col * idx))
                 res_feature_names += ['D{}_{}'.format(idx, name) for name in names]
-                idx += 1
                 self.assertListEqual(d1.feature_name, res_feature_names)
 
     def test_cegb_affects_behavior(self):
