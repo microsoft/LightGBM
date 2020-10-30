@@ -149,7 +149,7 @@ Booster <- R6::R6Class(
     add_valid = function(data, name) {
 
       # Check if data is lgb.Dataset
-      if (!lgb.check.r6.class(object = data , name = "lgb.Dataset")) {
+      if (!lgb.check.r6.class(object = data, name = "lgb.Dataset")) {
         stop("lgb.Booster.add_valid: Can only use lgb.Dataset as validation data")
       }
 
