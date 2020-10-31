@@ -21,9 +21,6 @@ if test -z "${R_HOME}"; then
     exit 1
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
-CXX=`"${R_HOME}/bin/R" CMD config CXX11`
-CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
-CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
