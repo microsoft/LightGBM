@@ -245,7 +245,7 @@ def generate_r_docs(app):
         -y \
         -c conda-forge \
         -n r_env \
-            cmake=3.14.0=h52cb24c_0 \
+            cmake=3.18.2=ha30ef3c_0 \
             r-base=4.0.3=hc603457_2 \
             r-data.table=1.13.2=r40h0eb13af_0 \
             r-jsonlite=1.7.1=r40hcdcec82_0 \
