@@ -11,7 +11,7 @@ except ImportError:
 def get_runs(workflow_name):
     pr_runs = []
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
-        req = request.Request(url="{}/repos/{}/actions/workflows/{}/runs".format(environ.get("GITHUB_SERVER_URL"),
+        req = request.Request(url="{}/repos/{}/actions/workflows/{}/runs".format(environ.get("GITHUB_API_URL"),
                                                                                  environ.get("GITHUB_REPOSITORY"),
                                                                                  workflow_name),
                               headers={"Accept": "application/vnd.github.v3+json"})
