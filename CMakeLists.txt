@@ -454,7 +454,6 @@ endif(__BUILD_FOR_R)
 
 # fmtlib/fmt
 add_subdirectory(external_libs/fmt)
-#set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 TARGET_LINK_LIBRARIES(lightgbm PRIVATE fmt::fmt-header-only)
 TARGET_LINK_LIBRARIES(_lightgbm PRIVATE fmt::fmt-header-only)
 
