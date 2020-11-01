@@ -42,4 +42,5 @@ jobs:
             exit -1
       - name: Send status
         if: ${{ always() }}
+        shell: bash
         run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}"
