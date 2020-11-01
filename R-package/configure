@@ -1694,6 +1694,7 @@ if test -z "${R_HOME}"; then
     exit 1
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
+CXX=`"${R_HOME}/bin/R" CMD config CXX11`
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
@@ -1705,6 +1706,12 @@ LGB_CPPFLAGS=""
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether MM_PREFETCH works" >&5
 $as_echo_n "checking whether MM_PREFETCH works... " >&6; }
 ac_mmprefetch=no
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -1715,11 +1722,9 @@ int
 main ()
 {
 
-                int main() {
-                    int a = 0;
-                    _mm_prefetch(&a, _MM_HINT_NTA);
-                    return 0;
-                }
+                int a = 0;
+                _mm_prefetch(&a, _MM_HINT_NTA);
+                return 0;
 
 
   ;
@@ -1728,7 +1733,7 @@ main ()
 
 
 _ACEOF
-${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mmprefetch=yes
+${CXX} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mmprefetch=yes
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_mmprefetch}" >&5
 $as_echo "${ac_mmprefetch}" >&6; }
 if test "${ac_mmprefetch}" = yes; then
@@ -1742,6 +1747,12 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether MM_MALLOC works" >&5
 $as_echo_n "checking whether MM_MALLOC works... " >&6; }
 ac_mm_malloc=no
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -1752,11 +1763,9 @@ int
 main ()
 {
 
-                int main() {
-                    char *a = (char*)_mm_malloc(8, 16);
-                    _mm_free(a);
-                    return 0;
-                }
+                char *a = (char*)_mm_malloc(8, 16);
+                _mm_free(a);
+                return 0;
 
 
   ;
@@ -1765,7 +1774,7 @@ main ()
 
 
 _ACEOF
-${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_malloc=yes
+${CXX} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc=yes
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_mm_malloc}" >&5
 $as_echo "${ac_mm_malloc}" >&6; }
 if test "${ac_mm_malloc}" = yes; then
@@ -1790,6 +1799,12 @@ then
     ac_pkg_openmp=no
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether OpenMP will work in a package" >&5
 $as_echo_n "checking whether OpenMP will work in a package... " >&6; }
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
