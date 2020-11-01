@@ -4,13 +4,15 @@
 #     Set a status with a given name to the latest commit in a current PR git branch.
 #
 # [usage]
-#     set_commit_status.sh <NAME> <STATUS>
+#     set_commit_status.sh <NAME> <STATUS> <SHA>
 #
 # NAME: Name of status.
 #       Status with existing name overwrites a previous one.
 #
 # STATUS: Status to be set.
 #         Can be "error", "failure", "pending" or "success".
+#
+# SHA: SHA of a commit a status to be set on.
 
 set -e
 
@@ -19,8 +21,8 @@ if [ -z "$GITHUB_ACTIONS" ]; then
   exit -1
 fi
 
-if [ $# -ne 2 ]; then
-  echo "Usage: $0 <NAME> <STATUS>"
+if [ $# -ne 3 ]; then
+  echo "Usage: $0 <NAME> <STATUS> <SHA>"
   exit -1
 fi
 
@@ -32,15 +34,17 @@ status=${status/timed_out/failure}
 status=${status/in_progress/pending}
 status=${status/queued/pending}
 
+sha=$3
+
 data=$(jq -n \
   --arg state $status \
-  --arg url "$GITHUB_SERVER_URL/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+  --arg url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
   --arg name $name \
   '{"state":$state,"target_url":$url,"context":$name}')
 
 curl \
   -X POST \
   -H "Accept: application/vnd.github.v3+json" \
-  -H "Authorization: token ${{ secrets.WORKFLOW }}" \
+  -H "Authorization: token $SECRETS_WORKFLOW" \
   -d "$data" \
-  "$GITHUB_API_URL/repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}"
+  "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/$sha"

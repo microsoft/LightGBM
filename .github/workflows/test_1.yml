@@ -42,4 +42,6 @@ jobs:
             exit -1
       - name: Send status
         if: ${{ always() }}
-        run: bash $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}"
+        env:
+          SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
+        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.pull_request.head.sha }}"
