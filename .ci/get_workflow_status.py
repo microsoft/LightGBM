@@ -2,16 +2,22 @@ import json
 from os import environ
 from sys import exit
 from time import sleep
-from urllib import request
+try:
+    from urllib import request
+except ImportError:
+    import urllib2 as request
 
 
-def get_runs():
-    req = request.Request(url="https://api.github.com/repos/microsoft/LightGBM/actions/workflows/test_1.yml/runs",
-                          headers={"accept": "application/vnd.github.v3+json"})
-    with request.urlopen(req) as url:
-        data = json.loads(url.read().decode())
+def get_runs(workflow_name):
     pr_runs = []
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
+        req = request.Request(url="{}/repos/{}/actions/workflows/{}/runs".format(environ.get("GITHUB_SERVER_URL"),
+                                                                                 environ.get("GITHUB_REPOSITORY"),
+                                                                                 workflow_name),
+                              headers={"Accept": "application/vnd.github.v3+json"})
+        url = request.urlopen(req):
+        data = json.loads(url.read().decode('utf-8'))
+        url.close()
         pr_runs = [i for i in data['workflow_runs']
                    if i['event'] == 'pull_request_review_comment' and
                    (i.get('pull_requests') and
@@ -30,6 +36,7 @@ def get_status(runs):
                 status = 'fail'
                 break
             if run['conclusion'] == 'success':
+                status = 'ok'
                 break
         if run['status'] in {'in_progress', 'queued'}:
             status = 'rerun'
@@ -39,7 +46,7 @@ def get_status(runs):
 
 if __name__ == "__main__":
     while True:
-        status = get_status(get_runs())
+        status = get_status(get_runs("test_1.yml"))
         if status != 'rerun':
             break
         sleep(60)

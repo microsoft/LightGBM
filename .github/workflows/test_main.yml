@@ -40,9 +40,5 @@ jobs:
         with:
           fetch-depth: 5
           submodules: false
-      - name: Install Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
       - name: Note that all tests succeeded
-        run: python "$GITHUB_WORKSPACE/.ci/check_workflow_status.py"
+        run: python "$GITHUB_WORKSPACE/.ci/get_workflow_status.py"
