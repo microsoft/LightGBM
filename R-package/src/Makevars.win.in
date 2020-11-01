@@ -9,6 +9,7 @@ LGB_CPPFLAGS = \
 
 PKG_CPPFLAGS = \
     -I$(PKGROOT)/include \
+    -DFMT_HEADER_ONLY \
     $(LGB_CPPFLAGS)
 
 PKG_CXXFLAGS = \
@@ -27,8 +28,6 @@ OBJECTS = \
     boosting/gbdt_model_text.o \
     boosting/gbdt_prediction.o \
     boosting/prediction_early_stop.o \
-    fmt/format.o \
-    fmt/os.o \
     io/bin.o \
     io/config.o \
     io/config_auto.o \
