@@ -18,6 +18,11 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
+      - name: Send status
+        if: ${{ always() }}
+        env:
+          SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
+        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.pull_request.head.sha }}"
 #      - name: Rerun main workflow
         # Unfortunately, GitHub doesn't allow to rerun successful workflows via REST API:
         # https://stackoverflow.com/a/56684569
@@ -36,8 +41,6 @@ jobs:
 #          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
       - name: Test
         run: |
-            echo "${{ github.sha }}"
-            echo "${{ github.ref }}"
             sleep 30s
             exit -1
       - name: Send status

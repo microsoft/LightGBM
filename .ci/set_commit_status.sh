@@ -12,7 +12,7 @@
 # STATUS: Status to be set.
 #         Can be "error", "failure", "pending" or "success".
 #
-# SHA: SHA of a commit a status to be set on.
+# SHA: SHA of a commit to set a status on.
 
 set -e
 
