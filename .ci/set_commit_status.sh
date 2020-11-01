@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # [description]
 #     Set a status with a given name to the latest commit in a current PR git branch.
