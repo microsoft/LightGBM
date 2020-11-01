@@ -433,6 +433,7 @@ void PushDataToMultiValBin(
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
   if (ret->IsSparse()) {
+    Log::Warning("in sparse push data to multi val bin");
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data;
@@ -458,6 +459,7 @@ void PushDataToMultiValBin(
           }
         });
   } else {
+    Log::Warning("in dense push data to multi val bin");
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
@@ -538,7 +540,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
     } else {
       ncol += 1;
     }
-    for (int fid = 0; fid < feature_groups_[fid]->num_feature_; ++fid) {
+    for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
       const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
       sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
     }
@@ -546,6 +548,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   sum_dense_ratio /= ncol;
   const int offset = (1.0f - sum_dense_ratio) >=
     MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
+  Log::Warning("offset = %d", offset);
   int num_total_bin = offset;
   offsets.push_back(num_total_bin);
   for (int gid = 0; gid < num_groups_; ++gid) {
@@ -1119,6 +1122,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     share_state->hist_move_size.clear();
 
     const int offset = !share_state->is_colwise && !share_state->multi_val_bin->IsSparse() ? 0 : 1;
+    Log::Warning("offset = %d in InitTrain", offset);
     int num_total_bin = offset;
     int new_num_total_bin = offset;
     offsets.push_back(static_cast<uint32_t>(new_num_total_bin));

@@ -376,6 +376,12 @@ void SerialTreeLearner::ConstructHistograms(
         ordered_gradients_.data(), ordered_hessians_.data(), share_state_.get(),
         ptr_larger_leaf_hist_data);
   }
+
+  /*const auto* ptr = smaller_leaf_histogram_array_[0].RawData() - kHistOffset * offset;
+  for (int i = 0; i < 100; ++i) {
+    Log::Warning("bin %d gradient value %f", i, ptr[2 * i]);
+    Log::Warning("bin %d hessian value %f", i, ptr[2 * i + 1]);
+  }*/
 }
 
 void SerialTreeLearner::FindBestSplitsFromHistograms(
