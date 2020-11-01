@@ -42,6 +42,9 @@ data=$(jq -n \
   --arg name $name \
   '{"state":$state,"target_url":$url,"context":$name}')
 
+echo "$data"
+echo "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/$sha"
+
 curl \
   -X POST \
   -H "Accept: application/vnd.github.v3+json" \
