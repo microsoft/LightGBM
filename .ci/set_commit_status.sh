@@ -39,11 +39,8 @@ sha=$3
 data=$(jq -n \
   --arg state $status \
   --arg url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
-  --arg name $name \
+  --arg name "$name" \
   '{"state":$state,"target_url":$url,"context":$name}')
-
-echo "$data"
-echo "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/$sha"
 
 curl \
   -X POST \
