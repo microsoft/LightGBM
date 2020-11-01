@@ -14,9 +14,8 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v1
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 5
           submodules: true
 #      - name: Rerun main workflow
@@ -37,21 +36,10 @@ jobs:
 #          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
       - name: Test
         run: |
+            echo "${{ github.sha }}"
+            echo "${{ github.ref }}"
             sleep 30s
             exit -1
       - name: Send status
         if: ${{ always() }}
-        run: |
-            status=${{ job.status }}
-            status=${status/cancelled/failure}
-            data=$(jq -n \
-              --arg state $status \
-              --arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              --arg name "${{ github.workflow }}" \
-              '{"state":$state,"target_url":$url,"context":$name}')
-            curl \
-              -X POST \
-              -H "Accept: application/vnd.github.v3+json" \
-              -H "Authorization: token ${{ secrets.WORKFLOW }}" \
-              -d "$data" \
-              "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}"
+        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}"

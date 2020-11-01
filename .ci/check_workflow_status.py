@@ -24,9 +24,9 @@ def get_status(runs):
     status = 'ok'
     for run in runs:
         if run['status'] == 'completed':
-            if run['conclusion'] in {'cancelled', 'skipped'}:
+            if run['conclusion'] == 'skipped':
                 continue
-            if run['conclusion'] in {'failure', 'timed_out'}:
+            if run['conclusion'] in {'failure', 'timed_out', 'cancelled'}:
                 status = 'fail'
                 break
             if run['conclusion'] == 'success':
