@@ -13,6 +13,7 @@
 #include <queue>
 #include <unordered_map>
 #include <utility>
+#include <fstream>
 
 #include "cost_effective_gradient_boosting.hpp"
 
@@ -349,7 +350,8 @@ void SerialTreeLearner::ConstructHistograms(
                                   global_timer);
   int offset = 1;
   if (!share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse() &&
-    train_data_->FeatureBinMapper(0)->GetMostFreqBin() > 0) {
+    train_data_->FeatureBinMapper(0)->GetMostFreqBin() > 0 &&
+    train_data_->IsMultiGroup(train_data_->Feature2Group(0))) {
     offset = 0;
   }
   if (share_state_->is_colwise &&
@@ -376,12 +378,6 @@ void SerialTreeLearner::ConstructHistograms(
         ordered_gradients_.data(), ordered_hessians_.data(), share_state_.get(),
         ptr_larger_leaf_hist_data);
   }
-
-  /*const auto* ptr = smaller_leaf_histogram_array_[0].RawData() - kHistOffset * offset;
-  for (int i = 0; i < 100; ++i) {
-    Log::Warning("bin %d gradient value %f", i, ptr[2 * i]);
-    Log::Warning("bin %d hessian value %f", i, ptr[2 * i + 1]);
-  }*/
 }
 
 void SerialTreeLearner::FindBestSplitsFromHistograms(
