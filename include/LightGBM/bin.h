@@ -431,18 +431,18 @@ class MultiValBin {
                                   data_size_t start, data_size_t end,
                                   const score_t* gradients,
                                   const score_t* hessians,
-                                  hist_t* out) const = 0;
+                                  float* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
                                   const score_t* gradients,
                                   const score_t* hessians,
-                                  hist_t* out) const = 0;
+                                  float* out) const = 0;
 
   virtual void ConstructHistogramOrdered(const data_size_t* data_indices,
                                          data_size_t start, data_size_t end,
                                          const score_t* ordered_gradients,
                                          const score_t* ordered_hessians,
-                                         hist_t* out) const = 0;
+                                         float* out) const = 0;
 
   virtual void FinishLoad() = 0;
 

@@ -548,7 +548,6 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   sum_dense_ratio /= ncol;
   const int offset = (1.0f - sum_dense_ratio) >=
     MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
-  Log::Warning("offset = %d", offset);
   int num_total_bin = offset;
   offsets.push_back(num_total_bin);
   for (int gid = 0; gid < num_groups_; ++gid) {
@@ -606,13 +605,13 @@ TrainingShareStates* Dataset::GetShareStates(
   }
   if (force_colwise) {
     TrainingShareStates* share_state = new TrainingShareStates();
-    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures());
+    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(), num_data_);
     share_state->is_colwise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else if (force_rowwise) {
     TrainingShareStates* share_state = new TrainingShareStates();
-    share_state->SetMultiValBin(GetMultiBinFromAllFeatures());
+    share_state->SetMultiValBin(GetMultiBinFromAllFeatures(), num_data_);
     share_state->is_colwise = false;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
@@ -627,11 +626,11 @@ TrainingShareStates* Dataset::GetShareStates(
     std::chrono::duration<double, std::milli> col_wise_init_time,
         row_wise_init_time;
     auto start_time = std::chrono::steady_clock::now();
-    colwise_state->SetMultiValBin(GetMultiBinFromSparseFeatures());
+    colwise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(), num_data_);
     col_wise_init_time = std::chrono::steady_clock::now() - start_time;
 
     start_time = std::chrono::steady_clock::now();
-    rowwise_state->SetMultiValBin(GetMultiBinFromAllFeatures());
+    rowwise_state->SetMultiValBin(GetMultiBinFromAllFeatures(), num_data_);
     std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
         hist_data(NumTotalBin() * 2);
 
@@ -1122,7 +1121,6 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     share_state->hist_move_size.clear();
 
     const int offset = !share_state->is_colwise && !share_state->multi_val_bin->IsSparse() ? 0 : 1;
-    Log::Warning("offset = %d in InitTrain", offset);
     int num_total_bin = offset;
     int new_num_total_bin = offset;
     offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
@@ -1224,9 +1222,9 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
   int n_data_block = 1;
   int data_block_size = num_data;
   Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, 1024,
-                                    &n_data_block, &data_block_size);
+                                    share_state->max_block_size, &n_data_block, &data_block_size);
   const size_t buf_size =
-      static_cast<size_t>(n_data_block - 1) * num_bin_aligned * 2;
+      static_cast<size_t>(n_data_block) * num_bin_aligned * 2;
   if (share_state->hist_buf.size() < buf_size) {
     share_state->hist_buf.resize(buf_size);
   }
@@ -1235,17 +1233,17 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
     hist_data = share_state->TempBuf();
   }
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static, 1) num_threads(share_state->num_threads)
+#pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
   for (int tid = 0; tid < n_data_block; ++tid) {
     OMP_LOOP_EX_BEGIN();
     data_size_t start = tid * data_block_size;
     data_size_t end = std::min(start + data_block_size, num_data);
-    auto data_ptr = hist_data;
-    if (tid > 0) {
-      data_ptr = share_state->hist_buf.data() +
-                 static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
-    }
-    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistEntrySize);
+    //auto data_ptr = hist_data;
+    //if (tid > 0) {
+    auto  data_ptr = share_state->hist_buf.data() +
+                 static_cast<size_t>(num_bin_aligned) * 2 * (tid);
+    //}
+    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * 8UL);
     if (USE_INDICES) {
       if (ORDERED) {
         multi_val_bin->ConstructHistogramOrdered(data_indices, start, end,
@@ -1266,15 +1264,16 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
   global_timer.Start("Dataset::sparse_bin_histogram_merge");
   int n_bin_block = 1;
   int bin_block_size = num_bin;
+  std::memset(reinterpret_cast<void*>(hist_data), 0, num_bin * kHistEntrySize);
   Threading::BlockInfo<data_size_t>(share_state->num_threads, num_bin, 512, &n_bin_block,
                                     &bin_block_size);
 #pragma omp parallel for schedule(static, 1) num_threads(share_state->num_threads)
   for (int t = 0; t < n_bin_block; ++t) {
     const int start = t * bin_block_size;
     const int end = std::min(start + bin_block_size, num_bin);
-    for (int tid = 1; tid < n_data_block; ++tid) {
+    for (int tid = 0; tid < n_data_block; ++tid) {
       auto src_ptr = share_state->hist_buf.data() +
-                     static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
+                     static_cast<size_t>(num_bin_aligned) * 2 * (tid);
       for (int i = start * 2; i < end * 2; ++i) {
         hist_data[i] += src_ptr[i];
       }

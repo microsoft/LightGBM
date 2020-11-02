@@ -1180,7 +1180,6 @@ class HistogramPool {
     const int offset = is_dense_rowwise || is_hist_colwise ? 0 : 1;
     int num_total_bin = offset;
     offsets->clear();
-    Log::Warning("is_dense_rowwise = %d", static_cast<int>(is_dense_rowwise));
     for (int i = 0; i < train_data->num_features(); ++i) {
       int group = train_data->Feature2Group(i);
       if (train_data->IsDenseMultiGroup(group)) {

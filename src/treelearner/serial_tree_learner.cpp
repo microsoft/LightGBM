@@ -659,6 +659,12 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
 
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
+    /*Log::Warning("best_split_info.left_sum_gradient = %f", best_split_info.left_sum_gradient);
+    Log::Warning("best_split_info.left_sum_hessian = %f", best_split_info.left_sum_hessian);
+    Log::Warning("best_split_info.right_sum_gradient = %f", best_split_info.right_sum_gradient);
+    Log::Warning("best_split_info.right_sum_hessian = %f", best_split_info.right_sum_hessian);
+    Log::Warning("best_split_info.left_count = %d", best_split_info.left_count);
+    Log::Warning("best_split_info.right_count = %d", best_split_info.right_count);*/
     CHECK_GT(best_split_info.left_count, 0);
     smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                                best_split_info.left_sum_gradient,
@@ -669,6 +675,12 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                               best_split_info.right_sum_hessian,
                               best_split_info.right_output);
   } else {
+    /*Log::Warning("best_split_info.left_sum_gradient = %f", best_split_info.left_sum_gradient);
+    Log::Warning("best_split_info.left_sum_hessian = %f", best_split_info.left_sum_hessian);
+    Log::Warning("best_split_info.right_sum_gradient = %f", best_split_info.right_sum_gradient);
+    Log::Warning("best_split_info.right_sum_hessian = %f", best_split_info.right_sum_hessian);
+    Log::Warning("best_split_info.left_count = %d", best_split_info.left_count);
+    Log::Warning("best_split_info.right_count = %d", best_split_info.right_count);*/
     CHECK_GT(best_split_info.right_count, 0);
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                best_split_info.right_sum_gradient,

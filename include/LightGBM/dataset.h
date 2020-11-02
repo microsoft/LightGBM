@@ -290,28 +290,35 @@ struct TrainingShareStates {
   std::vector<uint32_t> hist_move_src;
   std::vector<uint32_t> hist_move_dest;
   std::vector<uint32_t> hist_move_size;
-  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
+  std::vector<float, Common::AlignmentAllocator<float, kAlignedSize>>
       hist_buf;
+  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> temp_buf;
+  const int max_block_size = 100000;
+  int num_blocks = 0;
 
-  void SetMultiValBin(MultiValBin* bin) {
+  void SetMultiValBin(MultiValBin* bin, data_size_t num_data) {
     num_threads = OMP_NUM_THREADS();
     if (bin == nullptr) {
       return;
     }
+    num_blocks = (num_data + max_block_size - 1) / max_block_size;
+    num_blocks = std::max(num_threads, num_blocks);
     multi_val_bin.reset(bin);
     num_bin_aligned =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
+    size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_blocks;
     if (new_size > hist_buf.size()) {
-      hist_buf.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_threads);
+      hist_buf.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_blocks);
     }
+    temp_buf.resize(static_cast<size_t>(num_bin_aligned) * 2);
   }
 
   hist_t* TempBuf() {
     if (!is_use_subcol) {
       return nullptr;
     }
-    return hist_buf.data() + hist_buf.size() - num_bin_aligned * 2;
+    return temp_buf.data();
+    //return hist_buf.data() + hist_buf.size() - num_bin_aligned * 2;
   }
 
   void HistMove(const hist_t* src, hist_t* dest) {
