@@ -1274,6 +1274,7 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
     for (int tid = 0; tid < n_data_block; ++tid) {
       auto src_ptr = share_state->hist_buf.data() +
                      static_cast<size_t>(num_bin_aligned) * 2 * (tid);
+      #pragma omp simd
       for (int i = start * 2; i < end * 2; ++i) {
         hist_data[i] += src_ptr[i];
       }

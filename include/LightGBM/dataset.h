@@ -293,7 +293,7 @@ struct TrainingShareStates {
   std::vector<float, Common::AlignmentAllocator<float, kAlignedSize>>
       hist_buf;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> temp_buf;
-  const int max_block_size = 100000;
+  const int max_block_size = 200000;
   int num_blocks = 0;
 
   void SetMultiValBin(MultiValBin* bin, data_size_t num_data) {
