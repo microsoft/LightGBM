@@ -15,7 +15,7 @@
 #' The \code{lgb.plot.interpretation} function creates a \code{barplot}.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' Logit <- function(x) {
 #'   log(x / (1.0 - x))
 #' }

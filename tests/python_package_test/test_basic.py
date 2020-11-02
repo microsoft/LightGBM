@@ -7,8 +7,10 @@ import lightgbm as lgb
 import numpy as np
 
 from scipy import sparse
-from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
+from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
+
+from .utils import load_breast_cancer
 
 
 class TestBasic(unittest.TestCase):
@@ -187,6 +189,40 @@ class TestBasic(unittest.TestCase):
             with open(d1name, 'rt') as d1f:
                 d1txt = d1f.read()
             self.assertEqual(dtxt, d1txt)
+
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
+    def test_add_features_from_different_sources(self):
+        import pandas as pd
+        n_row = 100
+        n_col = 5
+        X = np.random.random((n_row, n_col))
+        xxs = [X, sparse.csr_matrix(X), pd.DataFrame(X)]
+        names = ['col_%d' % i for i in range(n_col)]
+        for x_1 in xxs:
+            # test that method works even with free_raw_data=True
+            d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=True).construct()
+            d2 = lgb.Dataset(x_1, feature_name=names, free_raw_data=True).construct()
+            d1.add_features_from(d2)
+            self.assertIsNone(d1.data)
+
+            # test that method works but sets raw data to None in case of immergeable data types
+            d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
+            d2 = lgb.Dataset([X[:n_row // 2, :], X[n_row // 2:, :]],
+                             feature_name=names, free_raw_data=False).construct()
+            d1.add_features_from(d2)
+            self.assertIsNone(d1.data)
+
+            # test that method works for different data types
+            d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
+            res_feature_names = [name for name in names]
+            for idx, x_2 in enumerate(xxs, 2):
+                original_type = type(d1.get_data())
+                d2 = lgb.Dataset(x_2, feature_name=names, free_raw_data=False).construct()
+                d1.add_features_from(d2)
+                self.assertIsInstance(d1.get_data(), original_type)
+                self.assertTupleEqual(d1.get_data().shape, (n_row, n_col * idx))
+                res_feature_names += ['D{}_{}'.format(idx, name) for name in names]
+                self.assertListEqual(d1.feature_name, res_feature_names)
 
     def test_cegb_affects_behavior(self):
         X = np.random.random((100, 5))

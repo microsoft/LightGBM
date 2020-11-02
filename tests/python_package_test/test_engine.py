@@ -10,15 +10,16 @@ import unittest
 import lightgbm as lgb
 import numpy as np
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
-from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris, load_svmlight_file, make_multilabel_classification)
-from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score, average_precision_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris
 
 
 decreasing_generator = itertools.count(0, -1)
@@ -1247,7 +1248,7 @@ class TestEngine(unittest.TestCase):
 
         for test_with_categorical_variable in [True, False]:
             trainset = self.generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
-            for monotone_constraints_method in ["basic", "intermediate"]:
+            for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
                 params = {
                     'min_data': 20,
                     'num_leaves': 20,
@@ -1281,7 +1282,7 @@ class TestEngine(unittest.TestCase):
         monotone_constraints = [1, -1, 0]
         penalization_parameter = 2.0
         trainset = self.generate_trainset_for_monotone_constraints_tests(x3_to_category=False)
-        for monotone_constraints_method in ["basic", "intermediate"]:
+        for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
                 'max_depth': max_depth,
                 'monotone_constraints': monotone_constraints,
@@ -1320,7 +1321,7 @@ class TestEngine(unittest.TestCase):
         unconstrained_model_predictions = unconstrained_model.\
             predict(x3_negatively_correlated_with_y.reshape(-1, 1))
 
-        for monotone_constraints_method in ["basic", "intermediate"]:
+        for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params_constrained_model["monotone_constraints_method"] = monotone_constraints_method
             # The penalization is so high that the first 2 features should not be used here
             constrained_model = lgb.train(params_constrained_model, trainset_constrained_model, 10)
@@ -2507,3 +2508,25 @@ class TestEngine(unittest.TestCase):
         inner_test(X, y, params, early_stopping_rounds=1)
         inner_test(X, y, params, early_stopping_rounds=5)
         inner_test(X, y, params, early_stopping_rounds=None)
+
+    def test_average_precision_metric(self):
+        # test against sklearn average precision metric
+        X, y = load_breast_cancer(return_X_y=True)
+        params = {
+            'objective': 'binary',
+            'metric': 'average_precision',
+            'verbose': -1
+        }
+        res = {}
+        lgb_X = lgb.Dataset(X, label=y)
+        est = lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=res)
+        ap = res['training']['average_precision'][-1]
+        pred = est.predict(X)
+        sklearn_ap = average_precision_score(y, pred)
+        self.assertAlmostEqual(ap, sklearn_ap)
+        # test that average precision is 1 where model predicts perfectly
+        y = y.copy()
+        y[:] = 1
+        lgb_X = lgb.Dataset(X, label=y)
+        lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], evals_result=res)
+        self.assertAlmostEqual(res['training']['average_precision'][-1], 1)

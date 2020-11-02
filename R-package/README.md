@@ -5,22 +5,51 @@
 ### Contents
 
 * [Installation](#installation)
+    - [Installing the CRAN Package](#installing-the-cran-package)
+    - [Installing from Source with CMake](#install)
+    - [Installing a GPU-enabled Build](#installing-a-gpu-enabled-build)
+    - [Installing Precompiled Binaries](#installing-precompiled-binaries)
+    - [Installing from a Pre-compiled lib_lightgbm](#lib_lightgbm)
 * [Examples](#examples)
 * [Testing](#testing)
-* [Preparing a CRAN Package and Installing It](#preparing-a-cran-package-and-installing-it)
+* [Preparing a CRAN Package](#preparing-a-cran-package)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
 
 Installation
 ------------
 
+For the easiest installation, go to ["Installing the CRAN package"](#installing-the-cran-package).
+
+If you experience any issues with that, try ["Installing from Source with CMake"](#install). This can produce a more efficient version of the library on Windows systems with Visual Studio.
+
+To build a GPU-enabled version of the package, follow the steps in ["Installing a GPU-enabled Build"](#installing-a-gpu-enabled-build).
+
+If any of the above options do not work for you or do not meet your needs, please let the maintainers know by [opening an issue](https://github.com/microsoft/LightGBM/issues).
+
+When your package installation is done, you can check quickly if your LightGBM R-package is working by running the following:
+
+```r
+library(lightgbm)
+data(agaricus.train, package='lightgbm')
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label = train$label)
+model <- lgb.cv(
+    params = list(
+        objective = "regression"
+        , metric = "l2"
+    )
+    , data = dtrain
+)
+```
+
 ### Installing the CRAN package
 
-As of this writing, `LightGBM`'s R package is not available on CRAN. However, start with `LightGBM` 3.0.0, you can install a released source distribution. This is the same type of package that you'd install from CRAN. It does not require `CMake`, Visual Studio, or anything else outside the CRAN toolchain.
+As of this writing, `LightGBM`'s R package is not available on CRAN. However, start with `LightGBM` 3.0.0, you can install a released source distribution. This is the same type of package that you'd install from CRAN. It does not require `CMake`, `Visual Studio`, or anything else outside the CRAN toolchain.
 
 To install this package on any operating system:
 
-1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases)
+1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases).
 2. Look for the artifact with a name like `lightgbm-{VERSION}-r-cran.tar.gz`. Right-click it and choose "copy link address".
 3. Copy that link into `PKG_URL` in the code below and run it.
 
@@ -30,46 +59,30 @@ PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0/light
 remotes::install_url(PKG_URL)
 ```
 
-### Installing Precompiled Binaries
+#### Custom Installation (Linux, Mac)
 
-Starting with `LightGBM` 3.0.0, precompiled binaries for the R package are created for each release. These packages do not require compilation, so they will be faster and easier to install than packages that are built from source. These packages are created with R 4.0 and are not guaranteed to work with other R versions.
+The steps above should work on most systems, but users with highly-customized environments might want to change how R builds packages from source.
 
-Binaries are available for Windows, Mac, and Linux systems. They are not guaranteed to work with all variants and versions of these operating systems. Please [open an issue](https://github.com/microsoft/LightGBM/issues) if you encounter any problems.
+To change the compiler used when installing the CRAN package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler).
 
-To install a binary for the R package:
+For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
 
-1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases).
-2. Choose a file based on your operating system. Right-click it and choose "copy link address".
-    * Linux: `lightgbm-{VERSION}-r40-linux.tgz`
-    * Mac: `lightgbm-{VERSION}-r40-macos.tgz`
-    * Windows: `lightgbm-{VERSION}-r40-windows.zip`
-3. Copy that link into `PKG_URL` in the code below and run it.
-
-This sample code installs version 3.0.0-1 of the R package on Mac.
-
-```r
-PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r40-macos.tgz"
-
-local_file <- paste0("lightgbm.", tools::file_ext(PKG_URL))
-
-download.file(
-    url = PKG_URL
-    , destfile = local_file
-)
-install.packages(
-    pkgs = local_file
-    , type = "binary"
-    , repos = NULL
-)
+```make
+# ~/.R/Makevars
+CC=gcc-8
+CXX=g++-8
+CXX11=g++-8
 ```
 
-### Preparation
+### Installing from Source with CMake <a name="install"></a>
 
 You need to install git and [CMake](https://cmake.org/) first.
 
-Note: 32-bit (i386) R/Rtools is currently not supported.
+Note: this method is only supported on 64-bit systems. If you need to run LightGBM on 32-bit Windows (i386), follow the instructions in ["Installing the CRAN Package"](#installing-the-cran-package).
 
 #### Windows Preparation
+
+NOTE: Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package).
 
 Installing a 64-bit version of [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory.
 
@@ -127,9 +140,9 @@ You can perform installation either with **Apple Clang** or **gcc**. In case you
 export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
 ```
 
-### Install
+#### Install with CMake
 
-Build and install R-package with the following commands:
+After following the "preparation" steps above for your operating system, build and install the R-package with the following commands:
 
 ```sh
 git clone --recursive https://github.com/microsoft/LightGBM
@@ -141,22 +154,52 @@ The `build_r.R` script builds the package in a temporary directory called `light
 
 Note: for the build with Visual Studio/VS Build Tools in Windows, you should use the Windows CMD or Powershell.
 
-Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Linux users might require the appropriate user write permissions for packages.
+### Installing a GPU-enabled Build
 
 Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
-If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual.
+After installing these other libraries, follow the steps in ["Installing from Source with CMake"](#install).
 
-When your package installation is done, you can check quickly if your LightGBM R-package is working by running the following:
+### Installing Precompiled Binaries
+
+**NOTE:** As of this writing, the precompiled binaries of the R package should be considered experimental. If you try them an experience any problems, please [open an issue](https://github.com/microsoft/LightGBM/issues).
+
+Starting with `LightGBM` 3.0.0, precompiled binaries for the R package are created for each release. These packages do not require compilation, so they will be faster and easier to install than packages that are built from source. These packages are created with R 4.0 and are not guaranteed to work with other R versions.
+
+Binaries are available for Windows, Mac, and Linux systems. They are not guaranteed to work with all variants and versions of these operating systems. Please [open an issue](https://github.com/microsoft/LightGBM/issues) if you encounter any problems.
+
+To install a binary for the R package:
+
+1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases).
+2. Choose a file based on your operating system. Right-click it and choose "copy link address".
+    * Linux: `lightgbm-{VERSION}-r40-linux.tgz`
+    * Mac: `lightgbm-{VERSION}-r40-macos.tgz`
+    * Windows: `lightgbm-{VERSION}-r40-windows.zip`
+3. Copy that link into `PKG_URL` in the code below and run it.
+
+This sample code installs version 3.0.0-1 of the R package on Mac.
 
 ```r
-library(lightgbm)
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
-params <- list(objective="regression", metric="l2")
-model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r40-macos.tgz"
+
+local_file <- paste0("lightgbm.", tools::file_ext(PKG_URL))
+
+download.file(
+    url = PKG_URL
+    , destfile = local_file
+)
+install.packages(
+    pkgs = local_file
+    , type = "binary"
+    , repos = NULL
+)
 ```
+
+### Installing from a Pre-compiled lib_lightgbm <a name="lib_lightgbm"></a>
+
+Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.so` or `lib_lightgbm.dll`) and then build an R package that wraps it.
+
+As of version 3.0.0, this is no longer supported. If building from source is difficult for you, please [open an issue](https://github.com/microsoft/LightGBM/issues).
 
 Examples
 --------
@@ -194,8 +237,8 @@ Rscript -e " \
     "
 ```
 
-Preparing a CRAN Package and Installing It
-------------------------------------------
+Preparing a CRAN Package
+------------------------
 
 This section is primarily for maintainers, but may help users and contributors to understand the structure of the R package.
 
@@ -213,23 +256,18 @@ sh build-cran-package.sh
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
 
+Alternatively, GitHub Actions can generate this file for you. On a pull request, go to the "Files changed" tab and create a comment with this phrase:
+
+> /gha build r-artifacts
+
+Go to https://github.com/microsoft/LightGBM/actions, and find the most recent run of the "R artifact builds" workflow. If it ran successfully, you'll find a download link for the package (in `.zip` format) in that run's "Artifacts" section.
+
 ### Standard Installation from CRAN Package
 
 After building the package, install it with a command like the following:
 
 ```shell
 R CMD install lightgbm_*.tar.gz
-```
-
-#### Custom Installation (Linux, Mac)
-
-To change the compiler used when installing the package, you can create a file `~/.R/Makevars` which overrides `CC` (`C` compiler) and `CXX` (`C++` compiler). For example, to use `gcc` instead of `clang` on Mac, you could use something like the following:
-
-```make
-# ~/.R/Makevars
-CC=gcc-8
-CXX=g++-8
-CXX11=g++-8
 ```
 
 ### Changing the CRAN Package
@@ -337,6 +375,101 @@ mv \
     lightgbm_${LGB_VERSION}.tgz \
     lightgbm-${LGB_VERSION}-r40-windows.zip
 ```
+
+### Testing the CRAN Package
+
+`{lightgbm}` is tested automatically on every commit, across many combinations of operating system, R version, and compiler. This section describes how to test the package locally while you are developing.
+
+#### Windows, Mac, and Linux
+
+```shell
+sh build-cran-package.sh
+R CMD check --as-cran lightgbm_*.tar.gz
+```
+
+#### Solaris
+
+All packages uploaded to CRAN must pass `R CMD check` on Solaris 10. To test LightGBM on this operating system, you can use the free service [R Hub](https://builder.r-hub.io/), a free service generously provided by the R Consortium.
+
+```shell
+sh build-cran-package.sh
+```
+
+```r
+package_tarball <- paste0("lightgbm_", readLines("VERSION.txt")[1], ".tar.gz")
+rhub::check(
+    path = package_tarball
+    , email = "your_email_here"
+    , check_args = "--as-cran"
+    , platform = c(
+        "solaris-x86-patched"
+        , "solaris-x86-patched-ods"
+    )
+    , env_vars = c(
+        "R_COMPILE_AND_INSTALL_PACKAGES" = "always"
+    )
+)
+```
+
+#### UBSAN
+
+All packages uploaded to CRAN must pass a build using `gcc` instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN). For more background, see [this blog post](http://dirk.eddelbuettel.com/code/sanitizers.html).
+
+You can replicate these checks locally using Docker.
+
+```shell
+docker run \
+    -v $(pwd):/opt/LightGBM \
+    -it rhub/rocker-gcc-san \
+    /bin/bash
+
+cd /opt/LightGBM
+Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+
+sh build-cran-package.sh
+
+Rdevel CMD install lightgbm_*.tar.gz
+cd R-package/tests
+Rscriptdevel testthat.R
+```
+
+#### Valgrind
+
+All packages uploaded to CRAN must be built and tested without raising any issues from `valgrind`. `valgrind` is a profiler that can catch serious issues like memory leaks and illegal writes. For more information, see [this blog post](https://reside-ic.github.io/blog/debugging-and-fixing-crans-additional-checks-errors/).
+
+You can replicate these checks locally using Docker. Note that instrumented versions of R built to use `valgrind` run much slower, and these tests may take as long as 20 minutes to run.
+
+```shell
+docker run \
+    -v $(pwd):/opt/LightGBM \
+    -it \
+        wch1/r-debug
+
+cd /opt/LightGBM
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+
+sh build-cran-package.sh
+
+RDvalgrind CMD INSTALL \
+    --preclean \
+    --install-tests \
+        lightgbm_*.tar.gz
+
+cd R-package/tests
+
+RDvalgrind \
+    --no-readline \
+    --vanilla \
+    -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes" \
+        -f testthat.R \
+2>&1 \
+| tee out.log \
+| cat
+```
+
+These tests can also be triggered on any pull request by leaving a review on the "Files changed" tab in a pull request:
+
+> /gha run r-valgrind
 
 External (Unofficial) Repositories
 ----------------------------------

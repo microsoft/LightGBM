@@ -193,6 +193,18 @@ Core Parameters
 
    -  this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
 
+-  ``deterministic`` :raw-html:`<a id="deterministic" title="Permalink to this parameter" href="#deterministic">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only with ``cpu`` device type
+
+   -  setting this to ``true`` should ensure the stable results when using the same data and the same parameters (and different ``num_threads``)
+
+   -  when you use the different seeds, different LightGBM versions, the binaries compiled by different compilers, or in different systems, the results are expected to be different
+
+   -  you can `raise issues <https://github.com/microsoft/LightGBM/issues>`__ in LightGBM GitHub repo when you meet the unstable results
+
+   -  **Note**: setting this to ``true`` may slow down the training
+
 Learning Control Parameters
 ---------------------------
 
@@ -462,7 +474,7 @@ Learning Control Parameters
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
--  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, aliases: ``monotone_constraining_method``, ``mc_method``
+-  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, ``advanced``, aliases: ``monotone_constraining_method``, ``mc_method``
 
    -  used only if ``monotone_constraints`` is set
 
@@ -470,13 +482,15 @@ Learning Control Parameters
 
       -  ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
 
-      -  ``intermediate``, a `more advanced method <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+      -  ``intermediate``, a `more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+
+      -  ``advanced``, an `even more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
 
 -  ``monotone_penalty`` :raw-html:`<a id="monotone_penalty" title="Permalink to this parameter" href="#monotone_penalty">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``monotone_splits_penalty``, ``ms_penalty``, ``mc_penalty``, constraints: ``monotone_penalty >= 0.0``
 
    -  used only if ``monotone_constraints`` is set
 
-   -  `monotone penalty <https://github.com/microsoft/LightGBM/files/3457826/PR-monotone-constraints-report.pdf>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+   -  `monotone penalty <https://hal.archives-ouvertes.fr/hal-02862802/document>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
 
    -  if ``0.0`` (the default), no penalization is applied
 
@@ -949,11 +963,13 @@ Objective Parameters
 
    -  set this closer to ``1`` to shift towards a **Poisson** distribution
 
--  ``lambdarank_truncation_level`` :raw-html:`<a id="lambdarank_truncation_level" title="Permalink to this parameter" href="#lambdarank_truncation_level">&#x1F517;&#xFE0E;</a>`, default = ``20``, type = int, constraints: ``lambdarank_truncation_level > 0``
+-  ``lambdarank_truncation_level`` :raw-html:`<a id="lambdarank_truncation_level" title="Permalink to this parameter" href="#lambdarank_truncation_level">&#x1F517;&#xFE0E;</a>`, default = ``30``, type = int, constraints: ``lambdarank_truncation_level > 0``
 
    -  used only in ``lambdarank`` application
 
-   -  used for truncating the max DCG, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
+   -  controls the number of top-results to focus on during training, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
+
+   -  this parameter is closely related to the desirable cutoff ``k`` in the metric **NDCG@k** that we aim at optimizing the ranker for. The optimal setting for this parameter is likely to be slightly higher than ``k`` (e.g., ``k + 3``) to include more pairs of documents to train on, but perhaps not too high to avoid deviating too much from the desired target metric **NDCG@k**
 
 -  ``lambdarank_norm`` :raw-html:`<a id="lambdarank_norm" title="Permalink to this parameter" href="#lambdarank_norm">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
@@ -1009,6 +1025,8 @@ Metric Parameters
       -  ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
 
       -  ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
+
+      -  ``average_precision``, `average precision score <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
 
       -  ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
 

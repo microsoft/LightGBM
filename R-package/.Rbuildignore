@@ -3,7 +3,7 @@ AUTOCONF_UBUNTU_VERSION
 ^.*\.bin
 ^build_r.R$
 ^cran-comments\.md$
-^docs/.*$
+^docs$
 ^.*\.dll
 \.gitkeep$
 ^.*\.history
