@@ -136,7 +136,48 @@ class MultiValDenseBin : public MultiValBin {
       const VAL_T* data_ptr = data_.data() + j_start;
       const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
       const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
-      for (auto j = 0; j < num_feature_; ++j) {
+      __m256 g_vec = _mm256_broadcast_ss(&gradient);
+      __m256 h_vec = _mm256_broadcast_ss(&hessian);
+      __m256 gh_vec = _mm256_blend_ps(g_vec, h_vec, blend_bits);
+      int j = 0;
+      for (; j < vec_end; j += 4) {
+        const uint32_t bin0 = static_cast<uint32_t>(data_ptr[j]);
+        const auto ti0 = (bin0 + offsets_ptr[j]) << 1;
+        const float* hist0_pos = grad + ti0;
+        
+        __m128 hist0;
+        hist0 = _mm_loadl_pi(hist0, (__m64*)hist0_pos);
+        const uint32_t bin1 = static_cast<uint32_t>(data_ptr[j + 1]);
+        const auto ti1 = (bin1 + offsets_ptr[j + 1]) << 1;
+        const float* hist1_pos = grad + ti1;
+        hist0 = _mm_loadh_pi(hist0, (__m64*)hist1_pos);
+
+        const uint32_t bin2 = static_cast<uint32_t>(data_ptr[j + 2]);
+        const auto ti2 = (bin2 + offsets_ptr[j + 2]) << 1;
+        const float* hist2_pos = grad + ti2;
+
+        __m128 hist2;
+        hist2 = _mm_loadl_pi(hist2, (__m64*)hist2_pos);
+        const uint32_t bin3 = static_cast<uint32_t>(data_ptr[j + 3]);
+        const auto ti3 = (bin3 + offsets_ptr[j + 3]) << 1;
+        const float* hist3_pos = grad + ti3;
+        hist2 = _mm_loadh_pi(hist2, (__m64*)hist3_pos);
+
+        __m256 hist = _mm256_castps128_ps256(hist0);
+        hist = _mm256_insertf128_ps(hist, hist2, 1);
+
+        hist = _mm256_add_ps(hist, gh_vec);
+
+        __m128 res1 = _mm256_extractf128_ps(hist, 1);
+        __m128 res0 = _mm256_castps256_ps128(hist);
+
+        _mm_storel_pi((__m64*)hist0_pos, res0);
+        _mm_storeh_pi((__m64*)hist1_pos, res0);
+        _mm_storel_pi((__m64*)hist2_pos, res1);
+        _mm_storeh_pi((__m64*)hist3_pos, res1);
+      }
+
+      for (; j < num_feature_; ++j) {
         const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
         const auto ti = (bin + offsets_ptr[j]) << 1;
         grad[ti] += gradient;
