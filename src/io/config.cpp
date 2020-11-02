@@ -329,6 +329,9 @@ void Config::CheckParamConflict() {
   if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
     force_col_wise = true;
     force_row_wise = false;
+    if (deterministic) {
+      Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
+    }
   }
 
   // force gpu_use_dp for CUDA

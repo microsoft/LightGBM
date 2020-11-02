@@ -50,8 +50,8 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 
   // initialize splits for leaf
-  smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));
-  larger_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));
+  smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data(), config_));
+  larger_leaf_splits_.reset(new LeafSplits(train_data_->num_data(), config_));
 
   // initialize data partition
   data_partition_.reset(new DataPartition(num_data_, config_->num_leaves));
@@ -791,7 +791,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
   int num_data = split->left_count + split->right_count;
 
   std::vector<SplitInfo> bests(share_state_->num_threads);
-  LeafSplits leaf_splits(num_data);
+  LeafSplits leaf_splits(num_data, config_);
   leaf_splits.Init(leaf, sum_gradients, sum_hessians);
 
   // can't use GetParentOutput because leaf_splits doesn't have weight property set
