@@ -48,6 +48,8 @@ class MultiValSparseBin : public MultiValBin {
 
   std::vector<uint32_t> offsets() const override { return std::vector<uint32_t>(0); }
 
+  int bit_size() const override { return 0; }
+
   void PushOneRow(int tid, data_size_t idx,
                   const std::vector<uint32_t>& values) override {
     const int pre_alloc_size = 50;
@@ -108,6 +110,8 @@ class MultiValSparseBin : public MultiValBin {
 
   bool IsSparse() override { return true; }
 
+  #include <x86intrin.h>
+
   template <bool USE_INDICES, bool USE_PREFETCH, bool ORDERED>
   void ConstructHistogramInner(const data_size_t* data_indices,
                                data_size_t start, data_size_t end,
@@ -143,21 +147,21 @@ class MultiValSparseBin : public MultiValBin {
         const auto j_vec_end = j_end - ((j_end - j_start) % 4);
         auto j = j_start;
         for (; j < j_vec_end; j += 4) {
-          const uint32_t bin0 = data_ptr[j];
+          const uint32_t bin0 = static_cast<uint32_t>(data_ptr[j]);
           __m64* hist0_pos = hist_ptr + bin0;
           
           __m128 hist0;
           hist0 = _mm_loadl_pi(hist0, hist0_pos);
-          const uint32_t bin1 = data_ptr[j + 1];
+          const uint32_t bin1 = static_cast<uint32_t>(data_ptr[j + 1]);
           __m64* hist1_pos = hist_ptr + bin1;
           hist0 = _mm_loadh_pi(hist0, hist1_pos);
 
-          const uint32_t bin2 = data_ptr[j + 2];
+          const uint32_t bin2 = static_cast<uint32_t>(data_ptr[j + 2]);
           __m64* hist2_pos = hist_ptr + bin2;
 
           __m128 hist2;
           hist2 = _mm_loadl_pi(hist2, hist2_pos);
-          const uint32_t bin3 = data_ptr[j + 3];
+          const uint32_t bin3 = static_cast<uint32_t>(data_ptr[j + 3]);
           __m64* hist3_pos = hist_ptr + bin3;
           hist2 = _mm_loadh_pi(hist2, hist3_pos);
 
@@ -193,21 +197,21 @@ class MultiValSparseBin : public MultiValBin {
       const auto j_vec_end = j_end - ((j_end - j_start) % 4);
       auto j = j_start;
       for (; j < j_vec_end; j += 4) {
-        const uint32_t bin0 = data_ptr[j];
+        const uint32_t bin0 = static_cast<uint32_t>(data_ptr[j]);
         __m64* hist0_pos = hist_ptr + bin0;
         
         __m128 hist0;
         hist0 = _mm_loadl_pi(hist0, hist0_pos);
-        const uint32_t bin1 = data_ptr[j + 1];
+        const uint32_t bin1 = static_cast<uint32_t>(data_ptr[j + 1]);
         __m64* hist1_pos = hist_ptr + bin1;
         hist0 = _mm_loadh_pi(hist0, hist1_pos);
 
-        const uint32_t bin2 = data_ptr[j + 2];
+        const uint32_t bin2 = static_cast<uint32_t>(data_ptr[j + 2]);
         __m64* hist2_pos = hist_ptr + bin2;
 
         __m128 hist2;
         hist2 = _mm_loadl_pi(hist2, hist2_pos);
-        const uint32_t bin3 = data_ptr[j + 3];
+        const uint32_t bin3 = static_cast<uint32_t>(data_ptr[j + 3]);
         __m64* hist3_pos = hist_ptr + bin3;
         hist2 = _mm_loadh_pi(hist2, hist3_pos);
 
@@ -256,7 +260,8 @@ class MultiValSparseBin : public MultiValBin {
   }
 
   MultiValBin* CreateLike(data_size_t num_data, int num_bin, int,
-                          double estimate_element_per_row, const std::vector<uint32_t>& /*offsets*/) const override {
+                          double estimate_element_per_row, const std::vector<uint32_t>& /*offsets*/,
+                          int /*bit_size*/) const override {
     return new MultiValSparseBin<INDEX_T, VAL_T>(num_data, num_bin,
                                                  estimate_element_per_row);
   }
