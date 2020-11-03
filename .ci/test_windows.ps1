@@ -72,7 +72,7 @@ elseif ($env:TASK -eq "bdist") {
 
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py bdist_wheel --integrated-opencl --plat-name=win-amd64 --universal ; Check-Output $?
-  cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
+  cd dist; pip install --user @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
   cd $env:BUILD_SOURCESDIRECTORY\python-package
@@ -88,14 +88,13 @@ if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq 
 } else {
   # cannot test C API with "sdist" task
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
+  if ($env:TASK -eq "bdist") {
+    # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
+    $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
+  }
 }
 pytest $tests ; Check-Output $?
 
-if ($env:TASK -eq "bdist") {
-  # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
-  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
-  pytest $env:BUILD_SOURCESDIRECTORY\tests\python_package_test\test_dual.py ; Check-Output $?
-}
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
