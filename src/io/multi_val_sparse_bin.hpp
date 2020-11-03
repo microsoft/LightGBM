@@ -116,6 +116,9 @@ class MultiValSparseBin : public MultiValBin {
     data_size_t i = start;
     float* grad = out;
     float* hess = out + 1;
+    __m64* hist_ptr = reinterpret_cast<__m64*>(grad);
+    const int blend_bits = 0xaa;
+    const VAL_T* data_ptr = data_.data();
     if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
       const data_size_t pf_end = end - pf_offset;
@@ -129,18 +132,52 @@ class MultiValSparseBin : public MultiValBin {
           PREFETCH_T0(hessians + pf_idx);
         }
         PREFETCH_T0(row_ptr_.data() + pf_idx);
-        PREFETCH_T0(data_.data() + row_ptr_[pf_idx]);
+        PREFETCH_T0(data_ptr + row_ptr_[pf_idx]);
         const auto j_start = RowPtr(idx);
         const auto j_end = RowPtr(idx + 1);
-        for (auto j = j_start; j < j_end; ++j) {
+        const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
+        const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
+        __m256 g_vec = _mm256_broadcast_ss(&gradient);
+        __m256 h_vec = _mm256_broadcast_ss(&hessian);
+        __m256 gh_vec = _mm256_blend_ps(g_vec, h_vec, blend_bits);
+        const auto j_vec_end = j_end - ((j_end - j_start) % 4);
+        auto j = j_start;
+        for (; j < j_vec_end; j += 4) {
+          const uint32_t bin0 = data_ptr[j];
+          __m64* hist0_pos = hist_ptr + bin0;
+          
+          __m128 hist0;
+          hist0 = _mm_loadl_pi(hist0, hist0_pos);
+          const uint32_t bin1 = data_ptr[j + 1];
+          __m64* hist1_pos = hist_ptr + bin1;
+          hist0 = _mm_loadh_pi(hist0, hist1_pos);
+
+          const uint32_t bin2 = data_ptr[j + 2];
+          __m64* hist2_pos = hist_ptr + bin2;
+
+          __m128 hist2;
+          hist2 = _mm_loadl_pi(hist2, hist2_pos);
+          const uint32_t bin3 = data_ptr[j + 3];
+          __m64* hist3_pos = hist_ptr + bin3;
+          hist2 = _mm_loadh_pi(hist2, hist3_pos);
+
+          __m256 hist = _mm256_castps128_ps256(hist0);
+          hist = _mm256_insertf128_ps(hist, hist2, 1);
+
+          hist = _mm256_add_ps(hist, gh_vec);
+
+          __m128 res1 = _mm256_extractf128_ps(hist, 1);
+          __m128 res0 = _mm256_castps256_ps128(hist);
+
+          _mm_storel_pi(hist0_pos, res0);
+          _mm_storeh_pi(hist1_pos, res0);
+          _mm_storel_pi(hist2_pos, res1);
+          _mm_storeh_pi(hist3_pos, res1);
+        }
+        for (; j < j_end; ++j) {
           const auto ti = static_cast<uint32_t>(data_[j]) << 1;
-          if (ORDERED) {
-            grad[ti] += gradients[i];
-            hess[ti] += hessians[i];
-          } else {
-            grad[ti] += gradients[idx];
-            hess[ti] += hessians[idx];
-          }
+          grad[ti] += gradient;
+          hess[ti] += hessian;
         }
       }
     }
@@ -148,15 +185,49 @@ class MultiValSparseBin : public MultiValBin {
       const auto idx = USE_INDICES ? data_indices[i] : i;
       const auto j_start = RowPtr(idx);
       const auto j_end = RowPtr(idx + 1);
-      for (auto j = j_start; j < j_end; ++j) {
+      const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
+      const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
+      __m256 g_vec = _mm256_broadcast_ss(&gradient);
+      __m256 h_vec = _mm256_broadcast_ss(&hessian);
+      __m256 gh_vec = _mm256_blend_ps(g_vec, h_vec, blend_bits);
+      const auto j_vec_end = j_end - ((j_end - j_start) % 4);
+      auto j = j_start;
+      for (; j < j_vec_end; j += 4) {
+        const uint32_t bin0 = data_ptr[j];
+        __m64* hist0_pos = hist_ptr + bin0;
+        
+        __m128 hist0;
+        hist0 = _mm_loadl_pi(hist0, hist0_pos);
+        const uint32_t bin1 = data_ptr[j + 1];
+        __m64* hist1_pos = hist_ptr + bin1;
+        hist0 = _mm_loadh_pi(hist0, hist1_pos);
+
+        const uint32_t bin2 = data_ptr[j + 2];
+        __m64* hist2_pos = hist_ptr + bin2;
+
+        __m128 hist2;
+        hist2 = _mm_loadl_pi(hist2, hist2_pos);
+        const uint32_t bin3 = data_ptr[j + 3];
+        __m64* hist3_pos = hist_ptr + bin3;
+        hist2 = _mm_loadh_pi(hist2, hist3_pos);
+
+        __m256 hist = _mm256_castps128_ps256(hist0);
+        hist = _mm256_insertf128_ps(hist, hist2, 1);
+
+        hist = _mm256_add_ps(hist, gh_vec);
+
+        __m128 res1 = _mm256_extractf128_ps(hist, 1);
+        __m128 res0 = _mm256_castps256_ps128(hist);
+
+        _mm_storel_pi(hist0_pos, res0);
+        _mm_storeh_pi(hist1_pos, res0);
+        _mm_storel_pi(hist2_pos, res1);
+        _mm_storeh_pi(hist3_pos, res1);
+      }
+      for (; j < j_end; ++j) {
         const auto ti = static_cast<uint32_t>(data_[j]) << 1;
-        if (ORDERED) {
-          grad[ti] += gradients[i];
-          hess[ti] += hessians[i];
-        } else {
-          grad[ti] += gradients[idx];
-          hess[ti] += hessians[idx];
-        }
+        grad[ti] += gradient;
+        hess[ti] += hessian;
       }
     }
   }
