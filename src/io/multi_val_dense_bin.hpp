@@ -66,7 +66,7 @@ class MultiValDenseBin : public MultiValBin {
     for (size_t i = 0; i < offsets_.size(); ++i) {
       hist_ptr[i] = reinterpret_cast<__m64*>(grad + (offsets_[i] << 1));
     }
-    const int blend_bits = 0xa;
+    const int blend_bits = 0xaa;
     const int vec_end = num_feature_ - num_feature_ % 4;
     if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
@@ -84,9 +84,9 @@ class MultiValDenseBin : public MultiValBin {
         const VAL_T* data_ptr = data_.data() + j_start;
         const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
         const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
-        __m128 g_vec = _mm_broadcast_ss(&gradient);
-        __m128 h_vec = _mm_broadcast_ss(&hessian);
-        __m128 gh_vec = _mm_blend_ps(g_vec, h_vec, blend_bits);
+        __m256 g_vec = _mm256_broadcast_ss(&gradient);
+        __m256 h_vec = _mm256_broadcast_ss(&hessian);
+        __m256 gh_vec = _mm256_blend_ps(g_vec, h_vec, blend_bits);
         int j = 0;
         for (; j < vec_end; j += 4) {
 
@@ -104,21 +104,24 @@ class MultiValDenseBin : public MultiValBin {
           const uint32_t bin2 = static_cast<uint32_t>((bin >> 16) & 0xff);
           __m64* hist2_pos = hist_ptr[j + 2] + bin2;
 
-          hist0 = _mm_add_ps(hist0, gh_vec);
-
-          _mm_storel_pi(hist0_pos, hist0);
-          _mm_storeh_pi(hist1_pos, hist0);
-
           __m128 hist2;
           hist2 = _mm_loadl_pi(hist2, hist2_pos);
           const uint32_t bin3 = static_cast<uint32_t>((bin >> 24) & 0xff);
           __m64* hist3_pos = hist_ptr[j + 3] + bin3;
           hist2 = _mm_loadh_pi(hist2, hist3_pos);
 
-          hist2 = _mm_add_ps(hist2, gh_vec);
+          __m256 hist = _mm256_castps128_ps256(hist0);
+          hist = _mm256_insertf128_ps(hist, hist2, 1);
 
-          _mm_storel_pi(hist2_pos, hist2);
-          _mm_storeh_pi(hist3_pos, hist2);
+          hist = _mm256_add_ps(hist, gh_vec);
+
+          __m128 res1 = _mm256_extractf128_ps(hist, 1);
+          __m128 res0 = _mm256_castps256_ps128(hist);
+
+          _mm_storel_pi(hist0_pos, res0);
+          _mm_storeh_pi(hist1_pos, res0);
+          _mm_storel_pi(hist2_pos, res1);
+          _mm_storeh_pi(hist3_pos, res1);
         }
 
         for (; j < num_feature_; ++j) {
@@ -135,9 +138,9 @@ class MultiValDenseBin : public MultiValBin {
       const VAL_T* data_ptr = data_.data() + j_start;
       const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
       const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
-      __m128 g_vec = _mm_broadcast_ss(&gradient);
-      __m128 h_vec = _mm_broadcast_ss(&hessian);
-      __m128 gh_vec = _mm_blend_ps(g_vec, h_vec, blend_bits);
+      __m256 g_vec = _mm256_broadcast_ss(&gradient);
+      __m256 h_vec = _mm256_broadcast_ss(&hessian);
+      __m256 gh_vec = _mm256_blend_ps(g_vec, h_vec, blend_bits);
       int j = 0;
       for (; j < vec_end; j += 4) {
 
@@ -155,21 +158,24 @@ class MultiValDenseBin : public MultiValBin {
         const uint32_t bin2 = static_cast<uint32_t>((bin >> 16) & 0xff);
         __m64* hist2_pos = hist_ptr[j + 2] + bin2;
 
-        hist0 = _mm_add_ps(hist0, gh_vec);
-
-        _mm_storel_pi(hist0_pos, hist0);
-        _mm_storeh_pi(hist1_pos, hist0);
-
         __m128 hist2;
         hist2 = _mm_loadl_pi(hist2, hist2_pos);
         const uint32_t bin3 = static_cast<uint32_t>((bin >> 24) & 0xff);
         __m64* hist3_pos = hist_ptr[j + 3] + bin3;
         hist2 = _mm_loadh_pi(hist2, hist3_pos);
 
-        hist2 = _mm_add_ps(hist2, gh_vec);
+        __m256 hist = _mm256_castps128_ps256(hist0);
+        hist = _mm256_insertf128_ps(hist, hist2, 1);
 
-        _mm_storel_pi(hist2_pos, hist2);
-        _mm_storeh_pi(hist3_pos, hist2);
+        hist = _mm256_add_ps(hist, gh_vec);
+
+        __m128 res1 = _mm256_extractf128_ps(hist, 1);
+        __m128 res0 = _mm256_castps256_ps128(hist);
+
+        _mm_storel_pi(hist0_pos, res0);
+        _mm_storeh_pi(hist1_pos, res0);
+        _mm_storel_pi(hist2_pos, res1);
+        _mm_storeh_pi(hist3_pos, res1);
       }
 
       for (; j < num_feature_; ++j) {
