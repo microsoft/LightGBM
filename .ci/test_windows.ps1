@@ -84,14 +84,14 @@ elseif ($env:TASK -eq "bdist") {
 }
 
 if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
-  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
-} else {
   # cannot test C API with "sdist" task
+  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
+} elseif ($env:TASK -eq "bdist") {
+  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
+  # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
+  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
+} else {
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
-  if ($env:TASK -eq "bdist") {
-    # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
-    $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
-  }
 }
 pytest $tests ; Check-Output $?
 
