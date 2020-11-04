@@ -110,8 +110,6 @@ class MultiValSparseBin : public MultiValBin {
 
   bool IsSparse() override { return true; }
 
-  #include <x86intrin.h>
-
   template <bool USE_INDICES, bool USE_PREFETCH, bool ORDERED>
   void ConstructHistogramInner(const data_size_t* data_indices,
                                data_size_t start, data_size_t end,
