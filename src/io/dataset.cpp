@@ -1233,16 +1233,13 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
     hist_data = share_state->TempBuf();
   }
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
+#pragma omp parallel for schedule(dynamic) num_threads(share_state->num_threads)
   for (int tid = 0; tid < n_data_block; ++tid) {
     OMP_LOOP_EX_BEGIN();
     data_size_t start = tid * data_block_size;
     data_size_t end = std::min(start + data_block_size, num_data);
-    //auto data_ptr = hist_data;
-    //if (tid > 0) {
     auto  data_ptr = share_state->hist_buf.data() +
-                 static_cast<size_t>(num_bin_aligned) * 2 * (tid);
-    //}
+          static_cast<size_t>(num_bin_aligned) * 2 * (tid);
     std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * 8UL);
     if (USE_INDICES) {
       if (ORDERED) {

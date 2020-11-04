@@ -49,7 +49,7 @@ class Threading {
         num_threads,
         static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
     *out_nblock = std::max<int>(
-      num_threads,
+      *out_nblock,
       static_cast<int>((cnt + max_cnt_per_block - 1) / max_cnt_per_block)
     );
     if (*out_nblock > 1) {
