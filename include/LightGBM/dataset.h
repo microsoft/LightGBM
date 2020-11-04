@@ -295,6 +295,7 @@ struct TrainingShareStates {
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> temp_buf;
   const int max_block_size = 100000;
   int num_blocks = 0;
+  std::vector<score_t> scaled_gradients, scaled_hessians;
 
   void SetMultiValBin(MultiValBin* bin, data_size_t num_data) {
     num_threads = OMP_NUM_THREADS();
@@ -311,6 +312,8 @@ struct TrainingShareStates {
       hist_buf.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_blocks);
     }
     temp_buf.resize(static_cast<size_t>(num_bin_aligned) * 2);
+    scaled_gradients.resize(num_data, 0.0f);
+    scaled_hessians.resize(num_data, 0.0f);
   }
 
   hist_t* TempBuf() {
@@ -318,7 +321,6 @@ struct TrainingShareStates {
       return nullptr;
     }
     return temp_buf.data();
-    //return hist_buf.data() + hist_buf.size() - num_bin_aligned * 2;
   }
 
   void HistMove(const hist_t* src, hist_t* dest) {
