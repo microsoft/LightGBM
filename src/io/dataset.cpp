@@ -1221,13 +1221,10 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
       (num_bin + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
   int n_data_block = 1;
   int data_block_size = num_data;
-  if (num_bin <= 10000) {
-    Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, 1,
-                                    share_state->max_block_size, &n_data_block, &data_block_size);
-  } else {
-    Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, 1024,
-                                    share_state->max_block_size, &n_data_block, &data_block_size);
-  }
+  int min_block_size = std::min<int>(static_cast<int>(0.3f * share_state->multi_val_bin->num_bin() /
+    share_state->multi_val_bin->num_element_per_row()) + 1, 1024);
+  Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, min_block_size,
+                                  share_state->max_block_size, &n_data_block, &data_block_size);
   const size_t buf_size =
       static_cast<size_t>(n_data_block) * num_bin_aligned * 2;
   if (share_state->hist_buf.size() < buf_size) {
