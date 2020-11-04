@@ -127,6 +127,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
         cmake_cmd.append("-DUSE_OPENMP=OFF")
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
+    logger.info("Base cmake command: %s", cmake_cmd)
 
     if system() in {'Windows', 'Microsoft'}:
         if use_mingw:
@@ -159,7 +160,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
                 arch = "Win32" if bit32 else "x64"
                 vs_versions = ("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
                 for vs in vs_versions:
-                    logger.info("Starting to compile with %s." % vs)
+                    logger.info("Starting to compile with %s (%s).", vs, arch)
                     status = silent_call(cmake_cmd + ["-G", vs, "-A", arch])
                     if status == 0:
                         break
