@@ -1098,7 +1098,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
       if (share_state->multi_val_bin_subset == nullptr) {
         share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
             share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
-            multi_val_bin->num_element_per_row(), multi_val_bin->offsets(), multi_val_bin->bit_size()));
+            multi_val_bin->num_element_per_row(), multi_val_bin->offsets()));
       } else {
         share_state->multi_val_bin_subset->ReSize(
             share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
@@ -1120,7 +1120,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     share_state->hist_move_dest.clear();
     share_state->hist_move_size.clear();
 
-    const int offset = !share_state->is_colwise && !share_state->multi_val_bin->IsSparse() ? 0 : 1;
+    const int offset = share_state->multi_val_bin->IsSparse() ? 1 : 0;
     int num_total_bin = offset;
     int new_num_total_bin = offset;
     offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
@@ -1180,7 +1180,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
         share_state->is_use_subrow ? share_state->bagging_indices_cnt : num_data_;
     if (share_state->multi_val_bin_subset == nullptr) {
       share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
-          num_data, new_num_total_bin, num_used, sum_used_dense_ratio, offsets, multi_val_bin->bit_size()));
+          num_data, new_num_total_bin, num_used, sum_used_dense_ratio, offsets));
     } else {
       share_state->multi_val_bin_subset->ReSize(num_data, new_num_total_bin,
                                                num_used, sum_used_dense_ratio, offsets);

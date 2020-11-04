@@ -401,8 +401,6 @@ class MultiValBin {
 
   virtual std::vector<uint32_t> offsets() const = 0;
 
-  virtual int bit_size() const = 0;
-
   virtual void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t>& values) = 0;
 
   virtual void CopySubrow(const MultiValBin* full_bin,
@@ -412,8 +410,7 @@ class MultiValBin {
   virtual MultiValBin* CreateLike(data_size_t num_data, int num_bin,
                                   int num_feature,
                                   double estimate_element_per_row,
-                                  const std::vector<uint32_t>& offsets,
-                                  int bit_size) const = 0;
+                                  const std::vector<uint32_t>& offsets) const = 0;
 
   virtual void CopySubcol(const MultiValBin* full_bin,
                           const std::vector<int>& used_feature_index,

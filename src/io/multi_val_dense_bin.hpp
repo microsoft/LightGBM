@@ -19,9 +19,9 @@ template <typename VAL_T>
 class MultiValDenseBin : public MultiValBin {
  public:
   explicit MultiValDenseBin(data_size_t num_data, int num_bin, int num_feature, 
-    const std::vector<uint32_t>& offsets, const int bit_size)
+    const std::vector<uint32_t>& offsets)
     : num_data_(num_data), num_bin_(num_bin), num_feature_(num_feature),
-      offsets_(offsets), bit_size_(bit_size) {
+      offsets_(offsets) {
     data_.resize(static_cast<size_t>(num_data_) * num_feature_, static_cast<VAL_T>(0));
   }
 
@@ -39,8 +39,6 @@ class MultiValDenseBin : public MultiValBin {
   double num_element_per_row() const override { return num_feature_; }
 
   std::vector<uint32_t> offsets() const override { return offsets_; }
-
-  int bit_size() const override { return bit_size_; }
 
   void PushOneRow(int , data_size_t idx, const std::vector<uint32_t>& values) override {
     auto start = RowPtr(idx);
@@ -126,8 +124,8 @@ class MultiValDenseBin : public MultiValBin {
   }
 
   MultiValBin* CreateLike(data_size_t num_data, int num_bin, int num_feature, double,
-    const std::vector<uint32_t>& offsets, int bit_size) const override {
-    return new MultiValDenseBin<VAL_T>(num_data, num_bin, num_feature, offsets, bit_size);
+    const std::vector<uint32_t>& offsets) const override {
+    return new MultiValDenseBin<VAL_T>(num_data, num_bin, num_feature, offsets);
   }
 
   void ReSize(data_size_t num_data, int num_bin, int num_feature,
@@ -145,8 +143,7 @@ class MultiValDenseBin : public MultiValBin {
   template <bool SUBROW, bool SUBCOL>
   void CopyInner(const MultiValBin* full_bin, const data_size_t* used_indices,
                  data_size_t num_used_indices,
-                 const std::vector<int>& used_feature_index,
-                 const std::vector<uint32_t>& delta) {
+                 const std::vector<int>& used_feature_index) {
     const auto other_bin =
         reinterpret_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
     if (SUBROW) {
@@ -168,8 +165,7 @@ class MultiValDenseBin : public MultiValBin {
           if (SUBCOL) {
             if (other_bin->data_[other_j_start + used_feature_index[j]] > 0) {
               data_[j_start + j] = static_cast<VAL_T>(
-                  other_bin->data_[other_j_start + used_feature_index[j]] -
-                  delta[j]);
+                  other_bin->data_[other_j_start + used_feature_index[j]]);
             } else {
               data_[j_start + j] = 0;
             }
@@ -193,9 +189,8 @@ class MultiValDenseBin : public MultiValBin {
                   const std::vector<int>& used_feature_index,
                   const std::vector<uint32_t>&,
                   const std::vector<uint32_t>&,
-                  const std::vector<uint32_t>& delta) override {
-    CopyInner<false, true>(full_bin, nullptr, num_data_, used_feature_index,
-                           delta);
+                  const std::vector<uint32_t>&) override {
+    CopyInner<false, true>(full_bin, nullptr, num_data_, used_feature_index);
   }
 
   void CopySubrowAndSubcol(const MultiValBin* full_bin,
@@ -203,10 +198,9 @@ class MultiValDenseBin : public MultiValBin {
                            data_size_t num_used_indices,
                            const std::vector<int>& used_feature_index,
                            const std::vector<uint32_t>&,
-                           const std::vector<uint32_t>&,
-                           const std::vector<uint32_t>& delta) override {
+                           const std::vector<uint32_t>&) override {
     CopyInner<true, true>(full_bin, used_indices, num_used_indices,
-                          used_feature_index, delta);
+                          used_feature_index);
   }
 
   inline size_t RowPtr(data_size_t idx) const {
@@ -221,11 +215,10 @@ class MultiValDenseBin : public MultiValBin {
   int num_feature_;
   std::vector<uint32_t> offsets_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>> data_;
-  const int bit_size_;
 
   MultiValDenseBin<VAL_T>(const MultiValDenseBin<VAL_T>& other)
     : num_data_(other.num_data_), num_bin_(other.num_bin_), num_feature_(other.num_feature_),
-      offsets_(other.offsets_), data_(other.data_), bit_size_(other.bit_size_) {
+      offsets_(other.offsets_), data_(other.data_) {
   }
 };
 

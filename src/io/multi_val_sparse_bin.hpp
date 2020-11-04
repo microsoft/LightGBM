@@ -48,8 +48,6 @@ class MultiValSparseBin : public MultiValBin {
 
   std::vector<uint32_t> offsets() const override { return std::vector<uint32_t>(0); }
 
-  int bit_size() const override { return 0; }
-
   void PushOneRow(int tid, data_size_t idx,
                   const std::vector<uint32_t>& values) override {
     const int pre_alloc_size = 50;
@@ -182,8 +180,8 @@ class MultiValSparseBin : public MultiValBin {
   }
 
   MultiValBin* CreateLike(data_size_t num_data, int num_bin, int,
-                          double estimate_element_per_row, const std::vector<uint32_t>& /*offsets*/,
-                          int /*bit_size*/) const override {
+                          double estimate_element_per_row,
+                          const std::vector<uint32_t>& /*offsets*/) const override {
     return new MultiValSparseBin<INDEX_T, VAL_T>(num_data, num_bin,
                                                  estimate_element_per_row);
   }
