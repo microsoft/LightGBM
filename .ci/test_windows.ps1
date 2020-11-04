@@ -60,6 +60,8 @@ elseif ($env:TASK -eq "bdist") {
     exit 1
   }
   RefreshEnv
+  Rename-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors" -Name "intelocl64.dll" -NewName "C:\Program Files (x86)\Common Files\Intel\OpenCL\windows\compiler\lib\intel64_win\intelocl64.dll"
+  RefreshEnv
   Write-Output "Current OpenCL drivers:"
   Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
