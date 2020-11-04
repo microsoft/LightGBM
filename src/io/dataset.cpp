@@ -1200,35 +1200,6 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
 }
 
 template <bool USE_INDICES, bool ORDERED>
-void ScaleGradAndHess(const score_t* gradients, const score_t* hessians,
-  data_size_t num_data, const data_size_t* data_indices,
-  int num_threads, score_t* scaled_gradients, score_t* scaled_hessians,
-  double* gradient_scale, double* hessian_scale) {
-  double sum_gradient_abs = 0.0f, sum_hessian_abs = 0.0f;
-  #pragma omp parallel for schedule(static) num_threads(num_threads)\
-    reduction(+:sum_gradient_abs,sum_hessian_abs)
-  for (data_size_t i = 0; i < num_data; ++i) {
-    const data_size_t idx = USE_INDICES ? data_indices[i] : i;
-    const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
-    const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
-    sum_gradient_abs += static_cast<double>(std::fabs(gradient));
-    sum_hessian_abs += static_cast<double>(std::fabs(hessian));
-  }
-  const double gradient_mean_abs = sum_gradient_abs / num_data;
-  const double hessian_mean_abs = sum_hessian_abs / num_data;
-  *gradient_scale = 10.0f * gradient_mean_abs;
-  *hessian_scale = 10.0f * hessian_mean_abs;
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
-  for (data_size_t i = 0; i < num_data; ++i) {
-    const data_size_t idx = USE_INDICES ? data_indices[i] : i;
-    const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
-    const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
-    scaled_gradients[idx] = gradient / *gradient_scale;
-    scaled_hessians[idx] = hessian / *hessian_scale;
-  }
-}
-
-template <bool USE_INDICES, bool ORDERED>
 void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
                                           data_size_t num_data,
                                           const score_t* gradients,
@@ -1254,14 +1225,6 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
     share_state->multi_val_bin->num_element_per_row()) + 1, 1024);
   Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, min_block_size,
                                   share_state->max_block_size, &n_data_block, &data_block_size);
-  global_timer.Start("Dataset::ScaleGradAndHess")
-  double gradient_scale = 0.0f, hessian_scale = 0.0f;
-  ScaleGradAndHess<USE_INDICES, ORDERED>(gradients, hessians, num_data, data_indices, share_state->num_threads,
-    share_state->scaled_gradients.data(), share_state->scaled_hessians.data(),
-    &gradient_scale, &hessian_scale);
-  global_timer.Stop("Dataset::ScaleGradAndHess")
-  gradients = share_state->scaled_gradients.data();
-  hessians = share_state->scaled_hessians.data();
   const size_t buf_size =
       static_cast<size_t>(n_data_block) * num_bin_aligned * 2;
   if (share_state->hist_buf.size() < buf_size) {
@@ -1314,11 +1277,6 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
       for (int i = start * 2; i < end * 2; ++i) {
         hist_data[i] += src_ptr[i];
       }
-    }
-    #pragma omp simd
-    for (int i = start * 2; i < end * 2; i += 2) {
-      hist_data[i] *= gradient_scale;
-      hist_data[i + 1] *= hessian_scale;
     }
   }
   global_timer.Stop("Dataset::sparse_bin_histogram_merge");
