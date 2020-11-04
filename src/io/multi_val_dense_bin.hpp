@@ -182,7 +182,7 @@ class MultiValDenseBin : public MultiValBin {
   void CopySubrow(const MultiValBin* full_bin, const data_size_t* used_indices,
                   data_size_t num_used_indices) override {
     CopyInner<true, false>(full_bin, used_indices, num_used_indices,
-                           std::vector<int>(), std::vector<uint32_t>());
+                           std::vector<int>());
   }
 
   void CopySubcol(const MultiValBin* full_bin,
@@ -197,6 +197,7 @@ class MultiValDenseBin : public MultiValBin {
                            const data_size_t* used_indices,
                            data_size_t num_used_indices,
                            const std::vector<int>& used_feature_index,
+                           const std::vector<uint32_t>&,
                            const std::vector<uint32_t>&,
                            const std::vector<uint32_t>&) override {
     CopyInner<true, true>(full_bin, used_indices, num_used_indices,
