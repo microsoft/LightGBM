@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
         with:
           fetch-depth: 5
           submodules: true
@@ -36,9 +36,18 @@ jobs:
     needs: [test]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
         with:
           fetch-depth: 5
           submodules: false
       - name: Note that all tests succeeded
-        run: python "$GITHUB_WORKSPACE/.ci/get_workflow_status.py"
+        run: |
+            workflows=("test_1.yml;Test 1"
+                       "test_2.yml;Test 2")
+            for i in "${workflows[@]}"; do
+                id="${i%;*}"
+                name="${i#*;}"
+                status=success
+                python "$GITHUB_WORKSPACE/.ci/get_workflow_status.py" "$id" || status=error
+                $GITHUB_WORKSPACE/.ci/set_commit_status.sh "$name" "$status" "${{ github.event.pull_request.head.sha }}"
+            done

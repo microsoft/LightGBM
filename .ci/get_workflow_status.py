@@ -1,6 +1,6 @@
 import json
 from os import environ
-from sys import exit
+from sys import argv, exit
 from time import sleep
 try:
     from urllib import request
@@ -8,12 +8,12 @@ except ImportError:
     import urllib2 as request
 
 
-def get_runs(workflow_name):
+def get_runs(workflow_id):
     pr_runs = []
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
         req = request.Request(url="{}/repos/{}/actions/workflows/{}/runs".format(environ.get("GITHUB_API_URL"),
                                                                                  environ.get("GITHUB_REPOSITORY"),
-                                                                                 workflow_name),
+                                                                                 workflow_id),
                               headers={"Accept": "application/vnd.github.v3+json"})
         url = request.urlopen(req)
         data = json.loads(url.read().decode('utf-8'))
@@ -45,8 +45,9 @@ def get_status(runs):
 
 
 if __name__ == "__main__":
+    workflow_id = argv[1]
     while True:
-        status = get_status(get_runs("test_1.yml"))
+        status = get_status(get_runs(workflow_id))
         if status != 'rerun':
             break
         sleep(60)

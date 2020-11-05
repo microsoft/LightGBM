@@ -1,4 +1,4 @@
-name: Test 1
+name: Test 2
 
 on:
   pull_request_review_comment:
@@ -6,9 +6,9 @@ on:
 
 jobs:
   test:
-    name: Test 1
+    name: Test 2
     runs-on: ubuntu-latest
-    if: github.event.comment.body == '/gha run' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
+    if: github.event.comment.body == '/gha run 2' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
     timeout-minutes: 60
     strategy:
       fail-fast: true
@@ -42,7 +42,7 @@ jobs:
       - name: Test
         run: |
             sleep 30s
-            exit -1
+            exit 0
       - name: Send status
         if: ${{ always() }}
         env:
