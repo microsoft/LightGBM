@@ -1229,30 +1229,30 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
     multi_val_bin->num_element_per_row()) + 1, 1024);
   Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, min_block_size,
                                   share_state->max_block_size, &n_data_block, &data_block_size);
-  share_state->ResizeHistBuf(n_data_block, num_bin_aligned);
-  share_state->SetOriginHistData(hist_data);
+  share_state->ResizeHistBuf(n_data_block, num_bin_aligned, hist_data);
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
-  for (int tid = 0; tid < n_data_block; ++tid) {
+  for (int block_id = 0; block_id < n_data_block; ++block_id) {
     OMP_LOOP_EX_BEGIN();
-    data_size_t start = tid * data_block_size;
+    int thread_id = omp_get_thread_num();
+    data_size_t start = block_id * data_block_size;
     data_size_t end = std::min(start + data_block_size, num_data);
     if (USE_INDICES) {
       if (ORDERED) {
         share_state->ConstructHistogramsForBlock(
           multi_val_bin, start, end, data_indices, gradients, hessians,
-          num_bin_aligned, tid, true, true
+          num_bin_aligned, block_id, thread_id, true, true
         );
       } else {
         share_state->ConstructHistogramsForBlock(
           multi_val_bin, start, end, data_indices, gradients, hessians,
-          num_bin_aligned, tid, true, false
+          num_bin_aligned, block_id, thread_id, true, false
         );
       }
     } else {
       share_state->ConstructHistogramsForBlock(
           multi_val_bin, start, end, data_indices, gradients, hessians,
-          num_bin_aligned, tid, false, false
+          num_bin_aligned, block_id, thread_id, false, false
         );
     }
     OMP_LOOP_EX_END();
