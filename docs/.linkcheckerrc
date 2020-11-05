@@ -2,11 +2,10 @@
 recursionlevel=1
 anchors=1
 sslverify=0
-useragent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36
 
 [filtering]
 ignore=
-  pythonapi/lightgbm\..*\.html.*
+  pythonapi/lightgbm\..*\.html.*,amd\.com
 ignorewarnings=http-robots-denied,https-certificate-error
 checkextern=1
 
