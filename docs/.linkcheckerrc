@@ -5,7 +5,8 @@ sslverify=0
 
 [filtering]
 ignore=
-  pythonapi/lightgbm\..*\.html.*,amd\.com
+  pythonapi/lightgbm\..*\.html.*
+  .*/amd\.com.*
 ignorewarnings=http-robots-denied,https-certificate-error
 checkextern=1
 
