@@ -250,6 +250,12 @@ struct Config {
   // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
   bool force_row_wise = false;
 
+  // desc = set this to ``true`` to use single precision floating point numbers
+  // desc = in the histogram buffers, when constructing histograms for the multi-value bin
+  // desc = setting this to ``true`` may bring a speedup in training
+  // desc = but with a drop in accuracy
+  bool single_precision_hist_buffer = false;
+
   // alias = hist_pool_size
   // desc = max cache size in MB for historical histogram
   // desc = ``< 0`` means no limit
