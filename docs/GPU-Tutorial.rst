@@ -33,7 +33,7 @@ After installing the drivers you need to restart the server.
 
 After about 30 seconds, the server should be up again.
 
-If you are using an AMD GPU, you should download and install the `AMDGPU-Pro`_ driver and also install package ``ocl-icd-libopencl1`` and ``ocl-icd-opencl-dev``.
+If you are using an AMD GPU, you should download and install the AMDGPU-Pro driver and also install package ``ocl-icd-libopencl1`` and ``ocl-icd-opencl-dev``.
 
 Build LightGBM
 --------------
@@ -190,8 +190,6 @@ Please kindly cite the following article in your publications if you find the GP
 Huan Zhang, Si Si and Cho-Jui Hsieh. "`GPU Acceleration for Large-scale Tree Boosting`_." SysML Conference, 2018.
 
 .. _Microsoft Azure cloud computing platform: https://azure.microsoft.com/
-
-.. _AMDGPU-Pro: https://www.amd.com/en/support
 
 .. _Python-package Examples: https://github.com/microsoft/LightGBM/tree/master/examples/python-guide
 

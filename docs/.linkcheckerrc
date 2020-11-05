@@ -1,7 +1,7 @@
 [checking]
 recursionlevel=1
 anchors=1
-sslverify=1
+sslverify=0
 
 [filtering]
 ignore=
