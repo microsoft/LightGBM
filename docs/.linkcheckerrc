@@ -1,8 +1,7 @@
 [checking]
 recursionlevel=1
 anchors=1
-sslverify=0
-useragent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6)"
+sslverify=1
 
 [filtering]
 ignore=
