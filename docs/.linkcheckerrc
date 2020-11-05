@@ -2,6 +2,7 @@
 recursionlevel=1
 anchors=1
 sslverify=0
+useragent=Mozilla/5.0
 
 [filtering]
 ignore=
