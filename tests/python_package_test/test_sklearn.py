@@ -455,7 +455,6 @@ class TestSklearn(unittest.TestCase):
     # sklearn <0.19 cannot accept instance, but many tests could be passed only with min_data=1 and min_data_in_bin=1
     @unittest.skipIf(sk_version < '0.19.0', 'scikit-learn version is less than 0.19')
     def test_sklearn_integration(self):
-        # we cannot use `check_estimator` directly since there is no skip test mechanism
         for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
                                 (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
             # we cannot leave default params (see https://github.com/microsoft/LightGBM/issues/833)
