@@ -1143,6 +1143,13 @@ def test_sklearn_integration(estimator, check, request):
     check(estimator)
 
 
+@pytest.mark.skipif(
+    (sk_version < "0.23.0") or (sk_version >= "0.24.0"),
+    reason=(
+        "Default constructible check is included in the common check from "
+        "sklearn 0.24"
+    )
+)
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
 def test_parameters_default_constructible(estimator):
     name, Estimator = estimator.__class__.__name__, estimator.__class__
