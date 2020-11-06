@@ -164,6 +164,16 @@ void DatasetLoader::SetHeader(const char* filename) {
   }
 }
 
+void CheckSampleSize(size_t sample_cnt, size_t num_data) {
+  if (static_cast<double>(sample_cnt) / num_data < 0.2f &&
+      sample_cnt < 100000) {
+    Log::Warning(
+        "Using too small ``bin_construct_sample_cnt`` may encounter "
+        "unexpected "
+        "errors and poor accuracy.");
+  }
+}
+
 Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines) {
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !config_.pre_partition) {
@@ -190,6 +200,8 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // sample data
       auto sample_data = SampleTextDataFromMemory(text_data);
+      CheckSampleSize(sample_data.size(),
+                      static_cast<size_t>(dataset->num_data_));
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
@@ -205,6 +217,8 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       } else {
         dataset->num_data_ = num_global_data;
       }
+      CheckSampleSize(sample_data.size(),
+                      static_cast<size_t>(dataset->num_data_));
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
@@ -540,6 +554,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
                                                 int** sample_indices, int num_col, const int* num_per_col,
                                                 size_t total_sample_size, data_size_t num_data) {
+  CheckSampleSize(total_sample_size, static_cast<size_t>(num_data));
   int num_total_features = num_col;
   if (Network::num_machines() > 1) {
     num_total_features = Network::GlobalSyncUpByMax(num_total_features);

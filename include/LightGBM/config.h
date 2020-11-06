@@ -580,9 +580,10 @@ struct Config {
 
   // alias = subsample_for_bin
   // check = >0
-  // desc = number of data that sampled to construct histogram bins
-  // desc = setting this to larger value will give better training result, but will increase data loading time
+  // desc = number of data that sampled to construct feature discrete bins
+  // desc = setting this to larger value will give better training result, but may increase data loading time
   // desc = set this to larger value if data is very sparse
+  // desc = **Note**: don't set this to small values, otherwise, you may encounter unexpected errors and poor accuracy
   int bin_construct_sample_cnt = 200000;
 
   // alias = data_seed
