@@ -439,3 +439,6 @@ miktex*.zip
 # GraphViz artifacts
 *.gv
 *.gv.*
+
+# Files from local Dask work
+dask-worker-space/

@@ -13,7 +13,7 @@ jobs:
     container: wch1/r-debug
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2.3.4
         with:
           fetch-depth: 5
           submodules: true
