@@ -53,8 +53,8 @@ elseif ($env:TASK -eq "bdist") {
   #curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
   #$msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
   curl -o opencl_runtime_16.1.2_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/12512/opencl_runtime_16.1.2_x64_setup.msi
-  Write-Output "Installing OpenCL runtime"
   $msiarglist = "/i opencl_runtime_16.1.2_x64_setup.msi /quiet /norestart /log msi.log"
+  Write-Output "Installing OpenCL runtime"
   $return = Start-Process msiexec -ArgumentList $msiarglist -Wait -passthru
   Get-Content msi.log
   If (@(0,3010) -contains $return.exitcode) {
