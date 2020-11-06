@@ -38,7 +38,8 @@ struct TrainingShareStates {
   virtual void HistMerge(int n_bin_block, int bin_block_size, int num_bin,
     int n_data_block, int sub_num_bin_aligned) = 0;
 
-  virtual void ResizeHistBuf(int n_data_block, int num_bin_aligned, hist_t* hist_data) = 0;
+  virtual void ResizeHistBuf(int n_data_block, int num_bin_aligned,
+    int num_bin, hist_t* hist_data) = 0;
 
   virtual void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
     data_size_t start, data_size_t end, const data_size_t* data_indices,
@@ -74,7 +75,8 @@ struct TrainingShareStatesFloat : public TrainingShareStates {
     }
   }
 
-  void ResizeHistBuf(int n_data_block, int sub_num_bin_aligned, hist_t* hist_data) override {
+  void ResizeHistBuf(int n_data_block, int sub_num_bin_aligned,
+    int /*num_bin*/, hist_t* hist_data) override {
     origin_hist_data = hist_data;
     size_t new_buf_size = static_cast<size_t>(n_data_block) * static_cast<size_t>(sub_num_bin_aligned) * 2;
     if (hist_buf.size() < new_buf_size) {
@@ -143,9 +145,10 @@ struct TrainingShareStatesFloat : public TrainingShareStates {
 
 struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
 
-  void SetMultiValBin(MultiValBin* bin, data_size_t num_data) override {
+  void SetMultiValBin(MultiValBin* bin, data_size_t /*num_data*/) override {
     num_threads = OMP_NUM_THREADS();
     kHistBufferEntrySize = 2 * sizeof(float);
+    max_block_size = 100000;
     if (bin == nullptr) {
       return;
     }
@@ -157,7 +160,8 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
     hist_buf.resize(thread_buf_size, 0.0f);
   }
 
-  void ResizeHistBuf(int n_data_block, int sub_num_bin_aligned, hist_t* hist_data) override {
+  void ResizeHistBuf(int /*n_data_block*/, int sub_num_bin_aligned,
+    int num_bin, hist_t* hist_data) override {
     origin_hist_data = hist_data;
     const size_t new_thread_buf_size = static_cast<size_t>(sub_num_bin_aligned) * num_threads * 2;
     if (new_thread_buf_size > temp_buf.size()) {
@@ -172,7 +176,7 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
     }
     if (!is_use_subcol) {
       #pragma omp parallel for schedule(static) num_threads(num_threads)
-      for (int i = 0; i < sub_num_bin_aligned * 2; ++i) {
+      for (int i = 0; i < num_bin * 2; ++i) {
         hist_data[i] = 0.0f;
       }
     }
@@ -264,7 +268,8 @@ struct TrainingShareStatesDouble : public TrainingShareStates {
     }
   }
 
-  void ResizeHistBuf(int n_data_block, int sub_num_bin_aligned, hist_t* hist_data) override {
+  void ResizeHistBuf(int n_data_block, int sub_num_bin_aligned,
+    int /*num_bin*/, hist_t* hist_data) override {
     origin_hist_data = hist_data;
     size_t new_buf_size = static_cast<size_t>(n_data_block) * static_cast<size_t>(sub_num_bin_aligned) * 2;
     if (hist_buf.size() < new_buf_size) {

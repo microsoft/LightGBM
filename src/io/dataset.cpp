@@ -1229,7 +1229,7 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
     multi_val_bin->num_element_per_row()) + 1, 1024);
   Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, min_block_size,
                                   share_state->max_block_size, &n_data_block, &data_block_size);
-  share_state->ResizeHistBuf(n_data_block, num_bin_aligned, hist_data);
+  share_state->ResizeHistBuf(n_data_block, num_bin_aligned, num_bin, hist_data);
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
   for (int block_id = 0; block_id < n_data_block; ++block_id) {
