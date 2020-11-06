@@ -239,7 +239,8 @@ void CUDATreeLearner::WaitAndGetHistograms(FeatureHistogram* leaf_histogram_arra
     CUDASUCCESS_OR_FATAL(cudaEventSynchronize(histograms_wait_obj_[device_id]));
   }
 
-  HistType* histograms = reinterpret_cast<HistType*>(leaf_histogram_array[0].RawData() - kHistOffset);
+  HistType* histograms = reinterpret_cast<HistType*>(leaf_histogram_array[0].RawData() -
+    kHistOffset * first_feature_hist_offset_);
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < num_dense_feature_groups_; ++i) {
     if (!feature_masks_[i]) {
@@ -783,7 +784,8 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
   }
 
   // construct smaller leaf
-  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
+  hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() -
+    kHistOffset * first_feature_hist_offset_;
 
   // Check workgroups per feature4 tuple..
   int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(smaller_leaf_splits_->num_data_in_leaf());
@@ -829,7 +831,8 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
       continue;
     int dense_feature_group_index = dense_feature_group_map_[i];
     size_t size = train_data_->FeatureGroupNumBin(dense_feature_group_index);
-    hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
+    hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() -
+      kHistOffset * first_feature_hist_offset_;
     hist_t* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index) * 2;
     hist_t* gpu_histogram = new hist_t[size * 2];
     data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
@@ -896,7 +899,8 @@ void CUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
-    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - kHistOffset;
+    hist_t* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() -
+      kHistOffset * first_feature_hist_offset_;
 
     is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf());
@@ -938,11 +942,13 @@ void CUDATreeLearner::FindBestSplits(const Tree* tree) {
     }
     size_t bin_size = train_data_->FeatureNumBin(feature_index) + 1;
     printf("CUDATreeLearner::FindBestSplits() Feature %d bin_size=%zd smaller leaf:\n", feature_index, bin_size);
-    PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
+    PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() -
+      kHistOffset * first_feature_hist_offset_, bin_size);
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->leaf_index() < 0) { continue; }
     printf("CUDATreeLearner::FindBestSplits() Feature %d bin_size=%zd larger leaf:\n", feature_index, bin_size);
 
-    PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
+    PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() -
+      kHistOffset * first_feature_hist_offset_, bin_size);
   }
 #endif
 }

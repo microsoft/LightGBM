@@ -9,7 +9,7 @@
 namespace LightGBM {
   TrainingShareStates* TrainingShareStates::CreateTrainingShareStates(bool single_precision_hist_buffer) {
     if (single_precision_hist_buffer) {
-        return new TrainingShareStatesFloatWithBuffer();
+        return new TrainingShareStatesFloat();
     } else {
         return new TrainingShareStatesDouble();
     }

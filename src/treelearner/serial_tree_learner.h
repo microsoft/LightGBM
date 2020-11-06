@@ -225,6 +225,7 @@ class SerialTreeLearner: public TreeLearner {
   const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
+  int first_feature_hist_offset_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

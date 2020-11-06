@@ -1201,6 +1201,7 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
           multi_val_bin, used_feature_index, lower_bound, upper_bound, delta);
     }
   }
+  share_state->InitTrain();
 }
 
 template <bool USE_INDICES, bool ORDERED>
@@ -1212,63 +1213,18 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
                                           hist_t* hist_data) const {
   Common::FunctionTimer fun_time("Dataset::ConstructHistogramsMultiVal",
                                  global_timer);
-  const auto multi_val_bin =
-      (share_state->is_use_subcol || share_state->is_use_subrow)
-          ? share_state->multi_val_bin_subset.get()
-          : share_state->multi_val_bin.get();
-  if (multi_val_bin == nullptr) {
+  global_timer.Start("Dataset::sparse_bin_histogram");
+  if (!share_state->ConstructHistograms<USE_INDICES, ORDERED>(
+      data_indices, num_data, gradients, hessians, hist_data)) {
     return;
   }
-  global_timer.Start("Dataset::sparse_bin_histogram");
-  const int num_bin = multi_val_bin->num_bin();
-  const int num_bin_aligned =
-      (num_bin + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-  int n_data_block = 1;
-  int data_block_size = num_data;
-  int min_block_size = std::min<int>(static_cast<int>(0.3f * num_bin /
-    multi_val_bin->num_element_per_row()) + 1, 1024);
-  Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, min_block_size,
-                                  share_state->max_block_size, &n_data_block, &data_block_size);
-  share_state->ResizeHistBuf(n_data_block, num_bin_aligned, num_bin, hist_data);
-  OMP_INIT_EX();
-#pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
-  for (int block_id = 0; block_id < n_data_block; ++block_id) {
-    OMP_LOOP_EX_BEGIN();
-    int thread_id = omp_get_thread_num();
-    data_size_t start = block_id * data_block_size;
-    data_size_t end = std::min(start + data_block_size, num_data);
-    if (USE_INDICES) {
-      if (ORDERED) {
-        share_state->ConstructHistogramsForBlock(
-          multi_val_bin, start, end, data_indices, gradients, hessians,
-          num_bin_aligned, block_id, thread_id, true, true
-        );
-      } else {
-        share_state->ConstructHistogramsForBlock(
-          multi_val_bin, start, end, data_indices, gradients, hessians,
-          num_bin_aligned, block_id, thread_id, true, false
-        );
-      }
-    } else {
-      share_state->ConstructHistogramsForBlock(
-          multi_val_bin, start, end, data_indices, gradients, hessians,
-          num_bin_aligned, block_id, thread_id, false, false
-        );
-    }
-    OMP_LOOP_EX_END();
-  }
-  OMP_THROW_EX();
   global_timer.Stop("Dataset::sparse_bin_histogram");
 
   global_timer.Start("Dataset::sparse_bin_histogram_merge");
-  int n_bin_block = 1;
-  int bin_block_size = num_bin;
-  Threading::BlockInfo<data_size_t>(share_state->num_threads, num_bin, 512, &n_bin_block,
-                                    &bin_block_size);
-  share_state->HistMerge(n_bin_block, bin_block_size, num_bin, n_data_block, num_bin_aligned);
+  share_state->HistMerge();
   global_timer.Stop("Dataset::sparse_bin_histogram_merge");
   global_timer.Start("Dataset::sparse_bin_histogram_move");
-  share_state->HistMove(num_bin_aligned);
+  share_state->HistMove();
   global_timer.Stop("Dataset::sparse_bin_histogram_move");
 }
 

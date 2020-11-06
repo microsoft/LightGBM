@@ -38,7 +38,7 @@ class MultiValDenseBin : public MultiValBin {
 
   double num_element_per_row() const override { return num_feature_; }
 
-  std::vector<uint32_t> offsets() const override { return offsets_; }
+  const std::vector<uint32_t>& offsets() const override { return offsets_; }
 
   void PushOneRow(int , data_size_t idx, const std::vector<uint32_t>& values) override {
     auto start = RowPtr(idx);

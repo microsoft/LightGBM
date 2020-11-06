@@ -20,8 +20,6 @@
 #include "monotone_constraints.hpp"
 #include "split_info.hpp"
 
-#include <fstream>
-
 namespace LightGBM {
 
 class FeatureMetainfo {
@@ -1223,7 +1221,7 @@ class HistogramPool {
     return num_total_bin;
   }
 
-  void DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise, bool is_dense_rowwise,
+  int DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise, bool is_dense_rowwise,
                          const Config* config, int cache_size, int total_size) {
     if (feature_metas_.empty()) {
       SetFeatureInfo<true, true>(train_data, config, &feature_metas_);
@@ -1256,6 +1254,7 @@ class HistogramPool {
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    return offsets[0];
   }
 
   void ResetConfig(const Dataset* train_data, const Config* config) {

@@ -46,7 +46,7 @@ class MultiValSparseBin : public MultiValBin {
     return estimate_element_per_row_;
   }
 
-  std::vector<uint32_t> offsets() const override { return std::vector<uint32_t>(0); }
+  const std::vector<uint32_t>& offsets() const override { return offsets_; }
 
   void PushOneRow(int tid, data_size_t idx,
                   const std::vector<uint32_t>& values) override {
@@ -323,6 +323,7 @@ class MultiValSparseBin : public MultiValBin {
   std::vector<std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>>>
       t_data_;
   std::vector<INDEX_T> t_size_;
+  std::vector<uint32_t> offsets_;
 
   MultiValSparseBin<INDEX_T, VAL_T>(
       const MultiValSparseBin<INDEX_T, VAL_T>& other)

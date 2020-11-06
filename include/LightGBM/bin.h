@@ -399,7 +399,7 @@ class MultiValBin {
 
   virtual double num_element_per_row() const = 0;
 
-  virtual std::vector<uint32_t> offsets() const = 0;
+  virtual const std::vector<uint32_t>& offsets() const = 0;
 
   virtual void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t>& values) = 0;
 

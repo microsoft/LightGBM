@@ -9,6 +9,7 @@
 #include <vector>
 #include <LightGBM/bin.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/utils/threading.h>
 
 namespace LightGBM {
 
@@ -21,33 +22,96 @@ struct TrainingShareStates {
   bool is_constant_hessian = true;
   const data_size_t* bagging_use_indices;
   data_size_t bagging_indices_cnt;
-  int num_bin_aligned;
   std::unique_ptr<MultiValBin> multi_val_bin;
   std::unique_ptr<MultiValBin> multi_val_bin_subset;
   std::vector<uint32_t> hist_move_src;
   std::vector<uint32_t> hist_move_dest;
   std::vector<uint32_t> hist_move_size;
-  size_t kHistBufferEntrySize;
-  int max_block_size;
-  hist_t* origin_hist_data = nullptr;
 
   virtual void SetMultiValBin(MultiValBin* bin, data_size_t num_data) = 0;
 
-  virtual void HistMove(int sub_num_bin_aligned) = 0;
+  virtual void HistMove() = 0;
 
-  virtual void HistMerge(int n_bin_block, int bin_block_size, int num_bin,
-    int n_data_block, int sub_num_bin_aligned) = 0;
+  virtual void HistMerge() = 0;
 
-  virtual void ResizeHistBuf(int n_data_block, int num_bin_aligned,
-    int num_bin, hist_t* hist_data) = 0;
+  virtual void ResizeHistBuf(hist_t* hist_data) = 0;
 
   virtual void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
     data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians,
-    int sub_num_bin_aligned, int block_id, int thread_id,
+    const score_t* gradients, const score_t* hessians, int block_id,
     bool use_indices, bool ordered) = 0;
 
+  virtual void InitTrain() {
+    const auto cur_multi_val_bin = (is_use_subcol || is_use_subrow)
+          ? multi_val_bin_subset.get()
+          : multi_val_bin.get();
+    if (cur_multi_val_bin == nullptr) {
+      return;
+    }
+    num_bin_ = cur_multi_val_bin->num_bin();
+    num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+    min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
+      cur_multi_val_bin->num_element_per_row()) + 1, 1024);
+  }
+
+  template <bool USE_INDICES, bool ORDERED>
+  bool ConstructHistograms(const data_size_t* data_indices,
+                          data_size_t num_data,
+                          const score_t* gradients,
+                          const score_t* hessians,
+                          hist_t* hist_data) {
+    const auto cur_multi_val_bin = (is_use_subcol || is_use_subrow)
+          ? multi_val_bin_subset.get()
+          : multi_val_bin.get();
+    if (cur_multi_val_bin == nullptr) {
+      return false;
+    }
+    n_data_block_ = 1;
+    data_block_size_ = num_data;
+    Threading::BlockInfo<data_size_t>(num_threads, num_data, min_block_size_,
+                                      max_block_size_, &n_data_block_, &data_block_size_);
+    ResizeHistBuf(hist_data);
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static) num_threads(num_threads)
+    for (int block_id = 0; block_id < n_data_block_; ++block_id) {
+      OMP_LOOP_EX_BEGIN();
+      data_size_t start = block_id * data_block_size_;
+      data_size_t end = std::min(start + data_block_size_, num_data);
+      if (USE_INDICES) {
+        if (ORDERED) {
+          ConstructHistogramsForBlock(
+            cur_multi_val_bin, start, end, data_indices, gradients, hessians,
+            block_id, true, true
+          );
+        } else {
+          ConstructHistogramsForBlock(
+            cur_multi_val_bin, start, end, data_indices, gradients, hessians,
+            block_id, true, false
+          );
+        }
+      } else {
+        ConstructHistogramsForBlock(
+            cur_multi_val_bin, start, end, data_indices, gradients, hessians,
+            block_id, false, false
+          );
+      }
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+    return true;
+  }
+
   static TrainingShareStates* CreateTrainingShareStates(bool single_precision_hist_buffer);
+
+protected:
+  size_t kHistBufferEntrySize;
+  int num_bin_aligned_;
+  int num_bin_;
+  int max_block_size_;
+  int min_block_size_;
+  int n_data_block_;
+  int data_block_size_;
+  hist_t* origin_hist_data_ = nullptr;
 };
 
 struct TrainingShareStatesFloat : public TrainingShareStates {
@@ -57,44 +121,41 @@ struct TrainingShareStatesFloat : public TrainingShareStates {
   void SetMultiValBin(MultiValBin* bin, data_size_t num_data) override {
     num_threads = OMP_NUM_THREADS();
     kHistBufferEntrySize = 2 * sizeof(float);
-    max_block_size = 100000;
+    max_block_size_ = 100000;
     if (bin == nullptr) {
       return;
     }
-    int num_blocks = (num_data + max_block_size - 1) / max_block_size;
+    int num_blocks = (num_data + max_block_size_ - 1) / max_block_size_;
     num_blocks = std::max(num_threads, num_blocks);
     multi_val_bin.reset(bin);
-    num_bin_aligned =
+    num_bin_aligned_ =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_blocks;
+    size_t new_size = static_cast<size_t>(num_bin_aligned_) * 2 * num_blocks;
     if (new_size > hist_buf.size()) {
-      hist_buf.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_blocks);
+      hist_buf.resize(static_cast<size_t>(num_bin_aligned_) * 2 * num_blocks);
     }
     if (is_use_subcol) {
-      temp_buf.resize(static_cast<size_t>(num_bin_aligned) * 2);
+      temp_buf.resize(static_cast<size_t>(num_bin_aligned_) * 2);
     }
   }
 
-  void ResizeHistBuf(int n_data_block, int sub_num_bin_aligned,
-    int /*num_bin*/, hist_t* hist_data) override {
-    origin_hist_data = hist_data;
-    size_t new_buf_size = static_cast<size_t>(n_data_block) * static_cast<size_t>(sub_num_bin_aligned) * 2;
+  void ResizeHistBuf(hist_t* hist_data) override {
+    origin_hist_data_ = hist_data;
+    size_t new_buf_size = static_cast<size_t>(n_data_block_) * static_cast<size_t>(num_bin_aligned_) * 2;
     if (hist_buf.size() < new_buf_size) {
       hist_buf.resize(new_buf_size);
     }
-    if (temp_buf.size() < static_cast<size_t>(sub_num_bin_aligned) * 2 && is_use_subcol) {
-      temp_buf.resize(static_cast<size_t>(sub_num_bin_aligned) * 2);
+    if (temp_buf.size() < static_cast<size_t>(num_bin_aligned_) * 2 && is_use_subcol) {
+      temp_buf.resize(static_cast<size_t>(num_bin_aligned_) * 2);
     }
   }
 
   void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
     data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians,
-    int sub_num_bin_aligned, int block_id, int /*thread_id*/,
+    const score_t* gradients, const score_t* hessians, int block_id,
     bool use_indices, bool ordered) override {
-    float* data_ptr = hist_buf.data() + static_cast<size_t>(sub_num_bin_aligned) * 2 * (block_id);
-    const int num_bin = sub_multi_val_bin->num_bin();
-    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistBufferEntrySize);
+    float* data_ptr = hist_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (block_id);
+    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin_ * kHistBufferEntrySize);
     if (use_indices) {
       if (ordered) {
         sub_multi_val_bin->ConstructHistogramOrdered(data_indices, start, end,
@@ -109,19 +170,22 @@ struct TrainingShareStatesFloat : public TrainingShareStates {
     }
   }
 
-  void HistMerge(int n_bin_block, int bin_block_size, int num_bin,
-    int n_data_block, int sub_num_bin_aligned) override {
-    hist_t* dst = origin_hist_data;
+  void HistMerge() override {
+    int n_bin_block = 1;
+    int bin_block_size = num_bin_;
+    Threading::BlockInfo<data_size_t>(num_threads, num_bin_, 512, &n_bin_block,
+                                    &bin_block_size);
+    hist_t* dst = origin_hist_data_;
     if (is_use_subcol) {
       dst = temp_buf.data();
     }
-    std::memset(reinterpret_cast<void*>(dst), 0, num_bin * kHistEntrySize);
+    std::memset(reinterpret_cast<void*>(dst), 0, num_bin_ * kHistEntrySize);
     #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
     for (int t = 0; t < n_bin_block; ++t) {
       const int start = t * bin_block_size;
-      const int end = std::min(start + bin_block_size, num_bin);
-      for (int tid = 0; tid < n_data_block; ++tid) {
-        auto src_ptr = hist_buf.data() + static_cast<size_t>(sub_num_bin_aligned) * 2 * (tid);
+      const int end = std::min(start + bin_block_size, num_bin_);
+      for (int tid = 0; tid < n_data_block_; ++tid) {
+        auto src_ptr = hist_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (tid);
         #pragma omp simd
         for (int i = start * 2; i < end * 2; ++i) {
           dst[i] += src_ptr[i];
@@ -130,7 +194,7 @@ struct TrainingShareStatesFloat : public TrainingShareStates {
     }
   }
 
-  void HistMove(int /*sub_num_bin_aligned*/) override {
+  void HistMove() override {
     if (!is_use_subcol) {
       return;
     }
@@ -138,7 +202,7 @@ struct TrainingShareStatesFloat : public TrainingShareStates {
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
       std::copy_n(src + hist_move_src[i], hist_move_size[i],
-                  origin_hist_data + hist_move_dest[i]);
+                  origin_hist_data_ + hist_move_dest[i]);
     }
   }
 };
@@ -148,22 +212,21 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
   void SetMultiValBin(MultiValBin* bin, data_size_t /*num_data*/) override {
     num_threads = OMP_NUM_THREADS();
     kHistBufferEntrySize = 2 * sizeof(float);
-    max_block_size = 100000;
+    max_block_size_ = 100000;
     if (bin == nullptr) {
       return;
     }
     multi_val_bin.reset(bin);
-    num_bin_aligned =
+    num_bin_aligned_ =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    const size_t thread_buf_size = static_cast<size_t>(num_bin_aligned) * num_threads * 2;
+    const size_t thread_buf_size = static_cast<size_t>(num_bin_aligned_) * num_threads * 2;
     temp_buf.resize(thread_buf_size, 0.0f);
     hist_buf.resize(thread_buf_size, 0.0f);
   }
 
-  void ResizeHistBuf(int /*n_data_block*/, int sub_num_bin_aligned,
-    int num_bin, hist_t* hist_data) override {
-    origin_hist_data = hist_data;
-    const size_t new_thread_buf_size = static_cast<size_t>(sub_num_bin_aligned) * num_threads * 2;
+  void ResizeHistBuf(hist_t* hist_data) override {
+    origin_hist_data_ = hist_data;
+    const size_t new_thread_buf_size = static_cast<size_t>(num_bin_aligned_) * num_threads * 2;
     if (new_thread_buf_size > temp_buf.size()) {
       temp_buf.resize(new_thread_buf_size, 0.0f);
     }
@@ -176,7 +239,7 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
     }
     if (!is_use_subcol) {
       #pragma omp parallel for schedule(static) num_threads(num_threads)
-      for (int i = 0; i < num_bin * 2; ++i) {
+      for (int i = 0; i < num_bin_ * 2; ++i) {
         hist_data[i] = 0.0f;
       }
     }
@@ -184,10 +247,10 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
 
   void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
     data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians,
-    int sub_num_bin_aligned, int /*block_id*/, int thread_id,
+    const score_t* gradients, const score_t* hessians, int /*block_id*/,
     bool use_indices, bool ordered) override {
-    float* data_ptr = hist_buf.data() + static_cast<size_t>(sub_num_bin_aligned) * 2 * thread_id;
+    int thread_id = omp_get_thread_num();
+    float* data_ptr = hist_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * thread_id;
     const int num_bin = sub_multi_val_bin->num_bin();
     std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistBufferEntrySize);
     if (use_indices) {
@@ -202,13 +265,13 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
       sub_multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
                                         data_ptr);
     }
-    double* thread_buf_ptr = origin_hist_data;
+    double* thread_buf_ptr = origin_hist_data_;
     if (thread_id == 0) {
       if (is_use_subcol) {
         thread_buf_ptr = temp_buf.data();
       }
     } else {
-      thread_buf_ptr = temp_buf.data() + static_cast<size_t>(sub_num_bin_aligned) * 2 * (thread_id);
+      thread_buf_ptr = temp_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (thread_id);
     }
     #pragma omp simd
     for (int i = 0; i < 2 * num_bin; ++i) {
@@ -216,18 +279,21 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
     }
   }
 
-  void HistMerge(int n_bin_block, int bin_block_size, int num_bin,
-    int /*n_data_block*/, int sub_num_bin_aligned) override {
-    hist_t* dst = origin_hist_data;
+  void HistMerge() override {
+    int n_bin_block = 1;
+    int bin_block_size = num_bin_;
+    Threading::BlockInfo<data_size_t>(num_threads, num_bin_, 512, &n_bin_block,
+                                    &bin_block_size);
+    hist_t* dst = origin_hist_data_;
     if (is_use_subcol) {
       dst = temp_buf.data();
     }
     #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
     for (int t = 0; t < n_bin_block; ++t) {
       const int start = t * bin_block_size;
-      const int end = std::min(start + bin_block_size, num_bin);
+      const int end = std::min(start + bin_block_size, num_bin_);
       for (int tid = 1; tid < num_threads; ++tid) {
-        auto src_ptr = temp_buf.data() + static_cast<size_t>(sub_num_bin_aligned) * 2 * (tid);
+        auto src_ptr = temp_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (tid);
         #pragma omp simd
         for (int i = start * 2; i < end * 2; ++i) {
           dst[i] += src_ptr[i];
@@ -236,7 +302,7 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
     }
   }
 
-  void HistMove(int /*sub_num_bin_aligned*/) override {
+  void HistMove() override {
     if (!is_use_subcol) {
       return;
     }
@@ -244,7 +310,7 @@ struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
       std::copy_n(src + hist_move_src[i], hist_move_size[i],
-                  origin_hist_data + hist_move_dest[i]);
+                  origin_hist_data_ + hist_move_dest[i]);
     }
   }
 };
@@ -255,23 +321,22 @@ struct TrainingShareStatesDouble : public TrainingShareStates {
   void SetMultiValBin(MultiValBin* bin, data_size_t num_data) override {
     num_threads = OMP_NUM_THREADS();
     kHistBufferEntrySize = 2 * sizeof(hist_t);
-    max_block_size = num_data;
+    max_block_size_ = num_data;
     if (bin == nullptr) {
       return;
     }
     multi_val_bin.reset(bin);
-    num_bin_aligned =
+    num_bin_aligned_ =
         (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
+    size_t new_size = static_cast<size_t>(num_bin_aligned_) * 2 * num_threads;
     if (new_size > hist_buf.size()) {
       hist_buf.resize(new_size);
     }
   }
 
-  void ResizeHistBuf(int n_data_block, int sub_num_bin_aligned,
-    int /*num_bin*/, hist_t* hist_data) override {
-    origin_hist_data = hist_data;
-    size_t new_buf_size = static_cast<size_t>(n_data_block) * static_cast<size_t>(sub_num_bin_aligned) * 2;
+  void ResizeHistBuf(hist_t* hist_data) override {
+    origin_hist_data_ = hist_data;
+    size_t new_buf_size = static_cast<size_t>(n_data_block_) * static_cast<size_t>(num_bin_aligned_) * 2;
     if (hist_buf.size() < new_buf_size) {
       hist_buf.resize(new_buf_size);
     }
@@ -279,17 +344,16 @@ struct TrainingShareStatesDouble : public TrainingShareStates {
 
   void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
     data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians,
-    int sub_num_bin_aligned, int block_id, int /*thread_id*/,
+    const score_t* gradients, const score_t* hessians, int block_id,
     bool use_indices, bool ordered) override {
-    hist_t* data_ptr = origin_hist_data;
+    hist_t* data_ptr = origin_hist_data_;
     if (block_id == 0) {
       if (is_use_subcol) {
-        data_ptr = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sub_num_bin_aligned);
+        data_ptr = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(num_bin_aligned_);
       }
     } else {
       data_ptr = hist_buf.data() +
-        static_cast<size_t>(sub_num_bin_aligned) * (block_id - 1) * 2;
+        static_cast<size_t>(num_bin_aligned_) * (block_id - 1) * 2;
     }
     const int num_bin = sub_multi_val_bin->num_bin();
     std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistBufferEntrySize);
@@ -307,18 +371,21 @@ struct TrainingShareStatesDouble : public TrainingShareStates {
     }
   }
 
-  void HistMerge(int n_bin_block, int bin_block_size, int num_bin,
-    int n_data_block, int sub_num_bin_aligned) override {
-    hist_t* dst = origin_hist_data;
+  void HistMerge() override {
+    int n_bin_block = 1;
+    int bin_block_size = num_bin_;
+    Threading::BlockInfo<data_size_t>(num_threads, num_bin_, 512, &n_bin_block,
+                                    &bin_block_size);
+    hist_t* dst = origin_hist_data_;
     if (is_use_subcol) {
-      dst = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sub_num_bin_aligned);
+      dst = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(num_bin_aligned_);
     }
     #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
     for (int t = 0; t < n_bin_block; ++t) {
       const int start = t * bin_block_size;
-      const int end = std::min(start + bin_block_size, num_bin);
-      for (int tid = 1; tid < n_data_block; ++tid) {
-        auto src_ptr = hist_buf.data() + static_cast<size_t>(sub_num_bin_aligned) * 2 * (tid - 1);
+      const int end = std::min(start + bin_block_size, num_bin_);
+      for (int tid = 1; tid < n_data_block_; ++tid) {
+        auto src_ptr = hist_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (tid - 1);
         #pragma omp simd
         for (int i = start * 2; i < end * 2; ++i) {
           dst[i] += src_ptr[i];
@@ -327,15 +394,15 @@ struct TrainingShareStatesDouble : public TrainingShareStates {
     }
   }
 
-  void HistMove(int sub_num_bin_aligned) override {
+  void HistMove() override {
     if (!is_use_subcol) {
       return;
     }
-    hist_t* src = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sub_num_bin_aligned);
+    hist_t* src = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(num_bin_aligned_);
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
       std::copy_n(src + hist_move_src[i], hist_move_size[i],
-                  origin_hist_data + hist_move_dest[i]);
+                  origin_hist_data_ + hist_move_dest[i]);
     }
   }
 };
