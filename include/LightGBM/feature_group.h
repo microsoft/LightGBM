@@ -363,6 +363,7 @@ class FeatureGroup {
    */
   void SaveBinaryToFile(const VirtualFileWriter* writer) const {
     writer->AlignedWrite(&is_multi_val_, sizeof(is_multi_val_));
+    writer->AlignedWrite(&is_dense_multi_val_, sizeof(is_dense_multi_val_));
     writer->AlignedWrite(&is_sparse_, sizeof(is_sparse_));
     writer->AlignedWrite(&num_feature_, sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
@@ -382,6 +383,7 @@ class FeatureGroup {
    */
   size_t SizesInByte() const {
     size_t ret = VirtualFileWriter::AlignedSize(sizeof(is_multi_val_)) +
+                 VirtualFileWriter::AlignedSize(sizeof(is_dense_multi_val_)) +
                  VirtualFileWriter::AlignedSize(sizeof(is_sparse_)) +
                  VirtualFileWriter::AlignedSize(sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
