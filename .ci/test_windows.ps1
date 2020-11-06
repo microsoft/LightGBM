@@ -49,8 +49,12 @@ elseif ($env:TASK -eq "sdist") {
 }
 elseif ($env:TASK -eq "bdist") {
   # Install the Intel CPU runtime, so we can run tests against OpenCL
-  curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
-  $msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
+  Write-Output "Downloading OpenCL runtime"
+  #curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
+  #$msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
+  curl -o opencl_runtime_16.1.2_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/12512/opencl_runtime_16.1.2_x64_setup.msi
+  Write-Output "Installing OpenCL runtime"
+  $msiarglist = "/i opencl_runtime_16.1.2_x64_setup.msi /quiet /norestart /log msi.log"
   $return = Start-Process msiexec -ArgumentList $msiarglist -Wait -passthru
   Get-Content msi.log
   If (@(0,3010) -contains $return.exitcode) {
@@ -60,12 +64,11 @@ elseif ($env:TASK -eq "bdist") {
     exit 1
   }
   RefreshEnv
-  Rename-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors" -Name "intelocl64.dll" -NewName "C:\Program Files (x86)\Common Files\Intel\OpenCL\windows\compiler\lib\intel64_win\intelocl64.dll"
-  RefreshEnv
   Write-Output "Current OpenCL drivers:"
   Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
   # TEMPORARY for debugging
+  Write-Output "Interrogating OpenCL runtime"
   curl https://ci.appveyor.com/api/projects/oblomov/clinfo/artifacts/clinfo.exe?job=platform%3a+x64 -o clinfo.exe
   .\clinfo.exe
   # /TEMPORARY
