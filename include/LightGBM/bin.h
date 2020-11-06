@@ -419,7 +419,7 @@ class MultiValBin {
                           const std::vector<uint32_t>& delta) = 0;
 
   virtual void ReSize(data_size_t num_data, int num_bin, int num_feature,
-                      double estimate_element_per_row, const std::vector<uint32_t>& num_bin_per_feature) = 0;
+                      double estimate_element_per_row, const std::vector<uint32_t>& offsets) = 0;
 
   virtual void CopySubrowAndSubcol(
       const MultiValBin* full_bin, const data_size_t* used_indices,

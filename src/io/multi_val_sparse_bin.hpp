@@ -210,7 +210,7 @@ class MultiValSparseBin : public MultiValBin {
   }
 
   void ReSize(data_size_t num_data, int num_bin, int,
-              double estimate_element_per_row, const std::vector<uint32_t>& /*num_bin_per_feature*/) override {
+              double estimate_element_per_row, const std::vector<uint32_t>& /*offsets*/) override {
     num_data_ = num_data;
     num_bin_ = num_bin;
     estimate_element_per_row_ = estimate_element_per_row;

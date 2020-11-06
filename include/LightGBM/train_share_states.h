@@ -103,6 +103,8 @@ struct TrainingShareStates {
 
   static TrainingShareStates* CreateTrainingShareStates(bool single_precision_hist_buffer);
 
+  virtual ~TrainingShareStates() {}
+
 protected:
   size_t kHistBufferEntrySize;
   int num_bin_aligned_;

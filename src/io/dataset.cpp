@@ -433,7 +433,6 @@ void PushDataToMultiValBin(
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
   if (ret->IsSparse()) {
-    Log::Warning("in sparse push data to multi val bin");
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data;
@@ -459,7 +458,6 @@ void PushDataToMultiValBin(
           }
         });
   } else {
-    Log::Warning("in dense push data to multi val bin");
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
@@ -678,10 +676,8 @@ TrainingShareStates* Dataset::GetShareStates(
           "And if memory is not enough, you can set `force_col_wise=true`.",
           overhead_cost * 1e-3);
       if (rowwise_state->multi_val_bin->IsSparse()) {
-        Log::Warning("is sparse");
         Log::Debug("Using Sparse Multi-Val Bin");
       } else {
-        Log::Warning("is dense");
         Log::Debug("Using Dense Multi-Val Bin");
       }
       return rowwise_state.release();
