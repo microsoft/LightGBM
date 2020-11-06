@@ -116,7 +116,7 @@ jobs:
         shell: pwsh
         run: git config --global core.autocrlf false
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2.3.4
         with:
           fetch-depth: 5
           submodules: true
@@ -143,7 +143,7 @@ jobs:
           $GITHUB_WORKSPACE/.ci/test.sh
       - name: Use conda on Windows
         if: startsWith(matrix.os, 'windows')
-        uses: goanpeca/setup-miniconda@v1
+        uses: conda-incubator/setup-miniconda@v1.7.0
         with:
           auto-update-conda: false
       - name: Setup and run tests on Windows
@@ -165,8 +165,13 @@ jobs:
     runs-on: ubuntu-latest
     container: rhub/rocker-gcc-san
     steps:
+      - name: Install Git before checkout
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y git
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2.3.4
         with:
           fetch-depth: 5
           submodules: true
