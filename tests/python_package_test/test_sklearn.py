@@ -7,6 +7,7 @@ import unittest
 
 import lightgbm as lgb
 import numpy as np
+import pytest
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
@@ -15,8 +16,8 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test
 from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOutputRegressor,
                                  RegressorChain)
 from sklearn.utils.estimator_checks import (
-    check_estimator,
     check_parameters_default_constructible,
+    parametrize_with_checks,
 )
 from sklearn.utils.validation import check_is_fitted
 
@@ -451,16 +452,6 @@ class TestSklearn(unittest.TestCase):
         importance_split_top1 = sorted(importances_split, reverse=True)[0]
         importance_gain_top1 = sorted(importances_gain, reverse=True)[0]
         self.assertNotEqual(importance_split_top1, importance_gain_top1)
-
-    # sklearn <0.19 cannot accept instance, but many tests could be passed only with min_data=1 and min_data_in_bin=1
-    @unittest.skipIf(sk_version < '0.19.0', 'scikit-learn version is less than 0.19')
-    def test_sklearn_integration(self):
-        for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
-                                (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
-            # we cannot leave default params (see https://github.com/microsoft/LightGBM/issues/833)
-            estimator = estimator(min_child_samples=1, min_data_in_bin=1)
-            check_parameters_default_constructible(name, estimator)
-            check_estimator(estimator)
 
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
@@ -1136,3 +1127,24 @@ class TestSklearn(unittest.TestCase):
         rnk.fit(X, y, group=np.ones(X.shape[0]))
         for model in models:
             check_is_fitted(model)
+
+
+def _tested_estimators():
+    for Estimator in [lgb.sklearn.LGBMClassifier, lgb.sklearn.LGBMRegressor]:
+        yield Estimator()
+
+
+@pytest.mark.skipif(
+    sk_version < "0.23.0", reason="scikit-learn version is less than 0.23"
+)
+@parametrize_with_checks(list(_tested_estimators()))
+def test_sklearn_integration(estimator, check, request):
+    estimator.set_params(min_child_samples=1, min_data_in_bin=1)
+    check(estimator)
+
+
+@pytest.mark.parametrize("estimator", list(_tested_estimators()))
+def test_parameters_default_constructible(estimator):
+    name, Estimator = estimator.__class__.__name__, estimator.__class__
+    # Test that estimators are default-constructible
+    check_parameters_default_constructible(name, Estimator)
