@@ -15,8 +15,8 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test
 from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOutputRegressor,
                                  RegressorChain)
 from sklearn.utils.estimator_checks import (
-    check_parameters_default_constructible,
     check_estimator,
+    check_parameters_default_constructible,
 )
 from sklearn.utils.validation import check_is_fitted
 
