@@ -16,8 +16,11 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOutputRegressor,
                                  RegressorChain)
-from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
-                                            check_parameters_default_constructible)
+from sklearn.utils.estimator_checks import (
+     SkipTest,
+    check_parameters_default_constructible,
+    check_estimator,
+)
 from sklearn.utils.validation import check_is_fitted
 
 from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
@@ -458,22 +461,10 @@ class TestSklearn(unittest.TestCase):
         # we cannot use `check_estimator` directly since there is no skip test mechanism
         for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
                                 (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
-            check_parameters_default_constructible(name, estimator)
             # we cannot leave default params (see https://github.com/microsoft/LightGBM/issues/833)
             estimator = estimator(min_child_samples=1, min_data_in_bin=1)
-            for check in _yield_all_checks(name, estimator):
-                check_name = check.func.__name__ if hasattr(check, 'func') else check.__name__
-                if check_name == 'check_estimators_nan_inf':
-                    continue  # skip test because LightGBM deals with nan
-                elif check_name == "check_no_attributes_set_in_init":
-                    # skip test because scikit-learn incorrectly asserts that
-                    # private attributes cannot be set in __init__
-                    # (see https://github.com/microsoft/LightGBM/issues/2628)
-                    continue
-                try:
-                    check(name, estimator)
-                except SkipTest as message:
-                    warnings.warn(message, SkipTestWarning)
+            check_parameters_default_constructible(name, estimator)
+            check_estimator(estimator)
 
     @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
