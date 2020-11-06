@@ -4,20 +4,17 @@ import joblib
 import math
 import os
 import unittest
-import warnings
 
 import lightgbm as lgb
 import numpy as np
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
-from sklearn.exceptions import SkipTestWarning
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOutputRegressor,
                                  RegressorChain)
 from sklearn.utils.estimator_checks import (
-     SkipTest,
     check_parameters_default_constructible,
     check_estimator,
 )
