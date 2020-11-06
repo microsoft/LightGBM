@@ -320,10 +320,9 @@ class LGBMModel(_LGBMModelBase):
             'X_types': ['2darray', 'sparse', '1dlabels'],
             '_xfail_checks': {
                 'check_no_attributes_set_in_init':
-                'xxx'
-                # 'scikit-learn incorrectly asserts that  private attributes '
-                # 'cannot be set in __init__: '
-                # '(see https://github.com/microsoft/LightGBM/issues/2628)'
+                'scikit-learn incorrectly asserts that  private attributes '
+                'cannot be set in __init__: '
+                '(see https://github.com/microsoft/LightGBM/issues/2628)'
             }
         }
 
