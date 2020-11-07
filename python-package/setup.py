@@ -340,6 +340,12 @@ if __name__ == "__main__":
               'scipy',
               'scikit-learn!=0.22.0'
           ],
+          extras_requires={
+              'dask': [
+                  'dask>=0.16.0',
+                  'distributed>=1.15.2'
+              ],
+          },
           maintainer='Guolin Ke',
           maintainer_email='guolin.ke@microsoft.com',
           zip_safe=False,
