@@ -2,7 +2,7 @@
  * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-/**
+/*!
  * This SWIG interface extension provides support to
  * the pointer manipulation methods present in the standard
  * SWIG wrappers, but with support for larger arrays.
