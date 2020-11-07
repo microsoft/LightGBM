@@ -3,7 +3,7 @@ context("Learning to rank")
 # numerical tolerance to use when checking metric values
 TOLERANCE <- 1e-06
 
-ON_SOLARIS <- Sys.info()['sysname'] == "SunOS"
+ON_SOLARIS <- Sys.info()["sysname"] == "SunOS"
 
 test_that("learning-to-rank with lgb.train() works as expected", {
     set.seed(708L)
