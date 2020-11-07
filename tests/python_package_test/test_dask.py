@@ -1,3 +1,6 @@
+import os
+import sys
+
 import dask.array as da
 import dask.dataframe as dd
 import lightgbm
@@ -114,6 +117,7 @@ def test_classifier_local_predict(client, listen_port):  # noqa
     assert_eq(y, p2)
 
 
+@pytest.mark.skipif(os.getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface")
 @pytest.mark.parametrize('output', data_output)
 def test_regressor(output, client, listen_port):  # noqa
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
