@@ -5,7 +5,14 @@
 /**
  * This SWIG interface extension provides support to
  * the pointer manipulation methods present in the standard
- * SWIG wrappers, but with support for int64 pointers.
+ * SWIG wrappers, but with support for larger arrays.
+ * 
+ * SWIG provides this in https://github.com/swig/swig/blob/master/Lib/carrays.i
+ * but the standard methods only provide arrays with up to
+ * max(int32_t) elements.
+ * 
+ * The `long_array_functions` wrappers extend this
+ * to arrays of size max(int64_t) instead of max(int32_t).
  */
 
 %pointer_functions(int, intp)
