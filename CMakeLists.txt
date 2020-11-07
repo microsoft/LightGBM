@@ -453,9 +453,9 @@ if(__BUILD_FOR_R)
 endif(__BUILD_FOR_R)
 
 # fmtlib/fmt
-add_subdirectory(external_libs/fmt)
-TARGET_LINK_LIBRARIES(lightgbm PRIVATE fmt::fmt-header-only)
-TARGET_LINK_LIBRARIES(_lightgbm PRIVATE fmt::fmt-header-only)
+#add_subdirectory(external_libs/fmt)
+#TARGET_LINK_LIBRARIES(lightgbm PRIVATE fmt::fmt-header-only)
+#TARGET_LINK_LIBRARIES(_lightgbm PRIVATE fmt::fmt-header-only)
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

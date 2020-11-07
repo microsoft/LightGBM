@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#define FMT_HEADER_ONLY
 #include "../../../external_libs/fmt/include/fmt/format.h"
 #include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
 
