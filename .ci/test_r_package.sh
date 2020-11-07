@@ -108,7 +108,7 @@ if [[ $TASK == "r-package-check-docs" ]]; then
     Rscript --vanilla -e "install.packages('roxygen2', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
     Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
     num_doc_files_changed=$(
-        git diff --name-only | grep -E "\.Rd|NAMESPACE" | wc -l
+        git diff --name-only | grep --count -E "\.Rd|NAMESPACE"
     )
     if [[ ${num_doc_files_changed} -gt 0 ]]; then
         echo "Some R documentation files have changed. Please re-generate them and commit those changes."
@@ -208,8 +208,7 @@ fi
 if [[ $OS_NAME == "macos" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
     omp_working=$(
         cat $BUILD_LOG_FILE \
-        | grep -E "checking whether OpenMP will work .*yes" \
-        | wc -l
+        | grep --count -E "checking whether OpenMP will work .*yes"
     )
     if [[ $omp_working -ne 1 ]]; then
         echo "OpenMP was not found, and should be when testing the CRAN package on macOS"
@@ -222,8 +221,7 @@ fi
 if [[ $R_BUILD_TYPE == "cran" ]]; then
     pragma_warning_present=$(
         cat $BUILD_LOG_FILE \
-        | grep -E "warning: unknown pragma ignored" \
-        | wc -l
+        | grep --count -E "warning: unknown pragma ignored"
     )
     if [[ $pragma_warning_present -ne 0 ]]; then
         echo "Unknown pragma warning is present, pragmas should have been removed before build"
