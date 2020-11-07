@@ -25,6 +25,8 @@ except ImportError:
     # setuptools not installed
     parse_version = LooseVersion  # type: ignore
 
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
+
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
     import warnings
@@ -32,8 +34,6 @@ if sk_version < parse_version("0.23"):
     from sklearn.utils.estimator_checks import _yield_all_checks, SkipTest
 else:
     from sklearn.utils.estimator_checks import parametrize_with_checks
-
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
 
 
 decreasing_generator = itertools.count(0, -1)
