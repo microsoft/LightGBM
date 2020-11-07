@@ -216,29 +216,6 @@ if (!makefiles_already_generated) {
   .run_shell_command("cmake", c(cmake_args, ".."))
 }
 
-# R CMD check complains about the .NOTPARALLEL directive created in the cmake
-# Makefile. We don't need it here anyway since targets are built serially, so trying
-# to remove it with this hack
-generated_makefile <- file.path(
-  build_dir
-  , "Makefile"
-)
-if (file.exists(generated_makefile)) {
-  makefile_txt <- readLines(
-    con = generated_makefile
-  )
-  makefile_txt <- gsub(
-    pattern = ".*NOTPARALLEL.*"
-    , replacement = ""
-    , x = makefile_txt
-  )
-  writeLines(
-    text = makefile_txt
-    , con = generated_makefile
-    , sep = "\n"
-  )
-}
-
 # build the library
 message("Building lib_lightgbm")
 .run_shell_command(build_cmd, build_args)

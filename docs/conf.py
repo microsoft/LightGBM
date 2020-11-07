@@ -240,17 +240,18 @@ def generate_r_docs(app):
         The application object representing the Sphinx process.
     """
     commands = """
-    echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile
-    /home/docs/.conda/bin/conda create -q -y -n r_env \
-        r-base=3.5.1=h1e0a451_2 \
-        r-jsonlite=1.5=r351h96ca727_0 \
-        r-matrix=1.2_14=r351h96ca727_0 \
-        r-testthat=2.0.0=r351h29659fb_0 \
-        cmake=3.14.0=h52cb24c_0
-    /home/docs/.conda/bin/conda install -q -y -n r_env -c conda-forge \
-        r-data.table=1.12.8=r35hcdcec82_0 \
-        r-pkgdown=1.5.1=r35h6115d3f_0 \
-        r-roxygen2=7.1.0=r35h0357c0b_0
+    /home/docs/.conda/bin/conda create \
+        -q \
+        -y \
+        -c conda-forge \
+        -n r_env \
+            cmake=3.18.2=ha30ef3c_0 \
+            r-base=4.0.3=hc603457_2 \
+            r-data.table=1.13.2=r40h0eb13af_0 \
+            r-jsonlite=1.7.1=r40hcdcec82_0 \
+            r-matrix=1.2_18=r40h7fa42b6_3 \
+            r-pkgdown=1.6.1=r40h6115d3f_0 \
+            r-roxygen2=7.1.1=r40h0357c0b_0
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {0}
