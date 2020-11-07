@@ -15,11 +15,23 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOutputRegressor,
                                  RegressorChain)
-from sklearn.utils.estimator_checks import (
-    check_parameters_default_constructible,
-    parametrize_with_checks,
-)
 from sklearn.utils.validation import check_is_fitted
+
+from sklearn.utils.estimator_checks import check_parameters_default_constructible
+
+try:
+    from pkg_resources import parse_version  # type: ignore
+except ImportError:
+    # setuptools not installed
+    parse_version = LooseVersion  # type: ignore
+
+sk_version = parse_version(sk_version)
+if sk_version < parse_version("0.23"):
+    import warnings
+    from sklearn.exceptions import SkipTestWarning
+    from sklearn.utils.estimator_checks import _yield_all_checks, SkipTest
+else:
+    from sklearn.utils.estimator_checks import parametrize_with_checks
 
 from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
 
@@ -169,7 +181,7 @@ class TestSklearn(unittest.TestCase):
         self.assertLessEqual(score, 1.)
 
     # sklearn <0.23 does not have a stacking classifier and n_features_in_ property
-    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    @unittest.skipIf(sk_version < parse_version("0.23"), 'scikit-learn version is less than 0.23')
     def test_stacking_classifier(self):
         from sklearn.ensemble import StackingClassifier
 
@@ -196,7 +208,7 @@ class TestSklearn(unittest.TestCase):
         self.assertTrue(all(classes))
 
     # sklearn <0.23 does not have a stacking regressor and n_features_in_ property
-    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    @unittest.skipIf(sk_version < parse_version('0.23'), 'scikit-learn version is less than 0.23')
     def test_stacking_regressor(self):
         from sklearn.ensemble import StackingRegressor
 
@@ -281,7 +293,7 @@ class TestSklearn(unittest.TestCase):
         self.assertLessEqual(score, 1.)
 
     # sklearn < 0.22 does not have the post fit attribute: classes_
-    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    @unittest.skipIf(sk_version < parse_version('0.22'), 'scikit-learn version is less than 0.22')
     def test_multioutput_classifier(self):
         n_outputs = 3
         X, y = make_multilabel_classification(n_samples=100, n_features=20,
@@ -301,7 +313,7 @@ class TestSklearn(unittest.TestCase):
             self.assertIsInstance(classifier.booster_, lgb.Booster)
 
     # sklearn < 0.23 does not have as_frame parameter
-    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    @unittest.skipIf(sk_version < parse_version('0.23'), 'scikit-learn version is less than 0.23')
     def test_multioutput_regressor(self):
         bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
         X, y = bunch['data'], bunch['target']
@@ -318,7 +330,7 @@ class TestSklearn(unittest.TestCase):
             self.assertIsInstance(regressor.booster_, lgb.Booster)
 
     # sklearn < 0.22 does not have the post fit attribute: classes_
-    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    @unittest.skipIf(sk_version < parse_version('0.22'), 'scikit-learn version is less than 0.22')
     def test_classifier_chain(self):
         n_outputs = 3
         X, y = make_multilabel_classification(n_samples=100, n_features=20,
@@ -340,7 +352,7 @@ class TestSklearn(unittest.TestCase):
             self.assertIsInstance(classifier.booster_, lgb.Booster)
 
     # sklearn < 0.23 does not have as_frame parameter
-    @unittest.skipIf(sk_version < '0.23.0', 'scikit-learn version is less than 0.23')
+    @unittest.skipIf(sk_version < parse_version('0.23'), 'scikit-learn version is less than 0.23')
     def test_regressor_chain(self):
         bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
         X, y = bunch['data'], bunch['target']
@@ -1109,7 +1121,7 @@ class TestSklearn(unittest.TestCase):
                         init_gbm.evals_result_['valid_0']['multi_logloss'][-1])
 
     # sklearn < 0.22 requires passing "attributes" argument
-    @unittest.skipIf(sk_version < '0.22.0', 'scikit-learn version is less than 0.22')
+    @unittest.skipIf(sk_version < parse_version('0.22'), 'scikit-learn version is less than 0.22')
     def test_check_is_fitted(self):
         X, y = load_digits(n_class=2, return_X_y=True)
         est = lgb.LGBMModel(n_estimators=5, objective="binary")
@@ -1134,21 +1146,39 @@ def _tested_estimators():
         yield Estimator()
 
 
-@pytest.mark.skipif(
-    sk_version < "0.23.0", reason="scikit-learn version is less than 0.23"
-)
-@parametrize_with_checks(list(_tested_estimators()))
-def test_sklearn_integration(estimator, check, request):
-    estimator.set_params(min_child_samples=1, min_data_in_bin=1)
-    check(estimator)
+if sk_version < parse_version("0.23"):
+    def _generate_checks_per_estimator(check_generator, estimators):
+        for estimator in estimators:
+            name = estimator.__class__.__name__
+            for check in check_generator(name, estimator):
+                yield estimator, check
 
-
-@pytest.mark.skipif(
-    (sk_version < "0.23.0") or (sk_version >= "0.24.0"),
-    reason=(
-        "Default constructible check is included in the common check from "
-        "sklearn 0.24"
+    @pytest.mark.skipif(
+        sk_version < parse_version("0.21"), reason="scikit-learn version is less than 0.21"
     )
+    @pytest.mark.parametrize(
+        "estimator, check",
+        _generate_checks_per_estimator(_yield_all_checks, _tested_estimators()),
+    )
+    def test_sklearn_integration(estimator, check):
+        xfail_checks = estimator._get_tags()["_xfail_checks"]
+        check_name = check.__name__ if hasattr(check, "__name__") else check.func.__name__
+        if xfail_checks and check_name in xfail_checks:
+            warnings.warn(xfail_checks[check_name], SkipTestWarning)
+            raise SkipTest
+        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
+        name = estimator.__class__.__name__
+        check(name, estimator)
+else:
+    @parametrize_with_checks(list(_tested_estimators()))
+    def test_sklearn_integration(estimator, check, request):
+        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
+        check(estimator)
+
+
+@pytest.mark.skipif(
+    not (sk_version < parse_version("0.24")),
+    reason="Default constructible check included in common check from 0.24"
 )
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
 def test_parameters_default_constructible(estimator):
