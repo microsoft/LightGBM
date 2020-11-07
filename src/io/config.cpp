@@ -317,7 +317,7 @@ void Config::CheckParamConflict() {
     double full_num_leaves = std::pow(2, max_depth);
     if (full_num_leaves > num_leaves
         && num_leaves == kDefaultNumLeaves) {
-      Log::Warning("Accuracy may be bad since you didn't set num_leaves OR 2^max_depth > num_leaves."
+      Log::Warning("Accuracy may be bad since you didn't explicitly set num_leaves OR 2^max_depth > num_leaves."
                    " (num_leaves=%d).",
                    num_leaves);
     }
