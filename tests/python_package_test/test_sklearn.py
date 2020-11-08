@@ -8,22 +8,16 @@ import unittest
 import lightgbm as lgb
 import numpy as np
 import pytest
+from pkg_resources import parse_version
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.utils.estimator_checks import check_parameters_default_constructible
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOutputRegressor,
                                  RegressorChain)
 from sklearn.utils.validation import check_is_fitted
-
-from sklearn.utils.estimator_checks import check_parameters_default_constructible
-
-try:
-    from pkg_resources import parse_version  # type: ignore
-except ImportError:
-    # setuptools not installed
-    parse_version = LooseVersion  # type: ignore
 
 from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
 
@@ -34,7 +28,6 @@ if sk_version < parse_version("0.23"):
     from sklearn.utils.estimator_checks import _yield_all_checks, SkipTest
 else:
     from sklearn.utils.estimator_checks import parametrize_with_checks
-
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -1177,7 +1170,7 @@ else:
 
 
 @pytest.mark.skipif(
-    not (sk_version < parse_version("0.24")),
+    sk_version >= parse_version("0.24"),
     reason="Default constructible check included in common check from 0.24"
 )
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
