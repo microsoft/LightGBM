@@ -187,7 +187,7 @@ jobs:
           cd R-package/tests
           Rscriptdevel testthat.R 2>&1 > ubsan-tests.log
           cat ubsan-tests.log
-          exit $(cat ubsan-tests.log | grep "runtime error" | wc -l)
+          exit $(cat ubsan-tests.log | grep --count "runtime error")
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest
