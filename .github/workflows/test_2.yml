@@ -46,4 +46,4 @@ jobs:
         if: ${{ always() }}
         env:
           SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
-        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.pull_request.head.sha }}"
+        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.token }}" "${{ job.status }}" "${{ github.event.pull_request.head.sha }}"
