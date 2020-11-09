@@ -27,6 +27,7 @@ else()
 endif()
 
 if(__BUILD_FOR_R)
+  # Should be always before PROJECT command
   set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 endif(__BUILD_FOR_R)
 
