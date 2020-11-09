@@ -59,6 +59,9 @@ jobs:
             export PATH=\$CONDA/bin:\$PATH
             nvidia-smi
             $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
-            $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
+            $ROOT_DOCKER_FOLDER/.ci/test.sh
+            source activate \$CONDA_ENV
+            cd \$BUILD_DIRECTORY/examples/python-guide/
+            python simple_example.py
             EOF
             sudo docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all nvidia/cuda:11.0-devel-ubuntu20.04 /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
