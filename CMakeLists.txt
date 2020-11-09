@@ -10,6 +10,10 @@ OPTION(BUILD_STATIC_LIB "Build static library" OFF)
 OPTION(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 OPTION(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
+if(APPLE)
+  OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
+endif(APPLE)
+
 if(__INTEGRATE_OPENCL)
   cmake_minimum_required(VERSION 3.11)
 elseif(USE_GPU OR APPLE)
@@ -31,10 +35,6 @@ if(USE_CUDA)
 else()
   PROJECT(lightgbm LANGUAGES C CXX)
 endif()
-
-if(APPLE)
-    OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
-endif(APPLE)
 
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)
