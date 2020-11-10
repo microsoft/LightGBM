@@ -2,7 +2,7 @@ name: Test 1
 
 on:
   repository_dispatch:
-    types: [test-1-command]
+    types: [gha-run-1-command]
 
 jobs:
   test:
