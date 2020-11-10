@@ -17,7 +17,9 @@ namespace LightGBM {
 struct TrainingShareStates {
   int num_threads = 0;
   bool is_colwise = true;
+  bool is_two_rowwise = false;
   bool is_use_subcol = false;
+  bool is_use_subcol_sparse = false;
   bool is_use_subrow = false;
   bool is_subrow_copied = false;
   bool is_constant_hessian = true;
@@ -30,6 +32,9 @@ struct TrainingShareStates {
   std::vector<uint32_t> hist_move_src;
   std::vector<uint32_t> hist_move_dest;
   std::vector<uint32_t> hist_move_size;
+  std::vector<uint32_t> hist_move_src_sparse;
+  std::vector<uint32_t> hist_move_dest_sparse;
+  std::vector<uint32_t> hist_move_size_sparse;
 
   int num_hist_total_bin() { return num_hist_total_bin_; }
 
@@ -54,10 +59,10 @@ struct TrainingShareStates {
     const score_t* gradients, const score_t* hessians, int block_id,
     bool use_indices, bool ordered) = 0;
 
-  virtual void SparseConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
-    data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians, int block_id,
-    bool use_indices, bool ordered) {}
+  virtual void SparseConstructHistogramsForBlock(const MultiValBin* /*sub_multi_val_bin*/,
+    data_size_t /*start*/, data_size_t /*end*/, const data_size_t* /*data_indices*/,
+    const score_t* /*gradients*/, const score_t* /*hessians*/, int /*block_id*/,
+    bool /*use_indices*/, bool /*ordered*/) {}
 
   virtual void CalcBinOffsets(const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
     std::vector<uint32_t>* offsets, std::vector<uint32_t>* offsets2,
@@ -290,12 +295,14 @@ struct TrainingShareStates {
       min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
         cur_multi_val_bin->num_element_per_row()) + 1, 1024);
     }
-    const auto cur_multi_val_bin_sparse = (is_use_subcol || is_use_subrow)
+    const auto cur_multi_val_bin_sparse = (is_use_subcol_sparse || is_use_subrow)
           ? multi_val_bin_sparse_subset.get()
           : multi_val_bin_sparse.get();
     if (cur_multi_val_bin_sparse != nullptr) {
       sparse_num_bin_ = cur_multi_val_bin_sparse->num_bin();
       sparse_num_bin_aligned_ = (sparse_num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+      sparse_min_block_size_ = std::min<int>(static_cast<int>(0.3f * sparse_num_bin_ /
+        cur_multi_val_bin_sparse->num_element_per_row()) + 1, 1024);
     }
   }
 
@@ -352,13 +359,13 @@ struct TrainingShareStates {
       global_timer.Stop("Dataset::sparse_bin_histogram_move");
     }
 
-    const auto cur_multi_val_bin_sparse = (is_use_subcol || is_use_subrow)
+    const auto cur_multi_val_bin_sparse = (is_use_subcol_sparse || is_use_subrow)
           ? multi_val_bin_sparse_subset.get()
           : multi_val_bin_sparse.get();
     if (cur_multi_val_bin_sparse != nullptr) {
       n_data_block_ = 1;
       data_block_size_ = num_data;
-      Threading::BlockInfo<data_size_t>(num_threads, num_data, min_block_size_,
+      Threading::BlockInfo<data_size_t>(num_threads, num_data, sparse_min_block_size_,
                                         max_block_size_, &n_data_block_, &data_block_size_);
       ResizeHistBuf(hist_data);
       OMP_INIT_EX();
@@ -409,6 +416,7 @@ protected:
   int num_bin_;
   int max_block_size_;
   int min_block_size_;
+  int sparse_min_block_size_;
   int n_data_block_;
   int data_block_size_;
   hist_t* origin_hist_data_ = nullptr;
@@ -699,7 +707,7 @@ struct TrainingShareStatesDouble : public TrainingShareStates {
     bool use_indices, bool ordered) override {
     hist_t* data_ptr = sparse_origin_hist_data_;
     if (block_id == 0) {
-      if (is_use_subcol) {
+      if (is_use_subcol_sparse) {
         data_ptr = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sparse_num_bin_aligned_);
       }
     } else {
@@ -750,7 +758,7 @@ struct TrainingShareStatesDouble : public TrainingShareStates {
     Threading::BlockInfo<data_size_t>(num_threads, sparse_num_bin_, 512, &n_bin_block,
                                     &bin_block_size);
     hist_t* dst = sparse_origin_hist_data_;
-    if (is_use_subcol) {
+    if (is_use_subcol_sparse) {
       dst = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sparse_num_bin_aligned_);
     }
     #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
@@ -775,6 +783,18 @@ struct TrainingShareStatesDouble : public TrainingShareStates {
     for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
       std::copy_n(src + hist_move_src[i], hist_move_size[i],
                   origin_hist_data_ + hist_move_dest[i]);
+    }
+  }
+
+  void SparseHistMove() override {
+    if (!is_use_subcol_sparse) {
+      return;
+    }
+    hist_t* src = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sparse_num_bin_aligned_);
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < static_cast<int>(hist_move_src_sparse.size()); ++i) {
+      std::copy_n(src + hist_move_src_sparse[i], hist_move_size_sparse[i],
+                  sparse_origin_hist_data_ + hist_move_dest_sparse[i]);
     }
   }
 };

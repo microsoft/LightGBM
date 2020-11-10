@@ -640,6 +640,17 @@ class Dataset {
   void AddFeaturesFrom(Dataset* other);
 
  private:
+  void CopyMultiValBinSubset(std::unique_ptr<MultiValBin>& multi_val_bin,
+    std::unique_ptr<MultiValBin>& multi_val_bin_subset, bool* is_use_subcol,
+    bool* is_use_subrow, bool* is_subrow_copied,
+    std::vector<uint32_t>* hist_move_src,
+    std::vector<uint32_t>* hist_move_dest,
+    std::vector<uint32_t>* hist_move_size,
+    bool sparse_only, bool dense_only,
+    const std::vector<int8_t>& is_feature_used,
+    const data_size_t* bagging_use_indices,
+    data_size_t bagging_indices_cnt) const;
+
   std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;

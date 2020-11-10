@@ -674,6 +674,7 @@ TrainingShareStates* Dataset::GetShareStates(
     );
     share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets1), num_data_);
     share_state->is_colwise = true;
+    share_state->is_two_rowwise = false;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else if (force_rowwise) {
@@ -701,6 +702,7 @@ TrainingShareStates* Dataset::GetShareStates(
     );
     share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets1), num_data_);
     share_state->is_colwise = false;
+    share_state->is_two_rowwise = false;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else if (force_two_rowwise) {
@@ -715,6 +717,7 @@ TrainingShareStates* Dataset::GetShareStates(
     share_state->SetMultiValBin(dense_multi_val_bin, num_data_);
     share_state->SetSparseMultiValBin(sparse_multi_val_bin, num_data_);
     share_state->is_colwise = false;
+    share_state->is_two_rowwise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else {
@@ -1170,14 +1173,16 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fclose(file);
 }
 
-void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
-                        TrainingShareStates* share_state) const {
-  Common::FunctionTimer fun_time("Dataset::InitTrain", global_timer);
-  share_state->is_use_subcol = false;
-  if (share_state->multi_val_bin == nullptr) {
-    return;
-  }
-  const auto multi_val_bin = share_state->multi_val_bin.get();
+void Dataset::CopyMultiValBinSubset(std::unique_ptr<MultiValBin>& multi_val_bin,
+  std::unique_ptr<MultiValBin>& multi_val_bin_subset, bool* is_use_subcol,
+  bool* is_use_subrow, bool* is_subrow_copied,
+  std::vector<uint32_t>* hist_move_src,
+  std::vector<uint32_t>* hist_move_dest,
+  std::vector<uint32_t>* hist_move_size,
+  bool sparse_only, bool dense_only,
+  const std::vector<int8_t>& is_feature_used,
+  const data_size_t* bagging_use_indices,
+  data_size_t bagging_indices_cnt) const {
   double sum_used_dense_ratio = 0.0;
   double sum_dense_ratio = 0.0;
   int num_used = 0;
@@ -1186,18 +1191,20 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   for (int i = 0; i < num_groups_; ++i) {
     int f_start = group_feature_start_[i];
     if (feature_groups_[i]->is_multi_val_) {
-      for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
-        const auto dense_rate =
-            1.0 - feature_groups_[i]->bin_mappers_[j]->sparse_rate();
-        if (is_feature_used[f_start + j]) {
-          ++num_used;
-          used_feature_index.push_back(total);
-          sum_used_dense_ratio += dense_rate;
+      if (!dense_only) {
+        for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
+          const auto dense_rate =
+              1.0 - feature_groups_[i]->bin_mappers_[j]->sparse_rate();
+          if (is_feature_used[f_start + j]) {
+            ++num_used;
+            used_feature_index.push_back(total);
+            sum_used_dense_ratio += dense_rate;
+          }
+          sum_dense_ratio += dense_rate;
+          ++total;
         }
-        sum_dense_ratio += dense_rate;
-        ++total;
       }
-    } else if (!share_state->is_colwise) {
+    } else if (!sparse_only) {
       bool is_group_used = false;
       double dense_rate = 0;
       for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
@@ -1218,61 +1225,63 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
   const double k_subfeature_threshold = 0.6;
   if (sum_used_dense_ratio >= sum_dense_ratio * k_subfeature_threshold) {
     // only need to copy subset
-    if (share_state->is_use_subrow && !share_state->is_subrow_copied) {
-      if (share_state->multi_val_bin_subset == nullptr) {
-        share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
-            share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
+    if (*is_use_subrow && !*is_subrow_copied) {
+      if (multi_val_bin_subset == nullptr) {
+        multi_val_bin_subset.reset(multi_val_bin->CreateLike(
+            bagging_indices_cnt, multi_val_bin->num_bin(), total,
             multi_val_bin->num_element_per_row(), multi_val_bin->offsets()));
       } else {
-        share_state->multi_val_bin_subset->ReSize(
-            share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
+        multi_val_bin_subset->ReSize(
+            bagging_indices_cnt, multi_val_bin->num_bin(), total,
             multi_val_bin->num_element_per_row(), multi_val_bin->offsets());
       }
-      share_state->multi_val_bin_subset->CopySubrow(
-          multi_val_bin, share_state->bagging_use_indices,
-          share_state->bagging_indices_cnt);
+      multi_val_bin_subset->CopySubrow(
+          multi_val_bin.get(), bagging_use_indices,
+          bagging_indices_cnt);
       // avoid to copy subset many times
-      share_state->is_subrow_copied = true;
+      *is_subrow_copied = true;
     }
   } else {
-    share_state->is_use_subcol = true;
+    *is_use_subcol = true;
     std::vector<uint32_t> upper_bound;
     std::vector<uint32_t> lower_bound;
     std::vector<uint32_t> delta;
     std::vector<uint32_t> offsets;
-    share_state->hist_move_src.clear();
-    share_state->hist_move_dest.clear();
-    share_state->hist_move_size.clear();
+    hist_move_src->clear();
+    hist_move_dest->clear();
+    hist_move_size->clear();
 
-    const int offset = share_state->multi_val_bin->IsSparse() ? 1 : 0;
+    const int offset = multi_val_bin->IsSparse() ? 1 : 0;
     int num_total_bin = offset;
     int new_num_total_bin = offset;
     offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
     for (int i = 0; i < num_groups_; ++i) {
       int f_start = group_feature_start_[i];
       if (feature_groups_[i]->is_multi_val_) {
-        for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
-          const auto& bin_mapper = feature_groups_[i]->bin_mappers_[j];
-          int cur_num_bin = bin_mapper->num_bin();
-          if (bin_mapper->GetMostFreqBin() == 0) {
-            cur_num_bin -= offset;
-          }
-          num_total_bin += cur_num_bin;
-          if (is_feature_used[f_start + j]) {
-            new_num_total_bin += cur_num_bin;
-            offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
-            lower_bound.push_back(num_total_bin - cur_num_bin);
-            upper_bound.push_back(num_total_bin);
+        if (!dense_only) {
+          for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
+            const auto& bin_mapper = feature_groups_[i]->bin_mappers_[j];
+            int cur_num_bin = bin_mapper->num_bin();
+            if (bin_mapper->GetMostFreqBin() == 0) {
+              cur_num_bin -= offset;
+            }
+            num_total_bin += cur_num_bin;
+            if (is_feature_used[f_start + j]) {
+              new_num_total_bin += cur_num_bin;
+              offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
+              lower_bound.push_back(num_total_bin - cur_num_bin);
+              upper_bound.push_back(num_total_bin);
 
-            share_state->hist_move_src.push_back(
-                (new_num_total_bin - cur_num_bin) * 2);
-            share_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
-                                                 2);
-            share_state->hist_move_size.push_back(cur_num_bin * 2);
-            delta.push_back(num_total_bin - new_num_total_bin);
+              hist_move_src->push_back(
+                  (new_num_total_bin - cur_num_bin) * 2);
+              hist_move_dest->push_back((num_total_bin - cur_num_bin) *
+                                                  2);
+              hist_move_size->push_back(cur_num_bin * 2);
+              delta.push_back(num_total_bin - new_num_total_bin);
+            }
           }
         }
-      } else if (!share_state->is_colwise) {
+      } else if (!sparse_only) {
         bool is_group_used = false;
         for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
           if (is_feature_used[f_start + j]) {
@@ -1288,11 +1297,11 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
           lower_bound.push_back(num_total_bin - cur_num_bin);
           upper_bound.push_back(num_total_bin);
 
-          share_state->hist_move_src.push_back(
+          hist_move_src->push_back(
               (new_num_total_bin - cur_num_bin) * 2);
-          share_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
-                                               2);
-          share_state->hist_move_size.push_back(cur_num_bin * 2);
+          hist_move_dest->push_back((num_total_bin - cur_num_bin) *
+                                              2);
+          hist_move_size->push_back(cur_num_bin * 2);
           delta.push_back(num_total_bin - new_num_total_bin);
         }
       }
@@ -1300,26 +1309,83 @@ void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
     // avoid out of range
     lower_bound.push_back(num_total_bin);
     upper_bound.push_back(num_total_bin);
-    data_size_t num_data =
-        share_state->is_use_subrow ? share_state->bagging_indices_cnt : num_data_;
-    if (share_state->multi_val_bin_subset == nullptr) {
-      share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
+    data_size_t num_data = *is_use_subrow ? bagging_indices_cnt : num_data_;
+    if (multi_val_bin_subset.get() == nullptr) {
+      multi_val_bin_subset.reset(multi_val_bin->CreateLike(
           num_data, new_num_total_bin, num_used, sum_used_dense_ratio, offsets));
     } else {
-      share_state->multi_val_bin_subset->ReSize(num_data, new_num_total_bin,
-                                               num_used, sum_used_dense_ratio, offsets);
+      multi_val_bin_subset->ReSize(num_data, new_num_total_bin,
+                                              num_used, sum_used_dense_ratio, offsets);
     }
-    if (share_state->is_use_subrow) {
-      share_state->multi_val_bin_subset->CopySubrowAndSubcol(
-          multi_val_bin, share_state->bagging_use_indices,
-          share_state->bagging_indices_cnt, used_feature_index, lower_bound,
+    if (*is_use_subrow) {
+      multi_val_bin_subset->CopySubrowAndSubcol(
+          multi_val_bin.get(), bagging_use_indices,
+          bagging_indices_cnt, used_feature_index, lower_bound,
           upper_bound, delta);
       // may need to recopy subset
-      share_state->is_subrow_copied = false;
+      *is_subrow_copied = false;
     } else {
-      share_state->multi_val_bin_subset->CopySubcol(
-          multi_val_bin, used_feature_index, lower_bound, upper_bound, delta);
+      multi_val_bin_subset->CopySubcol(
+          multi_val_bin.get(), used_feature_index, lower_bound, upper_bound, delta);
     }
+  }
+}
+
+void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
+                        TrainingShareStates* share_state) const {
+  Common::FunctionTimer fun_time("Dataset::InitTrain", global_timer);
+  share_state->is_use_subcol = false;
+  share_state->is_use_subcol_sparse = false;
+  if (share_state->multi_val_bin == nullptr) {
+    return;
+  }
+  if (share_state->is_colwise) {
+    CopyMultiValBinSubset(share_state->multi_val_bin,
+      share_state->multi_val_bin_subset,
+      &share_state->is_use_subcol,
+      &share_state->is_use_subrow,
+      &share_state->is_subrow_copied,
+      &share_state->hist_move_src,
+      &share_state->hist_move_dest,
+      &share_state->hist_move_size,
+      true, false, is_feature_used,
+      share_state->bagging_use_indices,
+      share_state->bagging_indices_cnt);
+  } else if (!share_state->is_two_rowwise) {
+    CopyMultiValBinSubset(share_state->multi_val_bin,
+      share_state->multi_val_bin_subset,
+      &share_state->is_use_subcol,
+      &share_state->is_use_subrow,
+      &share_state->is_subrow_copied,
+      &share_state->hist_move_src,
+      &share_state->hist_move_dest,
+      &share_state->hist_move_size,
+      false, false, is_feature_used,
+      share_state->bagging_use_indices,
+      share_state->bagging_indices_cnt);
+  } else {
+    CopyMultiValBinSubset(share_state->multi_val_bin,
+      share_state->multi_val_bin_subset,
+      &share_state->is_use_subcol,
+      &share_state->is_use_subrow,
+      &share_state->is_subrow_copied,
+      &share_state->hist_move_src,
+      &share_state->hist_move_dest,
+      &share_state->hist_move_size,
+      false, true, is_feature_used,
+      share_state->bagging_use_indices,
+      share_state->bagging_indices_cnt);
+    CopyMultiValBinSubset(share_state->multi_val_bin_sparse,
+      share_state->multi_val_bin_sparse_subset,
+      &share_state->is_use_subcol_sparse,
+      &share_state->is_use_subrow,
+      &share_state->is_subrow_copied,
+      &share_state->hist_move_src_sparse,
+      &share_state->hist_move_dest_sparse,
+      &share_state->hist_move_size_sparse,
+      true, false, is_feature_used,
+      share_state->bagging_use_indices,
+      share_state->bagging_indices_cnt);
   }
   share_state->InitTrain();
 }
