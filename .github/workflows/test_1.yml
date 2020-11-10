@@ -1,14 +1,13 @@
 name: Test 1
 
 on:
-  pull_request_review_comment:
-    types: [created]
+  repository_dispatch:
+    types: [test-1-command]
 
 jobs:
   test:
     name: Test 1
     runs-on: ubuntu-latest
-    if: github.event.comment.body == '/gha run' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
     timeout-minutes: 60
     strategy:
       fail-fast: true
@@ -18,17 +17,18 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
-      - name: Send status
+          ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
+      - name: Send init status
         if: ${{ always() }}
         env:
           SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
-        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.pull_request.head.sha }}"
+        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.client_payload.pull_request.head.sha }}"
       - name: Test
         run: |
             sleep 30s
             exit -1
-      - name: Send status
+      - name: Send final status
         if: ${{ always() }}
         env:
           SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
-        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.pull_request.head.sha }}"
+        run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.client_payload.pull_request.head.sha }}"

@@ -1,0 +1,32 @@
+name: Triggering comments
+
+on:
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  triggering-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger tests 1
+      if: github.event.comment.body == '/gha run 1' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
+      uses: peter-evans/slash-command-dispatch@v2
+      with:
+        token: ${{ secrets.WORKFLOW }}
+        reaction-token: ${{ github.token }}
+        permission: write
+        issue-type: pull-request
+        allow-edits: false
+        event-type-suffix: "-command"
+        commands: test-1
+    - name: Trigger tests 2
+      if: github.event.comment.body == '/gha run 2' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
+      uses: peter-evans/slash-command-dispatch@v2
+      with:
+        token: ${{ secrets.WORKFLOW }}
+        reaction-token: ${{ github.token }}
+        permission: write
+        issue-type: pull-request
+        allow-edits: false
+        event-type-suffix: "-command"
+        commands: test-2

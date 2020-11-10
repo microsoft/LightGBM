@@ -37,7 +37,5 @@ jobs:
             for i in "${workflows[@]}"; do
                 id="${i%;*}"
                 name="${i#*;}"
-                status=success
-                python "$GITHUB_WORKSPACE/.ci/get_workflow_status.py" "$id" || status=error
-                $GITHUB_WORKSPACE/.ci/set_commit_status.sh "$name" "$status" "${{ github.event.pull_request.head.sha }}"
+                python "$GITHUB_WORKSPACE/.ci/get_workflow_status.py" "$id" || exit -1
             done
