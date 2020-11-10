@@ -394,14 +394,17 @@ class Dataset {
 
   void CopySubrow(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
-  MultiValBin* GetMultiBinFromSparseFeatures() const;
+  MultiValBin* GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets) const;
 
-  MultiValBin* GetMultiBinFromAllFeatures() const;
+  MultiValBin* GetMultiBinFromDenseFeatures(const std::vector<uint32_t>& offsets) const;
+
+  MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const;
 
   TrainingShareStates* GetShareStates(
       score_t* gradients, score_t* hessians,
       const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-      bool force_colwise, bool force_rowwise, bool single_precision_hist_buffer) const;
+      bool force_colwise, bool force_rowwise, bool force_two_rowwise,
+      bool single_precision_hist_buffer) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 

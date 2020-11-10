@@ -18,12 +18,14 @@ namespace LightGBM {
 
 class Dataset;
 class DatasetLoader;
+class TrainingShareStates;
 /*! \brief Using to store data and providing some operations on one feature
  * group*/
 class FeatureGroup {
  public:
   friend Dataset;
   friend DatasetLoader;
+  friend TrainingShareStates;
   /*!
   * \brief Constructor
   * \param num_feature number of features of this group

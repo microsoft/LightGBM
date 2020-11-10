@@ -40,6 +40,8 @@ typedef double score_t;
 typedef float score_t;
 #endif
 
+typedef int32_t int_grad_t;
+
 /*! \brief Type of metadata, include weight and label */
 #ifdef LABEL_T_USE_DOUBLE
 typedef double label_t;

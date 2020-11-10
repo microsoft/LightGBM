@@ -61,8 +61,10 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   ordered_hessians_.resize(num_data_);
 
   GetShareStates(train_data_, is_constant_hessian, true);
-  first_feature_hist_offset_ = histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_colwise, 
-  !share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse(),
+  first_feature_hist_offset_ = histogram_pool_.DynamicChangeSize(train_data_,
+  share_state_->num_hist_total_bin(),
+  share_state_->is_colwise, !share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse(),
+  share_state_->feature_hist_offsets(),
   config_, max_cache_size, config_->num_leaves);
   Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
@@ -78,14 +80,14 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
     share_state_.reset(dataset->GetShareStates(
         ordered_gradients_.data(), ordered_hessians_.data(),
         col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-        config_->force_col_wise, config_->force_row_wise, config_->single_precision_hist_buffer));
+        config_->force_col_wise, config_->force_row_wise, config_->force_two_row_wise, config_->single_precision_hist_buffer));
   } else {
     CHECK_NOTNULL(share_state_);
     // cannot change is_hist_col_wise during training
     share_state_.reset(dataset->GetShareStates(
         ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
         is_constant_hessian, share_state_->is_colwise,
-        !share_state_->is_colwise, config_->single_precision_hist_buffer));
+        !share_state_->is_colwise, config_->force_two_row_wise, config_->single_precision_hist_buffer));
   }
   CHECK_NOTNULL(share_state_);
 }
@@ -133,8 +135,10 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     // at least need 2 leaves
     max_cache_size = std::max(2, max_cache_size);
     max_cache_size = std::min(max_cache_size, config_->num_leaves);
-    first_feature_hist_offset_ = histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_colwise,
-    !share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse(),
+    first_feature_hist_offset_ = histogram_pool_.DynamicChangeSize(train_data_,
+    share_state_->num_hist_total_bin(),
+    share_state_->is_colwise, !share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse(),
+    share_state_->feature_hist_offsets(),
     config_, max_cache_size, config_->num_leaves);
 
     // push split information for all leaves
@@ -356,7 +360,6 @@ void SerialTreeLearner::ConstructHistograms(
       smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(), share_state_.get(),
       ptr_smaller_leaf_hist_data);
-
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
     hist_t* ptr_larger_leaf_hist_data =
@@ -387,7 +390,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   }
   OMP_INIT_EX();
 // find splits
-#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
+//#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) {

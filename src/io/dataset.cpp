@@ -476,7 +476,7 @@ void PushDataToMultiValBin(
   }
 }
 
-MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
+MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromSparseFeatures",
                                  global_timer);
   int multi_group_id = -1;
@@ -492,9 +492,14 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   if (multi_group_id < 0) {
     return nullptr;
   }
-  const auto& offsets = feature_groups_[multi_group_id]->bin_offsets_;
+  const auto& local_offsets = feature_groups_[multi_group_id]->bin_offsets_;
   const int num_feature = feature_groups_[multi_group_id]->num_feature_;
   int num_threads = OMP_NUM_THREADS();
+
+  CHECK(local_offsets.size() == offsets.size());
+  for (size_t i = 0; i < local_offsets.size(); ++i) {
+    CHECK(local_offsets[i] == offsets[i]);
+  }
 
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
@@ -521,7 +526,60 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   return ret.release();
 }
 
-MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
+MultiValBin* Dataset::GetMultiBinFromDenseFeatures(const std::vector<uint32_t>& offsets) const {
+  Common::FunctionTimer fun_time("Dataset::GetMultiBinFromDenseFeatures",
+                                 global_timer);
+  int num_threads = OMP_NUM_THREADS();
+  double sum_dense_ratio = 0.0f;
+
+  std::unique_ptr<MultiValBin> ret;
+  std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
+  std::vector<uint32_t> most_freq_bins;
+  std::vector<uint32_t> local_offsets;
+  int ncol = 0;
+  for (int gid = 0; gid < num_groups_; ++gid) {
+    if (feature_groups_[gid]->is_multi_val_) {
+      continue;
+    }
+    ncol += 1;
+    for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
+      const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
+      sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
+    }
+  }
+  sum_dense_ratio /= ncol;
+  const int offset = (1.0f - sum_dense_ratio) >=
+    MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
+  int num_total_bin = offset;
+  local_offsets.push_back(num_total_bin);
+  for (int gid = 0; gid < num_groups_; ++gid) {
+    if (!feature_groups_[gid]->is_multi_val_) {
+      most_freq_bins.push_back(0);
+      num_total_bin += feature_groups_[gid]->bin_offsets_.back() - offset;
+      for (int tid = 0; tid < num_threads; ++tid) {
+        iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
+      }
+      local_offsets.push_back(num_total_bin);
+    }
+  }
+  Log::Warning("local_offsets.size() = %d, offsets.size() = %d, num_groups_ = %d",
+    local_offsets.size(), offsets.size(), num_groups_);
+  CHECK(local_offsets.size() == offsets.size());
+  for (size_t i = 0; i < local_offsets.size(); ++i) {
+    CHECK(local_offsets[i] == offsets[i]);
+  }
+  CHECK(static_cast<int>(most_freq_bins.size()) == ncol);
+  Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",
+             1.0 - sum_dense_ratio);
+  ret.reset(MultiValBin::CreateMultiValBin(
+      num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()),
+      1.0 - sum_dense_ratio, offsets));
+  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
+  ret->FinishLoad();
+  return ret.release();
+}
+
+MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromAllFeatures",
                                  global_timer);
   int num_threads = OMP_NUM_THREADS();
@@ -530,7 +588,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   std::unique_ptr<MultiValBin> ret;
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
-  std::vector<uint32_t> offsets;
+  std::vector<uint32_t> local_offsets;
   int ncol = 0;
   for (int gid = 0; gid < num_groups_; ++gid) {
     if (feature_groups_[gid]->is_multi_val_) {
@@ -547,7 +605,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   const int offset = (1.0f - sum_dense_ratio) >=
     MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
   int num_total_bin = offset;
-  offsets.push_back(num_total_bin);
+  local_offsets.push_back(num_total_bin);
   for (int gid = 0; gid < num_groups_; ++gid) {
     if (feature_groups_[gid]->is_multi_val_) {
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
@@ -557,7 +615,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
         if (most_freq_bins.back() == 0) {
           num_total_bin -= offset;
         }
-        offsets.push_back(num_total_bin);
+        local_offsets.push_back(num_total_bin);
 #pragma omp parallel for schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
@@ -570,8 +628,12 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
       for (int tid = 0; tid < num_threads; ++tid) {
         iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
       }
-      offsets.push_back(num_total_bin);
+      local_offsets.push_back(num_total_bin);
     }
+  }
+  CHECK(local_offsets.size() == offsets.size());
+  for (size_t i = 0; i < local_offsets.size(); ++i) {
+    CHECK(local_offsets[i] == offsets[i]);
   }
   CHECK(static_cast<int>(most_freq_bins.size()) == ncol);
   Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",
@@ -587,7 +649,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
 TrainingShareStates* Dataset::GetShareStates(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-    bool force_colwise, bool force_rowwise,
+    bool force_colwise, bool force_rowwise, bool force_two_rowwise,
     bool single_precision_hist_buffer) const {
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
                                   global_timer);
@@ -606,14 +668,52 @@ TrainingShareStates* Dataset::GetShareStates(
   if (force_colwise) {
     TrainingShareStates* share_state =
       TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer);
-    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(), num_data_);
+    std::vector<uint32_t> offsets1, offsets2;
+    share_state->CalcBinOffsets(
+      feature_groups_, &offsets1, &offsets2, true, false, false
+    );
+    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets1), num_data_);
     share_state->is_colwise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else if (force_rowwise) {
+    double sum_dense_ratio = 0.0f;
+    int ncol = 0;
+    for (int gid = 0; gid < num_groups_; ++gid) {
+      if (feature_groups_[gid]->is_multi_val_) {
+        ncol += feature_groups_[gid]->num_feature_;
+      } else {
+        ncol += 1;
+      }
+      for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
+        const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
+        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
+      }
+    }
+    sum_dense_ratio /= ncol;
+    const bool is_sparse_row_wise = (1.0f - sum_dense_ratio) >=
+      MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
     TrainingShareStates* share_state =
       TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer);
-    share_state->SetMultiValBin(GetMultiBinFromAllFeatures(), num_data_);
+    std::vector<uint32_t> offsets1, offsets2;
+    share_state->CalcBinOffsets(
+      feature_groups_, &offsets1, &offsets2, false, false, is_sparse_row_wise
+    );
+    share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets1), num_data_);
+    share_state->is_colwise = false;
+    share_state->is_constant_hessian = is_constant_hessian;
+    return share_state;
+  } else if (force_two_rowwise) {
+    TrainingShareStates* share_state =
+      TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer);
+    std::vector<uint32_t> offsets1, offsets2;
+    share_state->CalcBinOffsets(
+      feature_groups_, &offsets1, &offsets2, false, true, false
+    );
+    MultiValBin* dense_multi_val_bin = GetMultiBinFromDenseFeatures(offsets2);
+    MultiValBin* sparse_multi_val_bin = GetMultiBinFromSparseFeatures(offsets1);
+    share_state->SetMultiValBin(dense_multi_val_bin, num_data_);
+    share_state->SetSparseMultiValBin(sparse_multi_val_bin, num_data_);
     share_state->is_colwise = false;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
@@ -622,17 +722,41 @@ TrainingShareStates* Dataset::GetShareStates(
     std::unique_ptr<MultiValBin> all_bin;
     std::unique_ptr<TrainingShareStates> colwise_state;
     std::unique_ptr<TrainingShareStates> rowwise_state;
+    std::unique_ptr<TrainingShareStates> two_rowwise_state;
     colwise_state.reset(TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer));
     rowwise_state.reset(TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer));
+    two_rowwise_state.reset(TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer));
 
     std::chrono::duration<double, std::milli> col_wise_init_time,
-        row_wise_init_time;
+        row_wise_init_time, two_row_wise_init_time;
     auto start_time = std::chrono::steady_clock::now();
-    colwise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(), num_data_);
+    std::vector<uint32_t> col_wise_offsets1, col_wise_offsets2;
+    colwise_state->CalcBinOffsets(feature_groups_, &col_wise_offsets1, &col_wise_offsets2,
+      true, false, false);
+    colwise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(col_wise_offsets1), num_data_);
     col_wise_init_time = std::chrono::steady_clock::now() - start_time;
 
+    double sum_dense_ratio = 0.0f;
+    int ncol = 0;
+    for (int gid = 0; gid < num_groups_; ++gid) {
+      if (feature_groups_[gid]->is_multi_val_) {
+        ncol += feature_groups_[gid]->num_feature_;
+      } else {
+        ncol += 1;
+      }
+      for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
+        const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
+        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
+      }
+    }
+    sum_dense_ratio /= ncol;
+    const bool is_sparse_row_wise = (1.0f - sum_dense_ratio) >=
+      MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
     start_time = std::chrono::steady_clock::now();
-    rowwise_state->SetMultiValBin(GetMultiBinFromAllFeatures(), num_data_);
+    std::vector<uint32_t> row_wise_offsets1, row_wise_offsets2;
+    rowwise_state->CalcBinOffsets(feature_groups_, &row_wise_offsets1, &row_wise_offsets2,
+      false, false, is_sparse_row_wise);
+    rowwise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets1), num_data_);
     std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
         hist_data(NumTotalBin() * 2);
 
@@ -1209,19 +1333,8 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
                                           hist_t* hist_data) const {
   Common::FunctionTimer fun_time("Dataset::ConstructHistogramsMultiVal",
                                  global_timer);
-  global_timer.Start("Dataset::sparse_bin_histogram");
-  if (!share_state->ConstructHistograms<USE_INDICES, ORDERED>(
-      data_indices, num_data, gradients, hessians, hist_data)) {
-    return;
-  }
-  global_timer.Stop("Dataset::sparse_bin_histogram");
-
-  global_timer.Start("Dataset::sparse_bin_histogram_merge");
-  share_state->HistMerge();
-  global_timer.Stop("Dataset::sparse_bin_histogram_merge");
-  global_timer.Start("Dataset::sparse_bin_histogram_move");
-  share_state->HistMove();
-  global_timer.Stop("Dataset::sparse_bin_histogram_move");
+  share_state->ConstructHistograms<USE_INDICES, ORDERED>(
+      data_indices, num_data, gradients, hessians, hist_data);
 }
 
 template <bool USE_INDICES, bool USE_HESSIAN>

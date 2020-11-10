@@ -67,7 +67,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
   larger_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
-  std::vector<int> offsets;
+  std::vector<uint32_t> offsets;
   int num_total_bin = HistogramPool::GetNumTotalHistogramBins(
       train_data, this->share_state_->is_colwise, !this->share_state_->is_colwise && !this->share_state_->multi_val_bin->IsSparse(),
       &offsets);

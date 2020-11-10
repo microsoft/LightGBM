@@ -1174,7 +1174,7 @@ class HistogramPool {
   }
 
   static int GetNumTotalHistogramBins(const Dataset* train_data,
-    bool is_hist_colwise, bool is_dense_rowwise, std::vector<int>* offsets) {
+    bool is_hist_colwise, bool is_dense_rowwise, std::vector<uint32_t>* offsets) {
     const int offset = is_dense_rowwise || is_hist_colwise ? 0 : 1;
     int num_total_bin = offset;
     offsets->clear();
@@ -1205,7 +1205,9 @@ class HistogramPool {
         }
       } else {
         if (is_hist_colwise || is_dense_rowwise) {
+          Log::Warning("num_total_bin = %d", num_total_bin);
           num_total_bin += train_data->SubFeatureBinOffset(i);
+          Log::Warning("num_total_bin = %d", num_total_bin);
         }
         offsets->push_back(num_total_bin);
         const BinMapper* bin_mapper = train_data->FeatureBinMapper(i);
@@ -1215,14 +1217,17 @@ class HistogramPool {
         }
       }
     }
+    offsets->push_back(num_total_bin);
     if (is_hist_colwise) {
       CHECK(num_total_bin == static_cast<int>(train_data->NumTotalBin()));
     }
     return num_total_bin;
   }
 
-  int DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise, bool is_dense_rowwise,
-                         const Config* config, int cache_size, int total_size) {
+  int DynamicChangeSize(const Dataset* train_data, int num_total_bin,
+                        const bool is_hist_colwise, const bool is_dense_rowwise,
+                        const std::vector<uint32_t>& offsets, const Config* config,
+                        int cache_size, int total_size) {
     if (feature_metas_.empty()) {
       SetFeatureInfo<true, true>(train_data, config, &feature_metas_);
       uint64_t bin_cnt_over_features = 0;
@@ -1239,9 +1244,14 @@ class HistogramPool {
       pool_.resize(cache_size);
       data_.resize(cache_size);
     }
-    std::vector<int> offsets;
-    int num_total_bin =
-        this->GetNumTotalHistogramBins(train_data, is_hist_colwise, is_dense_rowwise, &offsets);
+    /*std::vector<uint32_t> local_offsets;
+    int local_num_total_bin =
+        this->GetNumTotalHistogramBins(train_data, false, true, &local_offsets);
+    CHECK(local_num_total_bin == num_total_bin);
+    CHECK(local_offsets.size() == offsets.size());
+    for (size_t i = 0; i < offsets.size(); ++i) {
+      CHECK(offsets[i] == local_offsets[i]);
+    }*/
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int i = old_cache_size; i < cache_size; ++i) {
@@ -1254,6 +1264,7 @@ class HistogramPool {
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    CHECK(offsets[0] == 1);
     return offsets[0];
   }
 

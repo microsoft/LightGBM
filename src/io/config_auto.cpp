@@ -186,6 +186,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "deterministic",
   "force_col_wise",
   "force_row_wise",
+  "force_two_row_wise",
   "single_precision_hist_buffer",
   "histogram_pool_size",
   "max_depth",
@@ -328,6 +329,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "force_col_wise", &force_col_wise);
 
   GetBool(params, "force_row_wise", &force_row_wise);
+
+  GetBool(params, "force_two_row_wise", &force_two_row_wise);
 
   GetBool(params, "single_precision_hist_buffer", &single_precision_hist_buffer);
 
@@ -634,6 +637,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[deterministic: " << deterministic << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
   str_buf << "[force_row_wise: " << force_row_wise << "]\n";
+  str_buf << "[force_two_row_wise: " << force_two_row_wise << "]\n";
   str_buf << "[single_precision_hist_buffer: " << single_precision_hist_buffer << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
   str_buf << "[max_depth: " << max_depth << "]\n";
