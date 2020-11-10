@@ -144,9 +144,9 @@ It is **strongly not recommended** to use this version of LightGBM!
 Install from `conda-forge <https://anaconda.org/conda-forge/lightgbm>`_ Using ``conda-forge``
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-You may need to install python via `anaconda/miniconda <https://docs.conda.io/en/latest/miniconda.html`_ first.
+You may need to install python via `anaconda/miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ first.
 
-::
+.. code:: sh
 
     conda install -c conda-forge lightgbm
     
