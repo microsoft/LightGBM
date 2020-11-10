@@ -35,7 +35,6 @@ For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
 
-
 Build from Sources
 ******************
 
@@ -141,6 +140,17 @@ Build 32-bit Version with 32-bit Python
 By default, installation in environment with 32-bit Python is prohibited. However, you can remove this prohibition on your own risk by passing ``bit32`` option.
 
 It is **strongly not recommended** to use this version of LightGBM!
+
+Install from `conda-forge <https://anaconda.org/conda-forge/lightgbm>`_ Using ``conda-forge``
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+You may need to install python via `anaconda/miniconda <https://docs.conda.io/en/latest/miniconda.html`_ first.
+
+::
+
+    conda install -c conda-forge lightgbm
+    
+**Note**: The `lightgbm conda-forge package <https://github.com/conda-forge/lightgbm-feedstock>`_.  is not maintained by LightGBM maintainers.
 
 Install from GitHub
 '''''''''''''''''''
