@@ -14,21 +14,7 @@ This document gives a basic walkthrough of LightGBM Python-package.
 Install
 -------
 
-You can install LightGBM via pip
-
-::
-
-    pip install lightgbm
-    
-or conda-forge
-
-::
-
-    conda install -c conda-forge lightgbm
-    
-**Note**: The `lightgbm-feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_.  is not maintained by LightGBM maintainers.
-
-Refer to `Python-package`_ folder for the detailed installation guide.
+Refer to `Python-package`_ folder for the installation guide.
 
 To verify your installation, try to ``import lightgbm`` in Python:
 
