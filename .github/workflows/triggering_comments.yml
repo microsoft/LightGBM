@@ -18,7 +18,7 @@ jobs:
         issue-type: pull-request
         allow-edits: false
         event-type-suffix: "-command"
-        commands: gha-run-1
+        commands: test-1
     - name: Trigger tests 2
       if: github.event.comment.body == '/gha run 2' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
       uses: peter-evans/slash-command-dispatch@v2
@@ -29,4 +29,4 @@ jobs:
         issue-type: pull-request
         allow-edits: false
         event-type-suffix: "-command"
-        commands: gha-run-2
+        commands: test-2
