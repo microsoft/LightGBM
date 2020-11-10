@@ -23,22 +23,6 @@ jobs:
         env:
           SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
         run: $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.pull_request.head.sha }}"
-#      - name: Rerun main workflow
-        # Unfortunately, GitHub doesn't allow to rerun successful workflows via REST API:
-        # https://stackoverflow.com/a/56684569
-        # git tag tmp-rerun && git push --tags && git tag -d tmp-rerun && git push origin :tmp-rerun
-#        run: |
-#            git config --global user.name "GitHub Actions Bot"
-#            git config --global user.email "bot@noreply.github.com"
-#            git commit --allow-empty -m "trigger GitHub actions"
-#            git push
-#      - name: Rerun main workflow
-#        uses: peter-evans/repository-dispatch@v1
-#        with:
-#          token: ${{ secrets.WORKFLOW }}
-#          repository: ${{ github.repository }}
-#          event-type: manual-trigger
-#          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
       - name: Test
         run: |
             sleep 30s

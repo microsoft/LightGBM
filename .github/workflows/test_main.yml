@@ -4,16 +4,6 @@ on:
   pull_request:
     branches:
       - master
-#  push:
-#    branches:
-#      - master
-#  workflow_run:
-#    workflows: ["Test 1"]
-#    types:
-#      - requested
-#  repository_dispatch:
-#    types:
-#      - manual-trigger
 
 jobs:
   test:

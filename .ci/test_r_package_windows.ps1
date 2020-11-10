@@ -70,13 +70,12 @@ tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
 if ($env:R_BUILD_TYPE -eq "cmake") {
+  $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
   if ($env:TOOLCHAIN -eq "MINGW") {
     Write-Output "Telling R to use MinGW"
-    $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
     ((Get-Content -Path $install_libs -Raw) -Replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
   } elseif ($env:TOOLCHAIN -eq "MSYS") {
     Write-Output "Telling R to use MSYS"
-    $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
     ((Get-Content -Path $install_libs -Raw) -Replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
   } elseif ($env:TOOLCHAIN -eq "MSVC") {
     # no customization for MSVC
