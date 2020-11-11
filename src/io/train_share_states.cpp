@@ -9,7 +9,7 @@
 namespace LightGBM {
 
 MultiValBinWrapper::MultiValBinWrapper(MultiValBin* bin, data_size_t num_data,
-  const std::vector<int>& feature_groups_contained): 
+  const std::vector<int>& feature_groups_contained):
     feature_groups_contained_(feature_groups_contained) {
   num_threads_ = OMP_NUM_THREADS();
   max_block_size_ = num_data;
@@ -81,7 +81,7 @@ void MultiValBinWrapper::HistMerge(std::vector<hist_t,
   }
 }
 
-void MultiValBinWrapper::ResizeHistBuf(std::vector<hist_t, 
+void MultiValBinWrapper::ResizeHistBuf(std::vector<hist_t,
   Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf,
   MultiValBin* sub_multi_val_bin,
   hist_t* origin_hist_data) {
@@ -414,7 +414,7 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
       }
       feature_offset += feature_group->num_feature_;
     }
-    CHECK(multi_val_group_id >= 0);
+    CHECK_GE(multi_val_group_id, 0);
     CHECK(is_sparse_multi_val);
 
     double sum_dense_ratio = 0.0f;
@@ -519,8 +519,7 @@ void TrainingShareStates::SetMultiValBin(MultiValBin* bin, data_size_t num_data,
     }
   }
   multi_val_bin_wappers_.emplace_back(new MultiValBinWrapper(
-    bin, num_data, feature_groups_contained
-  ));
+    bin, num_data, feature_groups_contained));
   hist_data_offsets_.push_back(static_cast<size_t>(hist_start_pos));
 }
 

@@ -18,7 +18,7 @@ namespace LightGBM {
 template <typename VAL_T>
 class MultiValDenseBin : public MultiValBin {
  public:
-  explicit MultiValDenseBin(data_size_t num_data, int num_bin, int num_feature, 
+  explicit MultiValDenseBin(data_size_t num_data, int num_bin, int num_feature,
     const std::vector<uint32_t>& offsets)
     : num_data_(num_data), num_bin_(num_bin), num_feature_(num_feature),
       offsets_(offsets) {
@@ -60,7 +60,7 @@ class MultiValDenseBin : public MultiValBin {
     data_size_t i = start;
     hist_t* grad = out;
     hist_t* hess = out + 1;
-    
+
     if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
       const data_size_t pf_end = end - pf_offset;

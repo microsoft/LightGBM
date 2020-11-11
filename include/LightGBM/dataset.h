@@ -540,7 +540,7 @@ class Dataset {
   inline bool IsMultiGroup(int i) const {
     return feature_groups_[i]->is_multi_val_;
   }
-  
+
   inline size_t FeatureGroupSizesInByte(int group) const {
     return feature_groups_[group]->FeatureGroupSizesInByte();
   }

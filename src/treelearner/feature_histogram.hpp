@@ -1205,7 +1205,7 @@ class HistogramPool {
     }
     OMP_THROW_EX();
     if (offsets.size() > 0) {
-      CHECK(offsets[0] == 1);
+      CHECK_EQ(offsets[0], 1);
     }
   }
 

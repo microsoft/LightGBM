@@ -684,8 +684,7 @@ TrainingShareStates* Dataset::GetShareStates(
     share_state->CalcBinOffsets(
       feature_groups_, &offsets1, &offsets2,
       &hist_start_pos1, &hist_start_pos2,
-      true, false
-    );
+      true, false);
     share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets1),
       num_data_, feature_groups_, false, true, hist_start_pos1);
     share_state->is_colwise = true;
@@ -699,8 +698,7 @@ TrainingShareStates* Dataset::GetShareStates(
     share_state->CalcBinOffsets(
       feature_groups_, &offsets1, &offsets2,
       &hist_start_pos1, &hist_start_pos2,
-      false, false
-    );
+      false, false);
     share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets1), num_data_,
       feature_groups_, false, false, hist_start_pos1);
     share_state->is_colwise = false;
@@ -714,8 +712,7 @@ TrainingShareStates* Dataset::GetShareStates(
     share_state->CalcBinOffsets(
       feature_groups_, &offsets1, &offsets2,
       &hist_start_pos1, &hist_start_pos2,
-      false, true
-    );
+      false, true);
     MultiValBin* dense_multi_val_bin = GetMultiBinFromDenseFeatures(offsets2);
     MultiValBin* sparse_multi_val_bin = GetMultiBinFromSparseFeatures(offsets1);
     share_state->SetMultiValBin(dense_multi_val_bin, num_data_,

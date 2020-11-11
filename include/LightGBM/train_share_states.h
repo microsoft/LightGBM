@@ -5,17 +5,19 @@
 #ifndef LIGHTGBM_TRAIN_SHARE_STATES_H_
 #define LIGHTGBM_TRAIN_SHARE_STATES_H_
 
-#include <memory>
-#include <vector>
 #include <LightGBM/bin.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/threading.h>
 #include <LightGBM/feature_group.h>
 
+#include <memory>
+#include <vector>
+#include <algorithm>
+
 namespace LightGBM {
 
 class MultiValBinWrapper {
-public:
+ public:
   MultiValBinWrapper(MultiValBin* bin, data_size_t num_data,
     const std::vector<int>& feature_groups_contained);
 
@@ -62,11 +64,10 @@ public:
       for (int block_id = 0; block_id < n_data_block_; ++block_id) {
         OMP_LOOP_EX_BEGIN();
         data_size_t start = block_id * data_block_size_;
-        data_size_t end = std::min(start + data_block_size_, num_data);
+        data_size_t end = std::min<data_size_t>(start + data_block_size_, num_data);
         ConstructHistogramsForBlock<USE_INDICES, ORDERED>(
           cur_multi_val_bin, start, end, data_indices, gradients, hessians,
-          block_id, hist_buf
-        );
+          block_id, hist_buf);
         OMP_LOOP_EX_END();
       }
       OMP_THROW_EX();
@@ -124,7 +125,7 @@ public:
     is_subrow_copied_ = is_subrow_copied;
   }
 
-private:
+ private:
   bool is_use_subcol_ = false;
   bool is_use_subrow_ = false;
   bool is_subrow_copied_ = false;
@@ -196,8 +197,7 @@ struct TrainingShareStates {
     for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
       const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
       multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
-        data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[i] * 2
-      );
+        data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[i] * 2);
     }
   }
 
@@ -213,7 +213,7 @@ struct TrainingShareStates {
     }
   }
 
-private:
+ private:
   std::vector<uint32_t> feature_hist_offsets_;
   uint64_t num_hist_total_bin_ = 0;
   std::vector<size_t> hist_data_offsets_;
@@ -221,6 +221,6 @@ private:
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
 };
 
-} // namespace LightGBM
+}  // namespace LightGBM
 
 #endif   // LightGBM_TRAIN_SHARE_STATES_H_
