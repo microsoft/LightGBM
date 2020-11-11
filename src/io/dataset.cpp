@@ -649,8 +649,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
 TrainingShareStates* Dataset::GetShareStates(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-    bool force_colwise, bool force_rowwise, bool force_two_rowwise,
-    bool single_precision_hist_buffer) const {
+    bool force_colwise, bool force_rowwise, bool force_two_rowwise) const {
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
                                   global_timer);
   if ((force_colwise && force_rowwise) ||
@@ -675,15 +674,13 @@ TrainingShareStates* Dataset::GetShareStates(
     Log::Warning("No sparse feature group is found, so degenerate force_two_rowwise to force_rowwise");
   }
   if (num_groups_ <= 0) {
-    TrainingShareStates* share_state =
-      TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer);
+    TrainingShareStates* share_state = new TrainingShareStates();
     share_state->is_colwise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   }
   if (force_colwise) {
-    TrainingShareStates* share_state =
-      TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer);
+    TrainingShareStates* share_state = new TrainingShareStates();
     std::vector<uint32_t> offsets1, offsets2;
     uint32_t hist_start_pos1 = 0, hist_start_pos2 = 0;
     share_state->CalcBinOffsets(
@@ -698,8 +695,7 @@ TrainingShareStates* Dataset::GetShareStates(
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else if (force_rowwise) {
-    TrainingShareStates* share_state =
-      TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer);
+    TrainingShareStates* share_state = new TrainingShareStates();
     std::vector<uint32_t> offsets1, offsets2;
     uint32_t hist_start_pos1 = 0, hist_start_pos2 = 0;
     share_state->CalcBinOffsets(
@@ -714,8 +710,7 @@ TrainingShareStates* Dataset::GetShareStates(
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else if (force_two_rowwise) {
-    TrainingShareStates* share_state =
-      TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer);
+    TrainingShareStates* share_state = new TrainingShareStates();
     std::vector<uint32_t> offsets1, offsets2;
     uint32_t hist_start_pos1 = 0, hist_start_pos2 = 0;
     share_state->CalcBinOffsets(
@@ -739,9 +734,9 @@ TrainingShareStates* Dataset::GetShareStates(
     std::unique_ptr<TrainingShareStates> colwise_state;
     std::unique_ptr<TrainingShareStates> rowwise_state;
     std::unique_ptr<TrainingShareStates> two_rowwise_state;
-    colwise_state.reset(TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer));
-    rowwise_state.reset(TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer));
-    two_rowwise_state.reset(TrainingShareStates::CreateTrainingShareStates(single_precision_hist_buffer));
+    colwise_state.reset(new TrainingShareStates());
+    rowwise_state.reset(new TrainingShareStates());
+    two_rowwise_state.reset(new TrainingShareStates());
 
     std::chrono::duration<double, std::milli> col_wise_init_time,
         row_wise_init_time, two_row_wise_init_time;

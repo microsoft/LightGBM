@@ -684,7 +684,6 @@ namespace LightGBM {
         max_bin = feature_bin;
       }
     }
-    // should be < 256 and < 65536 instead of <=, since the bin value can be +1 later on
     if (max_bin <= 256) {
       return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature, offsets);
     } else if (max_bin <= 65536) {

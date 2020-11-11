@@ -54,12 +54,12 @@ class MultiValDenseBin : public MultiValBin {
     return false;
   }
 
-  template<bool USE_INDICES, bool USE_PREFETCH, bool ORDERED, typename HIST_BUF_T>
+  template<bool USE_INDICES, bool USE_PREFETCH, bool ORDERED>
   void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* gradients, const score_t* hessians, HIST_BUF_T* out) const {
+    const score_t* gradients, const score_t* hessians, hist_t* out) const {
     data_size_t i = start;
-    HIST_BUF_T* grad = out;
-    HIST_BUF_T* hess = out + 1;
+    hist_t* grad = out;
+    hist_t* hess = out + 1;
     
     if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
@@ -102,15 +102,15 @@ class MultiValDenseBin : public MultiValBin {
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
                           data_size_t end, const score_t* gradients,
-                          const score_t* hessians, float* out) const override {
-    ConstructHistogramInner<true, true, false, float>(data_indices, start, end,
+                          const score_t* hessians, hist_t* out) const override {
+    ConstructHistogramInner<true, true, false>(data_indices, start, end,
                                                gradients, hessians, out);
   }
 
   void ConstructHistogram(data_size_t start, data_size_t end,
                           const score_t* gradients, const score_t* hessians,
-                          float* out) const override {
-    ConstructHistogramInner<false, false, false, float>(
+                          hist_t* out) const override {
+    ConstructHistogramInner<false, false, false>(
         nullptr, start, end, gradients, hessians, out);
   }
 
@@ -118,31 +118,8 @@ class MultiValDenseBin : public MultiValBin {
                                  data_size_t start, data_size_t end,
                                  const score_t* gradients,
                                  const score_t* hessians,
-                                 float* out) const override {
-    ConstructHistogramInner<true, true, true, float>(data_indices, start, end,
-                                              gradients, hessians, out);
-  }
-
-  void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
-                          data_size_t end, const score_t* gradients,
-                          const score_t* hessians, double* out) const override {
-    ConstructHistogramInner<true, true, false, double>(data_indices, start, end,
-                                               gradients, hessians, out);
-  }
-
-  void ConstructHistogram(data_size_t start, data_size_t end,
-                          const score_t* gradients, const score_t* hessians,
-                          double* out) const override {
-    ConstructHistogramInner<false, false, false, double>(
-        nullptr, start, end, gradients, hessians, out);
-  }
-
-  void ConstructHistogramOrdered(const data_size_t* data_indices,
-                                 data_size_t start, data_size_t end,
-                                 const score_t* gradients,
-                                 const score_t* hessians,
-                                 double* out) const override {
-    ConstructHistogramInner<true, true, true, double>(data_indices, start, end,
+                                 hist_t* out) const override {
+    ConstructHistogramInner<true, true, true>(data_indices, start, end,
                                               gradients, hessians, out);
   }
 

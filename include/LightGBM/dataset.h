@@ -403,8 +403,7 @@ class Dataset {
   TrainingShareStates* GetShareStates(
       score_t* gradients, score_t* hessians,
       const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-      bool force_colwise, bool force_rowwise, bool force_two_rowwise,
-      bool single_precision_hist_buffer) const;
+      bool force_colwise, bool force_rowwise, bool force_two_rowwise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
@@ -541,10 +540,6 @@ class Dataset {
   inline bool IsMultiGroup(int i) const {
     return feature_groups_[i]->is_multi_val_;
   }
-
-  inline bool IsDenseMultiGroup(int i) const {
-    return feature_groups_[i]->is_dense_multi_val_;
-  }
   
   inline size_t FeatureGroupSizesInByte(int group) const {
     return feature_groups_[group]->FeatureGroupSizesInByte();
@@ -640,17 +635,6 @@ class Dataset {
   void AddFeaturesFrom(Dataset* other);
 
  private:
-  void CopyMultiValBinSubset(std::unique_ptr<MultiValBin>& multi_val_bin,
-    std::unique_ptr<MultiValBin>& multi_val_bin_subset, bool* is_use_subcol,
-    bool* is_use_subrow, bool* is_subrow_copied,
-    std::vector<uint32_t>* hist_move_src,
-    std::vector<uint32_t>* hist_move_dest,
-    std::vector<uint32_t>* hist_move_size,
-    bool sparse_only, bool dense_only,
-    const std::vector<int8_t>& is_feature_used,
-    const data_size_t* bagging_use_indices,
-    data_size_t bagging_indices_cnt) const;
-
   std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;

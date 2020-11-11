@@ -264,7 +264,7 @@ class FeatureGroup {
       uint32_t min_bin = 1;
       uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1 + addi;
       return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin,
-                                                        most_freq_bin);
+                                                       most_freq_bin);
     }
   }
 
