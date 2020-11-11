@@ -19,6 +19,7 @@ namespace LightGBM {
 class Dataset;
 class DatasetLoader;
 class TrainingShareStates;
+class MultiValBinWrapper;
 /*! \brief Using to store data and providing some operations on one feature
  * group*/
 class FeatureGroup {
@@ -26,6 +27,7 @@ class FeatureGroup {
   friend Dataset;
   friend DatasetLoader;
   friend TrainingShareStates;
+  friend MultiValBinWrapper;
   /*!
   * \brief Constructor
   * \param num_feature number of features of this group

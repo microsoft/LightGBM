@@ -61,9 +61,8 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   ordered_hessians_.resize(num_data_);
 
   GetShareStates(train_data_, is_constant_hessian, true);
-  first_feature_hist_offset_ = histogram_pool_.DynamicChangeSize(train_data_,
+  histogram_pool_.DynamicChangeSize(train_data_,
   share_state_->num_hist_total_bin(),
-  share_state_->is_colwise, !share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse(),
   share_state_->feature_hist_offsets(),
   config_, max_cache_size, config_->num_leaves);
   Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
@@ -135,9 +134,8 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     // at least need 2 leaves
     max_cache_size = std::max(2, max_cache_size);
     max_cache_size = std::min(max_cache_size, config_->num_leaves);
-    first_feature_hist_offset_ = histogram_pool_.DynamicChangeSize(train_data_,
+    histogram_pool_.DynamicChangeSize(train_data_,
     share_state_->num_hist_total_bin(),
-    share_state_->is_colwise, !share_state_->is_colwise && !share_state_->multi_val_bin->IsSparse(),
     share_state_->feature_hist_offsets(),
     config_, max_cache_size, config_->num_leaves);
 
@@ -354,7 +352,7 @@ void SerialTreeLearner::ConstructHistograms(
                                   global_timer);
   // construct smaller leaf
   hist_t* ptr_smaller_leaf_hist_data =
-      smaller_leaf_histogram_array_[0].RawData() - kHistOffset * first_feature_hist_offset_;
+      smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
   train_data_->ConstructHistograms(
       is_feature_used, smaller_leaf_splits_->data_indices(),
       smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
@@ -363,7 +361,7 @@ void SerialTreeLearner::ConstructHistograms(
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
     hist_t* ptr_larger_leaf_hist_data =
-        larger_leaf_histogram_array_[0].RawData() - kHistOffset * first_feature_hist_offset_;
+        larger_leaf_histogram_array_[0].RawData() - kHistOffset;
     train_data_->ConstructHistograms(
         is_feature_used, larger_leaf_splits_->data_indices(),
         larger_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,

@@ -14,82 +14,406 @@
 
 namespace LightGBM {
 
+class MultiValBinWrapper {
+    private:
+      bool is_use_subcol_ = false;
+      bool is_use_subrow_ = false;
+      bool is_subrow_copied_ = false;
+      std::unique_ptr<MultiValBin> multi_val_bin_;
+      std::unique_ptr<MultiValBin> multi_val_bin_subset_;
+      std::vector<uint32_t> hist_move_src_;
+      std::vector<uint32_t> hist_move_dest_;
+      std::vector<uint32_t> hist_move_size_;
+      const std::vector<int> feature_groups_contained_;
+
+      int num_threads_;
+      int max_block_size_;
+      int num_bin_;
+      int num_bin_aligned_;
+      int n_data_block_;
+      int data_block_size_;
+      int min_block_size_;
+      int num_data_;
+
+      hist_t* origin_hist_data_;
+
+      const size_t kHistBufferEntrySize = 2 * sizeof(hist_t);
+
+    public:
+      MultiValBinWrapper(MultiValBin* bin, data_size_t num_data,
+        const std::vector<int>& feature_groups_contained): 
+          feature_groups_contained_(feature_groups_contained) {
+        num_threads_ = OMP_NUM_THREADS();
+        max_block_size_ = num_data;
+        num_data_ = num_data;
+        if (bin == nullptr) {
+          return;
+        }
+        multi_val_bin_.reset(bin);
+        num_bin_ = bin->num_bin();
+        num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+      }
+
+      bool IsSparse() {
+        if (multi_val_bin_ != nullptr) {
+          return multi_val_bin_->IsSparse();
+        }
+        return false;
+      }
+
+      void InitTrain(const std::vector<int>& group_feature_start,
+        const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
+        const std::vector<int8_t>& is_feature_used,
+        const data_size_t* bagging_use_indices,
+        data_size_t bagging_indices_cnt) {
+        is_use_subcol_ = false;
+        if (multi_val_bin_ == nullptr) {
+          return;
+        }
+        CopyMultiValBinSubset(group_feature_start, feature_groups,
+          is_feature_used, bagging_use_indices, bagging_indices_cnt);
+        const auto cur_multi_val_bin = (is_use_subcol_ || is_use_subrow_)
+              ? multi_val_bin_subset_.get()
+              : multi_val_bin_.get();
+        if (cur_multi_val_bin != nullptr) {
+          num_bin_ = cur_multi_val_bin->num_bin();
+          num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+          min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
+            cur_multi_val_bin->num_element_per_row()) + 1, 1024);
+        }
+      }
+
+      void HistMove(const std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>& hist_buf) {
+        if (!is_use_subcol_) {
+          return;
+        }
+        const hist_t* src = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(num_bin_aligned_);
+        #pragma omp parallel for schedule(static)
+        for (int i = 0; i < static_cast<int>(hist_move_src_.size()); ++i) {
+          std::copy_n(src + hist_move_src_[i], hist_move_size_[i],
+                      origin_hist_data_ + hist_move_dest_[i]);
+        }
+      }
+
+      void HistMerge(std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf) {
+        int n_bin_block = 1;
+        int bin_block_size = num_bin_;
+        Threading::BlockInfo<data_size_t>(num_threads_, num_bin_, 512, &n_bin_block,
+                                        &bin_block_size);
+        hist_t* dst = origin_hist_data_;
+        if (is_use_subcol_) {
+          dst = hist_buf->data() + hist_buf->size() - 2 * static_cast<size_t>(num_bin_aligned_);
+        }
+        #pragma omp parallel for schedule(static, 1) num_threads(num_threads_)
+        for (int t = 0; t < n_bin_block; ++t) {
+          const int start = t * bin_block_size;
+          const int end = std::min(start + bin_block_size, num_bin_);
+          for (int tid = 1; tid < n_data_block_; ++tid) {
+            auto src_ptr = hist_buf->data() + static_cast<size_t>(num_bin_aligned_) * 2 * (tid - 1);
+            for (int i = start * 2; i < end * 2; ++i) {
+              dst[i] += src_ptr[i];
+            }
+          }
+        }
+      }
+
+      void ResizeHistBuf(std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf,
+        MultiValBin* sub_multi_val_bin,
+        hist_t* origin_hist_data) {
+        num_bin_ = sub_multi_val_bin->num_bin();
+        num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+        origin_hist_data_ = origin_hist_data;
+        size_t new_buf_size = static_cast<size_t>(n_data_block_) * static_cast<size_t>(num_bin_aligned_) * 2;
+        if (hist_buf->size() < new_buf_size) {
+          hist_buf->resize(new_buf_size);
+        }
+      }
+
+      template <bool USE_INDICES, bool ORDERED>
+      void ConstructHistograms(const data_size_t* data_indices,
+          data_size_t num_data,
+          const score_t* gradients,
+          const score_t* hessians,
+          std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf,
+          hist_t* origin_hist_data) {
+        global_timer.Start("Dataset::sparse_bin_histogram");
+        const auto cur_multi_val_bin = (is_use_subcol_ || is_use_subrow_)
+              ? multi_val_bin_subset_.get()
+              : multi_val_bin_.get();
+        if (cur_multi_val_bin != nullptr) {
+          n_data_block_ = 1;
+          data_block_size_ = num_data;
+          Threading::BlockInfo<data_size_t>(num_threads_, num_data, min_block_size_,
+                                            max_block_size_, &n_data_block_, &data_block_size_);
+          ResizeHistBuf(hist_buf, cur_multi_val_bin, origin_hist_data);
+          OMP_INIT_EX();
+          #pragma omp parallel for schedule(static) num_threads(num_threads_)
+          for (int block_id = 0; block_id < n_data_block_; ++block_id) {
+            OMP_LOOP_EX_BEGIN();
+            data_size_t start = block_id * data_block_size_;
+            data_size_t end = std::min(start + data_block_size_, num_data);
+            ConstructHistogramsForBlock<USE_INDICES, ORDERED>(
+              cur_multi_val_bin, start, end, data_indices, gradients, hessians,
+              block_id, hist_buf
+            );
+            OMP_LOOP_EX_END();
+          }
+          OMP_THROW_EX();
+          global_timer.Stop("Dataset::sparse_bin_histogram");
+
+          global_timer.Start("Dataset::sparse_bin_histogram_merge");
+          HistMerge(hist_buf);
+          global_timer.Stop("Dataset::sparse_bin_histogram_merge");
+          global_timer.Start("Dataset::sparse_bin_histogram_move");
+          HistMove(*hist_buf);
+          global_timer.Stop("Dataset::sparse_bin_histogram_move");
+        }
+      }
+
+      template <bool USE_INDICES, bool ORDERED>
+      void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
+        data_size_t start, data_size_t end, const data_size_t* data_indices,
+        const score_t* gradients, const score_t* hessians, int block_id,
+        std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf) {
+        hist_t* data_ptr = origin_hist_data_;
+        if (block_id == 0) {
+          if (is_use_subcol_) {
+            data_ptr = hist_buf->data() + hist_buf->size() - 2 * static_cast<size_t>(num_bin_aligned_);
+          }
+        } else {
+          data_ptr = hist_buf->data() +
+            static_cast<size_t>(num_bin_aligned_) * (block_id - 1) * 2;
+        }
+        std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin_ * kHistBufferEntrySize);
+        if (USE_INDICES) {
+          if (ORDERED) {
+            sub_multi_val_bin->ConstructHistogramOrdered(data_indices, start, end,
+                                                    gradients, hessians, data_ptr);
+          } else {
+            sub_multi_val_bin->ConstructHistogram(data_indices, start, end, gradients,
+                                              hessians, data_ptr);
+          }
+        } else {
+          sub_multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
+                                            data_ptr);
+        }
+      }
+
+      void CopyMultiValBinSubset(const std::vector<int>& group_feature_start,
+        const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
+        const std::vector<int8_t>& is_feature_used,
+        const data_size_t* bagging_use_indices,
+        data_size_t bagging_indices_cnt) {
+        double sum_used_dense_ratio = 0.0;
+        double sum_dense_ratio = 0.0;
+        int num_used = 0;
+        int total = 0;
+        std::vector<int> used_feature_index;
+        for (int i : feature_groups_contained_) {
+          int f_start = group_feature_start[i];
+          if (feature_groups[i]->is_multi_val_) {
+            for (int j = 0; j < feature_groups[i]->num_feature_; ++j) {
+              const auto dense_rate =
+                  1.0 - feature_groups[i]->bin_mappers_[j]->sparse_rate();
+              if (is_feature_used[f_start + j]) {
+                ++num_used;
+                used_feature_index.push_back(total);
+                sum_used_dense_ratio += dense_rate;
+              }
+              sum_dense_ratio += dense_rate;
+              ++total;
+            }
+          } else {
+            bool is_group_used = false;
+            double dense_rate = 0;
+            for (int j = 0; j < feature_groups[i]->num_feature_; ++j) {
+              if (is_feature_used[f_start + j]) {
+                is_group_used = true;
+              }
+              dense_rate += 1.0 - feature_groups[i]->bin_mappers_[j]->sparse_rate();
+            }
+            if (is_group_used) {
+              ++num_used;
+              used_feature_index.push_back(total);
+              sum_used_dense_ratio += dense_rate;
+            }
+            sum_dense_ratio += dense_rate;
+            ++total;
+          }
+        }
+        const double k_subfeature_threshold = 0.6;
+        if (sum_used_dense_ratio >= sum_dense_ratio * k_subfeature_threshold) {
+          // only need to copy subset
+          if (is_use_subrow_ && !is_subrow_copied_) {
+            if (multi_val_bin_subset_ == nullptr) {
+              multi_val_bin_subset_.reset(multi_val_bin_->CreateLike(
+                  bagging_indices_cnt, multi_val_bin_->num_bin(), total,
+                  multi_val_bin_->num_element_per_row(), multi_val_bin_->offsets()));
+            } else {
+              multi_val_bin_subset_->ReSize(
+                  bagging_indices_cnt, multi_val_bin_->num_bin(), total,
+                  multi_val_bin_->num_element_per_row(), multi_val_bin_->offsets());
+            }
+            multi_val_bin_subset_->CopySubrow(
+                multi_val_bin_.get(), bagging_use_indices,
+                bagging_indices_cnt);
+            // avoid to copy subset many times
+            is_subrow_copied_ = true;
+          }
+        } else {
+          is_use_subcol_ = true;
+          std::vector<uint32_t> upper_bound;
+          std::vector<uint32_t> lower_bound;
+          std::vector<uint32_t> delta;
+          std::vector<uint32_t> offsets;
+          hist_move_src_.clear();
+          hist_move_dest_.clear();
+          hist_move_size_.clear();
+
+          const int offset = multi_val_bin_->IsSparse() ? 1 : 0;
+          int num_total_bin = offset;
+          int new_num_total_bin = offset;
+          offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
+          for (int i : feature_groups_contained_) {
+            int f_start = group_feature_start[i];
+            if (feature_groups[i]->is_multi_val_) {
+              for (int j = 0; j < feature_groups[i]->num_feature_; ++j) {
+                const auto& bin_mapper = feature_groups[i]->bin_mappers_[j];
+                int cur_num_bin = bin_mapper->num_bin();
+                if (bin_mapper->GetMostFreqBin() == 0) {
+                  cur_num_bin -= offset;
+                }
+                num_total_bin += cur_num_bin;
+                if (is_feature_used[f_start + j]) {
+                  new_num_total_bin += cur_num_bin;
+                  offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
+                  lower_bound.push_back(num_total_bin - cur_num_bin);
+                  upper_bound.push_back(num_total_bin);
+
+                  hist_move_src_.push_back(
+                      (new_num_total_bin - cur_num_bin) * 2);
+                  hist_move_dest_.push_back((num_total_bin - cur_num_bin) *
+                                                      2);
+                  hist_move_size_.push_back(cur_num_bin * 2);
+                  delta.push_back(num_total_bin - new_num_total_bin);
+                }
+              }
+            } else {
+              bool is_group_used = false;
+              for (int j = 0; j < feature_groups[i]->num_feature_; ++j) {
+                if (is_feature_used[f_start + j]) {
+                  is_group_used = true;
+                  break;
+                }
+              }
+              int cur_num_bin = feature_groups[i]->bin_offsets_.back() - offset;
+              num_total_bin += cur_num_bin;
+              if (is_group_used) {
+                new_num_total_bin += cur_num_bin;
+                offsets.push_back(static_cast<uint32_t>(new_num_total_bin));
+                lower_bound.push_back(num_total_bin - cur_num_bin);
+                upper_bound.push_back(num_total_bin);
+
+                hist_move_src_.push_back(
+                    (new_num_total_bin - cur_num_bin) * 2);
+                hist_move_dest_.push_back((num_total_bin - cur_num_bin) *
+                                                    2);
+                hist_move_size_.push_back(cur_num_bin * 2);
+                delta.push_back(num_total_bin - new_num_total_bin);
+              }
+            }
+          }
+          // avoid out of range
+          lower_bound.push_back(num_total_bin);
+          upper_bound.push_back(num_total_bin);
+          data_size_t num_data = is_use_subrow_ ? bagging_indices_cnt : num_data_;
+          if (multi_val_bin_subset_ == nullptr) {
+            multi_val_bin_subset_.reset(multi_val_bin_->CreateLike(
+                num_data, new_num_total_bin, num_used, sum_used_dense_ratio, offsets));
+          } else {
+            multi_val_bin_subset_->ReSize(num_data, new_num_total_bin,
+                                                    num_used, sum_used_dense_ratio, offsets);
+          }
+          if (is_use_subrow_) {
+            multi_val_bin_subset_->CopySubrowAndSubcol(
+                multi_val_bin_.get(), bagging_use_indices,
+                bagging_indices_cnt, used_feature_index, lower_bound,
+                upper_bound, delta);
+            // may need to recopy subset
+            is_subrow_copied_ = false;
+          } else {
+            multi_val_bin_subset_->CopySubcol(
+                multi_val_bin_.get(), used_feature_index, lower_bound, upper_bound, delta);
+          }
+        }
+      }
+
+      void SetUseSubrow(bool is_use_subrow) {
+        is_use_subrow_ = is_use_subrow;
+      }
+
+      void SetSubrowCopied(bool is_subrow_copied) {
+        is_subrow_copied_ = is_subrow_copied;
+      }
+  };
+
 struct TrainingShareStates {
   int num_threads = 0;
   bool is_colwise = true;
   bool is_two_rowwise = false;
-  bool is_use_subcol = false;
-  bool is_use_subcol_sparse = false;
-  bool is_use_subrow = false;
-  bool is_subrow_copied = false;
   bool is_constant_hessian = true;
   const data_size_t* bagging_use_indices;
   data_size_t bagging_indices_cnt;
-  std::unique_ptr<MultiValBin> multi_val_bin;
-  std::unique_ptr<MultiValBin> multi_val_bin_subset;
-  std::unique_ptr<MultiValBin> multi_val_bin_sparse;
-  std::unique_ptr<MultiValBin> multi_val_bin_sparse_subset;
-  std::vector<uint32_t> hist_move_src;
-  std::vector<uint32_t> hist_move_dest;
-  std::vector<uint32_t> hist_move_size;
-  std::vector<uint32_t> hist_move_src_sparse;
-  std::vector<uint32_t> hist_move_dest_sparse;
-  std::vector<uint32_t> hist_move_size_sparse;
 
-  int num_hist_total_bin() { return num_hist_total_bin_; }
+  uint64_t num_hist_total_bin() { return num_hist_total_bin_; }
 
   const std::vector<uint32_t>& feature_hist_offsets() { return feature_hist_offsets_; }
 
-  virtual void SetMultiValBin(MultiValBin* bin, data_size_t num_data) = 0;
+  bool IsSparseRowwise() {
+    return (multi_val_bin_wappers_.size() == 1 &&
+      multi_val_bin_wappers_[0]->IsSparse());
+  }
 
-  virtual void SetSparseMultiValBin(MultiValBin* /*bin*/, data_size_t /*num_data*/) {}
-
-  virtual void HistMove() = 0;
-
-  virtual void SparseHistMove() {}
-
-  virtual void HistMerge() = 0;
-
-  virtual void SparseHistMerge() {}
-
-  virtual void ResizeHistBuf(hist_t* hist_data) = 0;
-
-  virtual void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
-    data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians, int block_id,
-    bool use_indices, bool ordered) = 0;
-
-  virtual void SparseConstructHistogramsForBlock(const MultiValBin* /*sub_multi_val_bin*/,
-    data_size_t /*start*/, data_size_t /*end*/, const data_size_t* /*data_indices*/,
-    const score_t* /*gradients*/, const score_t* /*hessians*/, int /*block_id*/,
-    bool /*use_indices*/, bool /*ordered*/) {}
+  virtual void SetMultiValBin(MultiValBin* bin, data_size_t num_data,
+    const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
+    bool dense_only, bool sparse_only, uint32_t hist_start_pos) {
+    num_threads = OMP_NUM_THREADS();
+    if (bin == nullptr) {
+      return;
+    }
+    std::vector<int> feature_groups_contained;
+    for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
+      const auto& feature_group = feature_groups[group];
+      if (feature_group->is_multi_val_) {
+        if (!dense_only) {
+          feature_groups_contained.push_back(group);
+        }
+      } else if (!sparse_only) {
+        feature_groups_contained.push_back(group);
+      }
+    }
+    multi_val_bin_wappers_.emplace_back(new MultiValBinWrapper(
+      bin, num_data, feature_groups_contained
+    ));
+    hist_data_offsets_.push_back(static_cast<size_t>(hist_start_pos));
+  }
 
   virtual void CalcBinOffsets(const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
     std::vector<uint32_t>* offsets, std::vector<uint32_t>* offsets2,
-    bool is_col_wise, bool is_two_row_wise, bool is_sparse_row_wise) {
+    uint32_t* hist_start_pos1, uint32_t* hist_start_pos2,
+    bool is_col_wise, bool is_two_row_wise) {
     offsets->clear();
     offsets2->clear();
     feature_hist_offsets_.clear();
-    hist_start_pos_ = 0;
-    sparse_hist_start_pos_ = 0;
     if (is_two_row_wise) {
       is_two_row_wise = false;
-      //int multi_val_group = -1;
       for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
         if (feature_groups[group]->is_multi_val_) {
           if (!feature_groups[group]->is_dense_multi_val_ && feature_groups.size() > 1) {
             is_two_row_wise = true;
           }
-          //multi_val_group = group;
         }
       }
-      /*if (multi_val_group > 0 && !feature_groups[multi_val_group]->is_dense_multi_val_ &&
-        feature_groups.size() == 1) {
-        CHECK(is_sparse_row_wise == true);
-      }
-      if (multi_val_group > 0 && feature_groups[multi_val_group]->is_dense_multi_val_) {
-        CHECK(is_sparse_row_wise == false);
-      }*/
     }
     if (is_col_wise) {
       uint32_t cur_num_bin = 0;
@@ -135,14 +459,31 @@ struct TrainingShareStates {
         } else {
           for (int i = 0; i < feature_group->num_feature_; ++i) {
             feature_hist_offsets_.push_back(hist_cur_num_bin + feature_group->bin_offsets_[i]);
-            Log::Warning("hist_cur_num_bin = %d, feature_group->bin_offsets_[i] = %d", hist_cur_num_bin, feature_group->bin_offsets_[i]);
           }
           hist_cur_num_bin += feature_group->bin_offsets_.back();
         }
       }
       feature_hist_offsets_.push_back(hist_cur_num_bin);
-      num_hist_total_bin_ = feature_hist_offsets_.back();
+      num_hist_total_bin_ = static_cast<uint64_t>(feature_hist_offsets_.back());
+      *hist_start_pos1 = 0;
+      *hist_start_pos2 = 0;
     } else if (!is_two_row_wise) {
+      double sum_dense_ratio = 0.0f;
+      int ncol = 0;
+      for (int gid = 0; gid < static_cast<int>(feature_groups.size()); ++gid) {
+        if (feature_groups[gid]->is_multi_val_) {
+          ncol += feature_groups[gid]->num_feature_;
+        } else {
+          ncol += 1;
+        }
+        for (int fid = 0; fid < feature_groups[gid]->num_feature_; ++fid) {
+          const auto& bin_mapper = feature_groups[gid]->bin_mappers_[fid];
+          sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
+        }
+      }
+      sum_dense_ratio /= ncol;
+      const bool is_sparse_row_wise = (1.0f - sum_dense_ratio) >=
+        MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
       if (is_sparse_row_wise) {
         int cur_num_bin = 1;
         uint32_t hist_cur_num_bin = 1;
@@ -204,7 +545,9 @@ struct TrainingShareStates {
         offsets->push_back(cur_num_bin);
         feature_hist_offsets_.push_back(hist_cur_num_bin);
       }
-      num_hist_total_bin_ = feature_hist_offsets_.back();
+      num_hist_total_bin_ = static_cast<uint64_t>(feature_hist_offsets_.back());
+      *hist_start_pos1 = 0;
+      *hist_start_pos2 = 0;
     } else {
       std::vector<uint32_t> feature_hist_offsets1, feature_hist_offsets2;
       int multi_val_group_id = -1;
@@ -232,7 +575,6 @@ struct TrainingShareStates {
       uint32_t hist_cur_num_bin = 1;
       uint32_t hist_cur_num_bin2 = 0;
       const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[multi_val_group_id];
-      Log::Warning("multi_val_group_id = %d", multi_val_group_id);
       for (int i = 0; i < feature_group->num_feature_; ++i) {
         offsets->push_back(cur_num_bin);
         feature_hist_offsets1.push_back(hist_cur_num_bin);
@@ -263,46 +605,47 @@ struct TrainingShareStates {
       feature_hist_offsets2.push_back(hist_cur_num_bin2);
       feature_hist_offsets_.clear();
       if (multi_val_group_id == 0) {
+        // put histograms of all dense features in the back
         for (int i = 0; i < static_cast<int>(feature_hist_offsets1.size()) - 1; ++i) {
           feature_hist_offsets_.push_back(feature_hist_offsets1[i]);
         }
         for (int i = 0; i < static_cast<int>(feature_hist_offsets2.size()); ++i) {
           feature_hist_offsets_.push_back(feature_hist_offsets2[i] + feature_hist_offsets1.back());
         }
-        sparse_hist_start_pos_ = 0;
-        hist_start_pos_ = feature_hist_offsets1.back();
+        *hist_start_pos1 = 0;
+        *hist_start_pos2 = feature_hist_offsets1.back();
       } else {
-        for (int i = 0; i < static_cast<int>(feature_hist_offsets2.size()) - 1; ++i) {
-          feature_hist_offsets_.push_back(feature_hist_offsets2[i]);
+        size_t cur_dense_feature = 0;
+        // put histograms of all dense features in the front
+        for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
+          const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[group];
+          if (feature_group->is_multi_val_) {
+            for (int i = 0; i < feature_group->num_feature_; ++i) {
+              feature_hist_offsets_.push_back(feature_hist_offsets1[i] + feature_hist_offsets2.back());
+            }
+          } else {
+            for (int i = 0; i < feature_group->num_feature_; ++i) {
+              feature_hist_offsets_.push_back(feature_hist_offsets2[cur_dense_feature++]);
+            }
+          }
         }
-        for (int i = 0; i < static_cast<int>(feature_hist_offsets1.size()); ++i) {
-          feature_hist_offsets_.push_back(feature_hist_offsets1[i] + feature_hist_offsets2.back());
-        }
-        hist_start_pos_ = 0;
-        sparse_hist_start_pos_ = feature_hist_offsets2.back();
+        feature_hist_offsets_.push_back(feature_hist_offsets1.back() + feature_hist_offsets2.back());
+        *hist_start_pos1 = feature_hist_offsets2.back();
+        *hist_start_pos2 = 0;
       }
-      num_hist_total_bin_ = feature_hist_offsets1.back() + feature_hist_offsets2.back();
+      num_hist_total_bin_ = static_cast<uint64_t>(feature_hist_offsets1.back() + feature_hist_offsets2.back());
     }
   }
 
-  virtual void InitTrain() {
-    const auto cur_multi_val_bin = (is_use_subcol || is_use_subrow)
-          ? multi_val_bin_subset.get()
-          : multi_val_bin.get();
-    if (cur_multi_val_bin != nullptr) {
-      num_bin_ = cur_multi_val_bin->num_bin();
-      num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-      min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
-        cur_multi_val_bin->num_element_per_row()) + 1, 1024);
-    }
-    const auto cur_multi_val_bin_sparse = (is_use_subcol_sparse || is_use_subrow)
-          ? multi_val_bin_sparse_subset.get()
-          : multi_val_bin_sparse.get();
-    if (cur_multi_val_bin_sparse != nullptr) {
-      sparse_num_bin_ = cur_multi_val_bin_sparse->num_bin();
-      sparse_num_bin_aligned_ = (sparse_num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-      sparse_min_block_size_ = std::min<int>(static_cast<int>(0.3f * sparse_num_bin_ /
-        cur_multi_val_bin_sparse->num_element_per_row()) + 1, 1024);
+  virtual void InitTrain(const std::vector<int>& group_feature_start,
+        const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
+        const std::vector<int8_t>& is_feature_used) {
+    for (const auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
+      multi_val_bin_wrapper->InitTrain(group_feature_start,
+        feature_groups,
+        is_feature_used,
+        bagging_use_indices,
+        bagging_indices_cnt);
     }
   }
 
@@ -313,96 +656,11 @@ struct TrainingShareStates {
                           const score_t* hessians,
                           hist_t* hist_data) {
     global_timer.Start("Dataset::sparse_bin_histogram");
-    const auto cur_multi_val_bin = (is_use_subcol || is_use_subrow)
-          ? multi_val_bin_subset.get()
-          : multi_val_bin.get();
-    if (cur_multi_val_bin != nullptr) {
-      n_data_block_ = 1;
-      data_block_size_ = num_data;
-      Threading::BlockInfo<data_size_t>(num_threads, num_data, min_block_size_,
-                                        max_block_size_, &n_data_block_, &data_block_size_);
-      ResizeHistBuf(hist_data);
-      OMP_INIT_EX();
-      #pragma omp parallel for schedule(static) num_threads(num_threads)
-      for (int block_id = 0; block_id < n_data_block_; ++block_id) {
-        OMP_LOOP_EX_BEGIN();
-        data_size_t start = block_id * data_block_size_;
-        data_size_t end = std::min(start + data_block_size_, num_data);
-        if (USE_INDICES) {
-          if (ORDERED) {
-            ConstructHistogramsForBlock(
-              cur_multi_val_bin, start, end, data_indices, gradients, hessians,
-              block_id, true, true
-            );
-          } else {
-            ConstructHistogramsForBlock(
-              cur_multi_val_bin, start, end, data_indices, gradients, hessians,
-              block_id, true, false
-            );
-          }
-        } else {
-          ConstructHistogramsForBlock(
-              cur_multi_val_bin, start, end, data_indices, gradients, hessians,
-              block_id, false, false
-            );
-        }
-        OMP_LOOP_EX_END();
-      }
-      OMP_THROW_EX();
-      global_timer.Stop("Dataset::sparse_bin_histogram");
-
-      global_timer.Start("Dataset::sparse_bin_histogram_merge");
-      HistMerge();
-      global_timer.Stop("Dataset::sparse_bin_histogram_merge");
-      global_timer.Start("Dataset::sparse_bin_histogram_move");
-      HistMove();
-      global_timer.Stop("Dataset::sparse_bin_histogram_move");
-    }
-
-    const auto cur_multi_val_bin_sparse = (is_use_subcol_sparse || is_use_subrow)
-          ? multi_val_bin_sparse_subset.get()
-          : multi_val_bin_sparse.get();
-    if (cur_multi_val_bin_sparse != nullptr) {
-      n_data_block_ = 1;
-      data_block_size_ = num_data;
-      Threading::BlockInfo<data_size_t>(num_threads, num_data, sparse_min_block_size_,
-                                        max_block_size_, &n_data_block_, &data_block_size_);
-      ResizeHistBuf(hist_data);
-      OMP_INIT_EX();
-      #pragma omp parallel for schedule(static) num_threads(num_threads)
-      for (int block_id = 0; block_id < n_data_block_; ++block_id) {
-        OMP_LOOP_EX_BEGIN();
-        data_size_t start = block_id * data_block_size_;
-        data_size_t end = std::min(start + data_block_size_, num_data);
-        if (USE_INDICES) {
-          if (ORDERED) {
-            SparseConstructHistogramsForBlock(
-              cur_multi_val_bin_sparse, start, end, data_indices, gradients, hessians,
-              block_id, true, true
-            );
-          } else {
-            SparseConstructHistogramsForBlock(
-              cur_multi_val_bin_sparse, start, end, data_indices, gradients, hessians,
-              block_id, true, false
-            );
-          }
-        } else {
-          SparseConstructHistogramsForBlock(
-              cur_multi_val_bin_sparse, start, end, data_indices, gradients, hessians,
-              block_id, false, false
-            );
-        }
-        OMP_LOOP_EX_END();
-      }
-      OMP_THROW_EX();
-      global_timer.Stop("Dataset::sparse_bin_histogram");
-
-      global_timer.Start("Dataset::sparse_bin_histogram_merge");
-      SparseHistMerge();
-      global_timer.Stop("Dataset::sparse_bin_histogram_merge");
-      global_timer.Start("Dataset::sparse_bin_histogram_move");
-      SparseHistMove();
-      global_timer.Stop("Dataset::sparse_bin_histogram_move");
+    for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
+      const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
+      multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
+        data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[i] * 2
+      );
     }
   }
 
@@ -410,393 +668,24 @@ struct TrainingShareStates {
 
   virtual ~TrainingShareStates() {}
 
+  void SetUseSubrow(bool is_use_subrow) {
+    for (auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
+      multi_val_bin_wrapper->SetUseSubrow(is_use_subrow);
+    }
+  }
+
+  void SetSubrowCopied(bool is_subrow_copied) {
+    for (auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
+      multi_val_bin_wrapper->SetSubrowCopied(is_subrow_copied);
+    }
+  }
+
 protected:
-  size_t kHistBufferEntrySize;
-  int num_bin_aligned_;
-  int num_bin_;
-  int max_block_size_;
-  int min_block_size_;
-  int sparse_min_block_size_;
-  int n_data_block_;
-  int data_block_size_;
-  hist_t* origin_hist_data_ = nullptr;
-  int sparse_num_bin_aligned_;
-  int sparse_num_bin_;
-  hist_t* sparse_origin_hist_data_ = nullptr;
   std::vector<uint32_t> feature_hist_offsets_;
-  int hist_start_pos_;
-  int sparse_hist_start_pos_;
-  int num_hist_total_bin_;
-};
-
-struct TrainingShareStatesFloat : public TrainingShareStates {
-  std::vector<float, Common::AlignmentAllocator<float, kAlignedSize>> hist_buf;
-  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> temp_buf;
-
-  void SetMultiValBin(MultiValBin* bin, data_size_t num_data) override {
-    num_threads = OMP_NUM_THREADS();
-    kHistBufferEntrySize = 2 * sizeof(float);
-    max_block_size_ = 100000;
-    if (bin == nullptr) {
-      return;
-    }
-    int num_blocks = (num_data + max_block_size_ - 1) / max_block_size_;
-    num_blocks = std::max(num_threads, num_blocks);
-    multi_val_bin.reset(bin);
-    num_bin_aligned_ =
-        (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    size_t new_size = static_cast<size_t>(num_bin_aligned_) * 2 * num_blocks;
-    if (new_size > hist_buf.size()) {
-      hist_buf.resize(static_cast<size_t>(num_bin_aligned_) * 2 * num_blocks);
-    }
-    if (is_use_subcol) {
-      temp_buf.resize(static_cast<size_t>(num_bin_aligned_) * 2);
-    }
-  }
-
-  void ResizeHistBuf(hist_t* hist_data) override {
-    origin_hist_data_ = hist_data;
-    size_t new_buf_size = static_cast<size_t>(n_data_block_) * static_cast<size_t>(num_bin_aligned_) * 2;
-    if (hist_buf.size() < new_buf_size) {
-      hist_buf.resize(new_buf_size);
-    }
-    if (temp_buf.size() < static_cast<size_t>(num_bin_aligned_) * 2 && is_use_subcol) {
-      temp_buf.resize(static_cast<size_t>(num_bin_aligned_) * 2);
-    }
-  }
-
-  void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
-    data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians, int block_id,
-    bool use_indices, bool ordered) override {
-    float* data_ptr = hist_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (block_id);
-    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin_ * kHistBufferEntrySize);
-    if (use_indices) {
-      if (ordered) {
-        sub_multi_val_bin->ConstructHistogramOrdered(data_indices, start, end,
-                                                 gradients, hessians, data_ptr);
-      } else {
-        sub_multi_val_bin->ConstructHistogram(data_indices, start, end, gradients,
-                                          hessians, data_ptr);
-      }
-    } else {
-      sub_multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
-                                        data_ptr);
-    }
-  }
-
-  void HistMerge() override {
-    int n_bin_block = 1;
-    int bin_block_size = num_bin_;
-    Threading::BlockInfo<data_size_t>(num_threads, num_bin_, 512, &n_bin_block,
-                                    &bin_block_size);
-    hist_t* dst = origin_hist_data_;
-    if (is_use_subcol) {
-      dst = temp_buf.data();
-    }
-    std::memset(reinterpret_cast<void*>(dst), 0, num_bin_ * kHistEntrySize);
-    #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
-    for (int t = 0; t < n_bin_block; ++t) {
-      const int start = t * bin_block_size;
-      const int end = std::min(start + bin_block_size, num_bin_);
-      for (int tid = 0; tid < n_data_block_; ++tid) {
-        auto src_ptr = hist_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (tid);
-        for (int i = start * 2; i < end * 2; ++i) {
-          dst[i] += src_ptr[i];
-        }
-      }
-    }
-  }
-
-  void HistMove() override {
-    if (!is_use_subcol) {
-      return;
-    }
-    hist_t* src = temp_buf.data();
-#pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
-      std::copy_n(src + hist_move_src[i], hist_move_size[i],
-                  origin_hist_data_ + hist_move_dest[i]);
-    }
-  }
-};
-
-struct TrainingShareStatesFloatWithBuffer : public TrainingShareStatesFloat {
-
-  void SetMultiValBin(MultiValBin* bin, data_size_t /*num_data*/) override {
-    num_threads = OMP_NUM_THREADS();
-    kHistBufferEntrySize = 2 * sizeof(float);
-    max_block_size_ = 100000;
-    if (bin == nullptr) {
-      return;
-    }
-    multi_val_bin.reset(bin);
-    num_bin_aligned_ =
-        (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    const size_t thread_buf_size = static_cast<size_t>(num_bin_aligned_) * num_threads * 2;
-    temp_buf.resize(thread_buf_size, 0.0f);
-    hist_buf.resize(thread_buf_size, 0.0f);
-  }
-
-  void ResizeHistBuf(hist_t* hist_data) override {
-    origin_hist_data_ = hist_data;
-    const size_t new_thread_buf_size = static_cast<size_t>(num_bin_aligned_) * num_threads * 2;
-    if (new_thread_buf_size > temp_buf.size()) {
-      temp_buf.resize(new_thread_buf_size, 0.0f);
-    }
-    if (new_thread_buf_size > hist_buf.size()) {
-      hist_buf.resize(new_thread_buf_size, 0.0f);
-    }
-    #pragma omp parallel for schedule(static) num_threads(num_threads)
-    for (int i = 0; i < static_cast<int>(temp_buf.size()); ++i) {
-      temp_buf[i] = 0.0f;
-    }
-    if (!is_use_subcol) {
-      #pragma omp parallel for schedule(static) num_threads(num_threads)
-      for (int i = 0; i < num_bin_ * 2; ++i) {
-        hist_data[i] = 0.0f;
-      }
-    }
-  }
-
-  void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
-    data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians, int /*block_id*/,
-    bool use_indices, bool ordered) override {
-    int thread_id = omp_get_thread_num();
-    float* data_ptr = hist_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * thread_id;
-    const int num_bin = sub_multi_val_bin->num_bin();
-    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistBufferEntrySize);
-    if (use_indices) {
-      if (ordered) {
-        sub_multi_val_bin->ConstructHistogramOrdered(data_indices, start, end,
-                                                 gradients, hessians, data_ptr);
-      } else {
-        sub_multi_val_bin->ConstructHistogram(data_indices, start, end, gradients,
-                                          hessians, data_ptr);
-      }
-    } else {
-      sub_multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
-                                        data_ptr);
-    }
-    double* thread_buf_ptr = origin_hist_data_;
-    if (thread_id == 0) {
-      if (is_use_subcol) {
-        thread_buf_ptr = temp_buf.data();
-      }
-    } else {
-      thread_buf_ptr = temp_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (thread_id);
-    }
-    for (int i = 0; i < 2 * num_bin; ++i) {
-      thread_buf_ptr[i] += data_ptr[i];
-    }
-  }
-
-  void HistMerge() override {
-    int n_bin_block = 1;
-    int bin_block_size = num_bin_;
-    Threading::BlockInfo<data_size_t>(num_threads, num_bin_, 512, &n_bin_block,
-                                    &bin_block_size);
-    hist_t* dst = origin_hist_data_;
-    if (is_use_subcol) {
-      dst = temp_buf.data();
-    }
-    #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
-    for (int t = 0; t < n_bin_block; ++t) {
-      const int start = t * bin_block_size;
-      const int end = std::min(start + bin_block_size, num_bin_);
-      for (int tid = 1; tid < num_threads; ++tid) {
-        auto src_ptr = temp_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (tid);
-        for (int i = start * 2; i < end * 2; ++i) {
-          dst[i] += src_ptr[i];
-        }
-      }
-    }
-  }
-
-  void HistMove() override {
-    if (!is_use_subcol) {
-      return;
-    }
-    hist_t* src = temp_buf.data();
-#pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
-      std::copy_n(src + hist_move_src[i], hist_move_size[i],
-                  origin_hist_data_ + hist_move_dest[i]);
-    }
-  }
-};
-
-struct TrainingShareStatesDouble : public TrainingShareStates {
-  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf;
-
-  void SetMultiValBin(MultiValBin* bin, data_size_t num_data) override {
-    num_threads = OMP_NUM_THREADS();
-    kHistBufferEntrySize = 2 * sizeof(hist_t);
-    max_block_size_ = num_data;
-    if (bin == nullptr) {
-      return;
-    }
-    multi_val_bin.reset(bin);
-    num_bin_aligned_ =
-        (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    size_t new_size = static_cast<size_t>(num_bin_aligned_) * 2 * num_threads;
-    if (new_size > hist_buf.size()) {
-      hist_buf.resize(new_size);
-    }
-  }
-
-  void SetSparseMultiValBin(MultiValBin* bin, data_size_t /*num_data*/) override {
-    if (bin == nullptr) {
-      return;
-    }
-    multi_val_bin_sparse.reset(bin);
-    sparse_num_bin_aligned_ =
-        (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    size_t new_size = static_cast<size_t>(sparse_num_bin_aligned_) * 2 * num_threads;
-    if (new_size > hist_buf.size()) {
-      hist_buf.resize(new_size);
-    }
-  }
-
-  void ResizeHistBuf(hist_t* hist_data) override {
-    origin_hist_data_ = hist_data + hist_start_pos_ * 2;
-    sparse_origin_hist_data_ = hist_data + sparse_hist_start_pos_ * 2;
-    size_t new_buf_size = static_cast<size_t>(n_data_block_) * static_cast<size_t>(num_bin_aligned_) * 2;
-    if (hist_buf.size() < new_buf_size) {
-      hist_buf.resize(new_buf_size);
-    }
-    new_buf_size = static_cast<size_t>(n_data_block_) * static_cast<size_t>(sparse_num_bin_aligned_) * 2;
-    if (hist_buf.size() < new_buf_size) {
-      hist_buf.resize(new_buf_size);
-    }
-  }
-
-  void ConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
-    data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians, int block_id,
-    bool use_indices, bool ordered) override {
-    hist_t* data_ptr = origin_hist_data_;
-    if (block_id == 0) {
-      if (is_use_subcol) {
-        data_ptr = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(num_bin_aligned_);
-      }
-    } else {
-      data_ptr = hist_buf.data() +
-        static_cast<size_t>(num_bin_aligned_) * (block_id - 1) * 2;
-    }
-    const int num_bin = sub_multi_val_bin->num_bin();
-    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistBufferEntrySize);
-    if (use_indices) {
-      if (ordered) {
-        sub_multi_val_bin->ConstructHistogramOrdered(data_indices, start, end,
-                                                 gradients, hessians, data_ptr);
-      } else {
-        sub_multi_val_bin->ConstructHistogram(data_indices, start, end, gradients,
-                                          hessians, data_ptr);
-      }
-    } else {
-      sub_multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
-                                        data_ptr);
-    }
-  }
-
-  void SparseConstructHistogramsForBlock(const MultiValBin* sub_multi_val_bin,
-    data_size_t start, data_size_t end, const data_size_t* data_indices,
-    const score_t* gradients, const score_t* hessians, int block_id,
-    bool use_indices, bool ordered) override {
-    hist_t* data_ptr = sparse_origin_hist_data_;
-    if (block_id == 0) {
-      if (is_use_subcol_sparse) {
-        data_ptr = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sparse_num_bin_aligned_);
-      }
-    } else {
-      data_ptr = hist_buf.data() +
-        static_cast<size_t>(sparse_num_bin_aligned_) * (block_id - 1) * 2;
-    }
-    const int num_bin = sub_multi_val_bin->num_bin();
-    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistBufferEntrySize);
-    if (use_indices) {
-      if (ordered) {
-        sub_multi_val_bin->ConstructHistogramOrdered(data_indices, start, end,
-                                                 gradients, hessians, data_ptr);
-      } else {
-        sub_multi_val_bin->ConstructHistogram(data_indices, start, end, gradients,
-                                          hessians, data_ptr);
-      }
-    } else {
-      sub_multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
-                                        data_ptr);
-    }
-  }
-
-  void HistMerge() override {
-    int n_bin_block = 1;
-    int bin_block_size = num_bin_;
-    Threading::BlockInfo<data_size_t>(num_threads, num_bin_, 512, &n_bin_block,
-                                    &bin_block_size);
-    hist_t* dst = origin_hist_data_;
-    if (is_use_subcol) {
-      dst = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(num_bin_aligned_);
-    }
-    #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
-    for (int t = 0; t < n_bin_block; ++t) {
-      const int start = t * bin_block_size;
-      const int end = std::min(start + bin_block_size, num_bin_);
-      for (int tid = 1; tid < n_data_block_; ++tid) {
-        auto src_ptr = hist_buf.data() + static_cast<size_t>(num_bin_aligned_) * 2 * (tid - 1);
-        for (int i = start * 2; i < end * 2; ++i) {
-          dst[i] += src_ptr[i];
-        }
-      }
-    }
-  }
-
-  void SparseHistMerge() override {
-    int n_bin_block = 1;
-    int bin_block_size = sparse_num_bin_;
-    Threading::BlockInfo<data_size_t>(num_threads, sparse_num_bin_, 512, &n_bin_block,
-                                    &bin_block_size);
-    hist_t* dst = sparse_origin_hist_data_;
-    if (is_use_subcol_sparse) {
-      dst = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sparse_num_bin_aligned_);
-    }
-    #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
-    for (int t = 0; t < n_bin_block; ++t) {
-      const int start = t * bin_block_size;
-      const int end = std::min(start + bin_block_size, sparse_num_bin_);
-      for (int tid = 1; tid < n_data_block_; ++tid) {
-        auto src_ptr = hist_buf.data() + static_cast<size_t>(sparse_num_bin_aligned_) * 2 * (tid - 1);
-        for (int i = start * 2; i < end * 2; ++i) {
-          dst[i] += src_ptr[i];
-        }
-      }
-    }
-  }
-
-  void HistMove() override {
-    if (!is_use_subcol) {
-      return;
-    }
-    hist_t* src = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(num_bin_aligned_);
-#pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
-      std::copy_n(src + hist_move_src[i], hist_move_size[i],
-                  origin_hist_data_ + hist_move_dest[i]);
-    }
-  }
-
-  void SparseHistMove() override {
-    if (!is_use_subcol_sparse) {
-      return;
-    }
-    hist_t* src = hist_buf.data() + hist_buf.size() - 2 * static_cast<size_t>(sparse_num_bin_aligned_);
-#pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(hist_move_src_sparse.size()); ++i) {
-      std::copy_n(src + hist_move_src_sparse[i], hist_move_size_sparse[i],
-                  sparse_origin_hist_data_ + hist_move_dest_sparse[i]);
-    }
-  }
+  uint64_t num_hist_total_bin_ = 0;
+  std::vector<size_t> hist_data_offsets_;
+  std::vector<std::unique_ptr<MultiValBinWrapper>> multi_val_bin_wappers_;
+  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
 };
 
 } // namespace LightGBM

@@ -1173,59 +1173,7 @@ class HistogramPool {
     }
   }
 
-  static int GetNumTotalHistogramBins(const Dataset* train_data,
-    bool is_hist_colwise, bool is_dense_rowwise, std::vector<uint32_t>* offsets) {
-    const int offset = is_dense_rowwise || is_hist_colwise ? 0 : 1;
-    int num_total_bin = offset;
-    offsets->clear();
-    for (int i = 0; i < train_data->num_features(); ++i) {
-      int group = train_data->Feature2Group(i);
-      if (train_data->IsDenseMultiGroup(group)) {
-        const BinMapper* bin_mapper = train_data->FeatureBinMapper(i);
-        if (bin_mapper->GetMostFreqBin() == 0) {
-          offsets->push_back(num_total_bin + 1 - offset);
-          num_total_bin += bin_mapper->num_bin() - offset;
-        } else {
-          offsets->push_back(num_total_bin);
-          num_total_bin += bin_mapper->num_bin();
-        }
-      } else if (train_data->IsMultiGroup(group)) {
-        if (is_hist_colwise) {
-          num_total_bin += train_data->SubFeatureBinOffset(i);
-        }
-        const BinMapper* bin_mapper = train_data->FeatureBinMapper(i);
-        if (is_dense_rowwise && bin_mapper->GetMostFreqBin() == 0) {
-          offsets->push_back(num_total_bin + 1);
-        } else {
-          offsets->push_back(num_total_bin);
-        }
-        num_total_bin += bin_mapper->num_bin();
-        if (bin_mapper->GetMostFreqBin() == 0 && !is_dense_rowwise) {
-          num_total_bin -= 1;
-        }
-      } else {
-        if (is_hist_colwise || is_dense_rowwise) {
-          Log::Warning("num_total_bin = %d", num_total_bin);
-          num_total_bin += train_data->SubFeatureBinOffset(i);
-          Log::Warning("num_total_bin = %d", num_total_bin);
-        }
-        offsets->push_back(num_total_bin);
-        const BinMapper* bin_mapper = train_data->FeatureBinMapper(i);
-        num_total_bin += bin_mapper->num_bin();
-        if (bin_mapper->GetMostFreqBin() == 0) {
-          num_total_bin -= 1;
-        }
-      }
-    }
-    offsets->push_back(num_total_bin);
-    if (is_hist_colwise) {
-      CHECK(num_total_bin == static_cast<int>(train_data->NumTotalBin()));
-    }
-    return num_total_bin;
-  }
-
-  int DynamicChangeSize(const Dataset* train_data, int num_total_bin,
-                        const bool is_hist_colwise, const bool is_dense_rowwise,
+  void DynamicChangeSize(const Dataset* train_data, int num_total_bin,
                         const std::vector<uint32_t>& offsets, const Config* config,
                         int cache_size, int total_size) {
     if (feature_metas_.empty()) {
@@ -1244,14 +1192,6 @@ class HistogramPool {
       pool_.resize(cache_size);
       data_.resize(cache_size);
     }
-    /*std::vector<uint32_t> local_offsets;
-    int local_num_total_bin =
-        this->GetNumTotalHistogramBins(train_data, false, true, &local_offsets);
-    CHECK(local_num_total_bin == num_total_bin);
-    CHECK(local_offsets.size() == offsets.size());
-    for (size_t i = 0; i < offsets.size(); ++i) {
-      CHECK(offsets[i] == local_offsets[i]);
-    }*/
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int i = old_cache_size; i < cache_size; ++i) {
@@ -1265,7 +1205,6 @@ class HistogramPool {
     }
     OMP_THROW_EX();
     CHECK(offsets[0] == 1);
-    return offsets[0];
   }
 
   void ResetConfig(const Dataset* train_data, const Config* config) {
