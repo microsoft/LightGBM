@@ -14,10 +14,10 @@ MultiValBinWrapper::MultiValBinWrapper(MultiValBin* bin, data_size_t num_data,
   num_threads_ = OMP_NUM_THREADS();
   max_block_size_ = num_data;
   num_data_ = num_data;
+  multi_val_bin_.reset(bin);
   if (bin == nullptr) {
     return;
   }
-  multi_val_bin_.reset(bin);
   num_bin_ = bin->num_bin();
   num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
 }
@@ -416,10 +416,27 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
     }
     CHECK(multi_val_group_id >= 0);
     CHECK(is_sparse_multi_val);
+
+    double sum_dense_ratio = 0.0f;
+    int ncol = 0;
+    for (int gid = 0; gid < static_cast<int>(feature_groups.size()); ++gid) {
+      if (feature_groups[gid]->is_multi_val_) {
+        continue;
+      }
+      ncol += 1;
+      for (int fid = 0; fid < feature_groups[gid]->num_feature_; ++fid) {
+        const auto& bin_mapper = feature_groups[gid]->bin_mappers_[fid];
+        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
+      }
+    }
+    sum_dense_ratio /= ncol;
+    const uint32_t offset = (1.0f - sum_dense_ratio) >=
+      MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
+
     int cur_num_bin = 1;
-    int cur_num_bin2 = 0;
+    int cur_num_bin2 = offset;
     uint32_t hist_cur_num_bin = 1;
-    uint32_t hist_cur_num_bin2 = 0;
+    uint32_t hist_cur_num_bin2 = offset;
     const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[multi_val_group_id];
     for (int i = 0; i < feature_group->num_feature_; ++i) {
       offsets->push_back(cur_num_bin);
@@ -441,11 +458,11 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
       const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[group];
       CHECK(!feature_group->is_multi_val_);
       offsets2->push_back(cur_num_bin2);
-      cur_num_bin2 += feature_group->bin_offsets_.back();
+      cur_num_bin2 += feature_group->bin_offsets_.back() - offset;
       for (int i = 0; i < feature_group->num_feature_; ++i) {
-        feature_hist_offsets2.push_back(hist_cur_num_bin2 + feature_group->bin_offsets_[i]);
+        feature_hist_offsets2.push_back(hist_cur_num_bin2 + feature_group->bin_offsets_[i] - offset);
       }
-      hist_cur_num_bin2 += feature_group->bin_offsets_.back();
+      hist_cur_num_bin2 += feature_group->bin_offsets_.back() - offset;
     }
     offsets2->push_back(cur_num_bin2);
     feature_hist_offsets2.push_back(hist_cur_num_bin2);

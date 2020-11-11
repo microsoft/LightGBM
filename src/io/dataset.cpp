@@ -562,8 +562,6 @@ MultiValBin* Dataset::GetMultiBinFromDenseFeatures(const std::vector<uint32_t>& 
       local_offsets.push_back(num_total_bin);
     }
   }
-  Log::Warning("local_offsets.size() = %d, offsets.size() = %d, num_groups_ = %d",
-    local_offsets.size(), offsets.size(), num_groups_);
   CHECK(local_offsets.size() == offsets.size());
   for (size_t i = 0; i < local_offsets.size(); ++i) {
     CHECK(local_offsets[i] == offsets[i]);
@@ -671,7 +669,7 @@ TrainingShareStates* Dataset::GetShareStates(
   if (!try_two_rowwise && force_two_rowwise) {
     force_two_rowwise = false;
     force_rowwise = true;
-    Log::Warning("No sparse feature group is found, so degenerate force_two_rowwise to force_rowwise");
+    Log::Warning("No sparse feature group is found, so degenerate force_two_row_wise to force_row_wise");
   }
   if (num_groups_ <= 0) {
     TrainingShareStates* share_state = new TrainingShareStates();

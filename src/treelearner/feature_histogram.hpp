@@ -1204,7 +1204,9 @@ class HistogramPool {
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    CHECK(offsets[0] == 1);
+    if (offsets.size() > 0) {
+      CHECK(offsets[0] == 1);
+    }
   }
 
   void ResetConfig(const Dataset* train_data, const Config* config) {
