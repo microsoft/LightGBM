@@ -32,7 +32,8 @@ class MultiValBinWrapper {
     const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
     const std::vector<int8_t>& is_feature_used,
     const data_size_t* bagging_use_indices,
-    data_size_t bagging_indices_cnt);
+    data_size_t bagging_indices_cnt,
+    int min_block_size);
 
   void HistMove(const std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>& hist_buf);
 
@@ -239,12 +240,15 @@ struct TrainingShareStates {
   void InitTrain(const std::vector<int>& group_feature_start,
         const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
         const std::vector<int8_t>& is_feature_used) {
+    int min_block_size = std::min<int>(static_cast<int>(0.3f * num_total_bin_ /
+      num_elements_per_row_) + 1, 1024);
     for (const auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
       multi_val_bin_wrapper->InitTrain(group_feature_start,
         feature_groups,
         is_feature_used,
         bagging_use_indices,
-        bagging_indices_cnt);
+        bagging_indices_cnt,
+        min_block_size);
     }
   }
 
@@ -275,7 +279,7 @@ struct TrainingShareStates {
         n_data_blocks[i] = multi_val_bin_wrapper->PreConstructHistogramBlock(
           num_data, &hist_bufs_[i], hist_data + hist_data_offsets_[i] * 2);
       }
-      int min_n_data_block = std::min<int>(n_data_blocks[0], n_data_blocks[1]);
+      //int min_n_data_block = std::min<int>(n_data_blocks[0], n_data_blocks[1]);
       int max_n_data_block = std::max<int>(n_data_blocks[0], n_data_blocks[1]);
       //if (min_n_data_block < num_threads) {
       //  Log::Warning("min_n_data_block = %d, max_n_data_block = %d, num_threads = %d", min_n_data_block, max_n_data_block, num_threads);
@@ -321,6 +325,8 @@ struct TrainingShareStates {
   std::vector<std::unique_ptr<MultiValBinWrapper>> multi_val_bin_wappers_;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
   std::vector<std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>> hist_bufs_;
+  int num_total_bin_ = 0;
+  double num_elements_per_row_ = 0.0f;
 };
 
 }  // namespace LightGBM

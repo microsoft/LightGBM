@@ -26,7 +26,8 @@ void MultiValBinWrapper::InitTrain(const std::vector<int>& group_feature_start,
   const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
   const std::vector<int8_t>& is_feature_used,
   const data_size_t* bagging_use_indices,
-  data_size_t bagging_indices_cnt) {
+  data_size_t bagging_indices_cnt,
+  int min_block_size) {
   is_use_subcol_ = false;
   if (multi_val_bin_ == nullptr) {
     return;
@@ -39,8 +40,9 @@ void MultiValBinWrapper::InitTrain(const std::vector<int>& group_feature_start,
   if (cur_multi_val_bin != nullptr) {
     num_bin_ = cur_multi_val_bin->num_bin();
     num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    min_block_size_ = std::min<int>(static_cast<int>(0.6f * num_bin_ /
-      cur_multi_val_bin->num_element_per_row()) + 1, 1024);
+    //min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
+    //  cur_multi_val_bin->num_element_per_row()) + 1, 1024);
+    min_block_size_ = min_block_size;
   }
 }
 
@@ -518,6 +520,8 @@ void TrainingShareStates::SetMultiValBin(MultiValBin* bin, data_size_t num_data,
       feature_groups_contained.push_back(group);
     }
   }
+  num_total_bin_ += bin->num_bin();
+  num_elements_per_row_ += bin->num_element_per_row();
   multi_val_bin_wappers_.emplace_back(new MultiValBinWrapper(
     bin, num_data, feature_groups_contained));
   hist_data_offsets_.push_back(static_cast<size_t>(hist_start_pos));
