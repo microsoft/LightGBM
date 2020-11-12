@@ -541,7 +541,7 @@ MultiValBin* Dataset::GetMultiBinFromDenseFeatures(const std::vector<uint32_t>& 
     if (feature_groups_[gid]->is_multi_val_) {
       continue;
     }
-    ncol += 1;
+    ++ncol;
     for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
       const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
       sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
