@@ -71,7 +71,7 @@ class MultiValBinWrapper {
   }
 
   template <bool USE_INDICES, bool ORDERED>
-  void ConstructHistogramsForOneBlock(
+  void ConstructHistogramsForBlockWithBlockID(
     const data_size_t* data_indices, const score_t* gradients,
     const score_t* hessians, int block_id, data_size_t num_data,
     std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf) {
@@ -223,8 +223,8 @@ struct TrainingShareStates {
   const std::vector<uint32_t>& feature_hist_offsets() { return feature_hist_offsets_; }
 
   bool IsSparseRowwise() {
-    return (multi_val_bin_wappers_.size() == 1 &&
-      multi_val_bin_wappers_[0]->IsSparse());
+    return (multi_val_bin_wrappers_.size() == 1 &&
+      multi_val_bin_wrappers_[0]->IsSparse());
   }
 
   void SetMultiValBin(MultiValBin* bin, data_size_t num_data,
@@ -239,7 +239,7 @@ struct TrainingShareStates {
   void InitTrain(const std::vector<int>& group_feature_start,
         const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
         const std::vector<int8_t>& is_feature_used) {
-    for (const auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
+    for (const auto& multi_val_bin_wrapper : multi_val_bin_wrappers_) {
       multi_val_bin_wrapper->InitTrain(group_feature_start,
         feature_groups,
         is_feature_used,
@@ -248,68 +248,56 @@ struct TrainingShareStates {
     }
   }
 
-  /*template <bool USE_INDICES, bool ORDERED>
-  void ConstructHistograms(const data_size_t* data_indices,
-                          data_size_t num_data,
-                          const score_t* gradients,
-                          const score_t* hessians,
-                          hist_t* hist_data) {
-    for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
-      const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
-      multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
-        data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[i] * 2);
-    }
-  }*/
-
   template <bool USE_INDICES, bool ORDERED>
   void ConstructHistograms(const data_size_t* data_indices,
                           data_size_t num_data,
                           const score_t* gradients,
                           const score_t* hessians,
                           hist_t* hist_data) {
-    if (multi_val_bin_wappers_.size() == 2) {
-      hist_bufs_.resize(multi_val_bin_wappers_.size());
-      std::vector<int> n_data_blocks(multi_val_bin_wappers_.size()); 
-      for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
-        const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
+    if (multi_val_bin_wrappers_.size() == 2) {
+      // use seperate row wise for dense and sparse bins
+      hist_bufs_.resize(multi_val_bin_wrappers_.size());
+      std::vector<int> n_data_blocks(multi_val_bin_wrappers_.size());
+      for (size_t i = 0; i < multi_val_bin_wrappers_.size(); ++i) {
+        const auto& multi_val_bin_wrapper = multi_val_bin_wrappers_[i];
         n_data_blocks[i] = multi_val_bin_wrapper->PreConstructHistogramBlock(
           num_data, &hist_bufs_[i], hist_data + hist_data_offsets_[i] * 2);
       }
-      //int min_n_data_block = std::min<int>(n_data_blocks[0], n_data_blocks[1]);
       int max_n_data_block = std::max<int>(n_data_blocks[0], n_data_blocks[1]);
-      //if (min_n_data_block < num_threads) {
-      //  Log::Warning("min_n_data_block = %d, max_n_data_block = %d, num_threads = %d", min_n_data_block, max_n_data_block, num_threads);
-      //}
       #pragma omp parallel for schedule(static) num_threads(num_threads)
       for (int block_id = 0; block_id < max_n_data_block; ++block_id) {
         if (block_id < n_data_blocks[0]) {
-          multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+          // let the multi val bin decides the start and end position of the block
+          // since the two multi val bins can have different block sizes
+          multi_val_bin_wrappers_[0]->ConstructHistogramsForBlockWithBlockID<USE_INDICES, ORDERED>(
             data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
         }
         if (block_id < n_data_blocks[1]) {
-          multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+          multi_val_bin_wrappers_[1]->ConstructHistogramsForBlockWithBlockID<USE_INDICES, ORDERED>(
             data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
         }
       }
-      for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
-        const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
+      for (size_t i = 0; i < multi_val_bin_wrappers_.size(); ++i) {
+        const auto& multi_val_bin_wrapper = multi_val_bin_wrappers_[i];
         multi_val_bin_wrapper->PostConstructHistogramBlock(&hist_bufs_[i]);
       }
-    } else if (multi_val_bin_wappers_.size() == 1) {
-      const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[0];
+    } else if (multi_val_bin_wrappers_.size() == 1) {
+      const auto& multi_val_bin_wrapper = multi_val_bin_wrappers_[0];
       multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
         data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[0] * 2);
+    } else {
+      Log::Fatal("Should be either one or two multi val bins.");
     }
   }
 
   void SetUseSubrow(bool is_use_subrow) {
-    for (auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
+    for (auto& multi_val_bin_wrapper : multi_val_bin_wrappers_) {
       multi_val_bin_wrapper->SetUseSubrow(is_use_subrow);
     }
   }
 
   void SetSubrowCopied(bool is_subrow_copied) {
-    for (auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
+    for (auto& multi_val_bin_wrapper : multi_val_bin_wrappers_) {
       multi_val_bin_wrapper->SetSubrowCopied(is_subrow_copied);
     }
   }
@@ -318,7 +306,7 @@ struct TrainingShareStates {
   std::vector<uint32_t> feature_hist_offsets_;
   uint64_t num_hist_total_bin_ = 0;
   std::vector<size_t> hist_data_offsets_;
-  std::vector<std::unique_ptr<MultiValBinWrapper>> multi_val_bin_wappers_;
+  std::vector<std::unique_ptr<MultiValBinWrapper>> multi_val_bin_wrappers_;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
   std::vector<std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>> hist_bufs_;
   int num_total_bin_ = 0;

@@ -520,7 +520,7 @@ void TrainingShareStates::SetMultiValBin(MultiValBin* bin, data_size_t num_data,
   }
   num_total_bin_ += bin->num_bin();
   num_elements_per_row_ += bin->num_element_per_row();
-  multi_val_bin_wappers_.emplace_back(new MultiValBinWrapper(
+  multi_val_bin_wrappers_.emplace_back(new MultiValBinWrapper(
     bin, num_data, feature_groups_contained));
   hist_data_offsets_.push_back(static_cast<size_t>(hist_start_pos));
 }
