@@ -158,12 +158,16 @@ struct TrainingShareStates {
   const data_size_t* bagging_use_indices;
   data_size_t bagging_indices_cnt;
 
+  TrainingShareStates() {
+    multi_val_bin_wrapper_.reset(nullptr);
+  }
+
   uint64_t num_hist_total_bin() { return num_hist_total_bin_; }
 
   const std::vector<uint32_t>& feature_hist_offsets() { return feature_hist_offsets_; }
 
   bool IsSparseRowwise() {
-    return multi_val_bin_wrapper_->IsSparse();
+    return (multi_val_bin_wrapper_ != nullptr && multi_val_bin_wrapper_->IsSparse());
   }
 
   void SetMultiValBin(MultiValBin* bin, data_size_t num_data,
@@ -176,11 +180,13 @@ struct TrainingShareStates {
   void InitTrain(const std::vector<int>& group_feature_start,
         const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
         const std::vector<int8_t>& is_feature_used) {
-    multi_val_bin_wrapper_->InitTrain(group_feature_start,
-      feature_groups,
-      is_feature_used,
-      bagging_use_indices,
-      bagging_indices_cnt);
+    if (multi_val_bin_wrapper_ != nullptr) {
+      multi_val_bin_wrapper_->InitTrain(group_feature_start,
+        feature_groups,
+        is_feature_used,
+        bagging_use_indices,
+        bagging_indices_cnt);
+    }
   }
 
   template <bool USE_INDICES, bool ORDERED>
@@ -189,16 +195,22 @@ struct TrainingShareStates {
                           const score_t* gradients,
                           const score_t* hessians,
                           hist_t* hist_data) {
-    multi_val_bin_wrapper_->ConstructHistograms<USE_INDICES, ORDERED>(
-      data_indices, num_data, gradients, hessians, &hist_buf_, hist_data);
+    if (multi_val_bin_wrapper_ != nullptr) {
+      multi_val_bin_wrapper_->ConstructHistograms<USE_INDICES, ORDERED>(
+        data_indices, num_data, gradients, hessians, &hist_buf_, hist_data);
+    }
   }
 
   void SetUseSubrow(bool is_use_subrow) {
-    multi_val_bin_wrapper_->SetUseSubrow(is_use_subrow);
+    if (multi_val_bin_wrapper_ != nullptr) {
+      multi_val_bin_wrapper_->SetUseSubrow(is_use_subrow);
+    }
   }
 
   void SetSubrowCopied(bool is_subrow_copied) {
-    multi_val_bin_wrapper_->SetSubrowCopied(is_subrow_copied);
+    if (multi_val_bin_wrapper_ != nullptr) {
+      multi_val_bin_wrapper_->SetSubrowCopied(is_subrow_copied);
+    }
   }
 
  private:
