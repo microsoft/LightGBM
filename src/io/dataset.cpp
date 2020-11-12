@@ -590,7 +590,6 @@ TrainingShareStates* Dataset::GetShareStates(
         "Cannot set both of `force_col_wise` and `force_row_wise` to `true` at "
         "the same time");
   }
- 
   if (num_groups_ <= 0) {
     TrainingShareStates* share_state = new TrainingShareStates();
     share_state->is_col_wise = true;
