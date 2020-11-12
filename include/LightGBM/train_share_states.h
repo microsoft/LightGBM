@@ -248,7 +248,7 @@ struct TrainingShareStates {
     }
   }
 
-  /*template <bool USE_INDICES, bool ORDERED>
+  template <bool USE_INDICES, bool ORDERED>
   void ConstructHistograms(const data_size_t* data_indices,
                           data_size_t num_data,
                           const score_t* gradients,
@@ -259,9 +259,9 @@ struct TrainingShareStates {
       multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
         data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[i] * 2);
     }
-  }*/
+  }
 
-  template <bool USE_INDICES, bool ORDERED>
+  /*template <bool USE_INDICES, bool ORDERED>
   void ConstructHistograms(const data_size_t* data_indices,
                           data_size_t num_data,
                           const score_t* gradients,
@@ -275,36 +275,37 @@ struct TrainingShareStates {
         n_data_blocks[i] = multi_val_bin_wrapper->PreConstructHistogramBlock(
           num_data, &hist_bufs_[i], hist_data + hist_data_offsets_[i] * 2);
       }
-      if (multi_val_bin_wappers_.size() == 2) {
-        int min_n_data_block = std::min<int>(n_data_blocks[0], n_data_blocks[1]);
-        #pragma omp parallel for schedule(static) num_threads(num_threads)
-        for (int block_id = 0; block_id < min_n_data_block; ++block_id) {
-          multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
-            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
-          multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
-            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
-        }
-        #pragma omp parallel for schedule(static) num_threads(num_threads)
-        for (int block_id = min_n_data_block; block_id < n_data_blocks[0]; ++block_id) {
-          multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
-            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
-        }
-        #pragma omp parallel for schedule(static) num_threads(num_threads)
-        for (int block_id = min_n_data_block; block_id < n_data_blocks[1]; ++block_id) {
-          multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
-            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
-        }
-        for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
-          const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
-          multi_val_bin_wrapper->PostConstructHistogramBlock(&hist_bufs_[i]);
-        }
+      int min_n_data_block = std::min<int>(n_data_blocks[0], n_data_blocks[1]);
+      if (min_n_data_block < num_threads) {
+        Log::Warning("min_n_data_block = %d, num_threads = %d", min_n_data_block, num_threads);
+      }
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
+      for (int block_id = 0; block_id < min_n_data_block; ++block_id) {
+        multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+          data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
+        multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+          data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
+      }
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
+      for (int block_id = min_n_data_block; block_id < n_data_blocks[0]; ++block_id) {
+        multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+          data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
+      }
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
+      for (int block_id = min_n_data_block; block_id < n_data_blocks[1]; ++block_id) {
+        multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+          data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
+      }
+      for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
+        const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
+        multi_val_bin_wrapper->PostConstructHistogramBlock(&hist_bufs_[i]);
       }
     } else if (multi_val_bin_wappers_.size() == 1) {
       const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[0];
       multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
         data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[0] * 2);
     }
-  }
+  }*/
 
   void SetUseSubrow(bool is_use_subrow) {
     for (auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {

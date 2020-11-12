@@ -1244,8 +1244,24 @@ void Dataset::ConstructHistogramsInner(
     score_t* ordered_gradients, score_t* ordered_hessians,
     TrainingShareStates* share_state, hist_t* hist_data) const {
   if (!share_state->is_col_wise) {
-    return ConstructHistogramsMultiVal<USE_INDICES, false>(
-        data_indices, num_data, gradients, hessians, share_state, hist_data);
+    if (share_state->is_sep_row_wise) {
+      auto ptr_ordered_grad = gradients;
+      auto ptr_ordered_hess = hessians;
+      if (USE_INDICES) {
+        #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+        for (data_size_t i = 0; i < num_data; ++i) {
+          ordered_gradients[i] = gradients[data_indices[i]];
+          ordered_hessians[i] = hessians[data_indices[i]];
+        }
+        ptr_ordered_grad = ordered_gradients;
+        ptr_ordered_hess = ordered_hessians;
+      }
+      return ConstructHistogramsMultiVal<USE_INDICES, true>(
+          data_indices, num_data, ptr_ordered_grad, ptr_ordered_hess, share_state, hist_data);
+    } else {
+      return ConstructHistogramsMultiVal<USE_INDICES, false>(
+          data_indices, num_data, ptr_ordered_grad, ptr_ordered_hess, share_state, hist_data);
+    }
   }
   std::vector<int> used_dense_group;
   int multi_val_groud_id = -1;
