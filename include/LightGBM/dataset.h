@@ -396,8 +396,6 @@ class Dataset {
 
   MultiValBin* GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets) const;
 
-  MultiValBin* GetMultiBinFromDenseFeatures(const std::vector<uint32_t>& offsets) const;
-
   MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const;
 
   TrainingShareStates* GetShareStates(
