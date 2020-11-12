@@ -26,8 +26,7 @@ void MultiValBinWrapper::InitTrain(const std::vector<int>& group_feature_start,
   const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
   const std::vector<int8_t>& is_feature_used,
   const data_size_t* bagging_use_indices,
-  data_size_t bagging_indices_cnt,
-  int min_block_size) {
+  data_size_t bagging_indices_cnt) {
   is_use_subcol_ = false;
   if (multi_val_bin_ == nullptr) {
     return;
@@ -40,9 +39,8 @@ void MultiValBinWrapper::InitTrain(const std::vector<int>& group_feature_start,
   if (cur_multi_val_bin != nullptr) {
     num_bin_ = cur_multi_val_bin->num_bin();
     num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    //min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
-    //  cur_multi_val_bin->num_element_per_row()) + 1, 1024);
-    min_block_size_ = min_block_size;
+    min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
+      cur_multi_val_bin->num_element_per_row()) + 1, 1024);
   }
 }
 

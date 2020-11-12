@@ -32,8 +32,7 @@ class MultiValBinWrapper {
     const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
     const std::vector<int8_t>& is_feature_used,
     const data_size_t* bagging_use_indices,
-    data_size_t bagging_indices_cnt,
-    int min_block_size);
+    data_size_t bagging_indices_cnt);
 
   void HistMove(const std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>& hist_buf);
 
@@ -240,15 +239,12 @@ struct TrainingShareStates {
   void InitTrain(const std::vector<int>& group_feature_start,
         const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
         const std::vector<int8_t>& is_feature_used) {
-    int min_block_size = std::min<int>(static_cast<int>(0.3f * num_total_bin_ /
-      num_elements_per_row_) + 1, 1024);
     for (const auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
       multi_val_bin_wrapper->InitTrain(group_feature_start,
         feature_groups,
         is_feature_used,
         bagging_use_indices,
-        bagging_indices_cnt,
-        min_block_size);
+        bagging_indices_cnt);
     }
   }
 
