@@ -647,14 +647,14 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
 TrainingShareStates* Dataset::GetShareStates(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-    bool force_colwise, bool force_rowwise, bool force_two_rowwise) const {
+    bool force_col_wise, bool force_row_wise, bool force_sep_row_wise) const {
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
                                   global_timer);
-  if ((force_colwise && force_rowwise) ||
-    (force_colwise && force_two_rowwise) ||
-    (force_rowwise && force_two_rowwise)) {
+  if ((force_col_wise && force_row_wise) ||
+    (force_col_wise && force_sep_row_wise) ||
+    (force_row_wise && force_sep_row_wise)) {
     Log::Fatal(
-        "Cannot set any two of `force_col_wise`, `force_row_wise` and `force_two_rowwise` to `true` at "
+        "Cannot set any two of `force_col_wise`, `force_row_wise` and `force_sep_row_wise` to `true` at "
         "the same time");
   }
   int multi_val_group = -1;
@@ -664,20 +664,20 @@ TrainingShareStates* Dataset::GetShareStates(
       break;
     }
   }
-  bool try_two_rowwise = num_groups_ > 1 && multi_val_group >= 0 &&
+  bool try_sep_row_wise = num_groups_ > 1 && multi_val_group >= 0 &&
     !feature_groups_[multi_val_group]->is_dense_multi_val_;
-  if (!try_two_rowwise && force_two_rowwise) {
-    force_two_rowwise = false;
-    force_rowwise = true;
-    Log::Warning("No sparse feature group is found, so degenerate force_two_row_wise to force_row_wise");
+  if (!try_sep_row_wise && force_sep_row_wise) {
+    force_sep_row_wise = false;
+    force_row_wise = true;
+    Log::Warning("No sparse feature group is found, so degenerate force_sep_row_wise to force_row_wise");
   }
   if (num_groups_ <= 0) {
     TrainingShareStates* share_state = new TrainingShareStates();
-    share_state->is_colwise = true;
+    share_state->is_col_wise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   }
-  if (force_colwise) {
+  if (force_col_wise) {
     TrainingShareStates* share_state = new TrainingShareStates();
     std::vector<uint32_t> offsets1, offsets2;
     uint32_t hist_start_pos1 = 0, hist_start_pos2 = 0;
@@ -687,11 +687,11 @@ TrainingShareStates* Dataset::GetShareStates(
       true, false);
     share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets1),
       num_data_, feature_groups_, false, true, hist_start_pos1);
-    share_state->is_colwise = true;
-    share_state->is_two_rowwise = false;
+    share_state->is_col_wise = true;
+    share_state->is_sep_row_wise = false;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
-  } else if (force_rowwise) {
+  } else if (force_row_wise) {
     TrainingShareStates* share_state = new TrainingShareStates();
     std::vector<uint32_t> offsets1, offsets2;
     uint32_t hist_start_pos1 = 0, hist_start_pos2 = 0;
@@ -701,11 +701,11 @@ TrainingShareStates* Dataset::GetShareStates(
       false, false);
     share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets1), num_data_,
       feature_groups_, false, false, hist_start_pos1);
-    share_state->is_colwise = false;
-    share_state->is_two_rowwise = false;
+    share_state->is_col_wise = false;
+    share_state->is_sep_row_wise = false;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
-  } else if (force_two_rowwise) {
+  } else if (force_sep_row_wise) {
     TrainingShareStates* share_state = new TrainingShareStates();
     std::vector<uint32_t> offsets1, offsets2;
     uint32_t hist_start_pos1 = 0, hist_start_pos2 = 0;
@@ -719,63 +719,63 @@ TrainingShareStates* Dataset::GetShareStates(
       feature_groups_, true, false, hist_start_pos2);
     share_state->SetMultiValBin(sparse_multi_val_bin, num_data_,
       feature_groups_, false, true, hist_start_pos1);
-    share_state->is_colwise = false;
-    share_state->is_two_rowwise = true;
+    share_state->is_col_wise = false;
+    share_state->is_sep_row_wise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else {
     std::unique_ptr<MultiValBin> sparse_bin;
     std::unique_ptr<MultiValBin> all_bin;
-    std::unique_ptr<TrainingShareStates> colwise_state;
-    std::unique_ptr<TrainingShareStates> rowwise_state;
-    std::unique_ptr<TrainingShareStates> two_rowwise_state;
-    colwise_state.reset(new TrainingShareStates());
-    rowwise_state.reset(new TrainingShareStates());
-    two_rowwise_state.reset(new TrainingShareStates());
+    std::unique_ptr<TrainingShareStates> col_wise_state;
+    std::unique_ptr<TrainingShareStates> row_wise_state;
+    std::unique_ptr<TrainingShareStates> sep_row_wise_state;
+    col_wise_state.reset(new TrainingShareStates());
+    row_wise_state.reset(new TrainingShareStates());
+    sep_row_wise_state.reset(new TrainingShareStates());
 
     std::chrono::duration<double, std::milli> col_wise_init_time,
         row_wise_init_time, two_row_wise_init_time;
     auto start_time = std::chrono::steady_clock::now();
     std::vector<uint32_t> col_wise_offsets1, col_wise_offsets2;
     uint32_t hist_start_pos1 = 0, hist_start_pos2 = 0;
-    colwise_state->CalcBinOffsets(feature_groups_, &col_wise_offsets1, &col_wise_offsets2,
+    col_wise_state->CalcBinOffsets(feature_groups_, &col_wise_offsets1, &col_wise_offsets2,
       &hist_start_pos1, &hist_start_pos2,
       true, false);
-    colwise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(col_wise_offsets1), num_data_,
+    col_wise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(col_wise_offsets1), num_data_,
       feature_groups_, false, true, hist_start_pos1);
     col_wise_init_time = std::chrono::steady_clock::now() - start_time;
 
     start_time = std::chrono::steady_clock::now();
     std::vector<uint32_t> row_wise_offsets1, row_wise_offsets2;
-    rowwise_state->CalcBinOffsets(feature_groups_, &row_wise_offsets1, &row_wise_offsets2,
+    row_wise_state->CalcBinOffsets(feature_groups_, &row_wise_offsets1, &row_wise_offsets2,
       &hist_start_pos1, &hist_start_pos2,
       false, false);
-    rowwise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets1), num_data_,
+    row_wise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets1), num_data_,
       feature_groups_, false, false, hist_start_pos1);
     row_wise_init_time = std::chrono::steady_clock::now() - start_time;
 
-    if (try_two_rowwise) {
+    if (try_sep_row_wise) {
       start_time = std::chrono::steady_clock::now();
       std::vector<uint32_t> two_row_wise_offsets1, two_row_wise_offsets2;
-      two_rowwise_state->CalcBinOffsets(feature_groups_, &two_row_wise_offsets1, &two_row_wise_offsets2,
+      sep_row_wise_state->CalcBinOffsets(feature_groups_, &two_row_wise_offsets1, &two_row_wise_offsets2,
         &hist_start_pos1, &hist_start_pos2,
         false, true);
       MultiValBin* dense_multi_val_bin = GetMultiBinFromDenseFeatures(two_row_wise_offsets2);
       MultiValBin* sparse_multi_val_bin = GetMultiBinFromSparseFeatures(two_row_wise_offsets1);
-      two_rowwise_state->SetMultiValBin(dense_multi_val_bin, num_data_,
+      sep_row_wise_state->SetMultiValBin(dense_multi_val_bin, num_data_,
         feature_groups_, true, false, hist_start_pos2);
-      two_rowwise_state->SetMultiValBin(sparse_multi_val_bin, num_data_,
+      sep_row_wise_state->SetMultiValBin(sparse_multi_val_bin, num_data_,
         feature_groups_, false, true, hist_start_pos1);
-      two_rowwise_state->is_colwise = false;
-      two_rowwise_state->is_two_rowwise = true;
+      sep_row_wise_state->is_col_wise = false;
+      sep_row_wise_state->is_sep_row_wise = true;
       two_row_wise_init_time = std::chrono::steady_clock::now() - start_time;
     }
 
-    uint64_t max_total_bin = std::max<uint64_t>(rowwise_state->num_hist_total_bin(),
-      std::max<uint64_t>(colwise_state->num_hist_total_bin(), two_rowwise_state->num_hist_total_bin()));
+    uint64_t max_total_bin = std::max<uint64_t>(row_wise_state->num_hist_total_bin(),
+      std::max<uint64_t>(col_wise_state->num_hist_total_bin(), sep_row_wise_state->num_hist_total_bin()));
     std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
         hist_data(max_total_bin * 2);
-    if (try_two_rowwise) {
+    if (try_sep_row_wise) {
     Log::Debug(
         "init for col-wise cost %f seconds, init for row-wise cost %f seconds, init for two-row-wise %f seconds",
         col_wise_init_time * 1e-3, row_wise_init_time * 1e-3, two_row_wise_init_time * 1e-3);
@@ -784,31 +784,31 @@ TrainingShareStates* Dataset::GetShareStates(
         "init for col-wise cost %f seconds, init for row-wise cost %f seconds",
         col_wise_init_time * 1e-3, row_wise_init_time * 1e-3);
     }
-    colwise_state->is_colwise = true;
-    colwise_state->is_constant_hessian = is_constant_hessian;
-    InitTrain(is_feature_used, colwise_state.get());
-    rowwise_state->is_colwise = false;
-    rowwise_state->is_constant_hessian = is_constant_hessian;
-    InitTrain(is_feature_used, rowwise_state.get());
+    col_wise_state->is_col_wise = true;
+    col_wise_state->is_constant_hessian = is_constant_hessian;
+    InitTrain(is_feature_used, col_wise_state.get());
+    row_wise_state->is_col_wise = false;
+    row_wise_state->is_constant_hessian = is_constant_hessian;
+    InitTrain(is_feature_used, row_wise_state.get());
     std::chrono::duration<double, std::milli> col_wise_time, row_wise_time, two_row_wise_time(0.0f);
     start_time = std::chrono::steady_clock::now();
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
-                        hessians, gradients, hessians, colwise_state.get(),
+                        hessians, gradients, hessians, col_wise_state.get(),
                         hist_data.data());
     col_wise_time = std::chrono::steady_clock::now() - start_time;
     start_time = std::chrono::steady_clock::now();
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
-                        hessians, gradients, hessians, rowwise_state.get(),
+                        hessians, gradients, hessians, row_wise_state.get(),
                         hist_data.data());
     row_wise_time = std::chrono::steady_clock::now() - start_time;
 
-    if (try_two_rowwise) {
-      two_rowwise_state->is_colwise = false;
-      two_rowwise_state->is_constant_hessian = is_constant_hessian;
-      InitTrain(is_feature_used, two_rowwise_state.get());
+    if (try_sep_row_wise) {
+      sep_row_wise_state->is_col_wise = false;
+      sep_row_wise_state->is_constant_hessian = is_constant_hessian;
+      InitTrain(is_feature_used, sep_row_wise_state.get());
       start_time = std::chrono::steady_clock::now();
       ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
-                          hessians, gradients, hessians, two_rowwise_state.get(),
+                          hessians, gradients, hessians, sep_row_wise_state.get(),
                           hist_data.data());
       two_row_wise_time = std::chrono::steady_clock::now() - start_time;
       Log::Debug("col-wise cost %f seconds, row-wise cost %f seconds, two-row-wise cost %f seconds",
@@ -819,16 +819,16 @@ TrainingShareStates* Dataset::GetShareStates(
     }
 
     if (col_wise_time < row_wise_time &&
-      (!try_two_rowwise || col_wise_time <= two_row_wise_time)) {
+      (!try_sep_row_wise || col_wise_time <= two_row_wise_time)) {
       auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time + two_row_wise_time;
       Log::Warning(
           "Auto-choosing col-wise multi-threading, the overhead of testing was "
           "%f seconds.\n"
           "You can set `force_col_wise=true` to remove the overhead.",
           overhead_cost * 1e-3);
-      return colwise_state.release();
+      return col_wise_state.release();
     } else if (row_wise_time <= col_wise_time &&
-      (!try_two_rowwise || row_wise_time <= two_row_wise_time)) {
+      (!try_sep_row_wise || row_wise_time <= two_row_wise_time)) {
       auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time + two_row_wise_time;
       Log::Warning(
           "Auto-choosing row-wise multi-threading, the overhead of testing was "
@@ -836,22 +836,22 @@ TrainingShareStates* Dataset::GetShareStates(
           "You can set `force_row_wise=true` to remove the overhead.\n"
           "And if memory is not enough, you can set `force_col_wise=true`.",
           overhead_cost * 1e-3);
-      if (rowwise_state->IsSparseRowwise()) {
+      if (row_wise_state->IsSparseRowwise()) {
         Log::Debug("Using Sparse Multi-Val Bin");
       } else {
         Log::Debug("Using Dense Multi-Val Bin");
       }
-      return rowwise_state.release();
+      return row_wise_state.release();
     } else {
       auto overhead_cost = two_row_wise_init_time + row_wise_time + col_wise_time + two_row_wise_time;
       Log::Warning(
           "Auto-choosing two-row-wise multi-threading, the overhead of testing was "
           "%f seconds.\n"
-          "You can set `force_two_row_wise=true` to remove the overhead.\n"
+          "You can set `force_sep_row_wise=true` to remove the overhead.\n"
           "And if memory is not enough, you can set `force_col_wise=true`.",
           overhead_cost * 1e-3);
     }
-    return two_rowwise_state.release();
+    return sep_row_wise_state.release();
   }
 }
 
@@ -1243,7 +1243,7 @@ void Dataset::ConstructHistogramsInner(
     data_size_t num_data, const score_t* gradients, const score_t* hessians,
     score_t* ordered_gradients, score_t* ordered_hessians,
     TrainingShareStates* share_state, hist_t* hist_data) const {
-  if (!share_state->is_colwise) {
+  if (!share_state->is_col_wise) {
     return ConstructHistogramsMultiVal<USE_INDICES, false>(
         data_indices, num_data, gradients, hessians, share_state, hist_data);
   }

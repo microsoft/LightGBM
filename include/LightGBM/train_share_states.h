@@ -42,6 +42,65 @@ class MultiValBinWrapper {
     MultiValBin* sub_multi_val_bin,
     hist_t* origin_hist_data);
 
+  int PreConstructHistogramBlock(data_size_t num_data,
+    std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf,
+      hist_t* origin_hist_data) {
+    cur_multi_val_bin_ = (is_use_subcol_ || is_use_subrow_)
+          ? multi_val_bin_subset_.get()
+          : multi_val_bin_.get();
+    if (cur_multi_val_bin_ != nullptr) {
+      n_data_block_ = 1;
+      data_block_size_ = num_data;
+      Threading::BlockInfo<data_size_t>(num_threads_, num_data, min_block_size_,
+                                        max_block_size_, &n_data_block_, &data_block_size_);
+      ResizeHistBuf(hist_buf, cur_multi_val_bin_, origin_hist_data);
+      return n_data_block_;
+    } else {
+      return 0;
+    }
+  }
+
+  void PostConstructHistogramBlock(
+    std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf) {
+    global_timer.Start("Dataset::sparse_bin_histogram_merge");
+    HistMerge(hist_buf);
+    global_timer.Stop("Dataset::sparse_bin_histogram_merge");
+    global_timer.Start("Dataset::sparse_bin_histogram_move");
+    HistMove(*hist_buf);
+    global_timer.Stop("Dataset::sparse_bin_histogram_move");
+  }
+
+  template <bool USE_INDICES, bool ORDERED>
+  void ConstructHistogramsForOneBlock(
+    const data_size_t* data_indices, const score_t* gradients,
+    const score_t* hessians, int block_id, data_size_t num_data,
+    std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf) {
+    hist_t* data_ptr = origin_hist_data_;
+    if (block_id == 0) {
+      if (is_use_subcol_) {
+        data_ptr = hist_buf->data() + hist_buf->size() - 2 * static_cast<size_t>(num_bin_aligned_);
+      }
+    } else {
+      data_ptr = hist_buf->data() +
+        static_cast<size_t>(num_bin_aligned_) * (block_id - 1) * 2;
+    }
+    data_size_t start = block_id * data_block_size_;
+    data_size_t end = std::min<data_size_t>(start + data_block_size_, num_data);
+    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin_ * kHistBufferEntrySize);
+    if (USE_INDICES) {
+      if (ORDERED) {
+        cur_multi_val_bin_->ConstructHistogramOrdered(data_indices, start, end,
+                                                gradients, hessians, data_ptr);
+      } else {
+        cur_multi_val_bin_->ConstructHistogram(data_indices, start, end, gradients,
+                                          hessians, data_ptr);
+      }
+    } else {
+      cur_multi_val_bin_->ConstructHistogram(start, end, gradients, hessians,
+                                        data_ptr);
+    }
+  }
+
   template <bool USE_INDICES, bool ORDERED>
   void ConstructHistograms(const data_size_t* data_indices,
       data_size_t num_data,
@@ -131,6 +190,7 @@ class MultiValBinWrapper {
   bool is_subrow_copied_ = false;
   std::unique_ptr<MultiValBin> multi_val_bin_;
   std::unique_ptr<MultiValBin> multi_val_bin_subset_;
+  MultiValBin* cur_multi_val_bin_;
   std::vector<uint32_t> hist_move_src_;
   std::vector<uint32_t> hist_move_dest_;
   std::vector<uint32_t> hist_move_size_;
@@ -152,8 +212,8 @@ class MultiValBinWrapper {
 
 struct TrainingShareStates {
   int num_threads = 0;
-  bool is_colwise = true;
-  bool is_two_rowwise = false;
+  bool is_col_wise = true;
+  bool is_sep_row_wise = false;
   bool is_constant_hessian = true;
   const data_size_t* bagging_use_indices;
   data_size_t bagging_indices_cnt;
@@ -188,7 +248,7 @@ struct TrainingShareStates {
     }
   }
 
-  template <bool USE_INDICES, bool ORDERED>
+  /*template <bool USE_INDICES, bool ORDERED>
   void ConstructHistograms(const data_size_t* data_indices,
                           data_size_t num_data,
                           const score_t* gradients,
@@ -198,6 +258,51 @@ struct TrainingShareStates {
       const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
       multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
         data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[i] * 2);
+    }
+  }*/
+
+  template <bool USE_INDICES, bool ORDERED>
+  void ConstructHistograms(const data_size_t* data_indices,
+                          data_size_t num_data,
+                          const score_t* gradients,
+                          const score_t* hessians,
+                          hist_t* hist_data) {
+    if (multi_val_bin_wappers_.size() == 2) {
+      hist_bufs_.resize(multi_val_bin_wappers_.size());
+      std::vector<int> n_data_blocks(multi_val_bin_wappers_.size()); 
+      for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
+        const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
+        n_data_blocks[i] = multi_val_bin_wrapper->PreConstructHistogramBlock(
+          num_data, &hist_bufs_[i], hist_data + hist_data_offsets_[i] * 2);
+      }
+      if (multi_val_bin_wappers_.size() == 2) {
+        int min_n_data_block = std::min<int>(n_data_blocks[0], n_data_blocks[1]);
+        #pragma omp parallel for schedule(static) num_threads(num_threads)
+        for (int block_id = 0; block_id < min_n_data_block; ++block_id) {
+          multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
+          multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
+        }
+        #pragma omp parallel for schedule(static) num_threads(num_threads)
+        for (int block_id = min_n_data_block; block_id < n_data_blocks[0]; ++block_id) {
+          multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
+        }
+        #pragma omp parallel for schedule(static) num_threads(num_threads)
+        for (int block_id = min_n_data_block; block_id < n_data_blocks[1]; ++block_id) {
+          multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
+        }
+        for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
+          const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];
+          multi_val_bin_wrapper->PostConstructHistogramBlock(&hist_bufs_[i]);
+        }
+      }
+    } else if (multi_val_bin_wappers_.size() == 1) {
+      const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[0];
+      multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
+        data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[0] * 2);
     }
   }
 
@@ -219,6 +324,7 @@ struct TrainingShareStates {
   std::vector<size_t> hist_data_offsets_;
   std::vector<std::unique_ptr<MultiValBinWrapper>> multi_val_bin_wappers_;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
+  std::vector<std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>> hist_bufs_;
 };
 
 }  // namespace LightGBM
