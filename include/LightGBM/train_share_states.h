@@ -248,7 +248,7 @@ struct TrainingShareStates {
     }
   }
 
-  template <bool USE_INDICES, bool ORDERED>
+  /*template <bool USE_INDICES, bool ORDERED>
   void ConstructHistograms(const data_size_t* data_indices,
                           data_size_t num_data,
                           const score_t* gradients,
@@ -259,9 +259,9 @@ struct TrainingShareStates {
       multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
         data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[i] * 2);
     }
-  }
+  }*/
 
-  /*template <bool USE_INDICES, bool ORDERED>
+  template <bool USE_INDICES, bool ORDERED>
   void ConstructHistograms(const data_size_t* data_indices,
                           data_size_t num_data,
                           const score_t* gradients,
@@ -305,7 +305,7 @@ struct TrainingShareStates {
       multi_val_bin_wrapper->ConstructHistograms<USE_INDICES, ORDERED>(
         data_indices, num_data, gradients, hessians, &hist_buf_, hist_data + hist_data_offsets_[0] * 2);
     }
-  }*/
+  }
 
   void SetUseSubrow(bool is_use_subrow) {
     for (auto& multi_val_bin_wrapper : multi_val_bin_wappers_) {
