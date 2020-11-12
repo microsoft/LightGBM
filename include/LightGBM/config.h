@@ -235,8 +235,7 @@ struct Config {
   // descl2 = the number of columns is large, or the total number of bins is large
   // descl2 = ``num_threads`` is large, e.g. ``> 20``
   // descl2 = you want to reduce memory cost
-  // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``,
-  // desc = LightGBM will firstly try them all, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+  // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
   bool force_col_wise = false;
 
@@ -247,9 +246,8 @@ struct Config {
   // descl2 = ``num_threads`` is relatively small, e.g. ``<= 16``
   // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
   // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
-  // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``,
-  // desc = LightGBM will firstly try them all, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
-  // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise```, choose only one of them
+  // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+  // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
   bool force_row_wise = false;
 
   // alias = hist_pool_size
