@@ -1260,7 +1260,7 @@ void Dataset::ConstructHistogramsInner(
           data_indices, num_data, ptr_ordered_grad, ptr_ordered_hess, share_state, hist_data);
     } else {
       return ConstructHistogramsMultiVal<USE_INDICES, false>(
-          data_indices, num_data, ptr_ordered_grad, ptr_ordered_hess, share_state, hist_data);
+          data_indices, num_data, gradients, hessians, share_state, hist_data);
     }
   }
   std::vector<int> used_dense_group;
