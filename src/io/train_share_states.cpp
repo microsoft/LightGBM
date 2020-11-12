@@ -245,22 +245,9 @@ void MultiValBinWrapper::CopyMultiValBinSubset(
 }
 
 void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
-  std::vector<uint32_t>* offsets, std::vector<uint32_t>* offsets2,
-  uint32_t* hist_start_pos1, uint32_t* hist_start_pos2,
-  bool is_col_wise, bool is_two_row_wise) {
+  std::vector<uint32_t>* offsets, bool is_col_wise) {
   offsets->clear();
-  offsets2->clear();
   feature_hist_offsets_.clear();
-  if (is_two_row_wise) {
-    is_two_row_wise = false;
-    for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
-      if (feature_groups[group]->is_multi_val_) {
-        if (!feature_groups[group]->is_dense_multi_val_ && feature_groups.size() > 1) {
-          is_two_row_wise = true;
-        }
-      }
-    }
-  }
   if (is_col_wise) {
     uint32_t cur_num_bin = 0;
     uint32_t hist_cur_num_bin = 0;
@@ -311,16 +298,14 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
     }
     feature_hist_offsets_.push_back(hist_cur_num_bin);
     num_hist_total_bin_ = static_cast<uint64_t>(feature_hist_offsets_.back());
-    *hist_start_pos1 = 0;
-    *hist_start_pos2 = 0;
-  } else if (!is_two_row_wise) {
+  } else {
     double sum_dense_ratio = 0.0f;
     int ncol = 0;
     for (int gid = 0; gid < static_cast<int>(feature_groups.size()); ++gid) {
       if (feature_groups[gid]->is_multi_val_) {
         ncol += feature_groups[gid]->num_feature_;
       } else {
-        ncol += 1;
+        ++ncol;
       }
       for (int fid = 0; fid < feature_groups[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups[gid]->bin_mappers_[fid];
@@ -392,117 +377,12 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
       feature_hist_offsets_.push_back(hist_cur_num_bin);
     }
     num_hist_total_bin_ = static_cast<uint64_t>(feature_hist_offsets_.back());
-    *hist_start_pos1 = 0;
-    *hist_start_pos2 = 0;
-  } else {
-    std::vector<uint32_t> feature_hist_offsets1, feature_hist_offsets2;
-    int multi_val_group_id = -1;
-    bool is_sparse_multi_val = false;
-    std::vector<std::vector<int>> features_in_group;
-    int feature_offset = 0;
-    for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
-      const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[group];
-      features_in_group.emplace_back(0);
-      if (feature_group->is_multi_val_) {
-        multi_val_group_id = group;
-        if (!feature_group->is_dense_multi_val_) {
-          is_sparse_multi_val = true;
-        }
-      }
-      for (int i = 0; i < feature_group->num_feature_; ++i) {
-        features_in_group.back().push_back(feature_offset + i);
-      }
-      feature_offset += feature_group->num_feature_;
-    }
-    CHECK_GE(multi_val_group_id, 0);
-    CHECK(is_sparse_multi_val);
-
-    double sum_dense_ratio = 0.0f;
-    int ncol = 0;
-    for (int gid = 0; gid < static_cast<int>(feature_groups.size()); ++gid) {
-      if (feature_groups[gid]->is_multi_val_) {
-        continue;
-      }
-      ncol += 1;
-      for (int fid = 0; fid < feature_groups[gid]->num_feature_; ++fid) {
-        const auto& bin_mapper = feature_groups[gid]->bin_mappers_[fid];
-        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
-      }
-    }
-    sum_dense_ratio /= ncol;
-    const uint32_t offset = (1.0f - sum_dense_ratio) >=
-      MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
-
-    int cur_num_bin = 1;
-    int cur_num_bin2 = offset;
-    uint32_t hist_cur_num_bin = 1;
-    uint32_t hist_cur_num_bin2 = offset;
-    const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[multi_val_group_id];
-    for (int i = 0; i < feature_group->num_feature_; ++i) {
-      offsets->push_back(cur_num_bin);
-      feature_hist_offsets1.push_back(hist_cur_num_bin);
-      const std::unique_ptr<BinMapper>& bin_mapper = feature_group->bin_mappers_[i];
-      int num_bin = bin_mapper->num_bin();
-      if (bin_mapper->GetMostFreqBin() == 0) {
-        num_bin -= 1;
-      }
-      cur_num_bin += num_bin;
-      hist_cur_num_bin += num_bin;
-    }
-    offsets->push_back(cur_num_bin);
-    feature_hist_offsets1.push_back(hist_cur_num_bin);
-    for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
-      if (group == multi_val_group_id) {
-        continue;
-      }
-      const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[group];
-      CHECK(!feature_group->is_multi_val_);
-      offsets2->push_back(cur_num_bin2);
-      cur_num_bin2 += feature_group->bin_offsets_.back() - offset;
-      for (int i = 0; i < feature_group->num_feature_; ++i) {
-        feature_hist_offsets2.push_back(hist_cur_num_bin2 + feature_group->bin_offsets_[i] - offset);
-      }
-      hist_cur_num_bin2 += feature_group->bin_offsets_.back() - offset;
-    }
-    offsets2->push_back(cur_num_bin2);
-    feature_hist_offsets2.push_back(hist_cur_num_bin2);
-    feature_hist_offsets_.clear();
-    if (multi_val_group_id == 0) {
-      // put histograms of all dense features in the back
-      for (int i = 0; i < static_cast<int>(feature_hist_offsets1.size()) - 1; ++i) {
-        feature_hist_offsets_.push_back(feature_hist_offsets1[i]);
-      }
-      for (int i = 0; i < static_cast<int>(feature_hist_offsets2.size()); ++i) {
-        feature_hist_offsets_.push_back(feature_hist_offsets2[i] + feature_hist_offsets1.back());
-      }
-      *hist_start_pos1 = 0;
-      *hist_start_pos2 = feature_hist_offsets1.back();
-    } else {
-      size_t cur_dense_feature = 0;
-      // put histograms of all dense features in the front
-      for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
-        const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[group];
-        if (feature_group->is_multi_val_) {
-          for (int i = 0; i < feature_group->num_feature_; ++i) {
-            feature_hist_offsets_.push_back(feature_hist_offsets1[i] + feature_hist_offsets2.back());
-          }
-        } else {
-          for (int i = 0; i < feature_group->num_feature_; ++i) {
-            feature_hist_offsets_.push_back(feature_hist_offsets2[cur_dense_feature++]);
-          }
-        }
-      }
-      feature_hist_offsets_.push_back(feature_hist_offsets1.back() + feature_hist_offsets2.back());
-      *hist_start_pos1 = feature_hist_offsets2.back();
-      *hist_start_pos2 = 0;
-    }
-    num_hist_total_bin_ = static_cast<uint64_t>(feature_hist_offsets1.back() + feature_hist_offsets2.back());
   }
 }
 
 void TrainingShareStates::SetMultiValBin(MultiValBin* bin, data_size_t num_data,
   const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
-  bool dense_only, bool sparse_only, uint32_t hist_start_pos) {
+  bool dense_only, bool sparse_only) {
   num_threads = OMP_NUM_THREADS();
   if (bin == nullptr) {
     return;
@@ -520,9 +400,8 @@ void TrainingShareStates::SetMultiValBin(MultiValBin* bin, data_size_t num_data,
   }
   num_total_bin_ += bin->num_bin();
   num_elements_per_row_ += bin->num_element_per_row();
-  multi_val_bin_wrappers_.emplace_back(new MultiValBinWrapper(
+  multi_val_bin_wrapper_.reset(new MultiValBinWrapper(
     bin, num_data, feature_groups_contained));
-  hist_data_offsets_.push_back(static_cast<size_t>(hist_start_pos));
 }
 
 }  // namespace LightGBM

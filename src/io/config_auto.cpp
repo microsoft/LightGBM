@@ -186,7 +186,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "deterministic",
   "force_col_wise",
   "force_row_wise",
-  "force_sep_row_wise",
   "histogram_pool_size",
   "max_depth",
   "min_data_in_leaf",
@@ -328,8 +327,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "force_col_wise", &force_col_wise);
 
   GetBool(params, "force_row_wise", &force_row_wise);
-
-  GetBool(params, "force_sep_row_wise", &force_sep_row_wise);
 
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
 
@@ -634,7 +631,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[deterministic: " << deterministic << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
   str_buf << "[force_row_wise: " << force_row_wise << "]\n";
-  str_buf << "[force_sep_row_wise: " << force_sep_row_wise << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
   str_buf << "[max_depth: " << max_depth << "]\n";
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";

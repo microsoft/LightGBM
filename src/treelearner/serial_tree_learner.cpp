@@ -79,14 +79,14 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
     share_state_.reset(dataset->GetShareStates(
         ordered_gradients_.data(), ordered_hessians_.data(),
         col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-        config_->force_col_wise, config_->force_row_wise, config_->force_sep_row_wise));
+        config_->force_col_wise, config_->force_row_wise));
   } else {
     CHECK_NOTNULL(share_state_);
     // cannot change is_hist_col_wise during training
     share_state_.reset(dataset->GetShareStates(
         ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
         is_constant_hessian, share_state_->is_col_wise,
-        !share_state_->is_col_wise, config_->force_sep_row_wise));
+        !share_state_->is_col_wise));
   }
   CHECK_NOTNULL(share_state_);
 }
