@@ -276,25 +276,20 @@ struct TrainingShareStates {
           num_data, &hist_bufs_[i], hist_data + hist_data_offsets_[i] * 2);
       }
       int min_n_data_block = std::min<int>(n_data_blocks[0], n_data_blocks[1]);
-      if (min_n_data_block < num_threads) {
-        Log::Warning("min_n_data_block = %d, num_threads = %d", min_n_data_block, num_threads);
-      }
+      int max_n_data_block = std::max<int>(n_data_blocks[0], n_data_blocks[1]);
+      //if (min_n_data_block < num_threads) {
+      //  Log::Warning("min_n_data_block = %d, max_n_data_block = %d, num_threads = %d", min_n_data_block, max_n_data_block, num_threads);
+      //}
       #pragma omp parallel for schedule(static) num_threads(num_threads)
-      for (int block_id = 0; block_id < min_n_data_block; ++block_id) {
-        multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
-          data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
-        multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
-          data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
-      }
-      #pragma omp parallel for schedule(static) num_threads(num_threads)
-      for (int block_id = min_n_data_block; block_id < n_data_blocks[0]; ++block_id) {
-        multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
-          data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
-      }
-      #pragma omp parallel for schedule(static) num_threads(num_threads)
-      for (int block_id = min_n_data_block; block_id < n_data_blocks[1]; ++block_id) {
-        multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
-          data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
+      for (int block_id = 0; block_id < max_n_data_block; ++block_id) {
+        if (block_id < n_data_blocks[0]) {
+          multi_val_bin_wappers_[0]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[0]);
+        }
+        if (block_id < n_data_blocks[1]) {
+          multi_val_bin_wappers_[1]->ConstructHistogramsForOneBlock<USE_INDICES, ORDERED>(
+            data_indices, gradients, hessians, block_id, num_data, &hist_bufs_[1]);
+        }
       }
       for (size_t i = 0; i < multi_val_bin_wappers_.size(); ++i) {
         const auto& multi_val_bin_wrapper = multi_val_bin_wappers_[i];

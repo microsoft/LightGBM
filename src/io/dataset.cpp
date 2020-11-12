@@ -1245,6 +1245,7 @@ void Dataset::ConstructHistogramsInner(
     TrainingShareStates* share_state, hist_t* hist_data) const {
   if (!share_state->is_col_wise) {
     if (share_state->is_sep_row_wise) {
+      global_timer.Start("Dataset::prepare_ordered_gradients");
       auto ptr_ordered_grad = gradients;
       auto ptr_ordered_hess = hessians;
       if (USE_INDICES) {
@@ -1256,6 +1257,7 @@ void Dataset::ConstructHistogramsInner(
         ptr_ordered_grad = ordered_gradients;
         ptr_ordered_hess = ordered_hessians;
       }
+      global_timer.Stop("Dataset::prepare_ordered_gradients");
       return ConstructHistogramsMultiVal<USE_INDICES, true>(
           data_indices, num_data, ptr_ordered_grad, ptr_ordered_hess, share_state, hist_data);
     } else {
