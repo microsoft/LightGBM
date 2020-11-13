@@ -2403,7 +2403,7 @@ RowFunctionFromCSR_helper(const void* indptr, const int32_t* indices, const void
 template<typename T>
 std::function<std::vector<std::pair<int, double>>(T idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, const void* data, int data_type, int64_t , int64_t ) {
-  if (data_type == C_API_DTYPE_FLOAT32) {    
+  if (data_type == C_API_DTYPE_FLOAT32) {
     if (indptr_type == C_API_DTYPE_INT32) {
      return RowFunctionFromCSR_helper<T, float, int32_t>(indptr, indices, data);
     } else if (indptr_type == C_API_DTYPE_INT64) {
@@ -2424,7 +2424,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
 
 template <typename T1, typename T2>
 std::function<std::pair<int, double>(int idx)> IterateFunctionFromCSC_helper(const void* col_ptr, const int32_t* indices, const void* data, int col_idx) {
-  const T1* data_ptr = reinterpret_cast<const T1*>(data);    
+  const T1* data_ptr = reinterpret_cast<const T1*>(data);
   const T2* ptr_col_ptr = reinterpret_cast<const T2*>(col_ptr);
   int64_t start = ptr_col_ptr[col_idx];
   int64_t end = ptr_col_ptr[col_idx + 1];
@@ -2447,7 +2447,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       return IterateFunctionFromCSC_helper<float, int32_t>(col_ptr, indices, data, col_idx);
     } else if (col_ptr_type == C_API_DTYPE_INT64) {
       return IterateFunctionFromCSC_helper<float, int64_t>(col_ptr, indices, data, col_idx);
-    }    
+    }
   } else if (data_type == C_API_DTYPE_FLOAT64) {
     if (col_ptr_type == C_API_DTYPE_INT32) {
       return IterateFunctionFromCSC_helper<double, int32_t>(col_ptr, indices, data, col_idx);
