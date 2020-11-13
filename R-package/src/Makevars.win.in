@@ -37,6 +37,7 @@ OBJECTS = \
     io/json11.o \
     io/metadata.o \
     io/parser.o \
+    io/train_share_states.o \
     io/tree.o \
     metric/dcg_calculator.o \
     metric/metric.o \
