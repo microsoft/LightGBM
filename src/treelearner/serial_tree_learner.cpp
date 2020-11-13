@@ -13,7 +13,6 @@
 #include <queue>
 #include <unordered_map>
 #include <utility>
-#include <fstream>
 
 #include "cost_effective_gradient_boosting.hpp"
 
