@@ -9,16 +9,21 @@ import pandas as pd
 import pytest
 import scipy.sparse
 from dask.array.utils import assert_eq
-from dask_ml.metrics import accuracy_score, r2_score
+try:
+    from dask_ml.metrics import accuracy_score, r2_score
+except ImportError:
+    from sklearn.metrics import accuracy_score, r2_score
 
 from distributed.utils_test import client, cluster_fixture, loop, gen_cluster  # noqa
 from sklearn.datasets import make_blobs, make_regression
 from sklearn.metrics import confusion_matrix
 
-import lightgbm.dask as dlgbm
+import lightgbm.dask_distributed as dlgbm
 
 data_output = ['array', 'scipy_csr_matrix', 'dataframe']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
+
+pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Windows is currently not supported")
 
 
 @pytest.fixture()

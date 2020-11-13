@@ -340,10 +340,11 @@ if __name__ == "__main__":
               'scipy',
               'scikit-learn!=0.22.0'
           ],
-          extras_requires={
+          extras_require={
               'dask': [
-                  'dask>=0.16.0',
-                  'distributed>=1.15.2'
+                  'dask[array]>=1.0.0',
+                  'dask[dataframe]>=1.0.0'
+                  'dask[distributed]>=1.0.0'
               ],
           },
           maintainer='Guolin Ke',

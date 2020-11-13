@@ -11,8 +11,10 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-import dask.array as da
-import dask.dataframe as dd
+from dask import array as da
+from dask import dataframe as dd
+# import dask.array as da
+# import dask.dataframe as dd
 import lightgbm
 import numpy as np
 import pandas as pd
