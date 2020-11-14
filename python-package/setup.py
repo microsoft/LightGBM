@@ -342,9 +342,9 @@ if __name__ == "__main__":
           ],
           extras_require={
               'dask': [
-                  'dask[array]>=1.0.0',
-                  'dask[dataframe]>=1.0.0'
-                  'dask[distributed]>=1.0.0'
+                  'dask[array]>=2.0.0',
+                  'dask[dataframe]>=2.0.0'
+                  'dask[distributed]>=2.0.0'
               ],
           },
           maintainer='Guolin Ke',
