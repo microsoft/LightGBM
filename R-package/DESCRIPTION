@@ -20,6 +20,9 @@ Authors@R: c(
     person("Jay", "Loden", role = c("cph")),
     person("Dave", "Daeschler", role = c("cph")),
     person("Giampaolo", "Rodola", role = c("cph")),
+    person("Alberto", "Ferreira", role = c("ctb")),
+    person("Daniel", "Lemire", role = c("ctb")),
+    person("Victor", "Zverovich", role = c("cph")),
     person("IBM Corporation", role = c("ctb"))
     )
 Description: Tree based algorithms can be improved by introducing boosting frameworks. 

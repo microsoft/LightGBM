@@ -9,7 +9,6 @@ LGB_CPPFLAGS = \
 
 PKG_CPPFLAGS = \
     -I$(PKGROOT)/include \
-    -DFMT_HEADER_ONLY \
     $(LGB_CPPFLAGS)
 
 PKG_CXXFLAGS = \
