@@ -18,7 +18,7 @@ namespace LightGBM {
 
 class Dataset;
 class DatasetLoader;
-class TrainingShareStates;
+struct TrainingShareStates;
 class MultiValBinWrapper;
 /*! \brief Using to store data and providing some operations on one feature
  * group*/
