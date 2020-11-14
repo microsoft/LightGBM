@@ -25,7 +25,8 @@ data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 
 pytestmark = [
     pytest.mark.skipif(sys.platform != "linux", reason="Only linux is currently supported"),
-    pytest.mark.skipif(sys.version_info < (3, 6), reason="Only python>=3.6 is supported")
+    pytest.mark.skipif(sys.version_info < (3, 6), reason="Only python>=3.6 is supported"),
+    pytest.mark.skipif(os.getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface")
 ]
 
 
@@ -125,7 +126,6 @@ def test_classifier_local_predict(client, listen_port):  # noqa
     assert_eq(y, p2)
 
 
-@pytest.mark.skipif(os.getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface")
 @pytest.mark.parametrize('output', data_output)
 def test_regressor(output, client, listen_port):  # noqa
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
