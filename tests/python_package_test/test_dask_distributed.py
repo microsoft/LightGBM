@@ -24,8 +24,8 @@ data_output = ['array', 'scipy_csr_matrix', 'dataframe']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 
 pytestmark = [
-    pytest.mark.skipif(sys.platform == "win32", reason="Windows is currently not supported"),
-    pytest.mark.skipif(sys.version_info < (3, 6), reason="Only python 3.6 is supported")
+    pytest.mark.skipif(sys.platform != "linux", reason="Only linux is currently supported"),
+    pytest.mark.skipif(sys.version_info < (3, 6), reason="Only python>=3.6 is supported")
 ]
 
 
