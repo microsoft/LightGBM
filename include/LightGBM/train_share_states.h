@@ -162,7 +162,7 @@ struct TrainingShareStates {
     multi_val_bin_wrapper_.reset(nullptr);
   }
 
-  uint64_t num_hist_total_bin() { return num_hist_total_bin_; }
+  int num_hist_total_bin() { return num_hist_total_bin_; }
 
   const std::vector<uint32_t>& feature_hist_offsets() { return feature_hist_offsets_; }
 
@@ -215,7 +215,7 @@ struct TrainingShareStates {
 
  private:
   std::vector<uint32_t> feature_hist_offsets_;
-  uint64_t num_hist_total_bin_ = 0;
+  int num_hist_total_bin_ = 0;
   std::unique_ptr<MultiValBinWrapper> multi_val_bin_wrapper_;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;
   int num_total_bin_ = 0;

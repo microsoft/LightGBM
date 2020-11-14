@@ -245,10 +245,10 @@ void MultiValBinWrapper::CopyMultiValBinSubset(
 }
 
 void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<FeatureGroup>>& feature_groups,
-  std::vector<uint32_t>* offsets, bool is_col_wise) {
+  std::vector<uint32_t>* offsets, bool in_is_col_wise) {
   offsets->clear();
   feature_hist_offsets_.clear();
-  if (is_col_wise) {
+  if (in_is_col_wise) {
     uint32_t cur_num_bin = 0;
     uint32_t hist_cur_num_bin = 0;
     for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
@@ -297,7 +297,7 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
       }
     }
     feature_hist_offsets_.push_back(hist_cur_num_bin);
-    num_hist_total_bin_ = static_cast<uint64_t>(feature_hist_offsets_.back());
+    num_hist_total_bin_ = static_cast<int>(feature_hist_offsets_.back());
   } else {
     double sum_dense_ratio = 0.0f;
     int ncol = 0;
@@ -376,7 +376,7 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
       offsets->push_back(cur_num_bin);
       feature_hist_offsets_.push_back(hist_cur_num_bin);
     }
-    num_hist_total_bin_ = static_cast<uint64_t>(feature_hist_offsets_.back());
+    num_hist_total_bin_ = static_cast<int>(feature_hist_offsets_.back());
   }
 }
 
