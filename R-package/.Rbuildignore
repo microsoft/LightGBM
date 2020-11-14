@@ -32,6 +32,8 @@ src/external_libs/fast_double_parser/benchmarks
 src/external_libs/fast_double_parser/Makefile
 src/external_libs/fast_double_parser/.*\.md
 src/external_libs/fast_double_parser/tests
+src/external_libs/fast_double_parser/.*\.yaml
+src/external_libs/fast_double_parser/.*\.yml
 src/external_libs/fmt/.*\.md
 src/external_libs/fmt/doc
 src/external_libs/fmt/support/Android\.mk
