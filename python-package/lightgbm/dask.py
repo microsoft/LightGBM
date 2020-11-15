@@ -5,23 +5,20 @@ It is based on dask-xgboost package.
 """
 import logging
 from collections import defaultdict
+from urllib.parse import urlparse
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
-
-from dask import array as da
-from dask import dataframe as dd
-# import dask.array as da
-# import dask.dataframe as dd
-import lightgbm
 import numpy as np
 import pandas as pd
+from dask import array as da
+from dask import dataframe as dd
 from dask import delayed
-from dask.distributed import wait, default_client, get_worker
-from lightgbm.basic import _safe_call, _LIB
-from toolz import first, assoc
+from dask.distributed import default_client, get_worker, wait
+from toolz import assoc, first
+
+import lightgbm
+from .basic import _LIB, _safe_call
+from .sklearn import LGBMClassifier as LocalLGBMClassifier, LGBMRegressor as LocalLGBMRegressor
+from .compat import _LGBMModelBase
 
 try:
     import scipy.sparse as ss
@@ -36,7 +33,7 @@ def _parse_host_port(address):
     return parsed.hostname, parsed.port
 
 
-def build_network_params(worker_addresses, local_worker_ip, local_listen_port, time_out):
+def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, time_out):
     """Build network parameters suiltable for LightGBM C backend.
 
     Parameters
@@ -73,7 +70,7 @@ def _concat(seq):
 
 def _train_part(params, model_factory, list_of_parts, worker_addresses, return_model, local_listen_port=12400,
                 time_out=120, **kwargs):
-    network_params = build_network_params(worker_addresses, get_worker().address, local_listen_port, time_out)
+    network_params = _build_network_params(worker_addresses, get_worker().address, local_listen_port, time_out)
     params.update(network_params)
 
     # Concatenate many parts into one
@@ -99,7 +96,7 @@ def _split_to_parts(data, is_matrix):
     return parts
 
 
-def train(client, data, label, params, model_factory, weight=None, **kwargs):
+def _train(client, data, label, params, model_factory, weight=None, **kwargs):
     """Inner train routine.
 
     Parameters
@@ -182,7 +179,7 @@ def _predict_part(part, model, proba, **kwargs):
     return result
 
 
-def predict(client, model, data, proba=False, dtype=np.float32, **kwargs):
+def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
     """Inner predict routine.
 
     Parameters
@@ -209,7 +206,34 @@ def predict(client, model, data, proba=False, dtype=np.float32, **kwargs):
         raise TypeError('Data must be either Dask array or dataframe. Got %s.' % str(type(data)))
 
 
-class _LGBMModel:
+class _LGBMModel(_LGBMModelBase):
+
+    def __init__(self, model_factory, client=None) -> None:
+        if client is None:
+            client = default_client()
+        self.client = client
+        self.model_factory = model_factory
+
+    def fit(self, X, y=None, sample_weight=None, **kwargs):
+        """Docstring is inherited from the appropriate model_factory."""
+        params = self.get_params(True)
+        model = _train(self.client, X, y, params, self.model_factory, sample_weight, **kwargs)
+
+        self.set_params(**model.get_params())
+        self._copy_extra_params(model, self)
+
+        return self
+
+    def to_local(self):
+        """Create regular version of lightgbm.LGBMRegressor from the distributed version.
+
+        Returns
+        -------
+        model : lightgbm.LGBMRegressor
+        """
+        model = self.model_factory(**self.get_params())
+        self._copy_extra_params(self, model)
+        return model
 
     @staticmethod
     def _copy_extra_params(source, dest):
@@ -220,82 +244,36 @@ class _LGBMModel:
             setattr(dest, name, attributes[name])
 
 
-class LGBMClassifier(_LGBMModel, lightgbm.LGBMClassifier):
+class LGBMClassifier(_LGBMModel, LocalLGBMClassifier):
     """Distributed version of lightgbm.LGBMClassifier."""
 
-    def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
-        """Docstring is inherited from the LGBMModel."""
-        if client is None:
-            client = default_client()
+    def __init__(self, client=None, **kwargs) -> None:
+        super().__init__(LocalLGBMClassifier, client)
+        super(_LGBMModel, self).__init__(**kwargs)
 
-        model_factory = lightgbm.LGBMClassifier
-        params = self.get_params(True)
-        model = train(client, X, y, params, model_factory, sample_weight, **kwargs)
+    _LGBMModel.fit.__doc__ = LocalLGBMClassifier.fit.__doc__
 
-        self.set_params(**model.get_params())
-        self._copy_extra_params(model, self)
-
-        return self
-    fit.__doc__ = lightgbm.LGBMClassifier.fit.__doc__
-
-    def predict(self, X, client=None, **kwargs):
+    def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
-        if client is None:
-            client = default_client()
-        return predict(client, self.to_local(), X, dtype=self.classes_.dtype, **kwargs)
-    predict.__doc__ = lightgbm.LGBMClassifier.predict.__doc__
+        return _predict(self.to_local(), X, dtype=self.classes_.dtype, **kwargs)
+    predict.__doc__ = LocalLGBMClassifier.predict.__doc__
 
-    def predict_proba(self, X, client=None, **kwargs):
+    def predict_proba(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
-        if client is None:
-            client = default_client()
-        return predict(client, self.to_local(), X, proba=True, **kwargs)
-    predict_proba.__doc__ = lightgbm.LGBMClassifier.predict_proba.__doc__
-
-    def to_local(self):
-        """Create regular version of lightgbm.LGBMClassifier from the distributed version.
-
-        Returns
-        -------
-        model : lightgbm.LGBMClassifier
-        """
-        model = lightgbm.LGBMClassifier(**self.get_params())
-        self._copy_extra_params(self, model)
-        return model
+        return _predict(self.to_local(), X, proba=True, **kwargs)
+    predict_proba.__doc__ = LocalLGBMClassifier.predict_proba.__doc__
 
 
-class LGBMRegressor(_LGBMModel, lightgbm.LGBMRegressor):
+class LGBMRegressor(_LGBMModel, LocalLGBMRegressor):
     """Docstring is inherited from the lightgbm.LGBMRegressor."""
 
-    def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
-        """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        if client is None:
-            client = default_client()
+    def __init__(self, client=None, **kwargs) -> None:
+        super().__init__(LocalLGBMRegressor, client)
+        super(LocalLGBMRegressor, self).__init__(**kwargs)
 
-        model_factory = lightgbm.LGBMRegressor
-        params = self.get_params(True)
-        model = train(client, X, y, params, model_factory, sample_weight, **kwargs)
+    _LGBMModel.fit.__doc__ = LocalLGBMRegressor.fit.__doc__
 
-        self.set_params(**model.get_params())
-        self._copy_extra_params(model, self)
-
-        return self
-    fit.__doc__ = lightgbm.LGBMRegressor.fit.__doc__
-
-    def predict(self, X, client=None, **kwargs):
+    def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
-        if client is None:
-            client = default_client()
-        return predict(client, self.to_local(), X, **kwargs)
-    predict.__doc__ = lightgbm.LGBMRegressor.predict.__doc__
-
-    def to_local(self):
-        """Create regular version of lightgbm.LGBMRegressor from the distributed version.
-
-        Returns
-        -------
-        model : lightgbm.LGBMRegressor
-        """
-        model = lightgbm.LGBMRegressor(**self.get_params())
-        self._copy_extra_params(self, model)
-        return model
+        return _predict(self.to_local(), X, **kwargs)
+    predict.__doc__ = LocalLGBMRegressor.predict.__doc__
