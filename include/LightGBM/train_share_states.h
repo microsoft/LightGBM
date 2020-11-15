@@ -6,13 +6,13 @@
 #define LIGHTGBM_TRAIN_SHARE_STATES_H_
 
 #include <LightGBM/bin.h>
+#include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/feature_group.h>
 
+#include <algorithm>
 #include <memory>
 #include <vector>
-#include <algorithm>
 
 namespace LightGBM {
 
@@ -131,7 +131,6 @@ class MultiValBinWrapper {
   bool is_subrow_copied_ = false;
   std::unique_ptr<MultiValBin> multi_val_bin_;
   std::unique_ptr<MultiValBin> multi_val_bin_subset_;
-  MultiValBin* cur_multi_val_bin_;
   std::vector<uint32_t> hist_move_src_;
   std::vector<uint32_t> hist_move_dest_;
   std::vector<uint32_t> hist_move_size_;
