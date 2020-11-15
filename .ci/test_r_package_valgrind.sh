@@ -64,3 +64,21 @@ if [[ ${bytes_possibly_lost} -gt 352 ]]; then
     echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
     exit -1
 fi
+
+invalid_reads=$(
+  cat ${VALGRIND_LOGS_FILE} \
+    | grep --count -i "Invalid read"
+)
+if [[ ${invalid_reads} -gt 0 ]]; then
+    echo "valgrind found invalid reads: ${invalid_reads}"
+    exit -1
+fi
+
+invalid_writes=$(
+  cat ${VALGRIND_LOGS_FILE} \
+    | grep --count -i "Invalid write"
+)
+if [[ ${invalid_writes} -gt 0 ]]; then
+    echo "valgrind found invalid writes: ${invalid_writes}"
+    exit -1
+fi

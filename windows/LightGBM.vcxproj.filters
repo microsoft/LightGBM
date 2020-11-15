@@ -317,5 +317,8 @@
     <ClCompile Include="..\src\io\config_auto.cpp">
       <Filter>src\io</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\io\train_share_states.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -126,7 +126,8 @@ result <- file.copy(
 
 # remove CRAN-specific files
 result <- file.remove(
-  file.path(TEMP_R_DIR, "configure")
+  file.path(TEMP_R_DIR, "cleanup")
+  , file.path(TEMP_R_DIR, "configure")
   , file.path(TEMP_R_DIR, "configure.ac")
   , file.path(TEMP_R_DIR, "configure.win")
   , file.path(TEMP_SOURCE_DIR, "Makevars.in")

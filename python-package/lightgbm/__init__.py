@@ -11,6 +11,8 @@ from .callback import (early_stopping, print_evaluation, record_evaluation,
 from .engine import cv, train, CVBooster
 
 import os
+import sys
+import warnings
 
 try:
     from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier, LGBMRanker
@@ -34,3 +36,8 @@ __all__ = ['Dataset', 'Booster', 'CVBooster',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
            'plot_importance', 'plot_split_value_histogram', 'plot_metric', 'plot_tree', 'create_tree_digraph']
+
+# REMOVEME: remove warning after 3.1.0 version release
+if sys.version_info[0] == 2:
+    warnings.warn("LightGBM 3.1 version is the last version that supports Python 2.\n"
+                  "Next release will drop the support.", UserWarning)
