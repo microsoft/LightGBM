@@ -330,7 +330,9 @@ if(USE_CUDA)
 endif(USE_CUDA)
 )
 
-add_executable(lightgbm src/main.cpp ${SOURCES})
+if (NOT __BUILD_FOR_R)
+  add_executable(lightgbm src/main.cpp ${SOURCES})
+endif()
 list(APPEND SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for
@@ -443,7 +445,11 @@ if(WIN32)
     endif(MINGW OR CYGWIN)
 endif(WIN32)
 
+set(LGB_TARGETS "lightgbm _lightgbm")
+
+# CLI is not necessary for the R package
 if(__BUILD_FOR_R)
+  set(LGB_TARGETS "_lightgbm")
   if(MSVC)
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_MSVC_CORE_LIBRARY})
   else()
@@ -451,7 +457,7 @@ if(__BUILD_FOR_R)
   endif(MSVC)
 endif(__BUILD_FOR_R)
 
-install(TARGETS lightgbm _lightgbm
+install(TARGETS ${LGB_TARGETS}
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
