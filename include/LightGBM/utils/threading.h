@@ -25,6 +25,7 @@ class Threading {
     BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
                        block_size);
   }
+
   template <typename INDEX_T>
   static inline void BlockInfo(int num_threads, INDEX_T cnt,
                                INDEX_T min_cnt_per_block, int* out_nblock,
@@ -38,6 +39,25 @@ class Threading {
       *block_size = cnt;
     }
   }
+
+  template <typename INDEX_T>
+  static inline void BlockInfo(int num_threads, INDEX_T cnt,
+                               INDEX_T min_cnt_per_block, INDEX_T max_cnt_per_block,
+                               int* out_nblock, INDEX_T* block_size) {
+    CHECK(max_cnt_per_block >= min_cnt_per_block);
+    *out_nblock = std::min<int>(
+        num_threads,
+        static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
+    *out_nblock = std::max<int>(
+      *out_nblock,
+      static_cast<int>((cnt + max_cnt_per_block - 1) / max_cnt_per_block));
+    if (*out_nblock > 1) {
+      *block_size = SIZE_ALIGNED((cnt + (*out_nblock) - 1) / (*out_nblock));
+    } else {
+      *block_size = cnt;
+    }
+  }
+
   template <typename INDEX_T>
   static inline void BlockInfoForceSize(int num_threads, INDEX_T cnt,
                                         INDEX_T min_cnt_per_block,
@@ -56,12 +76,20 @@ class Threading {
   }
 
   template <typename INDEX_T>
+  static inline void BlockInfoForceSize(INDEX_T cnt, INDEX_T min_cnt_per_block,
+                                        int* out_nblock, INDEX_T* block_size) {
+    int num_threads = OMP_NUM_THREADS();
+    BlockInfoForceSize<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
+                                block_size);
+  }
+
+  template <typename INDEX_T>
   static inline int For(
       INDEX_T start, INDEX_T end, INDEX_T min_block_size,
       const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
     int n_block = 1;
     INDEX_T num_inner = end - start;
-    BlockInfo<INDEX_T>(end - start, min_block_size, &n_block, &num_inner);
+    BlockInfo<INDEX_T>(num_inner, min_block_size, &n_block, &num_inner);
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < n_block; ++i) {

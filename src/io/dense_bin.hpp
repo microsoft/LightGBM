@@ -7,6 +7,7 @@
 #define LIGHTGBM_IO_DENSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
+#include <LightGBM/cuda/vector_cudahost.h>
 
 #include <cstdint>
 #include <cstring>
@@ -364,6 +365,8 @@ class DenseBin : public Bin {
 
   data_size_t num_data() const override { return num_data_; }
 
+  void* get_data() override { return data_.data(); }
+
   void FinishLoad() override {
     if (IS_4BIT) {
       if (buf_.empty()) {
@@ -449,16 +452,22 @@ class DenseBin : public Bin {
   }
 
   void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
-    writer->Write(data_.data(), sizeof(VAL_T) * data_.size());
+    writer->AlignedWrite(data_.data(), sizeof(VAL_T) * data_.size());
   }
 
-  size_t SizesInByte() const override { return sizeof(VAL_T) * data_.size(); }
+  size_t SizesInByte() const override {
+    return VirtualFileWriter::AlignedSize(sizeof(VAL_T) * data_.size());
+  }
 
   DenseBin<VAL_T, IS_4BIT>* Clone() override;
 
  private:
   data_size_t num_data_;
+#ifdef USE_CUDA
+  std::vector<VAL_T, CHAllocator<VAL_T>> data_;
+#else
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;
+#endif
   std::vector<uint8_t> buf_;
 
   DenseBin<VAL_T, IS_4BIT>(const DenseBin<VAL_T, IS_4BIT>& other)

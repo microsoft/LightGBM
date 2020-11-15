@@ -30,7 +30,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
   auto max_cat_threshold = this->config_->max_cat_threshold;
   // need to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
   size_t split_info_size = static_cast<size_t>(SplitInfo::Size(max_cat_threshold) * 2);
-  size_t histogram_size = static_cast<size_t>(this->train_data_->NumTotalBin() * kHistEntrySize);
+  size_t histogram_size = static_cast<size_t>(this->share_state_->num_hist_total_bin() * kHistEntrySize);
 
   // allocate buffer for communication
   size_t buffer_size = std::max(histogram_size, split_info_size);
@@ -180,6 +180,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
       this->col_sampler_.GetByNode(tree, this->smaller_leaf_splits_->leaf_index());
   std::vector<int8_t> larger_node_used_features =
       this->col_sampler_.GetByNode(tree, this->larger_leaf_splits_->leaf_index());
+  double smaller_leaf_parent_output = this->GetParentOutput(tree, this->smaller_leaf_splits_.get());
+  double larger_leaf_parent_output = this->GetParentOutput(tree, this->larger_leaf_splits_.get());
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
@@ -200,7 +202,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
         smaller_node_used_features[feature_index],
         GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->leaf_index()),
         this->smaller_leaf_splits_.get(),
-        &smaller_bests_per_thread[tid]);
+        &smaller_bests_per_thread[tid],
+        smaller_leaf_parent_output);
 
     // only root leaf
     if (this->larger_leaf_splits_ == nullptr || this->larger_leaf_splits_->leaf_index() < 0) continue;
@@ -214,7 +217,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
         larger_node_used_features[feature_index],
         GetGlobalDataCountInLeaf(this->larger_leaf_splits_->leaf_index()),
         this->larger_leaf_splits_.get(),
-        &larger_bests_per_thread[tid]);
+        &larger_bests_per_thread[tid],
+        larger_leaf_parent_output);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -256,6 +260,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, in
 }
 
 // instantiate template classes, otherwise linker cannot find the code
+template class DataParallelTreeLearner<CUDATreeLearner>;
 template class DataParallelTreeLearner<GPUTreeLearner>;
 template class DataParallelTreeLearner<SerialTreeLearner>;
 

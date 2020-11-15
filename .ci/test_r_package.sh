@@ -18,8 +18,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.0.2
-    export R_LINUX_VERSION="4.0.2-1.1804.0"
+    export R_MAC_VERSION=4.0.3
+    export R_LINUX_VERSION="4.0.3-1.1804.0"
     export R_APT_REPO="bionic-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -29,6 +29,8 @@ fi
 # installing precompiled R for Ubuntu
 # https://cran.r-project.org/bin/linux/ubuntu/#installation
 # adding steps from https://stackoverflow.com/a/56378217/3986677 to get latest version
+#
+# `devscripts` is required for 'checkbashisms' (https://github.com/r-lib/actions/issues/111)
 if [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
@@ -39,6 +41,7 @@ if [[ $OS_NAME == "linux" ]]; then
     sudo apt-get install \
         --no-install-recommends \
         -y --allow-downgrades \
+            devscripts \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-recommended \
@@ -47,13 +50,12 @@ if [[ $OS_NAME == "linux" ]]; then
             qpdf \
             || exit -1
 
-    # https://github.com/r-lib/actions/issues/111
+    
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
                 autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
-                devscripts \
                 || exit -1
     fi
 fi
@@ -61,11 +63,11 @@ fi
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
     if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew install \
-            automake \
-            checkbashisms
+        brew install automake
     fi
-    brew install qpdf
+    brew install \
+        checkbashisms \
+        qpdf
     brew cask install basictex
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self
@@ -106,7 +108,7 @@ if [[ $TASK == "r-package-check-docs" ]]; then
     Rscript --vanilla -e "install.packages('roxygen2', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
     Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
     num_doc_files_changed=$(
-        git diff --name-only | grep -E "\.Rd|NAMESPACE" | wc -l
+        git diff --name-only | grep --count -E "\.Rd|NAMESPACE"
     )
     if [[ ${num_doc_files_changed} -gt 0 ]]; then
         echo "Some R documentation files have changed. Please re-generate them and commit those changes."
@@ -163,7 +165,7 @@ check_succeeded="yes"
 (
     R CMD check ${PKG_TARBALL} \
         --as-cran \
-        --run-dontrun \
+        --run-donttest \
     || check_succeeded="no"
 ) &
 
@@ -206,11 +208,23 @@ fi
 if [[ $OS_NAME == "macos" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
     omp_working=$(
         cat $BUILD_LOG_FILE \
-        | grep -E "checking whether OpenMP will work .*yes" \
-        | wc -l
+        | grep --count -E "checking whether OpenMP will work .*yes"
     )
     if [[ $omp_working -ne 1 ]]; then
         echo "OpenMP was not found, and should be when testing the CRAN package on macOS"
+        exit -1
+    fi
+fi
+
+# this check makes sure that no "warning: unknown pragma ignored" logs
+# reach the user leading them to believe that something went wrong
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    pragma_warning_present=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E "warning: unknown pragma ignored"
+    )
+    if [[ $pragma_warning_present -ne 0 ]]; then
+        echo "Unknown pragma warning is present, pragmas should have been removed before build"
         exit -1
     fi
 fi

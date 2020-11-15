@@ -18,7 +18,7 @@
 #' and silently returns a processed data.table with \code{top_n} features sorted by defined importance.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -79,7 +79,6 @@ lgb.plot.importance <- function(tree_imp,
     )
   )
 
-  # Do plot
   tree_imp[.N:1L,
            graphics::barplot(
                height = get(measure)
@@ -92,7 +91,6 @@ lgb.plot.importance <- function(tree_imp,
                , las = 1L
            )]
 
-  # Return invisibly
   invisible(tree_imp)
 
 }

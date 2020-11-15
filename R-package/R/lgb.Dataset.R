@@ -105,7 +105,6 @@ Dataset <- R6::R6Class(
         , ...
       )
 
-      # Return ret
       return(invisible(ret))
 
     },
@@ -312,7 +311,6 @@ Dataset <- R6::R6Class(
         stop("lgb.Dataset.construct: label should be set")
       }
 
-      # Return self
       return(invisible(self))
 
     },
@@ -405,7 +403,6 @@ Dataset <- R6::R6Class(
 
       }
 
-      # Return self
       return(invisible(self))
 
     },
@@ -504,7 +501,6 @@ Dataset <- R6::R6Class(
 
       }
 
-      # Return self
       return(invisible(self))
 
     },
@@ -677,7 +673,6 @@ Dataset <- R6::R6Class(
     # Set predictor
     set_predictor = function(predictor) {
 
-      # Return self is identical predictor
       if (identical(private$predictor, predictor)) {
         return(invisible(self))
       }
@@ -725,7 +720,7 @@ Dataset <- R6::R6Class(
 #' @return constructed dataset
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -771,7 +766,7 @@ lgb.Dataset <- function(data,
 #' @return constructed dataset
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -798,12 +793,13 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 #' @param dataset Object of class \code{lgb.Dataset}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' lgb.Dataset.construct(dtrain)
 #' }
+#' @return constructed dataset
 #' @export
 lgb.Dataset.construct <- function(dataset) {
 
@@ -829,7 +825,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' be directly used with an \code{lgb.Dataset} object.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -847,7 +843,6 @@ dim.lgb.Dataset <- function(x, ...) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
   }
 
-  # Return dimensions
   x$dim()
 
 }
@@ -864,7 +859,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #' Since row names are irrelevant, it is recommended to use \code{colnames} directly.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -875,6 +870,7 @@ dim.lgb.Dataset <- function(x, ...) {
 #' print(dtrain, verbose = TRUE)
 #' }
 #' @rdname dimnames.lgb.Dataset
+#' @return A list with the dimension names of the dataset
 #' @export
 dimnames.lgb.Dataset <- function(x) {
 
@@ -889,6 +885,7 @@ dimnames.lgb.Dataset <- function(x) {
 }
 
 #' @rdname dimnames.lgb.Dataset
+#' @return A list with the dimension names of the dataset
 #' @export
 `dimnames<-.lgb.Dataset` <- function(x, value) {
 
@@ -902,10 +899,8 @@ dimnames.lgb.Dataset <- function(x) {
     stop("lgb.Dataset does not have rownames")
   }
 
-  # Check for second value missing
   if (is.null(value[[2L]])) {
 
-    # No column names
     x$set_colnames(NULL)
     return(x)
 
@@ -937,7 +932,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' @return constructed sub dataset
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -952,6 +947,7 @@ slice <- function(dataset, ...) {
 }
 
 #' @rdname slice
+#' @return constructed sub dataset
 #' @export
 slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
@@ -984,7 +980,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1002,6 +998,7 @@ getinfo <- function(dataset, ...) {
 }
 
 #' @rdname getinfo
+#' @return info data
 #' @export
 getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
@@ -1010,7 +1007,6 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
     stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  # Return information
   dataset$getinfo(name)
 
 }
@@ -1022,7 +1018,7 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #' @param name the name of the field to get
 #' @param info the specific field of information to set
 #' @param ... other parameters
-#' @return passed object
+#' @return the dataset you passed in
 #'
 #' @details
 #' The \code{name} field can be one of the following:
@@ -1038,7 +1034,7 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #' }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1056,10 +1052,10 @@ setinfo <- function(dataset, ...) {
 }
 
 #' @rdname setinfo
+#' @return the dataset you passed in
 #' @export
 setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(dataset)) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
@@ -1076,10 +1072,10 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' @param categorical_feature categorical features. This can either be a character vector of feature
 #'                            names or an integer vector with the indices of the features (e.g.
 #'                            \code{c(1L, 10L)} to say "the first and tenth columns").
-#' @return passed dataset
+#' @return the dataset you passed in
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1092,7 +1088,6 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' @export
 lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(dataset)) {
     stop("lgb.Dataset.set.categorical: input dataset should be an lgb.Dataset object")
   }
@@ -1108,10 +1103,10 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param reference object of class \code{lgb.Dataset}
 #'
-#' @return passed dataset
+#' @return the dataset you passed in
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package ="lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1140,10 +1135,10 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param fname object filename of output file
 #'
-#' @return passed dataset
+#' @return the dataset you passed in
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)

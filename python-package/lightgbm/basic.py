@@ -1731,9 +1731,9 @@ class Dataset(object):
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
             self.handle,
-            num_feature,
+            ctypes.c_int(num_feature),
             ctypes.byref(tmp_out_len),
-            reserved_string_buffer_size,
+            ctypes.c_size_t(reserved_string_buffer_size),
             ctypes.byref(required_string_buffer_size),
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
@@ -1904,6 +1904,76 @@ class Dataset(object):
         if self.handle is None or other.handle is None:
             raise ValueError('Both source and target Datasets must be constructed before adding features')
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        was_none = self.data is None
+        old_self_data_type = type(self.data).__name__
+        if other.data is None:
+            self.data = None
+        elif self.data is not None:
+            if isinstance(self.data, np.ndarray):
+                if isinstance(other.data, np.ndarray):
+                    self.data = np.hstack((self.data, other.data))
+                elif scipy.sparse.issparse(other.data):
+                    self.data = np.hstack((self.data, other.data.toarray()))
+                elif isinstance(other.data, DataFrame):
+                    self.data = np.hstack((self.data, other.data.values))
+                elif isinstance(other.data, DataTable):
+                    self.data = np.hstack((self.data, other.data.to_numpy()))
+                else:
+                    self.data = None
+            elif scipy.sparse.issparse(self.data):
+                sparse_format = self.data.getformat()
+                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
+                    self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
+                elif isinstance(other.data, DataFrame):
+                    self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
+                elif isinstance(other.data, DataTable):
+                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
+                else:
+                    self.data = None
+            elif isinstance(self.data, DataFrame):
+                if not PANDAS_INSTALLED:
+                    raise LightGBMError("Cannot add features to DataFrame type of raw data "
+                                        "without pandas installed")
+                from pandas import concat
+                if isinstance(other.data, np.ndarray):
+                    self.data = concat((self.data, DataFrame(other.data)),
+                                       axis=1, ignore_index=True)
+                elif scipy.sparse.issparse(other.data):
+                    self.data = concat((self.data, DataFrame(other.data.toarray())),
+                                       axis=1, ignore_index=True)
+                elif isinstance(other.data, DataFrame):
+                    self.data = concat((self.data, other.data),
+                                       axis=1, ignore_index=True)
+                elif isinstance(other.data, DataTable):
+                    self.data = concat((self.data, DataFrame(other.data.to_numpy())),
+                                       axis=1, ignore_index=True)
+                else:
+                    self.data = None
+            elif isinstance(self.data, DataTable):
+                if isinstance(other.data, np.ndarray):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data)))
+                elif scipy.sparse.issparse(other.data):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
+                elif isinstance(other.data, DataFrame):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
+                elif isinstance(other.data, DataTable):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                else:
+                    self.data = None
+            else:
+                self.data = None
+        if self.data is None:
+            err_msg = ("Cannot add features from {} type of raw data to "
+                       "{} type of raw data.\n").format(type(other.data).__name__,
+                                                        old_self_data_type)
+            err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
+                        if was_none else "Freeing raw data")
+            warnings.warn(err_msg)
+        self.feature_name = self.get_feature_name()
+        warnings.warn("Reseting categorical features.\n"
+                      "You can set new categorical features via ``set_categorical_feature`` method")
+        self.categorical_feature = "auto"
+        self.pandas_categorical = None
         return self
 
     def _dump_text(self, filename):
@@ -2906,7 +2976,7 @@ class Booster(object):
             new_booster.handle,
             predictor.handle))
         leaf_preds = leaf_preds.reshape(-1)
-        ptr_data, type_ptr_data, _ = c_int_array(leaf_preds)
+        ptr_data, _, _ = c_int_array(leaf_preds)
         _safe_call(_LIB.LGBM_BoosterRefit(
             new_booster.handle,
             ptr_data,
@@ -2976,9 +3046,9 @@ class Booster(object):
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
             self.handle,
-            num_feature,
+            ctypes.c_int(num_feature),
             ctypes.byref(tmp_out_len),
-            reserved_string_buffer_size,
+            ctypes.c_size_t(reserved_string_buffer_size),
             ctypes.byref(required_string_buffer_size),
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
@@ -3175,9 +3245,9 @@ class Booster(object):
                 ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                     self.handle,
-                    self.__num_inner_eval,
+                    ctypes.c_int(self.__num_inner_eval),
                     ctypes.byref(tmp_out_len),
-                    reserved_string_buffer_size,
+                    ctypes.c_size_t(reserved_string_buffer_size),
                     ctypes.byref(required_string_buffer_size),
                     ptr_string_buffers))
                 if self.__num_inner_eval != tmp_out_len.value:

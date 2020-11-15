@@ -13,7 +13,7 @@
 #' }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -75,7 +75,6 @@ lgb.importance <- function(model, percentage = TRUE) {
     )]
   }
 
-  # Return importance table
   return(tree_imp_dt)
 
 }

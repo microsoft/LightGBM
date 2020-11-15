@@ -18,6 +18,8 @@ getinfo(dataset, ...)
 }
 \value{
 info data
+
+info data
 }
 \description{
 Get one attribute of a \code{lgb.Dataset}
@@ -33,7 +35,7 @@ The \code{name} field can be one of the following:
 }
 }
 \examples{
-\dontrun{
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

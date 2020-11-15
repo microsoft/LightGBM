@@ -9,8 +9,8 @@ git:
 os:
   - linux
   - osx
-dist: bionic
-osx_image: xcode12
+dist: focal
+osx_image: xcode12.2
 
 env:
   global:  # default values
@@ -24,13 +24,13 @@ env:
     - TASK=check-docs
     - TASK=mpi METHOD=source
     - TASK=mpi METHOD=pip PYTHON_VERSION=3.7
-    - TASK=gpu METHOD=source PYTHON_VERSION=3.5
+    - TASK=gpu METHOD=source
     - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
 
 matrix:
   exclude:
     - os: osx
-      env: TASK=gpu METHOD=source PYTHON_VERSION=3.5
+      env: TASK=gpu METHOD=source
     - os: osx
       env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - os: osx

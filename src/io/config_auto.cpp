@@ -183,6 +183,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "num_threads",
   "device_type",
   "seed",
+  "deterministic",
   "force_col_wise",
   "force_row_wise",
   "histogram_pool_size",
@@ -296,6 +297,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "gpu_platform_id",
   "gpu_device_id",
   "gpu_use_dp",
+  "num_gpu",
   });
   return params;
 }
@@ -319,6 +321,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK_LE(num_leaves, 131072);
 
   GetInt(params, "num_threads", &num_threads);
+
+  GetBool(params, "deterministic", &deterministic);
 
   GetBool(params, "force_col_wise", &force_col_wise);
 
@@ -611,6 +615,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "gpu_device_id", &gpu_device_id);
 
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
+
+  GetInt(params, "num_gpu", &num_gpu);
+  CHECK_GT(num_gpu, 0);
 }
 
 std::string Config::SaveMembersToString() const {
@@ -621,6 +628,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[deterministic: " << deterministic << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
   str_buf << "[force_row_wise: " << force_row_wise << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
@@ -715,6 +723,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[gpu_platform_id: " << gpu_platform_id << "]\n";
   str_buf << "[gpu_device_id: " << gpu_device_id << "]\n";
   str_buf << "[gpu_use_dp: " << gpu_use_dp << "]\n";
+  str_buf << "[num_gpu: " << num_gpu << "]\n";
   return str_buf.str();
 }
 

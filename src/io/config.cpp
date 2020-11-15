@@ -4,6 +4,7 @@
  */
 #include <LightGBM/config.h>
 
+#include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/random.h>
@@ -126,6 +127,8 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
       *device_type = "cpu";
     } else if (value == std::string("gpu")) {
       *device_type = "gpu";
+    } else if (value == std::string("cuda")) {
+      *device_type = "cuda";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());
     }
@@ -206,6 +209,9 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetMetricType(params, &metric);
   GetObjectiveType(params, &objective);
   GetDeviceType(params, &device_type);
+  if (device_type == std::string("cuda")) {
+    LGBM_config_::current_device = lgbm_device_cuda;
+  }
   GetTreeLearnerType(params, &tree_learner);
 
   GetMembersFromString(params);
@@ -311,7 +317,9 @@ void Config::CheckParamConflict() {
     double full_num_leaves = std::pow(2, max_depth);
     if (full_num_leaves > num_leaves
         && num_leaves == kDefaultNumLeaves) {
-      Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
+      Log::Warning("Accuracy may be bad since you didn't explicitly set num_leaves OR 2^max_depth > num_leaves."
+                   " (num_leaves=%d).",
+                   num_leaves);
     }
 
     if (full_num_leaves < num_leaves) {
@@ -319,11 +327,21 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-  // force col-wise for gpu
-  if (device_type == std::string("gpu")) {
+  // force col-wise for gpu & CUDA
+  if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
     force_col_wise = true;
     force_row_wise = false;
+    if (deterministic) {
+      Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
+    }
   }
+
+  // force gpu_use_dp for CUDA
+  if (device_type == std::string("cuda") && !gpu_use_dp) {
+    Log::Warning("CUDA currently requires double precision calculations.");
+    gpu_use_dp = true;
+  }
+
   // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the split is calculated
   // the count is calculated using the proportion of hessian in the leaf which is rounded up to nearest int, so it can
   // be 1 when there is actually no data in the leaf. In rare cases this can cause a bug because with path smoothing the
@@ -332,19 +350,25 @@ void Config::CheckParamConflict() {
     min_data_in_leaf = 2;
     Log::Warning("min_data_in_leaf has been increased to 2 because this is required when path smoothing is active.");
   }
-  if (is_parallel && monotone_constraints_method == std::string("intermediate")) {
+  if (is_parallel && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
     // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
-    Log::Warning("Cannot use \"intermediate\" monotone constraints in parallel learning, auto set to \"basic\" method.");
+    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints in parallel learning, auto set to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
-  if (feature_fraction_bynode != 1.0 && monotone_constraints_method == std::string("intermediate")) {
+  if (feature_fraction_bynode != 1.0 && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
     // "intermediate" monotone constraints need to recompute splits. If the features are sampled when computing the
     // split initially, then the sampling needs to be recorded or done once again, which is currently not supported
-    Log::Warning("Cannot use \"intermediate\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
+    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
   if (max_depth > 0 && monotone_penalty >= max_depth) {
     Log::Warning("Monotone penalty greater than tree depth. Monotone features won't be used.");
+  }
+  if (min_data_in_leaf <= 0 && min_sum_hessian_in_leaf <= kEpsilon) {
+    Log::Warning(
+        "Cannot set both min_data_in_leaf and min_sum_hessian_in_leaf to 0. "
+        "Will set min_data_in_leaf to 1.");
+    min_data_in_leaf = 1;
   }
 }
 

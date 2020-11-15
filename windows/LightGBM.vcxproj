@@ -287,6 +287,7 @@
     <ClInclude Include="..\src\treelearner\data_partition.hpp" />
     <ClInclude Include="..\src\treelearner\feature_histogram.hpp" />
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp" />
+    <ClInclude Include="..\src\treelearner\monotone_constraints.hpp" />
     <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
@@ -308,6 +309,7 @@
     <ClCompile Include="..\src\io\json11.cpp" />
     <ClCompile Include="..\src\io\metadata.cpp" />
     <ClCompile Include="..\src\io\parser.cpp" />
+    <ClCompile Include="..\src\io\train_share_states.cpp" />
     <ClCompile Include="..\src\io\tree.cpp" />
     <ClCompile Include="..\src\metric\dcg_calculator.cpp" />
     <ClCompile Include="..\src\metric\metric.cpp" />

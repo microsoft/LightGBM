@@ -15,7 +15,7 @@ Predictor <- R6::R6Class(
 
         # Freeing up handle
         lgb.call(
-          "LGBM_BoosterFree_R"
+          fun_name = "LGBM_BoosterFree_R"
           , ret = NULL
           , private$handle
         )
@@ -30,14 +30,14 @@ Predictor <- R6::R6Class(
       params <- list(...)
       private$params <- lgb.params2str(params)
       # Create new lgb handle
-      handle <- 0.0
+      handle <- lgb.null.handle()
 
       # Check if handle is a character
       if (is.character(modelfile)) {
 
         # Create handle on it
         handle <- lgb.call(
-          "LGBM_BoosterCreateFromModelfile_R"
+          fun_name = "LGBM_BoosterCreateFromModelfile_R"
           , ret = handle
           , lgb.c_str(modelfile)
         )
@@ -51,7 +51,6 @@ Predictor <- R6::R6Class(
 
       } else {
 
-        # Model file is unknown
         stop("lgb.Predictor: modelfile must be either a character filename or an lgb.Booster.handle")
 
       }
@@ -67,7 +66,7 @@ Predictor <- R6::R6Class(
 
       cur_iter <- 0L
       lgb.call(
-        "LGBM_BoosterGetCurrentIteration_R"
+        fun_name = "LGBM_BoosterGetCurrentIteration_R"
         , ret = cur_iter
         , private$handle
       )
@@ -93,7 +92,6 @@ Predictor <- R6::R6Class(
         start_iteration <- 0L
       }
 
-      # Set temporary variable
       num_row <- 0L
 
       # Check if data is a file name and not a matrix
@@ -105,7 +103,7 @@ Predictor <- R6::R6Class(
 
         # Predict from temporary file
         lgb.call(
-          "LGBM_BoosterPredictForFile_R"
+          fun_name = "LGBM_BoosterPredictForFile_R"
           , ret = NULL
           , private$handle
           , data
@@ -133,7 +131,7 @@ Predictor <- R6::R6Class(
 
         # Check number of predictions to do
         npred <- lgb.call(
-          "LGBM_BoosterCalcNumPredict_R"
+          fun_name = "LGBM_BoosterCalcNumPredict_R"
           , ret = npred
           , private$handle
           , as.integer(num_row)
@@ -149,12 +147,13 @@ Predictor <- R6::R6Class(
 
         # Check if data is a matrix
         if (is.matrix(data)) {
-          # Check whether matrix is the correct type first ("double")
+          # this if() prevents the memory and computational costs
+          # of converting something that is already "double" to "double"
           if (storage.mode(data) != "double") {
             storage.mode(data) <- "double"
           }
           preds <- lgb.call(
-            "LGBM_BoosterPredictForMat_R"
+            fun_name = "LGBM_BoosterPredictForMat_R"
             , ret = preds
             , private$handle
             , data
@@ -174,7 +173,7 @@ Predictor <- R6::R6Class(
           }
           # Check if data is a dgCMatrix (sparse matrix, column compressed format)
           preds <- lgb.call(
-            "LGBM_BoosterPredictForCSC_R"
+            fun_name = "LGBM_BoosterPredictForCSC_R"
             , ret = preds
             , private$handle
             , data@p
@@ -193,7 +192,6 @@ Predictor <- R6::R6Class(
 
         } else {
 
-          # Cannot predict on unknown class
           stop("predict: cannot predict on data of class ", sQuote(class(data)))
 
         }
@@ -227,7 +225,6 @@ Predictor <- R6::R6Class(
 
       }
 
-      # Return predictions
       return(preds)
 
     }

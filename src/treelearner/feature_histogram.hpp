@@ -84,7 +84,7 @@ class FeatureHistogram {
 
   void FindBestThreshold(double sum_gradient, double sum_hessian,
                          data_size_t num_data,
-                         const ConstraintEntry& constraints,
+                         const FeatureConstraint* constraints,
                          double parent_output,
                          SplitInfo* output) {
     output->default_left = true;
@@ -158,7 +158,7 @@ class FeatureHistogram {
 #define TEMPLATE_PREFIX USE_RAND, USE_MC, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING
 #define LAMBDA_ARGUMENTS                                         \
   double sum_gradient, double sum_hessian, data_size_t num_data, \
-      const ConstraintEntry &constraints, double parent_output, SplitInfo *output
+      const FeatureConstraint* constraints, double parent_output, SplitInfo *output
 #define BEFORE_ARGUMENTS sum_gradient, sum_hessian, parent_output, num_data, output, &rand_threshold
 #define FUNC_ARGUMENTS                                                      \
   sum_gradient, sum_hessian, num_data, constraints, min_gain_shift, \
@@ -278,7 +278,7 @@ class FeatureHistogram {
   void FindBestThresholdCategoricalInner(double sum_gradient,
                                          double sum_hessian,
                                          data_size_t num_data,
-                                         const ConstraintEntry& constraints,
+                                         const FeatureConstraint* constraints,
                                          double parent_output,
                                          SplitInfo* output) {
     is_splittable_ = false;
@@ -288,6 +288,9 @@ class FeatureHistogram {
     double best_sum_left_gradient = 0;
     double best_sum_left_hessian = 0;
     double gain_shift;
+    if (USE_MC) {
+      constraints->InitCumulativeConstraints(true);
+    }
     if (USE_SMOOTHING) {
       gain_shift = GetLeafGainGivenOutput<USE_L1>(
           sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, parent_output);
@@ -474,14 +477,14 @@ class FeatureHistogram {
       output->left_output = CalculateSplittedLeafOutput<USE_MC, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
           best_sum_left_gradient, best_sum_left_hessian,
           meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
-          constraints, meta_->config->path_smooth, best_left_count, parent_output);
+          constraints->LeftToBasicConstraint(), meta_->config->path_smooth, best_left_count, parent_output);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
       output->right_output = CalculateSplittedLeafOutput<USE_MC, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
           sum_gradient - best_sum_left_gradient,
           sum_hessian - best_sum_left_hessian, meta_->config->lambda_l1, l2,
-          meta_->config->max_delta_step, constraints, meta_->config->path_smooth,
+          meta_->config->max_delta_step, constraints->RightToBasicConstraint(), meta_->config->path_smooth,
           num_data - best_left_count, parent_output);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
@@ -763,7 +766,7 @@ class FeatureHistogram {
   template <bool USE_MC, bool USE_L1, bool USE_MAX_OUTPUT, bool USE_SMOOTHING>
   static double CalculateSplittedLeafOutput(
       double sum_gradients, double sum_hessians, double l1, double l2,
-      double max_delta_step, const ConstraintEntry& constraints,
+      double max_delta_step, const BasicConstraint& constraints,
       double smoothing, data_size_t num_data, double parent_output) {
     double ret = CalculateSplittedLeafOutput<USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
         sum_gradients, sum_hessians, l1, l2, max_delta_step, smoothing, num_data, parent_output);
@@ -784,7 +787,7 @@ class FeatureHistogram {
                               double sum_right_gradients,
                               double sum_right_hessians, double l1, double l2,
                               double max_delta_step,
-                              const ConstraintEntry& constraints,
+                              const FeatureConstraint* constraints,
                               int8_t monotone_constraint,
                               double smoothing,
                               data_size_t left_count,
@@ -803,11 +806,11 @@ class FeatureHistogram {
       double left_output =
           CalculateSplittedLeafOutput<USE_MC, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
               sum_left_gradients, sum_left_hessians, l1, l2, max_delta_step,
-              constraints, smoothing, left_count, parent_output);
+              constraints->LeftToBasicConstraint(), smoothing, left_count, parent_output);
       double right_output =
           CalculateSplittedLeafOutput<USE_MC, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
               sum_right_gradients, sum_right_hessians, l1, l2, max_delta_step,
-              constraints, smoothing, right_count, parent_output);
+              constraints->RightToBasicConstraint(), smoothing, right_count, parent_output);
       if (((monotone_constraint > 0) && (left_output > right_output)) ||
           ((monotone_constraint < 0) && (left_output < right_output))) {
         return 0;
@@ -854,7 +857,7 @@ class FeatureHistogram {
             bool REVERSE, bool SKIP_DEFAULT_BIN, bool NA_AS_MISSING>
   void FindBestThresholdSequentially(double sum_gradient, double sum_hessian,
                                      data_size_t num_data,
-                                     const ConstraintEntry& constraints,
+                                     const FeatureConstraint* constraints,
                                      double min_gain_shift, SplitInfo* output,
                                      int rand_threshold, double parent_output) {
     const int8_t offset = meta_->offset;
@@ -864,6 +867,16 @@ class FeatureHistogram {
     data_size_t best_left_count = 0;
     uint32_t best_threshold = static_cast<uint32_t>(meta_->num_bin);
     const double cnt_factor = num_data / sum_hessian;
+
+    BasicConstraint best_right_constraints;
+    BasicConstraint best_left_constraints;
+    bool constraint_update_necessary =
+        USE_MC && constraints->ConstraintDifferentDependingOnThreshold();
+
+    if (USE_MC) {
+      constraints->InitCumulativeConstraints(REVERSE);
+    }
+
     if (REVERSE) {
       double sum_right_gradient = 0.0f;
       double sum_right_hessian = kEpsilon;
@@ -910,6 +923,11 @@ class FeatureHistogram {
             continue;
           }
         }
+
+        if (USE_MC && constraint_update_necessary) {
+          constraints->Update(t + offset);
+        }
+
         // current split gain
         double current_gain = GetSplitGains<USE_MC, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
             sum_left_gradient, sum_left_hessian, sum_right_gradient,
@@ -932,6 +950,10 @@ class FeatureHistogram {
           // left is <= threshold, right is > threshold.  so this is t-1
           best_threshold = static_cast<uint32_t>(t - 1 + offset);
           best_gain = current_gain;
+          if (USE_MC) {
+            best_right_constraints = constraints->RightToBasicConstraint();
+            best_left_constraints = constraints->LeftToBasicConstraint();
+          }
         }
       }
     } else {
@@ -1016,6 +1038,10 @@ class FeatureHistogram {
           best_sum_left_hessian = sum_left_hessian;
           best_threshold = static_cast<uint32_t>(t + offset);
           best_gain = current_gain;
+          if (USE_MC) {
+            best_right_constraints = constraints->RightToBasicConstraint();
+            best_left_constraints = constraints->LeftToBasicConstraint();
+          }
         }
       }
     }
@@ -1027,7 +1053,7 @@ class FeatureHistogram {
           CalculateSplittedLeafOutput<USE_MC, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
               best_sum_left_gradient, best_sum_left_hessian,
               meta_->config->lambda_l1, meta_->config->lambda_l2,
-              meta_->config->max_delta_step, constraints, meta_->config->path_smooth,
+              meta_->config->max_delta_step, best_left_constraints, meta_->config->path_smooth,
               best_left_count, parent_output);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
@@ -1037,7 +1063,7 @@ class FeatureHistogram {
               sum_gradient - best_sum_left_gradient,
               sum_hessian - best_sum_left_hessian, meta_->config->lambda_l1,
               meta_->config->lambda_l2, meta_->config->max_delta_step,
-              constraints, meta_->config->path_smooth, num_data - best_left_count,
+              best_right_constraints, meta_->config->path_smooth, num_data - best_left_count,
               parent_output);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
@@ -1053,7 +1079,7 @@ class FeatureHistogram {
   hist_t* data_;
   bool is_splittable_ = true;
 
-  std::function<void(double, double, data_size_t, const ConstraintEntry&,
+  std::function<void(double, double, data_size_t, const FeatureConstraint*,
                      double, SplitInfo*)>
       find_best_threshold_fun_;
 };
@@ -1147,36 +1173,9 @@ class HistogramPool {
     }
   }
 
-  static int GetNumTotalHistogramBins(const Dataset* train_data,
-    bool is_hist_colwise, std::vector<int>* offsets) {
-    int num_total_bin = static_cast<int>(train_data->NumTotalBin());
-    offsets->clear();
-    if (is_hist_colwise) {
-      int offset = 0;
-      for (int j = 0; j < train_data->num_features(); ++j) {
-        offset += train_data->SubFeatureBinOffset(j);
-        offsets->push_back(offset);
-        auto num_bin = train_data->FeatureNumBin(j);
-        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-          num_bin -= 1;
-        }
-        offset += num_bin;
-      }
-    } else {
-      num_total_bin = 1;
-      for (int j = 0; j < train_data->num_features(); ++j) {
-        offsets->push_back(num_total_bin);
-        num_total_bin += train_data->FeatureBinMapper(j)->num_bin();
-        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-          num_total_bin -= 1;
-        }
-      }
-    }
-    return num_total_bin;
-  }
-
-  void DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise,
-                         const Config* config, int cache_size, int total_size) {
+  void DynamicChangeSize(const Dataset* train_data, int num_total_bin,
+                        const std::vector<uint32_t>& offsets, const Config* config,
+                        int cache_size, int total_size) {
     if (feature_metas_.empty()) {
       SetFeatureInfo<true, true>(train_data, config, &feature_metas_);
       uint64_t bin_cnt_over_features = 0;
@@ -1193,9 +1192,6 @@ class HistogramPool {
       pool_.resize(cache_size);
       data_.resize(cache_size);
     }
-    std::vector<int> offsets;
-    int num_total_bin =
-        this->GetNumTotalHistogramBins(train_data, is_hist_colwise, &offsets);
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int i = old_cache_size; i < cache_size; ++i) {

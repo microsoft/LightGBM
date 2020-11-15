@@ -12,14 +12,14 @@ lgb.Dataset.save(dataset, fname)
 \item{fname}{object filename of output file}
 }
 \value{
-passed dataset
+the dataset you passed in
 }
 \description{
 Please note that \code{init_score} is not saved in binary file.
              If you need it, please set it again after loading Dataset.
 }
 \examples{
-\dontrun{
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

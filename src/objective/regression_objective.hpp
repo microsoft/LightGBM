@@ -338,10 +338,6 @@ class RegressionHuberLoss: public RegressionL2loss {
     return "huber";
   }
 
-  bool IsConstantHessian() const override {
-    return false;
-  }
-
  private:
   /*! \brief delta for Huber loss */
   double alpha_;
