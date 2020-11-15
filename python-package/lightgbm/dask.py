@@ -40,7 +40,7 @@ def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, 
     worker_addresses : iterable of str - collection of worker addresses in `<protocol>://<host>:port` format
     local_worker_ip : str
     local_listen_port : int
-    listen_time_out : int
+    time_out : int
 
     Returns
     -------
@@ -206,6 +206,24 @@ def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
 
 class _LGBMModel:
 
+    def _fit(self, model_factory, X, y=None, sample_weight=None, client=None, **kwargs):
+        """Docstring is inherited from the LGBMModel."""
+        if client is None:
+            client = default_client()
+
+        params = self.get_params(True)
+        model = _train(client, X, y, params, model_factory, sample_weight, **kwargs)
+
+        self.set_params(**model.get_params())
+        self._copy_extra_params(model, self)
+
+        return self
+
+    def _to_local(self, model_factory):
+        model = model_factory(**self.get_params())
+        self._copy_extra_params(self, model)
+        return model
+
     @staticmethod
     def _copy_extra_params(source, dest):
         params = source.get_params()
@@ -220,17 +238,7 @@ class LGBMClassifier(_LGBMModel, LocalLGBMClassifier):
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the LGBMModel."""
-        if client is None:
-            client = default_client()
-
-        model_factory = LocalLGBMClassifier
-        params = self.get_params(True)
-        model = _train(client, X, y, params, model_factory, sample_weight, **kwargs)
-
-        self.set_params(**model.get_params())
-        self._copy_extra_params(model, self)
-
-        return self
+        return self._fit(LocalLGBMClassifier, X, y, sample_weight, client, **kwargs)
     fit.__doc__ = LocalLGBMClassifier.fit.__doc__
 
     def predict(self, X, **kwargs):
@@ -250,9 +258,7 @@ class LGBMClassifier(_LGBMModel, LocalLGBMClassifier):
         -------
         model : lightgbm.LGBMClassifier
         """
-        model = LocalLGBMClassifier(**self.get_params())
-        self._copy_extra_params(self, model)
-        return model
+        return self._to_local(LocalLGBMClassifier)
 
 
 class LGBMRegressor(_LGBMModel, LocalLGBMRegressor):
@@ -260,17 +266,7 @@ class LGBMRegressor(_LGBMModel, LocalLGBMRegressor):
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        if client is None:
-            client = default_client()
-
-        model_factory = LocalLGBMRegressor
-        params = self.get_params(True)
-        model = _train(client, X, y, params, model_factory, sample_weight, **kwargs)
-
-        self.set_params(**model.get_params())
-        self._copy_extra_params(model, self)
-
-        return self
+        return self._fit(LocalLGBMRegressor, X, y, sample_weight, client, **kwargs)
     fit.__doc__ = LocalLGBMRegressor.fit.__doc__
 
     def predict(self, X, **kwargs):
@@ -285,6 +281,4 @@ class LGBMRegressor(_LGBMModel, LocalLGBMRegressor):
         -------
         model : lightgbm.LGBMRegressor
         """
-        model = LocalLGBMRegressor(**self.get_params())
-        self._copy_extra_params(self, model)
-        return model
+        return self._to_local(LocalLGBMRegressor)
