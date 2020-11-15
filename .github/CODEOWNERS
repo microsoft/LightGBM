@@ -30,6 +30,10 @@ R-package/    @Laurae2 @jameslamb
 # Python code
 python-package/    @StrikerRUS @chivee @wxchan @henry0312
 
+# Dask integration
+python-package/lightgbm/dask_distributed.py    @jameslamb
+tests/python_package_test/test_dask_distributed.py    @jameslamb
+
 # helpers
 helpers/    @StrikerRUS @guolinke
 
