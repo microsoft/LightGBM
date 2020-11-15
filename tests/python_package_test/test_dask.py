@@ -3,20 +3,16 @@ import sys
 
 import dask.array as da
 import dask.dataframe as dd
-import lightgbm
 import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse
 from dask.array.utils import assert_eq
-try:
-    from dask_ml.metrics import accuracy_score, r2_score
-except ImportError:
-    from sklearn.metrics import accuracy_score, r2_score
-
-from distributed.utils_test import client, cluster_fixture, loop, gen_cluster  # noqa
+from dask_ml.metrics import accuracy_score, r2_score
+from distributed.utils_test import client, cluster_fixture, gen_cluster, loop  # noqa
 from sklearn.datasets import make_blobs, make_regression
 
+import lightgbm
 import lightgbm.dask as dlgbm
 
 data_output = ['array', 'scipy_csr_matrix', 'dataframe']
@@ -73,8 +69,8 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
 def test_classifier(output, centers, client, listen_port):  # noqa
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
-    a = dlgbm.LGBMClassifier(client=client, time_out=5, local_listen_port=listen_port)
-    a = a.fit(dX, dy, sample_weight=dw)
+    a = dlgbm.LGBMClassifier(time_out=5, local_listen_port=listen_port)
+    a = a.fit(dX, dy, sample_weight=dw, client=client)
     p1 = a.predict(dX)
     s1 = accuracy_score(dy, p1)
     p1 = p1.compute()
@@ -96,8 +92,8 @@ def test_classifier(output, centers, client, listen_port):  # noqa
 def test_classifier_proba(output, centers, client, listen_port):  # noqa
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
-    a = dlgbm.LGBMClassifier(client=client, time_out=5, local_listen_port=listen_port)
-    a = a.fit(dX, dy, sample_weight=dw)
+    a = dlgbm.LGBMClassifier(time_out=5, local_listen_port=listen_port)
+    a = a.fit(dX, dy, sample_weight=dw, client=client)
     p1 = a.predict_proba(dX)
     p1 = p1.compute()
 
@@ -111,8 +107,8 @@ def test_classifier_proba(output, centers, client, listen_port):  # noqa
 def test_classifier_local_predict(client, listen_port):  # noqa
     X, y, w, dX, dy, dw = _create_data('classification', output='array')
 
-    a = dlgbm.LGBMClassifier(client=client, time_out=5, local_listen_port=listen_port)
-    a = a.fit(dX, dy, sample_weight=dw)
+    a = dlgbm.LGBMClassifier(time_out=5, local_listen_port=listen_port)
+    a = a.fit(dX, dy, sample_weight=dw, client=client)
     p1 = a.to_local().predict(dX)
 
     b = lightgbm.LGBMClassifier()
@@ -128,8 +124,8 @@ def test_classifier_local_predict(client, listen_port):  # noqa
 def test_regressor(output, client, listen_port):  # noqa
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
-    a = dlgbm.LGBMRegressor(client=client, time_out=5, local_listen_port=listen_port, seed=42)
-    a = a.fit(dX, dy, sample_weight=dw)
+    a = dlgbm.LGBMRegressor(time_out=5, local_listen_port=listen_port, seed=42)
+    a = a.fit(dX, dy, client=client, sample_weight=dw)
     p1 = a.predict(dX)
     if output != 'dataframe':
         s1 = r2_score(dy, p1)
@@ -154,7 +150,7 @@ def test_regressor(output, client, listen_port):  # noqa
 def test_regressor_quantile(output, client, listen_port, alpha):  # noqa
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
-    a = dlgbm.LGBMRegressor(client=client, local_listen_port=listen_port, seed=42, objective='quantile', alpha=alpha)
+    a = dlgbm.LGBMRegressor(local_listen_port=listen_port, seed=42, objective='quantile', alpha=alpha)
     a = a.fit(dX, dy, client=client, sample_weight=dw)
     p1 = a.predict(dX).compute()
     q1 = np.count_nonzero(y < p1) / y.shape[0]
@@ -172,8 +168,8 @@ def test_regressor_quantile(output, client, listen_port, alpha):  # noqa
 def test_regressor_local_predict(client, listen_port):  # noqa
     X, y, w, dX, dy, dw = _create_data('regression', output='array')
 
-    a = dlgbm.LGBMRegressor(client=client, local_listen_port=listen_port, seed=42)
-    a = a.fit(dX, dy, sample_weight=dw)
+    a = dlgbm.LGBMRegressor(local_listen_port=listen_port, seed=42)
+    a = a.fit(dX, dy, sample_weight=dw, client=client)
     p1 = a.predict(dX)
     p2 = a.to_local().predict(X)
     s1 = r2_score(dy, p1)

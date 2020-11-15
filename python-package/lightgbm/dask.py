@@ -18,7 +18,6 @@ from toolz import assoc, first
 import lightgbm
 from .basic import _LIB, _safe_call
 from .sklearn import LGBMClassifier as LocalLGBMClassifier, LGBMRegressor as LocalLGBMRegressor
-from .compat import _LGBMModelBase
 
 try:
     import scipy.sparse as ss
@@ -184,7 +183,6 @@ def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
 
     Parameters
     ----------
-    client: dask.Client - client
     model :
     data : dask array of shape = [n_samples, n_features]
         Input feature matrix.
@@ -206,34 +204,7 @@ def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
         raise TypeError('Data must be either Dask array or dataframe. Got %s.' % str(type(data)))
 
 
-class _LGBMModel(_LGBMModelBase):
-
-    def __init__(self, model_factory, client=None) -> None:
-        if client is None:
-            client = default_client()
-        self.client = client
-        self.model_factory = model_factory
-
-    def fit(self, X, y=None, sample_weight=None, **kwargs):
-        """Docstring is inherited from the appropriate model_factory."""
-        params = self.get_params(True)
-        model = _train(self.client, X, y, params, self.model_factory, sample_weight, **kwargs)
-
-        self.set_params(**model.get_params())
-        self._copy_extra_params(model, self)
-
-        return self
-
-    def to_local(self):
-        """Create regular version of lightgbm.LGBMRegressor from the distributed version.
-
-        Returns
-        -------
-        model : lightgbm.LGBMRegressor
-        """
-        model = self.model_factory(**self.get_params())
-        self._copy_extra_params(self, model)
-        return model
+class _LGBMModel:
 
     @staticmethod
     def _copy_extra_params(source, dest):
@@ -247,11 +218,20 @@ class _LGBMModel(_LGBMModelBase):
 class LGBMClassifier(_LGBMModel, LocalLGBMClassifier):
     """Distributed version of lightgbm.LGBMClassifier."""
 
-    def __init__(self, client=None, **kwargs) -> None:
-        super().__init__(LocalLGBMClassifier, client)
-        super(_LGBMModel, self).__init__(**kwargs)
+    def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
+        """Docstring is inherited from the LGBMModel."""
+        if client is None:
+            client = default_client()
 
-    _LGBMModel.fit.__doc__ = LocalLGBMClassifier.fit.__doc__
+        model_factory = LocalLGBMClassifier
+        params = self.get_params(True)
+        model = _train(client, X, y, params, model_factory, sample_weight, **kwargs)
+
+        self.set_params(**model.get_params())
+        self._copy_extra_params(model, self)
+
+        return self
+    fit.__doc__ = LocalLGBMClassifier.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
@@ -263,17 +243,48 @@ class LGBMClassifier(_LGBMModel, LocalLGBMClassifier):
         return _predict(self.to_local(), X, proba=True, **kwargs)
     predict_proba.__doc__ = LocalLGBMClassifier.predict_proba.__doc__
 
+    def to_local(self):
+        """Create regular version of lightgbm.LGBMClassifier from the distributed version.
+
+        Returns
+        -------
+        model : lightgbm.LGBMClassifier
+        """
+        model = LocalLGBMClassifier(**self.get_params())
+        self._copy_extra_params(self, model)
+        return model
+
 
 class LGBMRegressor(_LGBMModel, LocalLGBMRegressor):
     """Docstring is inherited from the lightgbm.LGBMRegressor."""
 
-    def __init__(self, client=None, **kwargs) -> None:
-        super().__init__(LocalLGBMRegressor, client)
-        super(LocalLGBMRegressor, self).__init__(**kwargs)
+    def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
+        """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
+        if client is None:
+            client = default_client()
 
-    _LGBMModel.fit.__doc__ = LocalLGBMRegressor.fit.__doc__
+        model_factory = LocalLGBMRegressor
+        params = self.get_params(True)
+        model = _train(client, X, y, params, model_factory, sample_weight, **kwargs)
+
+        self.set_params(**model.get_params())
+        self._copy_extra_params(model, self)
+
+        return self
+    fit.__doc__ = LocalLGBMRegressor.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
         return _predict(self.to_local(), X, **kwargs)
     predict.__doc__ = LocalLGBMRegressor.predict.__doc__
+
+    def to_local(self):
+        """Create regular version of lightgbm.LGBMRegressor from the distributed version.
+
+        Returns
+        -------
+        model : lightgbm.LGBMRegressor
+        """
+        model = LocalLGBMRegressor(**self.get_params())
+        self._copy_extra_params(self, model)
+        return model
