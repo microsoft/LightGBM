@@ -389,7 +389,9 @@ if(USE_SWIG)
 endif(USE_SWIG)
 
 if(USE_MPI)
-  TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
+  if(NOT __BUILD_FOR_R)
+    TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
+  endif()
   TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
 
@@ -403,7 +405,9 @@ if(USE_OPENMP)
 endif(USE_OPENMP)
 
 if(USE_GPU)
-  TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
+  if(NOT __BUILD_FOR_R)
+    TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
+  endif()
   TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif(USE_GPU)
 
@@ -421,11 +425,13 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-  TARGET_LINK_LIBRARIES(
-    lightgbm
-    ${histograms}
-  )
+  if(NOT __BUILD_FOR_R)
+    set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+    TARGET_LINK_LIBRARIES(
+      lightgbm
+      ${histograms}
+    )
+  endif()
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   TARGET_LINK_LIBRARIES(
     _lightgbm
