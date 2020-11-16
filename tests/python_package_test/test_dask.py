@@ -1,11 +1,16 @@
 import os
 import sys
 
+import pytest
+if not sys.platform.startswith("linux"):
+    pytest.skip("lightgbm.dask is currently supported in Linux environments", allow_module_level=True)
+if sys.version_info < (3, 6):
+    pytest.skip("Only python>=3.6 is supported", allow_module_level=True)
+
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-import pytest
 import scipy.sparse
 from dask.array.utils import assert_eq
 from dask_ml.metrics import accuracy_score, r2_score
@@ -19,8 +24,6 @@ data_output = ['array', 'scipy_csr_matrix', 'dataframe']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 
 pytestmark = [
-    pytest.mark.skipif(sys.platform != "linux", reason="Only linux is currently supported"),
-    pytest.mark.skipif(sys.version_info < (3, 6), reason="Only python>=3.6 is supported"),
     pytest.mark.skipif(os.getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface")
 ]
 
