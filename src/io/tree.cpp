@@ -221,37 +221,43 @@ std::string Tree::ToString() const {
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
 
+  #if (defined(sun) || defined(__sun))
+  using CommonLegacy::ArrayToString; // Slower & unsafe regarding locale.
+  #else
+  using CommonC::ArrayToString;
+  #endif
+
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
   str_buf << "split_feature="
-    << CommonC::ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
+    << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
   str_buf << "split_gain="
-    << CommonC::ArrayToString(split_gain_, num_leaves_ - 1) << '\n';
+    << ArrayToString(split_gain_, num_leaves_ - 1) << '\n';
   str_buf << "threshold="
-    << CommonC::ArrayToString<true>(threshold_, num_leaves_ - 1) << '\n';
+    << ArrayToString<true>(threshold_, num_leaves_ - 1) << '\n';
   str_buf << "decision_type="
-    << CommonC::ArrayToString(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1) << '\n';
+    << ArrayToString(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1) << '\n';
   str_buf << "left_child="
-    << CommonC::ArrayToString(left_child_, num_leaves_ - 1) << '\n';
+    << ArrayToString(left_child_, num_leaves_ - 1) << '\n';
   str_buf << "right_child="
-    << CommonC::ArrayToString(right_child_, num_leaves_ - 1) << '\n';
+    << ArrayToString(right_child_, num_leaves_ - 1) << '\n';
   str_buf << "leaf_value="
-    << CommonC::ArrayToString<true>(leaf_value_, num_leaves_) << '\n';
+    << ArrayToString<true>(leaf_value_, num_leaves_) << '\n';
   str_buf << "leaf_weight="
-    << CommonC::ArrayToString<true>(leaf_weight_, num_leaves_) << '\n';
+    << ArrayToString<true>(leaf_weight_, num_leaves_) << '\n';
   str_buf << "leaf_count="
-    << CommonC::ArrayToString(leaf_count_, num_leaves_) << '\n';
+    << ArrayToString(leaf_count_, num_leaves_) << '\n';
   str_buf << "internal_value="
-    << CommonC::ArrayToString(internal_value_, num_leaves_ - 1) << '\n';
+    << ArrayToString(internal_value_, num_leaves_ - 1) << '\n';
   str_buf << "internal_weight="
-    << CommonC::ArrayToString(internal_weight_, num_leaves_ - 1) << '\n';
+    << ArrayToString(internal_weight_, num_leaves_ - 1) << '\n';
   str_buf << "internal_count="
-    << CommonC::ArrayToString(internal_count_, num_leaves_ - 1) << '\n';
+    << ArrayToString(internal_count_, num_leaves_ - 1) << '\n';
   if (num_cat_ > 0) {
     str_buf << "cat_boundaries="
-      << CommonC::ArrayToString(cat_boundaries_, num_cat_ + 1) << '\n';
+      << ArrayToString(cat_boundaries_, num_cat_ + 1) << '\n';
     str_buf << "cat_threshold="
-      << CommonC::ArrayToString(cat_threshold_, cat_threshold_.size()) << '\n';
+      << ArrayToString(cat_threshold_, cat_threshold_.size()) << '\n';
   }
   str_buf << "shrinkage=" << shrinkage_ << '\n';
   str_buf << '\n';

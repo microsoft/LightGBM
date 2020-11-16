@@ -5,6 +5,9 @@
 #ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
 #define LIGHTGBM_UTILS_COMMON_FUN_H_
 
+#if (defined(sun) || defined(__sun))
+#include <LightGBM/utils/common_legacy_solaris.h>
+#endif
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
@@ -27,8 +30,10 @@
 #include <utility>
 #include <vector>
 
+#if (! (defined(sun) || defined(__sun)))
 #define FMT_HEADER_ONLY
 #include "../../../external_libs/fmt/include/fmt/format.h"
+#endif
 #include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
 
 #ifdef _MSC_VER
@@ -1089,43 +1094,6 @@ struct __StringToTHelper<T, true> {
   }
 };
 
-/*!
-* Safely formats a value onto a buffer according to a format string and null-terminates it.
-*
-* \note It checks that the full value was written or forcefully aborts.
-*       This safety check serves to prevent incorrect internal API usage.
-*       Correct usage will never incur in this problem:
-*         - The received buffer size shall be sufficient at all times for the input format string and value.
-*/
-template <typename T>
-inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
-    auto result = fmt::format_to_n(buffer, buf_len, format, value);
-    if (result.size >= buf_len) {
-      Log::Fatal("Numerical conversion failed. Buffer is too small.");
-    }
-    buffer[result.size] = '\0';
-}
-
-template<typename T, bool is_float, bool high_precision>
-struct __TToStringHelper {
-  void operator()(T value, char* buffer, size_t buf_len) const {
-    format_to_buf(buffer, buf_len, "{}", value);
-  }
-};
-
-template<typename T>
-struct __TToStringHelper<T, true, false> {
-  void operator()(T value, char* buffer, size_t buf_len) const {
-    format_to_buf(buffer, buf_len, "{:g}", value);
-  }
-};
-
-template<typename T>
-struct __TToStringHelper<T, true, true> {
-  void operator()(T value, char* buffer, size_t buf_len) const {
-    format_to_buf(buffer, buf_len, "{:.17g}", value);
-  }
-};
 
 /*!
 * \warning Beware that due to internal use of ``Common::Atof`` in ``__StringToTHelperFast``,
@@ -1186,6 +1154,45 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
   return ret;
 }
 
+#if (!(defined(sun) || defined(__sun)))
+/*!
+* Safely formats a value onto a buffer according to a format string and null-terminates it.
+*
+* \note It checks that the full value was written or forcefully aborts.
+*       This safety check serves to prevent incorrect internal API usage.
+*       Correct usage will never incur in this problem:
+*         - The received buffer size shall be sufficient at all times for the input format string and value.
+*/
+template <typename T>
+inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
+    auto result = fmt::format_to_n(buffer, buf_len, format, value);
+    if (result.size >= buf_len) {
+      Log::Fatal("Numerical conversion failed. Buffer is too small.");
+    }
+    buffer[result.size] = '\0';
+}
+
+template<typename T, bool is_float, bool high_precision>
+struct __TToStringHelper {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{}", value);
+  }
+};
+
+template<typename T>
+struct __TToStringHelper<T, true, false> {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{:g}", value);
+  }
+};
+
+template<typename T>
+struct __TToStringHelper<T, true, true> {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{:.17g}", value);
+  }
+};
+
 /*!
 * Converts an array to a string with with values separated by the space character.
 * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
@@ -1212,6 +1219,8 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
   }
   return str_buf.str();
 }
+#endif // (! (defined(sun) || defined(__sun)))
+
 
 }  // namespace CommonC
 
