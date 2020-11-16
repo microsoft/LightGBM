@@ -31,8 +31,8 @@ R-package/    @Laurae2 @jameslamb
 python-package/    @StrikerRUS @chivee @wxchan @henry0312
 
 # Dask integration
-python-package/lightgbm/dask_distributed.py    @jameslamb
-tests/python_package_test/test_dask_distributed.py    @jameslamb
+python-package/lightgbm/dask.py    @jameslamb
+tests/python_package_test/test_dask.py    @jameslamb
 
 # helpers
 helpers/    @StrikerRUS @guolinke
