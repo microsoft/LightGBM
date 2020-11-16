@@ -115,9 +115,6 @@ jobs:
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 2.7
       bdist:
         TASK: bdist
   steps:
