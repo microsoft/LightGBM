@@ -15,7 +15,6 @@ from dask import delayed
 from dask.distributed import default_client, get_worker, wait
 from toolz import assoc, first
 
-import lightgbm
 from .basic import _LIB, _safe_call
 from .sklearn import LGBMClassifier as LocalLGBMClassifier, LGBMRegressor as LocalLGBMRegressor
 
