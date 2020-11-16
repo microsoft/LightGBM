@@ -455,11 +455,11 @@ if(WIN32)
     endif(MINGW OR CYGWIN)
 endif(WIN32)
 
-set(LGB_TARGETS "lightgbm _lightgbm")
+set(LGB_TARGETS lightgbm _lightgbm)
 
 # CLI is not necessary for the R package
 if(__BUILD_FOR_R)
-  set(LGB_TARGETS "_lightgbm")
+  set(LGB_TARGETS _lightgbm)
   if(MSVC)
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_MSVC_CORE_LIBRARY})
   else()
