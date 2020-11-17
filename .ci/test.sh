@@ -8,6 +8,11 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
+if [[ "${TASK:0:9}" == "r-package" ]]; then
+    bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
+    exit 0
+fi
+
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
 source activate $CONDA_ENV
 
@@ -62,11 +67,6 @@ if [[ $TASK == "if-else" ]]; then
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
-    exit 0
-fi
-
-if [[ "${TASK:0:9}" == "r-package" ]]; then
-    bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi
 
