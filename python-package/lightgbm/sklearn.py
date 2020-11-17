@@ -315,8 +315,16 @@ class LGBMModel(_LGBMModelBase):
         self.set_params(**kwargs)
 
     def _more_tags(self):
-        return {'allow_nan': True,
-                'X_types': ['2darray', 'sparse', '1dlabels']}
+        return {
+            'allow_nan': True,
+            'X_types': ['2darray', 'sparse', '1dlabels'],
+            '_xfail_checks': {
+                'check_no_attributes_set_in_init':
+                'scikit-learn incorrectly asserts that private attributes '
+                'cannot be set in __init__: '
+                '(see https://github.com/microsoft/LightGBM/issues/2628)'
+            }
+        }
 
     def get_params(self, deep=True):
         """Get parameters for this estimator.

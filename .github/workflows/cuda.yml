@@ -52,6 +52,7 @@ jobs:
             OS_NAME=linux
             BUILD_DIRECTORY=$ROOT_DOCKER_FOLDER
             CONDA_ENV=test-env
+            PYTHON_VERSION=3.8
             EOF
             cat > docker-script.sh <<EOF
             export CONDA=\$HOME/miniconda

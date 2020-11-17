@@ -634,11 +634,13 @@ Dataset Parameters
 
 -  ``bin_construct_sample_cnt`` :raw-html:`<a id="bin_construct_sample_cnt" title="Permalink to this parameter" href="#bin_construct_sample_cnt">&#x1F517;&#xFE0E;</a>`, default = ``200000``, type = int, aliases: ``subsample_for_bin``, constraints: ``bin_construct_sample_cnt > 0``
 
-   -  number of data that sampled to construct histogram bins
+   -  number of data that sampled to construct feature discrete bins
 
-   -  setting this to larger value will give better training result, but will increase data loading time
+   -  setting this to larger value will give better training result, but may increase data loading time
 
    -  set this to larger value if data is very sparse
+
+   -  **Note**: don't set this to small values, otherwise, you may encounter unexpected errors and poor accuracy
 
 -  ``data_random_seed`` :raw-html:`<a id="data_random_seed" title="Permalink to this parameter" href="#data_random_seed">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``data_seed``
 
