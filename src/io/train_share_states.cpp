@@ -38,8 +38,13 @@ void MultiValBinWrapper::InitTrain(const std::vector<int>& group_feature_start,
   if (cur_multi_val_bin != nullptr) {
     num_bin_ = cur_multi_val_bin->num_bin();
     num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
-      cur_multi_val_bin->num_element_per_row()) + 1, 1024);
+    auto num_element_per_row = cur_multi_val_bin->num_element_per_row();
+    if (num_element_per_row > kZeroThreshold) {
+      min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
+        num_element_per_row) + 1, 1024);
+    } else {
+      min_block_size_ = 1024;
+    }
   }
 }
 
