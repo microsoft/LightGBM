@@ -115,20 +115,20 @@ By default, the package will be built with [Visual Studio Build Tools](https://v
 
 If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://mingw-w64.org/doku.php) bundled with `Rtools`.
 
-If you want to force `LightGBM` to use MinGW (for any R version), open `R-package/src/install.libs.R` and change `use_mingw`:
+If you want to force `LightGBM` to use MinGW (for any R version), pass `--use-mingw` to the installation script.
 
-```r
-use_mingw <- TRUE
+```shell
+Rscript build_r.R --use-mingw
 ```
 
 **MSYS2 (R 4.x)**
 
 If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS2](https://www.msys2.org/). This should work with the tools already bundled in `Rtools` 4.0.
 
-If you want to force `LightGBM` to use MSYS2 (for any R version), open `R-package/src/install.libs.R` and change `use_msys2`:
+If you want to force `LightGBM` to use MinGW (for any R version), pass `--use-msys2` to the installation script.
 
-```r
-use_msys2 <- TRUE
+```shell
+Rscript build_r.R --use-msys2
 ```
 
 #### Mac OS Preparation
@@ -150,15 +150,24 @@ cd LightGBM
 Rscript build_r.R
 ```
 
-The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script.
+The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That scripts supports the following command-line options:
+
+- `--skip-install`: Build the package tarball, but do not install it.
+- `--use-gpu`: Build a GPU-enabled versioon of the library
+- `--use-mingw`: Force the use of MinGW toolchain, regardless of R version.
+- `--use-msys2`: Force the use of MSYS2 toolchain, regardless of R version.
 
 Note: for the build with Visual Studio/VS Build Tools in Windows, you should use the Windows CMD or Powershell.
 
 ### Installing a GPU-enabled Build
 
-Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
+You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
-After installing these other libraries, follow the steps in ["Installing from Source with CMake"](#install).
+After installing these other libraries, follow the steps in ["Installing from Source with CMake"](#install). When you reach the step that mentions `build_r.R`, pass the flag `--use-gpu`.
+
+```shell
+Rscript build_r.R --use-gpu
+```
 
 ### Installing Precompiled Binaries
 
