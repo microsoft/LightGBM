@@ -105,15 +105,6 @@ result <- file.copy(
 )
 .handle_result(result)
 
-# files only used by the lightgbm CLI aren't needed for
-# the R package
-result <- file.remove(
-  file.path(TEMP_SOURCE_DIR, "src", "application", "application.cpp")
-  , file.path(TEMP_SOURCE_DIR, "include", "LightGBM", "application.h")
-  , file.path(TEMP_SOURCE_DIR, "src", "main.cpp")
-)
-.handle_result(result)
-
 # compute/ is a submodule with boost, only needed if
 # building the R package with GPU support
 if (USING_GPU) {
