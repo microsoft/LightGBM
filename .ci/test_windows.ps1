@@ -50,8 +50,8 @@ elseif ($env:TASK -eq "sdist") {
 elseif ($env:TASK -eq "bdist") {
   # Install the Intel CPU runtime, so we can run tests against OpenCL
   Write-Output "Downloading OpenCL runtime"
-  curl -o opencl_runtime_16.1.2_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/12512/opencl_runtime_16.1.2_x64_setup.msi
-  $msiarglist = "/i opencl_runtime_16.1.2_x64_setup.msi /quiet /norestart /log msi.log"
+  curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
+  $msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
   Write-Output "Installing OpenCL runtime"
   $return = Start-Process msiexec -ArgumentList $msiarglist -Wait -passthru
   Get-Content msi.log
@@ -82,7 +82,7 @@ if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq 
   # cannot test C API with "sdist" task
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
 } elseif ($env:TASK -eq "bdist") {
-  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
+  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
   # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
   $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
 } else {
@@ -104,6 +104,3 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
   conda install -q -y -n $env:CONDA_ENV ipywidgets notebook
   jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $?  # run all notebooks
 }
-
-Write-Output "Exiting"
-Exit 0
