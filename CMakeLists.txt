@@ -318,7 +318,6 @@ if(USE_MPI)
 endif(USE_MPI)
 
 file(GLOB SOURCES
-    src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
     src/metric/*.cpp
@@ -330,9 +329,7 @@ if(USE_CUDA)
 endif(USE_CUDA)
 )
 
-if (NOT __BUILD_FOR_R)
-  add_executable(lightgbm src/main.cpp ${SOURCES})
-endif()
+add_executable(lightgbm src/main.cpp src/application/application.cpp ${SOURCES})
 list(APPEND SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for
@@ -389,25 +386,19 @@ if(USE_SWIG)
 endif(USE_SWIG)
 
 if(USE_MPI)
-  if(NOT __BUILD_FOR_R)
-    TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
-  endif()
+  TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
   TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
 
 if(USE_OPENMP)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-        if(NOT __BUILD_FOR_R)
-          TARGET_LINK_LIBRARIES(lightgbm OpenMP::OpenMP_CXX)
-        endif()
+        TARGET_LINK_LIBRARIES(lightgbm OpenMP::OpenMP_CXX)
         TARGET_LINK_LIBRARIES(_lightgbm OpenMP::OpenMP_CXX)
     endif()
 endif(USE_OPENMP)
 
 if(USE_GPU)
-  if(NOT __BUILD_FOR_R)
-    TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
-  endif()
+  TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
   TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif(USE_GPU)
 
@@ -425,13 +416,11 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  if(NOT __BUILD_FOR_R)
-    set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-    TARGET_LINK_LIBRARIES(
-      lightgbm
-      ${histograms}
-    )
-  endif()
+  set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  TARGET_LINK_LIBRARIES(
+    lightgbm
+    ${histograms}
+  )
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   TARGET_LINK_LIBRARIES(
     _lightgbm
@@ -446,20 +435,14 @@ endif(USE_HDFS)
 
 if(WIN32)
     if(MINGW OR CYGWIN)
-      if(NOT __BUILD_FOR_R)
-        TARGET_LINK_LIBRARIES(lightgbm Ws2_32)
-        TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
-      endif()
+      TARGET_LINK_LIBRARIES(lightgbm Ws2_32)
       TARGET_LINK_LIBRARIES(_lightgbm Ws2_32)
+      TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
       TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
     endif(MINGW OR CYGWIN)
 endif(WIN32)
 
-set(LGB_TARGETS lightgbm _lightgbm)
-
-# CLI is not necessary for the R package
 if(__BUILD_FOR_R)
-  set(LGB_TARGETS _lightgbm)
   if(MSVC)
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_MSVC_CORE_LIBRARY})
   else()
@@ -467,7 +450,7 @@ if(__BUILD_FOR_R)
   endif(MSVC)
 endif(__BUILD_FOR_R)
 
-install(TARGETS ${LGB_TARGETS}
+install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
