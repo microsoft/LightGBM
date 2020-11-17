@@ -125,7 +125,7 @@ Rscript build_r.R --use-mingw
 
 If you are using R 4.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MSYS2](https://www.msys2.org/). This should work with the tools already bundled in `Rtools` 4.0.
 
-If you want to force `LightGBM` to use MinGW (for any R version), pass `--use-msys2` to the installation script.
+If you want to force `LightGBM` to use MSYS2 (for any R version), pass `--use-msys2` to the installation script.
 
 ```shell
 Rscript build_r.R --use-msys2
@@ -150,14 +150,14 @@ cd LightGBM
 Rscript build_r.R
 ```
 
-The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That scripts supports the following command-line options:
+The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
 
 - `--skip-install`: Build the package tarball, but do not install it.
 - `--use-gpu`: Build a GPU-enabled versioon of the library
 - `--use-mingw`: Force the use of MinGW toolchain, regardless of R version.
 - `--use-msys2`: Force the use of MSYS2 toolchain, regardless of R version.
 
-Note: for the build with Visual Studio/VS Build Tools in Windows, you should use the Windows CMD or Powershell.
+Note: for the build with Visual Studio/VS Build Tools in Windows, you should use the Windows CMD or PowerShell.
 
 ### Installing a GPU-enabled Build
 
