@@ -104,7 +104,6 @@ if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Write-Output "Done installing MiKTeX"
 
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
-    conda install -q -y --no-deps pandoc
 }
 
 Write-Output "Building R package"
