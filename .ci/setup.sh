@@ -48,8 +48,10 @@ else  # Linux
     fi
 fi
 
-if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
-    sh conda.sh -b -p $CONDA
+if [[ "${TASK:0:9}" != "r-package" ]]; then
+    if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
+        sh conda.sh -b -p $CONDA
+    fi
+    conda config --set always_yes yes --set changeps1 no
+    conda update -q -y conda
 fi
-conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda
