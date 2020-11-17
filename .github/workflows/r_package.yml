@@ -145,7 +145,7 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         uses: conda-incubator/setup-miniconda@v1.7.0
         with:
-          auto-update-conda: false
+          auto-update-conda: true
       - name: Setup and run tests on Windows
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
