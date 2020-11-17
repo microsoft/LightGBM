@@ -12,7 +12,6 @@ MultiValBinWrapper::MultiValBinWrapper(MultiValBin* bin, data_size_t num_data,
   const std::vector<int>& feature_groups_contained):
     feature_groups_contained_(feature_groups_contained) {
   num_threads_ = OMP_NUM_THREADS();
-  max_block_size_ = num_data;
   num_data_ = num_data;
   multi_val_bin_.reset(bin);
   if (bin == nullptr) {
