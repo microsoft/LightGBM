@@ -157,7 +157,7 @@ def param_dict_to_str(data):
     return ' '.join(pairs)
 
 
-class _TempFile(object):
+class _TempFile:
     def __enter__(self):
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
@@ -183,7 +183,7 @@ class LightGBMError(Exception):
     pass
 
 
-class _ConfigAliases(object):
+class _ConfigAliases:
     aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
                                             "subsample_for_bin"},
                "boosting": {"boosting",
@@ -452,7 +452,7 @@ def _load_pandas_categorical(file_name=None, model_str=None):
         return None
 
 
-class _InnerPredictor(object):
+class _InnerPredictor:
     """_InnerPredictor of LightGBM.
 
     Not exposed to user.
@@ -906,7 +906,7 @@ class _InnerPredictor(object):
         return out_cur_iter.value
 
 
-class Dataset(object):
+class Dataset:
     """Dataset in LightGBM."""
 
     def __init__(self, data, label=None, reference=None,
@@ -1997,7 +1997,7 @@ class Dataset(object):
         return self
 
 
-class Booster(object):
+class Booster:
     """Booster in LightGBM."""
 
     def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent=False):
