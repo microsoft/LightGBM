@@ -15,7 +15,6 @@ from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
                      DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
-                     json_default_with_numpy,
                      range_, zip_)
 from .libpath import find_lib_path
 
@@ -133,6 +132,16 @@ def c_str(string):
 def c_array(ctype, values):
     """Convert a Python array to C array."""
     return (ctype * len(values))(*values)
+
+
+def json_default_with_numpy(obj):
+    """Convert numpy classes to JSON serializable objects."""
+    if isinstance(obj, (np.integer, np.floating, np.bool_)):
+        return obj.item()
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
 
 
 def param_dict_to_str(data):
