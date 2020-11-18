@@ -1,7 +1,5 @@
 # coding: utf-8
 """Plotting library."""
-from __future__ import absolute_import, division
-
 import warnings
 from copy import deepcopy
 from io import BytesIO
