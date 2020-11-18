@@ -277,7 +277,7 @@ def train(params, train_set, num_boost_round=100,
     return booster
 
 
-class CVBooster(object):
+class CVBooster:
     """CVBooster in LightGBM.
 
     Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
