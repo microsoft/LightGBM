@@ -1,7 +1,5 @@
 # coding: utf-8
 """Callbacks library."""
-from __future__ import absolute_import
-
 import collections
 import warnings
 from operator import gt, lt
