@@ -1,7 +1,5 @@
 # coding: utf-8
 """Library with training routines of LightGBM."""
-from __future__ import absolute_import
-
 import collections
 import copy
 import warnings
