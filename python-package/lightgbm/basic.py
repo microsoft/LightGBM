@@ -1,7 +1,5 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-from __future__ import absolute_import, print_function
-
 import copy
 import ctypes
 import os
