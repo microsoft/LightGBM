@@ -340,7 +340,7 @@ class LGBMModel(_LGBMModelBase):
         params : dict
             Parameter names mapped to their values.
         """
-        params = super(LGBMModel, self).get_params(deep=deep)
+        params = super().get_params(deep=deep)
         params.update(self._other_params)
         return params
 
@@ -767,16 +767,11 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
             verbose=True, feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
-        super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
-                                       init_score=init_score, eval_set=eval_set,
-                                       eval_names=eval_names,
-                                       eval_sample_weight=eval_sample_weight,
-                                       eval_init_score=eval_init_score,
-                                       eval_metric=eval_metric,
-                                       early_stopping_rounds=early_stopping_rounds,
-                                       verbose=verbose, feature_name=feature_name,
-                                       categorical_feature=categorical_feature,
-                                       callbacks=callbacks, init_model=init_model)
+        super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
+                    eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_init_score=eval_init_score, eval_metric=eval_metric,
+                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
@@ -844,17 +839,12 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                 else:
                     valid_sets[i] = (valid_x, self._le.transform(valid_y))
 
-        super(LGBMClassifier, self).fit(X, _y, sample_weight=sample_weight,
-                                        init_score=init_score, eval_set=valid_sets,
-                                        eval_names=eval_names,
-                                        eval_sample_weight=eval_sample_weight,
-                                        eval_class_weight=eval_class_weight,
-                                        eval_init_score=eval_init_score,
-                                        eval_metric=eval_metric,
-                                        early_stopping_rounds=early_stopping_rounds,
-                                        verbose=verbose, feature_name=feature_name,
-                                        categorical_feature=categorical_feature,
-                                        callbacks=callbacks, init_model=init_model)
+        super().fit(X, _y, sample_weight=sample_weight, init_score=init_score, eval_set=valid_sets,
+                    eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
+                    eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
+                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
+                    callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
@@ -919,8 +909,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
             If ``pred_contrib=True``, the feature contributions for each sample.
         """
-        result = super(LGBMClassifier, self).predict(X, raw_score, start_iteration, num_iteration,
-                                                     pred_leaf, pred_contrib, **kwargs)
+        result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             warnings.warn("Cannot compute class probabilities or labels "
                           "due to the usage of customized objective function.\n"
@@ -974,16 +963,11 @@ class LGBMRanker(LGBMModel):
                                  "if you use dict, the index should start from 0")
 
         self._eval_at = eval_at
-        super(LGBMRanker, self).fit(X, y, sample_weight=sample_weight,
-                                    init_score=init_score, group=group,
-                                    eval_set=eval_set, eval_names=eval_names,
-                                    eval_sample_weight=eval_sample_weight,
-                                    eval_init_score=eval_init_score, eval_group=eval_group,
-                                    eval_metric=eval_metric,
-                                    early_stopping_rounds=early_stopping_rounds,
-                                    verbose=verbose, feature_name=feature_name,
-                                    categorical_feature=categorical_feature,
-                                    callbacks=callbacks, init_model=init_model)
+        super().fit(X, y, sample_weight=sample_weight, init_score=init_score, group=group,
+                    eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_init_score=eval_init_score, eval_group=eval_group, eval_metric=eval_metric,
+                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
