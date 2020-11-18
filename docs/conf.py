@@ -32,10 +32,7 @@ LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
 sys.path.insert(0, LIB_PATH)
 
 # -- mock out modules
-try:
-    from unittest.mock import Mock  # Python 3.x
-except ImportError:
-    from mock import Mock  # Python 2.x
+from unittest.mock import Mock
 
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
                 'sklearn', 'matplotlib', 'pandas', 'graphviz']
