@@ -2,6 +2,7 @@
 """Wrapper for C API of LightGBM."""
 import copy
 import ctypes
+import json
 import os
 import warnings
 from tempfile import NamedTemporaryFile
@@ -14,7 +15,7 @@ from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
                      DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
-                     json, json_default_with_numpy,
+                     json_default_with_numpy,
                      range_, zip_)
 from .libpath import find_lib_path
 
