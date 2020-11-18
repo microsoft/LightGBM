@@ -183,10 +183,10 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
-    std::unique_ptr<Parser> inner_parser(nullptr);
     if (ctr_provider.get() != nullptr) {
+      std::unique_ptr<Parser> inner_parser(nullptr);
       inner_parser.reset(parser.release());
-      parser.reset(new CTRParser(inner_parser, ctr_provider, false));
+      parser.reset(new CTRParser(inner_parser.release(), ctr_provider, false));
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
@@ -244,6 +244,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
   // need to check training data
   CheckDataset(dataset.get());
+  dataset->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
   return dataset.release();
 }
 
@@ -260,10 +261,10 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
-    std::unique_ptr<Parser> inner_parser(nullptr);
     if (ctr_provider.get() != nullptr) {
+      std::unique_ptr<Parser> inner_parser(nullptr);
       inner_parser.reset(parser.release());
-      parser.reset(new CTRParser(inner_parser, ctr_provider, true));
+      parser.reset(new CTRParser(inner_parser.release(), ctr_provider, true));
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
@@ -994,6 +995,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   }
   dataset->set_feature_names(feature_names_);
   if (!config_.max_bin_by_feature.empty()) {
+    // TODO: reset max_bin_by_feature of config in CTRProvider
     CHECK_EQ(static_cast<size_t>(dataset->num_total_features_), config_.max_bin_by_feature.size());
     CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
   }

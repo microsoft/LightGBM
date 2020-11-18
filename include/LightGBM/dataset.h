@@ -349,7 +349,7 @@ class Dataset {
       if (is_feature_added[fidx]) { continue; }
       const int group = feature2group_[fidx];
       const int sub_feature = feature2subfeature_[fidx];
-      push_data_func_(tid, row_idx, group, sub_feature, 0.0f);
+      feature_groups_[group]->PushData(tid, sub_feature, row_idx, 0.0f);
     }
   }
 
@@ -360,7 +360,7 @@ class Dataset {
       if (feature_idx >= 0) {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
-        push_data_func_(tid, row_idx, group, sub_feature, feature_values[i]);
+        feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
       }
     }
   }
@@ -375,14 +375,14 @@ class Dataset {
         is_feature_added[feature_idx] = true;
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
-        push_data_func_(tid, row_idx, group, sub_feature, inner_data.second);
+        feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
       }
     }
     FinishOneRow(tid, row_idx, is_feature_added);
   }
 
   inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
-    push_data_func_(tid, row_idx, group, sub_feature, value);
+    feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
   }
 
   inline int RealFeatureIndex(int fidx) const {
@@ -713,9 +713,6 @@ class Dataset {
   std::unique_ptr<CTRProvider> ctr_provider_ = std::unique_ptr<CTRProvider>(nullptr);
   /*! \brief a flag indicating whether the dataset is validation or not */
   bool is_valid_ = false;
-
-  /*! \brief function to push one feature value of one data into a featue group */
-  std::function<void(int tid, data_size_t row_idx, int group, int sub_feature, double value)> push_data_func_;
 };
 
 }  // namespace LightGBM

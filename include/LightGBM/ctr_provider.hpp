@@ -861,7 +861,7 @@ private:
 
 class CTRParser : public Parser {
   public:
-    explicit CTRParser(const std::unique_ptr<Parser>& inner_parser,
+    explicit CTRParser(const Parser* inner_parser,
     const std::unique_ptr<CTRProvider>& ctr_provider, const bool is_valid):
     inner_parser_(inner_parser), ctr_provider_(ctr_provider), is_valid_(is_valid) {
 
@@ -883,7 +883,7 @@ class CTRParser : public Parser {
     }
 
   private:
-    const std::unique_ptr<Parser>& inner_parser_;
+    std::unique_ptr<const Parser> inner_parser_;
     const std::unique_ptr<CTRProvider>& ctr_provider_;
     const bool is_valid_;
 };
