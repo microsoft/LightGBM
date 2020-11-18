@@ -1,7 +1,5 @@
 # coding: utf-8
 """Compatibility library."""
-from __future__ import absolute_import
-
 import inspect
 import sys
 
