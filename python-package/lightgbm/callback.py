@@ -23,7 +23,7 @@ class EarlyStopException(Exception):
         best_score : float
             The score of the best iteration.
         """
-        super(EarlyStopException, self).__init__()
+        super().__init__()
         self.best_iteration = best_iteration
         self.best_score = best_score
 
