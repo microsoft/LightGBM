@@ -16,7 +16,7 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
 from .engine import train
 
 
-class _ObjectiveFunctionWrapper(object):
+class _ObjectiveFunctionWrapper:
     """Proxy class for objective function."""
 
     def __init__(self, func):
@@ -96,7 +96,7 @@ class _ObjectiveFunctionWrapper(object):
         return grad, hess
 
 
-class _EvalFunctionWrapper(object):
+class _EvalFunctionWrapper:
     """Proxy class for evaluation function."""
 
     def __init__(self, func):
