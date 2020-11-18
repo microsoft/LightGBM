@@ -66,12 +66,12 @@ try:
 except ImportError:
     PANDAS_INSTALLED = False
 
-    class Series(object):
+    class Series:
         """Dummy class for pandas.Series."""
 
         pass
 
-    class DataFrame(object):
+    class DataFrame:
         """Dummy class for pandas.DataFrame."""
 
         pass
@@ -103,7 +103,7 @@ try:
 except ImportError:
     DATATABLE_INSTALLED = False
 
-    class DataTable(object):
+    class DataTable:
         """Dummy class for DataTable."""
 
         pass
