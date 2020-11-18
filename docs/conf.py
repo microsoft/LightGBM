@@ -205,9 +205,7 @@ def generate_doxygen_xml(app):
         "WARN_AS_ERROR=YES",
     ]
     doxygen_input = '\n'.join(doxygen_args)
-    is_py3 = sys.version[0] == "3"
-    if is_py3:
-        doxygen_input = bytes(doxygen_input, "utf-8")
+    doxygen_input = bytes(doxygen_input, "utf-8")
     if not os.path.exists(os.path.join(CURR_PATH, 'doxyoutput')):
         os.makedirs(os.path.join(CURR_PATH, 'doxyoutput'))
     try:
@@ -218,8 +216,7 @@ def generate_doxygen_xml(app):
         process = Popen(["doxygen", "-"],
                         stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = process.communicate(doxygen_input)
-        output = '\n'.join([i.decode('utf-8') if is_py3 else i
-                            for i in (stdout, stderr) if i is not None])
+        output = '\n'.join([i.decode('utf-8') for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
         else:
