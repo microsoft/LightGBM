@@ -15,7 +15,7 @@ from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
                      DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
-                     range_, zip_)
+                     range_)
 from .libpath import find_lib_path
 
 
@@ -383,7 +383,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         else:
             if len(cat_cols) != len(pandas_categorical):
                 raise ValueError('train and valid dataset categorical_feature do not match.')
-            for col, category in zip_(cat_cols, pandas_categorical):
+            for col, category in zip(cat_cols, pandas_categorical):
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is list
@@ -676,8 +676,8 @@ class _InnerPredictor:
             n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            for chunk, (start_idx_pred, end_idx_pred) in zip_(np.array_split(mat, sections),
-                                                              zip_(n_preds_sections, n_preds_sections[1:])):
+            for chunk, (start_idx_pred, end_idx_pred) in zip(np.array_split(mat, sections),
+                                                             zip(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
                 inner_predict(chunk, start_iteration, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
             return preds, nrow
@@ -815,8 +815,8 @@ class _InnerPredictor:
             n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff(sections)]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip_(zip_(sections, sections[1:]),
-                                                                             zip_(n_preds_sections, n_preds_sections[1:])):
+            for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip(zip(sections, sections[1:]),
+                                                                            zip(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
                 inner_predict(csr[start_idx:end_idx], start_iteration, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
             return preds, nrow
