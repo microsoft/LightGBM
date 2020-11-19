@@ -13,7 +13,7 @@ import scipy.sparse
 
 from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
                      DataTable,
-                     decode_string, string_type,
+                     decode_string,
                      integer_types, numeric_types)
 from .libpath import find_lib_path
 
@@ -156,7 +156,7 @@ def param_dict_to_str(data):
                 else:
                     return str(x)
             pairs.append(str(key) + '=' + ','.join(map(to_string, val)))
-        elif isinstance(val, string_type) or isinstance(val, numeric_types) or is_numeric(val):
+        elif isinstance(val, (str, numeric_types)) or is_numeric(val):
             pairs.append(str(key) + '=' + str(val))
         elif val is not None:
             raise TypeError('Unknown type of parameter:%s, got:%s'
@@ -570,7 +570,7 @@ class _InnerPredictor:
             predict_type = C_API_PREDICT_CONTRIB
         int_data_has_header = 1 if data_has_header else 0
 
-        if isinstance(data, string_type):
+        if isinstance(data, str):
             with _TempFile() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
@@ -1025,7 +1025,7 @@ class Dataset:
 
     def _set_init_score_by_predictor(self, predictor, data, used_indices=None):
         data_has_header = False
-        if isinstance(data, string_type):
+        if isinstance(data, str):
             # check data has header or not
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
         num_data = self.num_data()
