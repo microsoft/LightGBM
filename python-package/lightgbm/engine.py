@@ -10,7 +10,7 @@ import numpy as np
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
-                     string_type, integer_types)
+                     integer_types)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -157,7 +157,7 @@ def train(params, train_set, num_boost_round=100,
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, string_type):
+    if isinstance(init_model, str):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
@@ -180,7 +180,7 @@ def train(params, train_set, num_boost_round=100,
     if valid_sets is not None:
         if isinstance(valid_sets, Dataset):
             valid_sets = [valid_sets]
-        if isinstance(valid_names, string_type):
+        if isinstance(valid_names, str):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_sets):
             # reduce cost for prediction training data
@@ -537,7 +537,7 @@ def cv(params, train_set, num_boost_round=100,
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, string_type):
+    if isinstance(init_model, str):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
