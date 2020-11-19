@@ -11,10 +11,8 @@ from collections import OrderedDict
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
-                     DataTable,
-                     decode_string,
-                     numeric_types)
+from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTable,
+                     decode_string)
 from .libpath import find_lib_path
 
 
@@ -278,6 +276,8 @@ class _ConfigAliases:
 
 
 MAX_INT32 = (1 << 31) - 1
+
+NUMERIC_TYPES = (int, float, bool)
 
 """Macro definition of data type in C API of LightGBM"""
 C_API_DTYPE_FLOAT32 = 0
