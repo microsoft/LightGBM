@@ -9,8 +9,7 @@ import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
-from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
-                     integer_types)
+from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 
 def train(params, train_set, num_boost_round=100,
@@ -207,7 +206,7 @@ def train(params, train_set, num_boost_round=100,
     # Most of legacy advanced options becomes callbacks
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation())
-    elif isinstance(verbose_eval, integer_types):
+    elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
@@ -571,7 +570,7 @@ def cv(params, train_set, num_boost_round=100,
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
-    elif isinstance(verbose_eval, integer_types):
+    elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
