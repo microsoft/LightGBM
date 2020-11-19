@@ -1,18 +1,5 @@
 # coding: utf-8
 """Compatibility library."""
-import sys
-
-
-"""Compatibility between Python2 and Python3"""
-if sys.version_info[0] == 3:
-    def decode_string(bytestring):
-        """Decode C bytestring to ordinary string."""
-        return bytestring.decode('utf-8')
-else:
-    def decode_string(bytestring):
-        """Decode C bytestring to ordinary string."""
-        return bytestring
-
 
 """pandas"""
 try:
