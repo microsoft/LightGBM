@@ -12,7 +12,6 @@ if is_py3:
     string_type = str
     numeric_types = (int, float, bool)
     integer_types = (int, )
-    range_ = range
 
     def argc_(func):
         """Count the number of arguments of a function."""
@@ -25,7 +24,6 @@ else:
     string_type = basestring
     numeric_types = (int, long, float, bool)
     integer_types = (int, long)
-    range_ = xrange
 
     def argc_(func):
         """Count the number of arguments of a function."""
