@@ -9,7 +9,6 @@ is_py3 = (sys.version_info[0] == 3)
 
 """Compatibility between Python2 and Python3"""
 if is_py3:
-    zip_ = zip
     string_type = str
     numeric_types = (int, float, bool)
     integer_types = (int, )
@@ -23,7 +22,6 @@ if is_py3:
         """Decode C bytestring to ordinary string."""
         return bytestring.decode('utf-8')
 else:
-    from itertools import izip as zip_
     string_type = basestring
     numeric_types = (int, long, float, bool)
     integer_types = (int, long)
