@@ -190,6 +190,13 @@ class LightGBMError(Exception):
     pass
 
 
+# DeprecationWarning is not shown by default, so let's create our own with higher level
+class LGBMDeprecationWarning(UserWarning):
+    """Custom deprecation warning."""
+
+    pass
+
+
 class _ConfigAliases:
     aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
                                             "subsample_for_bin"},
