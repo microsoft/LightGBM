@@ -12,7 +12,7 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     string_type, DataFrame, DataTable)
+                     DataFrame, DataTable)
 from .engine import train
 
 
@@ -518,10 +518,10 @@ class LGBMModel(_LGBMModelBase):
 
         # Separate built-in from callable evaluation metrics
         eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
-        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, string_type)]
+        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
 
         # register default metric for consistency with callable eval_metric case
-        original_metric = self._objective if isinstance(self._objective, string_type) else None
+        original_metric = self._objective if isinstance(self._objective, str) else None
         if original_metric is None:
             # try to deduce from class instance
             if isinstance(self, LGBMRegressor):
@@ -537,7 +537,7 @@ class LGBMModel(_LGBMModelBase):
                 original_metric = params.pop(metric_alias)
 
         # concatenate metric from params (or default if not provided in params) and eval_metric
-        original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
+        original_metric = [original_metric] if isinstance(original_metric, (str, type(None))) else original_metric
         params['metric'] = [e for e in eval_metrics_builtin if e not in original_metric] + original_metric
         params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
@@ -812,7 +812,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                 self._objective = "multiclass"
 
         if not callable(eval_metric):
-            if isinstance(eval_metric, (string_type, type(None))):
+            if isinstance(eval_metric, (str, type(None))):
                 eval_metric = [eval_metric]
             if self._n_classes > 2:
                 for index, metric in enumerate(eval_metric):
