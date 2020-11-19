@@ -1304,7 +1304,7 @@ class Dataset:
                     assert used_indices.flags.c_contiguous
                     if self.reference.group is not None:
                         group_info = np.array(self.reference.group).astype(np.int32, copy=False)
-                        _, self.group = np.unique(np.repeat(range_(len(group_info)), repeats=group_info)[self.used_indices],
+                        _, self.group = np.unique(np.repeat(range(len(group_info)), repeats=group_info)[self.used_indices],
                                                   return_counts=True)
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
@@ -1734,7 +1734,7 @@ class Dataset:
         tmp_out_len = ctypes.c_int(0)
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
-        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(num_feature)]
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(num_feature)]
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
             self.handle,
@@ -1750,7 +1750,7 @@ class Dataset:
                 "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
                 .format(reserved_string_buffer_size, required_string_buffer_size.value)
             )
-        return [string_buffers[i].value.decode('utf-8') for i in range_(num_feature)]
+        return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
     def get_label(self):
         """Get the label of the Dataset.
