@@ -2447,7 +2447,7 @@ class Booster:
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
-            self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
+            self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
             return is_finished.value == 1
         else:
             if not self.__set_objective_to_none:
@@ -2490,7 +2490,7 @@ class Booster:
             grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             ctypes.byref(is_finished)))
-        self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
+        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return is_finished.value == 1
 
     def rollback_one_iter(self):
@@ -2503,7 +2503,7 @@ class Booster:
         """
         _safe_call(_LIB.LGBM_BoosterRollbackOneIter(
             self.handle))
-        self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
+        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return self
 
     def current_iteration(self):
@@ -2616,7 +2616,7 @@ class Booster:
         if data is self.train_set:
             data_idx = 0
         else:
-            for i in range_(len(self.valid_sets)):
+            for i in range(len(self.valid_sets)):
                 if data is self.valid_sets[i]:
                     data_idx = i + 1
                     break
@@ -2689,7 +2689,7 @@ class Booster:
         result : list
             List with evaluation results.
         """
-        return [item for i in range_(1, self.__num_dataset)
+        return [item for i in range(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
     def save_model(self, filename, num_iteration=None, start_iteration=0, importance_type='split'):
