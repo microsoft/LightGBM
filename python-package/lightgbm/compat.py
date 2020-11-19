@@ -2,7 +2,6 @@
 """Compatibility library."""
 import sys
 
-import numpy as np
 
 is_py3 = (sys.version_info[0] == 3)
 
