@@ -14,8 +14,7 @@ import scipy.sparse
 from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
                      DataTable,
                      decode_string, string_type,
-                     integer_types, numeric_types,
-                     range_)
+                     integer_types, numeric_types)
 from .libpath import find_lib_path
 
 
@@ -1040,15 +1039,15 @@ class Dataset:
                 if isinstance(data, string_type):
                     sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
                     assert num_data == len(used_indices)
-                    for i in range_(len(used_indices)):
-                        for j in range_(predictor.num_class):
+                    for i in range(len(used_indices)):
+                        for j in range(predictor.num_class):
                             sub_init_score[i * predictor.num_class + j] = init_score[used_indices[i] * predictor.num_class + j]
                     init_score = sub_init_score
             if predictor.num_class > 1:
                 # need to regroup init_score
                 new_init_score = np.zeros(init_score.size, dtype=np.float32)
-                for i in range_(num_data):
-                    for j in range_(predictor.num_class):
+                for i in range(num_data):
+                    for j in range(predictor.num_class):
                         new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
                 init_score = new_init_score
         elif self.init_score is not None:
