@@ -127,10 +127,3 @@ except ImportError:
     _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
-
-
-# DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
-    """Custom deprecation warning."""
-
-    pass
