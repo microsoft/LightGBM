@@ -154,7 +154,7 @@ def param_dict_to_str(data):
                 else:
                     return str(x)
             pairs.append(str(key) + '=' + ','.join(map(to_string, val)))
-        elif isinstance(val, (str, numeric_types)) or is_numeric(val):
+        elif isinstance(val, (str, NUMERIC_TYPES)) or is_numeric(val):
             pairs.append(str(key) + '=' + str(val))
         elif val is not None:
             raise TypeError('Unknown type of parameter:%s, got:%s'
