@@ -7,7 +7,7 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster
-from .compat import (MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED, string_type)
+from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
 from .sklearn import LGBMModel
 
 
@@ -19,7 +19,7 @@ def _check_not_tuple_of_2_elements(obj, obj_name='obj'):
 
 def _float2str(value, precision=None):
     return ("{0:.{1}f}".format(value, precision)
-            if precision is not None and not isinstance(value, string_type)
+            if precision is not None and not isinstance(value, str)
             else str(value))
 
 
@@ -235,7 +235,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
 
     if title is not None:
         title = title.replace('@feature@', str(feature))
-        title = title.replace('@index/name@', ('name' if isinstance(feature, string_type) else 'index'))
+        title = title.replace('@index/name@', ('name' if isinstance(feature, str) else 'index'))
         ax.set_title(title)
     if xlabel is not None:
         ax.set_xlabel(xlabel)
