@@ -2044,7 +2044,7 @@ class Booster:
             for alias in _ConfigAliases.get("machines"):
                 if alias in params:
                     machines = params[alias]
-                    if isinstance(machines, string_type):
+                    if isinstance(machines, str):
                         num_machines = len(machines.split(','))
                     elif isinstance(machines, (list, set)):
                         num_machines = len(machines)
@@ -3136,12 +3136,12 @@ class Booster:
         def add(root):
             """Recursively add thresholds."""
             if 'split_index' in root:  # non-leaf
-                if feature_names is not None and isinstance(feature, string_type):
+                if feature_names is not None and isinstance(feature, str):
                     split_feature = feature_names[root['split_feature']]
                 else:
                     split_feature = root['split_feature']
                 if split_feature == feature:
-                    if isinstance(root['threshold'], string_type):
+                    if isinstance(root['threshold'], str):
                         raise LightGBMError('Cannot compute split value histogram for the categorical feature')
                     else:
                         values.append(root['threshold'])
@@ -3301,7 +3301,7 @@ class Booster:
         """
         for key, value in kwargs.items():
             if value is not None:
-                if not isinstance(value, string_type):
+                if not isinstance(value, str):
                     raise ValueError("Only string values are accepted")
                 self.__attr[key] = value
             else:
