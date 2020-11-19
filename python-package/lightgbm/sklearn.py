@@ -87,7 +87,7 @@ class _ObjectiveFunctionWrapper:
                 if num_class * num_data != len(grad):
                     raise ValueError("Length of grad and hess should equal to num_class * num_data")
                 for k in range(num_class):
-                    for i in range_(num_data):
+                    for i in range(num_data):
                         idx = k * num_data + i
                         grad[idx] *= weight[i]
                         hess[idx] *= weight[i]
