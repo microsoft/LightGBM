@@ -38,6 +38,9 @@ def _load_lib():
 _LIB = _load_lib()
 
 
+NUMERIC_TYPES = (int, float, bool)
+
+
 def _safe_call(ret):
     """Check the return value from C API call.
 
@@ -276,8 +279,6 @@ class _ConfigAliases:
 
 
 MAX_INT32 = (1 << 31) - 1
-
-NUMERIC_TYPES = (int, float, bool)
 
 """Macro definition of data type in C API of LightGBM"""
 C_API_DTYPE_FLOAT32 = 0
