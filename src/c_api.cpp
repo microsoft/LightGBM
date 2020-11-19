@@ -6,11 +6,13 @@
 
 #include <LightGBM/boosting.h>
 #include <LightGBM/config.h>
+#include <LightGBM/ctr_provider.hpp>
 #include <LightGBM/dataset.h>
 #include <LightGBM/dataset_loader.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
+#include <LightGBM/parser.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
@@ -867,25 +869,6 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
 std::function<double(int row_idx)>
 LabelFunctionFromArray(const void* label, int label_type);
 
-// Row iterator of on column for CSC matrix
-class CSC_RowIterator {
- public:
-  CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
-                  const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx);
-  ~CSC_RowIterator() {}
-  // return value at idx, only can access by ascent order
-  double Get(int idx);
-  // return next non-zero pair, if index < 0, means no more data
-  std::pair<int, double> NextNonZero();
-
- private:
-  int nonzero_idx_ = 0;
-  int cur_idx_ = -1;
-  double cur_val_ = 0.0f;
-  bool is_end_ = false;
-  std::function<std::pair<int, double>(int idx)> iter_fun_;
-};
-
 // start of c_api functions
 
 const char* LGBM_GetLastError() {
@@ -948,17 +931,10 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
     omp_set_num_threads(config.num_threads);
   }
   DatasetLoader loader(config, nullptr, 1, nullptr);
-  std::vector<std::vector<double>> sample_data_matrix(ncol);
-  std::vector<std::vector<int>> sample_indices_matrix(ncol);
-  #pragma omp parallel for schedule(dynamic)
-  for(int i = 0; i < ncol; ++i) {
-    sample_data_matrix[i].assign(sample_data[i], sample_data[i] + num_per_col[i]);
-    sample_indices_matrix[i].assign(sample_indices[i], sample_indices[i] + num_per_col[i]);
-  }
-  *out = loader.ConstructFromSampleData(sample_data_matrix, sample_indices_matrix,
-                                       ncol, num_per_col,
-                                       num_sample_row,
-                                       static_cast<data_size_t>(num_total_row), nullptr, nullptr);
+  // TODO: in this case do we need ctr provider ? it seems that therea are no labels available.
+  *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
+                                        num_sample_row,
+                                        static_cast<data_size_t>(num_total_row), nullptr);
   API_END();
 }
 
@@ -1083,7 +1059,21 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
 
-  if (reference == nullptr) {
+  const CTRProvider* ctr_provider = nullptr;
+  const bool is_valid = (reference != nullptr);
+  if (is_valid) {
+    ctr_provider = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+  } else {
+    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
+    ctr_provider = CTRProvider::CreateCTRProvider(
+      config, get_row_fun, get_label_fun, nmat, nrow, ncol
+    );
+  }
+  if (ctr_provider != nullptr) {
+    ctr_provider->WrapRowFunctions(&get_row_fun, &ncol, is_valid);
+  }
+
+  if (!is_valid) {
     // sample data first
     Random rand(config.data_random_seed);
     int sample_cnt = static_cast<int>(total_nrow < config.bin_construct_sample_cnt ? total_nrow : config.bin_construct_sample_cnt);
@@ -1091,15 +1081,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
     std::vector<std::vector<int>> sample_idx(ncol);
-    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
     DatasetLoader loader(config, nullptr, 1, nullptr);
-    CTRProvider* ctr_provider = new CTRProvider(config, 1, nmat, get_row_fun, get_label_fun, nrow);
-    const bool has_cat_convert = ctr_provider->GetNumCatConverters() > 0;
-    std::vector<bool> is_categorical_feature(ncol, false);
-    const auto& categorical_features = loader.GetParsedCategoricalFeatures();
-    for(const int fid : categorical_features) {
-      is_categorical_feature[fid] = true;
-    }
     int offset = 0;
     int j = 0;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -1110,18 +1092,18 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       }
       auto row = get_row_fun[j](static_cast<int>(idx - offset));
       for (size_t k = 0; k < row.size(); ++k) {
-        // if ctr is used, zero categorical values should not be ignored
-        if (std::fabs(row[k]) > kZeroThreshold || std::isnan(row[k]) || (has_cat_convert && is_categorical_feature[k])) {
+        if (std::fabs(row[k]) > kZeroThreshold || std::isnan(row[k])) {
           sample_values[k].emplace_back(row[k]);
           sample_idx[k].emplace_back(static_cast<int>(i));
         }
       }
     }
-    ret.reset(loader.ConstructFromSampleData(sample_values,
-                                            sample_idx,
-                                            ncol,
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, total_nrow, ctr_provider, &sample_indices));
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             ncol,
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, total_nrow, ctr_provider));
+    ret->SetCTRProvider(ctr_provider);
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1174,56 +1156,46 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   }
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+  const CTRProvider* ctr_provider = nullptr;
+  const bool is_valid = (reference != nullptr);
+  if (is_valid) {
+    ctr_provider = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+  } else {
+    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
+    ctr_provider = CTRProvider::CreateCTRProvider(
+      config, get_row_fun, get_label_fun, nindptr - 1, num_col
+    );
+  }
+  if (ctr_provider != nullptr) {
+    ctr_provider->WrapRowFunction(&get_row_fun, &num_col, is_valid);
+  }
+
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
-  if (reference == nullptr) {
+  if (!is_valid) {
     // sample data first
     Random rand(config.data_random_seed);
     int sample_cnt = static_cast<int>(nrow < config.bin_construct_sample_cnt ? nrow : config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
-    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
-    std::vector<bool> is_categorical_feature(num_col, false);
-    DatasetLoader loader(config, nullptr, 1, nullptr);
-    CTRProvider* ctr_provider = new CTRProvider(config, 1, get_row_fun, get_label_fun, nrow, num_col);
-    const bool has_cat_convert = ctr_provider->GetNumCatConverters() > 0;
-    const auto& categorical_features = loader.GetParsedCategoricalFeatures();
-    for(const int fid : categorical_features) {
-      is_categorical_feature[fid] = true;
-    }
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(num_col);
     std::vector<std::vector<int>> sample_idx(num_col);
-    std::vector<bool> is_feature_pushed(num_col, false);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
-      for(int j = 0; j < num_col; ++j) {
-        is_feature_pushed[j] = false;
-      }
       for (std::pair<int, double>& inner_data : row) {
         CHECK_LT(inner_data.first, num_col);
-        // if ctr is used, zero categorical values should not be ignored
-        if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second) || 
-          (has_cat_convert && is_categorical_feature[i])) {
+        if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
-          is_feature_pushed[inner_data.first] = true;
-        }
-      }
-      // if ctr is used, zero categorical values should not be ignored
-      if(has_cat_convert) {
-        for(int j = 0; j < num_col; ++j) {
-          if(is_categorical_feature[j] && !is_feature_pushed[j]) {
-            sample_values[j].emplace_back(0.0f);
-            sample_idx[j].emplace_back(static_cast<int>(i));
-          }
         }
       }
     }
-    ret.reset(loader.ConstructFromSampleData(sample_values,
-                                            sample_idx,
-                                            static_cast<int>(num_col),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow, ctr_provider, &sample_indices));
+    DatasetLoader loader(config, nullptr, 1, nullptr);
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(num_col),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow, ctr_provider));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1266,7 +1238,6 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   }
   std::unique_ptr<Dataset> ret;
   int32_t nrow = num_rows;
-  std::vector<LightGBM::label_t> sample_label;
   if (reference == nullptr) {
     // sample data first
     Random rand(config.data_random_seed);
@@ -1277,24 +1248,23 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
     std::vector<std::vector<int>> sample_idx(num_col);
     // local buffer to re-use memory
     std::vector<std::pair<int, double>> buffer;
-    DatasetLoader loader(config, nullptr, 1, nullptr);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       get_row_fun(static_cast<int>(idx), buffer);
       for (std::pair<int, double>& inner_data : buffer) {
         CHECK_LT(inner_data.first, num_col);
-        // if ctr is used, zero categorical values should not be ignored
         if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
         }
       }
     }
-    ret.reset(loader.ConstructFromSampleData(sample_values,
-                                            sample_idx,
-                                            static_cast<int>(num_col),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow, nullptr, nullptr));
+    DatasetLoader loader(config, nullptr, 1, nullptr);
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(num_col),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow, nullptr));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1319,6 +1289,8 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   API_END();
 }
 
+typedef LightGBM::CSC_RowIterator CSC_RowIterator;
+
 int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                               int col_ptr_type,
                               const int32_t* indices,
@@ -1341,6 +1313,28 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   }
   std::unique_ptr<Dataset> ret;
   int32_t nrow = static_cast<int32_t>(num_row);
+
+  std::vector<std::unique_ptr<CSC_RowIterator>> csc_iterators(ncol_ptr - 1);
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < static_cast<int>(csc_iterators.size()); ++i) {
+    csc_iterators[i].reset(new CSC_RowIterator(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i));
+  }
+  
+  const CTRProvider* ctr_provider = nullptr;
+  const bool is_valid = (reference != nullptr);
+  if (is_valid) {
+    ctr_provider = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+  } else {
+    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
+    ctr_provider = CTRProvider::CreateCTRProvider(
+      config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1
+    );
+  }
+  if (ctr_provider != nullptr) {
+    // TODO: reset col iterators
+    ctr_provider->WrapColIters(&csc_iterators, &ncol_ptr, is_valid);
+  }
+
   if (reference == nullptr) {
     // sample data first
     Random rand(config.data_random_seed);
@@ -1349,46 +1343,13 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
     std::vector<std::vector<int>> sample_idx(ncol_ptr - 1);
-    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
-    std::vector<LightGBM::label_t> sample_label;
-    std::vector<bool> is_categorical_feature(ncol_ptr - 1, false);
-    DatasetLoader loader(config, nullptr, 1, nullptr);
-    const auto& categorical_features = loader.GetParsedCategoricalFeatures();
-    for(const int fid : categorical_features) {
-      is_categorical_feature[fid] = true;
-    }
-
-    const int num_threads = config.num_threads > 0 ? config.num_threads : OMP_NUM_THREADS();
-    std::vector<std::vector<CSC_RowIterator>> col_iters(num_threads);
-    std::vector<std::vector<std::function<double(int row_idx)>>> col_iter_funcs(num_threads);
-    for(int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
-      for(int thread_id = 0; thread_id < num_threads; ++thread_id) {
-        col_iters[thread_id].emplace_back(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
-        col_iter_funcs[thread_id].push_back([&col_iters, i, thread_id](int row_idx) { return col_iters[thread_id][i].Get(row_idx); } );
-      }
-    }
-    CTRProvider* ctr_provider = new CTRProvider(config, 1, col_iter_funcs, get_label_fun, nrow, ncol_ptr - 1);
-    const bool has_cat_converters = ctr_provider->GetNumCatConverters() > 0;
-
     OMP_INIT_EX();
-    if(has_cat_converters) {
-      sample_label.resize(sample_indices.size());
-      #pragma omp parallel for schedule(static)
-      for(int j = 0; j < sample_cnt; ++j) {
-        OMP_LOOP_EX_BEGIN();
-        sample_label[j] = static_cast<LightGBM::label_t>(get_label_fun(sample_indices[j]));
-        OMP_LOOP_EX_END();
-      }
-    }
-    
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
       OMP_LOOP_EX_BEGIN();
-      CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
       for (int j = 0; j < sample_cnt; j++) {
-        auto val = col_it.Get(sample_indices[j]);
-        // if ctr is used, zero categorical values should not be ignored
-        if (std::fabs(val) > kZeroThreshold || std::isnan(val) || (has_cat_converters && is_categorical_feature[i])) {
+        auto val = csc_iterators[i]->Get(sample_indices[j]);
+        if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
           sample_values[i].emplace_back(val);
           sample_idx[i].emplace_back(j);
         }
@@ -1396,11 +1357,12 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    ret.reset(loader.ConstructFromSampleData(sample_values,
-                                            sample_idx,
-                                            static_cast<int>(sample_values.size()),
-                                            VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow, ctr_provider, &sample_indices));
+    DatasetLoader loader(config, nullptr, 1, nullptr);
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             static_cast<int>(sample_values.size()),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_cnt, nrow, ctr_provider));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1415,13 +1377,11 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     if (feature_idx < 0) { continue; }
     int group = ret->Feature2Group(feature_idx);
     int sub_feature = ret->Feture2SubFeature(feature_idx);
-    CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
     auto bin_mapper = ret->FeatureBinMapper(feature_idx);
-    if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin() &&
-      !(ret->ctr_provider() != nullptr && ret->ctr_provider()->IsCategorical(i))) {
+    if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin()) {
       int row_idx = 0;
       while (row_idx < nrow) {
-        auto pair = col_it.NextNonZero();
+        auto pair = csc_iterators[i]->NextNonZero();
         row_idx = pair.first;
         // no more data
         if (row_idx < 0) { break; }
@@ -1429,7 +1389,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       }
     } else {
       for (int row_idx = 0; row_idx < nrow; ++row_idx) {
-        auto val = col_it.Get(row_idx);
+        auto val = csc_iterators[i]->Get(row_idx);
         ret->PushOneData(tid, row_idx, group, sub_feature, val);
       }
     }
@@ -2603,106 +2563,4 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
   }
   Log::Fatal("Unknown data type in RowFunctionFromCSR");
   return nullptr;
-}
-
-std::function<std::pair<int, double>(int idx)>
-IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices, const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx) {
-  CHECK(col_idx < ncol_ptr && col_idx >= 0);
-  if (data_type == C_API_DTYPE_FLOAT32) {
-    const float* data_ptr = reinterpret_cast<const float*>(data);
-    if (col_ptr_type == C_API_DTYPE_INT32) {
-      const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
-    } else if (col_ptr_type == C_API_DTYPE_INT64) {
-      const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
-    }
-  } else if (data_type == C_API_DTYPE_FLOAT64) {
-    const double* data_ptr = reinterpret_cast<const double*>(data);
-    if (col_ptr_type == C_API_DTYPE_INT32) {
-      const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
-    } else if (col_ptr_type == C_API_DTYPE_INT64) {
-      const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
-    }
-  }
-  Log::Fatal("Unknown data type in CSC matrix");
-  return nullptr;
-}
-
-CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
-                                 const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx) {
-  iter_fun_ = IterateFunctionFromCSC(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, col_idx);
-}
-
-double CSC_RowIterator::Get(int idx) {
-  while (idx > cur_idx_ && !is_end_) {
-    auto ret = iter_fun_(nonzero_idx_);
-    if (ret.first < 0) {
-      is_end_ = true;
-      break;
-    }
-    cur_idx_ = ret.first;
-    cur_val_ = ret.second;
-    ++nonzero_idx_;
-  }
-  if (idx == cur_idx_) {
-    return cur_val_;
-  } else {
-    return 0.0f;
-  }
-}
-
-std::pair<int, double> CSC_RowIterator::NextNonZero() {
-  if (!is_end_) {
-    auto ret = iter_fun_(nonzero_idx_);
-    ++nonzero_idx_;
-    if (ret.first < 0) {
-      is_end_ = true;
-    }
-    return ret;
-  } else {
-    return std::make_pair(-1, 0.0);
-  }
 }

@@ -766,8 +766,8 @@ void Dataset::CreateValid(const Dataset* dataset) {
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
   is_valid_ = true;
   if(dataset->ctr_provider() != nullptr) {
-    //ctr_provider_.reset(new CTRProvider(*dataset->ctr_provider()));
-    ctr_provider_.reset(CTRProvider::RecoverFromModelString(dataset->ctr_provider()->DumpModelInfo()));
+    ctr_provider_.reset(CTRProvider::RecoverFromModelString(
+      dataset->ctr_provider()->DumpModelInfo()));
   }
 }
 

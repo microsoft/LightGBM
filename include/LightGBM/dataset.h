@@ -661,7 +661,7 @@ class Dataset {
 
   void AddFeaturesFrom(Dataset* other);
 
-  void SetCTRProvider(CTRProvider* ctr_provider) {
+  void SetCTRProvider(const CTRProvider* ctr_provider) {
     ctr_provider_.reset(ctr_provider);
   }
 
@@ -672,8 +672,6 @@ class Dataset {
   inline bool is_valid() const { return is_valid_; }
 
  private:
-  void CreatePushDataFunc();
-
   std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
@@ -710,7 +708,7 @@ class Dataset {
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
   /*! \brief CTR provider, converts categorical feature values into CTR values */
-  std::unique_ptr<CTRProvider> ctr_provider_ = std::unique_ptr<CTRProvider>(nullptr);
+  std::unique_ptr<const CTRProvider> ctr_provider_ = std::unique_ptr<CTRProvider>(nullptr);
   /*! \brief a flag indicating whether the dataset is validation or not */
   bool is_valid_ = false;
 };

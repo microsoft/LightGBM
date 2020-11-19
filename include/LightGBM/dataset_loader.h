@@ -28,11 +28,9 @@ class DatasetLoader {
   LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data,
     const std::unique_ptr<CTRProvider>& ctr_provider);
 
-  LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(std::vector<std::vector<double>>& sample_values,
-    std::vector<std::vector<int>>& sample_indices,
-    int num_col, const int* num_per_col,
-    size_t total_sample_size, data_size_t num_data,
-    CTRProvider* ctr_provider, const std::vector<int>* all_sample_indices);
+  LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(double** sample_values,
+    int** sample_indices, int num_col, const int* num_per_col,
+    size_t total_sample_size, data_size_t num_data, const CTRProvider* ctr_provider);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;

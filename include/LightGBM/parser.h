@@ -37,6 +37,49 @@ class Parser {
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
+// Row iterator of one column for CSC matrix
+class CSC_RowIterator {
+ public:
+  CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
+                  const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx);
+  virtual ~CSC_RowIterator() {}
+  // return value at idx, only can access by ascent order
+  virtual double Get(int idx);
+  // return next non-zero pair, if index < 0, means no more data
+  std::pair<int, double> NextNonZero();
+
+ protected:
+  int nonzero_idx_ = 0;
+  int cur_idx_ = -1;
+  double cur_val_ = 0.0f;
+  bool is_end_ = false;
+  std::function<std::pair<int, double>(int idx)> iter_fun_;
+};
+
+#ifndef C_API_DTYPE_FLOAT32
+#define C_API_DTYPE_FLOAT32 (0)  /*!< \brief float32 (single precision float). */
+#endif
+
+#ifndef C_API_DTYPE_FLOAT64
+#define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
+#endif
+
+#ifndef C_API_DTYPE_INT32
+#define C_API_DTYPE_INT32   (2)  /*!< \brief int32. */
+#endif
+
+#ifndef C_API_DTYPE_INT64
+#define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
+#endif
+
+#ifndef C_API_DTYPE_NONE
+#define C_API_DTYPE_NONE   (4)  /*!< \brief None. */
+#endif
+
+std::function<std::pair<int, double>(int idx)>
+IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices,
+  const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx);
+
 } // namespace LightGBM
 
 #endif   // LightGBM_PARSER_H_

@@ -25,9 +25,11 @@ public:
     protected:
       std::unordered_map<int, int> cat_fid_to_convert_fid_;
     public:
-      virtual double CalcValue(const double sum_label, const double sum_count, const double all_fold_sum_count, const double prior) = 0;
+      virtual double CalcValue(const double sum_label, const double sum_count,
+        const double all_fold_sum_count, const double prior) const = 0;
 
-      virtual double CalcValue(const double sum_label, const double sum_count, const double all_fold_sum_count) = 0;
+      virtual double CalcValue(const double sum_label, const double sum_count,
+        const double all_fold_sum_count) const = 0;
 
       virtual std::string DumpToString() const = 0;
 
@@ -99,11 +101,13 @@ public:
   class CTRConverter: public CatConverter {
     public:
       CTRConverter(const double prior): prior_(prior) {}
-      inline virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/) override {
+      inline virtual double CalcValue(const double sum_label, const double sum_count,
+        const double /*all_fold_sum_count*/) const override {
         return (sum_label + prior_ * prior_weight_) / (sum_count + prior_weight_);
       }
 
-      inline virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/, const double /*prior*/) override {
+      inline virtual double CalcValue(const double sum_label, const double sum_count,
+        const double /*all_fold_sum_count*/, const double /*prior*/) const override {
         return (sum_label + prior_ * prior_weight_) / (sum_count + prior_weight_);
       }
 
@@ -144,12 +148,13 @@ public:
         return ret;
       }
     private:
-      inline virtual double CalcValue(const double /*sum_label*/, const double /*sum_count*/, const double all_fold_sum_count) override {
+      inline virtual double CalcValue(const double /*sum_label*/, const double /*sum_count*/,
+        const double all_fold_sum_count) const override {
         return all_fold_sum_count;
       }
 
       inline virtual double CalcValue(const double /*sum_label*/, const double /*sum_count*/,
-        const double all_fold_sum_count, const double /*prior*/) override {
+        const double all_fold_sum_count, const double /*prior*/) const override {
         return all_fold_sum_count;
       }
       
@@ -173,14 +178,16 @@ public:
         prior_set_ = true;
       }
 
-      inline virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/) override {
+      inline virtual double CalcValue(const double sum_label, const double sum_count,
+        const double /*all_fold_sum_count*/) const override {
         if(!prior_set_) {
           Log::Fatal("CTRConverterLabelMean is not ready since the prior value is not set.");
         }
         return (sum_label + prior_weight_ * prior_) / (sum_count + prior_weight_);
       }
 
-      inline virtual double CalcValue(const double sum_label, const double sum_count, const double /*all_fold_sum_count*/, const double prior) override {
+      inline virtual double CalcValue(const double sum_label, const double sum_count,
+        const double /*all_fold_sum_count*/, const double prior) const override {
         if(!prior_set_) {
           Log::Fatal("CTRConverterLabelMean is not ready since the prior value is not set.");
         }
@@ -212,160 +219,6 @@ public:
       bool prior_set_;
   };
 
-  CTRProvider(const Config& config,
-    const int /*num_machines*/, const std::vector<std::string>& /*text_data*/,
-    const std::function<void(const char* line, std::vector<std::pair<int, double>>* oneline_features, double* label)> /*parser_func*/):
-    CTRProvider(config) {
-    /*convert_calc_func_ = [this, &text_data, num_machines, parser_func](const data_size_t num_data, const int num_total_features) {
-      if(cat_converters_.size() == 0) { return; }
-      CHECK(num_data_ == static_cast<data_size_t>(text_data.size()));
-      const data_size_t block_size = (num_data + num_threads_ - 1) / num_threads_;
-      #pragma omp parallel for schedule(static) num_threads(num_threads_)
-      for(int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-        std::vector<std::pair<int, double>> oneline_features;
-        double label;
-        std::vector<bool> is_feature_processed(num_total_features, false);
-        const data_size_t thread_start = block_size * thread_id;
-        const data_size_t thread_end = std::min(thread_start + block_size, num_data);
-        for(data_size_t row_idx = thread_start; row_idx < thread_end; ++row_idx) {
-          oneline_features.clear();
-          parser_func(text_data[row_idx].c_str(), &oneline_features, &label);
-          ProcessOneLine(oneline_features, label, row_idx, is_feature_processed, thread_id);
-        }
-      }
-      FinishProcess(num_machines);
-    };*/
-  }
-
-  CTRProvider(const Config& config, 
-    const int /*num_machines*/, const char* /*filename*/,
-    const std::function<void(const char* line, std::vector<std::pair<int, double>>* oneline_features, double* label)> /*parser_func*/): 
-    CTRProvider(config) {
-    //convert_calc_func_ = [this, filename, num_machines, parser_func](const data_size_t /*num_data*/, const int num_total_features) {
-    /*  if(cat_converters_.size() == 0) { return; }
-      std::vector<std::pair<int, double>> oneline_features;
-      std::vector<bool> is_feature_processed(num_total_features, false);
-      double label;
-      TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
-      text_reader.ReadAllAndProcess([parser_func, this, &oneline_features, &label, &is_feature_processed] (data_size_t row_idx, const char* buffer, size_t size) {
-        std::string line(buffer, size);
-        oneline_features.clear();
-        parser_func(line.c_str(), &oneline_features, &label);
-        ProcessOneLine(oneline_features, label, row_idx, is_feature_processed);
-      });
-      FinishProcess(num_machines);
-    };*/
-  }
-
-  CTRProvider(const Config& config,
-    const int /*num_machines*/, const int32_t /*nmat*/, const std::vector<std::function<std::vector<double>(int row_idx)>>& /*get_row_fun*/,
-    const std::function<double(int row_idx)>& /*get_label_fun*/, const int32_t* /*nrow*/):
-    CTRProvider(config) {
-    // we assume that, when constructing datasets from mats under distributed settings, local feature number is the same as global feature number
-    // so the size of oneline_features should equal to num_original_features_ when Init of CTRProvider is called
-    //convert_calc_func_ = [this, &get_label_fun, &get_row_fun, nmat, nrow, num_machines] (const data_size_t /*num_data*/, const int /*num_total_features*/) {
-    /*  if(cat_converters_.size() == 0) { return; }
-      int32_t mat_offset = 0;
-      for(int32_t i_mat = 0; i_mat < nmat; ++i_mat) {
-        const int32_t mat_nrow = nrow[i_mat];
-        const auto& mat_get_row_fun = get_row_fun[i_mat];
-        Threading::For<int32_t>(0, mat_nrow, 1024, [this, &mat_get_row_fun, &get_label_fun, &mat_offset](int thread_id, int32_t start, int32_t end) {
-          for(int32_t j = start; j < end; ++j) {
-            const std::vector<double>& oneline_features = mat_get_row_fun(j);
-            const int32_t row_idx = j + mat_offset;
-            const double label = get_label_fun(row_idx);
-            ProcessOneLine(oneline_features, label, row_idx, thread_id);
-          }
-        });
-        mat_offset += mat_nrow;
-      }
-      FinishProcess(num_machines);
-    };*/
-  }
-
-  CTRProvider(const Config& config,
-    const int /*num_machines*/, const std::function<std::vector<std::pair<int, double>>(int row_idx)>& /*get_row_fun*/,
-    const std::function<double(int row_idx)>& /*get_label_fun*/, const int32_t /*nrow*/, const int32_t /*ncol*/):
-    CTRProvider(config) {
-    //convert_calc_func_ = [this, &get_label_fun, &get_row_fun, nrow, num_machines, ncol] (const data_size_t /*num_data*/, const int /*num_total_features*/) {
-    /*  if(cat_converters_.size() == 0) { return; }
-      Threading::For<int32_t>(0, nrow, 1024, [this, &get_row_fun, &get_label_fun, ncol](int thread_id, int32_t start, int32_t end) {
-        std::vector<bool> is_feature_processed(ncol, false);
-        for(int32_t row_idx = start; row_idx < end; ++row_idx) {
-          const std::vector<std::pair<int, double>>& oneline_features = get_row_fun(row_idx);
-          const double label = get_label_fun(row_idx);
-          ProcessOneLine(oneline_features, label, row_idx, is_feature_processed, thread_id);
-        }
-      });
-      FinishProcess(num_machines);
-    };*/
-  }
-
-  CTRProvider(const Config& config,
-    const int /*num_machines*/, const std::vector<std::vector<std::function<double(int row_idx)>>>& /*col_iter_funcs*/,
-    const std::function<double(int row_idx)>& /*get_label_fun*/,
-    const int32_t /*nrow*/, const int32_t /*ncol*/):
-    CTRProvider(config) {
-    // we assume that, when constructing datasets from CSC under distributed settings, local feature number is the same as global feature number
-    // so the size of oneline_features should equal to num_original_features_ when Init of CTRProvider is called
-    //convert_calc_func_ = [this, &col_iter_funcs, &get_label_fun, ncol, nrow, num_machines] (const data_size_t /*num_data*/, const int /*num_total_features*/) {
-    /*  if(cat_converters_.size() == 0) { return; }
-      int32_t mat_offset = 0;
-      Threading::For<int32_t>(0, nrow, 1024, [this, &col_iter_funcs, &get_label_fun, &mat_offset, ncol](int thread_id, int32_t start, int32_t end) {
-        std::vector<double> oneline_features(ncol, 0.0f);
-        for(int32_t row_idx = start; row_idx < end; ++row_idx) {
-          for(int32_t col_idx = 0; col_idx < ncol; ++col_idx) {
-            oneline_features[col_idx] = col_iter_funcs[thread_id][col_idx](row_idx);
-          }
-          const double label = get_label_fun(row_idx);
-          ProcessOneLine(oneline_features, label, row_idx, thread_id);
-        }
-      });
-      FinishProcess(num_machines);
-    };*/
-  }
-
-  CTRProvider(const CTRProvider& other):
-    config_(other.config_) {
-    num_data_ = other.num_data_;
-    categorical_features_ = other.categorical_features_;
-    training_data_fold_id_.resize(other.training_data_fold_id_.size());
-    num_threads_ = other.num_threads_;
-    #pragma omp parallel for schedule(static) num_threads(num_threads_)
-    for (int i = 0; i < static_cast<int>(training_data_fold_id_.size()); ++i) {
-      training_data_fold_id_[i] = other.training_data_fold_id_[i];
-    }
-    convert_fid_to_cat_fid_ = other.convert_fid_to_cat_fid_;
-    prior_ = other.prior_;
-    fold_prior_ = other.fold_prior_;
-    is_categorical_feature_ = other.is_categorical_feature_;
-    push_training_data_func_ = other.push_training_data_func_;
-    push_valid_data_func_ = other.push_valid_data_func_;
-    num_original_features_ = other.num_original_features_;
-    num_total_features_ = other.num_total_features_;
-    for (const auto& pair : other.count_info_) {
-      count_info_[pair.first] = pair.second;
-    }
-    for (const auto& pair : other.label_info_) {
-      label_info_[pair.first] = pair.second;
-    }
-    thread_count_info_.clear();
-    thread_label_info_.clear();
-    thread_fold_label_sum_.clear();
-    thread_fold_num_data_.clear();
-    thread_count_info_.shrink_to_fit();
-    thread_label_info_.shrink_to_fit();
-    thread_fold_label_sum_.shrink_to_fit();
-    thread_fold_num_data_.shrink_to_fit();
-    fold_label_sum_ = other.fold_label_sum_;
-    fold_num_data_ = other.fold_num_data_;
-    max_bin_by_feature_ = other.max_bin_by_feature_;
-    cat_converters_.clear();
-    for (const std::unique_ptr<CatConverter>& cat_converter: other.cat_converters_) {
-      cat_converters_.emplace_back(cat_converter->Copy());
-    }
-  }
-
   ~CTRProvider() {
     training_data_fold_id_.clear();
     training_data_fold_id_.shrink_to_fit();
@@ -382,6 +235,7 @@ public:
     cat_converters_.shrink_to_fit();
   }
 
+  // for file data input
   static CTRProvider* CreateCTRProvider(Config& config,
     const int num_machines, const char* filename) {
     std::unique_ptr<CTRProvider> ctr_provider(new CTRProvider(config, num_machines, filename));
@@ -392,9 +246,51 @@ public:
     }
   }
 
-  void Init() {
+  // for pandas/numpy array data input
+  static CTRProvider* CreateCTRProvider(Config& config,
+    std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
+    std::function<double(int row_idx)>& get_label_fun, int32_t nmat, int32_t* nrow, int32_t ncol) {
+    std::unique_ptr<CTRProvider> ctr_provider(new CTRProvider(config, get_row_fun, get_label_fun, nmat, nrow, ncol));
+    if (ctr_provider->GetNumCatConverters() == 0) {
+      return nullptr;
+    } else {
+      return ctr_provider.release();
+    }
+  }
+
+  // for csr sparse matrix data input
+  static CTRProvider* CreateCTRProvider(Config& config,
+    std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
+    std::function<double(int row_idx)>& get_label_fun, int64_t nrow, int64_t ncol) {
+    std::unique_ptr<CTRProvider> ctr_provider(new CTRProvider(config, get_row_fun, get_label_fun, nrow, ncol));
+    if (ctr_provider->GetNumCatConverters() == 0) {
+      return nullptr;
+    } else {
+      return ctr_provider.release();
+    }
+  }
+
+  // for csc sparse matrix data input
+  static CTRProvider* CreateCTRProvider(Config& config,
+    std::vector<std::unique_ptr<CSC_RowIterator>>& csc_func,
+    std::function<double(int row_idx)>& get_label_fun, int64_t nrow, int64_t ncol) {
+    std::unique_ptr<CTRProvider> ctr_provider(new CTRProvider(config, csc_func, get_label_fun, nrow, ncol));
+    if (ctr_provider->GetNumCatConverters() == 0) {
+      return nullptr;
+    } else {
+      return ctr_provider.release();
+    }
+  }
+
+  void Init(Config& config) {
     num_total_features_ = num_original_features_;
     CHECK(max_bin_by_feature_.empty() || static_cast<int>(max_bin_by_feature_.size()) == num_original_features_);
+    CHECK(config.max_bin_by_feature.empty() || static_cast<int>(config.max_bin_by_feature.size()) == num_original_features_);
+    is_categorical_feature_.clear();
+    is_categorical_feature_.resize(num_original_features_, false);
+    for (const int fid : categorical_features_) {
+      is_categorical_feature_[fid] = true;
+    }
     fold_prior_.resize(config_.num_ctr_folds + 1, 0.0f);
     if (cat_converters_.size() > 0) {
       // prepare to accumulate ctr statistics
@@ -433,6 +329,7 @@ public:
           convert_fid_to_cat_fid_[num_total_features_] = fid;
           if (!max_bin_by_feature_.empty()) {
             max_bin_by_feature_.push_back(max_bin_by_feature_[fid]);
+            config.max_bin_by_feature.push_back(max_bin_by_feature_[fid]);
           }
           ++num_total_features_;
         }
@@ -455,21 +352,6 @@ public:
   // recover ctr values from string
   static std::unordered_map<int, std::unordered_map<int, double>> RecoverCTRValues(const std::string str);
 
-  // create ctr convert function
-  void CreatePushDataFunction(const std::vector<int>& used_feature_idx, 
-    const std::vector<int>& feature_to_group,
-    const std::vector<int>& feature_to_sub_feature,
-    const std::function<void(int tid, data_size_t row_idx, 
-      int group, int sub_feature, double value)>& feature_group_push_data_func); 
-
-  void PushTrainingOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) const {
-    push_training_data_func_(tid, row_idx, group, sub_feature, value);
-  }
-
-  void PushValidOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) const {
-    push_valid_data_func_(tid, row_idx, group, sub_feature, value);
-  }
-
   bool IsCategorical(const int fid) const { 
     if(fid < num_original_features_) {
       return is_categorical_feature_[fid]; 
@@ -481,7 +363,9 @@ public:
 
   int ConvertFidToCatFid(int convert_fid) const { return convert_fid_to_cat_fid_.at(convert_fid); }
 
-  inline int GetNumOriginalFeatures() const { return num_original_features_; }
+  inline int GetNumOriginalFeatures() const { 
+    return num_original_features_; 
+  }
 
   inline int GetNumTotalFeatures() const { 
     return num_total_features_;
@@ -495,11 +379,9 @@ public:
     max_bin_by_feature_[fid];
   }
 
-  // replace categorical feature values of sampled data with ctr values and count values
-  void ReplaceCategoricalValues(const std::vector<data_size_t>& sampled_data_indices, 
-    std::vector<std::vector<int>>& sampled_non_missing_data_indices,
-    std::vector<std::vector<double>>& sampled_non_missing_feature_values,
-    std::unordered_set<int>& ignored_features);
+  void ConvertCatToCTR(std::vector<double>* features, int line_idx) const;
+
+  void ConvertCatToCTR(std::vector<double>* features) const;
 
   void ConvertCatToCTR(double* features) const;
 
@@ -508,6 +390,12 @@ public:
   void ConvertCatToCTR(std::vector<std::pair<int, double>>& features, const int fold_id) const;
 
   void ConvertCatToCTR(std::vector<std::pair<int, double>>& features) const;
+
+  double ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
+    int col_idx, int line_idx) const;
+
+  double ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
+    int col_idx) const;
 
   int CalcNumExtraFeatures() const {
     int num_extra_features = 0;
@@ -518,6 +406,13 @@ public:
   }
 
   void ExtendFeatureNames(std::vector<std::string>& feature_names) const {
+    if (feature_names.empty()) {
+      for (int i = 0; i < num_original_features_; ++i) {
+        std::stringstream str_buf;
+        str_buf << "Column_" << i;
+        feature_names.push_back(str_buf.str());
+      }
+    }
     CHECK(static_cast<int>(feature_names.size()) == num_original_features_);
     const std::vector<std::string> old_feature_names = feature_names;
     feature_names.resize(num_total_features_);
@@ -525,11 +420,25 @@ public:
       if (is_categorical_feature_[fid]) {
         for (const auto& cat_converter : cat_converters_) {
           const int convert_fid = cat_converter->GetConvertFid(fid);
-          feature_names[convert_fid] = old_feature_names[fid] + std::string("[") + cat_converter->Name() + std::string("]");
+          std::string cat_converter_name = cat_converter->Name();
+          std::replace(cat_converter_name.begin(), cat_converter_name.end(), ':', '_');
+          feature_names[convert_fid] = old_feature_names[fid] + std::string("_") + cat_converter_name + std::string("_");
         }
       }
     }
   }
+
+  void WrapRowFunctions(
+    std::vector<std::function<std::vector<double>(int row_idx)>>* get_row_fun,
+    int32_t* ncol, bool is_valid) const;
+
+  void WrapRowFunction(
+    std::function<std::vector<std::pair<int, double>>(int row_idx)>* get_row_fun,
+    int64_t* ncol, bool is_valid) const;
+
+  void WrapColIters(
+    std::vector<std::unique_ptr<CSC_RowIterator>>* col_iters,
+    int64_t* ncol_ptr, bool is_valid) const;
 
 private:
   CTRProvider(const Config& config): config_(config) {
@@ -607,12 +516,7 @@ private:
     }
     categorical_features.clear();
     categorical_features.shrink_to_fit();
-    is_categorical_feature_.clear();
-    is_categorical_feature_.resize(num_original_features_, false);
-    for (const int fid : categorical_features_) {
-      is_categorical_feature_[fid] = true;
-    }
-    Init();
+    Init(config);
     if(cat_converters_.size() == 0) { return; }
     std::vector<std::pair<int, double>> oneline_features;
     std::vector<bool> is_feature_processed(num_total_features_, false);
@@ -637,6 +541,112 @@ private:
     FinishProcess(num_machines);
   }
 
+  CTRProvider(Config& config,
+    const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
+    const std::function<double(int row_idx)>& get_label_fun, const int32_t nmat,
+    const int32_t* nrow, const int32_t ncol):
+    CTRProvider(config) {
+    ParseMetaInfo(nullptr, config);
+    num_original_features_ = ncol;
+    Init(config);
+    if(cat_converters_.size() == 0) { return; }
+    int32_t mat_offset = 0;
+    for (int32_t i = 0; i < nmat; ++i) {
+      num_data_ += nrow[i];
+    }
+    std::mt19937 mt_generator;
+    const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+    std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
+    training_data_fold_id_.resize(num_data_, 0);
+    for (int32_t i_mat = 0; i_mat < nmat; ++i_mat) {
+      const int32_t mat_nrow = nrow[i_mat];
+      const auto& mat_get_row_fun = get_row_fun[i_mat];
+      Threading::For<int32_t>(0, mat_nrow, 1024,
+        [this, &mat_get_row_fun, &get_label_fun, &mat_offset, &fold_distribution, &mt_generator]
+        (int thread_id, int32_t start, int32_t end) {
+        for(int32_t j = start; j < end; ++j) {
+          const std::vector<double>& oneline_features = mat_get_row_fun(j);
+          const int32_t row_idx = j + mat_offset;
+          const double label = get_label_fun(row_idx);
+          const int fold_id = fold_distribution(mt_generator);
+          training_data_fold_id_[row_idx] = fold_id;
+          ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
+        }
+      });
+      mat_offset += mat_nrow;
+    }
+    FinishProcess(1);
+  }
+
+  CTRProvider(Config& config,
+    const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
+    const std::function<double(int row_idx)>& get_label_fun,
+    const int64_t nrow, const int64_t ncol):
+    CTRProvider(config) {
+    ParseMetaInfo(nullptr, config);
+    num_original_features_ = ncol;
+    num_data_ = nrow;
+    training_data_fold_id_.resize(num_data_);
+    Init(config);
+    if(cat_converters_.size() == 0) { return; }
+    std::mt19937 mt_generator;
+    const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+    std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
+    std::vector<bool> is_feature_processed(num_total_features_, false);
+    Threading::For<int64_t>(0, nrow, 1024,
+    [this, &get_row_fun, &get_label_fun, &fold_distribution, &mt_generator, &is_feature_processed]
+    (int thread_id, int64_t start, int64_t end) {
+      for (int64_t j = start; j < end; ++j) {
+        const std::vector<std::pair<int, double>>& oneline_features = get_row_fun(j);
+        const int32_t row_idx = j;
+        const double label = get_label_fun(row_idx);
+        const int fold_id = fold_distribution(mt_generator);
+        training_data_fold_id_[row_idx] = fold_id;
+        ProcessOneLine(oneline_features, label, row_idx, is_feature_processed, thread_id, fold_id);
+      }
+    });
+    FinishProcess(1);
+  }
+
+  CTRProvider(Config& config,
+    const std::vector<std::unique_ptr<CSC_RowIterator>>& csc_iters,
+    const std::function<double(int row_idx)>& get_label_fun,
+    const int64_t nrow, const int64_t ncol):
+    CTRProvider(config) {
+    ParseMetaInfo(nullptr, config);
+    num_original_features_ = ncol;
+    num_data_ = nrow;
+    training_data_fold_id_.resize(num_data_);
+    Init(config);
+    if(cat_converters_.size() == 0) { return; }
+    std::mt19937 mt_generator;
+    const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+    std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
+    std::vector<std::vector<std::unique_ptr<CSC_RowIterator>>> thread_csc_iters(num_threads_);
+    // copy csc row iterators for each thread
+    #pragma omp parallel for schedule(static) num_threads(num_threads_)
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      for (size_t i = 0; i < csc_iters.size(); ++i) {
+        thread_csc_iters[thread_id].emplace_back(new CSC_RowIterator(*csc_iters[i].get()));
+      }
+    }
+    Threading::For<int32_t>(0, nrow, 1024,
+      [this, &thread_csc_iters, &get_label_fun, ncol, &fold_distribution, &mt_generator]
+      (int thread_id, int32_t start, int32_t end) {
+      std::vector<double> oneline_features(ncol, 0.0f);
+      for(int32_t row_idx = start; row_idx < end; ++row_idx) {
+        for(int32_t col_idx = 0; col_idx < ncol; ++col_idx) {
+          oneline_features[col_idx] = thread_csc_iters[thread_id][col_idx]->Get(row_idx);
+        }
+        const int fold_id = fold_distribution(mt_generator);
+        training_data_fold_id_[row_idx] = fold_id;
+        const double label = get_label_fun(row_idx);
+        ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
+      }
+    });
+    FinishProcess(1);
+  }
+
   void ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, std::vector<bool>& is_feature_processed,
     std::unordered_map<int, std::vector<std::unordered_map<int, int>>>& count_info,
     std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info,
@@ -644,11 +654,6 @@ private:
 
   // generate fold ids for training data, each data point will be randomly allocated into one fold
   void GenTrainingDataFoldID();
-
-  // expand to use count encodings, adding new feature columns to the sampled feature values
-  void ExpandCountEncodings(std::vector<std::vector<int>>& sampled_non_missing_data_indices,
-    std::vector<std::vector<double>>& sampled_non_missing_feature_values,
-    std::unordered_set<int>& ignored_features); 
 
   // sync up ctr values by gathering statistics from all machines in distributed scenario
   void SyncCTRStat(std::vector<std::unordered_map<int, label_t>>& fold_label_sum,
@@ -674,18 +679,6 @@ private:
   }
 
   void FinishProcess(const int num_machines);
-
-  inline double TrimConvertValue(const double convert_value) {
-    if (std::fabs(convert_value) > kZeroThreshold || std::isnan(convert_value)) {
-      return convert_value;
-    }
-    if (convert_value < 0.0f) {
-      return -2 * kZeroThreshold;
-    }
-    else {
-      return 2 * kZeroThreshold;
-    }
-  }
 
   int ParseMetaInfo(const char* filename, Config& config) {
     std::unordered_map<std::string, int> name2idx;
@@ -802,6 +795,7 @@ private:
       categorical_features_.push_back(fid);
     }
     std::sort(categorical_features_.begin(), categorical_features_.end());
+    is_categorical_feature_.clear();
 
     return label_idx;
   }
@@ -824,10 +818,6 @@ private:
   double prior_;
   // record whether a feature is categorical in the original data
   std::vector<bool> is_categorical_feature_; 
-  
-  // push one feature value of one data into the dataset
-  std::function<void(int tid, data_size_t row_idx,
-      int group, int sub_feature, double value)> push_training_data_func_, push_valid_data_func_;
 
   // number of features in the original dataset, without adding count features
   int num_original_features_;
@@ -850,7 +840,7 @@ private:
   // the accumulated label sum per thread per fold
   std::vector<std::vector<label_t>> thread_fold_label_sum_;
   // the accumulated number of data per fold per thread
-  std::vector<std::vector<int>> thread_fold_num_data_;
+  std::vector<std::vector<data_size_t>> thread_fold_num_data_;
   // number of data per fold
   std::vector<data_size_t> fold_num_data_;
   // categorical value converters
@@ -886,6 +876,45 @@ class CTRParser : public Parser {
     std::unique_ptr<const Parser> inner_parser_;
     const std::unique_ptr<CTRProvider>& ctr_provider_;
     const bool is_valid_;
+};
+
+class CTR_CSC_RowIterator: public CSC_RowIterator {
+ public:
+  CTR_CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
+                  const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx,
+                  const CTRProvider::CatConverter* cat_converter,
+                  const CTRProvider* ctr_provider, bool is_valid):
+    CSC_RowIterator(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, col_idx),
+    col_idx_(col_idx),
+    is_valid_(is_valid) {
+    cat_converter_ = cat_converter;
+    ctr_provider_ = ctr_provider;
+  }
+
+  CTR_CSC_RowIterator(CSC_RowIterator* csc_iter, const int col_idx,
+                  const CTRProvider::CatConverter* cat_converter,
+                  const CTRProvider* ctr_provider, bool is_valid): 
+    CSC_RowIterator(*csc_iter),
+    col_idx_(col_idx),
+    is_valid_(is_valid) {
+    cat_converter_ = cat_converter;
+    ctr_provider_ = ctr_provider;
+  }
+  
+  double Get(int row_idx) override {
+    const double value = CSC_RowIterator::Get(row_idx);
+    if (is_valid_) {
+      return ctr_provider_->ConvertCatToCTR(value, cat_converter_, col_idx_);
+    } else {
+      return ctr_provider_->ConvertCatToCTR(value, cat_converter_, col_idx_, row_idx);
+    }
+  }
+
+ private:
+  const CTRProvider::CatConverter* cat_converter_;
+  const CTRProvider* ctr_provider_;
+  const int col_idx_;
+  const bool is_valid_;
 };
 
 } //namespace LightGBM
