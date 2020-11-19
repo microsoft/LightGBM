@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - drop_py2
+    - master
   tags:
     include:
     - v*
