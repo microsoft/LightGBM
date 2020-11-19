@@ -11,14 +11,13 @@ from collections import OrderedDict
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTable,
-                     decode_string)
+from .compat import PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTable
 from .libpath import find_lib_path
 
 
 def _log_callback(msg):
     """Redirect logs from native library into Python console."""
-    print("{0:s}".format(decode_string(msg)), end='')
+    print("{0:s}".format(msg.decode('utf-8')), end='')
 
 
 def _load_lib():
@@ -31,7 +30,7 @@ def _load_lib():
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
     lib.callback = callback(_log_callback)
     if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
-        raise LightGBMError(decode_string(lib.LGBM_GetLastError()))
+        raise LightGBMError(lib.LGBM_GetLastError().decode('utf-8'))
     return lib
 
 
@@ -50,7 +49,7 @@ def _safe_call(ret):
         The return value from C API calls.
     """
     if ret != 0:
-        raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
 def is_numeric(obj):
