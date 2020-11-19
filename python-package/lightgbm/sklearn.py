@@ -3,6 +3,8 @@
 import copy
 import warnings
 
+from inspect import signature
+
 import numpy as np
 
 from .basic import Dataset, LightGBMError, _ConfigAliases
@@ -10,7 +12,7 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, string_type, DataFrame, DataTable)
+                     string_type, DataFrame, DataTable)
 from .engine import train
 
 
@@ -67,7 +69,7 @@ class _ObjectiveFunctionWrapper:
             The value of the second order derivative (Hessian) for each sample point.
         """
         labels = dataset.get_label()
-        argc = argc_(self.func)
+        argc = len(signature(self.func).parameters)
         if argc == 2:
             grad, hess = self.func(labels, preds)
         elif argc == 3:
@@ -156,7 +158,7 @@ class _EvalFunctionWrapper:
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
         """
         labels = dataset.get_label()
-        argc = argc_(self.func)
+        argc = len(signature(self.func).parameters)
         if argc == 2:
             return self.func(labels, preds)
         elif argc == 3:
