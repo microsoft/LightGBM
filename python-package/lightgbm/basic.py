@@ -1036,7 +1036,7 @@ class Dataset:
                                            is_reshape=False)
             if used_indices is not None:
                 assert not self.need_slice
-                if isinstance(data, string_type):
+                if isinstance(data, str):
                     sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
                     assert num_data == len(used_indices)
                     for i in range(len(used_indices)):
@@ -1092,7 +1092,7 @@ class Dataset:
             if feature_name is not None:
                 feature_dict = {name: i for i, name in enumerate(feature_name)}
             for name in categorical_feature:
-                if isinstance(name, string_type) and name in feature_dict:
+                if isinstance(name, str) and name in feature_dict:
                     categorical_indices.add(feature_dict[name])
                 elif isinstance(name, integer_types):
                     categorical_indices.add(name)
@@ -1115,7 +1115,7 @@ class Dataset:
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
         # start construct data
-        if isinstance(data, string_type):
+        if isinstance(data, str):
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
                 c_str(data),
