@@ -1,6 +1,5 @@
 # coding: utf-8
 """Compatibility library."""
-import inspect
 import sys
 
 import numpy as np
@@ -13,10 +12,6 @@ if is_py3:
     numeric_types = (int, float, bool)
     integer_types = (int, )
 
-    def argc_(func):
-        """Count the number of arguments of a function."""
-        return len(inspect.signature(func).parameters)
-
     def decode_string(bytestring):
         """Decode C bytestring to ordinary string."""
         return bytestring.decode('utf-8')
@@ -24,10 +19,6 @@ else:
     string_type = basestring
     numeric_types = (int, long, float, bool)
     integer_types = (int, long)
-
-    def argc_(func):
-        """Count the number of arguments of a function."""
-        return len(inspect.getargspec(func).args)
 
     def decode_string(bytestring):
         """Decode C bytestring to ordinary string."""
