@@ -9,14 +9,12 @@ is_py3 = (sys.version_info[0] == 3)
 """Compatibility between Python2 and Python3"""
 if is_py3:
     numeric_types = (int, float, bool)
-    integer_types = (int, )
 
     def decode_string(bytestring):
         """Decode C bytestring to ordinary string."""
         return bytestring.decode('utf-8')
 else:
     numeric_types = (int, long, float, bool)
-    integer_types = (int, long)
 
     def decode_string(bytestring):
         """Decode C bytestring to ordinary string."""
