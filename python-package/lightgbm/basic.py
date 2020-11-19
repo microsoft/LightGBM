@@ -454,9 +454,9 @@ def _load_pandas_categorical(file_name=None, model_str=None):
                 if len(lines) >= 2:
                     break
                 offset *= 2
-        last_line = decode_string(lines[-1]).strip()
+        last_line = lines[-1].decode('utf-8').strip()
         if not last_line.startswith(pandas_key):
-            last_line = decode_string(lines[-2]).strip()
+            last_line = lines[-2].decode('utf-8').strip()
     elif model_str is not None:
         idx = model_str.rfind('\n', 0, offset)
         last_line = model_str[idx:].strip()
@@ -1447,7 +1447,7 @@ class Dataset:
                     update()
                     self._free_handle()
                 else:
-                    raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
+                    raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
         return self
 
     def _reverse_update_params(self):
