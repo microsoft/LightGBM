@@ -10,7 +10,7 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, string_type, DataFrame, DataTable)
+                     argc_, string_type, DataFrame, DataTable)
 from .engine import train
 
 
@@ -86,7 +86,7 @@ class _ObjectiveFunctionWrapper:
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
                     raise ValueError("Length of grad and hess should equal to num_class * num_data")
-                for k in range_(num_class):
+                for k in range(num_class):
                     for i in range_(num_data):
                         idx = k * num_data + i
                         grad[idx] *= weight[i]
@@ -954,7 +954,7 @@ class LGBMRanker(LGBMModel):
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should be equal to eval_set")
             elif (isinstance(eval_group, dict)
-                  and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))
+                  and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
                   or isinstance(eval_group, list)
                   and any(group is None for group in eval_group)):
                 raise ValueError("Should set group for all eval datasets for ranking task; "
