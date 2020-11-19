@@ -48,23 +48,6 @@ elseif ($env:TASK -eq "sdist") {
   cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
 }
 elseif ($env:TASK -eq "bdist") {
-  # Install the Intel CPU runtime, so we can run tests against OpenCL
-  Write-Output "Downloading OpenCL runtime"
-  curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
-  $msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
-  Write-Output "Installing OpenCL runtime"
-  $return = Start-Process msiexec -ArgumentList $msiarglist -Wait -passthru
-  Get-Content msi.log
-  If (@(0,3010) -contains $return.exitcode) {
-    Write-Output "OpenCL install successful"
-  } else {
-    Write-Output "OpenCL install failed, aborting"
-    exit 1
-  }
-  RefreshEnv
-  Write-Output "Current OpenCL drivers:"
-  Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
-
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py bdist_wheel --integrated-opencl --plat-name=win-amd64 --universal ; Check-Output $?
   cd dist; pip install --user @(Get-ChildItem *.whl) ; Check-Output $?
@@ -83,14 +66,38 @@ if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq 
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
 } elseif ($env:TASK -eq "bdist") {
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
-  # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
+  # Test that package works with no OpenCL platform installed; see tests/python_package_test/test_dual.py
   $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
 } else {
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
 }
 Write-Output "Running tests"
 pytest $tests ; Check-Output $?
-Write-Output "Tests completed"
+
+if ($env:TASK -eq "bdist") {
+  # Install the Intel CPU runtime, so we can run tests against OpenCL
+  Write-Output "Downloading OpenCL runtime"
+  curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
+  $msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
+  Write-Output "Installing OpenCL runtime"
+  $return = Start-Process msiexec -ArgumentList $msiarglist -Wait -passthru
+  Get-Content msi.log
+  If (@(0,3010) -contains $return.exitcode) {
+    Write-Output "OpenCL install successful"
+  } else {
+    Write-Output "OpenCL install failed, aborting"
+    exit 1
+  }
+  RefreshEnv
+  Write-Output "Current OpenCL drivers:"
+  Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
+
+  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test/test_dual.py"
+  # Test that package works with OpenCL platform installed; see tests/python_package_test/test_dual.py
+  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "2"
+  Write-Output "Running auxiliary tests"
+  pytest $tests ; Check-Output $?
+}
 
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
