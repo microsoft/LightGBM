@@ -10,7 +10,7 @@ import numpy as np
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
-                     string_type, integer_types, range_)
+                     string_type, integer_types)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -238,7 +238,7 @@ def train(params, train_set, num_boost_round=100,
     booster.best_iteration = 0
 
     # start training
-    for i in range_(init_iteration, init_iteration + num_boost_round):
+    for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     params=params,
@@ -326,7 +326,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             group_info = full_data.get_group()
             if group_info is not None:
                 group_info = np.array(group_info, dtype=np.int32, copy=False)
-                flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
+                flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=np.int32)
             folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
@@ -352,8 +352,8 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             else:
                 randidx = np.arange(num_data)
             kstep = int(num_data / nfold)
-            test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
-            train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
+            test_id = [randidx[i: i + kstep] for i in range(0, num_data, kstep)]
+            train_id = [np.concatenate([test_id[i] for i in range(nfold) if k != i]) for k in range(nfold)]
             folds = zip(train_id, test_id)
 
     ret = CVBooster()
@@ -579,7 +579,7 @@ def cv(params, train_set, num_boost_round=100,
     callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
-    for i in range_(num_boost_round):
+    for i in range(num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=cvfolds,
                                     params=params,
