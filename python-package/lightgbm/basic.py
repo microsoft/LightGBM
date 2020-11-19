@@ -14,7 +14,7 @@ import scipy.sparse
 from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
                      DataTable,
                      decode_string,
-                     integer_types, numeric_types)
+                     numeric_types)
 from .libpath import find_lib_path
 
 
@@ -1101,7 +1101,7 @@ class Dataset:
             for name in categorical_feature:
                 if isinstance(name, str) and name in feature_dict:
                     categorical_indices.add(feature_dict[name])
-                elif isinstance(name, integer_types):
+                elif isinstance(name, int):
                     categorical_indices.add(name)
                 else:
                     raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
@@ -3162,7 +3162,7 @@ class Booster:
         for tree_info in tree_infos:
             add(tree_info['tree_structure'])
 
-        if bins is None or isinstance(bins, integer_types) and xgboost_style:
+        if bins is None or isinstance(bins, int) and xgboost_style:
             n_unique = len(np.unique(values))
             bins = max(min(n_unique, bins) if bins is not None else n_unique, 1)
         hist, bin_edges = np.histogram(values, bins=bins)
