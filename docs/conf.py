@@ -26,14 +26,13 @@ from distutils.dir_util import copy_tree
 from docutils.parsers.rst import Directive
 from sphinx.errors import VersionRequirementError
 from subprocess import PIPE, Popen
+from unittest.mock import Mock
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
 sys.path.insert(0, LIB_PATH)
 
 # -- mock out modules
-from unittest.mock import Mock
-
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
                 'sklearn', 'matplotlib', 'pandas', 'graphviz']
 for mod_name in MOCK_MODULES:
