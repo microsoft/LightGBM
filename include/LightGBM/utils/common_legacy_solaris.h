@@ -157,4 +157,4 @@ ArrayToString(const std::vector<T>& arr, size_t n) {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_COMMON_FUN_H_
+#endif   // LIGHTGBM_UTILS_COMMON_FUN_LEGACY_H_
