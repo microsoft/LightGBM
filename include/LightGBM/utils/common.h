@@ -30,7 +30,7 @@
 #include <utility>
 #include <vector>
 
-#if (! (defined(sun) || defined(__sun)))
+#if (!(defined(sun) || defined(__sun)))
 #define FMT_HEADER_ONLY
 #include "../../../external_libs/fmt/include/fmt/format.h"
 #endif
@@ -1219,7 +1219,7 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
   }
   return str_buf.str();
 }
-#endif // (! (defined(sun) || defined(__sun)))
+#endif  // (! (defined(sun) || defined(__sun)))
 
 
 }  // namespace CommonC

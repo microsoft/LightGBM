@@ -11,31 +11,17 @@
 
 #include <LightGBM/utils/log.h>
 
+#include <algorithm>
 #include <sstream>
 #include <type_traits>
 #include <vector>
+#include <string>
 
 namespace LightGBM {
 
 namespace CommonLegacy {
 
 inline static unsigned CountDecimalDigit32(uint32_t n) {
-#if defined(__GNUC__)
-  static const uint32_t powers_of_10[] = {
-    0,
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-    1000000,
-    10000000,
-    100000000,
-    1000000000
-  };
-  uint32_t t = (32 - __builtin_clz(n | 1)) * 1233 >> 12;
-  return t - (n < powers_of_10[t]) + 1;
-#else
   if (n < 10) return 1;
   else if (n < 100) return 2;
   else if (n < 1000) return 3;
@@ -45,8 +31,8 @@ inline static unsigned CountDecimalDigit32(uint32_t n) {
   else if (n < 10000000) return 7;
   else if (n < 100000000) return 8;
   else if (n < 1000000000) return 9;
-  else return 10;
-#endif
+  else
+    return 10;
 }
 
 inline static void Uint32ToStr(uint32_t value, char* buffer) {
@@ -155,14 +141,14 @@ inline static std::string _ArrayToString(const std::vector<double>& arr, size_t 
 
 
 template<bool high_precision_output = false, typename T>
-inline static typename std::enable_if<high_precision_output==false, std::string>::type
+inline static typename std::enable_if<high_precision_output == false, std::string>::type
 ArrayToString(const std::vector<T>& arr, size_t n) {
     return _ArrayToStringFast(arr, n);
 }
 
 template<bool high_precision_output, typename T>
 inline static typename std::enable_if<
-(high_precision_output==true) && (std::is_same<T, double>::value), std::string>::type
+(high_precision_output == true) && (std::is_same<T, double>::value), std::string>::type
 ArrayToString(const std::vector<T>& arr, size_t n) {
     return _ArrayToString(arr, n);
 }
