@@ -89,12 +89,6 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-conda install \
-    -y \
-    -q \
-    --no-deps \
-        pandoc
-
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"

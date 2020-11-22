@@ -40,8 +40,10 @@ cd ${TEMP_R_DIR}
     rm AUTOCONF_UBUNTU_VERSION
     rm recreate-configure.sh
 
-    # main.cpp is used to make the lightgbm CLI, unnecessary
-    # for the R package
+    # files only used by the lightgbm CLI aren't needed for
+    # the R package
+    rm src/application/application.cpp
+    rm src/include/LightGBM/application.h
     rm src/main.cpp
 
     # configure.ac and DESCRIPTION have placeholders for version

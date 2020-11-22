@@ -4,7 +4,9 @@ FROM rocker/verse:${R_VERSION}
 WORKDIR /lgbm
 
 RUN apt-get update && \
-    apt-get install -y build-essential cmake && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake && \
     git clone --recursive --branch stable --depth 1 https://github.com/Microsoft/LightGBM && \
     cd LightGBM && \
     Rscript build_r.R
