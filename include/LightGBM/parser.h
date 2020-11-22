@@ -48,7 +48,14 @@ class CSC_RowIterator {
   // return next non-zero pair, if index < 0, means no more data
   std::pair<int, double> NextNonZero();
 
- protected:
+  void Reset() {
+    nonzero_idx_ = 0;
+    cur_idx_ = -1;
+    cur_val_ = 0.0f;
+    is_end_ = false;
+  }
+
+ public:
   int nonzero_idx_ = 0;
   int cur_idx_ = -1;
   double cur_val_ = 0.0f;

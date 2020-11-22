@@ -473,8 +473,15 @@ private:
     std::stringstream str_stream(model_string);
     int cat_fid = 0, cat_value = 0;
     double label_sum = 0.0f, total_count = 0.0f;
+    str_stream >> num_original_features_;
+    str_stream >> num_total_features_;
+    is_categorical_feature_.clear();
+    is_categorical_feature_.resize(num_original_features_, false);
+    categorical_features_.clear();
     while (str_stream >> cat_fid) {
       CHECK(str_stream.get() == ' ');
+      is_categorical_feature_[cat_fid] = true;
+      categorical_features_.push_back(cat_fid);
       label_info_[cat_fid].clear();
       count_info_[cat_fid].clear();
       label_info_[cat_fid].resize(1);
@@ -554,7 +561,10 @@ private:
     for (int32_t i = 0; i < nmat; ++i) {
       num_data_ += nrow[i];
     }
-    std::mt19937 mt_generator;
+    std::vector<std::mt19937> mt_generators;
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      mt_generators.emplace_back(config_.seed + thread_id);
+    }
     const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
     std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
     training_data_fold_id_.resize(num_data_, 0);
@@ -562,13 +572,13 @@ private:
       const int32_t mat_nrow = nrow[i_mat];
       const auto& mat_get_row_fun = get_row_fun[i_mat];
       Threading::For<int32_t>(0, mat_nrow, 1024,
-        [this, &mat_get_row_fun, &get_label_fun, &mat_offset, &fold_distribution, &mt_generator]
+        [this, &mat_get_row_fun, &get_label_fun, &mat_offset, &fold_distribution, &mt_generators]
         (int thread_id, int32_t start, int32_t end) {
         for(int32_t j = start; j < end; ++j) {
           const std::vector<double>& oneline_features = mat_get_row_fun(j);
           const int32_t row_idx = j + mat_offset;
           const double label = get_label_fun(row_idx);
-          const int fold_id = fold_distribution(mt_generator);
+          const int fold_id = fold_distribution(mt_generators[thread_id]);
           training_data_fold_id_[row_idx] = fold_id;
           ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
         }
@@ -589,18 +599,21 @@ private:
     training_data_fold_id_.resize(num_data_);
     Init(config);
     if(cat_converters_.size() == 0) { return; }
-    std::mt19937 mt_generator;
+    std::vector<std::mt19937> mt_generators;
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      mt_generators.emplace_back(config_.seed + thread_id);
+    }
     const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
     std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
     std::vector<bool> is_feature_processed(num_total_features_, false);
     Threading::For<int64_t>(0, nrow, 1024,
-    [this, &get_row_fun, &get_label_fun, &fold_distribution, &mt_generator, &is_feature_processed]
+    [this, &get_row_fun, &get_label_fun, &fold_distribution, &mt_generators, &is_feature_processed]
     (int thread_id, int64_t start, int64_t end) {
       for (int64_t j = start; j < end; ++j) {
         const std::vector<std::pair<int, double>>& oneline_features = get_row_fun(j);
         const int32_t row_idx = j;
         const double label = get_label_fun(row_idx);
-        const int fold_id = fold_distribution(mt_generator);
+        const int fold_id = fold_distribution(mt_generators[thread_id]);
         training_data_fold_id_[row_idx] = fold_id;
         ProcessOneLine(oneline_features, label, row_idx, is_feature_processed, thread_id, fold_id);
       }
@@ -619,7 +632,10 @@ private:
     training_data_fold_id_.resize(num_data_);
     Init(config);
     if(cat_converters_.size() == 0) { return; }
-    std::mt19937 mt_generator;
+    std::vector<std::mt19937> mt_generators;
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      mt_generators.emplace_back(config_.seed + thread_id);
+    }
     const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
     std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
     std::vector<std::vector<std::unique_ptr<CSC_RowIterator>>> thread_csc_iters(num_threads_);
@@ -631,14 +647,14 @@ private:
       }
     }
     Threading::For<int32_t>(0, nrow, 1024,
-      [this, &thread_csc_iters, &get_label_fun, ncol, &fold_distribution, &mt_generator]
+      [this, &thread_csc_iters, &get_label_fun, ncol, &fold_distribution, &mt_generators]
       (int thread_id, int32_t start, int32_t end) {
       std::vector<double> oneline_features(ncol, 0.0f);
       for(int32_t row_idx = start; row_idx < end; ++row_idx) {
         for(int32_t col_idx = 0; col_idx < ncol; ++col_idx) {
           oneline_features[col_idx] = thread_csc_iters[thread_id][col_idx]->Get(row_idx);
         }
-        const int fold_id = fold_distribution(mt_generator);
+        const int fold_id = fold_distribution(mt_generators[thread_id]);
         training_data_fold_id_[row_idx] = fold_id;
         const double label = get_label_fun(row_idx);
         ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
@@ -651,9 +667,6 @@ private:
     std::unordered_map<int, std::vector<std::unordered_map<int, int>>>& count_info,
     std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info,
     std::vector<label_t>& label_sum, std::vector<int>& num_data, const int fold_id);
-
-  // generate fold ids for training data, each data point will be randomly allocated into one fold
-  void GenTrainingDataFoldID();
 
   // sync up ctr values by gathering statistics from all machines in distributed scenario
   void SyncCTRStat(std::vector<std::unordered_map<int, label_t>>& fold_label_sum,
@@ -681,73 +694,75 @@ private:
   void FinishProcess(const int num_machines);
 
   int ParseMetaInfo(const char* filename, Config& config) {
+    std::unordered_set<int> ignore_features;
     std::unordered_map<std::string, int> name2idx;
     std::string name_prefix("name:");
-    TextReader<data_size_t> text_reader(filename, config.header);
-    // get column names
-    std::vector<std::string> feature_names;
-    if (config.header) {
-      std::string first_line = text_reader.first_line();
-      feature_names = Common::Split(first_line.c_str(), "\t,");
-    }
     int label_idx = 0;
-    // load label idx first
-    if (config.label_column.size() > 0) {
-      if (Common::StartsWith(config.label_column, name_prefix)) {
-        std::string name = config.label_column.substr(name_prefix.size());
-        label_idx = -1;
-        for (int i = 0; i < static_cast<int>(feature_names.size()); ++i) {
-          if (name == feature_names[i]) {
-            label_idx = i;
-            break;
+    if (filename != nullptr) {
+      TextReader<data_size_t> text_reader(filename, config.header);
+      // get column names
+      std::vector<std::string> feature_names;
+      if (config.header) {
+        std::string first_line = text_reader.first_line();
+        feature_names = Common::Split(first_line.c_str(), "\t,");
+      }
+      // load label idx first
+      if (config.label_column.size() > 0) {
+        if (Common::StartsWith(config.label_column, name_prefix)) {
+          std::string name = config.label_column.substr(name_prefix.size());
+          label_idx = -1;
+          for (int i = 0; i < static_cast<int>(feature_names.size()); ++i) {
+            if (name == feature_names[i]) {
+              label_idx = i;
+              break;
+            }
           }
-        }
-        if (label_idx >= 0) {
-          Log::Info("Using column %s as label", name.c_str());
-        } else {
-          Log::Fatal("Could not find label column %s in data file \n"
-                     "or data file doesn't contain header", name.c_str());
-        }
-      } else {
-        if (!Common::AtoiAndCheck(config.label_column.c_str(), &label_idx)) {
-          Log::Fatal("label_column is not a number,\n"
-                     "if you want to use a column name,\n"
-                     "please add the prefix \"name:\" to the column name");
-        }
-        Log::Info("Using column number %d as label", label_idx);
-      }
-    }
-
-    if (!feature_names.empty()) {
-      // erase label column name
-      feature_names.erase(feature_names.begin() + label_idx);
-      for (size_t i = 0; i < feature_names.size(); ++i) {
-        name2idx[feature_names[i]] = static_cast<int>(i);
-      }
-    }
-
-    // load ignore columns
-    std::unordered_set<int> ignore_features;
-    if (config.ignore_column.size() > 0) {
-      if (Common::StartsWith(config.ignore_column, name_prefix)) {
-        std::string names = config.ignore_column.substr(name_prefix.size());
-        for (auto name : Common::Split(names.c_str(), ',')) {
-          if (name2idx.count(name) > 0) {
-            int tmp = name2idx[name];
-            ignore_features.emplace(tmp);
+          if (label_idx >= 0) {
+            Log::Info("Using column %s as label", name.c_str());
           } else {
-            Log::Fatal("Could not find ignore column %s in data file", name.c_str());
+            Log::Fatal("Could not find label column %s in data file \n"
+                      "or data file doesn't contain header", name.c_str());
           }
+        } else {
+          if (!Common::AtoiAndCheck(config.label_column.c_str(), &label_idx)) {
+            Log::Fatal("label_column is not a number,\n"
+                      "if you want to use a column name,\n"
+                      "please add the prefix \"name:\" to the column name");
+          }
+          Log::Info("Using column number %d as label", label_idx);
         }
-      } else {
-        for (auto token : Common::Split(config.ignore_column.c_str(), ',')) {
-          int tmp = 0;
-          if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
-            Log::Fatal("ignore_column is not a number,\n"
-                       "if you want to use a column name,\n"
-                       "please add the prefix \"name:\" to the column name");
+      }
+
+      if (!feature_names.empty()) {
+        // erase label column name
+        feature_names.erase(feature_names.begin() + label_idx);
+        for (size_t i = 0; i < feature_names.size(); ++i) {
+          name2idx[feature_names[i]] = static_cast<int>(i);
+        }
+      }
+
+      // load ignore columns
+      if (config.ignore_column.size() > 0) {
+        if (Common::StartsWith(config.ignore_column, name_prefix)) {
+          std::string names = config.ignore_column.substr(name_prefix.size());
+          for (auto name : Common::Split(names.c_str(), ',')) {
+            if (name2idx.count(name) > 0) {
+              int tmp = name2idx[name];
+              ignore_features.emplace(tmp);
+            } else {
+              Log::Fatal("Could not find ignore column %s in data file", name.c_str());
+            }
           }
-          ignore_features.emplace(tmp);
+        } else {
+          for (auto token : Common::Split(config.ignore_column.c_str(), ',')) {
+            int tmp = 0;
+            if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
+              Log::Fatal("ignore_column is not a number,\n"
+                        "if you want to use a column name,\n"
+                        "please add the prefix \"name:\" to the column name");
+            }
+            ignore_features.emplace(tmp);
+          }
         }
       }
     }
@@ -852,7 +867,7 @@ private:
 class CTRParser : public Parser {
   public:
     explicit CTRParser(const Parser* inner_parser,
-    const std::unique_ptr<CTRProvider>& ctr_provider, const bool is_valid):
+    const CTRProvider* ctr_provider, const bool is_valid):
     inner_parser_(inner_parser), ctr_provider_(ctr_provider), is_valid_(is_valid) {
 
     }
@@ -874,7 +889,7 @@ class CTRParser : public Parser {
 
   private:
     std::unique_ptr<const Parser> inner_parser_;
-    const std::unique_ptr<CTRProvider>& ctr_provider_;
+    const CTRProvider* ctr_provider_;
     const bool is_valid_;
 };
 

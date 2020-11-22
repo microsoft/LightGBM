@@ -902,14 +902,13 @@ int LGBM_DatasetCreateFromFile(const char* filename,
 
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
-      *out = loader.LoadFromFile(filename, ctr_provider);
+      *out = loader.LoadFromFile(filename, ctr_provider.get());
     } else {
-      *out = loader.LoadFromFile(filename, Network::rank(), Network::num_machines(), ctr_provider);
+      *out = loader.LoadFromFile(filename, Network::rank(), Network::num_machines(), ctr_provider.get());
     }
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename,
-                                                    reinterpret_cast<const Dataset*>(reference),
-                                                    ctr_provider);
+                                                    reinterpret_cast<const Dataset*>(reference));
   }
   API_END();
 }
@@ -1059,20 +1058,20 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
 
-  const CTRProvider* ctr_provider = nullptr;
+  std::unique_ptr<const CTRProvider> ctr_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    ctr_provider = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+    ctr_provider.reset(CTRProvider::RecoverFromModelString((
+      reinterpret_cast<const Dataset*>(reference))->ctr_provider()->DumpModelInfo()));
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
-    ctr_provider = CTRProvider::CreateCTRProvider(
+    ctr_provider.reset(CTRProvider::CreateCTRProvider(
       config, get_row_fun, get_label_fun, nmat, nrow, ncol
-    );
+    ));
   }
   if (ctr_provider != nullptr) {
     ctr_provider->WrapRowFunctions(&get_row_fun, &ncol, is_valid);
   }
-
   if (!is_valid) {
     // sample data first
     Random rand(config.data_random_seed);
@@ -1102,8 +1101,8 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              ncol,
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, total_nrow, ctr_provider));
-    ret->SetCTRProvider(ctr_provider);
+                                             sample_cnt, total_nrow, ctr_provider.get()));
+    ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1156,15 +1155,16 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   }
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  const CTRProvider* ctr_provider = nullptr;
+  std::unique_ptr<const CTRProvider> ctr_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    ctr_provider = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+    ctr_provider.reset(CTRProvider::RecoverFromModelString((
+      reinterpret_cast<const Dataset*>(reference))->ctr_provider()->DumpModelInfo()));
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
-    ctr_provider = CTRProvider::CreateCTRProvider(
+    ctr_provider.reset(CTRProvider::CreateCTRProvider(
       config, get_row_fun, get_label_fun, nindptr - 1, num_col
-    );
+    ));
   }
   if (ctr_provider != nullptr) {
     ctr_provider->WrapRowFunction(&get_row_fun, &num_col, is_valid);
@@ -1195,7 +1195,8 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow, ctr_provider));
+                                             sample_cnt, nrow, ctr_provider.get()));
+    ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1319,20 +1320,25 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   for (int i = 0; i < static_cast<int>(csc_iterators.size()); ++i) {
     csc_iterators[i].reset(new CSC_RowIterator(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i));
   }
-  
-  const CTRProvider* ctr_provider = nullptr;
+
+  std::unique_ptr<const CTRProvider> ctr_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    ctr_provider = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+    ctr_provider.reset(CTRProvider::RecoverFromModelString((
+      reinterpret_cast<const Dataset*>(reference))->ctr_provider()->DumpModelInfo()));
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
-    ctr_provider = CTRProvider::CreateCTRProvider(
-      config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1
-    );
+    ctr_provider.reset(CTRProvider::CreateCTRProvider(
+      config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
   }
   if (ctr_provider != nullptr) {
-    // TODO: reset col iterators
     ctr_provider->WrapColIters(&csc_iterators, &ncol_ptr, is_valid);
+  }
+  Log::Warning("csc_iterators.size() = %d after expanding", csc_iterators.size());
+  for (const auto& csc_iter : csc_iterators) {
+    Log::Warning("nonzero_idx = %d, cur_idx = %d, cur_val_ = %f, is_end_ = %d",
+      csc_iter->nonzero_idx_, csc_iter->cur_idx_, csc_iter->cur_val_, static_cast<int>(csc_iter->is_end_));
+    csc_iter->Reset();
   }
 
   if (reference == nullptr) {
@@ -1362,7 +1368,8 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(sample_values.size()),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow, ctr_provider));
+                                             sample_cnt, nrow, ctr_provider.get()));
+    ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1377,6 +1384,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     if (feature_idx < 0) { continue; }
     int group = ret->Feature2Group(feature_idx);
     int sub_feature = ret->Feture2SubFeature(feature_idx);
+    csc_iterators[i]->Reset();
     auto bin_mapper = ret->FeatureBinMapper(feature_idx);
     if (bin_mapper->GetDefaultBin() == bin_mapper->GetMostFreqBin()) {
       int row_idx = 0;

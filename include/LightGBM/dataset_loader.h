@@ -19,14 +19,13 @@ class DatasetLoader {
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines, const std::unique_ptr<CTRProvider>& ctr_provider);
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines, const CTRProvider* ctr_provider);
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, const std::unique_ptr<CTRProvider>& ctr_provider) {
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, const CTRProvider* ctr_provider) {
     return LoadFromFile(filename, 0, 1, ctr_provider);
   }
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data,
-    const std::unique_ptr<CTRProvider>& ctr_provider);
+  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
   LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(double** sample_values,
     int** sample_indices, int num_col, const int* num_per_col,
@@ -39,14 +38,6 @@ class DatasetLoader {
 
   static std::vector<std::vector<double>> GetForcedBins(std::string forced_bins_path, int num_total_features,
                                                         const std::unordered_set<int>& categorical_features);
-
-  std::unordered_set<int> GetParsedCategoricalFeatures() {
-    return categorical_features_;
-  }
-
-  const std::unordered_set<int>& GetParsedIgnoreFeatures() const {
-    return ignore_features_;
-  }
 
  private:
   Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);

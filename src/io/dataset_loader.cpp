@@ -166,7 +166,7 @@ void DatasetLoader::SetHeader(const char* filename) {
 }
 
 Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines,
-  const std::unique_ptr<CTRProvider>& ctr_provider) {
+  const CTRProvider* ctr_provider) {
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !config_.pre_partition) {
     if (group_idx_ > 0) {
@@ -183,7 +183,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
-    if (ctr_provider.get() != nullptr) {
+    if (ctr_provider != nullptr) {
       std::unique_ptr<Parser> inner_parser(nullptr);
       inner_parser.reset(parser.release());
       parser.reset(new CTRParser(inner_parser.release(), ctr_provider, false));
@@ -198,7 +198,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // sample data
       std::vector<std::string> sample_data;
       std::vector<data_size_t> sampled_indices;
-      if (ctr_provider.get() == nullptr) {
+      if (ctr_provider == nullptr) {
         sample_data = SampleTextDataFromMemory(text_data);
       } else {
         sample_data = SampleTextDataFromMemoryWithIndices(text_data, &sampled_indices);
@@ -217,7 +217,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // sample data from file
       std::vector<std::string> sample_data;
       std::vector<data_size_t> sampled_indices;
-      if (ctr_provider.get() == nullptr) {
+      if (ctr_provider == nullptr) {
         sample_data = SampleTextDataFromFile(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
       } else {
         sample_data = SampleTextDataFromFileWithIndices(filename, dataset->metadata_, rank,
@@ -251,18 +251,18 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
 
 
 
-Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data,
-    const std::unique_ptr<CTRProvider>& ctr_provider) {
+Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   auto bin_filename = CheckCanLoadFromBin(filename);
+  const CTRProvider* ctr_provider = train_data->ctr_provider();
   if (bin_filename.size() == 0) {
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
-    if (ctr_provider.get() != nullptr) {
+    if (ctr_provider != nullptr) {
       std::unique_ptr<Parser> inner_parser(nullptr);
       inner_parser.reset(parser.release());
       parser.reset(new CTRParser(inner_parser.release(), ctr_provider, true));

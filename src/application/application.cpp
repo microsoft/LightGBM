@@ -113,10 +113,10 @@ void Application::LoadData() {
   if (config_.is_data_based_parallel) {
     // load data for parallel training
     train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(),
-                                                  Network::rank(), Network::num_machines(), ctr_provider));
+                                                  Network::rank(), Network::num_machines(), ctr_provider.get()));
   } else {
     // load data for single machine
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, ctr_provider));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, ctr_provider.get()));
   }
   // need save binary file
   if (config_.save_binary) {
@@ -143,7 +143,7 @@ void Application::LoadData() {
       auto new_dataset = std::unique_ptr<Dataset>(
         dataset_loader.LoadFromFileAlignWithOtherDataset(
           config_.valid[i].c_str(),
-          train_data_.get(), ctr_provider));
+          train_data_.get()));
       valid_datas_.push_back(std::move(new_dataset));
       // need save binary file
       if (config_.save_binary) {
@@ -239,7 +239,7 @@ void Application::Predict() {
     if (!config_.cat_converters.empty()) {
       ctr_provider.reset(CTRProvider::CreateCTRProvider(config_, Network::num_machines(), config_.data.c_str()));
     }
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, ctr_provider));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, ctr_provider.get()));
     train_metric_.clear();
     objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                     config_));

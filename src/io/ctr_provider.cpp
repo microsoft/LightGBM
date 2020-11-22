@@ -9,44 +9,17 @@
 
 namespace LightGBM {
 
-void CTRProvider::GenTrainingDataFoldID() {
-  std::vector<std::mt19937> mt_generators;
-  for(int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-      mt_generators.emplace_back(config_.seed + thread_id);
-  }
-  fold_num_data_.resize(config_.num_ctr_folds + 1, 0);
-  fold_num_data_.back() = num_data_;
-  std::vector<std::vector<data_size_t>> thread_fold_num_data(num_threads_);
-  const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
-  std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
-  training_data_fold_id_.clear();
-  training_data_fold_id_.resize(num_data_, -1);
-  const int block_size = (num_data_ + num_threads_ - 1) / num_threads_;
-  #pragma omp parallel for schedule(static, 1) num_threads(num_threads_)
-  for(int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-    int block_start = block_size * thread_id;
-    int block_end = std::min(block_start + block_size, num_data_);
-    thread_fold_num_data[thread_id].resize(config_.num_ctr_folds, 0);
-    std::mt19937& generator = mt_generators[thread_id];
-    for(int index = block_start; index < block_end; ++index) {
-      training_data_fold_id_[index] = fold_distribution(generator);
-      thread_fold_num_data[thread_id][training_data_fold_id_[index]] += 1;
-    }
-  }
-  for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
-    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-      fold_num_data_[fold_id] += thread_fold_num_data[thread_id][fold_id];
-    }
-  }
-}
-
 std::string CTRProvider::DumpModelInfo() const {
   std::stringstream str_buf;
   if (cat_converters_.size() > 0) {
+    str_buf << num_original_features_ << " ";
+    str_buf << num_total_features_ << " ";
     for (const int cat_fid : categorical_features_) {
       str_buf << cat_fid;
-      for (const auto& pair : label_info_.at(cat_fid).at(config_.num_ctr_folds)) {
-        str_buf << " " << pair.first << ":" << pair.second << ":" << count_info_.at(cat_fid).at(config_.num_ctr_folds).at(pair.first);
+      // only the information of the full training dataset is kept
+      // information per fold is discarded
+      for (const auto& pair : label_info_.at(cat_fid).back()) {
+        str_buf << " " << pair.first << ":" << pair.second << ":" << count_info_.at(cat_fid).back().at(pair.first);
       }
       str_buf << "@";
     }
@@ -369,8 +342,12 @@ void CTRProvider::ConvertCatToCTR(std::vector<double>* features, int line_idx) c
       label_sum = pair.second[fold_id].at(cat_value);
       total_count = count_info_.at(pair.first)[fold_id].at(cat_value);
     }
+    double all_fold_total_count = 0.0f;
+    if (pair.second.back().count(cat_value) > 0) {
+      all_fold_total_count = count_info_.at(pair.first).back().at(cat_value);
+    }
     for (const auto& cat_converter : cat_converters_) {
-      const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
+      const double convert_value = cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
       const int convert_fid = cat_converter->GetConvertFid(pair.first);
       features->operator[](convert_fid) = convert_value;
     }
@@ -433,8 +410,12 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features,
         label_sum = label_info.at(cat_value);
         total_count = count_info.at(cat_value);    
       }
+      double all_fold_total_count = 0.0f;
+      if (count_info_.at(fid).back().count(cat_value) > 0) {
+        all_fold_total_count = count_info_.at(fid).back().at(cat_value);
+      }
       for (const auto& cat_converter: cat_converters_) {
-        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
+        const double convert_value = cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
         const int convert_fid = cat_converter->GetConvertFid(fid);
         if (convert_fid == fid) {
           pair.second = convert_value;
@@ -525,7 +506,11 @@ double CTRProvider::ConvertCatToCTR(double fval, const CTRProvider::CatConverter
     label_sum = f_label_info.at(int_cat_val);
     total_count = count_info_.at(col_idx).at(fold_id).at(int_cat_val);
   }
-  return cat_converter->CalcValue(label_sum, total_count, total_count);
+  double all_fold_total_count = 0.0f;
+  if (count_info_.at(col_idx).back().count(int_cat_val) > 0) {
+    all_fold_total_count = count_info_.at(col_idx).back().at(int_cat_val);
+  }
+  return cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
 }
 
 double CTRProvider::ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
@@ -601,6 +586,9 @@ void CTRProvider::WrapColIters(
         col_iters->operator[](convert_fid).reset(new CTR_CSC_RowIterator(
           old_col_iters[i].get(), i, cat_converter.get(), this, is_valid
         ));
+      }
+      if (config_.keep_old_cat_method) {
+        col_iters->operator[](i).reset(old_col_iters[i].release());
       }
     } else {
       col_iters->operator[](i).reset(old_col_iters[i].release());
