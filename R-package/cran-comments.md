@@ -1,6 +1,6 @@
 # CRAN Submission History
 
-## v3.1.0.1 - Submission 1 - (November 21, 2020)
+## v3.1.1 - Submission 1 - (November 21, 2020)
 
 ### Cran response
 
