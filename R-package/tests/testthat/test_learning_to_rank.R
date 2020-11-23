@@ -4,7 +4,7 @@ context("Learning to rank")
 TOLERANCE <- 1e-06
 
 ON_SOLARIS <- Sys.info()["sysname"] == "SunOS"
-ON_32_BIT_WINDOWS <- .Platform$OS.type == "windows" && .Machine$sizeof.pointer != 8
+ON_32_BIT_WINDOWS <- .Platform$OS.type == "windows" && .Machine$sizeof.pointer != 8L
 
 test_that("learning-to-rank with lgb.train() works as expected", {
     set.seed(708L)
