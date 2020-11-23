@@ -6,8 +6,8 @@
  * This file is meant to be used ONLY IN SOLARIS!
  * The newer code that replaced it is faster and safe regarding locale!
  */
-#ifndef LIGHTGBM_UTILS_COMMON_FUN_LEGACY_H_
-#define LIGHTGBM_UTILS_COMMON_FUN_LEGACY_H_
+#ifndef LIGHTGBM_UTILS_COMMON_FUN_LEGACY_SOLARIS_H_
+#define LIGHTGBM_UTILS_COMMON_FUN_LEGACY_SOLARIS_H_
 
 #include <LightGBM/utils/log.h>
 
@@ -157,4 +157,4 @@ ArrayToString(const std::vector<T>& arr, size_t n) {
 
 }  // namespace LightGBM
 
-#endif   // LIGHTGBM_UTILS_COMMON_FUN_LEGACY_H_
+#endif   // LIGHTGBM_UTILS_COMMON_FUN_LEGACY_SOLARIS_H_

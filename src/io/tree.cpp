@@ -221,7 +221,7 @@ std::string Tree::ToString() const {
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
 
-  #if (defined(sun) || defined(__sun))
+  #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
   using CommonLegacy::ArrayToString;  // Slower & unsafe regarding locale.
   #else
   using CommonC::ArrayToString;

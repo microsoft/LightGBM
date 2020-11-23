@@ -251,8 +251,7 @@ For more information on this approach, see ["Writing R Extensions"](https://cran
 From the root of the repository, run the following.
 
 ```shell
-git submodule init
-git submodule update
+git submodule update --init --recursive
 sh build-cran-package.sh
 ```
 

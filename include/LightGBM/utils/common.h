@@ -5,7 +5,7 @@
 #ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
 #define LIGHTGBM_UTILS_COMMON_FUN_H_
 
-#if (defined(sun) || defined(__sun))
+#if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
 #include <LightGBM/utils/common_legacy_solaris.h>
 #endif
 #include <LightGBM/utils/log.h>
@@ -30,7 +30,7 @@
 #include <utility>
 #include <vector>
 
-#if (!(defined(sun) || defined(__sun)))
+#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 #define FMT_HEADER_ONLY
 #include "../../../external_libs/fmt/include/fmt/format.h"
 #endif
@@ -1154,7 +1154,7 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
   return ret;
 }
 
-#if (!(defined(sun) || defined(__sun)))
+#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 /*!
 * Safely formats a value onto a buffer according to a format string and null-terminates it.
 *
@@ -1219,7 +1219,7 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
   }
   return str_buf.str();
 }
-#endif  // (! (defined(sun) || defined(__sun)))
+#endif  // (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 
 
 }  // namespace CommonC
