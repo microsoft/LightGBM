@@ -22,7 +22,6 @@ PKG_LIBS = \
     -lIphlpapi
 
 OBJECTS = \
-    application/application.o \
     boosting/boosting.o \
     boosting/gbdt.o \
     boosting/gbdt_model_text.o \
@@ -37,6 +36,7 @@ OBJECTS = \
     io/json11.o \
     io/metadata.o \
     io/parser.o \
+    io/train_share_states.o \
     io/tree.o \
     metric/dcg_calculator.o \
     metric/metric.o \

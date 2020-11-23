@@ -318,7 +318,6 @@ if(USE_MPI)
 endif(USE_MPI)
 
 file(GLOB SOURCES
-    src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
     src/metric/*.cpp
@@ -330,7 +329,7 @@ if(USE_CUDA)
 endif(USE_CUDA)
 )
 
-add_executable(lightgbm src/main.cpp ${SOURCES})
+add_executable(lightgbm src/main.cpp src/application/application.cpp ${SOURCES})
 list(APPEND SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for
