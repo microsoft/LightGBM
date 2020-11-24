@@ -2,8 +2,8 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
-#define LIGHTGBM_UTILS_COMMON_FUN_H_
+#ifndef LIGHTGBM_UTILS_COMMON_H_
+#define LIGHTGBM_UTILS_COMMON_H_
 
 #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
 #include <LightGBM/utils/common_legacy_solaris.h>
@@ -1227,4 +1227,4 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_COMMON_FUN_H_
+#endif  // LIGHTGBM_UTILS_COMMON_H_
