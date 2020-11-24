@@ -97,6 +97,12 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
+            toolchain: MINGW
+            r_version: 3.6
+            build_type: cran
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
             toolchain: MSYS
             r_version: 4.0
             build_type: cran
