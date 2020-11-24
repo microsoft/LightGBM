@@ -20,7 +20,9 @@ namespace LightGBM {
 */
 class BinaryLogloss: public ObjectiveFunction {
  public:
-  explicit BinaryLogloss(const Config& config, std::function<bool(label_t)> is_pos = nullptr) {
+  explicit BinaryLogloss(const Config& config,
+                         std::function<bool(label_t)> is_pos = nullptr)
+      : deterministic_(config.deterministic) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
@@ -36,7 +38,8 @@ class BinaryLogloss: public ObjectiveFunction {
     }
   }
 
-  explicit BinaryLogloss(const std::vector<std::string>& strs) {
+  explicit BinaryLogloss(const std::vector<std::string>& strs)
+      : deterministic_(false) {
     sigmoid_ = -1;
     for (auto str : strs) {
       auto tokens = Common::Split(str.c_str(), ':');
@@ -137,14 +140,14 @@ class BinaryLogloss: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml)
+      #pragma omp parallel for schedule(static) reduction(+:suml) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]);
       }
@@ -202,6 +205,7 @@ class BinaryLogloss: public ObjectiveFunction {
   double scale_pos_weight_;
   std::function<bool(label_t)> is_pos_;
   bool need_train_;
+  const bool deterministic_;
 };
 
 }  // namespace LightGBM
