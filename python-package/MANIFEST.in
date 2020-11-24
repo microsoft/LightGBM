@@ -4,7 +4,7 @@ include *.rst *.txt
 recursive-include lightgbm *.py *.txt *.so
 recursive-include compile *.txt *.so
 recursive-include compile/Release *.dll
-recursive-include compile/compute/ *.txt
+recursive-include compile/compute *.txt
 recursive-include compile/compute/cmake *
 recursive-include compile/compute/include *
 recursive-include compile/compute/meta *
