@@ -46,9 +46,9 @@ class CSC_RowIterator {
   // return value at idx, only can access by ascent order
   virtual double Get(int idx);
   // return next non-zero pair, if index < 0, means no more data
-  std::pair<int, double> NextNonZero();
+  virtual std::pair<int, double> NextNonZero();
 
-  void Reset() {
+  virtual void Reset() {
     nonzero_idx_ = 0;
     cur_idx_ = -1;
     cur_val_ = 0.0f;

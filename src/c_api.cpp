@@ -1332,12 +1332,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
   }
   if (ctr_provider != nullptr) {
-    ctr_provider->WrapColIters(&csc_iterators, &ncol_ptr, is_valid);
+    ctr_provider->WrapColIters(&csc_iterators, &ncol_ptr, is_valid, num_row);
   }
-  Log::Warning("csc_iterators.size() = %d after expanding", csc_iterators.size());
   for (const auto& csc_iter : csc_iterators) {
-    Log::Warning("nonzero_idx = %d, cur_idx = %d, cur_val_ = %f, is_end_ = %d",
-      csc_iter->nonzero_idx_, csc_iter->cur_idx_, csc_iter->cur_val_, static_cast<int>(csc_iter->is_end_));
     csc_iter->Reset();
   }
 

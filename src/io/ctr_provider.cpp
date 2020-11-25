@@ -123,20 +123,19 @@ void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>& fol
 }
 
 void CTRProvider::SyncCTRPrior(const double label_sum, const int local_num_data, 
-    double& all_label_sum, int& all_num_data, int num_machines) const {
-    if(num_machines > 1) {
-      all_label_sum = Network::GlobalSyncUpBySum(label_sum);
-      all_num_data = Network::GlobalSyncUpBySum(local_num_data); 
-    }
-    else {
-      all_label_sum = label_sum;
-      all_num_data = local_num_data;
-    }
+  double& all_label_sum, int& all_num_data, int num_machines) const {
+  if(num_machines > 1) {
+    all_label_sum = Network::GlobalSyncUpBySum(label_sum);
+    all_num_data = Network::GlobalSyncUpBySum(local_num_data);
   }
+  else {
+    all_label_sum = label_sum;
+    all_num_data = local_num_data;
+  }
+}
 
 void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double label,
   int /*line_idx*/, const int thread_id, const int fold_id) {
-  //const int fold_id = training_data_fold_id_[line_idx];
   auto& count_info = thread_count_info_[thread_id];
   auto& label_info = thread_label_info_[thread_id];
   for (int fid = 0; fid < num_original_features_; ++fid) {
@@ -152,6 +151,7 @@ void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double lab
     }
   }
   thread_fold_label_sum_[thread_id][fold_id] += label;
+  ++thread_fold_num_data_[thread_id][fold_id];
 }
 
 void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, 
@@ -274,7 +274,6 @@ void CTRProvider::FinishProcess(const int num_machines) {
     fold_prior_[fold_id] = fold_label_sum_[fold_id] * 1.0f / fold_num_data_[fold_id];
   }
   prior_ = fold_prior_.back();
-
   // set prior for label mean ctr converter
   for (size_t i = 0; i < cat_converters_.size(); ++i) {
     cat_converters_[i]->SetPrior(prior_, config_.prior_weight);
@@ -378,7 +377,7 @@ void CTRProvider::ConvertCatToCTR(std::unordered_map<int, double>& features) con
     if (features.count(pair.first) > 0) {
       const int cat_value = static_cast<int>(features[pair.first]);
       double label_sum = 0.0f, total_count = 0.0f;
-      if (pair.second.back().count(cat_value)) {
+      if (pair.second.back().count(cat_value) > 0) {
         label_sum = pair.second.back().at(cat_value);
         total_count = count_info_.at(pair.first).back().at(cat_value);
       }
@@ -430,15 +429,19 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features,
   }
   for (const int fid : categorical_features_) {
     if (!feature_processed[fid]) {
-      const auto& label_info = label_info_.at(fid).back();
-      const auto& count_info = count_info_.at(fid).back();
+      const auto& label_info = label_info_.at(fid).at(fold_id);
+      const auto& count_info = count_info_.at(fid).at(fold_id);
       double label_sum = 0.0f, total_count = 0.0f;
-      if (label_info.count(0)) {
+      if (label_info.count(0) > 0) {
         label_sum = label_info.at(0);
         total_count = count_info.at(0);    
       }
+      double all_fold_total_count = 0.0f;
+      if (count_info_.at(fid).back().count(0) > 0) {
+        all_fold_total_count = count_info_.at(fid).back().at(0);
+      }
       for (const auto& cat_converter: cat_converters_) {
-        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
+        const double convert_value = cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
         const int convert_fid = cat_converter->GetConvertFid(fid);
         features.emplace_back(convert_fid, convert_value);
       }
@@ -462,7 +465,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features)
       double label_sum = 0.0f, total_count = 0.0f;
       if (label_info.count(cat_value)) {
         label_sum = label_info.at(cat_value);
-        total_count = count_info.at(cat_value);    
+        total_count = count_info.at(cat_value);
       }
       for (const auto& cat_converter: cat_converters_) {
         const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
@@ -485,7 +488,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features)
       double label_sum = 0.0f, total_count = 0.0f;
       if (label_info.count(0)) {
         label_sum = label_info.at(0);
-        total_count = count_info.at(0);    
+        total_count = count_info.at(0);
       }
       for (const auto& cat_converter: cat_converters_) {
         const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
@@ -571,7 +574,7 @@ void CTRProvider::WrapRowFunction(
 
 void CTRProvider::WrapColIters(
   std::vector<std::unique_ptr<CSC_RowIterator>>* col_iters,
-  int64_t* ncol_ptr, bool is_valid) const {
+  int64_t* ncol_ptr, bool is_valid, int64_t num_row) const {
   int old_num_col = static_cast<int>(col_iters->size());
   std::vector<std::unique_ptr<CSC_RowIterator>> old_col_iters(col_iters->size());
   for (int i = 0; i < old_num_col; ++i) {
@@ -584,7 +587,7 @@ void CTRProvider::WrapColIters(
       for (const auto& cat_converter : cat_converters_) {
         const int convert_fid = cat_converter->GetConvertFid(i);
         col_iters->operator[](convert_fid).reset(new CTR_CSC_RowIterator(
-          old_col_iters[i].get(), i, cat_converter.get(), this, is_valid
+          old_col_iters[i].get(), i, cat_converter.get(), this, is_valid, num_row
         ));
       }
       if (config_.keep_old_cat_method) {

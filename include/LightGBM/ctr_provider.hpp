@@ -422,7 +422,7 @@ public:
           const int convert_fid = cat_converter->GetConvertFid(fid);
           std::string cat_converter_name = cat_converter->Name();
           std::replace(cat_converter_name.begin(), cat_converter_name.end(), ':', '_');
-          feature_names[convert_fid] = old_feature_names[fid] + std::string("_") + cat_converter_name + std::string("_");
+          feature_names[convert_fid] = old_feature_names[fid] + std::string("_") + cat_converter_name;
         }
       }
     }
@@ -438,7 +438,7 @@ public:
 
   void WrapColIters(
     std::vector<std::unique_ptr<CSC_RowIterator>>* col_iters,
-    int64_t* ncol_ptr, bool is_valid) const;
+    int64_t* ncol_ptr, bool is_valid, int64_t num_row) const;
 
 private:
   CTRProvider(const Config& config): config_(config) {
@@ -497,6 +497,7 @@ private:
       str_stream.clear();
       CHECK(str_stream.get() == '@');
     }
+    std::sort(categorical_features_.begin(), categorical_features_.end());
     str_stream.clear();
     cat_converters_.clear();
     std::string cat_converter_string;
@@ -530,7 +531,7 @@ private:
     double label;
     TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
     num_data_ = 0;
-    std::mt19937 mt_generator;
+    std::mt19937 mt_generator(config_.seed);
     const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
     std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
     training_data_fold_id_.clear();
@@ -605,7 +606,10 @@ private:
     }
     const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
     std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
-    std::vector<bool> is_feature_processed(num_total_features_, false);
+    std::vector<std::vector<bool>> is_feature_processed(num_threads_);
+    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+      is_feature_processed[thread_id].resize(num_total_features_, false);
+    }
     Threading::For<int64_t>(0, nrow, 1024,
     [this, &get_row_fun, &get_label_fun, &fold_distribution, &mt_generators, &is_feature_processed]
     (int thread_id, int64_t start, int64_t end) {
@@ -615,7 +619,7 @@ private:
         const double label = get_label_fun(row_idx);
         const int fold_id = fold_distribution(mt_generators[thread_id]);
         training_data_fold_id_[row_idx] = fold_id;
-        ProcessOneLine(oneline_features, label, row_idx, is_feature_processed, thread_id, fold_id);
+        ProcessOneLine(oneline_features, label, row_idx, is_feature_processed[thread_id], thread_id, fold_id);
       }
     });
     FinishProcess(1);
@@ -868,9 +872,7 @@ class CTRParser : public Parser {
   public:
     explicit CTRParser(const Parser* inner_parser,
     const CTRProvider* ctr_provider, const bool is_valid):
-    inner_parser_(inner_parser), ctr_provider_(ctr_provider), is_valid_(is_valid) {
-
-    }
+    inner_parser_(inner_parser), ctr_provider_(ctr_provider), is_valid_(is_valid) {}
 
     inline void ParseOneLine(const char* str,
       std::vector<std::pair<int, double>>* out_features,
@@ -898,20 +900,22 @@ class CTR_CSC_RowIterator: public CSC_RowIterator {
   CTR_CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
                   const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx,
                   const CTRProvider::CatConverter* cat_converter,
-                  const CTRProvider* ctr_provider, bool is_valid):
+                  const CTRProvider* ctr_provider, bool is_valid, int64_t num_row):
     CSC_RowIterator(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, col_idx),
     col_idx_(col_idx),
-    is_valid_(is_valid) {
+    is_valid_(is_valid),
+    num_row_(num_row) {
     cat_converter_ = cat_converter;
     ctr_provider_ = ctr_provider;
   }
 
   CTR_CSC_RowIterator(CSC_RowIterator* csc_iter, const int col_idx,
                   const CTRProvider::CatConverter* cat_converter,
-                  const CTRProvider* ctr_provider, bool is_valid): 
+                  const CTRProvider* ctr_provider, bool is_valid, int64_t num_row): 
     CSC_RowIterator(*csc_iter),
     col_idx_(col_idx),
-    is_valid_(is_valid) {
+    is_valid_(is_valid),
+    num_row_(num_row) {
     cat_converter_ = cat_converter;
     ctr_provider_ = ctr_provider;
   }
@@ -925,11 +929,46 @@ class CTR_CSC_RowIterator: public CSC_RowIterator {
     }
   }
 
+  std::pair<int, double> NextNonZero() override {
+    if (cur_row_idx_ + 1 < static_cast<int>(num_row_)) {
+      auto pair = cached_pair_;
+      if (cur_row_idx_ == cached_pair_.first) {
+        cached_pair_ = CSC_RowIterator::NextNonZero();
+      }
+      if ((cur_row_idx_ + 1 < cached_pair_.first) || is_end_) {
+        pair = std::make_pair<int, double>(cur_row_idx_ + 1, 0.0f);
+      } else {
+        pair = cached_pair_;
+      }
+      ++cur_row_idx_;
+      double value = 0.0f;
+      if (is_valid_) {
+        value = ctr_provider_->ConvertCatToCTR(pair.second, cat_converter_, col_idx_);
+      } else {
+        value = ctr_provider_->ConvertCatToCTR(pair.second, cat_converter_, col_idx_, pair.first);
+      }
+      pair.second = value;
+      return pair;
+    } else {
+      return std::make_pair<int, double>(-1, 0.0f);
+    }
+  }
+
+  void Reset() override {
+    CSC_RowIterator::Reset();
+    cur_row_idx_ = -1;
+    cached_pair_ = std::make_pair<int, double>(-1, 0.0f);
+  }
+
  private:
   const CTRProvider::CatConverter* cat_converter_;
   const CTRProvider* ctr_provider_;
   const int col_idx_;
   const bool is_valid_;
+  const int64_t num_row_;
+
+  int cur_row_idx_ = -1;
+  std::pair<int, double> cached_pair_ = std::make_pair<int, double>(-1, 0.0f);
 };
 
 } //namespace LightGBM
