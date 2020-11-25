@@ -164,6 +164,9 @@ lgb.cv <- function(params = list()
   }
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
 
+  # Construct datasets, if needed
+  data$construct()
+  
   # Check interaction constraints
   cnames <- NULL
   if (!is.null(colnames)) {
@@ -193,9 +196,6 @@ lgb.cv <- function(params = list()
   if (!is.null(categorical_feature)) {
     data$set_categorical_feature(categorical_feature)
   }
-
-  # Construct datasets, if needed
-  data$construct()
 
   # Check for folds
   if (!is.null(folds)) {
