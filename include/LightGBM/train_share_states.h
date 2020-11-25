@@ -57,7 +57,7 @@ class MultiValBinWrapper {
       n_data_block_ = 1;
       data_block_size_ = num_data;
       Threading::BlockInfo<data_size_t>(num_threads_, num_data, min_block_size_,
-                                        max_block_size_, &n_data_block_, &data_block_size_);
+                                        &n_data_block_, &data_block_size_);
       ResizeHistBuf(hist_buf, cur_multi_val_bin, origin_hist_data);
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static) num_threads(num_threads_)
@@ -137,7 +137,6 @@ class MultiValBinWrapper {
   const std::vector<int> feature_groups_contained_;
 
   int num_threads_;
-  int max_block_size_;
   int num_bin_;
   int num_bin_aligned_;
   int n_data_block_;

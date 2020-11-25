@@ -92,11 +92,13 @@ namespace LightGBM {
 */
 class RegressionL2loss: public ObjectiveFunction {
  public:
-  explicit RegressionL2loss(const Config& config) {
+  explicit RegressionL2loss(const Config& config)
+      : deterministic_(config.deterministic) {
     sqrt_ = config.reg_sqrt;
   }
 
-  explicit RegressionL2loss(const std::vector<std::string>& strs) {
+  explicit RegressionL2loss(const std::vector<std::string>& strs)
+      : deterministic_(false) {
     sqrt_ = false;
     for (auto str : strs) {
       if (str == std::string("sqrt")) {
@@ -172,14 +174,14 @@ class RegressionL2loss: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i] * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml)
+      #pragma omp parallel for schedule(static) reduction(+:suml) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i];
       }
@@ -196,6 +198,7 @@ class RegressionL2loss: public ObjectiveFunction {
   /*! \brief Pointer of weights */
   const label_t* weights_;
   std::vector<label_t> trans_label_;
+  const bool deterministic_;
 };
 
 /*!
