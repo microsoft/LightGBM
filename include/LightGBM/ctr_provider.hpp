@@ -365,10 +365,6 @@ public:
     return static_cast<int>(cat_converters_.size());
   }
 
-  inline int GetMaxBinForFeature(const int fid) const {
-    max_bin_by_feature_[fid];
-  }
-
   void ConvertCatToCTR(std::vector<double>* features, int line_idx) const;
 
   void ConvertCatToCTR(std::vector<double>* features) const;

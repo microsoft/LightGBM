@@ -187,7 +187,7 @@ class TextReader {
   }
 
   INDEX_T SampleFromFileWithIndices(Random* random, INDEX_T sample_cnt,
-    std::vector<std::string>* out_sampled_data, std::vector<data_size_t>* sampled_indices) {
+    std::vector<std::string>* out_sampled_data, std::vector<INDEX_T>* sampled_indices) {
     INDEX_T cur_sample_cnt = 0;
     sampled_indices->clear();
     return ReadAllAndProcess([=, &random, &cur_sample_cnt, &out_sampled_data]
