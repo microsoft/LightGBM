@@ -982,7 +982,6 @@ class Dataset(object):
             1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
                 If the prior value is omitted, then the label mean will be used as prior.
             2. count, the count of the categorical feature value in the dataset.
-            3. stat, the old LightGBM method.
             For example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features,
             with the 3 different ways separated by ','.
         """

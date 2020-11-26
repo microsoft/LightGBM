@@ -25,6 +25,8 @@ public:
     protected:
       std::unordered_map<int, int> cat_fid_to_convert_fid_;
     public:
+      virtual ~CatConverter() {}
+
       virtual double CalcValue(const double sum_label, const double sum_count,
         const double all_fold_sum_count, const double prior) const = 0;
 
