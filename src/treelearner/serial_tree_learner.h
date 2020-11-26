@@ -84,11 +84,11 @@ class SerialTreeLearner: public TreeLearner {
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
     if (subset == nullptr) {
       data_partition_->SetUsedDataIndices(used_indices, num_data);
-      share_state_->is_use_subrow = false;
+      share_state_->SetUseSubrow(false);
     } else {
       ResetTrainingDataInner(subset, share_state_->is_constant_hessian, false);
-      share_state_->is_use_subrow = true;
-      share_state_->is_subrow_copied = false;
+      share_state_->SetUseSubrow(true);
+      share_state_->SetSubrowCopied(false);
       share_state_->bagging_use_indices = used_indices;
       share_state_->bagging_indices_cnt = num_data;
     }
@@ -120,7 +120,7 @@ class SerialTreeLearner: public TreeLearner {
  protected:
   void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
                                   int feature_index, int real_fidx,
-                                  bool is_feature_used, int num_data,
+                                  int8_t is_feature_used, int num_data,
                                   const LeafSplits* leaf_splits,
                                   SplitInfo* best_split, double parent_output);
 

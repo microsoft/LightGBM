@@ -40,8 +40,10 @@ cd ${TEMP_R_DIR}
     rm AUTOCONF_UBUNTU_VERSION
     rm recreate-configure.sh
 
-    # main.cpp is used to make the lightgbm CLI, unnecessary
-    # for the R package
+    # files only used by the lightgbm CLI aren't needed for
+    # the R package
+    rm src/application/application.cpp
+    rm src/include/LightGBM/application.h
     rm src/main.cpp
 
     # configure.ac and DESCRIPTION have placeholders for version
@@ -50,19 +52,20 @@ cd ${TEMP_R_DIR}
     sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" DESCRIPTION
     sed -i.bak -e "s/~~DATE~~/${CURRENT_DATE}/" DESCRIPTION
 
-    # Remove 'region' and 'endregion' pragmas. This won't change
-    # the correctness of the code. CRAN does not allow you
-    # to use compiler flag '-Wno-unknown-pragmas' or
+    # Remove 'region', 'endregion', and 'warning' pragmas.
+    # This won't change the correctness of the code. CRAN does
+    # not allow you to use compiler flag '-Wno-unknown-pragmas' or
     # pragmas that suppress warnings.
     echo "Removing unknown pragmas in headers"
-    for file in src/include/LightGBM/*.h; do
+    for file in $(find . -name '*.h' -o -name '*.hpp' -o -name '*.cpp'); do
       sed \
         -i.bak \
         -e 's/^.*#pragma region.*$//' \
         -e 's/^.*#pragma endregion.*$//' \
+        -e 's/^.*#pragma warning.*$//' \
         "${file}"
     done
-    rm src/include/LightGBM/*.h.bak
+    find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
 
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called

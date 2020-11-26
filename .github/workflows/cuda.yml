@@ -1,0 +1,64 @@
+name: CUDA GitHub Actions
+
+on:
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  test:
+    name: CUDA
+    runs-on: [self-hosted, linux]
+    if: github.event.comment.body == '/gha run cuda-builds' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Setup or update software on host machine
+        run: |
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                apt-transport-https \
+                ca-certificates \
+                curl \
+                git \
+                gnupg-agent \
+                software-properties-common \
+                wget
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
+            curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+            curl -sL https://nvidia.github.io/nvidia-docker/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                containerd.io \
+                docker-ce \
+                docker-ce-cli \
+                nvidia-docker2
+            sudo systemctl restart docker
+      - name: Remove old folder with repository
+        run: sudo rm -rf $GITHUB_WORKSPACE
+      - name: Checkout repository
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Test CUDA
+        run: |
+            export ROOT_DOCKER_FOLDER=/LightGBM
+            cat > docker.env <<EOF
+            TASK=cuda
+            COMPILER=gcc
+            GITHUB_ACTIONS=true
+            OS_NAME=linux
+            BUILD_DIRECTORY=$ROOT_DOCKER_FOLDER
+            CONDA_ENV=test-env
+            PYTHON_VERSION=3.8
+            EOF
+            cat > docker-script.sh <<EOF
+            export CONDA=\$HOME/miniconda
+            export PATH=\$CONDA/bin:\$PATH
+            nvidia-smi
+            $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
+            $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
+            EOF
+            sudo docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all nvidia/cuda:11.0-devel-ubuntu20.04 /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh

@@ -26,7 +26,7 @@
 #' @return a trained booster model \code{lgb.Booster}.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -84,8 +84,8 @@ lgb.train <- function(params = list(),
   additional_params <- list(...)
   params <- append(params, additional_params)
   params$verbose <- verbose
-  params <- lgb.check.obj(params, obj)
-  params <- lgb.check.eval(params, eval)
+  params <- lgb.check.obj(params = params, obj = obj)
+  params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
 
@@ -238,8 +238,8 @@ lgb.train <- function(params = list(),
   # If user supplied early_stopping_rounds, add the early stopping callback
   if (using_early_stopping) {
     callbacks <- add.cb(
-      callbacks
-      , cb.early.stop(
+      cb_list = callbacks
+      , cb = cb.early.stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
         , verbose = verbose
@@ -247,16 +247,16 @@ lgb.train <- function(params = list(),
     )
   }
 
-  cb <- categorize.callbacks(callbacks)
+  cb <- categorize.callbacks(cb_list = callbacks)
 
   # Construct booster with datasets
   booster <- Booster$new(params = params, train_set = data)
   if (valid_contain_train) {
-    booster$set_train_data_name(train_data_name)
+    booster$set_train_data_name(name = train_data_name)
   }
 
   for (key in names(reduced_valid_sets)) {
-    booster$add_valid(reduced_valid_sets[[key]], key)
+    booster$add_valid(data = reduced_valid_sets[[key]], name = key)
   }
 
   # Callback env

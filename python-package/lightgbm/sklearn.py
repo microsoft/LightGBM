@@ -315,8 +315,16 @@ class LGBMModel(_LGBMModelBase):
         self.set_params(**kwargs)
 
     def _more_tags(self):
-        return {'allow_nan': True,
-                'X_types': ['2darray', 'sparse', '1dlabels']}
+        return {
+            'allow_nan': True,
+            'X_types': ['2darray', 'sparse', '1dlabels'],
+            '_xfail_checks': {
+                'check_no_attributes_set_in_init':
+                'scikit-learn incorrectly asserts that private attributes '
+                'cannot be set in __init__: '
+                '(see https://github.com/microsoft/LightGBM/issues/2628)'
+            }
+        }
 
     def get_params(self, deep=True):
         """Get parameters for this estimator.
@@ -945,7 +953,7 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=[1, 2, 3, 4, 5], early_stopping_rounds=None, verbose=True,
+            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -984,6 +992,6 @@ class LGBMRanker(LGBMModel):
     _base_doc = fit.__doc__
     _before_early_stop, _early_stop, _after_early_stop = _base_doc.partition('early_stopping_rounds :')
     fit.__doc__ = (_before_early_stop
-                   + 'eval_at : list of int, optional (default=[1, 2, 3, 4, 5])\n'
+                   + 'eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n'
                    + ' ' * 12 + 'The evaluation positions of the specified metric.\n'
                    + ' ' * 8 + _early_stop + _after_early_stop)

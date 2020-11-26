@@ -68,7 +68,7 @@
 #'         \code{lgb.Dataset}.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(iris)
 #'
 #' str(iris)

@@ -18,7 +18,7 @@
 #' @return NULL invisibly.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train

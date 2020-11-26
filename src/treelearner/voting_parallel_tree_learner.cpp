@@ -55,8 +55,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   larger_buffer_read_start_pos_.resize(this->num_features_);
   global_data_count_in_leaf_.resize(this->config_->num_leaves);
 
-  smaller_leaf_splits_global_.reset(new LeafSplits(train_data->num_data()));
-  larger_leaf_splits_global_.reset(new LeafSplits(train_data->num_data()));
+  smaller_leaf_splits_global_.reset(new LeafSplits(train_data->num_data(), this->config_));
+  larger_leaf_splits_global_.reset(new LeafSplits(train_data->num_data(), this->config_));
 
   local_config_ = *this->config_;
   local_config_.min_data_in_leaf /= num_machines_;
@@ -67,9 +67,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
   larger_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
-  std::vector<int> offsets;
-  int num_total_bin = HistogramPool::GetNumTotalHistogramBins(
-      train_data, this->share_state_->is_colwise, &offsets);
+  std::vector<uint32_t> offsets = this->share_state_->feature_hist_offsets();
+  int num_total_bin = this->share_state_->num_hist_total_bin();
   smaller_leaf_histogram_data_.resize(num_total_bin * 2);
   larger_leaf_histogram_data_.resize(num_total_bin * 2);
   HistogramPool::SetFeatureInfo<true, true>(train_data, this->config_, &feature_metas_);
