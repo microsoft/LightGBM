@@ -12,7 +12,7 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 #include <LightGBM/ctr_provider.hpp>
-#include <LightGBM/parser.h>
+#include <LightGBM/parser_base.h>
 
 #include <string>
 #include <functional>
@@ -669,8 +669,6 @@ class Dataset {
     return ctr_provider_.get();
   }
 
-  inline bool is_valid() const { return is_valid_; }
-
  private:
   std::string data_filename_;
   /*! \brief Store used features */
@@ -709,8 +707,6 @@ class Dataset {
   std::vector<int> feature_need_push_zeros_;
   /*! \brief CTR provider, converts categorical feature values into CTR values */
   std::unique_ptr<const CTRProvider> ctr_provider_ = std::unique_ptr<CTRProvider>(nullptr);
-  /*! \brief a flag indicating whether the dataset is validation or not */
-  bool is_valid_ = false;
 };
 
 }  // namespace LightGBM

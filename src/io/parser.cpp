@@ -4,7 +4,7 @@
  */
 #include "parser.hpp"
 
-#include <LightGBM/parser.h>
+#include <LightGBM/parser_base.h>
 
 #include <string>
 #include <algorithm>

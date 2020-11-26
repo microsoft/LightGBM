@@ -12,7 +12,7 @@
 #include <LightGBM/metric.h>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
-#include <LightGBM/parser.h>
+#include <LightGBM/parser_base.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
@@ -1059,8 +1059,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   std::unique_ptr<const CTRProvider> ctr_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    ctr_provider.reset(CTRProvider::RecoverFromModelString((
-      reinterpret_cast<const Dataset*>(reference))->ctr_provider()->DumpModelInfo()));
+    const CTRProvider* ctr_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+    if (ctr_provider_ptr != nullptr) {
+      ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
+    }
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
@@ -1100,7 +1102,9 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                              ncol,
                                              VectorSize<double>(sample_values).data(),
                                              sample_cnt, total_nrow, ctr_provider.get()));
-    ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+    if (ctr_provider != nullptr) {
+      ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+    }
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1156,8 +1160,10 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   std::unique_ptr<const CTRProvider> ctr_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    ctr_provider.reset(CTRProvider::RecoverFromModelString((
-      reinterpret_cast<const Dataset*>(reference))->ctr_provider()->DumpModelInfo()));
+    const CTRProvider* ctr_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+    if (ctr_provider_ptr != nullptr) {
+      ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
+    }
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
@@ -1194,7 +1200,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
                                              sample_cnt, nrow, ctr_provider.get()));
-    ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+    if (ctr_provider != nullptr) {
+      ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+    }
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1322,8 +1330,10 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   std::unique_ptr<const CTRProvider> ctr_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    ctr_provider.reset(CTRProvider::RecoverFromModelString((
-      reinterpret_cast<const Dataset*>(reference))->ctr_provider()->DumpModelInfo()));
+    const CTRProvider* ctr_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
+    if (ctr_provider_ptr != nullptr) {
+      ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
+    }
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
@@ -1364,7 +1374,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                              static_cast<int>(sample_values.size()),
                                              VectorSize<double>(sample_values).data(),
                                              sample_cnt, nrow, ctr_provider.get()));
-    ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+    if (ctr_provider != nullptr) {
+      ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+    }
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1565,7 +1577,11 @@ int LGBM_DatasetGetNumOriginalFeature(DatasetHandle handle,
                               int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
-  *out = dataset->ctr_provider()->GetNumOriginalFeatures();
+  if (dataset->ctr_provider() != nullptr) {
+    *out = dataset->ctr_provider()->GetNumOriginalFeatures();
+  } else {
+    *out = dataset->num_total_features();
+  }
   API_END();
 }
 

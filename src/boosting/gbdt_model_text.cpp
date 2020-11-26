@@ -333,7 +333,6 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   }
 
   ss << "feature_infos=" << Common::Join(feature_infos_, " ") << '\n';
-  Log::Warning("before dump ctr");
   // dump ctr information
   if(ctr_provider_ != nullptr) {
     ss << "ctr_provider=" << ctr_provider_->DumpModelInfo() << "\n"; 
@@ -341,7 +340,6 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   else {
     ss << "ctr_provider= " << "\n";
   }
-  Log::Warning("after dump ctr");
 
   int num_used_model = static_cast<int>(models_.size());
   int total_iteration = num_used_model / num_tree_per_iteration_;

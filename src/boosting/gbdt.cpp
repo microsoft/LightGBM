@@ -62,7 +62,9 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-  ctr_provider_.reset(CTRProvider::RecoverFromModelString(train_data_->ctr_provider()->DumpModelInfo()));
+  if (train_data_->ctr_provider() != nullptr) {
+    ctr_provider_.reset(CTRProvider::RecoverFromModelString(train_data_->ctr_provider()->DumpModelInfo()));
+  }
 
   if (config_->device_type == std::string("cuda")) {
     LGBM_config_::current_learner = use_cuda_learner;
@@ -90,6 +92,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   // init tree learner
   tree_learner_->Init(train_data_, is_constant_hessian_);
   tree_learner_->SetForcedSplit(&forced_splits_json_);
+
   // push training metrics
   training_metrics_.clear();
   for (const auto& metric : training_metrics) {
@@ -270,7 +273,6 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
       SaveModelToFile(0, -1, config_->saved_feature_importance_type, snapshot_out.c_str());
     }
   }
-  Log::Warning("train finished");
 }
 
 void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {

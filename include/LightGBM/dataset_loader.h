@@ -61,10 +61,6 @@ class DatasetLoader {
     int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices,
     std::vector<data_size_t>* sampled_indices);
 
-  CTRProvider* ConstructCTRProviderFromTextData(const std::vector<std::string>& text_data, Parser* parser, const int num_machines);
-
-  CTRProvider* ConstructCTRProviderFromFile(const char* filename, Parser* parser, const int num_machines);
-
   void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data,
     const Parser* parser, Dataset* dataset, const std::vector<data_size_t>& sampled_indices);
 

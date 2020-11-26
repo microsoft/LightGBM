@@ -9,7 +9,7 @@
 #include <LightGBM/network.h>
 #include <LightGBM/utils/text_reader.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/parser.h>
+#include <LightGBM/parser_base.h>
 
 #include <vector>
 #include <string>

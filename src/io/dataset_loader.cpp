@@ -202,7 +202,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
         sample_data = SampleTextDataFromMemory(text_data);
       } else {
         sample_data = SampleTextDataFromMemoryWithIndices(text_data, &sampled_indices);
-        ctr_provider->ExtendFeatureNames(feature_names_);
+        if (ctr_provider != nullptr) {
+          ctr_provider->ExtendFeatureNames(feature_names_);
+        }
       }
 
       // construct feature bin mappers
@@ -245,7 +247,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
   // need to check training data
   CheckDataset(dataset.get());
-  dataset->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+  if (ctr_provider != nullptr) {
+    dataset->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+  }
   return dataset.release();
 }
 
@@ -716,9 +720,7 @@ void DatasetLoader::CheckDataset(const Dataset* dataset) {
   if (dataset->num_data_ <= 0) {
     Log::Fatal("Data file %s is empty", dataset->data_filename_.c_str());
   }
-  if (dataset->feature_names_.size() != static_cast<size_t>(dataset->num_total_features_) && (
-    static_cast<int>(dataset->feature_names_.size()) != dataset->ctr_provider()->GetNumOriginalFeatures()
-  )) {
+  if (dataset->feature_names_.size() != static_cast<size_t>(dataset->num_total_features_)) {
     Log::Fatal("Size of feature name error, should be %d, got %d", dataset->num_total_features_,
                static_cast<int>(dataset->feature_names_.size()));
   }
