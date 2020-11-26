@@ -6,6 +6,7 @@
 #define LIGHTGBM_BOOSTING_H_
 
 #include <LightGBM/config.h>
+#include <LightGBM/ctr_provider.hpp>
 #include <LightGBM/meta.h>
 
 #include <string>
@@ -295,21 +296,6 @@ class LIGHTGBM_EXPORT Boosting {
   */
   virtual const char* SubModelName() const = 0;
 
-  /*!
-  * \brief Get the extra feature numbers by categorical converters 
-  */
-  virtual int NumExtraFeatures() const = 0;
-
-  /*!
-  * \brief Convert categorical values
-  */
-  virtual void ConvertCatValues(double* features) const = 0;
-
-  /*!
-  * \brief Convert categorical values
-  */
-  virtual void ConvertCatValues(std::unordered_map<int, double>& features) const = 0;
-
   Boosting() = default;
   /*! \brief Disable copy */
   Boosting& operator=(const Boosting&) = delete;
@@ -327,6 +313,8 @@ class LIGHTGBM_EXPORT Boosting {
   * \return The boosting object
   */
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
+
+  virtual const CTRProvider* ctr_provider() const { return nullptr; }
 };
 
 class GBDTBase : public Boosting {

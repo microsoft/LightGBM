@@ -51,16 +51,6 @@ public:
         return cat_fid_to_convert_fid_.at(cat_fid);
       }
 
-      int CalcNumExtraFeatures() const {
-        int num_extra_features = 0;
-        for (const auto& pair : cat_fid_to_convert_fid_) {
-          if (pair.first != pair.second) {
-            ++num_extra_features;
-          }
-        }
-        return num_extra_features;
-      }
-
       static CatConverter* CreateFromString(const std::string& model_string, const double prior_weight) {
         std::vector<std::string> split_model_string = Common::Split(model_string.c_str(), ",");
         if (split_model_string.size() > 2 || split_model_string.size() == 0) {
@@ -397,14 +387,6 @@ public:
   double ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
     int col_idx) const;
 
-  int CalcNumExtraFeatures() const {
-    int num_extra_features = 0;
-    for (const auto& cat_converter : cat_converters_) {
-      num_extra_features += cat_converter->CalcNumExtraFeatures();
-    }
-    return num_extra_features;
-  }
-
   void ExtendFeatureNames(std::vector<std::string>& feature_names) const {
     if (feature_names.empty()) {
       for (int i = 0; i < num_original_features_; ++i) {
@@ -443,6 +425,7 @@ public:
 private:
   CTRProvider(const Config& config): config_(config) {
     num_threads_ = config_.num_threads > 0 ? config_.num_threads : OMP_NUM_THREADS();
+    keep_old_cat_method_ = config.keep_old_cat_method;
     const std::string ctr_string = std::string("ctr");
     if(config_.cat_converters.size() > 0) {
       for (auto token : Common::Split(config_.cat_converters.c_str(), ',')) {
@@ -473,6 +456,9 @@ private:
     std::stringstream str_stream(model_string);
     int cat_fid = 0, cat_value = 0;
     double label_sum = 0.0f, total_count = 0.0f;
+    int keep_old_cat_method;
+    str_stream >> keep_old_cat_method;
+    keep_old_cat_method_ = static_cast<bool>(keep_old_cat_method);
     str_stream >> num_original_features_;
     str_stream >> num_total_features_;
     is_categorical_feature_.clear();
@@ -866,6 +852,8 @@ private:
   std::vector<std::unique_ptr<CatConverter>> cat_converters_;
   // max bin by feature
   std::vector<int> max_bin_by_feature_;
+  // whether the old categorical handling method is used
+  bool keep_old_cat_method_;
 };
 
 class CTRParser : public Parser {

@@ -75,11 +75,9 @@ class Predictor {
         if (num_feature_ > kFeatureThreshold &&
             features.size() < KSparseThreshold) {
           auto buf = CopyToPredictMap(features);
-          boosting_->ConvertCatValues(buf);
           boosting_->PredictLeafIndexByMap(buf, output);
         } else {
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->ConvertCatValues(predict_buf_[tid].data());
           // get result for leaf index
           boosting_->PredictLeafIndex(predict_buf_[tid].data(), output);
           ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(),
@@ -91,7 +89,6 @@ class Predictor {
                          double* output) {
         int tid = omp_get_thread_num();
         CopyToPredictBuffer(predict_buf_[tid].data(), features);
-        boosting_->ConvertCatValues(predict_buf_[tid].data());
         // get feature importances
         boosting_->PredictContrib(predict_buf_[tid].data(), output);
         ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(),
@@ -100,7 +97,6 @@ class Predictor {
       predict_sparse_fun_ = [=](const std::vector<std::pair<int, double>>& features,
                                 std::vector<std::unordered_map<int, double>>* output) {
         auto buf = CopyToPredictMap(features);
-        boosting_->ConvertCatValues(buf);
         // get sparse feature importances
         boosting_->PredictContribByMap(buf, output);
       };
@@ -113,11 +109,9 @@ class Predictor {
           if (num_feature_ > kFeatureThreshold &&
               features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
-            boosting_->ConvertCatValues(buf);
             boosting_->PredictRawByMap(buf, output, &early_stop_);
           } else {
             CopyToPredictBuffer(predict_buf_[tid].data(), features);
-            boosting_->ConvertCatValues(predict_buf_[tid].data());
             boosting_->PredictRaw(predict_buf_[tid].data(), output,
                                   &early_stop_);
             ClearPredictBuffer(predict_buf_[tid].data(),
@@ -131,11 +125,9 @@ class Predictor {
           if (num_feature_ > kFeatureThreshold &&
               features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
-            boosting_->ConvertCatValues(buf);
             boosting_->PredictByMap(buf, output, &early_stop_);
           } else {
             CopyToPredictBuffer(predict_buf_[tid].data(), features);
-            boosting_->ConvertCatValues(predict_buf_[tid].data());
             boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_);
             ClearPredictBuffer(predict_buf_[tid].data(),
                                predict_buf_[tid].size(), features);
@@ -176,8 +168,14 @@ class Predictor {
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
-    if (!header && !disable_shape_check && 
-      !(boosting_->NumExtraFeatures() + parser->NumFeatures() == boosting_->MaxFeatureIdx() + 1)) {
+    if (boosting_->ctr_provider() != nullptr) {
+      Log::Warning("create ctr parser");
+      std::unique_ptr<Parser> inner_parser(nullptr);
+      inner_parser.reset(parser.release());
+      parser.reset(new CTRParser(inner_parser.release(), boosting_->ctr_provider(), true));
+      Log::Warning("create ctr parser");
+    }
+    if (!header && !disable_shape_check && parser->NumFeatures() == boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
     }

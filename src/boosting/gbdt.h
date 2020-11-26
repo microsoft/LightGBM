@@ -391,11 +391,7 @@ class GBDT : public GBDTBase {
   */
   const char* SubModelName() const override { return "tree"; }
 
-  int NumExtraFeatures() const override; 
-
-  void ConvertCatValues(double* features) const override;
-
-  void ConvertCatValues(std::unordered_map<int, double>& features) const override;
+  const CTRProvider* ctr_provider() const override { return ctr_provider_.get(); }
 
  protected:
   virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {

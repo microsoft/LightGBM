@@ -385,8 +385,7 @@ class Booster {
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
                double* out_result, int64_t* out_len) {
-    if (!config.predict_disable_shape_check && 
-      (ncol != boosting_->MaxFeatureIdx() + 1 - boosting_->NumExtraFeatures())) {
+    if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
@@ -400,8 +399,7 @@ class Booster {
   }
 
   Predictor CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
-    if (!config.predict_disable_shape_check && 
-      (ncol != boosting_->MaxFeatureIdx() + 1 - boosting_->NumExtraFeatures())) {
+    if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
@@ -839,6 +837,7 @@ using LightGBM::Common::RemoveQuotationSymbol;
 using LightGBM::Common::Vector2Ptr;
 using LightGBM::Common::VectorSize;
 using LightGBM::Config;
+using LightGBM::CTRProvider;
 using LightGBM::data_size_t;
 using LightGBM::Dataset;
 using LightGBM::DatasetLoader;
@@ -848,7 +847,6 @@ using LightGBM::Log;
 using LightGBM::Network;
 using LightGBM::Random;
 using LightGBM::ReduceScatterFunction;
-using LightGBM::CTRProvider;
 
 // some help functions used to convert data
 
@@ -1907,6 +1905,9 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+  }
   int nrow = static_cast<int>(nindptr - 1);
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, static_cast<int>(num_col), get_row_fun,
                        config, out_result, out_len);
@@ -2028,6 +2029,9 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+  }
   ref_booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, config);
   ref_booster->PredictSingleRow(predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
   API_END();
@@ -2077,7 +2081,13 @@ int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
   API_BEGIN();
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, fastConfig->data_type, nindptr, nelem);
-  fastConfig->booster->PredictSingleRow(fastConfig->predict_type, fastConfig->ncol,
+  int32_t ncol = fastConfig->ncol;
+  if (fastConfig->booster->GetBoosting()->ctr_provider() != nullptr) {
+    int64_t num_col = static_cast<int64_t>(ncol);
+    fastConfig->booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ncol = static_cast<int32_t>(num_col);
+  }
+  fastConfig->booster->PredictSingleRow(fastConfig->predict_type, ncol,
                                         get_row_fun, fastConfig->config, out_result, out_len);
   API_END();
 }
@@ -2127,6 +2137,11 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
         }
         return one_row;
       };
+  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+    int64_t num_col = static_cast<int64_t>(ncol);
+    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ncol = static_cast<int>(num_col);
+  }
   ref_booster->Predict(start_iteration, num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
                        out_result, out_len);
   API_END();
@@ -2153,6 +2168,11 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
+  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+    int64_t num_col = static_cast<int64_t>(ncol);
+    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ncol = static_cast<int32_t>(num_col);
+  }
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun,
                        config, out_result, out_len);
   API_END();
@@ -2178,6 +2198,11 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, is_row_major);
+  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+    int64_t num_col = static_cast<int64_t>(ncol);
+    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ncol = static_cast<int32_t>(num_col);
+  }
   ref_booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, config);
   ref_booster->PredictSingleRow(predict_type, ncol, get_row_fun, config, out_result, out_len);
   API_END();
@@ -2217,7 +2242,13 @@ int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fastConfig_handle,
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   // Single row in row-major format:
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, fastConfig->ncol, fastConfig->data_type, 1);
-  fastConfig->booster->PredictSingleRow(fastConfig->predict_type, fastConfig->ncol,
+  int32_t ncol = fastConfig->ncol;
+  if (fastConfig->booster->GetBoosting()->ctr_provider() != nullptr) {
+    int64_t num_col = static_cast<int64_t>(fastConfig->ncol);
+    fastConfig->booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ncol = static_cast<int32_t>(num_col);
+  }
+  fastConfig->booster->PredictSingleRow(fastConfig->predict_type, ncol,
                                         get_row_fun, fastConfig->config,
                                         out_result, out_len);
   API_END();
@@ -2244,6 +2275,11 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseRows(data, ncol, data_type);
+  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+    int64_t num_col = static_cast<int64_t>(ncol);
+    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ncol = static_cast<int32_t>(num_col);
+  }
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun, config, out_result, out_len);
   API_END();
 }

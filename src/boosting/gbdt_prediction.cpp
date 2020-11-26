@@ -94,12 +94,4 @@ void GBDT::PredictLeafIndexByMap(const std::unordered_map<int, double>& features
   }
 }
 
-void GBDT::ConvertCatValues(double* features) const {
-  ctr_provider_->ConvertCatToCTR(features);
-}
-
-void GBDT::ConvertCatValues(std::unordered_map<int, double>& features) const {
-  ctr_provider_->ConvertCatToCTR(features);
-}
-
 }  // namespace LightGBM

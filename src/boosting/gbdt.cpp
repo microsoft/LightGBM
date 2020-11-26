@@ -90,7 +90,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   // init tree learner
   tree_learner_->Init(train_data_, is_constant_hessian_);
   tree_learner_->SetForcedSplit(&forced_splits_json_);
-
   // push training metrics
   training_metrics_.clear();
   for (const auto& metric : training_metrics) {
@@ -805,10 +804,6 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     bagging_runner_.ReSize(0);
     is_use_subset_ = false;
   }
-}
-
-int GBDT::NumExtraFeatures() const {
-  return ctr_provider_->CalcNumExtraFeatures();
 }
 
 }  // namespace LightGBM

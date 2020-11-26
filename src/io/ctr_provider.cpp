@@ -12,6 +12,7 @@ namespace LightGBM {
 std::string CTRProvider::DumpModelInfo() const {
   std::stringstream str_buf;
   if (cat_converters_.size() > 0) {
+    str_buf << static_cast<int>(keep_old_cat_method_) << " ";
     str_buf << num_original_features_ << " ";
     str_buf << num_total_features_ << " ";
     for (const int cat_fid : categorical_features_) {
@@ -31,8 +32,17 @@ std::string CTRProvider::DumpModelInfo() const {
 }
 
 CTRProvider* CTRProvider::RecoverFromModelString(const std::string model_string) {
-  return new CTRProvider(model_string);
-} 
+  if (!model_string.empty()) {
+    std::unique_ptr<CTRProvider> ret(new CTRProvider(model_string));
+    if (ret->cat_converters_.size() > 0) {
+      return ret.release();
+    } else {
+      return nullptr;
+    }
+  } else {
+    return nullptr;
+  }
+}
 
 std::unordered_map<int, std::unordered_map<int, double>> CTRProvider::RecoverCTRValues(const std::string str) {
   std::stringstream sin(str);
@@ -590,7 +600,7 @@ void CTRProvider::WrapColIters(
           old_col_iters[i].get(), i, cat_converter.get(), this, is_valid, num_row
         ));
       }
-      if (config_.keep_old_cat_method) {
+      if (keep_old_cat_method_) {
         col_iters->operator[](i).reset(old_col_iters[i].release());
       }
     } else {
