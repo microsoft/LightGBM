@@ -261,66 +261,37 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   return ret.release();
 }
 
+template <typename T1, typename T2>
+std::function<std::pair<int, double>(int idx)> IterateFunctionFromCSC_helper(const void* col_ptr, const int32_t* indices, const void* data, int col_idx) {
+  const T1* data_ptr = reinterpret_cast<const T1*>(data);
+  const T2* ptr_col_ptr = reinterpret_cast<const T2*>(col_ptr);
+  int64_t start = ptr_col_ptr[col_idx];
+  int64_t end = ptr_col_ptr[col_idx + 1];
+  return [=] (int offset) {
+    int64_t i = static_cast<int64_t>(start + offset);
+    if (i >= end) {
+      return std::make_pair(-1, 0.0);
+    }
+    int idx = static_cast<int>(indices[i]);
+    double val = static_cast<double>(data_ptr[i]);
+    return std::make_pair(idx, val);
+  };
+}
+
 std::function<std::pair<int, double>(int idx)>
 IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices, const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx) {
   CHECK(col_idx < ncol_ptr && col_idx >= 0);
   if (data_type == C_API_DTYPE_FLOAT32) {
-    const float* data_ptr = reinterpret_cast<const float*>(data);
     if (col_ptr_type == C_API_DTYPE_INT32) {
-      const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
+      return IterateFunctionFromCSC_helper<float, int32_t>(col_ptr, indices, data, col_idx);
     } else if (col_ptr_type == C_API_DTYPE_INT64) {
-      const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
+      return IterateFunctionFromCSC_helper<float, int64_t>(col_ptr, indices, data, col_idx);
     }
   } else if (data_type == C_API_DTYPE_FLOAT64) {
-    const double* data_ptr = reinterpret_cast<const double*>(data);
     if (col_ptr_type == C_API_DTYPE_INT32) {
-      const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
+      return IterateFunctionFromCSC_helper<double, int32_t>(col_ptr, indices, data, col_idx);
     } else if (col_ptr_type == C_API_DTYPE_INT64) {
-      const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
+      return IterateFunctionFromCSC_helper<double, int64_t>(col_ptr, indices, data, col_idx);
     }
   }
   Log::Fatal("Unknown data type in CSC matrix");

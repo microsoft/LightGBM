@@ -577,7 +577,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
       new FeatureGroup(buffer.data(),
                        *num_global_data,
-                       *used_data_indices)));
+                       *used_data_indices, i)));
   }
   dataset->feature_groups_.shrink_to_fit();
   dataset->is_finish_load_ = true;

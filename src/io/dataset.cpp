@@ -392,7 +392,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
-      new FeatureGroup(cur_cnt_features, group_is_multi_val[i], &cur_bin_mappers, num_data_)));
+      new FeatureGroup(cur_cnt_features, group_is_multi_val[i], &cur_bin_mappers, num_data_, i)));
     num_total_bin += feature_groups_[i]->num_total_bin_;
     group_bin_boundaries_.push_back(num_total_bin);
   }
@@ -1282,7 +1282,8 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
     PushVector(&group_feature_cnt_, other->group_feature_cnt_);
     feature_groups_.reserve(other->feature_groups_.size());
     for (auto& fg : other->feature_groups_) {
-      feature_groups_.emplace_back(new FeatureGroup(*fg));
+      const int cur_group_id = static_cast<int>(feature_groups_.size());
+      feature_groups_.emplace_back(new FeatureGroup(*fg, true, cur_group_id));
     }
     for (auto feature_idx : other->used_feature_map_) {
       if (feature_idx >= 0) {
@@ -1311,34 +1312,37 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
       int f_cnt = group_feature_cnt_[i];
       features_in_group.emplace_back();
       for (int j = 0; j < f_cnt; ++j) {
-        features_in_group.back().push_back(f_start + j);
+        const int real_fidx = real_feature_idx_[f_start + j];
+        features_in_group.back().push_back(real_fidx);
       }
     }
     feature_groups_[mv_gid]->AddFeaturesFrom(
-        other->feature_groups_[other_mv_gid].get());
+        other->feature_groups_[other_mv_gid].get(), mv_gid);
     for (int i = 0; i < other->num_groups_; ++i) {
       int f_start = other->group_feature_start_[i];
       int f_cnt = other->group_feature_cnt_[i];
       if (i == other_mv_gid) {
         for (int j = 0; j < f_cnt; ++j) {
-          features_in_group[mv_gid].push_back(f_start + j);
+          const int real_fidx = other->real_feature_idx_[f_start + j] + num_total_features_;
+          features_in_group[mv_gid].push_back(real_fidx);
         }
       } else {
         features_in_group.emplace_back();
         for (int j = 0; j < f_cnt; ++j) {
-          features_in_group.back().push_back(f_start + j);
+          const int real_fidx = other->real_feature_idx_[f_start + j] + num_total_features_;
+          features_in_group.back().push_back(real_fidx);
         }
         feature_groups_.emplace_back(
-            new FeatureGroup(*other->feature_groups_[i]));
+            new FeatureGroup(*other->feature_groups_[i], false, -1));
       }
     }
     // regenerate other fields
     num_groups_ += other->num_groups_ - 1;
     CHECK(num_groups_ == static_cast<int>(features_in_group.size()));
     num_features_ += other->num_features_;
-
     int cur_fidx = 0;
-    used_feature_map_ = std::vector<int>(num_total_features_, -1);
+    used_feature_map_ =
+      std::vector<int>(num_total_features_ + other->num_total_features_, -1);
     real_feature_idx_.resize(num_features_);
     feature2group_.resize(num_features_);
     feature2subfeature_.resize(num_features_);
