@@ -103,7 +103,7 @@ public:
         return (sum_label + prior_ * prior_weight_) / (sum_count + prior_weight_);
       }
 
-      virtual void SetPrior(const double /*prior*/, const double prior_weight) {
+      virtual void SetPrior(const double /*prior*/, const double prior_weight) override {
         prior_weight_ = prior_weight;
       }
 
@@ -164,7 +164,7 @@ public:
   class CTRConverterLabelMean: public CatConverter {
     public:
       CTRConverterLabelMean() { prior_set_ = false; }
-      virtual void SetPrior(const double prior, const double prior_weight) {
+      virtual void SetPrior(const double prior, const double prior_weight) override {
         prior_ = prior;
         prior_weight_ = prior_weight;
         prior_set_ = true;
