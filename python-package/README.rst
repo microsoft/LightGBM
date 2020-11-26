@@ -172,6 +172,12 @@ Run ``python setup.py install --bit32``, if you want to use 32-bit version. All 
 
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
 
+
+Build Wheel File
+****************
+
+You can use ``python setup.py bdist_wheel`` instead of ``python setup.py install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
+
 Troubleshooting
 ---------------
 
