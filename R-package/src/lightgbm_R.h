@@ -56,7 +56,6 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetCreateFromCSC_R(
   LGBM_SE indptr,
   LGBM_SE indices,
   LGBM_SE data,
-  LGBM_SE label,
   LGBM_SE nindptr,
   LGBM_SE nelem,
   LGBM_SE num_row,
@@ -78,7 +77,6 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetCreateFromCSC_R(
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetCreateFromMat_R(
   LGBM_SE data,
-  LGBM_SE label,
   LGBM_SE nrow,
   LGBM_SE ncol,
   LGBM_SE parameters,

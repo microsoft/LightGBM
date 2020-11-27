@@ -338,7 +338,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
     ss << "ctr_provider=" << ctr_provider_->DumpModelInfo() << "\n"; 
   }
   else {
-    ss << "ctr_provider= " << "\n";
+    ss << "ctr_provider=" << "\n";
   }
 
   int num_used_model = static_cast<int>(models_.size());

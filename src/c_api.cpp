@@ -281,6 +281,9 @@ class Booster {
     if (new_param.count("forcedbins_filename")) {
       Log::Fatal("Cannot change forced bins after constructed Dataset handle.");
     }
+    if (new_param.count("cat_converters")) {
+      Log::Fatal("Cannot change cat_converters after constructed Dataset handle.");
+    }
     if (new_param.count("min_data_in_leaf") &&
         new_config.min_data_in_leaf < old_config.min_data_in_leaf &&
         old_config.feature_pre_filter) {

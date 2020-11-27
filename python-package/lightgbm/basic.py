@@ -941,7 +941,7 @@ class Dataset(object):
     def __init__(self, data, label=None, reference=None,
                  weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
-                 free_raw_data=True, cat_converters=''):
+                 free_raw_data=True, cat_converters='raw'):
         """Initialize Dataset.
 
         Parameters
@@ -977,12 +977,14 @@ class Dataset(object):
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
-        cat_converters: string, optional (default='')
+        cat_converters: string, optional (default='raw')
             Ways to convert categorical features, currently supports:
             1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
                 If the prior value is omitted, then the label mean will be used as prior.
             2. count, the count of the categorical feature value in the dataset.
-            For example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features,
+            3. raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians
+                per leaf per iteration.
+            For example "ctr:0.5,ctr:0.0,count will convert each categorical feature into 3 numerical features,
             with the 3 different ways separated by ','.
         """
         self.handle = None
@@ -1090,7 +1092,7 @@ class Dataset(object):
                    weight=None, group=None, init_score=None, predictor=None,
                    silent=False, feature_name='auto',
                    categorical_feature='auto', params=None, 
-                   cat_converters=''):
+                   cat_converters='raw'):
         if data is None:
             self.handle = None
             return self
@@ -1139,7 +1141,7 @@ class Dataset(object):
                 params['categorical_column'] = sorted(categorical_indices)
         if self.cat_converters != '':
             params['cat_converters'] = self.cat_converters
-        elif params['cat_converters'] == '':
+        elif 'cat_converters' in params and params['cat_converters'] != '':
             self.cat_converters = params['cat_converters']
         params_str = param_dict_to_str(params)
         self.params = params
@@ -1378,7 +1380,8 @@ class Dataset(object):
                                 weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
                                 silent=self.silent, feature_name=self.feature_name,
-                                categorical_feature=self.categorical_feature, params=self.params)
+                                categorical_feature=self.categorical_feature, cat_converters=self.cat_converters,
+                                params=self.params)
             if self.free_raw_data:
                 self.data = None
         return self
@@ -1615,6 +1618,39 @@ class Dataset(object):
             raise LightGBMError("Cannot set categorical feature after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
 
+    def set_cat_converters(self, cat_converters):
+        """Set categorical feature converters.
+
+        Parameters
+        ----------
+        cat_converters : string, optional (default='raw')
+            Ways to convert categorical features, currently supports:
+            1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
+                If the prior value is omitted, then the label mean will be used as prior.
+            2. count, the count of the categorical feature value in the dataset.
+            3. raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians
+                per leaf per iteration.
+            For example "ctr:0.5,ctr:0.0,count will convert each categorical feature into 3 numerical features,
+            with the 3 different ways separated by ','.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set categorical converters
+        """
+        if cat_converters is None:
+            cat_converters = "raw"
+        if self.cat_converters == cat_converters:
+            return self
+        if self.data is not None:
+            warnings.warn('cat_converters in Dataset is overridden.\n'
+                              'New cat_converters is {}'.format(cat_converters))
+            self.cat_converters = cat_converters
+            return self._free_handle()
+        else:
+            raise LightGBMError("Cannot set categorical feature converters after freed raw data, "
+                                "set free_raw_data=False when construct Dataset to avoid this.")
+
     def _set_predictor(self, predictor):
         """Set predictor for continued training.
 
@@ -1650,6 +1686,7 @@ class Dataset(object):
             Dataset with set reference.
         """
         self.set_categorical_feature(reference.categorical_feature) \
+            .set_cat_converters(reference.cat_converters) \
             .set_feature_name(reference.feature_name) \
             ._set_predictor(reference._predictor)
         # we're done if self and reference share a common upstrem reference

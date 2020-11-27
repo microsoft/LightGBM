@@ -306,7 +306,7 @@ public:
       }
 
       size_t append_from = 0;
-      if (!config_.keep_old_cat_method) {
+      if (!keep_raw_cat_method_) {
         auto& cat_converter = cat_converters_[0];
         for (int fid : categorical_features_) {
           cat_converter->RegisterConvertFid(fid, fid);
@@ -423,7 +423,7 @@ public:
 private:
   CTRProvider(const Config& config): config_(config) {
     num_threads_ = config_.num_threads > 0 ? config_.num_threads : OMP_NUM_THREADS();
-    keep_old_cat_method_ = config.keep_old_cat_method;
+    keep_raw_cat_method_ = false;
     const std::string ctr_string = std::string("ctr");
     if(config_.cat_converters.size() > 0) {
       for (auto token : Common::Split(config_.cat_converters.c_str(), ',')) {
@@ -437,10 +437,11 @@ private:
             }
             cat_converters_.emplace_back(new CTRProvider::CTRConverter(prior));
           }
-        } else if(token == std::string("count")) {
+        } else if (token == std::string("count")) {
           cat_converters_.emplace_back(new CTRProvider::CountConverter());
-        }
-        else {
+        } else if (token == std::string("raw")) {
+          keep_raw_cat_method_ = true;
+        } else {
           Log::Fatal("Unknown cat_converters specification %s.", token.c_str());
         }
       }
@@ -454,9 +455,9 @@ private:
     std::stringstream str_stream(model_string);
     int cat_fid = 0, cat_value = 0;
     double label_sum = 0.0f, total_count = 0.0f;
-    int keep_old_cat_method;
-    str_stream >> keep_old_cat_method;
-    keep_old_cat_method_ = static_cast<bool>(keep_old_cat_method);
+    int keep_raw_cat_method;
+    str_stream >> keep_raw_cat_method;
+    keep_raw_cat_method_ = static_cast<bool>(keep_raw_cat_method);
     str_stream >> num_original_features_;
     str_stream >> num_total_features_;
     is_categorical_feature_.clear();
@@ -543,6 +544,7 @@ private:
     Init(config);
     if(cat_converters_.size() == 0) { return; }
     int32_t mat_offset = 0;
+    num_data_ = 0;
     for (int32_t i = 0; i < nmat; ++i) {
       num_data_ += nrow[i];
     }
@@ -787,7 +789,7 @@ private:
 
     // reset categorical features for Config
     if (config.categorical_feature.size() > 0) {
-      if (!config_.keep_old_cat_method) {
+      if (keep_raw_cat_method_) {
         config.categorical_feature.clear();
         config.categorical_feature.shrink_to_fit();
       }
@@ -851,7 +853,7 @@ private:
   // max bin by feature
   std::vector<int> max_bin_by_feature_;
   // whether the old categorical handling method is used
-  bool keep_old_cat_method_;
+  bool keep_raw_cat_method_;
 };
 
 class CTRParser : public Parser {

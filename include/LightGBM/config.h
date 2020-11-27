@@ -992,14 +992,12 @@ struct Config {
   // desc = ctr[:prior], where prior is a real number used to smooth the calculation of CTR values
   // desc = if the prior value is missing, use the label mean of training data
   // desc = count, the count of the categorical feature value in the dataset
+  // desc = raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians per leaf per iteration
   // desc = for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
-  std::string cat_converters = std::string("");
+  std::string cat_converters = std::string("raw");
 
   // desc = number of folds that training data is divided into, to calculate ctr values
   int num_ctr_folds = 4;
-
-  // desc = whether to use the old categorical handling
-  bool keep_old_cat_method = false;
 
   // desc = weight of prior in CTR calculation
   double prior_weight = 1.0f;

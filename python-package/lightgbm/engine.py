@@ -21,7 +21,8 @@ def train(params, train_set, num_boost_round=100,
           feature_name='auto', categorical_feature='auto',
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None,
-          keep_training_booster=False, callbacks=None):
+          keep_training_booster=False, callbacks=None,
+          cat_converters='raw'):
     """Perform the training with given parameters.
 
     Parameters
@@ -133,6 +134,15 @@ def train(params, train_set, num_boost_round=100,
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
+    cat_converters : string, optional (default='raw')
+        Ways to convert categorical features, currently supports:
+        1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
+            If the prior value is omitted, then the label mean will be used as prior.
+        2. count, the count of the categorical feature value in the dataset.
+        3. raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians
+            per leaf per iteration.
+        For example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features,
+        with the 3 different ways separated by ','.
 
     Returns
     -------
@@ -173,7 +183,8 @@ def train(params, train_set, num_boost_round=100,
     train_set._update_params(params) \
              ._set_predictor(predictor) \
              .set_feature_name(feature_name) \
-             .set_categorical_feature(categorical_feature)
+             .set_categorical_feature(categorical_feature) \
+             .set_cat_converters(cat_converters)
 
     is_valid_contain_train = False
     train_data_name = "training"
@@ -398,7 +409,7 @@ def cv(params, train_set, num_boost_round=100,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None, eval_train_metric=False,
-       return_cvbooster=False):
+       return_cvbooster=False, cat_converters='raw'):
     """Perform the cross-validation with given paramaters.
 
     Parameters
@@ -506,6 +517,15 @@ def cv(params, train_set, num_boost_round=100,
         The score of the metric is calculated again after each training step, so there is some impact on performance.
     return_cvbooster : bool, optional (default=False)
         Whether to return Booster models trained on each fold through ``CVBooster``.
+    cat_converters : string, optional (default='raw')
+        Ways to convert categorical features, currently supports:
+        1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
+            If the prior value is omitted, then the label mean will be used as prior.
+        2. count, the count of the categorical feature value in the dataset.
+        3. raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians
+            per leaf per iteration.
+        For example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features,
+        with the 3 different ways separated by ','.
 
     Returns
     -------
@@ -554,7 +574,8 @@ def cv(params, train_set, num_boost_round=100,
     train_set._update_params(params) \
              ._set_predictor(predictor) \
              .set_feature_name(feature_name) \
-             .set_categorical_feature(categorical_feature)
+             .set_categorical_feature(categorical_feature) \
+             .set_cat_converters(cat_converters)
 
     results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,

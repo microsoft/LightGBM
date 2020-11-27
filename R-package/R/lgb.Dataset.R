@@ -208,7 +208,6 @@ Dataset <- R6::R6Class(
             "LGBM_DatasetCreateFromMat_R"
             , ret = handle
             , private$raw_data
-            , self$getinfo("label")
             , nrow(private$raw_data)
             , ncol(private$raw_data)
             , params_str
@@ -226,7 +225,6 @@ Dataset <- R6::R6Class(
             , private$raw_data@p
             , private$raw_data@i
             , private$raw_data@x
-            , self$getinfo("label")
             , length(private$raw_data@p)
             , length(private$raw_data@x)
             , nrow(private$raw_data)
