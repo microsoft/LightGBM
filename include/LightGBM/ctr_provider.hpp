@@ -543,6 +543,9 @@ private:
     num_original_features_ = ncol;
     Init(config);
     if(cat_converters_.size() == 0) { return; }
+    if (get_label_fun == nullptr) {
+      Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+    }
     int32_t mat_offset = 0;
     num_data_ = 0;
     for (int32_t i = 0; i < nmat; ++i) {
@@ -586,6 +589,9 @@ private:
     training_data_fold_id_.resize(num_data_);
     Init(config);
     if(cat_converters_.size() == 0) { return; }
+    if (get_label_fun == nullptr) {
+      Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+    }
     std::vector<std::mt19937> mt_generators;
     for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
       mt_generators.emplace_back(config_.seed + thread_id);
@@ -622,6 +628,9 @@ private:
     training_data_fold_id_.resize(num_data_);
     Init(config);
     if(cat_converters_.size() == 0) { return; }
+    if (get_label_fun == nullptr) {
+      Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+    }
     std::vector<std::mt19937> mt_generators;
     for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
       mt_generators.emplace_back(config_.seed + thread_id);

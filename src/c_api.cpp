@@ -2519,7 +2519,7 @@ LabelFunctionFromArray(const void* label, int label_type) {
     };
   }
   else if(label_type == C_API_DTYPE_NONE) {
-    Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+    return nullptr;
   }
   else {
     Log::Fatal("Unknown data type in LabelFunctionFromArray");
