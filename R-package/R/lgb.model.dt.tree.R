@@ -111,10 +111,12 @@ single.tree.parse <- function(lgb_tree) {
         , leaf_count = integer(0L)
       )
       # start tree traversal
-      pre_order_traversal(env = env
-                          , tree_node_leaf = tree_node_leaf
-                          , current_depth = current_depth
-                          , parent_index = parent_index)
+      pre_order_traversal(
+        env = env
+        , tree_node_leaf = tree_node_leaf
+        , current_depth = current_depth
+        , parent_index = parent_index
+        )
     } else {
 
       # Check if split index is not null in leaf
