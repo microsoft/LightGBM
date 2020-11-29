@@ -33,10 +33,10 @@ Dataset <- R6::R6Class(
                           ...) {
 
       # validate inputs early to avoid unnecessary computation
-      if (!(is.null(reference) || lgb.check.r6.class(object = reference , name = "lgb.Dataset"))) {
+      if (!(is.null(reference) || lgb.check.r6.class(object = reference, name = "lgb.Dataset"))) {
           stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset"))
       }
-      if (!(is.null(predictor) || lgb.check.r6.class(object = predictor , name = "lgb.Predictor"))) {
+      if (!(is.null(predictor) || lgb.check.r6.class(object = predictor, name = "lgb.Predictor"))) {
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
