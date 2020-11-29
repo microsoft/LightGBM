@@ -1,5 +1,9 @@
 # LightGBM R-package
 
+[![CRAN Version](https://www.r-pkg.org/badges/version/lightgbm)](https://cran.r-project.org/package=lightgbm)
+[![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/lightgbm)](https://cran.r-project.org/package=lightgbm)
+[![API Docs](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/en/latest/R/reference/)
+
 <img src="man/figures/logo.svg" align="right" alt="" width="175" />
 
 ### Contents
