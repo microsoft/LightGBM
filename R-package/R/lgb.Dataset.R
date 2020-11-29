@@ -325,12 +325,18 @@ Dataset <- R6::R6Class(
         num_col <- 0L
 
         # Get numeric data and numeric features
-        c(lgb.call(fun_name = "LGBM_DatasetGetNumData_R"
-                   , ret = num_row
-                   , private$handle),
-          lgb.call(fun_name = "LGBM_DatasetGetNumFeature_R"
-                   , ret = num_col
-                   , private$handle))
+        c(
+          lgb.call(
+            fun_name = "LGBM_DatasetGetNumData_R"
+            , ret = num_row
+            , private$handle
+          ),
+          lgb.call(
+            fun_name = "LGBM_DatasetGetNumFeature_R"
+            , ret = num_col
+            , private$handle
+          )
+        )
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
 
