@@ -319,7 +319,7 @@ Dataset <- R6::R6Class(
     dim = function() {
 
       # Check for handle
-      if (!lgb.is.null.handle(x = private$handle)) {
+      if (!lgb.is.null.handle(private$handle)) {
 
         num_row <- 0L
         num_col <- 0L
