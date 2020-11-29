@@ -1,8 +1,22 @@
 # CRAN Submission History
 
+## v3.1.1 - Submission 1 - (TBD)
+
+### CRAN response
+
+### Maintainer Notes
+
+Submitted a fix to 3.1.0 that skips some learning-to-rank tests on 32-bit Windows.
+
 ## v3.1.0 - Submission 1 - (November 15, 2020)
 
 ### CRAN response
+
+Accepted to CRAN, November 18.
+
+On November 21, found out that the CRAN's `r-oldrel-windows-ix86+x86_64` check was failing, with an issue similar to the one faced on Solaris and fixed in https://github.com/microsoft/LightGBM/pull/3534.
+
+CRAN did not ask for a re-submission, but this was fixed in 3.1.1.
 
 ### Maintainer Notes
 
