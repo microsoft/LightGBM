@@ -357,8 +357,10 @@ Dataset <- R6::R6Class(
       if (!lgb.is.null.handle(private$handle)) {
 
         # Get feature names and write them
-        cnames <- lgb.call.return.str(fun_name = "LGBM_DatasetGetFeatureNames_R"
-                                      , private$handle)
+        cnames <- lgb.call.return.str(
+            fun_name = "LGBM_DatasetGetFeatureNames_R"
+            , private$handle
+        )
         private$colnames <- as.character(base::strsplit(cnames, "\t")[[1L]])
         private$colnames
 
