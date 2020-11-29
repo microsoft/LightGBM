@@ -153,7 +153,7 @@ Rscript build_r.R
 The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
 
 - `--skip-install`: Build the package tarball, but do not install it.
-- `--use-gpu`: Build a GPU-enabled versioon of the library
+- `--use-gpu`: Build a GPU-enabled version of the library.
 - `--use-mingw`: Force the use of MinGW toolchain, regardless of R version.
 - `--use-msys2`: Force the use of MSYS2 toolchain, regardless of R version.
 
@@ -289,7 +289,7 @@ This section briefly explains the key files for building a CRAN package. To upda
 
 At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
 
-1. Edit `configure.ac`
+1. Edit `configure.ac`.
 2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 18.04.
 
     If you have an Ubuntu 18.04 environment available, run the provided script from the root of the `LightGBM` repository.
@@ -309,14 +309,14 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
 
     The version of `autoconf` used by this project is stored in `R-package/AUTOCONF_UBUNTU_VERSION`. To update that version, update that file and run the commands above. To see available versions, see https://packages.ubuntu.com/search?keywords=autoconf.
 
-3. Edit `src/Makevars.in`
+3. Edit `src/Makevars.in`.
 
 **Configuring for Windows**
 
 At build time, `configure.win` will be run and used to create a file `Makevars.win`, using `Makevars.win.in` as a template.
 
-1. Edit `configure.win` directly
-2. Edit `src/Makevars.win.in`
+1. Edit `configure.win` directly.
+2. Edit `src/Makevars.win.in`.
 
 ### Build Precompiled Binaries of the CRAN Package
 
