@@ -49,19 +49,15 @@ model <- lgb.cv(
 
 ### Installing the CRAN package
 
-As of this writing, `LightGBM`'s R package is not available on CRAN. However, start with `LightGBM` 3.0.0, you can install a released source distribution. This is the same type of package that you'd install from CRAN. It does not require `CMake`, `Visual Studio`, or anything else outside the CRAN toolchain.
-
-To install this package on any operating system:
-
-1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases).
-2. Look for the artifact with a name like `lightgbm-{VERSION}-r-cran.tar.gz`. Right-click it and choose "copy link address".
-3. Copy that link into `PKG_URL` in the code below and run it.
+`{lightgbm}` is [available on CRAN](https://cran.r-project.org/package=lightgbm), and can be installed with the following R code.
 
 ```r
-PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0/lightgbm-3.0.0-r-cran.tar.gz"
-
-remotes::install_url(PKG_URL)
+install.packages("lightgbm", repos = "https://cran.r-project.org")
 ```
+
+This is the easiest way to install `{lightgbm}`. It does not require `CMake` or `Visual Studio`, and  should work well on many different operating systems and compilers.
+
+Each CRAN package is also available on [LightGBM releases](https://github.com/microsoft/LightGBM/releases), with a name like `lightgbm-{VERSION}-r-cran.tar.gz`.
 
 #### Custom Installation (Linux, Mac)
 
@@ -322,73 +318,6 @@ At build time, `configure.win` will be run and used to create a file `Makevars.w
 1. Edit `configure.win` directly.
 2. Edit `src/Makevars.win.in`.
 
-### Build Precompiled Binaries of the CRAN Package
-
-This section is mainly for maintainers. As long as the R package is not available on CRAN (which will build precompiled binaries automatically) you may want to build precompiled versions of the R package manually, since these will be easier for users to install.
-
-For more details, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Building-binary-packages).
-
-Packages built like this will only work for the minor version of R used to build them. They may or may not work across different versions of operating systems.
-
-**Mac**
-
-Binary produced: `lightgbm-${VERSION}-r40-macos.tgz`.
-
-```shell
-LGB_VERSION="3.0.0-1"
-sh build-cran-package.sh
-R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
-mv \
-    lightgbm_${LGB_VERSION}.tgz \
-    lightgbm-${LGB_VERSION}-r40-macos.tgz
-```
-
-**Linux**
-
-Binary produced: `lightgbm-${VERSION}-r40-linux.tgz`.
-
-You can access a Linux system that has R and its build toolchain installed with the `rocker` Docker images.
-
-```shell
-R_VERSION=4.0.2
-
-docker run \
-    -v $(pwd):/opt/LightGBM \
-    -it rocker/verse:${R_VERSION} \
-        /bin/bash
-```
-
-From inside that container, the commands to create a precompiled binary are very similar.
-
-```shell
-cd /opt/LightGBM
-LGB_VERSION="3.0.0-1"
-sh build-cran-package.sh
-R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
-mv \
-    lightgbm_${LGB_VERSION}_R_*-linux-gnu.tar.gz \
-    lightgbm-${LGB_VERSION}-r40-linux.tgz
-```
-
-Exit the container, and the binary package should still be there on the host system.
-
-```shell
-exit
-```
-
-**Windows**
-
-Binary produced: `lightgbm-${VERSION}-r40-windows.zip`.
-
-```shell
-LGB_VERSION="3.0.0-1"
-sh build-cran-package.sh
-R CMD INSTALL --build lightgbm_${LGB_VERSION}.tar.gz
-mv \
-    lightgbm_${LGB_VERSION}.tgz \
-    lightgbm-${LGB_VERSION}-r40-windows.zip
-```
-
 ### Testing the CRAN Package
 
 `{lightgbm}` is tested automatically on every commit, across many combinations of operating system, R version, and compiler. This section describes how to test the package locally while you are developing.
@@ -495,3 +424,12 @@ Known Issues
 ------------
 
 For information about known issues with the R package, see the [R-package section of LightGBM's main FAQ page](https://lightgbm.readthedocs.io/en/latest/FAQ.html#r-package).
+
+Outdated Links
+--------------
+
+This section is used to redirect people following links that have been removed from the documentation above.
+
+### Build Precompiled Binaries of the CRAN Package
+
+Prior to `{lightgbm}` making it to CRAN, precompiled binaries for the R package were built manually and added to releases. CRAN does this automatically, so this section was removed.
