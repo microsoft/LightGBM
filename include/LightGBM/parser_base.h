@@ -35,6 +35,12 @@ class Parser {
   * \return Object of parser
   */
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
+
+  /*! \brief Binary file token */
+  static const char* binary_file_token;
+
+  /*! \brief Check can load from binary file */
+  static std::string CheckCanLoadFromBin(const char* filename);
 };
 
 // Row iterator of one column for CSC matrix

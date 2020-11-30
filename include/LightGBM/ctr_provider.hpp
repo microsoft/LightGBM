@@ -491,8 +491,12 @@ private:
     }
   }
 
-  CTRProvider(Config& config, const int num_machines, const char* filename): 
+  CTRProvider(Config& config, const int num_machines, const char* filename):
     CTRProvider(config) {
+    const auto bin_filename = Parser::CheckCanLoadFromBin(filename);
+    if (bin_filename.size() > 0) {
+      return;
+    }
     const int label_idx = ParseMetaInfo(filename, config);
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx));
     auto categorical_features = categorical_features_;

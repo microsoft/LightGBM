@@ -187,7 +187,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
-  auto bin_filename = CheckCanLoadFromBin(filename);
+  auto bin_filename = Parser::CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
     if (parser == nullptr) {
@@ -272,7 +272,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
-  auto bin_filename = CheckCanLoadFromBin(filename);
+  auto bin_filename = Parser::CheckCanLoadFromBin(filename);
   const CTRProvider* ctr_provider = train_data->ctr_provider();
   if (bin_filename.size() == 0) {
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
@@ -333,14 +333,14 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   auto buffer = std::vector<char>(buffer_size);
 
   // check token
-  size_t size_of_token = std::strlen(Dataset::binary_file_token);
+  size_t size_of_token = std::strlen(Parser::binary_file_token);
   size_t read_cnt = reader->Read(
       buffer.data(),
       VirtualFileWriter::AlignedSize(sizeof(char) * size_of_token));
   if (read_cnt < sizeof(char) * size_of_token) {
     Log::Fatal("Binary file error: token has the wrong size");
   }
-  if (std::string(buffer.data()) != std::string(Dataset::binary_file_token)) {
+  if (std::string(buffer.data()) != std::string(Parser::binary_file_token)) {
     Log::Fatal("Input file is not LightGBM binary file");
   }
 
@@ -580,6 +580,39 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
                        *used_data_indices, i)));
   }
   dataset->feature_groups_.shrink_to_fit();
+
+  // read size of ctr provider
+  read_cnt = reader->Read(buffer.data(), sizeof(size_t));
+
+  if (read_cnt != sizeof(size_t)) {
+    Log::Fatal("Binary file error: ctr provider data has the wrong size");
+  }
+
+  size_t size_of_ctr_provider = *(reinterpret_cast<size_t*>(buffer.data()));
+  // re-allocate space if not enough
+  if (size_of_ctr_provider > buffer_size) {
+    buffer_size = size_of_ctr_provider;
+    buffer.resize(buffer_size);
+  }
+  //  read ctr provider
+  read_cnt = reader->Read(buffer.data(), size_of_ctr_provider);
+
+  if (read_cnt != size_of_ctr_provider) {
+    Log::Fatal("Binary file error: ctr_provider is incorrect");
+  }
+  // load ctr provider
+  if (size_of_ctr_provider > 0) {
+    Log::Warning("ctr provider is not empty #################################");
+    dataset->ctr_provider_.reset(CTRProvider::RecoverFromModelString(
+      std::string(buffer.data(), size_of_ctr_provider / sizeof(char))
+    ));
+    Log::Warning("size_of_ctr_provider = %d", size_of_ctr_provider);
+    Log::Warning(dataset->ctr_provider_.get()->DumpModelInfo().c_str());
+  } else {
+    Log::Warning("ctr provider is empty #################################");
+    dataset->ctr_provider_ = nullptr;
+  }
+
   dataset->is_finish_load_ = true;
   return dataset.release();
 }
@@ -1307,35 +1340,6 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   }
   dataset->FinishLoad();
 }
-
-/*! \brief Check can load from binary file */
-std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
-  std::string bin_filename(filename);
-  bin_filename.append(".bin");
-
-  auto reader = VirtualFileReader::Make(bin_filename.c_str());
-
-  if (!reader->Init()) {
-    bin_filename = std::string(filename);
-    reader = VirtualFileReader::Make(bin_filename.c_str());
-    if (!reader->Init()) {
-      Log::Fatal("Cannot open data file %s", bin_filename.c_str());
-    }
-  }
-
-  size_t buffer_size = 256;
-  auto buffer = std::vector<char>(buffer_size);
-  // read size of token
-  size_t size_of_token = std::strlen(Dataset::binary_file_token);
-  size_t read_cnt = reader->Read(buffer.data(), size_of_token);
-  if (read_cnt == size_of_token
-      && std::string(buffer.data()) == std::string(Dataset::binary_file_token)) {
-    return bin_filename;
-  } else {
-    return std::string();
-  }
-}
-
 
 
 std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced_bins_path, int num_total_features,

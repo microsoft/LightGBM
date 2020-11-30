@@ -70,9 +70,6 @@ class DatasetLoader {
   /*! \brief Extract local features from file */
   void ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset);
 
-  /*! \brief Check can load from binary file */
-  std::string CheckCanLoadFromBin(const char* filename);
-
   const Config& config_;
   /*! \brief Random generator*/
   Random random_;

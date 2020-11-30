@@ -15,6 +15,37 @@
 
 namespace LightGBM {
 
+const char* Parser::binary_file_token =
+  "______LightGBM_Binary_File_Token______\n";
+
+/*! \brief Check can load from binary file */
+std::string Parser::CheckCanLoadFromBin(const char* filename) {
+  std::string bin_filename(filename);
+  bin_filename.append(".bin");
+
+  auto reader = VirtualFileReader::Make(bin_filename.c_str());
+
+  if (!reader->Init()) {
+    bin_filename = std::string(filename);
+    reader = VirtualFileReader::Make(bin_filename.c_str());
+    if (!reader->Init()) {
+      Log::Fatal("Cannot open data file %s", bin_filename.c_str());
+    }
+  }
+
+  size_t buffer_size = 256;
+  auto buffer = std::vector<char>(buffer_size);
+  // read size of token
+  size_t size_of_token = std::strlen(Parser::binary_file_token);
+  size_t read_cnt = reader->Read(buffer.data(), size_of_token);
+  if (read_cnt == size_of_token
+      && std::string(buffer.data()) == std::string(Parser::binary_file_token)) {
+    return bin_filename;
+  } else {
+    return std::string();
+  }
+}
+
 void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt) {
   *comma_cnt = 0;
   *tab_cnt = 0;

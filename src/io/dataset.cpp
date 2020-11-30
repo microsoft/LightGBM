@@ -19,9 +19,6 @@
 
 namespace LightGBM {
 
-const char* Dataset::binary_file_token =
-    "______LightGBM_Binary_File_Token______\n";
-
 Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
@@ -907,8 +904,8 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       Log::Fatal("Cannot write binary data to %s ", bin_filename);
     }
     Log::Info("Saving data to binary file %s", bin_filename);
-    size_t size_of_token = std::strlen(binary_file_token);
-    writer->AlignedWrite(binary_file_token, size_of_token);
+    size_t size_of_token = std::strlen(Parser::binary_file_token);
+    writer->AlignedWrite(Parser::binary_file_token, size_of_token);
     // get size of header
     size_t size_of_header =
         VirtualFileWriter::AlignedSize(sizeof(num_data_)) +
@@ -997,6 +994,15 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       writer->Write(&size_of_feature, sizeof(size_of_feature));
       // write feature
       feature_groups_[i]->SaveBinaryToFile(writer.get());
+    }
+    if (ctr_provider_ != nullptr) {
+      const std::string ctr_provider_str = ctr_provider_->DumpModelInfo();
+      const size_t ctr_provider_str_size_in_bytes = ctr_provider_str.size() * sizeof(char);
+      writer->Write(&ctr_provider_str_size_in_bytes, sizeof(ctr_provider_str_size_in_bytes));
+      writer->Write(ctr_provider_str.c_str(), ctr_provider_str_size_in_bytes);
+    } else {
+      const size_t ctr_provider_str_size_in_bytes = 0;
+      writer->Write(&ctr_provider_str_size_in_bytes, sizeof(ctr_provider_str_size_in_bytes));
     }
   }
 }
