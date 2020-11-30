@@ -165,6 +165,7 @@ lgb.cv <- function(params = list()
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
 
   # Construct datasets, if needed
+  data$update_params(params = params)
   data$construct()
   
   # Check interaction constraints
