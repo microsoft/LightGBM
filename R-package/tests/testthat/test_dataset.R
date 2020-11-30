@@ -251,5 +251,5 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
   bst <- lgb.cv(params = param
                 , data = dtest_read_in)
   
-  expect_true(lgb.is.Booster(x = bst))
+  expect_is(bst, "CVBooster")
 })
