@@ -207,8 +207,10 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
 })
 
 test_that("lgb.Dataset: should be able to run lgb.train() immediately after using lgb.Dataset() on a file", {
-  dtest <- lgb.Dataset(data = test_data
-                       , label = test_label)
+  dtest <- lgb.Dataset(
+    data = test_data
+    , label = test_label
+  )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
   lgb.Dataset.save(dataset = dtest
                    , fname = tmp_file)
