@@ -166,7 +166,7 @@ lgb.convert_with_rules <- function(data, rules = NULL) {
         }
         if (is_data_table) {
             data.table::set(
-                data
+                x = data
                 , j = col_name
                 , value = unname(rules[[col_name]][data[[col_name]]])
             )
