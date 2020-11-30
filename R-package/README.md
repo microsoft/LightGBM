@@ -405,12 +405,3 @@ Known Issues
 ------------
 
 For information about known issues with the R package, see the [R-package section of LightGBM's main FAQ page](https://lightgbm.readthedocs.io/en/latest/FAQ.html#r-package).
-
-Outdated Links
---------------
-
-This section is used to redirect people following links that have been removed from the documentation above.
-
-### Build Precompiled Binaries of the CRAN Package
-
-Prior to `{lightgbm}` making it to CRAN, precompiled binaries for the R package were built manually and added to releases. CRAN does this automatically, so this section was removed.
