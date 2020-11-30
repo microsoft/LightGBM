@@ -145,7 +145,7 @@ lgb.train <- function(params = list(),
   # Construct datasets, if needed
   data$update_params(params = params)
   data$construct()
-  
+
   # Check interaction constraints
   cnames <- NULL
   if (!is.null(colnames)) {
