@@ -754,6 +754,14 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
     if (dataset->zero_as_missing_ != config_.zero_as_missing) {
       Log::Fatal("Dataset zero_as_missing %d != config %d", dataset->zero_as_missing_, config_.zero_as_missing);
     }
+    if (dataset->bin_construct_sample_cnt_ != config_.bin_construct_sample_cnt) {
+      Log::Fatal("Dataset bin_construct_sample_cnt %d != config %d", dataset->bin_construct_sample_cnt_, config_.bin_construct_sample_cnt);
+    }
+    if ((dataset->max_bin_by_feature_.size() != config_.max_bin_by_feature.size()) ||
+        !std::equal(dataset->max_bin_by_feature_.begin(), dataset->max_bin_by_feature_.end(),
+            config_.max_bin_by_feature.begin())) {
+      Log::Fatal("Dataset max_bin_by_feature does not match with config");
+    }
 
     int label_idx = -1;
     if (Common::AtoiAndCheck(config_.label_column.c_str(), &label_idx)) {
