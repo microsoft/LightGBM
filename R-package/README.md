@@ -171,38 +171,19 @@ Rscript build_r.R --use-gpu
 
 ### Installing Precompiled Binaries
 
-**NOTE:** As of this writing, the precompiled binaries of the R package should be considered experimental. If you try them an experience any problems, please [open an issue](https://github.com/microsoft/LightGBM/issues).
-
-Starting with `LightGBM` 3.0.0, precompiled binaries for the R package are created for each release. These packages do not require compilation, so they will be faster and easier to install than packages that are built from source. These packages are created with R 4.0 and are not guaranteed to work with other R versions.
-
-Binaries are available for Windows, Mac, and Linux systems. They are not guaranteed to work with all variants and versions of these operating systems. Please [open an issue](https://github.com/microsoft/LightGBM/issues) if you encounter any problems.
-
-To install a binary for the R package:
-
-1. Choose a release from [the "Releases" page](https://github.com/microsoft/LightGBM/releases).
-2. Choose a file based on your operating system. Right-click it and choose "copy link address".
-    * Linux: `lightgbm-{VERSION}-r40-linux.tgz`
-    * Mac: `lightgbm-{VERSION}-r40-macos.tgz`
-    * Windows: `lightgbm-{VERSION}-r40-windows.zip`
-3. Copy that link into `PKG_URL` in the code below and run it.
-
-This sample code installs version 3.0.0-1 of the R package on Mac.
+Precompiled binaries for Mac and Windows are prepared by CRAN a few days after each release to CRAN. They can be installed with the following R code.
 
 ```r
-PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0rc1/lightgbm-3.0.0-1-r40-macos.tgz"
-
-local_file <- paste0("lightgbm.", tools::file_ext(PKG_URL))
-
-download.file(
-    url = PKG_URL
-    , destfile = local_file
-)
 install.packages(
-    pkgs = local_file
-    , type = "binary"
-    , repos = NULL
+    "lightgbm"
+    , type = "both"
+    , repos = "https://cran.r-project.org"
 )
 ```
+
+These packages do not require compilation, so they will be faster and easier to install than packages that are built from source.
+
+CRAN does not prepare precompiled binaries for Linux, and as of this writing neither does this project.
 
 ### Installing from a Pre-compiled lib_lightgbm <a name="lib_lightgbm"></a>
 
