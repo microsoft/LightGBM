@@ -2207,42 +2207,42 @@ class Booster(object):
         result : pandas DataFrame
             Returns a pandas DataFrame of the parsed model, with one row per node.
             This dataframe has the following columns:
-              * `tree_index`: int64, which tree a node belongs to.
-                0-based, so a value of ``6``, for example, means "this node is in the
-                7th tree".
-              * ``node_depth``: int64, how far a node is from the root of the tree.
-                The root node has a value of ``1``, its direct children are ``2``, etc.
-              * ``node_index``: string, unique identifier for a node
-              * ``left_child``: string, ``node_index`` of the child node to the left
-                of a split. ``None`` for leaf nodes.
-              * ``right_child``: string, ``node_index`` of the child node to the right
-                of a split. ``None`` for leaf nodes.
-              * ``parent_index``: string, ``node_index`` of this node's parent. ``None``
-                for the root node.
-              * ``split_feature``: string, identifier for the feature used for splitting.
-                This is of the form ``"Column_i"``, where ``i`` refers to the number of the
-                feature. For example, the first feature would be ``"Column_0"``. ``None``
-                for leaf nodes.
-              * ``split_gain``: float64, gain from adding this split to the tree. ``NaN``
-                for leaf nodes.
-              * ``threshold``: float64, value of the feature used to decide which side of
-                the split a record will go down. ``NaN`` for leaf nodes.
-              * ``decision_type``: string, logical operator describing how to compare a value
-                to ``threshold``. For example, ``split_feature = "Column_10",
-                threshold = 15, decision_type = "<="`` means that records where ``Column_10 <= 15``
-                follow the leftt side of the split, otherwise follows the right side of the split.
-                ``None`` for leaf nodes.
-              * ``missing_direction``: string, split direction that missing values should go to.
-                ``None`` for leaf nodes.
-              * ``missing_type``: object, describes what types of values are treated
-                as missing.
-              * ``value``: float64, predicted value for this leaf node, multiplied by
-                the learning rate.
-              * ``weight`: float64, proportion of records in training data that fall
-                into this node. This is a value between 0 and 100, so ``65.4`` means
-                "65.4%  of the training data falls into this node".
-              * ``count`: int64, number of records in the training data that fall into
-                this node.
+            * ``tree_index``: int64, which tree a node belongs to.
+              0-based, so a value of ``6``, for example, means "this node is in the
+              7th tree".
+            * ``node_depth``: int64, how far a node is from the root of the tree.
+              The root node has a value of ``1``, its direct children are ``2``, etc.
+            * ``node_index``: string, unique identifier for a node
+            * ``left_child``: string, ``node_index`` of the child node to the left
+              of a split. ``None`` for leaf nodes.
+            * ``right_child``: string, ``node_index`` of the child node to the right
+              of a split. ``None`` for leaf nodes.
+            * ``parent_index``: string, ``node_index`` of this node's parent. ``None``
+              for the root node.
+            * ``split_feature``: string, identifier for the feature used for splitting.
+              This is of the form ``"Column_i"``, where ``i`` refers to the number of the
+              feature. For example, the first feature would be ``"Column_0"``. ``None``
+              for leaf nodes.
+            * ``split_gain``: float64, gain from adding this split to the tree. ``NaN``
+              for leaf nodes.
+            * ``threshold``: float64, value of the feature used to decide which side of
+              the split a record will go down. ``NaN`` for leaf nodes.
+            * ``decision_type``: string, logical operator describing how to compare a value
+              to ``threshold``. For example, ``split_feature = "Column_10",
+              threshold = 15, decision_type = "<="`` means that records where ``Column_10 <= 15``
+              follow the left side of the split, otherwise follows the right side of the split.
+              ``None`` for leaf nodes.
+            * ``missing_direction``: string, split direction that missing values should go to.
+              ``None`` for leaf nodes.
+            * ``missing_type``: object, describes what types of values are treated
+              as missing.
+            * ``value``: float64, predicted value for this leaf node, multiplied by
+              the learning rate.
+            * ``weight``: float64, proportion of records in training data that fall
+              into this node. This is a value between 0 and 100, so ``65.4`` means
+              "65.4%  of the training data falls into this node".
+            * ``count``: int64, number of records in the training data that fall into
+              this node.
         """
         if not PANDAS_INSTALLED:
             raise LightGBMError('This method cannot be run without pandas installed')
