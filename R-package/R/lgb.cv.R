@@ -153,7 +153,7 @@ lgb.cv <- function(params = list()
   # Check for boosting from a trained model
   if (is.character(init_model)) {
     predictor <- Predictor$new(modelfile = init_model)
-  } else if (lgb.is.Booster(init_model)) {
+  } else if (lgb.is.Booster(x = init_model)) {
     predictor <- init_model$to_predictor()
   }
 
@@ -229,7 +229,7 @@ lgb.cv <- function(params = list()
 
   # Add printing log callback
   if (verbose > 0L && eval_freq > 0L) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb.print.evaluation(eval_freq))
+    callbacks <- add.cb(cb_list = callbacks, cb = cb.print.evaluation(period = eval_freq))
   }
 
   # Add evaluation log callback

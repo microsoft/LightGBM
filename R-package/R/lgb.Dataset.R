@@ -196,7 +196,7 @@ Dataset <- R6::R6Class(
           handle <- lgb.call(
             fun_name = "LGBM_DatasetCreateFromFile_R"
             , ret = handle
-            , lgb.c_str(private$raw_data)
+            , lgb.c_str(x = private$raw_data)
             , params_str
             , ref_handle
           )
@@ -411,7 +411,7 @@ Dataset <- R6::R6Class(
           fun_name = "LGBM_DatasetSetFeatureNames_R"
           , ret = NULL
           , private$handle
-          , lgb.c_str(merged_name)
+          , lgb.c_str(x = merged_name)
         )
 
       }
@@ -444,7 +444,7 @@ Dataset <- R6::R6Class(
           fun_name = "LGBM_DatasetGetFieldSize_R"
           , ret = info_len
           , private$handle
-          , lgb.c_str(name)
+          , lgb.c_str(x = name)
         )
 
         # Check if info is not empty
@@ -462,7 +462,7 @@ Dataset <- R6::R6Class(
             fun_name = "LGBM_DatasetGetField_R"
             , ret = ret
             , private$handle
-            , lgb.c_str(name)
+            , lgb.c_str(x = name)
           )
 
           private$info[[name]] <- ret
@@ -503,7 +503,7 @@ Dataset <- R6::R6Class(
             fun_name = "LGBM_DatasetSetField_R"
             , ret = NULL
             , private$handle
-            , lgb.c_str(name)
+            , lgb.c_str(x = name)
             , info
             , length(info)
           )
@@ -653,7 +653,7 @@ Dataset <- R6::R6Class(
         fun_name = "LGBM_DatasetSaveBinary_R"
         , ret = NULL
         , private$handle
-        , lgb.c_str(fname)
+        , lgb.c_str(x = fname)
       )
       return(invisible(self))
     }
@@ -791,7 +791,7 @@ lgb.Dataset <- function(data,
 lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
   }
 
@@ -817,7 +817,7 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 lgb.Dataset.construct <- function(dataset) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.construct: input data should be an lgb.Dataset object")
   }
 
