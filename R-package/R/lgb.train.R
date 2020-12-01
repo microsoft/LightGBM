@@ -142,6 +142,10 @@ lgb.train <- function(params = list(),
   }
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
 
+  # Construct datasets, if needed
+  data$update_params(params = params)
+  data$construct()
+
   # Check interaction constraints
   cnames <- NULL
   if (!is.null(colnames)) {
@@ -167,8 +171,6 @@ lgb.train <- function(params = list(),
     data$set_categorical_feature(categorical_feature)
   }
 
-  # Construct datasets, if needed
-  data$construct()
   valid_contain_train <- FALSE
   train_data_name <- "train"
   reduced_valid_sets <- list()
