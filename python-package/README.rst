@@ -1,7 +1,7 @@
 LightGBM Python-package
 =======================
 
-|License| |Python Versions| |PyPI Version| |Downloads|
+|License| |Python Versions| |PyPI Version| |Downloads| |API Docs|
 
 Installation
 ------------
@@ -172,6 +172,12 @@ Run ``python setup.py install --bit32``, if you want to use 32-bit version. All 
 
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
 
+
+Build Wheel File
+****************
+
+You can use ``python setup.py bdist_wheel`` instead of ``python setup.py install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
+
 Troubleshooting
 ---------------
 
@@ -199,4 +205,6 @@ Documentation strings (docstrings) are written in the NumPy style.
    :target: https://pypi.org/project/lightgbm
 .. |Downloads| image:: https://pepy.tech/badge/lightgbm
    :target: https://pepy.tech/project/lightgbm
+.. |API Docs| image:: https://readthedocs.org/projects/lightgbm/badge/?version=latest
+   :target: https://lightgbm.readthedocs.io/en/latest/Python-API.html
 .. _CMake: https://cmake.org/

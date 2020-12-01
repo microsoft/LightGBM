@@ -51,11 +51,11 @@
 lgb.model.dt.tree <- function(model, num_iteration = NULL) {
 
   # Dump json model first
-  json_model <- lgb.dump(model, num_iteration = num_iteration)
+  json_model <- lgb.dump(booster = model, num_iteration = num_iteration)
 
   # Parse json model second
   parsed_json_model <- jsonlite::fromJSON(
-    json_model
+    txt = json_model
     , simplifyVector = TRUE
     , simplifyDataFrame = FALSE
     , simplifyMatrix = FALSE
@@ -66,7 +66,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   tree_list <- lapply(parsed_json_model$tree_info, single.tree.parse)
 
   # Combine into single data.table fourth
-  tree_dt <- data.table::rbindlist(tree_list, use.names = TRUE)
+  tree_dt <- data.table::rbindlist(l = tree_list, use.names = TRUE)
 
   # Substitute feature index with the actual feature name
 
@@ -111,7 +111,12 @@ single.tree.parse <- function(lgb_tree) {
         , leaf_count = integer(0L)
       )
       # start tree traversal
-      pre_order_traversal(env, tree_node_leaf, current_depth, parent_index)
+      pre_order_traversal(
+        env = env
+        , tree_node_leaf = tree_node_leaf
+        , current_depth = current_depth
+        , parent_index = parent_index
+      )
     } else {
 
       # Check if split index is not null in leaf
@@ -134,14 +139,14 @@ single.tree.parse <- function(lgb_tree) {
 
         # Traverse tree again both left and right
         pre_order_traversal(
-          env
-          , tree_node_leaf$left_child
+          env = env
+          , tree_node_leaf = tree_node_leaf$left_child
           , current_depth = current_depth + 1L
           , parent_index = tree_node_leaf$split_index
         )
         pre_order_traversal(
-          env
-          , tree_node_leaf$right_child
+          env = env
+          , tree_node_leaf = tree_node_leaf$right_child
           , current_depth = current_depth + 1L
           , parent_index = tree_node_leaf$split_index
         )

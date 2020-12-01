@@ -71,22 +71,6 @@ cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
-if ($env:R_BUILD_TYPE -eq "cmake") {
-  $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
-  if ($env:TOOLCHAIN -eq "MINGW") {
-    Write-Output "Telling R to use MinGW"
-    ((Get-Content -Path $install_libs -Raw) -Replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
-  } elseif ($env:TOOLCHAIN -eq "MSYS") {
-    Write-Output "Telling R to use MSYS"
-    ((Get-Content -Path $install_libs -Raw) -Replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
-  } elseif ($env:TOOLCHAIN -eq "MSVC") {
-    # no customization for MSVC
-  } else {
-    Write-Output "[ERROR] Unrecognized toolchain: $env:TOOLCHAIN"
-    Check-Output $false
-  }
-}
-
 # download R and RTools
 Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
@@ -94,7 +78,7 @@ Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/
 
 # Install R
 Write-Output "Installing R"
-Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64" ; Check-Output $?
+Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
@@ -131,7 +115,19 @@ if ($env:COMPILER -ne "MSVC") {
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
-    Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
+    if ($env:TOOLCHAIN -eq "MINGW") {
+      Write-Output "Telling R to use MinGW"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw')"
+    } elseif ($env:TOOLCHAIN -eq "MSYS") {
+      Write-Output "Telling R to use MSYS"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2')"
+    } elseif ($env:TOOLCHAIN -eq "MSVC") {
+      $env:BUILD_R_FLAGS = "'--skip-install'"
+    } else {
+      Write-Output "[ERROR] Unrecognized toolchain: $env:TOOLCHAIN"
+      Check-Output $false
+    }
+    Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.

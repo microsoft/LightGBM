@@ -10,10 +10,42 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
 TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 
+USING_GPU <- "--use-gpu" %in% args
+USING_MINGW <- "--use-mingw" %in% args
+USING_MSYS2 <- "--use-msys2" %in% args
+
+recognized_args <- c(
+  "--skip-install"
+  , "--use-gpu"
+  , "--use-mingw"
+  , "--use-msys2"
+)
+unrecognized_args <- setdiff(args, recognized_args)
+if (length(unrecognized_args) > 0L) {
+  msg <- paste0(
+    "Unrecognized arguments: "
+    , paste0(unrecognized_args, collapse = ", ")
+  )
+  stop(msg)
+}
+
+# [description] Replace statements in install.libs.R code based on
+#               command-line flags
+.replace_flag <- function(variable_name, value, content) {
+  out <- gsub(
+    pattern = paste0(variable_name, " <-.*")
+    , replacement = paste0(variable_name, " <- ", as.character(value))
+    , x = content
+  )
+  return(out)
+}
+
 install_libs_content <- readLines(
   file.path("R-package", "src", "install.libs.R")
 )
-USING_GPU <- any(grepl("use_gpu.*TRUE", install_libs_content))
+install_libs_content <- .replace_flag("use_gpu", USING_GPU, install_libs_content)
+install_libs_content <- .replace_flag("use_mingw", USING_MINGW, install_libs_content)
+install_libs_content <- .replace_flag("use_msys2", USING_MSYS2, install_libs_content)
 
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
@@ -74,6 +106,12 @@ result <- file.copy(
   , overwrite = TRUE
 )
 .handle_result(result)
+
+# overwrite src/install.libs.R with new content based on command-line flags
+writeLines(
+  text = install_libs_content
+  , con = file.path(TEMP_SOURCE_DIR, "install.libs.R")
+)
 
 # Add blank Makevars files
 result <- file.copy(

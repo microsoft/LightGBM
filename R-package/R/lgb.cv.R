@@ -446,7 +446,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
     if (isTRUE(stratified) && params$objective %in% c("binary", "multiclass") && length(label) == length(rnd_idx)) {
 
       y <- label[rnd_idx]
-      y <- factor(y)
+      y <- as.factor(y)
       folds <- lgb.stratified.folds(y, nfold)
 
     } else {
@@ -496,7 +496,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 }
 
 # Creates CV folds stratified by the values of y.
-# It was borrowed from caret::lgb.stratified.folds and simplified
+# It was borrowed from caret::createFolds and simplified
 # by always returning an unnamed list of fold indices.
 #' @importFrom stats quantile
 lgb.stratified.folds <- function(y, k = 10L) {
@@ -530,7 +530,7 @@ lgb.stratified.folds <- function(y, k = 10L) {
 
     ## Reset levels so that the possible levels and
     ## the levels in the vector are the same
-    y <- factor(as.character(y))
+    y <- as.factor(as.character(y))
     numInClass <- table(y)
     foldVector <- vector(mode = "integer", length(y))
 
