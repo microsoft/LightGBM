@@ -67,7 +67,7 @@ lgb.train <- function(params = list(),
   if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
-  if (!lgb.is.Dataset(data)) {
+  if (!lgb.is.Dataset(x = data)) {
     stop("lgb.train: data must be an lgb.Dataset instance")
   }
   if (length(valids) > 0L) {
@@ -131,7 +131,7 @@ lgb.train <- function(params = list(),
   # Check for boosting from a trained model
   if (is.character(init_model)) {
     predictor <- Predictor$new(init_model)
-  } else if (lgb.is.Booster(init_model)) {
+  } else if (lgb.is.Booster(x = init_model)) {
     predictor <- init_model$to_predictor()
   }
 
@@ -153,7 +153,10 @@ lgb.train <- function(params = list(),
   } else if (!is.null(data$get_colnames())) {
     cnames <- data$get_colnames()
   }
-  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params, cnames)
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(
+    params = params
+    , column_names = cnames
+  )
 
   # Update parameters with parsed parameters
   data$update_params(params)
@@ -202,12 +205,12 @@ lgb.train <- function(params = list(),
 
   # Add printing log callback
   if (verbose > 0L && eval_freq > 0L) {
-    callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
+    callbacks <- add.cb(cb_list = callbacks, cb = cb.print.evaluation(period = eval_freq))
   }
 
   # Add evaluation log callback
   if (record && length(valids) > 0L) {
-    callbacks <- add.cb(callbacks, cb.record.evaluation())
+    callbacks <- add.cb(cb_list = callbacks, cb = cb.record.evaluation())
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
