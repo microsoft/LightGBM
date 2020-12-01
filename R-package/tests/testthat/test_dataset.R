@@ -263,5 +263,5 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , data = dtest_read_in
   )
 
-  expect_is(bst, "CVBooster")
+  expect_is(bst, "lgb.CVBooster")
 })
