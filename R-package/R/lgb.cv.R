@@ -96,7 +96,7 @@ lgb.cv <- function(params = list()
   }
 
   # If 'data' is not an lgb.Dataset, try to construct one using 'label'
-  if (!lgb.is.Dataset(data)) {
+  if (!lgb.is.Dataset(x = data)) {
     if (is.null(label)) {
       stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
     }
@@ -152,7 +152,7 @@ lgb.cv <- function(params = list()
 
   # Check for boosting from a trained model
   if (is.character(init_model)) {
-    predictor <- Predictor$new(init_model)
+    predictor <- Predictor$new(modelfile = init_model)
   } else if (lgb.is.Booster(init_model)) {
     predictor <- init_model$to_predictor()
   }
@@ -171,7 +171,7 @@ lgb.cv <- function(params = list()
   } else if (!is.null(data$get_colnames())) {
     cnames <- data$get_colnames()
   }
-  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params, cnames)
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params = params, column_names = cnames)
 
   # Check for weights
   if (!is.null(weight)) {
@@ -179,19 +179,19 @@ lgb.cv <- function(params = list()
   }
 
   # Update parameters with parsed parameters
-  data$update_params(params)
+  data$update_params(params = params)
 
   # Create the predictor set
-  data$.__enclos_env__$private$set_predictor(predictor)
+  data$.__enclos_env__$private$set_predictor(predictor = predictor)
 
   # Write column names
   if (!is.null(colnames)) {
-    data$set_colnames(colnames)
+    data$set_colnames(colnames = colnames)
   }
 
   # Write categorical features
   if (!is.null(categorical_feature)) {
-    data$set_categorical_feature(categorical_feature)
+    data$set_categorical_feature(categorical_feature = categorical_feature)
   }
 
   # Construct datasets, if needed
@@ -276,7 +276,7 @@ lgb.cv <- function(params = list()
     )
   }
 
-  cb <- categorize.callbacks(callbacks)
+  cb <- categorize.callbacks(cb_list = callbacks)
 
   # Construct booster for each fold. The data.table() code below is used to
   # guarantee that indices are sorted while keeping init_score and weight together
@@ -338,7 +338,7 @@ lgb.cv <- function(params = list()
   )
 
   # Create new booster
-  cv_booster <- CVBooster$new(bst_folds)
+  cv_booster <- CVBooster$new(x = bst_folds)
 
   # Callback env
   env <- CB_ENV$new()
