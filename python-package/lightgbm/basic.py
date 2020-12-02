@@ -339,7 +339,7 @@ def c_float_label(label):
                     label = np.array([float(elem) for elem in label], dtype=np.float32)
                     ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
                     type_label = C_API_DTYPE_FLOAT32
-                except:
+                except Exception:
                     raise TypeError("Expected np.float32, np.float64, np.int32 or np.int64"
                                     "or a type convertable to np.float32 in label array, met type({})"
                                     .format(label.dtype))
