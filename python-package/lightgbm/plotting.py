@@ -497,20 +497,20 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
         The index of a target tree to convert.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
-        Possible values of list items:
-        * ``'split_gain'``: gain from adding this split to the model
-        * ``'internal_value'``: raw predicted value that would be produced
-            by this node if it was a leaf node
-        * ``'internal_count'``: number of records from the training data
-            that fall into this non-leaf node
-        * ``'internal_weight'``: total weight of all nodes that
-            fall into this non-leaf node
-        * ``'leaf_count'``: number of records from the training data
-            that fall into this leaf node
-        * ``'leaf_weight'``: total weight of all nodes that
-            fall into this leaf node
-        * ``'data_percentage'``: percentage of training data that fall into
-            this node
+
+            - ``'split_gain'`` : gain from adding this split to the model
+            - ``'internal_value'`` : raw predicted value that would be produced \
+                by this node if it was a leaf node
+            - ``'internal_count'`` : number of records from the training data \
+                that fall into this non-leaf node
+            - ``'internal_weight'`` : total weight of all nodes that \
+                fall into this non-leaf node
+            - ``'leaf_count'`` : number of records from the training data \
+                that fall into this leaf node
+            - ``'leaf_weight'`` : total weight of all nodes that \
+                fall into this leaf node
+            - ``'data_percentage'`` : percentage of training data that fall into \
+                this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     orientation : string, optional (default='horizontal')
@@ -585,20 +585,20 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         Resolution of the figure.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
-        Possible values of list items:
-        * ``'split_gain'``: gain from adding this split to the model
-        * ``'internal_value'``: raw predicted value that would be produced
-            by this node if it was a leaf node
-        * ``'internal_count'``: number of records from the training data
-            that fall into this non-leaf node
-        * ``'internal_weight'``: total weight of all nodes that
-            fall into this non-leaf node
-        * ``'leaf_count'``: number of records from the training data
-            that fall into this leaf node
-        * ``'leaf_weight'``: total weight of all nodes that
-            fall into this leaf node
-        * ``'data_percentage'``: percentage of training data that fall into
-            this node
+
+            - ``'split_gain'`` : gain from adding this split to the model
+            - ``'internal_value'`` : raw predicted value that would be produced \
+                by this node if it was a leaf node
+            - ``'internal_count'`` : number of records from the training data \
+                that fall into this non-leaf node
+            - ``'internal_weight'`` : total weight of all nodes that \
+                fall into this non-leaf node
+            - ``'leaf_count'`` : number of records from the training data \
+                that fall into this leaf node
+            - ``'leaf_weight'`` : total weight of all nodes that \
+                fall into this leaf node
+            - ``'data_percentage'`` : percentage of training data that fall into \
+                this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     orientation : string, optional (default='horizontal')
