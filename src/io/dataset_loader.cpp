@@ -602,14 +602,10 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
   // load ctr provider
   if (size_of_ctr_provider > 0) {
-    Log::Warning("ctr provider is not empty #################################");
     dataset->ctr_provider_.reset(CTRProvider::RecoverFromModelString(
       std::string(buffer.data(), size_of_ctr_provider / sizeof(char))
     ));
-    Log::Warning("size_of_ctr_provider = %d", size_of_ctr_provider);
-    Log::Warning(dataset->ctr_provider_.get()->DumpModelInfo().c_str());
   } else {
-    Log::Warning("ctr provider is empty #################################");
     dataset->ctr_provider_ = nullptr;
   }
 
