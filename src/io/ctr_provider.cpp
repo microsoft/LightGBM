@@ -12,9 +12,7 @@ namespace LightGBM {
 std::string CTRProvider::DumpModelInfo() const {
   std::stringstream str_buf;
   if (cat_converters_.size() > 0) {
-    Log::Warning("categorical_features_.size() = %d", categorical_features_.size());
     for (const int cat_fid : categorical_features_) {
-      Log::Warning("cat_fid = %d", cat_fid);
     }
     str_buf << static_cast<int>(keep_raw_cat_method_) << " ";
     str_buf << num_original_features_ << " ";

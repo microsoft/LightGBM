@@ -802,7 +802,7 @@ private:
 
     // reset categorical features for Config
     if (config.categorical_feature.size() > 0) {
-      if (keep_raw_cat_method_) {
+      if (!keep_raw_cat_method_) {
         config.categorical_feature.clear();
         config.categorical_feature.shrink_to_fit();
       }

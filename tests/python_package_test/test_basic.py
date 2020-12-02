@@ -324,3 +324,25 @@ class TestBasic(unittest.TestCase):
         lgb_data.set_init_score(sequence)
         lgb_data.set_feature_name(feature_names)
         check_asserts(lgb_data)
+
+    def test_ctr(self):
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
+                                                            test_size=0.1, random_state=2)
+        train_data = lgb.Dataset(X_train, label=y_train, cat_converters=
+            "ctr,count,ctr:0.5,raw")
+        valid_data = train_data.create_valid(X_test, label=y_test)
+
+        params = {
+            "objective": "binary",
+            "metric": "auc",
+            "min_data": 10,
+            "num_leaves": 15,
+            "verbose": 1,
+            "num_threads": 1,
+            "max_bin": 255,
+            "max_cat_to_onehot":1,
+            "cat_converters":"ctr,count,ctr:0.5,raw"
+        }
+        categorical_feature = ",".join([str(fidx) for fidx in range(X_train.shape[1] // 2)])
+        params.update({"categorical_feature":categorical_feature})
+        lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])

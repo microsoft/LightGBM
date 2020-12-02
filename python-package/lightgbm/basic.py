@@ -309,6 +309,7 @@ def convert_from_sliced_object(data):
             return np.copy(data)
     return data
 
+
 def c_float_label(label):
     if label is None:
         ptr_label = np.zeros(1, dtype=np.float32).ctypes.data_as(ctypes.POINTER(ctypes.c_float))
@@ -316,6 +317,8 @@ def c_float_label(label):
     else:
         if is_1d_list(label):
             label = np.array(label, copy=False)
+        elif isinstance(label, Series):
+            label = label.to_numpy()
         if is_numpy_1d_array(label):
             label = convert_from_sliced_object(label)
             assert label.flags.c_contiguous
@@ -332,11 +335,18 @@ def c_float_label(label):
                 ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
                 type_label = C_API_DTYPE_INT64
             else:
-                raise TypeError("Expected np.float32, np.float64, np.int32 or np.int64, met type({})"
-                                .format(label.dtype))
+                try:
+                    label = np.array([float(elem) for elem in label], dtype=np.float32)
+                    ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+                    type_label = C_API_DTYPE_FLOAT32
+                except:
+                    raise TypeError("Expected np.float32, np.float64, np.int32 or np.int64"
+                                    "or a type convertable to np.float32 in label array, met type({})"
+                                    .format(label.dtype))
         else:
             raise TypeError("Unknown type({})".format(type(label).__name__))
     return ptr_label, type_label
+
 
 def c_float_array(data):
     """Get pointer of float numpy array / list."""
@@ -1091,7 +1101,7 @@ class Dataset(object):
     def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
                    silent=False, feature_name='auto',
-                   categorical_feature='auto', params=None, 
+                   categorical_feature='auto', params=None,
                    cat_converters='raw'):
         if data is None:
             self.handle = None
@@ -1643,10 +1653,17 @@ class Dataset(object):
         if self.cat_converters == cat_converters:
             return self
         if self.data is not None:
-            warnings.warn('cat_converters in Dataset is overridden.\n'
+            if self.cat_converters is None:
+                self.cat_converters = cat_converters
+                return self._free_handle()
+            elif cat_converters == 'raw' or cat_converters == '':
+                warnings.warn('Using cat_converters in Dataset.')
+                return self
+            else:
+                warnings.warn('cat_converters in Dataset is overridden.\n'
                               'New cat_converters is {}'.format(cat_converters))
-            self.cat_converters = cat_converters
-            return self._free_handle()
+                self.cat_converters = cat_converters
+                return self._free_handle()
         else:
             raise LightGBMError("Cannot set categorical feature converters after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
@@ -1960,7 +1977,7 @@ class Dataset(object):
         if self.handle is not None:
             ret = ctypes.c_int()
             _safe_call(_LIB.LGBM_DatasetGetNumOriginalFeature(self.handle,
-                                                      ctypes.byref(ret)))
+                                                              ctypes.byref(ret)))
             return ret.value
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")

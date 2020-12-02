@@ -173,7 +173,7 @@ class Predictor {
       inner_parser.reset(parser.release());
       parser.reset(new CTRParser(inner_parser.release(), boosting_->ctr_provider(), true));
     }
-    if (!header && !disable_shape_check && parser->NumFeatures() == boosting_->MaxFeatureIdx() + 1) {
+    if (!header && !disable_shape_check && parser->NumFeatures() != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", parser->NumFeatures(), boosting_->MaxFeatureIdx() + 1);
     }
