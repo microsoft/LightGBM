@@ -2244,7 +2244,7 @@ class Booster(object):
         Returns
         -------
         result : pandas DataFrame
-          Returns a pandas DataFrame of the parsed model.
+            Returns a pandas DataFrame of the parsed model.
         """
         if not PANDAS_INSTALLED:
             raise LightGBMError('This method cannot be run without pandas installed')
