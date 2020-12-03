@@ -127,11 +127,11 @@ void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>* fol
       }
     }
     CHECK_EQ(check_num_machines, num_machines);
-    CHECK_EQ(cur_str_pos, output_buffer.size()); 
+    CHECK_EQ(cur_str_pos, output_buffer.size());
   }
 }
 
-void CTRProvider::SyncCTRPrior(const double label_sum, const int local_num_data, 
+void CTRProvider::SyncCTRPrior(const double label_sum, const int local_num_data,
   double* all_label_sum_ptr, int* all_num_data_ptr, int num_machines) const {
   if (num_machines > 1) {
     *all_label_sum_ptr = Network::GlobalSyncUpBySum(label_sum);
@@ -149,7 +149,7 @@ void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double lab
   for (int fid = 0; fid < num_original_features_; ++fid) {
     if (is_categorical_feature_[fid]) {
       const int value = static_cast<int>(one_line[fid]);
-      if(count_info[fid][fold_id].count(value) == 0) {
+      if (count_info[fid][fold_id].count(value) == 0) {
         count_info[fid][fold_id][value] = 1;
         label_info[fid][fold_id][value] = static_cast<label_t>(label);
       } else {
@@ -434,7 +434,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
       if (count_info_.at(fid).back().count(cat_value) > 0) {
         all_fold_total_count = count_info_.at(fid).back().at(cat_value);
       }
-      for (const auto& cat_converter: cat_converters_) {
+      for (const auto& cat_converter : cat_converters_) {
         const double convert_value = cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
         const int convert_fid = cat_converter->GetConvertFid(fid);
         if (convert_fid == fid) {
@@ -488,7 +488,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
         label_sum = label_info.at(cat_value);
         total_count = count_info.at(cat_value);
       }
-      for (const auto& cat_converter: cat_converters_) {
+      for (const auto& cat_converter : cat_converters_) {
         const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
         const int convert_fid = cat_converter->GetConvertFid(fid);
         if (convert_fid == fid) {

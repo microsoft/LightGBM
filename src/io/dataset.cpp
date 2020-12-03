@@ -745,7 +745,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   label_idx_ = dataset->label_idx_;
   real_feature_idx_ = dataset->real_feature_idx_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
-  if(dataset->ctr_provider() != nullptr) {
+  if (dataset->ctr_provider() != nullptr) {
     ctr_provider_.reset(CTRProvider::RecoverFromModelString(
       dataset->ctr_provider()->DumpModelInfo()));
   }

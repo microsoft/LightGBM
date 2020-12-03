@@ -1148,6 +1148,31 @@ GPU Parameters
 
    -  **Note**: can be used only in CUDA implementation
 
+CTR Parameters
+--------------
+
+-  ``cat_converters`` :raw-html:`<a id="cat_converters" title="Permalink to this parameter" href="#cat_converters">&#x1F517;&#xFE0E;</a>`, default = ``std::string("raw")``, type = string
+
+   -  ways to convert categorical features, currently supports:
+
+   -  ctr[:prior], where prior is a real number used to smooth the calculation of CTR values
+
+   -  if the prior value is missing, use the label mean of training data
+
+   -  count, the count of the categorical feature value in the dataset
+
+   -  raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians per leaf per iteration
+
+   -  for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
+
+-  ``num_ctr_folds`` :raw-html:`<a id="num_ctr_folds" title="Permalink to this parameter" href="#num_ctr_folds">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int
+
+   -  number of folds that training data is divided into, to calculate ctr values
+
+-  ``prior_weight`` :raw-html:`<a id="prior_weight" title="Permalink to this parameter" href="#prior_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0f``, type = double
+
+   -  weight of prior in CTR calculation
+
 .. end params list
 
 Others

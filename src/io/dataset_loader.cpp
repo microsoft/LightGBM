@@ -213,7 +213,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       } else {
         sample_data = SampleTextDataFromMemoryWithIndices(text_data, &sampled_indices);
         if (ctr_provider != nullptr) {
-          ctr_provider->ExtendFeatureNames(feature_names_);
+          ctr_provider->ExtendFeatureNames(&feature_names_);
         }
       }
       CheckSampleSize(sample_data.size(),
@@ -623,7 +623,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
   }
   // fill feature_names_ if not header
   if (ctr_provider != nullptr) {
-    ctr_provider->ExtendFeatureNames(feature_names_);
+    ctr_provider->ExtendFeatureNames(&feature_names_);
   }
   if (feature_names_.empty()) {
     for (int i = 0; i < num_total_features; ++i) {

@@ -988,7 +988,7 @@ class Dataset(object):
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
-        cat_converters: string, optional (default='raw')
+        cat_converters : string, optional (default='raw')
             Ways to convert categorical features, currently supports:
             1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
             If the prior value is omitted, then the label mean will be used as prior.

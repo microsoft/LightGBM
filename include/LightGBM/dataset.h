@@ -584,7 +584,7 @@ class Dataset {
       Log::Warning("Find whitespaces in feature_names, replace with underlines");
     }
     if (ctr_provider_.get() != nullptr && ctr_provider_->GetNumCatConverters() > 0) {
-      ctr_provider_->ExtendFeatureNames(feature_names_);
+      ctr_provider_->ExtendFeatureNames(&feature_names_);
     }
   }
 

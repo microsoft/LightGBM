@@ -1224,7 +1224,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   API_END();
 }
 
-// TODO: This is called in mmlspark, supporting CTR mode with this function requires modifying mmlspark.
+// TODO(shiyu1994): This is called in mmlspark, supporting CTR mode with this function requires modifying mmlspark.
 int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                                   int num_rows,
                                   int64_t num_col,
@@ -2492,7 +2492,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 // label is array of pointer to individual labels
 std::function<double(int row_idx)>
 LabelFunctionFromArray(const void* label, int label_type) {
-  if(label_type == C_API_DTYPE_FLOAT32) {
+  if (label_type == C_API_DTYPE_FLOAT32) {
     const float* label_ptr = reinterpret_cast<const float*>(label);
     return [=](int row_idx) {
       return  static_cast<double>(label_ptr[row_idx]);

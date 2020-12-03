@@ -395,7 +395,8 @@ class CTRProvider {
   double ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
     int col_idx) const;
 
-  void ExtendFeatureNames(std::vector<std::string>& feature_names) const {
+  void ExtendFeatureNames(std::vector<std::string>* feature_names_ptr) const {
+    auto& feature_names = *feature_names_ptr;
     if (feature_names.empty()) {
       for (int i = 0; i < num_original_features_; ++i) {
         std::stringstream str_buf;
@@ -578,7 +579,7 @@ class CTRProvider {
       Threading::For<int32_t>(0, mat_nrow, 1024,
         [this, &mat_get_row_fun, &get_label_fun, &mat_offset, &fold_distribution, &mt_generators]
         (int thread_id, int32_t start, int32_t end) {
-        for(int32_t j = start; j < end; ++j) {
+        for (int32_t j = start; j < end; ++j) {
           const std::vector<double>& oneline_features = mat_get_row_fun(j);
           const int32_t row_idx = j + mat_offset;
           const double label = get_label_fun(row_idx);
@@ -685,7 +686,7 @@ class CTRProvider {
   // sync up ctr values by gathering statistics from all machines in distributed scenario
   void SyncCTRStat(std::vector<std::unordered_map<int, label_t>>* fold_label_sum_ptr,
     std::vector<std::unordered_map<int, int>>* fold_total_count_ptr, const int num_machines) const;
-  
+
   // sync up statistics to calculate the ctr prior by gathering statistics from all machines in distributed scenario
   void SyncCTRPrior(const double label_sum, const int local_num_data, double* all_label_sum_ptr,
     int* all_num_data_ptr, int num_machines) const;
