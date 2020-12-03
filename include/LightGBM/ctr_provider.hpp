@@ -432,7 +432,8 @@ class CTRProvider {
     int64_t* ncol_ptr, bool is_valid, int64_t num_row) const;
 
  private:
-  explicit CTRProvider(const Config* config): config_(*config) {
+  void SetConfig(const Config* config) {
+    config_ = *config;
     num_threads_ = config_.num_threads > 0 ? config_.num_threads : OMP_NUM_THREADS();
     keep_raw_cat_method_ = false;
     const std::string ctr_string = std::string("ctr");
@@ -502,8 +503,8 @@ class CTRProvider {
     }
   }
 
-  CTRProvider(Config* config, const int num_machines, const char* filename):
-    CTRProvider(config) {
+  CTRProvider(Config* config, const int num_machines, const char* filename) {
+    SetConfig(config);
     const auto bin_filename = Parser::CheckCanLoadFromBin(filename);
     if (bin_filename.size() > 0) {
       return;
@@ -552,8 +553,8 @@ class CTRProvider {
   CTRProvider(Config* config,
     const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
     const std::function<double(int row_idx)>& get_label_fun, const int32_t nmat,
-    const int32_t* nrow, const int32_t ncol):
-    CTRProvider(config) {
+    const int32_t* nrow, const int32_t ncol) {
+    SetConfig(config);
     ParseMetaInfo(nullptr, config);
     num_original_features_ = ncol;
     Init(config);
@@ -596,8 +597,8 @@ class CTRProvider {
   CTRProvider(Config* config,
     const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
     const std::function<double(int row_idx)>& get_label_fun,
-    const int64_t nrow, const int64_t ncol):
-    CTRProvider(config) {
+    const int64_t nrow, const int64_t ncol) {
+    SetConfig(config);
     ParseMetaInfo(nullptr, config);
     num_original_features_ = ncol;
     num_data_ = nrow;
@@ -635,8 +636,8 @@ class CTRProvider {
   CTRProvider(Config* config,
     const std::vector<std::unique_ptr<CSC_RowIterator>>& csc_iters,
     const std::function<double(int row_idx)>& get_label_fun,
-    const int64_t nrow, const int64_t ncol):
-    CTRProvider(config) {
+    const int64_t nrow, const int64_t ncol) {
+    SetConfig(config);
     ParseMetaInfo(nullptr, config);
     num_original_features_ = ncol;
     num_data_ = nrow;
@@ -832,7 +833,7 @@ class CTRProvider {
   }
 
   // parameter configuration
-  const Config config_;
+  Config config_;
 
   // size of training data
   data_size_t num_data_;
