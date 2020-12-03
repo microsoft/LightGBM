@@ -620,12 +620,12 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
 
   GetInt(params, "num_ctr_folds", &num_ctr_folds);
-  CHECK(num_ctr_folds >= 2);
+  CHECK_GE(num_ctr_folds, 2);
 
   GetString(params, "cat_converters", &cat_converters);
 
   GetDouble(params, "prior_weight", &prior_weight);
-  
+
   GetInt(params, "num_gpu", &num_gpu);
   CHECK_GT(num_gpu, 0);
 }

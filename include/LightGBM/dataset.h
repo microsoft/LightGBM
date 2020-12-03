@@ -12,7 +12,6 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
-#include <LightGBM/ctr_provider.hpp>
 #include <LightGBM/parser_base.h>
 
 #include <string>
@@ -22,6 +21,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <LightGBM/ctr_provider.hpp>
 
 namespace LightGBM {
 
@@ -557,8 +558,8 @@ class Dataset {
 
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_) && !(
-      ctr_provider_.get() != nullptr && static_cast<int>(feature_names.size()) == ctr_provider_->GetNumOriginalFeatures()
-    )) {
+      ctr_provider_.get() != nullptr &&
+      static_cast<int>(feature_names.size()) == ctr_provider_->GetNumOriginalFeatures())) {
       Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
     feature_names_ = std::vector<std::string>(feature_names);

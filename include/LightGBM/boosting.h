@@ -6,13 +6,14 @@
 #define LIGHTGBM_BOOSTING_H_
 
 #include <LightGBM/config.h>
-#include <LightGBM/ctr_provider.hpp>
 #include <LightGBM/meta.h>
 
 #include <string>
 #include <map>
 #include <unordered_map>
 #include <vector>
+
+#include <LightGBM/ctr_provider.hpp>
 
 namespace LightGBM {
 

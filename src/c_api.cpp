@@ -6,7 +6,6 @@
 
 #include <LightGBM/boosting.h>
 #include <LightGBM/config.h>
-#include <LightGBM/ctr_provider.hpp>
 #include <LightGBM/dataset.h>
 #include <LightGBM/dataset_loader.h>
 #include <LightGBM/metric.h>
@@ -30,6 +29,7 @@
 #include <vector>
 
 #include "application/predictor.hpp"
+#include <LightGBM/ctr_provider.hpp>
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
 
@@ -896,7 +896,7 @@ int LGBM_DatasetCreateFromFile(const char* filename,
 
   std::unique_ptr<CTRProvider> ctr_provider(nullptr);
   if (!config.cat_converters.empty()) {
-    ctr_provider.reset(CTRProvider::CreateCTRProvider(config, Network::num_machines(), filename));
+    ctr_provider.reset(CTRProvider::CreateCTRProvider(&config, Network::num_machines(), filename));
   }
 
   DatasetLoader loader(config, nullptr, 1, filename);
@@ -931,7 +931,7 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
     omp_set_num_threads(config.num_threads);
   }
   DatasetLoader loader(config, nullptr, 1, nullptr);
-  // TODO: in this case do we need ctr provider ? it seems that therea are no labels available.
+  // TODO(shiyu1994): in this case do we need ctr provider ? it seems that therea are no labels available.
   *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
                                         num_sample_row,
                                         static_cast<data_size_t>(num_total_row), nullptr);
@@ -1069,8 +1069,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
-      config, get_row_fun, get_label_fun, nmat, nrow, ncol
-    ));
+      &config, get_row_fun, get_label_fun, nmat, nrow, ncol));
   }
   if (ctr_provider != nullptr) {
     ctr_provider->WrapRowFunctions(&get_row_fun, &ncol, is_valid);
@@ -1170,8 +1169,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
-      config, get_row_fun, get_label_fun, nindptr - 1, num_col
-    ));
+      &config, get_row_fun, get_label_fun, nindptr - 1, num_col));
   }
   if (ctr_provider != nullptr) {
     ctr_provider->WrapRowFunction(&get_row_fun, &num_col, is_valid);
@@ -1340,7 +1338,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   } else {
     std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
-      config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
+      &config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
   }
   if (ctr_provider != nullptr) {
     ctr_provider->WrapColIters(&csc_iterators, &ncol_ptr, is_valid, num_row);
@@ -2499,29 +2497,24 @@ LabelFunctionFromArray(const void* label, int label_type) {
     return [=](int row_idx) {
       return  static_cast<double>(label_ptr[row_idx]);
     };
-  }
-  else if(label_type == C_API_DTYPE_FLOAT64) {
+  } else if (label_type == C_API_DTYPE_FLOAT64) {
     const double* label_ptr = reinterpret_cast<const double*>(label);
     return [=](int row_idx) {
       return label_ptr[row_idx];
     };
-  }
-  else if(label_type == C_API_DTYPE_INT32) {
+  } else if (label_type == C_API_DTYPE_INT32) {
     const int32_t* label_ptr = reinterpret_cast<const int32_t*>(label);
     return [=](int row_idx) {
       return static_cast<double>(label_ptr[row_idx]);
     };
-  }
-  else if(label_type == C_API_DTYPE_INT64) {
+  } else if (label_type == C_API_DTYPE_INT64) {
     const int64_t* label_ptr = reinterpret_cast<const int64_t*>(label);
     return [=](int row_idx) {
       return static_cast<double>(label_ptr[row_idx]);
     };
-  }
-  else if(label_type == C_API_DTYPE_NONE) {
+  } else if (label_type == C_API_DTYPE_NONE) {
     return nullptr;
-  }
-  else {
+  } else {
     Log::Fatal("Unknown data type in LabelFunctionFromArray");
   }
   return nullptr;

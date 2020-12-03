@@ -603,8 +603,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   // load ctr provider
   if (size_of_ctr_provider > 0) {
     dataset->ctr_provider_.reset(CTRProvider::RecoverFromModelString(
-      std::string(buffer.data(), size_of_ctr_provider / sizeof(char))
-    ));
+      std::string(buffer.data(), size_of_ctr_provider / sizeof(char))));
   } else {
     dataset->ctr_provider_ = nullptr;
   }
@@ -987,7 +986,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   std::vector<std::vector<int>> sample_indices;
   std::vector<std::pair<int, double>> oneline_features;
   double label;
-  
+
   std::function<void(int)> parse_func = nullptr;
   if (sampled_indices.empty()) {
     parse_func = [&sample_data, &oneline_features, &label, &sampled_indices, parser] (int line_idx) {
@@ -1315,7 +1314,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           }
         }
       }
-      //TODO: should be start_idx + i ?
+      // TODO(shiyu1994): should be start_idx + i ?
       dataset->FinishOneRow(tid, i, is_feature_added);
       OMP_LOOP_EX_END();
     }

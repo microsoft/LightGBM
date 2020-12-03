@@ -12,8 +12,6 @@ namespace LightGBM {
 std::string CTRProvider::DumpModelInfo() const {
   std::stringstream str_buf;
   if (cat_converters_.size() > 0) {
-    for (const int cat_fid : categorical_features_) {
-    }
     str_buf << static_cast<int>(keep_raw_cat_method_) << " ";
     str_buf << num_original_features_ << " ";
     str_buf << num_total_features_ << " ";
@@ -52,23 +50,24 @@ std::unordered_map<int, std::unordered_map<int, double>> CTRProvider::RecoverCTR
   int fid = 0;
   int cat_feature_value = 0;
   double ctr_value = 0.0;
-  while(sin >> fid) {
-    while(sin.get() != ' ') {
+  while (sin >> fid) {
+    while (sin.get() != ' ') {
       sin >> cat_feature_value;
-      CHECK(sin.get() == ':');
-      sin >> ctr_value;  
+      CHECK_EQ(sin.get(), ':');
+      sin >> ctr_value;
       ctr_values[fid][cat_feature_value] = ctr_value;
     }
   }
   return ctr_values;
 }
 
-void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>& fold_label_sum,
-    std::vector<std::unordered_map<int, int>>& fold_total_count, const int num_machines) const {
-  if(num_machines > 1) {
-    //CHECK(Network::num_machines() == config_.num_machines);
+void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>* fold_label_sum_ptr,
+    std::vector<std::unordered_map<int, int>>* fold_total_count_ptr, const int num_machines) const {
+  auto& fold_label_sum = *fold_label_sum_ptr;
+  auto& fold_total_count = *fold_total_count_ptr;
+  if (num_machines > 1) {
     std::string ctr_stat_string;
-    for(int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+    for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
       ctr_stat_string += DumpDictToString(fold_label_sum[fold_id], ' ') + "@";
       ctr_stat_string += DumpDictToString(fold_total_count[fold_id], ' ') + "@";
     }
@@ -83,66 +82,63 @@ void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>& fol
     int count_value = 0;
     label_t label_sum = 0;
 
-    for(int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+    for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
       fold_label_sum[fold_id].clear();
       fold_total_count[fold_id].clear();
     }
 
     size_t cur_str_pos = 0;
     int check_num_machines = 0;
-    while(cur_str_pos < output_buffer.size()) {
+    while (cur_str_pos < output_buffer.size()) {
       std::string all_ctr_stat_string(output_buffer.data() + cur_str_pos);
-      Log::Warning(all_ctr_stat_string.c_str()); 
+      Log::Warning(all_ctr_stat_string.c_str());
       cur_str_pos += max_ctr_values_string_size;
       ++check_num_machines;
       std::stringstream sin(all_ctr_stat_string);
-      for(int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+      for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
         auto& this_fold_label_sum = fold_label_sum[fold_id];
         auto& this_fold_total_count = fold_total_count[fold_id];
         char ending_char = ' ';
-        while(ending_char != '@') {
-          CHECK(ending_char == ' ');
+        while (ending_char != '@') {
+          CHECK_EQ(ending_char, ' ');
           sin >> feature_value;
-          CHECK(sin.get() == ':');
+          CHECK_EQ(sin.get(), ':');
           sin >> label_sum;
-          if(this_fold_label_sum.count(feature_value) > 0) {
+          if (this_fold_label_sum.count(feature_value) > 0) {
             this_fold_label_sum[feature_value] += label_sum;
-          }
-          else {
+          } else {
             this_fold_label_sum[feature_value] = label_sum;
           }
           ending_char = sin.get();
         }
         ending_char = ' ';
-        while(ending_char != '@') {
-          CHECK(ending_char == ' ');
+        while (ending_char != '@') {
+          CHECK_EQ(ending_char, ' ');
           sin >> feature_value;
-          CHECK(sin.get() == ':');
+          CHECK_EQ(sin.get(), ':');
           sin >> count_value;
-          if(this_fold_total_count.count(feature_value) > 0) {
+          if (this_fold_total_count.count(feature_value) > 0) {
             this_fold_total_count[feature_value] += count_value;
-          }
-          else {
+          } else {
             this_fold_total_count[feature_value] = count_value;
           }
           ending_char = sin.get();
         }
       }
     }
-    CHECK(check_num_machines == num_machines);
-    CHECK(cur_str_pos == output_buffer.size()); 
+    CHECK_EQ(check_num_machines, num_machines);
+    CHECK_EQ(cur_str_pos, output_buffer.size()); 
   }
 }
 
 void CTRProvider::SyncCTRPrior(const double label_sum, const int local_num_data, 
-  double& all_label_sum, int& all_num_data, int num_machines) const {
-  if(num_machines > 1) {
-    all_label_sum = Network::GlobalSyncUpBySum(label_sum);
-    all_num_data = Network::GlobalSyncUpBySum(local_num_data);
-  }
-  else {
-    all_label_sum = label_sum;
-    all_num_data = local_num_data;
+  double* all_label_sum_ptr, int* all_num_data_ptr, int num_machines) const {
+  if (num_machines > 1) {
+    *all_label_sum_ptr = Network::GlobalSyncUpBySum(label_sum);
+    *all_num_data_ptr = Network::GlobalSyncUpBySum(local_num_data);
+  } else {
+    *all_label_sum_ptr = label_sum;
+    *all_num_data_ptr = local_num_data;
   }
 }
 
@@ -166,25 +162,31 @@ void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double lab
   ++thread_fold_num_data_[thread_id][fold_id];
 }
 
-void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx, 
-  std::vector<bool>& is_feature_processed, const int thread_id, const int fold_id) {
-  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, thread_count_info_[thread_id], 
-    thread_label_info_[thread_id], thread_fold_label_sum_[thread_id], thread_fold_num_data_[thread_id], fold_id);
+void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx,
+  std::vector<bool>* is_feature_processed_ptr, const int thread_id, const int fold_id) {
+  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed_ptr, &thread_count_info_[thread_id],
+    &thread_label_info_[thread_id], &thread_fold_label_sum_[thread_id], &thread_fold_num_data_[thread_id], fold_id);
 }
 
-void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, 
-  int line_idx, std::vector<bool>& is_feature_processed, const int fold_id) {
-  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed, 
-    count_info_, label_info_, fold_label_sum_, fold_num_data_, fold_id);
+void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label,
+  int line_idx, std::vector<bool>* is_feature_processed_ptr, const int fold_id) {
+  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed_ptr,
+    &count_info_, &label_info_, &fold_label_sum_, &fold_num_data_, fold_id);
 }
 
-void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line, double label, int /*line_idx*/,
-  std::vector<bool>& is_feature_processed,
-  std::unordered_map<int, std::vector<std::unordered_map<int, int>>>& count_info,
-  std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>& label_info,
-  std::vector<label_t>& label_sum,
-  std::vector<int>& num_data,
+void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line,
+  double label, int /*line_idx*/,
+  std::vector<bool>* is_feature_processed_ptr,
+  std::unordered_map<int, std::vector<std::unordered_map<int, int>>>* count_info_ptr,
+  std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>* label_info_ptr,
+  std::vector<label_t>* label_sum_ptr,
+  std::vector<int>* num_data_ptr,
   const int fold_id) {
+  auto& is_feature_processed = *is_feature_processed_ptr;
+  auto& count_info = *count_info_ptr;
+  auto& label_info = *label_info_ptr;
+  auto& label_sum = *label_sum_ptr;
+  auto& num_data = *num_data_ptr;
   for (size_t i = 0; i < is_feature_processed.size(); ++i) {
     is_feature_processed[i] = false;
   }
@@ -266,16 +268,18 @@ void CTRProvider::FinishProcess(const int num_machines) {
   thread_fold_label_sum_.shrink_to_fit();
 
   // gather from machines
-  if(num_machines > 1) {
-    for(size_t i = 0; i < categorical_features_.size(); ++i) {
-      SyncCTRStat(label_info_.at(categorical_features_[i]), count_info_.at(categorical_features_[i]), num_machines);
+  if (num_machines > 1) {
+    for (size_t i = 0; i < categorical_features_.size(); ++i) {
+      SyncCTRStat(&label_info_.at(categorical_features_[i]),
+        &count_info_.at(categorical_features_[i]), num_machines);
     }
     for (int fold_id = 0; fold_id < config_.num_ctr_folds + 1; ++fold_id) {
       const double local_label_sum = fold_label_sum_[fold_id];
       const int local_num_data = static_cast<int>(fold_num_data_[fold_id]);
       int global_num_data = 0;
       double global_label_sum = 0.0f;
-      SyncCTRPrior(local_label_sum, local_num_data, global_label_sum, global_num_data, num_machines);
+      SyncCTRPrior(local_label_sum, local_num_data,
+        &global_label_sum, &global_num_data, num_machines);
     }
   }
   for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
@@ -317,10 +321,12 @@ void CTRProvider::FinishProcess(const int num_machines) {
           count_info_[fid][fold_id][pair.first] = total_count_info.at(pair.first);
           label_info_[fid][fold_id][pair.first] = label_count_info.at(pair.first);
         } else {
-          count_info_[fid][fold_id][pair.first] = total_count_info.at(pair.first) - count_info_[fid][fold_id][pair.first];
-          label_info_[fid][fold_id][pair.first] = label_count_info.at(pair.first) - label_info_[fid][fold_id][pair.first];
+          count_info_[fid][fold_id][pair.first] =
+            total_count_info.at(pair.first) - count_info_[fid][fold_id][pair.first];
+          label_info_[fid][fold_id][pair.first] =
+            label_count_info.at(pair.first) - label_info_[fid][fold_id][pair.first];
         }
-      } 
+      }
     }
   }
 }
@@ -383,7 +389,8 @@ void CTRProvider::ConvertCatToCTR(std::vector<double>* features) const {
   }
 }
 
-void CTRProvider::ConvertCatToCTR(std::unordered_map<int, double>& features) const {
+void CTRProvider::ConvertCatToCTR(std::unordered_map<int, double>* features_ptr) const {
+  auto& features = *features_ptr;
   if (cat_converters_.size() == 0) { return; }
   for (const auto& pair : label_info_) {
     if (features.count(pair.first) > 0) {
@@ -402,7 +409,9 @@ void CTRProvider::ConvertCatToCTR(std::unordered_map<int, double>& features) con
   }
 }
 
-void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features, const int line_idx) const {
+void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_ptr,
+  const int line_idx) const {
+  auto& features = *features_ptr;
   std::vector<bool> feature_processed(num_original_features_, false);
   for (const int fid : categorical_features_) {
     feature_processed[fid] = false;
@@ -419,7 +428,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features,
       double label_sum = 0.0f, total_count = 0.0f;
       if (label_info.count(cat_value)) {
         label_sum = label_info.at(cat_value);
-        total_count = count_info.at(cat_value);    
+        total_count = count_info.at(cat_value);
       }
       double all_fold_total_count = 0.0f;
       if (count_info_.at(fid).back().count(cat_value) > 0) {
@@ -430,8 +439,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features,
         const int convert_fid = cat_converter->GetConvertFid(fid);
         if (convert_fid == fid) {
           pair.second = convert_value;
-        }
-        else {
+        } else {
           // assert that convert_fid in this case is larger than all the original feature indices
           features.emplace_back(convert_fid, convert_value);
         }
@@ -446,13 +454,13 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features,
       double label_sum = 0.0f, total_count = 0.0f;
       if (label_info.count(0) > 0) {
         label_sum = label_info.at(0);
-        total_count = count_info.at(0);    
+        total_count = count_info.at(0);
       }
       double all_fold_total_count = 0.0f;
       if (count_info_.at(fid).back().count(0) > 0) {
         all_fold_total_count = count_info_.at(fid).back().at(0);
       }
-      for (const auto& cat_converter: cat_converters_) {
+      for (const auto& cat_converter : cat_converters_) {
         const double convert_value = cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
         const int convert_fid = cat_converter->GetConvertFid(fid);
         features.emplace_back(convert_fid, convert_value);
@@ -461,7 +469,8 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features,
   }
 }
 
-void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features) const {
+void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_ptr) const {
+  auto& features = *features_ptr;
   std::vector<bool> feature_processed(num_original_features_, false);
   for (const int fid : categorical_features_) {
     feature_processed[fid] = false;
@@ -484,8 +493,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features)
         const int convert_fid = cat_converter->GetConvertFid(fid);
         if (convert_fid == fid) {
           pair.second = convert_value;
-        }
-        else {
+        } else {
           // assert that convert_fid in this case is larger than all the original feature indices
           features.emplace_back(convert_fid, convert_value);
         }
@@ -502,7 +510,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>& features)
         label_sum = label_info.at(0);
         total_count = count_info.at(0);
       }
-      for (const auto& cat_converter: cat_converters_) {
+      for (const auto& cat_converter : cat_converters_) {
         const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
         const int convert_fid = cat_converter->GetConvertFid(fid);
         features.emplace_back(convert_fid, convert_value);
@@ -571,13 +579,13 @@ void CTRProvider::WrapRowFunction(
   if (is_valid) {
     *get_row_fun = [old_get_row_fun, this] (int row_idx) {
       std::vector<std::pair<int, double>> row = old_get_row_fun(row_idx);
-      ConvertCatToCTR(row);
+      ConvertCatToCTR(&row);
       return row;
     };
   } else {
     *get_row_fun = [old_get_row_fun, this] (int row_idx) {
       std::vector<std::pair<int, double>> row = old_get_row_fun(row_idx);
-      ConvertCatToCTR(row, row_idx);
+      ConvertCatToCTR(&row, row_idx);
       return row;
     };
   }
@@ -599,8 +607,7 @@ void CTRProvider::WrapColIters(
       for (const auto& cat_converter : cat_converters_) {
         const int convert_fid = cat_converter->GetConvertFid(i);
         col_iters->operator[](convert_fid).reset(new CTR_CSC_RowIterator(
-          old_col_iters[i].get(), i, cat_converter.get(), this, is_valid, num_row
-        ));
+          old_col_iters[i].get(), i, cat_converter.get(), this, is_valid, num_row));
       }
       if (keep_raw_cat_method_) {
         col_iters->operator[](i).reset(old_col_iters[i].release());
@@ -612,4 +619,4 @@ void CTRProvider::WrapColIters(
   *ncol_ptr = static_cast<int64_t>(col_iters->size()) + 1;
 }
 
-} // namespace LightGBM
+}  // namespace LightGBM

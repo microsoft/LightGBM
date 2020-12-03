@@ -54,10 +54,10 @@ class DatasetLoader {
     const std::vector<std::string>& data,
     std::vector<data_size_t>* sampled_indices);
 
-  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, 
+  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank,
     int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
-  std::vector<std::string> SampleTextDataFromFileWithIndices(const char* filename, const Metadata& metadata, int rank, 
+  std::vector<std::string> SampleTextDataFromFileWithIndices(const char* filename, const Metadata& metadata, int rank,
     int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices,
     std::vector<data_size_t>* sampled_indices);
 

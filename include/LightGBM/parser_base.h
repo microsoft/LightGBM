@@ -5,6 +5,8 @@
 #ifndef LIGHTGBM_PARSER_H_
 #define LIGHTGBM_PARSER_H_
 
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace LightGBM {
@@ -93,6 +95,6 @@ std::function<std::pair<int, double>(int idx)>
 IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices,
   const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx);
 
-} // namespace LightGBM
+}  // namespace LightGBM
 
 #endif   // LightGBM_PARSER_H_
