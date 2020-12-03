@@ -2209,7 +2209,7 @@ class Booster(object):
               7th tree".
             - ``node_depth``: int64, how far a node is from the root of the tree.
               The root node has a value of ``1``, its direct children are ``2``, etc.
-            - ``node_index``: string, unique identifier for a node
+            - ``node_index``: string, unique identifier for a node.
             - ``left_child``: string, ``node_index`` of the child node to the left
               of a split. ``None`` for leaf nodes.
             - ``right_child``: string, ``node_index`` of the child node to the right
@@ -2231,11 +2231,11 @@ class Booster(object):
               ``None`` for leaf nodes.
             - ``missing_direction``: string, split direction that missing values should go to.
               ``None`` for leaf nodes.
-            - ``missing_type``: object, describes what types of values are treated
+            - ``missing_type``: string, describes what types of values are treated
               as missing.
             - ``value``: float64, predicted value for this leaf node, multiplied by
               the learning rate.
-            - ``weight``: float64, proportion of records in training data that fall
+            - ``weight``: float64 or int64, proportion of records in training data that fall
               into this node. This is a value between 0 and 100, so ``65.4`` means
               "65.4%  of the training data falls into this node".
             - ``count``: int64, number of records in the training data that fall into
