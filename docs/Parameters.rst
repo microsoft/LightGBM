@@ -312,7 +312,7 @@ Learning Control Parameters
 
    -  frequency for bagging
 
-   -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration
+   -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction``% of the data to use for the next ``k`` iterations.
 
    -  **Note**: to enable bagging, ``bagging_fraction`` should be set to value smaller than ``1.0`` as well
 
@@ -322,7 +322,7 @@ Learning Control Parameters
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
-   -  LightGBM will randomly select part of features on each iteration (tree) if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+   -  LightGBM will randomly select a subset of of features on each iteration (tree) if ``feature_fraction`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
    -  can be used to speed up training
 
@@ -330,7 +330,7 @@ Learning Control Parameters
 
 -  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature_bynode``, ``colsample_bynode``, constraints: ``0.0 < feature_fraction_bynode <= 1.0``
 
-   -  LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+   -  LightGBM will randomly select a subset of features on each tree node if ``feature_fraction_bynode`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
 
    -  can be used to deal with over-fitting
 
@@ -343,6 +343,8 @@ Learning Control Parameters
    -  random seed for ``feature_fraction``
 
 -  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  can be used to speed up training
 
    -  use extremely randomized trees
 
@@ -358,11 +360,13 @@ Learning Control Parameters
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
 
-   -  ``<= 0`` means disable
+   -  can be used to speed up training
+
+   -  ``<= 0`` means disable (the default)
 
 -  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  set this to ``true``, if you want to use only the first metric for early stopping
+   -  LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping.
 
 -  ``max_delta_step`` :raw-html:`<a id="max_delta_step" title="Permalink to this parameter" href="#max_delta_step">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``max_tree_output``, ``max_leaf_output``
 
@@ -381,6 +385,8 @@ Learning Control Parameters
    -  L2 regularization
 
 -  ``min_gain_to_split`` :raw-html:`<a id="min_gain_to_split" title="Permalink to this parameter" href="#min_gain_to_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
+
+   -  can be used to speed up training
 
    -  the minimal gain to perform split
 
@@ -442,7 +448,9 @@ Learning Control Parameters
 
    -  used for the categorical features
 
-   -  limit the max threshold points in categorical features
+   -  limit number of split points considered for categorical features. See `the documentation on how LightGBM finds optimal splits for categorical features <./Features.rst#optimal-split-for-categorical-features>`_ for more details.
+
+   -  can be used to speed up training
 
 -  ``cat_l2`` :raw-html:`<a id="cat_l2" title="Permalink to this parameter" href="#cat_l2">&#x1F517;&#xFE0E;</a>`, default = ``10.0``, type = double, constraints: ``cat_l2 >= 0.0``
 
@@ -668,7 +676,7 @@ Dataset Parameters
 
 -  ``feature_pre_filter`` :raw-html:`<a id="feature_pre_filter" title="Permalink to this parameter" href="#feature_pre_filter">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
-   -  set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+   -  set this to ``true`` (the default) to tell LightGBM to ignore the features that are unsplittable based on ``min_data_in_leaf``
 
    -  as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
 
