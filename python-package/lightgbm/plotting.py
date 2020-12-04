@@ -477,7 +477,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     Each node in the graph represents a node in the tree.
 
     Non-leaf nodes have labels like ``Column_10 <= 875.9``, which means
-    "this node splits on the 11th feature, with threshold 875.9".
+    "this node splits on the feature named "Column_10", with threshold 875.9".
 
     Leaf nodes have labels like ``leaf 2: 0.422``, which means "this node is a
     leaf node, and the predicted value for records that fall into this node
@@ -552,7 +552,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
     """Plot specified tree.
 
     Non-leaf nodes have labels like ``Column_10 <= 875.9``, which means
-    "this node splits on the 11th feature, with threshold 875.9".
+    "this node splits on the feature named "Column_10", with threshold 875.9".
 
     Leaf nodes have labels like ``leaf 2: 0.422``, which means "this node is a
     leaf node, and the predicted value for records that fall into this node
