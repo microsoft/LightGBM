@@ -85,7 +85,7 @@ Depending on the size of the training data and the distribution of features, it'
 This can be prevented indirectly with parameters like ``max_depth`` and ``num_leaves``, but LightGBM also offers parameters to help you directly avoid adding these overly-specific tree nodes.
 
 - ``min_data_in_leaf``: Minimum number of observations that must fall into a tree node for it to be added.
-- ``min_sum_hessian_in_leaf``: Minimum sum of the Hessian (second derivative of the objective function evaluated for each observation) for observations in a leaf. For some regression objectives, this is just the minimum number of records that have to fall into each node. For classification objectives, it represents a sum over a distribution of probabilities. See <a href="https://stats.stackexchange.com/questions/317073/explanation-of-min-child-weight-in-xgboost-algorithm" target="_blank" rel="noopener">this Stack Overflow answer</a> for a good description of how to reason about values of this parameter.
+- ``min_sum_hessian_in_leaf``: Minimum sum of the Hessian (second derivative of the objective function evaluated for each observation) for observations in a leaf. For some regression objectives, this is just the minimum number of records that have to fall into each node. For classification objectives, it represents a sum over a distribution of probabilities. See `this Stack Overflow answer <https://stats.stackexchange.com/questions/317073/explanation-of-min-child-weight-in-xgboost-algorithm>`_ for a good description of how to reason about values of this parameter.
 
 Grow Less Trees
 '''''''''''''''
