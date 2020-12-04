@@ -2210,7 +2210,7 @@ class Booster(object):
             - ``left_child`` : string, ``node_index`` of the child node to the left of a split. ``None`` for leaf nodes.
             - ``right_child`` : string, ``node_index`` of the child node to the right of a split. ``None`` for leaf nodes.
             - ``parent_index`` : string, ``node_index`` of this node's parent. ``None`` for the root node.
-            - ``split_feature`` : string, identifier for the feature used for splitting. This is of the form ``"Column_i"``, where ``i`` refers to the number of the feature. For example, the first feature would be ``"Column_0"``. ``None`` for leaf nodes.
+            - ``split_feature`` : string, name of the feature used for splitting. ``None`` for leaf nodes.
             - ``split_gain`` : float64, gain from adding this split to the tree. ``NaN`` for leaf nodes.
             - ``threshold`` : float64, value of the feature used to decide which side of the split a record will go down. ``NaN`` for leaf nodes.
             - ``decision_type`` : string, logical operator describing how to compare a value to ``threshold``. For example, ``split_feature = "Column_10", threshold = 15, decision_type = "<="`` means that records where ``Column_10 <= 15`` follow the left side of the split, otherwise follows the right side of the split. ``None`` for leaf nodes.
