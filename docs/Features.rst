@@ -205,9 +205,9 @@ LightGBM supports the following metrics:
 
 -  Multi-class error rate
 
--  AUC-mu **(--- new in v3.0.0 ---)**
+-  AUC-mu ``(new in v3.0.0)``
 
--  Average precision **(new in v3.1.0)**
+-  Average precision ``(new in v3.1.0)``
 
 -  Fair
 
