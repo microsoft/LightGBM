@@ -60,7 +60,7 @@ The suggestions below will speed up training, but might hurt statistical perform
 Decrease ``max_depth``
 **********************
 
-This parameter is an integer that controls the maximum distance between the root node of each tree and a leaf node. Decrease `max_depth` to reduce training time.
+This parameter is an integer that controls the maximum distance between the root node of each tree and a leaf node. Decrease ``max_depth`` to reduce training time.
 
 Decrease ``num_leaves``
 ***********************
