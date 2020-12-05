@@ -205,3 +205,63 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
     expect_identical(new_params[[param_name]], updated_params[[param_name]])
   }
 })
+
+test_that("lgb.Dataset: should be able to run lgb.train() immediately after using lgb.Dataset() on a file", {
+  dtest <- lgb.Dataset(
+    data = test_data
+    , label = test_label
+  )
+  tmp_file <- tempfile(pattern = "lgb.Dataset_")
+  lgb.Dataset.save(
+    dataset = dtest
+    , fname = tmp_file
+  )
+
+  # read from a local file
+  dtest_read_in <- lgb.Dataset(data = tmp_file)
+
+  param <- list(
+    objective = "binary"
+    , metric = "binary_logloss"
+    , num_leaves = 5L
+    , learning_rate = 1.0
+  )
+
+  # should be able to train right away
+  bst <- lgb.train(
+    params = param
+    , data = dtest_read_in
+  )
+
+  expect_true(lgb.is.Booster(x = bst))
+})
+
+test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using lgb.Dataset() on a file", {
+  dtest <- lgb.Dataset(
+    data = test_data
+    , label = test_label
+  )
+  tmp_file <- tempfile(pattern = "lgb.Dataset_")
+  lgb.Dataset.save(
+    dataset = dtest
+    , fname = tmp_file
+  )
+
+  # read from a local file
+  dtest_read_in <- lgb.Dataset(data = tmp_file)
+
+  param <- list(
+    objective = "binary"
+    , metric = "binary_logloss"
+    , num_leaves = 5L
+    , learning_rate = 1.0
+  )
+
+  # should be able to train right away
+  bst <- lgb.cv(
+    params = param
+    , data = dtest_read_in
+  )
+
+  expect_is(bst, "lgb.CVBooster")
+})

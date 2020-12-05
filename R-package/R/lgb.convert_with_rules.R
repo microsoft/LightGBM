@@ -15,7 +15,7 @@
 #               and lgb.convert_with_rules() too warn if more action is needed by users
 #               before a dataset can be converted to a lgb.Dataset.
 .warn_for_unconverted_columns <- function(df, function_name) {
-    column_classes <- .get_column_classes(df)
+    column_classes <- .get_column_classes(df = df)
     unconverted_columns <- column_classes[!(column_classes %in% c("numeric", "integer"))]
     if (length(unconverted_columns) > 0L) {
         col_detail_string <- paste0(
@@ -109,13 +109,13 @@
 #' @export
 lgb.convert_with_rules <- function(data, rules = NULL) {
 
-    column_classes <- .get_column_classes(data)
+    column_classes <- .get_column_classes(df = data)
 
     is_char <- which(column_classes == "character")
     is_factor <- which(column_classes == "factor")
     is_logical <- which(column_classes == "logical")
 
-    is_data_table <- data.table::is.data.table(data)
+    is_data_table <- data.table::is.data.table(x = data)
     is_data_frame <- is.data.frame(data)
 
     if (!(is_data_table || is_data_frame)) {
@@ -166,7 +166,7 @@ lgb.convert_with_rules <- function(data, rules = NULL) {
         }
         if (is_data_table) {
             data.table::set(
-                data
+                x = data
                 , j = col_name
                 , value = unname(rules[[col_name]][data[[col_name]]])
             )

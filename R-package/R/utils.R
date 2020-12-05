@@ -95,13 +95,13 @@ lgb.call.return.str <- function(fun_name, ...) {
   buf <- raw(buf_len)
 
   # Call buffer
-  buf <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
+  buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
 
   # Check for buffer content
   if (act_len > buf_len) {
     buf_len <- act_len
     buf <- raw(buf_len)
-    buf <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
+    buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
   }
 
   return(lgb.encode.char(arr = buf, len = act_len))
