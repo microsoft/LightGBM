@@ -165,6 +165,10 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "NOTE" -CaseSensitive -Quiet) {
+      echo "NOTEs have been found by R CMD check!"
+      Check-Output $False
+  }
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
       echo "ERRORs have been found by R CMD check!"
       Check-Output $False
@@ -174,14 +178,6 @@ if ($env:COMPILER -ne "MSVC") {
       Check-Output $False
   }
 
-  $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
-  $relevant_line = $note_str -match '(\d+) NOTE'
-  $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 0
-  if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
-      Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
-      Check-Output $False
-  }
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
