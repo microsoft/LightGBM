@@ -317,8 +317,8 @@ lgb.cv <- function(params = list()
       # set up training set
       indexDT <- data.table::data.table(
         indices = train_indices
-        , weight = getinfo(data = data, name = "weight")[train_indices]
-        , init_score = getinfo(data = data, name = "init_score")[train_indices]
+        , weight = getinfo(dataset = data, name = "weight")[train_indices]
+        , init_score = getinfo(dataset = data, name = "init_score")[train_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
       dtrain <- slice(data, indexDT$indices)
