@@ -62,6 +62,15 @@ $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
 $env:_R_CHECK_SYSTEM_CLOCK_ = 0
 
+# ignore R CMD CHECK NOTE checking how long it has
+# been since the last submission
+$env:_R_CHECK_CRAN_INCOMING_REMOTE_ = 0
+
+# CRAN ignores the "installed size is too large" NOTE,
+# so our CI can too. Setting to a large value here just
+# to catch extreme problems
+$env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 60
+
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
