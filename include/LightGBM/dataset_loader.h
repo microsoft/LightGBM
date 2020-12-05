@@ -44,7 +44,7 @@ class DatasetLoader {
 
   void SetHeader(const char* filename);
 
-  void CheckDataset(const Dataset* dataset);
+  void CheckDataset(const Dataset* dataset, bool is_load_from_binary);
 
   std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
