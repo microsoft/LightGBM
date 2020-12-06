@@ -165,16 +165,8 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "NOTE" -CaseSensitive -Quiet) {
-      echo "NOTEs have been found by R CMD check!"
-      Check-Output $False
-  }
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
-      echo "ERRORs have been found by R CMD check!"
-      Check-Output $False
-  }
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
-      echo "WARNINGS have been found by R CMD check!"
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "NOTE|WARNING|ERROR" -CaseSensitive -Quiet) {
+      echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
       Check-Output $False
   }
 

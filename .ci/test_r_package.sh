@@ -190,16 +190,8 @@ if [[ $check_succeeded == "no" ]]; then
     exit -1
 fi
 
-if grep -q -R "NOTE" "$LOG_FILE_NAME"; then
-    echo "NOTEs have been found by R CMD check!"
-    exit -1
-fi
-if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
-    echo "WARNINGS have been found by R CMD check!"
-    exit -1
-fi
-if grep -q -R "ERROR" "$LOG_FILE_NAME"; then
-    echo "ERRORs have been found by R CMD check!"
+if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
+    echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
     exit -1
 fi
 
