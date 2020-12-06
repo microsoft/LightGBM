@@ -190,19 +190,16 @@ if [[ $check_succeeded == "no" ]]; then
     exit -1
 fi
 
+if grep -q -R "NOTE" "$LOG_FILE_NAME"; then
+    echo "NOTEs have been found by R CMD check!"
+    exit -1
+fi
 if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
     echo "WARNINGS have been found by R CMD check!"
     exit -1
 fi
-
-ALLOWED_CHECK_NOTES=0
-NUM_CHECK_NOTES=$(
-    cat ${LOG_FILE_NAME} \
-        | grep -e '^Status: .* NOTE.*' \
-        | sed 's/[^0-9]*//g'
-)
-if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
-    echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
+if grep -q -R "ERROR" "$LOG_FILE_NAME"; then
+    echo "ERRORs have been found by R CMD check!"
     exit -1
 fi
 
