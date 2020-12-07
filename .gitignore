@@ -442,3 +442,10 @@ miktex*.zip
 
 # Files from local Dask work
 dask-worker-space/
+
+# credentials and key material
+*.env
+*.pem
+*.pub
+*.rdp
+*_rsa

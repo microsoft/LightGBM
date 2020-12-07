@@ -10,7 +10,7 @@ Dataset <- R6::R6Class(
     finalize = function() {
 
       # Check the need for freeing handle
-      if (!lgb.is.null.handle(private$handle)) {
+      if (!lgb.is.null.handle(x = private$handle)) {
 
         # Freeing up handle
         lgb.call(fun_name = "LGBM_DatasetFree_R", ret = NULL, private$handle)
@@ -113,7 +113,7 @@ Dataset <- R6::R6Class(
     construct = function() {
 
       # Check for handle null
-      if (!lgb.is.null.handle(private$handle)) {
+      if (!lgb.is.null.handle(x = private$handle)) {
         return(invisible(self))
       }
 
@@ -196,7 +196,7 @@ Dataset <- R6::R6Class(
           handle <- lgb.call(
             fun_name = "LGBM_DatasetCreateFromFile_R"
             , ret = handle
-            , lgb.c_str(private$raw_data)
+            , lgb.c_str(x = private$raw_data)
             , params_str
             , ref_handle
           )
@@ -260,7 +260,7 @@ Dataset <- R6::R6Class(
         )
 
       }
-      if (lgb.is.null.handle(handle)) {
+      if (lgb.is.null.handle(x = handle)) {
         stop("lgb.Dataset.construct: cannot create Dataset handle")
       }
       # Setup class and private type
@@ -269,7 +269,7 @@ Dataset <- R6::R6Class(
 
       # Set feature names
       if (!is.null(private$colnames)) {
-        self$set_colnames(private$colnames)
+        self$set_colnames(colnames = private$colnames)
       }
 
       # Load init score if requested
@@ -307,7 +307,7 @@ Dataset <- R6::R6Class(
       }
 
       # Get label information existence
-      if (is.null(self$getinfo("label"))) {
+      if (is.null(self$getinfo(name = "label"))) {
         stop("lgb.Dataset.construct: label should be set")
       }
 
@@ -319,7 +319,7 @@ Dataset <- R6::R6Class(
     dim = function() {
 
       # Check for handle
-      if (!lgb.is.null.handle(private$handle)) {
+      if (!lgb.is.null.handle(x = private$handle)) {
 
         num_row <- 0L
         num_col <- 0L
@@ -360,7 +360,7 @@ Dataset <- R6::R6Class(
     get_colnames = function() {
 
       # Check for handle
-      if (!lgb.is.null.handle(private$handle)) {
+      if (!lgb.is.null.handle(x = private$handle)) {
 
         # Get feature names and write them
         cnames <- lgb.call.return.str(
@@ -403,7 +403,7 @@ Dataset <- R6::R6Class(
 
       # Write column names
       private$colnames <- colnames
-      if (!lgb.is.null.handle(private$handle)) {
+      if (!lgb.is.null.handle(x = private$handle)) {
 
         # Merge names with tab separation
         merged_name <- paste0(as.list(private$colnames), collapse = "\t")
@@ -411,7 +411,7 @@ Dataset <- R6::R6Class(
           fun_name = "LGBM_DatasetSetFeatureNames_R"
           , ret = NULL
           , private$handle
-          , lgb.c_str(merged_name)
+          , lgb.c_str(x = merged_name)
         )
 
       }
@@ -434,7 +434,7 @@ Dataset <- R6::R6Class(
       # Check for info name and handle
       if (is.null(private$info[[name]])) {
 
-        if (lgb.is.null.handle(private$handle)) {
+        if (lgb.is.null.handle(x = private$handle)) {
           stop("Cannot perform getinfo before constructing Dataset.")
         }
 
@@ -444,7 +444,7 @@ Dataset <- R6::R6Class(
           fun_name = "LGBM_DatasetGetFieldSize_R"
           , ret = info_len
           , private$handle
-          , lgb.c_str(name)
+          , lgb.c_str(x = name)
         )
 
         # Check if info is not empty
@@ -462,7 +462,7 @@ Dataset <- R6::R6Class(
             fun_name = "LGBM_DatasetGetField_R"
             , ret = ret
             , private$handle
-            , lgb.c_str(name)
+            , lgb.c_str(x = name)
           )
 
           private$info[[name]] <- ret
@@ -495,7 +495,7 @@ Dataset <- R6::R6Class(
       # Store information privately
       private$info[[name]] <- info
 
-      if (!lgb.is.null.handle(private$handle) && !is.null(info)) {
+      if (!lgb.is.null.handle(x = private$handle) && !is.null(info)) {
 
         if (length(info) > 0L) {
 
@@ -503,7 +503,7 @@ Dataset <- R6::R6Class(
             fun_name = "LGBM_DatasetSetField_R"
             , ret = NULL
             , private$handle
-            , lgb.c_str(name)
+            , lgb.c_str(x = name)
             , info
             , length(info)
           )
@@ -542,7 +542,7 @@ Dataset <- R6::R6Class(
       if (length(params) == 0L) {
         return(invisible(self))
       }
-      if (lgb.is.null.handle(private$handle)) {
+      if (lgb.is.null.handle(x = private$handle)) {
         private$params <- modifyList(private$params, params)
       } else {
         call_state <- 0L
@@ -608,9 +608,9 @@ Dataset <- R6::R6Class(
     set_reference = function(reference) {
 
       # Set known references
-      self$set_categorical_feature(reference$.__enclos_env__$private$categorical_feature)
-      self$set_colnames(reference$get_colnames())
-      private$set_predictor(reference$.__enclos_env__$private$predictor)
+      self$set_categorical_feature(categorical_feature = reference$.__enclos_env__$private$categorical_feature)
+      self$set_colnames(colnames = reference$get_colnames())
+      private$set_predictor(predictor = reference$.__enclos_env__$private$predictor)
 
       # Check for identical references
       if (identical(private$reference, reference)) {
@@ -653,7 +653,7 @@ Dataset <- R6::R6Class(
         fun_name = "LGBM_DatasetSaveBinary_R"
         , ret = NULL
         , private$handle
-        , lgb.c_str(fname)
+        , lgb.c_str(x = fname)
       )
       return(invisible(self))
     }
@@ -676,7 +676,7 @@ Dataset <- R6::R6Class(
     get_handle = function() {
 
       # Get handle and construct if needed
-      if (lgb.is.null.handle(private$handle)) {
+      if (lgb.is.null.handle(x = private$handle)) {
         self$construct()
       }
       private$handle
@@ -791,7 +791,7 @@ lgb.Dataset <- function(data,
 lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
   }
 
@@ -817,7 +817,7 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
 lgb.Dataset.construct <- function(dataset) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.construct: input data should be an lgb.Dataset object")
   }
 
@@ -852,7 +852,7 @@ lgb.Dataset.construct <- function(dataset) {
 dim.lgb.Dataset <- function(x, ...) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(x)) {
+  if (!lgb.is.Dataset(x = x)) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
   }
 
@@ -888,7 +888,7 @@ dim.lgb.Dataset <- function(x, ...) {
 dimnames.lgb.Dataset <- function(x) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(x)) {
+  if (!lgb.is.Dataset(x = x)) {
     stop("dimnames.lgb.Dataset: input data should be an lgb.Dataset object")
   }
 
@@ -914,7 +914,7 @@ dimnames.lgb.Dataset <- function(x) {
 
   if (is.null(value[[2L]])) {
 
-    x$set_colnames(NULL)
+    x$set_colnames(colnames = NULL)
     return(x)
 
   }
@@ -931,7 +931,7 @@ dimnames.lgb.Dataset <- function(x) {
   }
 
   # Set column names properly, and return
-  x$set_colnames(value[[2L]])
+  x$set_colnames(colnames = value[[2L]])
   x
 
 }
@@ -965,7 +965,7 @@ slice <- function(dataset, ...) {
 slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
@@ -1016,11 +1016,11 @@ getinfo <- function(dataset, ...) {
 getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  dataset$getinfo(name)
+  dataset$getinfo(name = name)
 
 }
 
@@ -1069,7 +1069,7 @@ setinfo <- function(dataset, ...) {
 #' @export
 setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
@@ -1101,12 +1101,12 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 #' @export
 lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set.categorical: input dataset should be an lgb.Dataset object")
   }
 
   # Set categoricals
-  invisible(dataset$set_categorical_feature(categorical_feature))
+  invisible(dataset$set_categorical_feature(categorical_feature = categorical_feature))
 
 }
 
@@ -1133,12 +1133,12 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 lgb.Dataset.set.reference <- function(dataset, reference) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set.reference: input dataset should be an lgb.Dataset object")
   }
 
   # Set reference
-  invisible(dataset$set_reference(reference))
+  invisible(dataset$set_reference(reference = reference))
 }
 
 #' @name lgb.Dataset.save
@@ -1161,7 +1161,7 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 lgb.Dataset.save <- function(dataset, fname) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(dataset)) {
+  if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set: input dataset should be an lgb.Dataset object")
   }
 
@@ -1171,5 +1171,5 @@ lgb.Dataset.save <- function(dataset, fname) {
   }
 
   # Store binary
-  invisible(dataset$save_binary(fname))
+  invisible(dataset$save_binary(fname = fname))
 }

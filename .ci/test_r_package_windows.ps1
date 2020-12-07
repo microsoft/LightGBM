@@ -62,6 +62,15 @@ $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
 $env:_R_CHECK_SYSTEM_CLOCK_ = 0
 
+# ignore R CMD CHECK NOTE checking how long it has
+# been since the last submission
+$env:_R_CHECK_CRAN_INCOMING_REMOTE_ = 0
+
+# CRAN ignores the "installed size is too large" NOTE,
+# so our CI can too. Setting to a large value here just
+# to catch extreme problems
+$env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 60
+
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
@@ -156,23 +165,11 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
-      echo "ERRORs have been found by R CMD check!"
-      Check-Output $False
-  }
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
-      echo "WARNINGS have been found by R CMD check!"
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "NOTE|WARNING|ERROR" -CaseSensitive -Quiet) {
+      echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
       Check-Output $False
   }
 
-  $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
-  $relevant_line = $note_str -match '(\d+) NOTE'
-  $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 2
-  if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
-      Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
-      Check-Output $False
-  }
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
