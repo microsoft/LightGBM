@@ -766,7 +766,7 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
     int label_idx = -1;
     if (Common::AtoiAndCheck(config_.label_column.c_str(), &label_idx)) {
       if (dataset->label_idx_ != label_idx) {
-        Log::Fatal("Dataset label_idx %d != config %d", dataset->zero_as_missing_, config_.zero_as_missing);
+        Log::Fatal("Dataset label_idx %d != config %d", dataset->label_idx_, label_idx);
       }
     } else {
       Log::Info("Recommend use integer for label index when loading data from binary for sanity check.");
