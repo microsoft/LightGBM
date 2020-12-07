@@ -15,7 +15,7 @@ Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first
 -  `Kubeflow Fairing`_ suggests using LightGBM in a Kubernetes cluster.
    `These examples`_ help to get started with LightGBM in a hybrid cloud environment.
    Also you can use `Kubeflow XGBoost Operator`_ to train LightGBM model.
-   Please check `this example`__ for how to do this.
+   Please check `this example`_ for how to do this.
 
 Choose Appropriate Parallel Algorithm
 -------------------------------------
