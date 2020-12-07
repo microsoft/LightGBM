@@ -2202,6 +2202,24 @@ class Booster(object):
     def trees_to_dataframe(self):
         """Parse the fitted model and return in an easy-to-read pandas DataFrame.
 
+        The returned DataFrame has the following columns.
+
+            - ``tree_index`` : int64, which tree a node belongs to. 0-based, so a value of ``6``, for example, means "this node is in the 7th tree".
+            - ``node_depth`` : int64, how far a node is from the root of the tree. The root node has a value of ``1``, its direct children are ``2``, etc.
+            - ``node_index`` : string, unique identifier for a node.
+            - ``left_child`` : string, ``node_index`` of the child node to the left of a split. ``None`` for leaf nodes.
+            - ``right_child`` : string, ``node_index`` of the child node to the right of a split. ``None`` for leaf nodes.
+            - ``parent_index`` : string, ``node_index`` of this node's parent. ``None`` for the root node.
+            - ``split_feature`` : string, name of the feature used for splitting. ``None`` for leaf nodes.
+            - ``split_gain`` : float64, gain from adding this split to the tree. ``NaN`` for leaf nodes.
+            - ``threshold`` : float64, value of the feature used to decide which side of the split a record will go down. ``NaN`` for leaf nodes.
+            - ``decision_type`` : string, logical operator describing how to compare a value to ``threshold``. For example, ``split_feature = "Column_10", threshold = 15, decision_type = "<="`` means that records where ``Column_10 <= 15`` follow the left side of the split, otherwise follows the right side of the split. ``None`` for leaf nodes.
+            - ``missing_direction`` : string, split direction that missing values should go to. ``None`` for leaf nodes.
+            - ``missing_type`` : string, describes what types of values are treated as missing.
+            - ``value`` : float64, predicted value for this leaf node, multiplied by the learning rate.
+            - ``weight`` : float64 or int64, sum of hessian (second-order derivative of objective), summed over observations that fall in this node.
+            - ``count`` : int64, number of records in the training data that fall into this node.
+
         Returns
         -------
         result : pandas DataFrame
