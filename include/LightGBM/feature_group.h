@@ -37,7 +37,8 @@ class FeatureGroup {
   */
   FeatureGroup(int num_feature, int8_t is_multi_val,
     std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-    data_size_t num_data) : num_feature_(num_feature), is_multi_val_(is_multi_val > 0), is_sparse_(false) {
+    data_size_t num_data, int group_id) :
+    num_feature_(num_feature), is_multi_val_(is_multi_val > 0), is_sparse_(false) {
     CHECK_EQ(static_cast<int>(bin_mappers->size()), num_feature);
     auto& ref_bin_mappers = *bin_mappers;
     double sum_sparse_rate = 0.0f;
@@ -55,6 +56,12 @@ class FeatureGroup {
     }
     // use bin at zero to store most_freq_bin only when not using dense multi val bin
     num_total_bin_ = offset;
+    // however, we should force to leave one bin, if dense multi val bin is the first bin
+    // and its first feature has most freq bin > 0
+    if (group_id == 0 && num_feature_ > 0 && is_dense_multi_val_ &&
+      bin_mappers_[0]->GetMostFreqBin() > 0) {
+      num_total_bin_ = 1;
+    }
     bin_offsets_.emplace_back(num_total_bin_);
     for (int i = 0; i < num_feature_; ++i) {
       auto num_bin = bin_mappers_[i]->num_bin();
@@ -109,7 +116,8 @@ class FeatureGroup {
    * \param local_used_indices Local used indices, empty means using all data
    */
   FeatureGroup(const void* memory, data_size_t num_all_data,
-               const std::vector<data_size_t>& local_used_indices) {
+               const std::vector<data_size_t>& local_used_indices,
+               int group_id) {
     const char* memory_ptr = reinterpret_cast<const char*>(memory);
     // get is_sparse
     is_multi_val_ = *(reinterpret_cast<const bool*>(memory_ptr));
@@ -122,19 +130,33 @@ class FeatureGroup {
     memory_ptr += VirtualFileWriter::AlignedSize(sizeof(num_feature_));
     // get bin mapper
     bin_mappers_.clear();
-    bin_offsets_.clear();
-    // start from 1, due to need to store zero bin in this slot
-    num_total_bin_ = 1;
-    bin_offsets_.emplace_back(num_total_bin_);
+
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_.emplace_back(new BinMapper(memory_ptr));
+      memory_ptr += bin_mappers_[i]->SizesInByte();
+    }
+
+    bin_offsets_.clear();
+    int offset = 1;
+    if (is_dense_multi_val_) {
+      offset = 0;
+    }
+    // use bin at zero to store most_freq_bin only when not using dense multi val bin
+    num_total_bin_ = offset;
+    // however, we should force to leave one bin, if dense multi val bin is the first bin
+    // and its first feature has most freq bin > 0
+    if (group_id == 0 && num_feature_ > 0 && is_dense_multi_val_ &&
+      bin_mappers_[0]->GetMostFreqBin() > 0) {
+      num_total_bin_ = 1;
+    }
+    bin_offsets_.emplace_back(num_total_bin_);
+    for (int i = 0; i < num_feature_; ++i) {
       auto num_bin = bin_mappers_[i]->num_bin();
       if (bin_mappers_[i]->GetMostFreqBin() == 0) {
-        num_bin -= 1;
+        num_bin -= offset;
       }
       num_total_bin_ += num_bin;
       bin_offsets_.emplace_back(num_total_bin_);
-      memory_ptr += bin_mappers_[i]->SizesInByte();
     }
     data_size_t num_data = num_all_data;
     if (!local_used_indices.empty()) {
@@ -210,7 +232,7 @@ class FeatureGroup {
     }
   }
 
-  void AddFeaturesFrom(const FeatureGroup* other) {
+  void AddFeaturesFrom(const FeatureGroup* other, int group_id) {
     CHECK(is_multi_val_);
     CHECK(other->is_multi_val_);
     // every time when new features are added, we need to reconsider sparse or dense
@@ -231,6 +253,12 @@ class FeatureGroup {
     }
     bin_offsets_.clear();
     num_total_bin_ = offset;
+    // however, we should force to leave one bin, if dense multi val bin is the first bin
+    // and its first feature has most freq bin > 0
+    if (group_id == 0 && num_feature_ > 0 && is_dense_multi_val_ &&
+      bin_mappers_[0]->GetMostFreqBin() > 0) {
+      num_total_bin_ = 1;
+    }
     bin_offsets_.emplace_back(num_total_bin_);
     for (int i = 0; i < num_feature_; ++i) {
       auto num_bin = bin_mappers_[i]->num_bin();
@@ -248,6 +276,7 @@ class FeatureGroup {
         num_bin -= offset;
       }
       num_total_bin_ += num_bin;
+      bin_offsets_.emplace_back(num_total_bin_);
       multi_bin_data_.emplace_back(other->multi_bin_data_[i]->Clone());
     }
     num_feature_ += other->num_feature_;
@@ -407,7 +436,8 @@ class FeatureGroup {
   FeatureGroup& operator=(const FeatureGroup&) = delete;
 
   /*! \brief Deep copy */
-  FeatureGroup(const FeatureGroup& other) {
+  FeatureGroup(const FeatureGroup& other, bool should_handle_dense_mv,
+    int group_id) {
     num_feature_ = other.num_feature_;
     is_multi_val_ = other.is_multi_val_;
     is_dense_multi_val_ = other.is_dense_multi_val_;
@@ -425,6 +455,17 @@ class FeatureGroup {
       multi_bin_data_.clear();
       for (int i = 0; i < num_feature_; ++i) {
         multi_bin_data_.emplace_back(other.multi_bin_data_[i]->Clone());
+      }
+    }
+
+    if (should_handle_dense_mv && is_dense_multi_val_ && group_id > 0) {
+      // this feature group was the first feature group, but now no longer is,
+      // so we need to eliminate its special empty bin for multi val dense bin
+      if (bin_mappers_[0]->GetMostFreqBin() > 0 && bin_offsets_[0] == 1) {
+        for (size_t i = 0; i < bin_offsets_.size(); ++i) {
+          bin_offsets_[i] -= 1;
+        }
+        num_total_bin_ -= 1;
       }
     }
   }

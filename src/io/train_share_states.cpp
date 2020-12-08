@@ -12,7 +12,6 @@ MultiValBinWrapper::MultiValBinWrapper(MultiValBin* bin, data_size_t num_data,
   const std::vector<int>& feature_groups_contained):
     feature_groups_contained_(feature_groups_contained) {
   num_threads_ = OMP_NUM_THREADS();
-  max_block_size_ = num_data;
   num_data_ = num_data;
   multi_val_bin_.reset(bin);
   if (bin == nullptr) {
@@ -39,8 +38,10 @@ void MultiValBinWrapper::InitTrain(const std::vector<int>& group_feature_start,
   if (cur_multi_val_bin != nullptr) {
     num_bin_ = cur_multi_val_bin->num_bin();
     num_bin_aligned_ = (num_bin_ + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
+    auto num_element_per_row = cur_multi_val_bin->num_element_per_row();
     min_block_size_ = std::min<int>(static_cast<int>(0.3f * num_bin_ /
-      cur_multi_val_bin->num_element_per_row()) + 1, 1024);
+      (num_element_per_row + kZeroThreshold)) + 1, 1024);
+    min_block_size_ = std::max<int>(min_block_size_, 32);
   }
 }
 

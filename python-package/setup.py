@@ -2,7 +2,6 @@
 """Setup lightgbm package."""
 import logging
 import os
-import shutil
 import struct
 import subprocess
 import sys
@@ -12,8 +11,28 @@ from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.sdist import sdist
-from distutils.dir_util import copy_tree
+from distutils.dir_util import copy_tree, create_tree, remove_tree
 from distutils.file_util import copy_file
+from wheel.bdist_wheel import bdist_wheel
+
+
+LIGHTGBM_OPTIONS = [
+    ('mingw', 'm', 'Compile with MinGW'),
+    ('integrated-opencl', None, 'Compile integrated OpenCL version'),
+    ('gpu', 'g', 'Compile GPU version'),
+    ('cuda', None, 'Compile CUDA version'),
+    ('mpi', None, 'Compile MPI version'),
+    ('nomp', None, 'Compile version without OpenMP support'),
+    ('hdfs', 'h', 'Compile HDFS version'),
+    ('bit32', None, 'Compile 32-bit version'),
+    ('precompile', 'p', 'Use precompiled library'),
+    ('boost-root=', None, 'Boost preferred installation prefix'),
+    ('boost-dir=', None, 'Directory with Boost package configuration file'),
+    ('boost-include-dir=', None, 'Directory containing Boost headers'),
+    ('boost-librarydir=', None, 'Preferred Boost library directory'),
+    ('opencl-include-dir=', None, 'OpenCL include directory'),
+    ('opencl-library=', None, 'Path to OpenCL library')
+]
 
 
 def find_lib():
@@ -32,7 +51,13 @@ def copy_files(integrated_opencl=False, use_gpu=False):
         src = os.path.join(CURRENT_DIR, os.path.pardir, folder_name)
         if os.path.exists(src):
             dst = os.path.join(CURRENT_DIR, 'compile', folder_name)
-            shutil.rmtree(dst, ignore_errors=True)
+            if os.path.exists(dst):
+                if os.path.isdir:
+                    # see https://github.com/pypa/distutils/pull/21
+                    remove_tree(dst)
+                else:
+                    os.remove(dst)
+            create_tree(src, dst, verbose=0)
             copy_tree(src, dst, verbose=0)
         else:
             raise Exception('Cannot copy {0} folder'.format(src))
@@ -40,6 +65,7 @@ def copy_files(integrated_opencl=False, use_gpu=False):
     if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
         copy_files_helper('src')
+        copy_files_helper('external_libs')
         if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "windows")):
             os.makedirs(os.path.join(CURRENT_DIR, "compile", "windows"))
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
@@ -70,7 +96,7 @@ def clear_path(path):
             if os.path.isfile(file_path):
                 os.remove(file_path)
             else:
-                shutil.rmtree(file_path)
+                remove_tree(file_path)
 
 
 def silent_call(cmd, raise_error=False, error_msg=''):
@@ -95,7 +121,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
                 nomp=False, bit32=False, integrated_opencl=False):
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
-        shutil.rmtree(os.path.join(CURRENT_DIR, "build_cpp"))
+        remove_tree(os.path.join(CURRENT_DIR, "build_cpp"))
     os.makedirs(os.path.join(CURRENT_DIR, "build_cpp"))
     os.chdir(os.path.join(CURRENT_DIR, "build_cpp"))
 
@@ -191,23 +217,7 @@ class CustomInstallLib(install_lib):
 
 class CustomInstall(install):
 
-    user_options = install.user_options + [
-        ('mingw', 'm', 'Compile with MinGW'),
-        ('integrated-opencl', None, 'Compile integrated OpenCL version'),
-        ('gpu', 'g', 'Compile GPU version'),
-        ('cuda', None, 'Compile CUDA version'),
-        ('mpi', None, 'Compile MPI version'),
-        ('nomp', None, 'Compile version without OpenMP support'),
-        ('hdfs', 'h', 'Compile HDFS version'),
-        ('bit32', None, 'Compile 32-bit version'),
-        ('precompile', 'p', 'Use precompiled library'),
-        ('boost-root=', None, 'Boost preferred installation prefix'),
-        ('boost-dir=', None, 'Directory with Boost package configuration file'),
-        ('boost-include-dir=', None, 'Directory containing Boost headers'),
-        ('boost-librarydir=', None, 'Preferred Boost library directory'),
-        ('opencl-include-dir=', None, 'OpenCL include directory'),
-        ('opencl-library=', None, 'Path to OpenCL library')
-    ]
+    user_options = install.user_options + LIGHTGBM_OPTIONS
 
     def initialize_options(self):
         install.initialize_options(self)
@@ -248,15 +258,59 @@ class CustomInstall(install):
             os.remove(LOG_PATH)
 
 
+class CustomBdistWheel(bdist_wheel):
+
+    user_options = bdist_wheel.user_options + LIGHTGBM_OPTIONS
+
+    def initialize_options(self):
+        bdist_wheel.initialize_options(self)
+        self.mingw = 0
+        self.integrated_opencl = 0
+        self.gpu = 0
+        self.cuda = 0
+        self.boost_root = None
+        self.boost_dir = None
+        self.boost_include_dir = None
+        self.boost_librarydir = None
+        self.opencl_include_dir = None
+        self.opencl_library = None
+        self.mpi = 0
+        self.hdfs = 0
+        self.precompile = 0
+        self.nomp = 0
+        self.bit32 = 0
+
+    def finalize_options(self):
+        bdist_wheel.finalize_options(self)
+
+        install = self.reinitialize_command('install')
+
+        install.mingw = self.mingw
+        install.integrated_opencl = self.integrated_opencl
+        install.gpu = self.gpu
+        install.cuda = self.cuda
+        install.boost_root = self.boost_root
+        install.boost_dir = self.boost_dir
+        install.boost_include_dir = self.boost_include_dir
+        install.boost_librarydir = self.boost_librarydir
+        install.opencl_include_dir = self.opencl_include_dir
+        install.opencl_library = self.opencl_library
+        install.mpi = self.mpi
+        install.hdfs = self.hdfs
+        install.precompile = self.precompile
+        install.nomp = self.nomp
+        install.bit32 = self.bit32
+
+
 class CustomSdist(sdist):
 
     def run(self):
         copy_files(integrated_opencl=True, use_gpu=True)
         open(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt'), 'w').close()
         if os.path.exists(os.path.join(CURRENT_DIR, 'lightgbm', 'Release')):
-            shutil.rmtree(os.path.join(CURRENT_DIR, 'lightgbm', 'Release'))
+            remove_tree(os.path.join(CURRENT_DIR, 'lightgbm', 'Release'))
         if os.path.exists(os.path.join(CURRENT_DIR, 'lightgbm', 'windows', 'x64')):
-            shutil.rmtree(os.path.join(CURRENT_DIR, 'lightgbm', 'windows', 'x64'))
+            remove_tree(os.path.join(CURRENT_DIR, 'lightgbm', 'windows', 'x64'))
         if os.path.isfile(os.path.join(CURRENT_DIR, 'lightgbm', 'lib_lightgbm.so')):
             os.remove(os.path.join(CURRENT_DIR, 'lightgbm', 'lib_lightgbm.so'))
         sdist.run(self)
@@ -285,6 +339,7 @@ if __name__ == "__main__":
           description='LightGBM Python Package',
           long_description=readme,
           install_requires=[
+              'wheel',
               'numpy',
               'scipy',
               'scikit-learn!=0.22.0'
@@ -295,6 +350,7 @@ if __name__ == "__main__":
           cmdclass={
               'install': CustomInstall,
               'install_lib': CustomInstallLib,
+              'bdist_wheel': CustomBdistWheel,
               'sdist': CustomSdist,
           },
           packages=find_packages(),

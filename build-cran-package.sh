@@ -28,6 +28,15 @@ cp -R R-package/* ${TEMP_R_DIR}
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
 
+cp \
+    external_libs/fast_double_parser/include/fast_double_parser.h \
+    ${TEMP_R_DIR}/src/include/LightGBM
+
+mkdir -p ${TEMP_R_DIR}/src/include/LightGBM/fmt
+cp \
+    external_libs/fmt/include/fmt/*.h \
+    ${TEMP_R_DIR}/src/include/LightGBM/fmt/
+
 cd ${TEMP_R_DIR}
 
     # Remove files not needed for CRAN
@@ -40,8 +49,10 @@ cd ${TEMP_R_DIR}
     rm AUTOCONF_UBUNTU_VERSION
     rm recreate-configure.sh
 
-    # main.cpp is used to make the lightgbm CLI, unnecessary
-    # for the R package
+    # files only used by the lightgbm CLI aren't needed for
+    # the R package
+    rm src/application/application.cpp
+    rm src/include/LightGBM/application.h
     rm src/main.cpp
 
     # configure.ac and DESCRIPTION have placeholders for version
@@ -64,6 +75,16 @@ cd ${TEMP_R_DIR}
         "${file}"
     done
     find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
+
+    sed \
+        -i.bak \
+        -e 's/\.\..*fmt\/format\.h/LightGBM\/fmt\/format\.h/' \
+        src/include/LightGBM/utils/common.h
+
+    sed \
+        -i.bak \
+        -e 's/\.\..*fast_double_parser\.h/LightGBM\/fast_double_parser\.h/' \
+        src/include/LightGBM/utils/common.h
 
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called
