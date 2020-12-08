@@ -173,6 +173,17 @@ result <- file.remove(
 )
 .handle_result(result)
 
+#------------#
+# submodules #
+#------------#
+result <- file.copy(
+  from = "external_libs/"
+  , to = sprintf("%s/", TEMP_SOURCE_DIR)
+  , recursive = TRUE
+  , overwrite = TRUE
+)
+.handle_result(result)
+
 # copy files into the place CMake expects
 for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
   result <- file.copy(
