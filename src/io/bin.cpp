@@ -661,26 +661,35 @@ namespace LightGBM {
     }
   }
 
-  MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature, double sparse_rate) {
-    const double multi_val_bin_sparse_threshold = 0.25f;
+  MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature,
+    double sparse_rate, const std::vector<uint32_t>& offsets) {
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
       const double average_element_per_row = (1.0 - sparse_rate) * num_feature;
       return CreateMultiValSparseBin(num_data, num_bin,
                                      average_element_per_row);
     } else {
-      return CreateMultiValDenseBin(num_data, num_bin, num_feature);
+      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets);
     }
   }
 
   MultiValBin* MultiValBin::CreateMultiValDenseBin(data_size_t num_data,
                                                    int num_bin,
-                                                   int num_feature) {
-    if (num_bin <= 256) {
-      return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature);
-    } else if (num_bin <= 65536) {
-      return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature);
+                                                   int num_feature,
+                                                   const std::vector<uint32_t>& offsets) {
+    // calculate max bin of all features to select the int type in MultiValDenseBin
+    int max_bin = 0;
+    for (int i = 0; i < static_cast<int>(offsets.size()) - 1; ++i) {
+      int feature_bin = offsets[i + 1] - offsets[i];
+      if (feature_bin > max_bin) {
+        max_bin = feature_bin;
+      }
+    }
+    if (max_bin <= 256) {
+      return new MultiValDenseBin<uint8_t>(num_data, num_bin, num_feature, offsets);
+    } else if (max_bin <= 65536) {
+      return new MultiValDenseBin<uint16_t>(num_data, num_bin, num_feature, offsets);
     } else {
-      return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature);
+      return new MultiValDenseBin<uint32_t>(num_data, num_bin, num_feature, offsets);
     }
   }
 

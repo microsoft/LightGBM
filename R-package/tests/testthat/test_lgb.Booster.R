@@ -439,12 +439,30 @@ test_that("Saving a model with different feature importance types works", {
             , "spore-print-color=green=1"
         )
     )
+})
+
+test_that("Saving a model with unknown importance type fails", {
+    testthat::skip("Skipping this test because it causes issues for valgrind")
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 4L
+        , learning_rate = 1.0
+        , nrounds = 2L
+        , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
+    )
+    expect_true(lgb.is.Booster(bst))
 
     UNSUPPORTED_IMPORTANCE <- 2L
     expect_error({
         model_string <- bst$save_model_to_string(feature_importance_type = UNSUPPORTED_IMPORTANCE)
     }, "Unknown importance type")
 })
+
 
 .params_from_model_string <- function(model_str) {
     file_lines <- strsplit(model_str, "\n")[[1L]]

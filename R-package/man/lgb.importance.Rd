@@ -24,7 +24,7 @@ For a tree model, a \code{data.table} with the following columns:
 Creates a \code{data.table} of feature importances in a model.
 }
 \examples{
-\dontrun{
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

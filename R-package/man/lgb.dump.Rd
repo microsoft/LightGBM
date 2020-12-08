@@ -18,7 +18,7 @@ json format of model
 Dump LightGBM model to json
 }
 \examples{
-\dontrun{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train

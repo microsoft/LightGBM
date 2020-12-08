@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -37,6 +38,7 @@ struct FeatureConstraint {
 };
 
 struct ConstraintEntry {
+  virtual ~ConstraintEntry() {}
   virtual void Reset() = 0;
   virtual void UpdateMin(double new_min) = 0;
   virtual void UpdateMax(double new_max) = 0;
@@ -462,12 +464,12 @@ class BasicLeafConstraints : public LeafConstraintsBase {
  public:
   explicit BasicLeafConstraints(int num_leaves) : num_leaves_(num_leaves) {
     for (int i = 0; i < num_leaves; ++i) {
-      entries_.push_back(new BasicConstraintEntry());
+      entries_.emplace_back(new BasicConstraintEntry());
     }
   }
 
   void Reset() override {
-    for (auto entry : entries_) {
+    for (auto& entry : entries_) {
       entry->Reset();
     }
   }
@@ -484,7 +486,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
                           int8_t monotone_type, double right_output,
                           double left_output, int, const SplitInfo& ,
                           const std::vector<SplitInfo>&) override {
-    entries_[new_leaf] = entries_[leaf]->clone();
+    entries_[new_leaf].reset(entries_[leaf]->clone());
     if (is_numerical_split) {
       double mid = (left_output + right_output) / 2.0f;
       if (monotone_type < 0) {
@@ -498,7 +500,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
     return std::vector<int>();
   }
 
-  const ConstraintEntry* Get(int leaf_idx) override { return entries_[leaf_idx]; }
+  const ConstraintEntry* Get(int leaf_idx) override { return entries_[leaf_idx].get(); }
 
   FeatureConstraint* GetFeatureConstraint(int leaf_idx, int feature_index) final {
     return entries_[leaf_idx]->GetFeatureConstraint(feature_index);
@@ -506,7 +508,7 @@ class BasicLeafConstraints : public LeafConstraintsBase {
 
  protected:
   int num_leaves_;
-  std::vector<ConstraintEntry*> entries_;
+  std::vector<std::unique_ptr<ConstraintEntry>> entries_;
 };
 
 class IntermediateLeafConstraints : public BasicLeafConstraints {
@@ -541,7 +543,7 @@ class IntermediateLeafConstraints : public BasicLeafConstraints {
   void UpdateConstraintsWithOutputs(bool is_numerical_split, int leaf,
                                     int new_leaf, int8_t monotone_type,
                                     double right_output, double left_output) {
-    entries_[new_leaf] = entries_[leaf]->clone();
+    entries_[new_leaf].reset(entries_[leaf]->clone());
     if (is_numerical_split) {
       if (monotone_type < 0) {
         entries_[leaf]->UpdateMin(right_output);
@@ -857,7 +859,7 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
                           int num_features)
       : IntermediateLeafConstraints(config, num_leaves) {
     for (int i = 0; i < num_leaves; ++i) {
-      entries_[i] = new AdvancedConstraintEntry(num_features);
+      entries_[i].reset(new AdvancedConstraintEntry(num_features));
     }
   }
 

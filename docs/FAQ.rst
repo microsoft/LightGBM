@@ -172,6 +172,10 @@ For C/C++ users, any OpenMP feature cannot be used before the fork happens. If a
 fork happens (example: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead
 and copy memory as required by creating new processes instead of forking (or, use Intel compilers).
 
+Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a 
+single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent 
+<https://aws.amazon.com/batch/faqs/#Features>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
+
 12. Why is early stopping not enabled by default in LightGBM?
 -------------------------------------------------------------
 

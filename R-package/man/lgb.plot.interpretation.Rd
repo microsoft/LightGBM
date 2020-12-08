@@ -34,7 +34,7 @@ The graph represents each feature as a horizontal bar of length proportional to 
 contribution of a feature. Features are shown ranked in a decreasing contribution order.
 }
 \examples{
-\dontrun{
+\donttest{
 Logit <- function(x) {
   log(x / (1.0 - x))
 }

@@ -18,7 +18,7 @@
 #' and silently returns a processed data.table with \code{top_n} features sorted by defined importance.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)

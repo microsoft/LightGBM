@@ -1904,6 +1904,76 @@ class Dataset(object):
         if self.handle is None or other.handle is None:
             raise ValueError('Both source and target Datasets must be constructed before adding features')
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        was_none = self.data is None
+        old_self_data_type = type(self.data).__name__
+        if other.data is None:
+            self.data = None
+        elif self.data is not None:
+            if isinstance(self.data, np.ndarray):
+                if isinstance(other.data, np.ndarray):
+                    self.data = np.hstack((self.data, other.data))
+                elif scipy.sparse.issparse(other.data):
+                    self.data = np.hstack((self.data, other.data.toarray()))
+                elif isinstance(other.data, DataFrame):
+                    self.data = np.hstack((self.data, other.data.values))
+                elif isinstance(other.data, DataTable):
+                    self.data = np.hstack((self.data, other.data.to_numpy()))
+                else:
+                    self.data = None
+            elif scipy.sparse.issparse(self.data):
+                sparse_format = self.data.getformat()
+                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
+                    self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
+                elif isinstance(other.data, DataFrame):
+                    self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
+                elif isinstance(other.data, DataTable):
+                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
+                else:
+                    self.data = None
+            elif isinstance(self.data, DataFrame):
+                if not PANDAS_INSTALLED:
+                    raise LightGBMError("Cannot add features to DataFrame type of raw data "
+                                        "without pandas installed")
+                from pandas import concat
+                if isinstance(other.data, np.ndarray):
+                    self.data = concat((self.data, DataFrame(other.data)),
+                                       axis=1, ignore_index=True)
+                elif scipy.sparse.issparse(other.data):
+                    self.data = concat((self.data, DataFrame(other.data.toarray())),
+                                       axis=1, ignore_index=True)
+                elif isinstance(other.data, DataFrame):
+                    self.data = concat((self.data, other.data),
+                                       axis=1, ignore_index=True)
+                elif isinstance(other.data, DataTable):
+                    self.data = concat((self.data, DataFrame(other.data.to_numpy())),
+                                       axis=1, ignore_index=True)
+                else:
+                    self.data = None
+            elif isinstance(self.data, DataTable):
+                if isinstance(other.data, np.ndarray):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data)))
+                elif scipy.sparse.issparse(other.data):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
+                elif isinstance(other.data, DataFrame):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
+                elif isinstance(other.data, DataTable):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                else:
+                    self.data = None
+            else:
+                self.data = None
+        if self.data is None:
+            err_msg = ("Cannot add features from {} type of raw data to "
+                       "{} type of raw data.\n").format(type(other.data).__name__,
+                                                        old_self_data_type)
+            err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
+                        if was_none else "Freeing raw data")
+            warnings.warn(err_msg)
+        self.feature_name = self.get_feature_name()
+        warnings.warn("Reseting categorical features.\n"
+                      "You can set new categorical features via ``set_categorical_feature`` method")
+        self.categorical_feature = "auto"
+        self.pandas_categorical = None
         return self
 
     def _dump_text(self, filename):
@@ -2131,6 +2201,24 @@ class Booster(object):
 
     def trees_to_dataframe(self):
         """Parse the fitted model and return in an easy-to-read pandas DataFrame.
+
+        The returned DataFrame has the following columns.
+
+            - ``tree_index`` : int64, which tree a node belongs to. 0-based, so a value of ``6``, for example, means "this node is in the 7th tree".
+            - ``node_depth`` : int64, how far a node is from the root of the tree. The root node has a value of ``1``, its direct children are ``2``, etc.
+            - ``node_index`` : string, unique identifier for a node.
+            - ``left_child`` : string, ``node_index`` of the child node to the left of a split. ``None`` for leaf nodes.
+            - ``right_child`` : string, ``node_index`` of the child node to the right of a split. ``None`` for leaf nodes.
+            - ``parent_index`` : string, ``node_index`` of this node's parent. ``None`` for the root node.
+            - ``split_feature`` : string, name of the feature used for splitting. ``None`` for leaf nodes.
+            - ``split_gain`` : float64, gain from adding this split to the tree. ``NaN`` for leaf nodes.
+            - ``threshold`` : float64, value of the feature used to decide which side of the split a record will go down. ``NaN`` for leaf nodes.
+            - ``decision_type`` : string, logical operator describing how to compare a value to ``threshold``. For example, ``split_feature = "Column_10", threshold = 15, decision_type = "<="`` means that records where ``Column_10 <= 15`` follow the left side of the split, otherwise follows the right side of the split. ``None`` for leaf nodes.
+            - ``missing_direction`` : string, split direction that missing values should go to. ``None`` for leaf nodes.
+            - ``missing_type`` : string, describes what types of values are treated as missing.
+            - ``value`` : float64, predicted value for this leaf node, multiplied by the learning rate.
+            - ``weight`` : float64 or int64, sum of hessian (second-order derivative of objective), summed over observations that fall in this node.
+            - ``count`` : int64, number of records in the training data that fall into this node.
 
         Returns
         -------

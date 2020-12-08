@@ -47,7 +47,7 @@ typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
 LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
 
 /*!
- * \brief Register a callback function for log redirecting. 
+ * \brief Register a callback function for log redirecting.
  * \param callback The callback function to register
  * \return 0 when succeed, -1 when failure happens
  */

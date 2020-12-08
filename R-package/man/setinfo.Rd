@@ -19,7 +19,9 @@ setinfo(dataset, ...)
 \item{info}{the specific field of information to set}
 }
 \value{
-passed object
+the dataset you passed in
+
+the dataset you passed in
 }
 \description{
 Set one attribute of a \code{lgb.Dataset}
@@ -38,7 +40,7 @@ The \code{name} field can be one of the following:
 }
 }
 \examples{
-\dontrun{
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

@@ -15,7 +15,7 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install open-mpi
     fi
     if [[ $AZURE == "true" ]] && [[ $TASK == "sdist" ]]; then
-        brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/f3544543a3115023fc7ca962c21d14b443f419d0/Formula/swig.rb  # swig 3.0.12
+        brew install swig@3
     fi
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
@@ -36,13 +36,22 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
+    if [[ $TASK == "cuda" ]]; then
+        apt-get update
+        apt-get install --no-install-recommends -y curl wget
+        curl -sL https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh -o cmake.sh
+        chmod +x cmake.sh
+        ./cmake.sh --prefix=/usr/local --exclude-subdir
+    fi
     if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi
 fi
 
-if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
-    sh conda.sh -b -p $CONDA
+if [[ "${TASK:0:9}" != "r-package" ]]; then
+    if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
+        sh conda.sh -b -p $CONDA
+    fi
+    conda config --set always_yes yes --set changeps1 no
+    conda update -q -y conda
 fi
-conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda

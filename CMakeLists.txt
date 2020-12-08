@@ -1,19 +1,3 @@
-if(__INTEGRATE_OPENCL)
-  cmake_minimum_required(VERSION 3.11)
-elseif(USE_GPU OR APPLE)
-  cmake_minimum_required(VERSION 3.2)
-elseif(USE_CUDA)
-  cmake_minimum_required(VERSION 3.16)
-else()
-  cmake_minimum_required(VERSION 2.8)
-endif()
-
-if(USE_CUDA)
-  PROJECT(lightgbm LANGUAGES C CXX CUDA)
-else()
-  PROJECT(lightgbm LANGUAGES C CXX)
-endif()
-
 OPTION(USE_MPI "Enable MPI-based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
@@ -27,8 +11,31 @@ OPTION(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R pack
 OPTION(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
 if(APPLE)
-    OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
+  OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif(APPLE)
+
+if(__INTEGRATE_OPENCL)
+  cmake_minimum_required(VERSION 3.11)
+elseif(USE_GPU OR APPLE)
+  cmake_minimum_required(VERSION 3.2)
+elseif(USE_CUDA)
+  cmake_minimum_required(VERSION 3.16)
+elseif(__BUILD_FOR_R)
+  cmake_minimum_required(VERSION 3.6)
+else()
+  cmake_minimum_required(VERSION 3.0)
+endif()
+
+if(__BUILD_FOR_R)
+  # Should be always before PROJECT command
+  set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+endif(__BUILD_FOR_R)
+
+if(USE_CUDA)
+  PROJECT(lightgbm LANGUAGES C CXX CUDA)
+else()
+  PROJECT(lightgbm LANGUAGES C CXX)
+endif()
 
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)
@@ -311,7 +318,6 @@ if(USE_MPI)
 endif(USE_MPI)
 
 file(GLOB SOURCES
-    src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
     src/metric/*.cpp
@@ -323,7 +329,7 @@ if(USE_CUDA)
 endif(USE_CUDA)
 )
 
-add_executable(lightgbm src/main.cpp ${SOURCES})
+add_executable(lightgbm src/main.cpp src/application/application.cpp ${SOURCES})
 list(APPEND SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for

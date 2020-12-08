@@ -123,10 +123,10 @@ class Log {
 #ifndef LGB_R_BUILD
     fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
     fflush(stderr);
-    throw std::runtime_error(std::string(str_buf));
 #else
     Rf_error("[LightGBM] [Fatal] %s\n", str_buf);
 #endif
+    throw std::runtime_error(std::string(str_buf));
   }
 
  private:

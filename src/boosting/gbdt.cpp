@@ -17,6 +17,8 @@
 
 namespace LightGBM {
 
+Common::Timer global_timer;
+
 int LGBM_config_::current_device = lgbm_device_cpu;
 int LGBM_config_::current_learner = use_cpu_learner;
 

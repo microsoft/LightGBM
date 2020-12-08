@@ -218,6 +218,13 @@ struct Config {
   // desc = this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
   int seed = 0;
 
+  // desc = used only with ``cpu`` device type
+  // desc = setting this to ``true`` should ensure the stable results when using the same data and the same parameters (and different ``num_threads``)
+  // desc = when you use the different seeds, different LightGBM versions, the binaries compiled by different compilers, or in different systems, the results are expected to be different
+  // desc = you can `raise issues <https://github.com/microsoft/LightGBM/issues>`__ in LightGBM GitHub repo when you meet the unstable results
+  // desc = **Note**: setting this to ``true`` may slow down the training
+  bool deterministic = false;
+
   #pragma endregion
 
   #pragma region Learning Control Parameters
@@ -573,9 +580,10 @@ struct Config {
 
   // alias = subsample_for_bin
   // check = >0
-  // desc = number of data that sampled to construct histogram bins
-  // desc = setting this to larger value will give better training result, but will increase data loading time
+  // desc = number of data that sampled to construct feature discrete bins
+  // desc = setting this to larger value will give better training result, but may increase data loading time
   // desc = set this to larger value if data is very sparse
+  // desc = **Note**: don't set this to small values, otherwise, you may encounter unexpected errors and poor accuracy
   int bin_construct_sample_cnt = 200000;
 
   // alias = data_seed
@@ -835,8 +843,9 @@ struct Config {
 
   // check = >0
   // desc = used only in ``lambdarank`` application
-  // desc = used for truncating the max DCG, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
-  int lambdarank_truncation_level = 20;
+  // desc = controls the number of top-results to focus on during training, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
+  // desc = this parameter is closely related to the desirable cutoff ``k`` in the metric **NDCG@k** that we aim at optimizing the ranker for. The optimal setting for this parameter is likely to be slightly higher than ``k`` (e.g., ``k + 3``) to include more pairs of documents to train on, but perhaps not too high to avoid deviating too much from the desired target metric **NDCG@k**
+  int lambdarank_truncation_level = 30;
 
   // desc = used only in ``lambdarank`` application
   // desc = set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data

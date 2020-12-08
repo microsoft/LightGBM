@@ -3,7 +3,6 @@ import unittest
 
 import lightgbm as lgb
 from lightgbm.compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
-from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 
 if MATPLOTLIB_INSTALLED:
@@ -11,6 +10,8 @@ if MATPLOTLIB_INSTALLED:
     matplotlib.use('Agg')
 if GRAPHVIZ_INSTALLED:
     import graphviz
+
+from .utils import load_breast_cancer
 
 
 class TestBasic(unittest.TestCase):

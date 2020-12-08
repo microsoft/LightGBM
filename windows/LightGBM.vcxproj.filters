@@ -222,6 +222,9 @@
     <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp">
       <Filter>include\LightGBM\utils\yamc</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\treelearner\monotone_constraints.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -312,6 +315,9 @@
       <Filter>src\io</Filter>
     </ClCompile>
     <ClCompile Include="..\src\io\config_auto.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\train_share_states.cpp">
       <Filter>src\io</Filter>
     </ClCompile>
   </ItemGroup>

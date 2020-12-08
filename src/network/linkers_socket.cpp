@@ -8,9 +8,10 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <string>
+#include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <string>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -186,7 +187,9 @@ void Linkers::Construct() {
   listener_->SetTimeout(socket_timeout_);
   listener_->Listen(incoming_cnt);
   std::thread listen_thread(&Linkers::ListenThread, this, incoming_cnt);
-  const int connect_fail_retry_cnt = 20;
+  const int connect_fail_constant_factor = 20;
+  const int connect_fail_retries_scale_factor = static_cast<int>(num_machines_ / connect_fail_constant_factor);
+  const int connect_fail_retry_cnt = std::max(connect_fail_constant_factor, connect_fail_retries_scale_factor);
   const int connect_fail_retry_first_delay_interval = 200;  // 0.2 s
   const float connect_fail_retry_delay_factor = 1.3f;
   // start connect
